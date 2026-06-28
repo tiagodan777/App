@@ -1,0 +1,29 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to VM
+        uses: appleboy/ssh-action@v1.2.2
+
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+
+          script: |
+            cd /var/www/app
+
+            GIT_SSH_COMMAND="ssh -i ~/.ssh/github_actions_deploy -o IdentitiesOnly=yes" git fetch origin
+            git reset --hard origin/main
+
+            composer install \
+              --no-dev \
+              --optimize-autoloader
