@@ -17,7 +17,7 @@ $current_page = ceil($from / 10) + 1;*/
 /*$data['count_contents'] = $count_contents;
 $data['total_pages'] = $total_pages;
 $data['current_page'] = $current_page;*/
-$data['tokenLogin'] = $tokenLogin;
+// $data['tokenLogin'] = $tokenLogin;
 //$data['pessoas'] = $pessoas;
 //$data['novas_datas'] = $novas_datas;
 
