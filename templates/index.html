@@ -6,28 +6,21 @@
         margin: 0;
         width: 100%;
         height: 100%;
-        background: #ffffff;
         overflow: hidden;
-    }
-
-    .mesh-wrapper {
-        position: fixed;
-        inset: 24px;
-        border-radius: 70px;
         background: #f7f7f8;
-        overflow: hidden;
     }
 
     #gridCanvas {
-        width: 100%;
-        height: 100%;
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
         display: block;
+        background: #f7f7f8;
     }
 </style>
 
-<div class="mesh-wrapper">
-    <canvas id="gridCanvas"></canvas>
-</div>
+<canvas id="gridCanvas"></canvas>
 
 <script>
 (() => {
@@ -37,38 +30,75 @@
     let width = 0;
     let height = 0;
     let dpr = 1;
-
-    const spacing = 27;
-
     let points = [];
-
-    let blob = {
-        x: 0,
-        y: 0,
-        vx: 0.35,
-        vy: 0.18,
-        targetVx: 0.35,
-        targetVy: 0.18,
-        nextTurn: 0
-    };
-
     let time = 0;
 
-    function resize() {
-        const rect = canvas.getBoundingClientRect();
+    const spacing = 24;
 
+    const colors = {
+        yellow: [255, 205, 65],
+        blue:   [55, 135, 255],
+        purple: [170, 85, 255]
+    };
+
+    const blobs = [
+        {
+            x: 0,
+            y: 0,
+            vx: 1.1,
+            vy: 0.45,
+            targetVx: 1.1,
+            targetVy: 0.45,
+            color: colors.yellow,
+            nextTurn: 0,
+            phase: Math.random() * Math.PI * 2
+        },
+        {
+            x: 0,
+            y: 0,
+            vx: -0.75,
+            vy: 0.95,
+            targetVx: -0.75,
+            targetVy: 0.95,
+            color: colors.blue,
+            nextTurn: 0,
+            phase: Math.random() * Math.PI * 2
+        },
+        {
+            x: 0,
+            y: 0,
+            vx: 0.7,
+            vy: -1.0,
+            targetVx: 0.7,
+            targetVy: -1.0,
+            color: colors.purple,
+            nextTurn: 0,
+            phase: Math.random() * Math.PI * 2
+        }
+    ];
+
+    function resize() {
         dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-        width = rect.width;
-        height = rect.height;
+        width = window.innerWidth;
+        height = window.innerHeight;
 
         canvas.width = Math.floor(width * dpr);
         canvas.height = Math.floor(height * dpr);
 
+        canvas.style.width = width + 'px';
+        canvas.style.height = height + 'px';
+
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-        blob.x = width * 0.55;
-        blob.y = height * 0.45;
+        blobs[0].x = width * 0.25;
+        blobs[0].y = height * 0.35;
+
+        blobs[1].x = width * 0.75;
+        blobs[1].y = height * 0.45;
+
+        blobs[2].x = width * 0.50;
+        blobs[2].y = height * 0.75;
 
         createPoints();
     }
@@ -82,11 +112,11 @@
         const startX = -spacing * 2;
         const startY = -spacing * 2;
 
-        for (let y = 0; y < rows; y++) {
-            for (let x = 0; x < cols; x++) {
+        for (let row = 0; row < rows; row++) {
+            for (let col = 0; col < cols; col++) {
                 points.push({
-                    x: startX + x * spacing,
-                    y: startY + y * spacing,
+                    x: startX + col * spacing,
+                    y: startY + row * spacing,
                     seed: Math.random() * Math.PI * 2
                 });
             }
@@ -104,40 +134,22 @@
         return Math.max(min, Math.min(max, v));
     }
 
-    function mix(c1, c2, t) {
-        return [
-            Math.round(lerp(c1[0], c2[0], t)),
-            Math.round(lerp(c1[1], c2[1], t)),
-            Math.round(lerp(c1[2], c2[2], t))
-        ];
-    }
-
-    function colorGradient(t) {
-        const grey = [145, 150, 155];
-        const blue = [70, 145, 255];
-        const purple = [174, 90, 255];
-
-        t = clamp(t, 0, 1);
-
-        if (t < 0.5) {
-            return mix(grey, blue, t / 0.5);
-        }
-
-        return mix(blue, purple, (t - 0.5) / 0.5);
-    }
-
-    function chooseDirection(now) {
-        const speed = 0.62;
+    function chooseDirection(blob, now) {
+        const speed = 1.35;
 
         const directions = [
             [ speed, 0 ],
             [ -speed, 0 ],
             [ 0, speed ],
             [ 0, -speed ],
-            [ speed * 0.75, speed * 0.45 ],
-            [ speed * 0.75, -speed * 0.45 ],
-            [ -speed * 0.75, speed * 0.45 ],
-            [ -speed * 0.75, -speed * 0.45 ]
+            [ speed * 0.75, speed * 0.65 ],
+            [ speed * 0.75, -speed * 0.65 ],
+            [ -speed * 0.75, speed * 0.65 ],
+            [ -speed * 0.75, -speed * 0.65 ],
+            [ speed * 0.35, speed ],
+            [ -speed * 0.35, speed ],
+            [ speed * 0.35, -speed ],
+            [ -speed * 0.35, -speed ]
         ];
 
         const dir = directions[Math.floor(Math.random() * directions.length)];
@@ -145,113 +157,142 @@
         blob.targetVx = dir[0];
         blob.targetVy = dir[1];
 
-        blob.nextTurn = now + 2600 + Math.random() * 2400;
+        // Muda mais rápido: entre 0.9s e 1.8s
+        blob.nextTurn = now + 900 + Math.random() * 900;
     }
 
-    chooseDirection(performance.now());
-
-    function draw(now) {
-        ctx.clearRect(0, 0, width, height);
-
+    function updateBlob(blob, now) {
         if (now > blob.nextTurn) {
-            chooseDirection(now);
+            chooseDirection(blob, now);
         }
 
-        // Suaviza mudança de direção
-        blob.vx = lerp(blob.vx, blob.targetVx, 0.025);
-        blob.vy = lerp(blob.vy, blob.targetVy, 0.025);
+        // Mudança de direção mais rápida, mas ainda suave
+        blob.vx = lerp(blob.vx, blob.targetVx, 0.055);
+        blob.vy = lerp(blob.vy, blob.targetVy, 0.055);
 
         blob.x += blob.vx;
         blob.y += blob.vy;
 
-        const margin = 140;
+        const margin = 80;
 
-        if (blob.x < margin) {
-            blob.x = margin;
+        if (blob.x < -margin) {
+            blob.x = -margin;
             blob.targetVx = Math.abs(blob.targetVx);
         }
 
-        if (blob.x > width - margin) {
-            blob.x = width - margin;
+        if (blob.x > width + margin) {
+            blob.x = width + margin;
             blob.targetVx = -Math.abs(blob.targetVx);
         }
 
-        if (blob.y < margin) {
-            blob.y = margin;
+        if (blob.y < -margin) {
+            blob.y = -margin;
             blob.targetVy = Math.abs(blob.targetVy);
         }
 
-        if (blob.y > height - margin) {
-            blob.y = height - margin;
+        if (blob.y > height + margin) {
+            blob.y = height + margin;
             blob.targetVy = -Math.abs(blob.targetVy);
         }
+    }
 
-        // Respiração tipo balão
-        const breath = 0.5 + 0.5 * Math.sin(time * 1.15);
-        const blobScale = 0.88 + breath * 0.26;
+    blobs.forEach(blob => chooseDirection(blob, performance.now()));
 
-        const radiusX = Math.min(width, height) * 0.42 * blobScale;
-        const radiusY = Math.min(width, height) * 0.36 * blobScale;
+    function draw(now) {
+        ctx.clearRect(0, 0, width, height);
 
-        // Deslocação suave da cor
-        const colorMotion = 0.5 + 0.5 * Math.sin(time * 0.55);
+        for (const blob of blobs) {
+            updateBlob(blob, now);
+        }
 
         for (const p of points) {
-            const dx = (p.x - blob.x) / radiusX;
-            const dy = (p.y - blob.y) / radiusY;
+            let totalInfluence = 0;
 
-            const dist = Math.sqrt(dx * dx + dy * dy);
+            let r = 0;
+            let g = 0;
+            let b = 0;
 
-            // Influência da bolha: 1 no centro, 0 longe
-            let influence = 1 - dist;
-            influence = clamp(influence, 0, 1);
-            influence = Math.pow(influence, 1.65);
+            let pushX = 0;
+            let pushY = 0;
 
-            // Mesmo fora da bolha há pontos pequenos, como no exemplo
-            const backgroundDot = 0.12;
+            for (const blob of blobs) {
+                const breath = 0.5 + 0.5 * Math.sin(time * 2.2 + blob.phase);
 
-            // Pontos crescem e diminuem, sem onda espacial
-            const localPulse = 0.5 + 0.5 * Math.sin(time * 1.8 + p.seed);
+                // Blobs grandes para cobrir o ecrã todo
+                const radiusX = Math.min(width, height) * (0.48 + breath * 0.16);
+                const radiusY = Math.min(width, height) * (0.42 + breath * 0.14);
+
+                const dx = (p.x - blob.x) / radiusX;
+                const dy = (p.y - blob.y) / radiusY;
+
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                let influence = 1 - dist;
+                influence = clamp(influence, 0, 1);
+                influence = Math.pow(influence, 1.7);
+
+                if (influence > 0) {
+                    totalInfluence += influence;
+
+                    r += blob.color[0] * influence;
+                    g += blob.color[1] * influence;
+                    b += blob.color[2] * influence;
+
+                    // Movimento tipo balão: expande/contrai à volta dos centros
+                    const push = influence * (breath - 0.5) * 18;
+
+                    pushX += dx * push;
+                    pushY += dy * push;
+                }
+            }
+
+            totalInfluence = clamp(totalInfluence, 0, 1.8);
+
+            const normalizedInfluence = clamp(totalInfluence, 0, 1);
+
+            let finalR;
+            let finalG;
+            let finalB;
+
+            if (totalInfluence > 0.001) {
+                finalR = r / totalInfluence;
+                finalG = g / totalInfluence;
+                finalB = b / totalInfluence;
+            } else {
+                finalR = 165;
+                finalG = 165;
+                finalB = 165;
+            }
+
+            // Pontos base continuam visíveis em todo o ecrã
+            const baseGrey = 160;
+
+            finalR = lerp(baseGrey, finalR, 0.30 + normalizedInfluence * 0.85);
+            finalG = lerp(baseGrey, finalG, 0.30 + normalizedInfluence * 0.85);
+            finalB = lerp(baseGrey, finalB, 0.30 + normalizedInfluence * 0.85);
+
+            const localPulse = 0.5 + 0.5 * Math.sin(time * 3.2 + p.seed);
 
             const size =
-                0.55 +
-                backgroundDot * 0.75 +
-                influence * 5.2 +
-                influence * localPulse * 1.2;
+                0.65 +
+                normalizedInfluence * 4.8 +
+                localPulse * normalizedInfluence * 1.4;
 
             const alpha =
-                0.18 +
-                influence * 0.72;
+                0.24 +
+                normalizedInfluence * 0.72;
 
-            // Pequeno "breathing" radial: parece balão, não onda
-            const push = influence * (breath - 0.5) * 13;
-
-            const px = p.x + dx * push;
-            const py = p.y + dy * push;
-
-            // Cor depende da posição + movimento global
-            const colorT = clamp(
-                (px / width) * 0.58 +
-                influence * 0.30 +
-                colorMotion * 0.18,
-                0,
-                1
-            );
-
-            const [r, g, b] = colorGradient(colorT);
-
-            // Pontos muito longe ficam mais cinzentos e discretos
-            const finalR = Math.round(lerp(150, r, influence + 0.18));
-            const finalG = Math.round(lerp(150, g, influence + 0.18));
-            const finalB = Math.round(lerp(150, b, influence + 0.18));
+            const px = p.x + pushX;
+            const py = p.y + pushY;
 
             ctx.beginPath();
             ctx.arc(px, py, size, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(${finalR}, ${finalG}, ${finalB}, ${alpha})`;
+            ctx.fillStyle = `rgba(${Math.round(finalR)}, ${Math.round(finalG)}, ${Math.round(finalB)}, ${alpha})`;
             ctx.fill();
         }
 
-        time += 0.016;
+        // Mais rápido a animar
+        time += 0.026;
 
         requestAnimationFrame(draw);
     }
