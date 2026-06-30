@@ -25,11 +25,11 @@ html, body {
 }
 
 #menuPrincipal {
-    width: 80%;
+    width: 90%;
     height: 100px;
     position: fixed;
     margin: auto;
-    bottom: 10%;
+    bottom: 5%;
 
     z-index: 10;
 }
