@@ -21,7 +21,7 @@ jobs:
           script: |
             cd /var/www/app
 
-            GIT_SSH_COMMAND="ssh -i ~/.ssh/github_actions_deploy -o IdentitiesOnly=yes" git fetch origin
+            git fetch origin
             git reset --hard origin/main
 
             composer install \
