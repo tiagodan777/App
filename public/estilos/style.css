@@ -3,6 +3,7 @@
 * {
     font-size: 1em;
     box-sizing: border-box;
+    font-family: Helvetica, sans-serif;
 }
 
 html, body {
@@ -41,7 +42,7 @@ html, body {
 
     display: flex;
     flex-flow: row nowrap;
-    justify-content: space-evenly;
+    justify-content: space-between;
     align-items: center;
 }
 
