@@ -30,7 +30,7 @@ date_default_timezone_set('Europe/Lisbon');*/
 
 //$cookie = $cms->getCookie();
 //$session = $cms->getSession();
-$db = $cms->getDatabase();
+// $db = $cms->getDatabase();
 
 /*if ($cookie->token) {
     $session = $session->create($cookie->token);
