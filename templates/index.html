@@ -1,11 +1,48 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    <img src="{{doc_root}}imagens/image.png" alt="">
-</body>
-</html>
+{% extends 'layout.hmtl' %}
+{% block content %}
+<canvas id="gridCanvas"></canvas>
+<script>
+    const canvas = document.getElementById('gridCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    function redimensionar() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', redimensionar);
+    redimensionar();
+
+    let time = 0;
+    const spacing = 30; // Distância entre os pontos
+    const dotRadius = 1.5; 
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        for (let x = 0; x < canvas.width; x += spacing) {
+            for (let y = 0; y < canvas.height; y += spacing) {
+                // Criação do movimento ondulatório da malha 2D
+                let wave = Math.sin((x * 0.01) + (y * 0.01) - time) * 0.5 + 0.5;
+                
+                // Transição de cores (Cinzento -> Azul -> Roxo)
+                let r = Math.floor(150 - wave * 50);
+                let g = Math.floor(150 - wave * 100);
+                let b = Math.floor(150 + wave * 105);
+                
+                // Puxar os tons avermelhados no pico da onda para criar o roxo
+                if (wave > 0.6) {
+                    r = Math.floor(150 + (wave - 0.6) * 150); 
+                }
+
+                ctx.beginPath();
+                ctx.arc(x, y, dotRadius, 0, Math.PI * 2);
+                ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+                ctx.fill();
+            }
+        }
+        time += 0.04; // Velocidade da animação
+        requestAnimationFrame(draw);
+    }
+    draw();
+</script>
+{% endblock %}
