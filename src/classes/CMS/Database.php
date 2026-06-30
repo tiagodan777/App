@@ -1,5 +1,5 @@
 <?php
-namespace TiagoDaniel\CMS;
+namespace App\CMS;
 
 class Database extends \PDO {
     public function __construct($dsn, $username, $password, $options = [])

@@ -17,7 +17,7 @@ class CMS {
         $this->db = new Database($dsn, $username, $password);        
     }
 
-    public function getMember() {
+    /*public function getMember() {
         if ($this->member === null) {
             $this->member = new Member($this->db);
         }
@@ -71,7 +71,7 @@ class CMS {
             $this->session = new Session($this->db);
         }
         return $this->session;
-    }
+    }*/
 
     public function getDatabase() {
         return $this->db;
