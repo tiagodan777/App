@@ -1,5 +1,5 @@
 <?php
-namespace TiagoDaniel\CMS;
+namespace App\CMS;
 
 class CMS {
     protected $db = null;
