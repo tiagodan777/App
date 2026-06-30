@@ -45,4 +45,5 @@ html, body {
 
 #menuPrincipal > nav > ul > li {
     color: black;
+    z-index: 10;
 }
