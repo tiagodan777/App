@@ -146,17 +146,19 @@
     }
 
     function chooseDirection(now) {
-        const speed = 0.42;
+        const speed = 0.34;
 
         const directions = [
             [ speed, 0 ],
             [ -speed, 0 ],
             [ 0, speed ],
             [ 0, -speed ],
+
             [ speed * 0.75, speed * 0.45 ],
             [ speed * 0.75, -speed * 0.45 ],
             [ -speed * 0.75, speed * 0.45 ],
             [ -speed * 0.75, -speed * 0.45 ],
+
             [ speed * 0.35, speed * 0.9 ],
             [ -speed * 0.35, speed * 0.9 ],
             [ speed * 0.35, -speed * 0.9 ],
@@ -168,11 +170,11 @@
         flow.targetVx = dir[0];
         flow.targetVy = dir[1];
 
-        flow.nextTurn = now + 2200 + Math.random() * 2400;
+        flow.nextTurn = now + 3000 + Math.random() * 3000;
     }
 
     function choosePattern(now) {
-        // Só muda os ALVOS. Nada muda instantaneamente.
+        // Só mudam os alvos. Nada muda de repente.
         pattern.targetA = 1.7 + Math.random() * 1.7;
         pattern.targetB = 1.6 + Math.random() * 1.8;
         pattern.targetC = 1.4 + Math.random() * 1.9;
@@ -182,7 +184,7 @@
         pattern.targetPhase2 += -0.8 + Math.random() * 1.6;
         pattern.targetPhase3 += -0.8 + Math.random() * 1.6;
 
-        pattern.nextChange = now + 2600 + Math.random() * 2800;
+        pattern.nextChange = now + 3600 + Math.random() * 3600;
     }
 
     chooseDirection(performance.now());
@@ -197,21 +199,20 @@
             choosePattern(now);
         }
 
-        // Interpolação suave: nada salta.
-        flow.vx = lerp(flow.vx, flow.targetVx, 0.018);
-        flow.vy = lerp(flow.vy, flow.targetVy, 0.018);
+        flow.vx = lerp(flow.vx, flow.targetVx, 0.016);
+        flow.vy = lerp(flow.vy, flow.targetVy, 0.016);
 
         flow.offsetX += flow.vx * delta * 60;
         flow.offsetY += flow.vy * delta * 60;
 
-        pattern.a = lerp(pattern.a, pattern.targetA, 0.006);
-        pattern.b = lerp(pattern.b, pattern.targetB, 0.006);
-        pattern.c = lerp(pattern.c, pattern.targetC, 0.006);
-        pattern.d = lerp(pattern.d, pattern.targetD, 0.006);
+        pattern.a = lerp(pattern.a, pattern.targetA, 0.005);
+        pattern.b = lerp(pattern.b, pattern.targetB, 0.005);
+        pattern.c = lerp(pattern.c, pattern.targetC, 0.005);
+        pattern.d = lerp(pattern.d, pattern.targetD, 0.005);
 
-        pattern.phase1 = lerp(pattern.phase1, pattern.targetPhase1, 0.006);
-        pattern.phase2 = lerp(pattern.phase2, pattern.targetPhase2, 0.006);
-        pattern.phase3 = lerp(pattern.phase3, pattern.targetPhase3, 0.006);
+        pattern.phase1 = lerp(pattern.phase1, pattern.targetPhase1, 0.005);
+        pattern.phase2 = lerp(pattern.phase2, pattern.targetPhase2, 0.005);
+        pattern.phase3 = lerp(pattern.phase3, pattern.targetPhase3, 0.005);
     }
 
     function field(nx, ny, t) {
@@ -242,11 +243,9 @@
 
         updateFlow(now, delta);
 
-        // tempo contínuo baseado no delta real
-        time += delta * 0.82;
+        time += delta * 0.62;
 
-        // expansão/retração contínua da superfície inteira
-        const breath = 0.5 + 0.5 * Math.sin(time * 1.15);
+        const breath = 0.5 + 0.5 * Math.sin(time * 0.9);
         const zoom = 0.93 + breath * 0.19;
 
         const driftX = flow.offsetX * 0.0022;
@@ -265,7 +264,6 @@
             nx += driftX;
             ny += driftY;
 
-            // Warp suave, contínuo, sem saltos.
             const warpX =
                 Math.sin(ny * 1.7 + time * 0.38 + pattern.phase1) * 0.065 +
                 Math.sin((nx + ny) * 2.2 + time * 0.22 + p.seed) * 0.025;
@@ -284,16 +282,16 @@
 
             const [r, g, b] = getGradientColor(n);
 
-            const localPulse = 0.5 + 0.5 * Math.sin(time * 2.05 + p.seed + n * 2.8);
+            const localPulse =
+                0.5 + 0.5 * Math.sin(time * 1.55 + p.seed + n * 2.8);
 
             const radius =
-                0.8 +
-                density * 3.7 * p.sizeSeed +
-                localPulse * density * 0.9;
+                0.55 +
+                density * 2.85 * p.sizeSeed +
+                localPulse * density * 0.55;
 
             const alpha = 0.20 + density * 0.70;
 
-            // Deslocação pequena e contínua dos pontos.
             const pushAmount = (density - 0.5) * 5.8 + (breath - 0.5) * 5.0;
             const angle = n * Math.PI * 2 + p.seed * 0.2;
 
