@@ -58,3 +58,9 @@ html, body {
     color: black;
     z-index: 10;
 }
+
+img {
+    width: 50px;
+    border-radius: 50%;
+    
+}
