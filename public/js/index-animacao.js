@@ -48,7 +48,13 @@
         dpr = Math.min(window.devicePixelRatio || 1, 2);
 
         width = window.innerWidth;
-        height = window.innerHeight;
+
+        /*
+            No iPhone/Safari, visualViewport representa melhor
+            a área realmente visível.
+        */
+        const viewport = window.visualViewport;
+        height = viewport ? viewport.height : window.innerHeight;
 
         canvas.width = Math.floor(width * dpr);
         canvas.height = Math.floor(height * dpr);
@@ -64,11 +70,11 @@
     function createPoints() {
         points = [];
 
-        const cols = Math.ceil(width / spacing) + 6;
-        const rows = Math.ceil(height / spacing) + 6;
+        const cols = Math.ceil(width / spacing) + 8;
+        const rows = Math.ceil(height / spacing) + 8;
 
-        const startX = -spacing * 3;
-        const startY = -spacing * 3;
+        const startX = -spacing * 4;
+        const startY = -spacing * 4;
 
         for (let row = 0; row < rows; row++) {
             for (let col = 0; col < cols; col++) {
@@ -83,6 +89,11 @@
     }
 
     window.addEventListener('resize', resize);
+
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', resize);
+    }
+
     resize();
 
     function lerp(a, b, t) {
@@ -108,7 +119,7 @@
 
     function getGradientColor(t) {
         const yellow = [255, 205, 70];
-        const blue   = [65, 135, 255];
+        const blue = [65, 135, 255];
         const purple = [175, 85, 255];
 
         t = clamp(t, 0, 1);
@@ -124,20 +135,20 @@
         const speed = 0.34;
 
         const directions = [
-            [ speed, 0 ],
-            [ -speed, 0 ],
-            [ 0, speed ],
-            [ 0, -speed ],
+            [speed, 0],
+            [-speed, 0],
+            [0, speed],
+            [0, -speed],
 
-            [ speed * 0.75, speed * 0.45 ],
-            [ speed * 0.75, -speed * 0.45 ],
-            [ -speed * 0.75, speed * 0.45 ],
-            [ -speed * 0.75, -speed * 0.45 ],
+            [speed * 0.75, speed * 0.45],
+            [speed * 0.75, -speed * 0.45],
+            [-speed * 0.75, speed * 0.45],
+            [-speed * 0.75, -speed * 0.45],
 
-            [ speed * 0.35, speed * 0.9 ],
-            [ -speed * 0.35, speed * 0.9 ],
-            [ speed * 0.35, -speed * 0.9 ],
-            [ -speed * 0.35, -speed * 0.9 ]
+            [speed * 0.35, speed * 0.9],
+            [-speed * 0.35, speed * 0.9],
+            [speed * 0.35, -speed * 0.9],
+            [-speed * 0.35, -speed * 0.9]
         ];
 
         const dir = directions[Math.floor(Math.random() * directions.length)];
@@ -149,7 +160,6 @@
     }
 
     function choosePattern(now) {
-        // Só mudam os alvos. Nada muda de repente.
         pattern.targetA = 1.7 + Math.random() * 1.7;
         pattern.targetB = 1.6 + Math.random() * 1.8;
         pattern.targetC = 1.4 + Math.random() * 1.9;
