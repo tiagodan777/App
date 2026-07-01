@@ -1,5 +1,5 @@
 <?php
-require_once './vendor/autoload.php';
+require_once APP_ROOT . '/vendor/autoload.php';
     
 use Ratchet\Http\HttpServer;
 use Ratchet\Server\IoServer;
