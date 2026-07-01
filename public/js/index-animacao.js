@@ -47,20 +47,16 @@
     function resize() {
         dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-        width = window.innerWidth;
+        canvas.style.width = '100vw';
+        canvas.style.height = '100lvh';
 
-        /*
-            No iPhone/Safari, visualViewport representa melhor
-            a área realmente visível.
-        */
-        const viewport = window.visualViewport;
-        height = viewport ? viewport.height : window.innerHeight;
+        const rect = canvas.getBoundingClientRect();
+
+        width = rect.width;
+        height = rect.height;
 
         canvas.width = Math.floor(width * dpr);
         canvas.height = Math.floor(height * dpr);
-
-        canvas.style.width = width + 'px';
-        canvas.style.height = height + 'px';
 
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
