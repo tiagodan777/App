@@ -8,8 +8,8 @@
 
 html, body {
     margin: 0;
-    width: 100vw;
-    height: 100dvh;
+    width: 100%;
+    min-height: 100dvh;
     overflow: hidden;
     background: #f7f7f8;
 }
@@ -18,7 +18,7 @@ html, body {
     position: fixed;
     inset: 0;
     width: 100vw;
-    height: 100dvh;
+    height: 100lvh;
     display: block;
     background: #f7f7f8;
     z-index: 0;
