@@ -21,7 +21,7 @@ html, body {
     height: 100lvh;
     display: block;
     background: #f7f7f8;
-    z-index: 0;
+    z-index: -1;
 }
 
 #menuPrincipal {
