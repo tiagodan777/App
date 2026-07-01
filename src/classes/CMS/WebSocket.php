@@ -1,4 +1,5 @@
 <?php
+require_once './src/bootstrap.php';
 namespace App\CMS;
     
 use Ratchet\Http\HttpServer;
@@ -9,14 +10,17 @@ use Ratchet\ConnectionInterface;
 
 class WebSocket implements MessageComponentInterface {
     protected $clients;
+    private $pdo;
 
-    public function __construct() {
+    public function __construct($pdoFactory) {
         $this->clients = new \SplObjectStorage;
+        $this->pdo = $pdoFactory;
     }
 
     public function onOpen(ConnectionInterface $conn) {
         $this->clients->attach($conn);
         echo "Nova conexção!! - ({$conn->resourceId})";
+        var_dump($this->pdo);
     }
 
     public function onMessage(ConnectionInterface $from, $msg) {
