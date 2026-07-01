@@ -10,6 +10,7 @@
     },
     "minimum-stability": "stable",
     "require": {
-        "twig/twig": "^3.27"
+        "twig/twig": "^3.27",
+        "cboden/ratchet": "^0.4.4"
     }
 }
