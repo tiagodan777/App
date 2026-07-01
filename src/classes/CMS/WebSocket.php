@@ -28,7 +28,7 @@ class WebSocket implements MessageComponentInterface {
         echo "Conexção ({$conn->resouceId}) desconectou-se";
     }
 
-    public function onError(ConnectionInterface $conn, Exception $e) {
+    public function onError(ConnectionInterface $conn, \Exception $e) {
         echo "Ocorreu um erro: ({$e->getMessage()})\n";
         $conn->close();
     }
