@@ -63,5 +63,5 @@ img {
     width: 50px;
     border-radius: 50%;
     position: absolute;
-    z
+    z-index: 10;
 }
