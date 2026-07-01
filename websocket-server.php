@@ -1,20 +1,20 @@
 <?php
-require_once __DIR__ . '/vendor/autoload.php';
-    
+require_once __DIR__ . '/src/bootstrap.php';
+
 use Ratchet\Http\HttpServer;
 use Ratchet\Server\IoServer;
 use Ratchet\WebSocket\WsServer;
-use Ratchet\MessageComponentInterface;
-use Ratchet\ConnectionInterface;
+use App\CMS\WebSocket;
 
 $server = IoServer::factory(
     new HttpServer(
         new WsServer(
             new WebSocket()
         )
-    ), 3306
+    ),
+    8080
 );
 
-echo "O WebSocket foi ligado na porta 3306\n";
+echo "WebSocket ligado na porta 8080\n";
+
 $server->run();
-?>

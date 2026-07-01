@@ -1,5 +1,5 @@
 <?php
-require_once APP_ROOT . '/vendor/autoload.php';
+namespace App\CMS;
     
 use Ratchet\Http\HttpServer;
 use Ratchet\Server\IoServer;
