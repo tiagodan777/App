@@ -28,7 +28,8 @@ html, body {
     width: 90%;
     height: 100px;
     position: fixed;
-    margin: auto;
+    left: 50%;
+    transform: translateX(-50%);
     bottom: 5%;
 
     z-index: 10;
