@@ -1,4 +1,4 @@
-var ws = new WebSocket('ws://' + location.host + '/ws');
+var ws = new WebSocket('ws://' + location.hostname + ':8080');
 
 var botao = window.document.querySelector('#botao');
 botao.addEventListener('click', enviar);
