@@ -21,7 +21,7 @@ html, body {
     height: 100lvh;
     display: block;
     background: #f7f7f8;
-    z-index: -1;
+    z-index: 0;
 }
 
 #menuPrincipal {
@@ -62,5 +62,5 @@ html, body {
 img {
     width: 50px;
     border-radius: 50%;
-    
+
 }
