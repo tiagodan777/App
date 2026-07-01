@@ -34,15 +34,4 @@ class WebSocket implements MessageComponentInterface {
     }
 }
 
-$server = IoServer::factory(
-    new HttpServer(
-        new WsServer(
-            new WebSocket()
-        )
-    ), 3306
-);
-
-echo "O WebSocket foi ligado na porta 3306\n";
-$server->run();
-
 ?>
