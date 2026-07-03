@@ -1,6 +1,7 @@
 <?php
-require_once './src/bootstrap.php';
 namespace App\CMS;
+
+require_once './src/bootstrap.php';
     
 use Ratchet\Http\HttpServer;
 use Ratchet\Server\IoServer;
