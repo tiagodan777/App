@@ -4,6 +4,7 @@
     font-size: 1em;
     box-sizing: border-box;
     font-family: Helvetica, sans-serif;
+    touch-action: none;
 }
 
 html, body {
@@ -12,7 +13,7 @@ html, body {
     min-height: 100dvh;
     overflow: hidden;
     background: #f7f7f8;
-    touch-action: none;
+    
 }
 
 #gridCanvas {
