@@ -30,7 +30,7 @@ class WebSocket implements MessageComponentInterface {
         var_dump($data);
         
         if ($data['type'] === 'move') {
-            
+            var_dump($data[1]);
         }
 
         $this->broadcastNewState($data);
