@@ -1,14 +1,11 @@
-var dedos = {};
+document.addEventListener("touchmove", e => {
 
-window.document.addEventListener('pointerdown', function(e) {
-    dedos[e.pointerId] = {
-        x: e.clientX,
-        y: e.clientY
-    };
+    for (const touch of e.touches) {
+        console.log(
+            touch.identifier,
+            touch.clientX,
+            touch.clientY
+        );
+    }
 
-    console.log(dedos);
-});
-
-window.document.addEventListener('pointerup', function(e) {
-    delete dedos[e.pointerId];
 });
