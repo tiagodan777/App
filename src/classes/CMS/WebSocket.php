@@ -39,6 +39,8 @@ class WebSocket implements MessageComponentInterface {
             $data[1]['pessoas'][0]['top'] += $top;
             $data[1]['pessoas'][0]['left'] += $left;
 
+            var_dump($data[1]['pessoas'][0]['top']);
+
             echo "NEW TOTAL TOP: $data[1]['pessoas'][0]['top']   ||   NEW TOTAL LEFT: $data[1]['pessoas'][0]['left']\n";
         }
 
