@@ -95,3 +95,7 @@ img {
     justify-content: space-evenly;
     align-items: center;
 }
+
+#botoes > input {
+    touch-action: auto;
+}
