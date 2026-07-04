@@ -16,10 +16,36 @@ ws.onclose = function () {
 botao.addEventListener('click', enviar);*/
 
 $('#botoes').on('click', 'input[type="button"]', function(e) {
+    var top;
+    var left;
+
     console.log($(this).val());
+
+    switch ($(this).val()) {
+        case '⬆️':
+            top = -25;
+            break;
+        case '⬇️':
+            top = 25;
+            break;
+        case '➡️':
+            left = 25;
+            break;
+        case '⬅️':
+            left = -25;
+            break;
+    }
+
+    var data = {
+        type: 'move',
+        top: top,
+        left: left
+    };
+
+    ws.send(JSON.stringify(data));
 })
 
-function enviar() {
+function state() {
     var pessoas = [];
 
     var $imagens = $('.foto');
@@ -35,6 +61,7 @@ function enviar() {
     })
 
     var data = {
+        type: 'state',
         pessoas: pessoas
     };
 

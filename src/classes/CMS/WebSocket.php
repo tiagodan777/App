@@ -26,8 +26,12 @@ class WebSocket implements MessageComponentInterface {
 
     public function onMessage(ConnectionInterface $from, $msg) {
         $data = json_decode($msg, true);
+
+        var_dump($this->clients);
         
-        var_dump($data);
+        if ($data['type'] === 'move') {
+            
+        }
 
         $this->broadcastNewState();
     }
@@ -44,8 +48,12 @@ class WebSocket implements MessageComponentInterface {
 
     private function broadcastNewState() {
         foreach ($this->clients as $client) {
-            
+
         }
+    }
+
+    private function sendNewState() {
+
     }
 }
 
