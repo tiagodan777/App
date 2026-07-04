@@ -3,10 +3,10 @@ let primeira_posicao = {}
 let c = 0;
 
 function guardaPosInit(e) {
-    dedos = {};
+    primeira_posicao = {};
 
     for (const touch of e.touches) {
-        dedos[touch.identifier] = {
+        primeira_posicao[touch.identifier] = {
             x: touch.clientX,
             y: touch.clientY
         };
@@ -25,7 +25,7 @@ function atualizarDedos(e) {
             y: touch.clientY
         };
     }
-    
+
     console.log('ATUAL');
     console.log(dedos);
 }
