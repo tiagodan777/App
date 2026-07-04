@@ -55,7 +55,7 @@ class WebSocket implements MessageComponentInterface {
 
         echo "Conexão ({$conn->resourceId}) desconectou-se\n";
 
-        $this->broadcastNewState($this->pessoas);
+        $this->broadcastNewState(array_values($this->pessoas);
     }
 
     public function onError(ConnectionInterface $conn, \Exception $e) {
