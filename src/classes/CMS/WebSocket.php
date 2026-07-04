@@ -42,7 +42,7 @@ class WebSocket implements MessageComponentInterface {
             echo "NEW TOTAL TOP: ";
             var_dump($data[1]['pessoas'][0]['top']);
             echo "\nNEW TOTAL LEFT: ";
-            var_dump($data[1]['pessoas'][0]['left'] += $left);
+            var_dump($data[1]['pessoas'][0]['left']);
         }
 
         $this->broadcastNewState($data);
