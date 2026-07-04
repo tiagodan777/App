@@ -55,6 +55,7 @@ ws.onmessage = function(event) {
         
         if ($img.length === 0) {
             $img = $('<img>');
+            $img.attr('id', pessoa.id);
             $img.attr('src', pessoa.src);
             $img.addClass('foto');
 
