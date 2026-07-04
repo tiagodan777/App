@@ -4,18 +4,6 @@ var resourceId;
 
 ws.onopen = function (data) {
     console.log('WebSocket ligado');
-
-    var resourceId = data;
-
-    console.log('OK ' + resourceId);
-};
-
-ws.onerror = function (error) {
-    console.error('Erro no WebSocket:', error);
-};
-
-ws.onclose = function () {
-    console.log('WebSocket fechado');
 };
 
 /*var botao = window.document.querySelector('#botao');
@@ -75,10 +63,16 @@ ws.onmessage = function(event) {
     })
 }
 
-/*ws.onclose = function(event) {
-    var data = event.data;
-    $('#' + data.)
-}*/
+ws.onerror = function (error) {
+    console.error('Erro no WebSocket:', error);
+};
+
+ws.onclose = function (id) {
+    console.log('WebSocket fechado');
+
+    $('img#' + id).remove();
+};
+
 
 /*var pessoas = [];
 
