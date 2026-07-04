@@ -30,7 +30,8 @@ class WebSocket implements MessageComponentInterface {
         echo "ENVIAR\n";
         var_dump($data);
 
-        if (count($data) > 1 && $data[0]['type'] === 'move') {
+        if ($data[0]['type'] === 'move') {
+            echo "OKOK";
             $top = $data[0]['top'] ?? null;
             $left = $data[0]['left'] ?? null;
 
