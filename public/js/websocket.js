@@ -2,7 +2,7 @@ var ws = new WebSocket('ws://' + location.hostname + ':8080');
 
 ws.onopen = function () {
     console.log('WebSocket ligado');
-    var data = JSON.parse(event.data);
+    var data = JSON.parse(data);
     console.log(data);
 };
 
