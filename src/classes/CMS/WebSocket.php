@@ -35,6 +35,8 @@ class WebSocket implements MessageComponentInterface {
             $top = $data[0]['top'] ?? null;
             $left = $data[0]['left'] ?? null;
 
+            echo "TOP: $top || LEFT: $left";
+
             $data[1]['pessoas'][0]['top'] += $top;
             $data[1]['pessoas'][0]['left'] += $left;
         }
