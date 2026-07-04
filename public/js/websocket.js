@@ -16,12 +16,22 @@ var botao = window.document.querySelector('#botao');
 botao.addEventListener('click', enviar);
 
 function enviar() {
-    var top = $('#tiago').offset().top;
-    var left = $('#tiago').offset().left;
+    var pessoas = [];
+
+    var $imagens = $('.foto');
+
+    $imagens.each(function() {
+        var dados = {
+            id: $this.attr('id'),
+            top: $this.offset().top,
+            left: $this.offset().left
+        };
+
+        pessoas.push(dados);
+    })
 
     var data = {
-        top: top,
-        left: left
+        pessoas: pessoas
     };
 
     ws.send(JSON.stringify(data));

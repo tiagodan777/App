@@ -66,8 +66,16 @@ img {
     position: absolute;
     z-index: 10;
     transform: translate(-50%, -50%);
+}
+
+#tiago {
     top: 50%;
     left: 50%;
+}
+
+#douradinho {
+    top: 25%;
+    left: 25%;
 }
 
 #botao {
