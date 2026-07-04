@@ -31,6 +31,8 @@ class WebSocket implements MessageComponentInterface {
         ];
         var_dump($this->pessoas);
         $this->broadcastNewState(array_values($this->pessoas));
+
+        $conn->send(json_encode($conn->resourceId));
     }
 
     public function onMessage(ConnectionInterface $from, $msg) {

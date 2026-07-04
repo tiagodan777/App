@@ -1,7 +1,12 @@
 var ws = new WebSocket('ws://' + location.hostname + ':8080');
 
-ws.onopen = function () {
+var resourceId;
+
+ws.onopen = function (data) {
     console.log('WebSocket ligado');
+    resourceId = data;
+
+    console.log(resourceId);
 };
 
 ws.onerror = function (error) {
@@ -69,6 +74,10 @@ ws.onmessage = function(event) {
     })
 }
 
+ws.onclose = function(event) {
+    var data = event.data;
+    $('#' + data.)
+}
 
 /*var pessoas = [];
 
