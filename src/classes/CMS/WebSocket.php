@@ -27,13 +27,13 @@ class WebSocket implements MessageComponentInterface {
     public function onMessage(ConnectionInterface $from, $msg) {
         $data = json_decode($msg, true);
 
-        var_dump($from);
+        /*var_dump($from);
         
         if ($data['type'] === 'move') {
             
-        }
+        }*/
 
-        $this->broadcastNewState();
+        $this->broadcastNewState($data);
     }
 
     public function onClose(ConnectionInterface $conn) {
@@ -46,14 +46,14 @@ class WebSocket implements MessageComponentInterface {
         $conn->close();
     }
 
-    private function broadcastNewState() {
+    private function broadcastNewState($data) {
         foreach ($this->clients as $client) {
-
+            $this->sendNewState($client, $data);
         }
     }
 
-    private function sendNewState() {
-
+    private function sendNewState(ConnectionInterface $conn, $data) {
+        $conn->send(json_encode($data));
     }
 }
 
