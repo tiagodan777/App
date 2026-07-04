@@ -63,7 +63,6 @@ ws.onmessage = function(event) {
         }
 
         $img.css({
-            position: 'absolute',
             top: pessoa.top + 'px',
             left: pessoa.left + 'px'
         });
