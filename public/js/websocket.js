@@ -22,9 +22,9 @@ function enviar() {
 
     $imagens.each(function() {
         var dados = {
-            id: $this.attr('id'),
-            top: $this.offset().top,
-            left: $this.offset().left
+            id: this.attr('id'),
+            top: this.offset().top,
+            left: this.offset().left
         };
 
         pessoas.push(dados);
