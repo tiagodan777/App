@@ -26,6 +26,7 @@ function atualizarDedos(e) {
 
 function reloadVarC() {
     c = 0;
+    primeira_posicao = {};
 }
 
 document.addEventListener("touchstart", atualizarDedos, { passive: false });
