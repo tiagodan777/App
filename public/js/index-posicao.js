@@ -7,4 +7,8 @@ window.document.addEventListener('pointerdown', function(e) {
     };
 
     console.log(dedos);
-})
+});
+
+window.document.addEventListener('pointerup', function(e) {
+    delete dedos[e.pointerId]
+});
