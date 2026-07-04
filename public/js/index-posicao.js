@@ -20,11 +20,13 @@ function atualizarDedos(e) {
         }
     }
 
-    console.log('PRIMERIA POSIÇÃO:   ' + primeira_posicao);
-    console.log('ATUAL  ' + dedos);
+    console.log('PRIMERIA POSIÇÃO');
+    console.log(primeira_posicao);
+    console.log('ATUAL');
+    console.log(dedos);
 }
 
-function resetPrimeiraPos() {
+function reloadVarC() {
     c = 0;
     primeira_posicao = {};
 }
@@ -32,5 +34,5 @@ function resetPrimeiraPos() {
 document.addEventListener("touchstart", atualizarDedos, { passive: false });
 document.addEventListener("touchmove", atualizarDedos, { passive: false });
 document.addEventListener("touchend", atualizarDedos, { passive: false });
-document.addEventListener("touchend", resetPrimeiraPos, { passive: false });
+document.addEventListener("touchend", resetP, { passive: false });
 document.addEventListener("touchcancel", atualizarDedos, { passive: false });
