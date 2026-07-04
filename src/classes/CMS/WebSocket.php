@@ -12,6 +12,7 @@ use Ratchet\ConnectionInterface;
 class WebSocket implements MessageComponentInterface {
     protected $clients;
     private $pdo;
+    private $pessoas;
 
     public function __construct($pdoFactory) {
         $this->clients = new \SplObjectStorage;
@@ -21,7 +22,15 @@ class WebSocket implements MessageComponentInterface {
     public function onOpen(ConnectionInterface $conn) {
         $this->clients->attach($conn);
         echo "Nova conexção!! - ({$conn->resourceId})\n";
-        // var_dump($this->pdo);
+        
+        $nova_pessoa = [
+            'src' => '{{ doc_root }}imagens/fotos-perfil/tiago.webp',
+            'top' => random_int(50, 600),
+            'left' => random_int(50, 400),
+        ];
+
+        $this->pessoas[] = $nova_pessoa;
+        var_dump($this->pessoas);
     }
 
     public function onMessage(ConnectionInterface $from, $msg) {
