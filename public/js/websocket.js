@@ -43,11 +43,7 @@ $('#botoes').on('click', 'input[type="button"]', function(e) {
         left: left
     };
 
-    var data = state();
-
-    var enviar = [move, data];
-
-    ws.send(JSON.stringify(enviar));
+    ws.send(JSON.stringify(move));
 })
 
 function updateState(data) {
