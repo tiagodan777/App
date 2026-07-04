@@ -78,9 +78,13 @@ img {
     left: 25%;
 }
 
-#botao {
-    position: absolute;
+#botoes {
+    position: fixes;
     z-index: 10;
-    left: 50%;
-    top: 50%;
+    bottom: 10px;
+
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: space-evenly;
+    align-items: center;
 }
