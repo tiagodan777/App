@@ -42,9 +42,11 @@ $('#botoes').on('click', 'input[type="button"]', function(e) {
         left: left
     };
 
-    ws.send(JSON.stringify(move));
+    var data = state();
 
-    state();
+    var enviar = [move, data];
+
+    ws.send(JSON.stringify(enviar));
 })
 
 function state() {
@@ -67,7 +69,7 @@ function state() {
         pessoas: pessoas
     };
 
-    ws.send(JSON.stringify(data));
+    return data;
 }
 
 ws.onmessage = function(event) {
