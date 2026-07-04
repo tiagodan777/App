@@ -28,7 +28,7 @@ class WebSocket implements MessageComponentInterface {
         $data = json_decode($msg, true);
         
         if ($data['type'] === 'move') {
-            
+            var_dump($data);
         }
 
         $this->broadcastNewState($data);
