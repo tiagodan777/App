@@ -43,11 +43,11 @@ $('#botoes').on('click', 'input[type="button"]', function(e) {
     };
 
     ws.send(JSON.stringify(data));
-    
-    state();
+
+    state(data);
 })
 
-function state() {
+function state(data) {
     var pessoas = [];
 
     var $imagens = $('.foto');
@@ -60,7 +60,7 @@ function state() {
         };
 
         pessoas.push(dados);
-    })
+    });
 
     var data = {
         type: 'state',
