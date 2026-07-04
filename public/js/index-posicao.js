@@ -25,9 +25,14 @@ function centro(a, b) {
 }
 
 function aplicarTransform() {
-    $('.foto').css({
-        transform: `translate(${panX}px, ${panY}px) scale(${scale})`,
-        transformOrigin: '0 0'
+    $('.foto').each(function() {
+        const topOriginal = Number($(this).attr('data-top'));
+        const leftOriginal = Number($(this).attr('data-left'));
+
+        $(this).css({
+            top: (topOriginal * scale + panY) + 'px',
+            left: (leftOriginal * scale + panX) + 'px'
+        });
     });
 }
 

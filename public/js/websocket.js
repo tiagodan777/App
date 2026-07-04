@@ -63,13 +63,14 @@ ws.onmessage = function(event) {
             $('body').append($img);
         }
 
+        $img.attr('data-top', pessoa.top);
+        $img.attr('data-left', pessoa.left);
+
         $img.css({
-            position: 'absolute',
-            top: pessoa.top + 'px',
-            left: pessoa.left + 'px',
-            transform: `translate(${panX}px, ${panY}px) scale(${scale})`,
-            transformOrigin: '0 0'
+            position: 'absolute'
         });
+
+        aplicarTransform();
     });
 };
 
