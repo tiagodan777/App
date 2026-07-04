@@ -80,4 +80,4 @@ ws.onmessage = function(event) {
         type: 'state',
         pessoas: pessoas
     };
-    return data;
+    return data;*/
