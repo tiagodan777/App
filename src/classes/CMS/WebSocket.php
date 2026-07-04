@@ -59,7 +59,7 @@ class WebSocket implements MessageComponentInterface {
 
     public function onClose(ConnectionInterface $conn) {
         $this->clients->detach($conn);
-        echo "Conexção ({$conn->resouceId}) desconectou-se";
+        echo "Conexção ({$conn->resourceId}) desconectou-se";
     }
 
     public function onError(ConnectionInterface $conn, \Exception $e) {
