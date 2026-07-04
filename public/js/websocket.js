@@ -2,6 +2,8 @@ var ws = new WebSocket('ws://' + location.hostname + ':8080');
 
 ws.onopen = function () {
     console.log('WebSocket ligado');
+    var data = JSON.parse(event.data);
+    console.log(data);
 };
 
 ws.onerror = function (error) {
