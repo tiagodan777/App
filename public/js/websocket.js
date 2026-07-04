@@ -36,18 +36,18 @@ $('#botoes').on('click', 'input[type="button"]', function(e) {
             break;
     }
 
-    var data = {
+    var move = {
         type: 'move',
         top: top,
         left: left
     };
 
-    ws.send(JSON.stringify(data));
+    ws.send(JSON.stringify(move));
 
-    state(data);
+    state();
 })
 
-function state(data) {
+function state() {
     var pessoas = [];
 
     var $imagens = $('.foto');
