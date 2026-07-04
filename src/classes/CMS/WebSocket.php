@@ -20,7 +20,7 @@ class WebSocket implements MessageComponentInterface {
 
     public function onOpen(ConnectionInterface $conn) {
         $this->clients->attach($conn);
-        echo "Nova conexção!! - ({$conn->resourceId})";
+        echo "Nova conexção!! - ({$conn->resourceId})\n";
         // var_dump($this->pdo);
     }
 
