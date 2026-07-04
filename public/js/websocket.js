@@ -5,6 +5,8 @@ var resourceId;
 ws.onopen = function (data) {
     console.log('WebSocket ligado');
 
+    var resourceId = data;
+
     console.log('OK ' + resourceId);
 };
 
