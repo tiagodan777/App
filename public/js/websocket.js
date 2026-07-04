@@ -70,7 +70,7 @@ function state() {
         pessoas: pessoas
     };
 
-    ws.send(JSON.stringify(enviar));
+    ws.send(JSON.stringify(data));
 
     return data;
 }
