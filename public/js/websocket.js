@@ -2,15 +2,7 @@ var ws = new WebSocket('ws://' + location.hostname + ':8080');
 
 ws.onopen = function () {
     console.log('WebSocket ligado');
-    var data = JSON.parse(data);
-
-    data.forEach(function(pessoa) {
-        $img = $('<img>');
-        $img.attr('id', pessoa.id);
-        $img.attr('src', pessoa.src);
-        
-        $('body').append($img);
-    });
+    
     console.log(data);
 };
 
@@ -60,19 +52,23 @@ ws.onmessage = function(event) {
     console.log(data);
 
     data.forEach(function(pessoa) {
-        $img = $('<img>');
-        $img.attr('id', pessoa.id);
-        $img.attr('src', pessoa.src);
+        var $img = $('#' + pessoa.id);
+
+        if ($img.length === 0) {
+            $img = $('<img>');
+            $img.attr('id', pessoa.id);
+            $img.attr('src', pessoa.src);
+            $img.addClass('foto');
+            $('body').append($img);
+        }
 
         $img.css({
-            'top': pessoa.top,
-            'left': pessoa.left
+            position: 'absolute',
+            top: pessoa.top + 'px',
+            left: pessoa.left + 'px'
         });
-
-        $('body').append($img);
     });
-
-}
+};
 
 
 /*var pessoas = [];
