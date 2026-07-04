@@ -53,11 +53,13 @@ ws.onmessage = function(event) {
         $img = $('<img>');
         $img.attr('id', pessoa.id);
         $img.attr('src', pessoa.src);
-        
-        $ims.css({
+
+        $img.css({
             'top': pessoa.top,
             'left': pessoa.left
         });
+
+        $('body').append($img);
     });
 
 }
