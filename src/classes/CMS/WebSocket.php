@@ -44,7 +44,7 @@ class WebSocket implements MessageComponentInterface {
             $this->pessoas[$from->resourceId]['top'] += $top;
             $this->pessoas[$from->resourceId]['left'] += $left;
 
-            $this->broadcastNewState($this->pessoas);
+            $this->broadcastNewState(array_values($this->pessoas));
         }
     }
 
