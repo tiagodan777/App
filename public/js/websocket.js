@@ -69,7 +69,7 @@ ws.onerror = function (error) {
 
 ws.onclose = function (id) {
     console.log('WebSocket fechado');
-    console.log(id);
+    alert(id);
 };
 
 
