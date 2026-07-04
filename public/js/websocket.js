@@ -45,15 +45,9 @@ $('#botoes').on('click', 'input[type="button"]', function(e) {
     ws.send(JSON.stringify(move));
 })
 
-function updateState(data) {
-    console.log(data);
-}
-
 ws.onmessage = function(event) {
     var data = JSON.parse(event.data);
     console.log(data);
-
-    updateState(data);
 }
 
 
