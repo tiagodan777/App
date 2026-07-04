@@ -30,9 +30,12 @@ class WebSocket implements MessageComponentInterface {
         echo "ENVIAR\n";
         var_dump($data);
 
-        
-        if ($data['type'] === 'move') {
-            // var_dump($data[1]);
+        if ($data[0]['type'] === 'move') {
+            $top = $data[0]['top'] ?? null;
+            $left = $data[0]['left'] ?? null;
+
+            $data[1]['pessoas'][0]['top'] += $top;
+            $data[1]['pessoas'][0]['left'] += $left;
         }
 
         $this->broadcastNewState($data);
