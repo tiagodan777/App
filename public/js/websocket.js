@@ -68,6 +68,7 @@ function state() {
     ws.send(JSON.stringify(data));
 }
 
-ws.onmessage(function(data) {
+ws.onmessage = function(event) {
+    var data = JSON.parse(event.data);
     console.log(data);
-})
+}
