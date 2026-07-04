@@ -42,7 +42,15 @@ $('#botoes').on('click', 'input[type="button"]', function(e) {
 ws.onmessage = function(event) {
     var data = JSON.parse(event.data);
 
-    console.log(data);
+    var idsAtuais = data.map(function(pessoa) {
+        return String(pessoa.id);
+    });
+
+    $('.foto').each(function() {
+        if (!idsAtuais.includes($(this).attr('id'))) {
+            $(this).remove();
+        }
+    });
 
     data.forEach(function(pessoa) {
         var $img = $('#' + pessoa.id);
@@ -52,7 +60,6 @@ ws.onmessage = function(event) {
             $img.attr('id', pessoa.id);
             $img.attr('src', pessoa.src);
             $img.addClass('foto');
-
             $('body').append($img);
         }
 
@@ -60,8 +67,8 @@ ws.onmessage = function(event) {
             top: pessoa.top + 'px',
             left: pessoa.left + 'px'
         });
-    })
-}
+    });
+};
 
 ws.onerror = function (error) {
     console.error('Erro no WebSocket:', error);
@@ -69,7 +76,6 @@ ws.onerror = function (error) {
 
 ws.onclose = function (id) {
     console.log('WebSocket fechado');
-    alert(id);
 };
 
 
