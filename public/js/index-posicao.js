@@ -20,8 +20,8 @@ function atualizarDedos(e) {
         }
     }
 
-    console.log(primeira_posicao);
-    console.log(dedos);
+    console.log('PRIMERIA POSIÇÃO:   ' + primeira_posicao);
+    console.log('ATUAL  ' + dedos);
 }
 
 function resetPrimeiraPos() {
