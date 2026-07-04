@@ -3,6 +3,14 @@ var ws = new WebSocket('ws://' + location.hostname + ':8080');
 ws.onopen = function () {
     console.log('WebSocket ligado');
     var data = JSON.parse(data);
+
+    data.forEach(function(pessoa) {
+        $img = $('<img>');
+        $img.attr('id', pessoa.id);
+        $img.attr('src', pessoa.src);
+        
+        $('body').append($img);
+    });
     console.log(data);
 };
 
