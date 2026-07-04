@@ -20,7 +20,7 @@ function enviar() {
     var left = $('#tiago').offset().left;
 
     var data = {
-        top: largura,
+        top: top,
         left: left
     };
 
