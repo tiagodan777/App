@@ -2,8 +2,6 @@ var ws = new WebSocket('ws://' + location.hostname + ':8080');
 
 ws.onopen = function () {
     console.log('WebSocket ligado');
-    
-    console.log(data);
 };
 
 ws.onerror = function (error) {
@@ -59,7 +57,7 @@ ws.onmessage = function(event) {
             $img = $('<img>');
             $img.attr('src', pessoa.src);
             $img.addClass('foto');
-            
+
             $('body').append($img);
         }
 
