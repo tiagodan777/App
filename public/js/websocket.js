@@ -69,9 +69,6 @@ function state() {
         type: 'state',
         pessoas: pessoas
     };
-
-    ws.send(JSON.stringify(data));
-
     return data;
 }
 
