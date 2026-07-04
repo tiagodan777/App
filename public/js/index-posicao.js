@@ -26,7 +26,7 @@ function atualizarDedos(e) {
     console.log(dedos);
 }
 
-function reloadVarC() {
+function resetPrimeiraPos() {
     c = 0;
     primeira_posicao = {};
 }
