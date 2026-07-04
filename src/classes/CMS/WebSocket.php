@@ -42,10 +42,11 @@ class WebSocket implements MessageComponentInterface {
             $top = $data['top'] ?? 0;
             $left = $data['left'] ?? 0;
 
-        $this->pessoas[$from->resourceId]['top'] += $top;
-        $this->pessoas[$from->resourceId]['left'] += $left;
+            $this->pessoas[$from->resourceId]['top'] += $top;
+            $this->pessoas[$from->resourceId]['left'] += $left;
 
-        $this->broadcastNewState($data);
+            $this->broadcastNewState($this->pessoas);
+        }
     }
 
     public function onClose(ConnectionInterface $conn) {
@@ -58,9 +59,9 @@ class WebSocket implements MessageComponentInterface {
         $conn->close();
     }
 
-    private function broadcastNewState($data) {
+    private function broadcastNewState($pessoas) {
         foreach ($this->clients as $client) {
-            $this->sendNewState($client, $data);
+            $this->sendNewState($client, $pessoas);
         }
     }
 
