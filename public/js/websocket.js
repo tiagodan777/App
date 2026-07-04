@@ -50,8 +50,19 @@ $('#botoes').on('click', 'input[type="button"]', function(e) {
     ws.send(JSON.stringify(enviar));
 })
 
-function state() {
-    var pessoas = [];
+function updateState(data) {
+    console.log(data);
+}
+
+ws.onmessage = function(event) {
+    var data = JSON.parse(event.data);
+    console.log(data);
+
+    updateState(data);
+}
+
+
+/*var pessoas = [];
 
     var $imagens = $('.foto');
 
@@ -70,9 +81,3 @@ function state() {
         pessoas: pessoas
     };
     return data;
-}
-
-ws.onmessage = function(event) {
-    var data = JSON.parse(event.data);
-    console.log(data);
-}
