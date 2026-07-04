@@ -53,7 +53,7 @@ ws.onmessage = function(event) {
     data.forEach(function(pessoa) {
         var $img = $('#' + pessoa.id);
         
-        if ($img.lenght === 0) {
+        if ($img.length === 0) {
             $img = $('<img>');
             $img.attr('src', pessoa.src);
             $img.addClass('foto');
