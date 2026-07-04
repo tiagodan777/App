@@ -10,5 +10,5 @@ window.document.addEventListener('pointerdown', function(e) {
 });
 
 window.document.addEventListener('pointerup', function(e) {
-    delete dedos[e.pointerId]
+    delete dedos[e.pointerId];
 });
