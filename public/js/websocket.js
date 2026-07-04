@@ -74,10 +74,10 @@ ws.onmessage = function(event) {
     })
 }
 
-ws.onclose = function(event) {
+/*ws.onclose = function(event) {
     var data = event.data;
     $('#' + data.)
-}
+}*/
 
 /*var pessoas = [];
 
