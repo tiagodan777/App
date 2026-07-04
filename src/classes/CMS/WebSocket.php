@@ -36,23 +36,14 @@ class WebSocket implements MessageComponentInterface {
     public function onMessage(ConnectionInterface $from, $msg) {
         $data = json_decode($msg, true);
 
-        echo "ENVIAR\n";
         var_dump($data);
 
-        if ($data[0]['type'] === 'move') {
-            $top = $data[0]['top'] ?? null;
-            $left = $data[0]['left'] ?? null;
+        if ($data['type'] === 'move') {
+            $top = $data['top'] ?? 0;
+            $left = $data['left'] ?? 0;
 
-            echo "TOP: $top || LEFT: $left\n";
-
-            $data[1]['pessoas'][0]['top'] += $top;
-            $data[1]['pessoas'][0]['left'] += $left;
-
-            echo "NEW TOTAL TOP: ";
-            var_dump($data[1]['pessoas'][0]['top']);
-            echo "\nNEW TOTAL LEFT: ";
-            var_dump($data[1]['pessoas'][0]['left']);
-        }
+        $this->pessoas[$from->resourceId]['top'] += $top;
+        $this->pessoas[$from->resourceId]['left'] += $left;
 
         $this->broadcastNewState($data);
     }
