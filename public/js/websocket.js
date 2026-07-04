@@ -12,8 +12,8 @@ ws.onclose = function () {
     console.log('WebSocket fechado');
 };
 
-var botao = window.document.querySelector('#botao');
-botao.addEventListener('click', enviar);
+/*var botao = window.document.querySelector('#botao');
+botao.addEventListener('click', enviar);*/
 
 $('#botoes').on('click', 'button', function(e) {
     console.log($(this.text()));
