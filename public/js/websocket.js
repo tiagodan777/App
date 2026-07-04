@@ -43,6 +43,8 @@ $('#botoes').on('click', 'input[type="button"]', function(e) {
     };
 
     ws.send(JSON.stringify(data));
+    
+    state();
 })
 
 function state() {
