@@ -48,6 +48,7 @@ ws.onmessage = function(event) {
         var $img = $('#' + pessoa.id);
         
         if ($img.length === 0) {
+            $('#' + pessoa.id).remove();
             $img = $('<img>');
             $img.attr('id', pessoa.id);
             $img.attr('src', pessoa.src);
@@ -69,8 +70,6 @@ ws.onerror = function (error) {
 
 ws.onclose = function (id) {
     console.log('WebSocket fechado');
-
-    $('img#' + id).remove();
 };
 
 

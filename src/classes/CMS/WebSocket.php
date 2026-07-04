@@ -52,8 +52,6 @@ class WebSocket implements MessageComponentInterface {
     public function onClose(ConnectionInterface $conn) {
         $this->clients->detach($conn);
 
-        $conn->send(json_encode($this->pessoas[$conn->resourceId]));
-
         unset($this->pessoas[$conn->resourceId]);
 
         echo "Conexão ({$conn->resourceId}) desconectou-se\n";
