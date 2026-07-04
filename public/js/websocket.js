@@ -15,6 +15,10 @@ ws.onclose = function () {
 var botao = window.document.querySelector('#botao');
 botao.addEventListener('click', enviar);
 
+$('#botoes').on('click', 'button', function(e) {
+    console.log($(this.text()));
+})
+
 function enviar() {
     var pessoas = [];
 
