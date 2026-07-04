@@ -30,6 +30,7 @@ class WebSocket implements MessageComponentInterface {
             'left' => random_int(50, 400),
         ];
         var_dump($this->pessoas);
+        $this->broadcastNewState(array_values($this->pessoas));
     }
 
     public function onMessage(ConnectionInterface $from, $msg) {
