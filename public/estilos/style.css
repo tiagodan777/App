@@ -79,9 +79,11 @@ img {
 }
 
 #botoes {
-    position: fixes;
+    position: fixed;
     z-index: 10;
-    bottom: 10px;
+    bottom: 10%;
+
+    z-index: 10;
 
     display: flex;
     flex-flow: row nowrap;
