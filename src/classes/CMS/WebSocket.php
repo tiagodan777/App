@@ -31,14 +31,15 @@ class WebSocket implements MessageComponentInterface {
         var_dump($data);
 
         if ($data[0]['type'] === 'move') {
-            echo "OKOK";
             $top = $data[0]['top'] ?? null;
             $left = $data[0]['left'] ?? null;
 
-            echo "TOP: $top || LEFT: $left";
+            echo "TOP: $top || LEFT: $left\n";
 
             $data[1]['pessoas'][0]['top'] += $top;
             $data[1]['pessoas'][0]['left'] += $left;
+
+            echo "NEW TOTAL TOP: $data[1]['pessoas'][0]['top']   ||   NEW TOTAL LEFT: $data[1]['pessoas'][0]['left']\n";
         }
 
         $this->broadcastNewState($data);
