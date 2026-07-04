@@ -48,6 +48,18 @@ $('#botoes').on('click', 'input[type="button"]', function(e) {
 ws.onmessage = function(event) {
     var data = JSON.parse(event.data);
     console.log(data);
+
+    data.forEach(function(pessoa) {
+        $img = $('<img>');
+        $img.attr('id', pessoa.id);
+        $img.attr('src', pessoa.src);
+        
+        $ims.css({
+            'top': pessoa.top,
+            'left': pessoa.left
+        });
+    });
+
 }
 
 
