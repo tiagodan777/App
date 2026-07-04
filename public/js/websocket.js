@@ -16,7 +16,7 @@ ws.onclose = function () {
 botao.addEventListener('click', enviar);*/
 
 $('#botoes').on('click', 'button', function(e) {
-    console.log($(this.text()));
+    console.log($(this).text());
 })
 
 function enviar() {
