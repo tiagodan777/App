@@ -28,6 +28,8 @@ class WebSocket implements MessageComponentInterface {
         $data = json_decode($msg, true);
         
         var_dump($data);
+
+        $this->broadcastNewState();
     }
 
     public function onClose(ConnectionInterface $conn) {
@@ -38,6 +40,12 @@ class WebSocket implements MessageComponentInterface {
     public function onError(ConnectionInterface $conn, \Exception $e) {
         echo "Ocorreu um erro: ({$e->getMessage()})\n";
         $conn->close();
+    }
+
+    private function broadcastNewState() {
+        foreach ($this->clients as $client) {
+            
+        }
     }
 }
 
