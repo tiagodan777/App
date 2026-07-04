@@ -11,7 +11,7 @@ function atualizarDedos(e) {
             y: touch.clientY
         };
 
-        if (c < 2) {
+        if (primeira_posicao.length <= 2) {
             primeira_posicao[touch.identifier] = {
                 x: touch.clientX,
                 y: touch.clientY
