@@ -34,5 +34,5 @@ function reloadVarC() {
 document.addEventListener("touchstart", atualizarDedos, { passive: false });
 document.addEventListener("touchmove", atualizarDedos, { passive: false });
 document.addEventListener("touchend", atualizarDedos, { passive: false });
-document.addEventListener("touchend", resetP, { passive: false });
+document.addEventListener("touchend", resetPrimeiraPos, { passive: false });
 document.addEventListener("touchcancel", atualizarDedos, { passive: false });
