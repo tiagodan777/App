@@ -64,8 +64,11 @@ ws.onmessage = function(event) {
         }
 
         $img.css({
+            position: 'absolute',
             top: pessoa.top + 'px',
-            left: pessoa.left + 'px'
+            left: pessoa.left + 'px',
+            transform: `translate(${panX}px, ${panY}px) scale(${scale})`,
+            transformOrigin: '0 0'
         });
     });
 };
