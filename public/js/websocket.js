@@ -16,12 +16,12 @@ var botao = window.document.querySelector('#botao');
 botao.addEventListener('click', enviar);
 
 function enviar() {
-    var largura = $(window).width();
-    var altura = $(window).height();
+    var top = $('#tiago').offset().top;
+    var left = $('#tiago').offset().left;
 
     var data = {
-        largura: largura,
-        altura: altura
+        top: largura,
+        left: left
     };
 
     ws.send(JSON.stringify(data));
