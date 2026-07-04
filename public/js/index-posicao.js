@@ -10,11 +10,13 @@ function atualizarDedos(e) {
             x: touch.clientX,
             y: touch.clientY
         };
+
         if (c == 0) {
-            primeira_posicao = {
+            primeira_posicao[touch.identifier] = {
                 x: touch.clientX,
                 y: touch.clientY
             }
+            c++;
         }
     }
 
