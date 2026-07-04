@@ -49,16 +49,17 @@ $('#botoes').on('click', 'input[type="button"]', function(e) {
 
 ws.onmessage = function(event) {
     var data = JSON.parse(event.data);
+
     console.log(data);
 
     data.forEach(function(pessoa) {
         var $img = $('#' + pessoa.id);
-
-        if ($img.length === 0) {
+        
+        if ($img.lenght === 0) {
             $img = $('<img>');
-            $img.attr('id', pessoa.id);
             $img.attr('src', pessoa.src);
             $img.addClass('foto');
+            
             $('body').append($img);
         }
 
@@ -66,8 +67,8 @@ ws.onmessage = function(event) {
             top: pessoa.top + 'px',
             left: pessoa.left + 'px'
         });
-    });
-};
+    })
+}
 
 
 /*var pessoas = [];
