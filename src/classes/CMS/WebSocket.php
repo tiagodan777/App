@@ -23,13 +23,12 @@ class WebSocket implements MessageComponentInterface {
         $this->clients->attach($conn);
         echo "Nova conexção!! - ({$conn->resourceId})\n";
         
-        $nova_pessoa = [
-            'src' => '{{ doc_root }}imagens/fotos-perfil/tiago.webp',
+        $this->pessoas[$conn->resourceId] = [
+            'id' => $conn->resourceId,
+            'src' => '/imagens/fotos-perfil/tiago.webp',
             'top' => random_int(50, 600),
             'left' => random_int(50, 400),
         ];
-
-        $this->pessoas[] = $nova_pessoa;
         var_dump($this->pessoas);
     }
 
