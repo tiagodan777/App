@@ -2,46 +2,46 @@
     const canvas = document.getElementById('gridCanvas');
     const ctx = canvas.getContext('2d');
 
-    let width = 0, height = 0, dpr = 1;
+    let width, height, dpr;
     let points = [];
     let time = 0;
 
-    const spacing = 22; 
+    // Distância entre os pontos da malha
+    const spacing = 18; 
 
-    const cY = [255, 215, 0];   // Amarelo
-    const cB = [0, 100, 255];   // Azul
-    const cP = [138, 43, 226];  // Roxo
+    // As três cores vibrantes que pediste
+    const colorYellow = [255, 215, 0];
+    const colorBlue = [0, 100, 255];
+    const colorPurple = [138, 43, 226];
 
     function resize() {
         dpr = Math.min(window.devicePixelRatio || 1, 2);
         width = window.innerWidth;
-        // Usar innerHeight é mais seguro para PWAs (aplicações no menu principal)
-        height = window.innerHeight; 
-
+        height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+        
+        canvas.style.width = width + 'px';
+        canvas.style.height = height + 'px';
         canvas.width = Math.floor(width * dpr);
         canvas.height = Math.floor(height * dpr);
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-        createPoints();
+        createGrid();
     }
 
-    function createPoints() {
+    function createGrid() {
         points = [];
+        const cols = Math.ceil(width / spacing) + 6;
+        const rows = Math.ceil(height / spacing) + 6;
         
-        // Criar uma margem invisível gigante à volta do ecrã para nunca faltarem pontos
-        const margin = spacing * 8; 
-        const cols = Math.ceil((width + margin * 2) / spacing);
-        const rows = Math.ceil((height + margin * 2) / spacing);
-
-        const startX = -margin;
-        const startY = -margin;
+        // Margem extra para os pontos não desaparecerem bruscamente nos cantos
+        const startX = -spacing * 3;
+        const startY = -spacing * 3;
 
         for (let row = 0; row < rows; row++) {
             for (let col = 0; col < cols; col++) {
                 points.push({
-                    x: startX + col * spacing,
-                    y: startY + row * spacing,
-                    seed: Math.random() * Math.PI * 2
+                    baseX: startX + col * spacing,
+                    baseY: startY + row * spacing
                 });
             }
         }
@@ -50,45 +50,48 @@
     window.addEventListener('resize', resize);
     resize();
 
-    function getColor(t) {
+    function lerp(a, b, t) { return a + (b - a) * t; }
+    function clamp(v, min, max) { return v < min ? min : (v > max ? max : v); }
+
+    // Função que mistura o Amarelo > Azul > Roxo dependendo da posição
+    function getGradientColor(t) {
+        t = clamp(t, 0, 1);
+        let c1, c2, factor;
         if (t < 0.5) {
-            const f = t * 2.0;
-            return `${Math.floor(cY[0] + (cB[0] - cY[0]) * f)}, ${Math.floor(cY[1] + (cB[1] - cY[1]) * f)}, ${Math.floor(cY[2] + (cB[2] - cY[2]) * f)}`;
+            c1 = colorYellow; c2 = colorBlue; factor = t * 2.0;
         } else {
-            const f = (t - 0.5) * 2.0;
-            return `${Math.floor(cB[0] + (cP[0] - cB[0]) * f)}, ${Math.floor(cB[1] + (cP[1] - cB[1]) * f)}, ${Math.floor(cB[2] + (cP[2] - cB[2]) * f)}`;
+            c1 = colorBlue; c2 = colorPurple; factor = (t - 0.5) * 2.0;
         }
+        return `rgb(${Math.floor(lerp(c1[0], c2[0], factor))}, ${Math.floor(lerp(c1[1], c2[1], factor))}, ${Math.floor(lerp(c1[2], c2[2], factor))})`;
     }
 
     function draw() {
         ctx.clearRect(0, 0, width, height);
 
-        // Muito mais lento e calmo
-        time += 0.012; 
+        time += 0.002; // Velocidade geral do movimento (suave e rítmica)
 
         for (let i = 0; i < points.length; i++) {
             const p = points[i];
             
-            // Ondas mais "largas" para dar uma lógica de nuvem e não de ruído
-            const nx = p.x * 0.0015; 
-            const ny = p.y * 0.0015;
+            // Normalizar coordenadas para a matemática fluir bem independentemente do ecrã
+            const nx = p.baseX * 0.003;
+            const ny = p.baseY * 0.003;
 
-            // Lógica fluida e contínua
-            const layer1 = Math.sin(nx * 3.0 + time) + Math.cos(ny * 2.5 - time * 0.8);
-            const layer2 = Math.sin((nx + ny) * 2.0 - time * 0.5) + Math.cos((nx - ny) * 1.5 + time * 0.6);
+            // LÓGICA DE MOVIMENTO: Usar ondas para empurrar os pontos da sua posição fixa
+            // Isto cria o tal movimento orgânico, mas ordenado
+            const waveX = Math.sin(ny * 2.5 + time * 2.5) * 18 + Math.cos(nx * 1.8 - time) * 12;
+            const waveY = Math.cos(nx * 2.5 - time * 2.5) * 18 + Math.sin(ny * 1.8 + time) * 12;
+
+            const finalX = p.baseX + waveX;
+            const finalY = p.baseY + waveY;
+
+            // LÓGICA DA COR: Mapear a posição das ondas para criar manchas de cor dinâmicas
+            const waveValue = (Math.sin(nx * 2.2 + time * 1.5) + Math.cos(ny * 2.2 + time * 1.5) + 2) / 4; 
             
-            const v = layer1 * 0.5 + layer2 * 0.5;
-            const n = Math.max(0, Math.min(1, (v + 1.5) / 3.0));
-
-            const alpha = n * 0.85;
-
-            if (alpha < 0.05) continue;
-
-            const radius = 0.6 + (n * 1.4);
-
             ctx.beginPath();
-            ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(${getColor(n)}, ${alpha.toFixed(2)})`;
+            // Pontos muito mais pequenos e fixos (raio 1.2), sem piscar de tamanho
+            ctx.arc(finalX, finalY, 1.2, 0, Math.PI * 2);
+            ctx.fillStyle = getGradientColor(waveValue);
             ctx.fill();
         }
 
