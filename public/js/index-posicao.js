@@ -6,7 +6,7 @@ let panY = 0;
 
 let ultimaDistancia = null;
 let ultimoCentro = null;
-let minhaPosicao = null;
+
 
 const MIN_SCALE = 0.7;
 const MAX_SCALE = 5;
@@ -82,10 +82,7 @@ function limitarPan() {
 }
 
 function aplicarTransform() {
-    if (!minhaPosicao) return;
-
-    const centerX = window.innerWidth / 2;
-    const centerY = (window.innerHeight - SAFE_BOTTOM) / 2;
+    limitarPan();
 
     $('.foto').each(function() {
         const topOriginal = Number($(this).attr('data-top'));
@@ -93,29 +90,12 @@ function aplicarTransform() {
 
         const fotoScale = 1 + (scale - 1) * FOTO_ZOOM_INTENSIDADE;
 
-        if ($(this).hasClass('minha-foto')) {
-            $(this).css({
-                position: 'fixed',
-                left: '50%',
-                top: `calc((100vh - ${SAFE_BOTTOM}px) / 2)`,
-                transform: 'translate(-50%, -50%) scale(1.15)',
-                transformOrigin: 'center center',
-                zIndex: 10
-            });
-
-            return;
-        }
-
-        const dx = leftOriginal - minhaPosicao.left;
-        const dy = topOriginal - minhaPosicao.top;
-
         $(this).css({
             position: 'absolute',
-            left: (centerX + panX + dx * scale) + 'px',
-            top: (centerY + panY + dy * scale) + 'px',
-            transform: `translate(-50%, -50%) scale(${fotoScale})`,
-            transformOrigin: 'center center',
-            zIndex: 5
+            left: (leftOriginal * scale + panX) + 'px',
+            top: (topOriginal * scale + panY) + 'px',
+            transform: `scale(${fotoScale})`,
+            transformOrigin: 'center center'
         });
     });
 }
