@@ -16,7 +16,7 @@ html, body {
     /* Estas propriedades ajudam em iPhones/Androids a parecer nativo */
     -webkit-user-select: none;
     user-select: none;
-    touch-action: none; 
+    /*touch-action: none; */
 }
 
 #gridCanvas {
