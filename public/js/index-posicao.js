@@ -95,9 +95,9 @@ function aplicarTransform() {
 
         if ($(this).hasClass('minha-foto')) {
             $(this).css({
-                position: 'absolute',
-                left: centerX + 'px',
-                top: centerY + 'px',
+                position: 'fixed',
+                left: '50%',
+                top: `calc((100vh - ${SAFE_BOTTOM}px) / 2)`,
                 transform: 'translate(-50%, -50%) scale(1.15)',
                 transformOrigin: 'center center',
                 zIndex: 10

@@ -52,12 +52,19 @@ ws.onmessage = function(event) {
         }
     });
 
+    minhaPosicao = null;
+
     data.forEach(function(pessoa) {
-        var $img = $('#' + pessoa.id);
-        
-        if ($img.length === 0) {
+        var id = String(pessoa.id);
+
+        var imgExistente = document.getElementById(id);
+        var $img;
+
+        if (imgExistente) {
+            $img = $(imgExistente);
+        } else {
             $img = $('<img>');
-            $img.attr('id', pessoa.id);
+            $img.attr('id', id);
             $img.attr('src', pessoa.src);
             $img.addClass('foto');
             $('body').append($img);
@@ -66,18 +73,20 @@ ws.onmessage = function(event) {
         $img.attr('data-top', pessoa.top);
         $img.attr('data-left', pessoa.left);
 
-        if (pessoa.souEu) {
+        if (pessoa.souEu === true) {
             minhaPosicao = {
-                top: pessoa.top,
-                left: pessoa.left,
-                id: pessoa.id
-        };
+                top: Number(pessoa.top),
+                left: Number(pessoa.left),
+                id: id
+            };
 
-        $img.addClass('minha-foto');
+            $img.addClass('minha-foto');
         } else {
             $img.removeClass('minha-foto');
         }
     });
+
+    console.log('minhaPosicao:', minhaPosicao);
 
     aplicarTransform();
 };
