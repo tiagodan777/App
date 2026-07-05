@@ -25,7 +25,8 @@ let lastZoomCY = window.innerHeight / 2;
 
 const MIN_SCALE = 0.3; 
 const MAX_SCALE = 5;
-const FOTO_ZOOM_INTENSIDADE = 0.25;
+const FOTO_ZOOM_INTENSIDADE = 0.25; // Intensidade ao aproximar
+const MIN_FOTO_SCALE = 0.45;        // O limite aceitável de quão pequenas ficam (45%)
 
 const SAFE_TOP = 20, SAFE_LEFT = 20, SAFE_RIGHT = 20, SAFE_BOTTOM = 100;
 
@@ -82,7 +83,16 @@ function limitarPan() {
 
 function aplicarTransform() {
     limitarPan();
-    const fotoScale = 1 + (scale - 1) * FOTO_ZOOM_INTENSIDADE;
+    
+    // NOVA LÓGICA DE ESCALA DAS FOTOS
+    let fotoScale;
+    if (scale < 1) {
+        // Se estamos a afastar (zoom out), encolhe de forma mais agressiva (fator 0.8)
+        fotoScale = Math.max(MIN_FOTO_SCALE, 1 + (scale - 1) * 0.8);
+    } else {
+        // Se estamos a aproximar (zoom in), cresce suavemente
+        fotoScale = 1 + (scale - 1) * FOTO_ZOOM_INTENSIDADE;
+    }
 
     for (const foto of fotosCache) {
         foto.elemento.style.left = (foto.left * scale + panX) + 'px';
@@ -132,11 +142,8 @@ function iniciarInerciaFoto(foto, vx, vy) {
 
 function iniciarInerciaMapa() {
     function animar() {
-        // Fricção do mapa
         mapVelX *= 0.92;
         mapVelY *= 0.92;
-        
-        // A fricção do zoom é ligeiramente maior para o ecrã não ficar aos saltos
         mapVelScale *= 0.88; 
 
         if (Math.abs(mapVelX) < 0.1 && Math.abs(mapVelY) < 0.1 && Math.abs(mapVelScale) < 0.001) {
@@ -161,7 +168,6 @@ function touchStart(e) {
         e.preventDefault();
     }
     
-    // Parar todas as inércias quando o utilizador toca no ecrã
     cancelAnimationFrame(inerciaAnimId);
     cancelAnimationFrame(mapInerciaAnimId);
     
@@ -225,7 +231,6 @@ function touchMove(e) {
             panX += deltaX;
             panY += deltaY;
             
-            // Gravar a velocidade do Pan (Arrasto do Fundo)
             mapVelX = (mapVelX * 0.4) + (deltaX * 0.6);
             mapVelY = (mapVelY * 0.4) + (deltaY * 0.6);
         }
@@ -248,7 +253,6 @@ function touchMove(e) {
         panX += deltaX;
         panY += deltaY;
         
-        // Gravar a velocidade de Pan com dois dedos
         mapVelX = (mapVelX * 0.4) + (deltaX * 0.6);
         mapVelY = (mapVelY * 0.4) + (deltaY * 0.6);
 
@@ -256,10 +260,8 @@ function touchMove(e) {
             const zoomFactor = dAtual / ultimaDistancia;
             zoomNoPonto(currX, currY, zoomFactor);
             
-            // Gravar a velocidade do Zoom (se os dedos estão a afastar ou a juntar rapidamente)
             mapVelScale = (mapVelScale * 0.4) + ((zoomFactor - 1) * 0.6);
             
-            // Guardar o centro do último zoom para a inércia saber onde focar
             lastZoomCX = currX;
             lastZoomCY = currY;
         }
@@ -283,7 +285,6 @@ function touchEnd(e) {
                 iniciarInerciaFoto(fotoEmArrasto, velX, velY);
             }
         } else {
-            // Se o mapa tiver velocidade acumulada no Pan ou no Zoom, disparamos a inércia
             if (Math.abs(mapVelX) > 0.5 || Math.abs(mapVelY) > 0.5 || Math.abs(mapVelScale) > 0.005) {
                 iniciarInerciaMapa();
             }
