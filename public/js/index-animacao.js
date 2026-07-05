@@ -45,23 +45,29 @@
     };
 
     function resize() {
-        dpr = Math.min(window.devicePixelRatio || 1, 2);
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-        canvas.style.width = '100vw';
-        canvas.style.height = '100lvh';
+    width = window.innerWidth;
 
-        const rect = canvas.getBoundingClientRect();
-
-        width = rect.width;
-        height = rect.height;
-
-        canvas.width = Math.floor(width * dpr);
-        canvas.height = Math.floor(height * dpr);
-
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-        createPoints();
+    if (window.visualViewport) {
+        height = window.visualViewport.height;
+    } else {
+        height = window.innerHeight;
     }
+
+    // margem extra para garantir que chega ao fundo
+    height += 140;
+
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
+
+    canvas.width = Math.floor(width * dpr);
+    canvas.height = Math.floor(height * dpr);
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    createPoints();
+}
 
     function createPoints() {
         points = [];
