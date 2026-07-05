@@ -1,8 +1,20 @@
-var ws = new WebSocket('ws://' + location.hostname + ':8080');
+var protocoloWS = location.protocol === 'https:' ? 'wss://' : 'ws://';
+var wsUrl = protocoloWS + location.hostname + ':8080';
+
+console.log('A tentar WebSocket:', wsUrl);
+
+var ws = new WebSocket(wsUrl);
 
 ws.onopen = function () {
-    alert('WebSocket ligado');
     console.log('WebSocket ligado');
+};
+
+ws.onerror = function (error) {
+    console.error('Erro WebSocket:', error);
+};
+
+ws.onclose = function (e) {
+    console.log('WebSocket fechado:', e.code, e.reason);
 };
 
 $('#botoes').on('click', 'input[type="button"]', function(e) {
@@ -69,12 +81,4 @@ ws.onmessage = function(event) {
     });
 
     aplicarTransform();
-};
-
-ws.onerror = function (error) {
-    console.error('Erro no WebSocket:', error);
-};
-
-ws.onclose = function () {
-    console.log('WebSocket fechado');
 };
