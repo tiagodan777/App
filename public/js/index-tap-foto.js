@@ -5,7 +5,7 @@ $(function() {
 
         var $div = ('<div class="mini-menu"></div>');
 
-        $div.slideUp()
+        $div.slideUp();
 
     });
 });
