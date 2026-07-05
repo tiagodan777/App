@@ -1,19 +1,12 @@
 var ws = new WebSocket('ws://' + location.hostname + ':8080');
 
-var resourceId;
-
-ws.onopen = function (data) {
+ws.onopen = function () {
     console.log('WebSocket ligado');
 };
 
-/*var botao = window.document.querySelector('#botao');
-botao.addEventListener('click', enviar);*/
-
 $('#botoes').on('click', 'input[type="button"]', function(e) {
-    var top;
-    var left;
-
-    console.log($(this).val());
+    var top = 0;
+    var left = 0;
 
     switch ($(this).val()) {
         case '⬆️':
@@ -37,7 +30,7 @@ $('#botoes').on('click', 'input[type="button"]', function(e) {
     };
 
     ws.send(JSON.stringify(move));
-})
+});
 
 ws.onmessage = function(event) {
     var data = JSON.parse(event.data);
@@ -53,11 +46,16 @@ ws.onmessage = function(event) {
     });
 
     data.forEach(function(pessoa) {
-        var $img = $('#' + pessoa.id);
-        
-        if ($img.length === 0) {
+        var id = String(pessoa.id);
+
+        var imgExistente = document.getElementById(id);
+        var $img;
+
+        if (imgExistente) {
+            $img = $(imgExistente);
+        } else {
             $img = $('<img>');
-            $img.attr('id', pessoa.id);
+            $img.attr('id', id);
             $img.attr('src', pessoa.src);
             $img.addClass('foto');
             $('body').append($img);
@@ -74,27 +72,6 @@ ws.onerror = function (error) {
     console.error('Erro no WebSocket:', error);
 };
 
-ws.onclose = function (id) {
+ws.onclose = function () {
     console.log('WebSocket fechado');
 };
-
-
-/*var pessoas = [];
-
-    var $imagens = $('.foto');
-
-    $imagens.each(function() {
-        var dados = {
-            id: $(this).attr('id'),
-            top: $(this).offset().top,
-            left: $(this).offset().left
-        };
-
-        pessoas.push(dados);
-    });
-
-    var data = {
-        type: 'state',
-        pessoas: pessoas
-    };
-    return data;*/

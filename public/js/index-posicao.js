@@ -7,6 +7,11 @@ let panY = 0;
 let ultimaDistancia = null;
 let ultimoCentro = null;
 
+window.radarView = {
+    scale: 1,
+    panX: 0,
+    panY: 0
+};
 
 const MIN_SCALE = 0.7;
 const MAX_SCALE = 5;
@@ -38,6 +43,12 @@ function limitarScale(valor) {
     return Math.max(MIN_SCALE, Math.min(valor, MAX_SCALE));
 }
 
+function atualizarRadarView() {
+    window.radarView.scale = scale;
+    window.radarView.panX = panX;
+    window.radarView.panY = panY;
+}
+
 function limitarPan() {
     const fotos = $('.foto');
 
@@ -52,11 +63,14 @@ function limitarPan() {
         const topOriginal = Number($(this).attr('data-top'));
         const leftOriginal = Number($(this).attr('data-left'));
 
-        minLeft = Math.min(minLeft, leftOriginal * scale);
-        maxLeft = Math.max(maxLeft, leftOriginal * scale);
+        const finalLeft = leftOriginal * scale;
+        const finalTop = topOriginal * scale;
 
-        minTop = Math.min(minTop, topOriginal * scale);
-        maxTop = Math.max(maxTop, topOriginal * scale);
+        minLeft = Math.min(minLeft, finalLeft);
+        maxLeft = Math.max(maxLeft, finalLeft);
+
+        minTop = Math.min(minTop, finalTop);
+        maxTop = Math.max(maxTop, finalTop);
     });
 
     const screenW = window.innerWidth;
@@ -83,6 +97,7 @@ function limitarPan() {
 
 function aplicarTransform() {
     limitarPan();
+    atualizarRadarView();
 
     $('.foto').each(function() {
         const topOriginal = Number($(this).attr('data-top'));
@@ -94,7 +109,7 @@ function aplicarTransform() {
             position: 'absolute',
             left: (leftOriginal * scale + panX) + 'px',
             top: (topOriginal * scale + panY) + 'px',
-            transform: `scale(${fotoScale})`,
+            transform: `translate(-50%, -50%) scale(${fotoScale})`,
             transformOrigin: 'center center'
         });
     });
