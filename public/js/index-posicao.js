@@ -51,7 +51,6 @@ function aplicarTransform() {
         const topOriginal = Number($(this).attr('data-top'));
         const leftOriginal = Number($(this).attr('data-left'));
 
-        console.log('foto:', this.id, topOriginal, leftOriginal);
 
         if (isNaN(topOriginal) || isNaN(leftOriginal)) return;
 
