@@ -91,7 +91,12 @@ img {
     padding: 0px 35px;
 }
 
-#menuPrincipal > nav > ul > li > img {
+#menuPrincipal > nav > ul > li > a {
+    text-decoration: none;
+    color: black;
+}
+
+#menuPrincipal > nav > ul > li > a > img {
     width: 26px;
     height: 26px;
 }
