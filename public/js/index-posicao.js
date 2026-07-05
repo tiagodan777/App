@@ -15,7 +15,7 @@ let inerciaAnimId = null;
 let velX = 0;
 let velY = 0;
 
-const MIN_SCALE = 0.3; 
+const MIN_SCALE = 0.2; 
 const MAX_SCALE = 5;
 const FOTO_ZOOM_INTENSIDADE = 0.25;
 
