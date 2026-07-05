@@ -14,7 +14,7 @@ html, body {
     overflow: hidden; /* Impede que o ecrã ande para cima ou para baixo */
     background-color: #ffffff; /* Fundo branco puro */
     /* Estas propriedades ajudam em iPhones/Androids a parecer nativo */
-    -webkit-user-select: none;
+    /*-webkit-user-select: none;
     user-select: none;
     /*touch-action: none; */
 }
