@@ -50,49 +50,10 @@ function atualizarRadarView() {
 }
 
 function limitarPan() {
-    const fotos = $('.foto');
+    const LIMITE_PAN = 300;
 
-    if (fotos.length === 0) return;
-
-    let minLeft = Infinity;
-    let maxLeft = -Infinity;
-    let minTop = Infinity;
-    let maxTop = -Infinity;
-
-    fotos.each(function() {
-        const topOriginal = Number($(this).attr('data-top'));
-        const leftOriginal = Number($(this).attr('data-left'));
-
-        const finalLeft = leftOriginal * scale;
-        const finalTop = topOriginal * scale;
-
-        minLeft = Math.min(minLeft, finalLeft);
-        maxLeft = Math.max(maxLeft, finalLeft);
-
-        minTop = Math.min(minTop, finalTop);
-        maxTop = Math.max(maxTop, finalTop);
-    });
-
-    const screenW = window.innerWidth;
-    const screenH = window.innerHeight;
-
-    const minPanX = SAFE_LEFT - minLeft;
-    const maxPanX = (screenW - SAFE_RIGHT) - maxLeft;
-
-    const minPanY = SAFE_TOP - minTop;
-    const maxPanY = (screenH - SAFE_BOTTOM) - maxTop;
-
-    if (minPanX > maxPanX) {
-        panX = (minPanX + maxPanX) / 2;
-    } else {
-        panX = Math.max(minPanX, Math.min(panX, maxPanX));
-    }
-
-    if (minPanY > maxPanY) {
-        panY = (minPanY + maxPanY) / 2;
-    } else {
-        panY = Math.max(minPanY, Math.min(panY, maxPanY));
-    }
+    panX = Math.max(-LIMITE_PAN, Math.min(panX, LIMITE_PAN));
+    panY = Math.max(-LIMITE_PAN, Math.min(panY, LIMITE_PAN));
 }
 
 function aplicarTransform() {
