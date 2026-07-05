@@ -13,8 +13,7 @@ window.radarView = {
     panY: 0
 };
 
-const MIN_SCALE = 0.7;
-const MAX_SCALE = 5;
+const MAX_SCALE = 8;
 const FOTO_ZOOM_INTENSIDADE = 0.25;
 
 const SAFE_TOP = 20;
@@ -40,7 +39,7 @@ function centro(a, b) {
 }
 
 function limitarScale(valor) {
-    return Math.max(MIN_SCALE, Math.min(valor, MAX_SCALE));
+    return Math.max(0.05, Math.min(valor, MAX_SCALE));
 }
 
 function atualizarRadarView() {
