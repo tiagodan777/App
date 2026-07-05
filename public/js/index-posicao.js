@@ -1,13 +1,15 @@
-let ativos = {}; // Guardar apenas as coordenadas necessárias
+let ativos = {};
 
 let scale = 1;
 let panX = 0;
 let panY = 0;
 
-// Referências base para não haver saltos quando se tira/põe um dedo
 let refX = 0;
 let refY = 0;
 let ultimaDistancia = 0;
+
+// Variável para saber qual é a foto que estamos a mover (se houver alguma)
+let fotoEmArrasto = null;
 
 const MIN_SCALE = 0.7;
 const MAX_SCALE = 5;
@@ -15,10 +17,8 @@ const FOTO_ZOOM_INTENSIDADE = 0.25;
 
 const SAFE_TOP = 20, SAFE_LEFT = 20, SAFE_RIGHT = 20, SAFE_BOTTOM = 100;
 
-// Cache para não ler o HTML a cada frame
 let fotosCache = [];
 
-// 1. OTIMIZAÇÃO: Executar isto apenas uma vez quando a página carrega
 function inicializarFotos() {
     const fotos = document.querySelectorAll('.foto');
     fotosCache = Array.from(fotos).map(el => {
@@ -87,7 +87,6 @@ function zoomNoPonto(screenX, screenY, zoomFactor) {
     panY = screenY - (screenY - panY) * realZoomFactor;
 }
 
-// 2. MATEMÁTICA CORRIGIDA: Atualizar referências sempre que muda o número de dedos
 function atualizarReferencias() {
     const chaves = Object.keys(ativos);
     if (chaves.length === 1) {
@@ -101,14 +100,30 @@ function atualizarReferencias() {
 }
 
 function touchStart(e) {
-    // Apenas prevenir o default se estivermos a tocar na área do mapa (podes ajustar o alvo se necessário)
-    if(e.target.closest('.foto') || e.target.id === 'mapa-container') {
+    if(e.target.closest('.foto') || e.target.id === 'mapa-container' || e.target.tagName.toLowerCase() === 'canvas') {
         e.preventDefault();
     }
     
     for (const touch of e.changedTouches) {
         ativos[touch.identifier] = { x: touch.clientX, y: touch.clientY };
     }
+    
+    const chaves = Object.keys(ativos);
+    
+    // Se pusermos um dedo, verificamos se acertámos numa foto
+    if (chaves.length === 1) {
+        const alvoFoto = e.target.closest('.foto');
+        if (alvoFoto) {
+            // Encontramos a foto na memória (cache) para a podermos editar diretamente
+            fotoEmArrasto = fotosCache.find(f => f.elemento === alvoFoto);
+        } else {
+            fotoEmArrasto = null;
+        }
+    } else {
+        // Se puser o segundo dedo, cancelamos o arrasto da foto para poder fazer zoom
+        fotoEmArrasto = null;
+    }
+
     atualizarReferencias();
 }
 
@@ -129,14 +144,33 @@ function touchMove(e) {
         const currX = ativos[chaves[0]].x;
         const currY = ativos[chaves[0]].y;
 
-        panX += currX - refX;
-        panY += currY - refY;
+        const deltaX = currX - refX;
+        const deltaY = currY - refY;
+
+        if (fotoEmArrasto) {
+            // MOVER APENAS A FOTO
+            // Dividimos pelo "scale" para o movimento ser 1:1 com o dedo, independentemente do zoom
+            fotoEmArrasto.left += deltaX / scale;
+            fotoEmArrasto.top += deltaY / scale;
+            
+            // Atualizar os atributos no HTML (será útil no futuro)
+            fotoEmArrasto.elemento.setAttribute('data-left', fotoEmArrasto.left);
+            fotoEmArrasto.elemento.setAttribute('data-top', fotoEmArrasto.top);
+            
+        } else {
+            // MOVER O MAPA INTEIRO
+            panX += deltaX;
+            panY += deltaY;
+        }
 
         refX = currX;
         refY = currY;
 
         aplicarTransform();
+
     } else if (chaves.length === 2) {
+        fotoEmArrasto = null; // Cancela arrastar a foto isolada
+        
         const currX = (ativos[chaves[0]].x + ativos[chaves[1]].x) / 2;
         const currY = (ativos[chaves[0]].y + ativos[chaves[1]].y) / 2;
         const dAtual = distancia(ativos[chaves[0]], ativos[chaves[1]]);
@@ -160,6 +194,12 @@ function touchEnd(e) {
     for (const touch of e.changedTouches) {
         delete ativos[touch.identifier];
     }
+    
+    // Se todos os dedos saírem do ecrã, limpamos a foto selecionada
+    if (Object.keys(ativos).length === 0) {
+        fotoEmArrasto = null;
+    }
+
     atualizarReferencias();
 }
 
@@ -167,6 +207,3 @@ document.addEventListener("touchstart", touchStart, { passive: false });
 document.addEventListener("touchmove", touchMove, { passive: false });
 document.addEventListener("touchend", touchEnd, { passive: false });
 document.addEventListener("touchcancel", touchEnd, { passive: false });
-
-// Exemplo de como deves inicializar quando a página carrega:
-// window.onload = () => inicializarFotos();
