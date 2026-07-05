@@ -30,7 +30,7 @@ html, body {
 
 #menuPrincipal {
     width: 90%;
-    height: 100px;
+    height: 64px;
     position: fixed;
     left: 50%;
     transform: translateX(-50%);
