@@ -1,25 +1,19 @@
-var protocoloWS = location.protocol === 'https:' ? 'wss://' : 'ws://';
-var wsUrl = protocoloWS + location.hostname + ':8080';
+var ws = new WebSocket('ws://' + location.hostname + ':8080');
 
-console.log('A tentar WebSocket:', wsUrl);
+var resourceId;
 
-var ws = new WebSocket(wsUrl);
-
-ws.onopen = function () {
+ws.onopen = function (data) {
     console.log('WebSocket ligado');
 };
 
-ws.onerror = function (error) {
-    console.error('Erro WebSocket:', error);
-};
-
-ws.onclose = function (e) {
-    console.log('WebSocket fechado:', e.code, e.reason);
-};
+/*var botao = window.document.querySelector('#botao');
+botao.addEventListener('click', enviar);*/
 
 $('#botoes').on('click', 'input[type="button"]', function(e) {
-    var top = 0;
-    var left = 0;
+    var top;
+    var left;
+
+    console.log($(this).val());
 
     switch ($(this).val()) {
         case '⬆️':
@@ -43,12 +37,10 @@ $('#botoes').on('click', 'input[type="button"]', function(e) {
     };
 
     ws.send(JSON.stringify(move));
-});
+})
 
 ws.onmessage = function(event) {
     var data = JSON.parse(event.data);
-
-    console.log('DATA:', data);
 
     var idsAtuais = data.map(function(pessoa) {
         return String(pessoa.id);
@@ -61,16 +53,11 @@ ws.onmessage = function(event) {
     });
 
     data.forEach(function(pessoa) {
-        var id = String(pessoa.id);
-
-        var imgExistente = document.getElementById(id);
-        var $img;
-
-        if (imgExistente) {
-            $img = $(imgExistente);
-        } else {
+        var $img = $('#' + pessoa.id);
+        
+        if ($img.length === 0) {
             $img = $('<img>');
-            $img.attr('id', id);
+            $img.attr('id', pessoa.id);
             $img.attr('src', pessoa.src);
             $img.addClass('foto');
             $('body').append($img);
@@ -82,3 +69,32 @@ ws.onmessage = function(event) {
 
     aplicarTransform();
 };
+
+ws.onerror = function (error) {
+    console.error('Erro no WebSocket:', error);
+};
+
+ws.onclose = function (id) {
+    console.log('WebSocket fechado');
+};
+
+
+/*var pessoas = [];
+
+    var $imagens = $('.foto');
+
+    $imagens.each(function() {
+        var dados = {
+            id: $(this).attr('id'),
+            top: $(this).offset().top,
+            left: $(this).offset().left
+        };
+
+        pessoas.push(dados);
+    });
+
+    var data = {
+        type: 'state',
+        pessoas: pessoas
+    };
+    return data;*/
