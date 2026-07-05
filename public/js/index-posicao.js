@@ -31,7 +31,7 @@ const MAX_SCALE = 5;
 const FOTO_ZOOM_INTENSIDADE = 0.25;
 const MIN_FOTO_SCALE = 0.45;
 
-const SAFE_TOP = 20, SAFE_LEFT = 20, SAFE_RIGHT = 20, SAFE_BOTTOM = 100;
+const SAFE_TOP = 10, SAFE_LEFT = 10, SAFE_RIGHT = 20, SAFE_BOTTOM = 100;
 
 let fotosCache = [];
 
