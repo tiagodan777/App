@@ -6,9 +6,8 @@
     let points = [];
     let time = 0;
 
-    const spacing = 22; // Equilíbrio ideal entre preenchimento e performance
+    const spacing = 22; 
 
-    // Cores base
     const cY = [255, 215, 0];   // Amarelo
     const cB = [0, 100, 255];   // Azul
     const cP = [138, 43, 226];  // Roxo
@@ -16,11 +15,9 @@
     function resize() {
         dpr = Math.min(window.devicePixelRatio || 1, 2);
         width = window.innerWidth;
-        height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-        height += 100; // Margem de segurança
+        // Usar innerHeight é mais seguro para PWAs (aplicações no menu principal)
+        height = window.innerHeight; 
 
-        canvas.style.width = width + 'px';
-        canvas.style.height = height + 'px';
         canvas.width = Math.floor(width * dpr);
         canvas.height = Math.floor(height * dpr);
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -30,14 +27,20 @@
 
     function createPoints() {
         points = [];
-        const cols = Math.ceil(width / spacing) + 4;
-        const rows = Math.ceil(height / spacing) + 4;
+        
+        // Criar uma margem invisível gigante à volta do ecrã para nunca faltarem pontos
+        const margin = spacing * 8; 
+        const cols = Math.ceil((width + margin * 2) / spacing);
+        const rows = Math.ceil((height + margin * 2) / spacing);
 
-        for (let row = -2; row < rows; row++) {
-            for (let col = -2; col < cols; col++) {
+        const startX = -margin;
+        const startY = -margin;
+
+        for (let row = 0; row < rows; row++) {
+            for (let col = 0; col < cols; col++) {
                 points.push({
-                    x: col * spacing,
-                    y: row * spacing,
+                    x: startX + col * spacing,
+                    y: startY + row * spacing,
                     seed: Math.random() * Math.PI * 2
                 });
             }
@@ -47,7 +50,6 @@
     window.addEventListener('resize', resize);
     resize();
 
-    // Mistura as três cores de forma ultra rápida
     function getColor(t) {
         if (t < 0.5) {
             const f = t * 2.0;
@@ -61,42 +63,31 @@
     function draw() {
         ctx.clearRect(0, 0, width, height);
 
-        // A velocidade de animação. Aumentado para ser mais rápido.
-        time += 0.045; 
+        // Muito mais lento e calmo
+        time += 0.012; 
 
         for (let i = 0; i < points.length; i++) {
             const p = points[i];
             
-            const nx = p.x * 0.0025;
-            const ny = p.y * 0.0025;
+            // Ondas mais "largas" para dar uma lógica de nuvem e não de ruído
+            const nx = p.x * 0.0015; 
+            const ny = p.y * 0.0015;
 
-            // O coração do teu 1º código: ondas que criam manchas que aparecem/desaparecem
-            // Reduzido para 2 camadas de cálculo em vez de 4 para ser muito mais leve
-            const layer1 = Math.sin(nx * 3.2 + time * 0.8) + Math.cos(ny * 2.7 - time * 0.6);
-            const layer2 = Math.sin((nx + ny) * 2.0 - time * 0.4) + Math.cos((nx - ny) * 2.5 + time * 0.5);
+            // Lógica fluida e contínua
+            const layer1 = Math.sin(nx * 3.0 + time) + Math.cos(ny * 2.5 - time * 0.8);
+            const layer2 = Math.sin((nx + ny) * 2.0 - time * 0.5) + Math.cos((nx - ny) * 1.5 + time * 0.6);
             
             const v = layer1 * 0.5 + layer2 * 0.5;
+            const n = Math.max(0, Math.min(1, (v + 1.5) / 3.0));
 
-            // Converte o resultado matemático para uma percentagem de 0 a 1
-            const n = Math.max(0, Math.min(1, (v + 1.2) / 2.4));
+            const alpha = n * 0.85;
 
-            // A opacidade dita se está a aparecer ou desaparecer
-            const alpha = n * 0.9;
-
-            // GRANDE OTIMIZAÇÃO: Se a bolinha está apagada, ignoramos e não desenhamos
             if (alpha < 0.05) continue;
 
-            // Pontos significativamente mais pequenos (entre 0.5px e 2.0px)
-            const radius = 0.5 + (n * 1.5);
-
-            // Um micro-empurrão natural para a malha não parecer um papel quadriculado rígido
-            const pushAmount = n * 4.0;
-            const px = p.x + Math.cos(p.seed) * pushAmount;
-            const py = p.y + Math.sin(p.seed) * pushAmount;
+            const radius = 0.6 + (n * 1.4);
 
             ctx.beginPath();
-            ctx.arc(px, py, radius, 0, Math.PI * 2);
-            // Usamos alpha.toFixed(2) para garantir que o Javascript não sofre com decimais gigantes
+            ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
             ctx.fillStyle = `rgba(${getColor(n)}, ${alpha.toFixed(2)})`;
             ctx.fill();
         }
