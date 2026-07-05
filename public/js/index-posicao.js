@@ -12,12 +12,10 @@ let ultimoAngulo = 0;
 
 let fotoEmArrasto = null;
 
-// FÍSICA DAS FOTOS
 let inerciaAnimId = null;
 let velX = 0;
 let velY = 0;
 
-// FÍSICA DO MAPA
 let mapInerciaAnimId = null;
 let mapVelX = 0;
 let mapVelY = 0;
@@ -39,6 +37,12 @@ function inicializarFotos() {
     const fotos = document.querySelectorAll('.foto');
     fotosCache = Array.from(fotos).map(el => {
         el.style.position = 'absolute';
+        
+        // OTIMIZAÇÃO: Trancar as imagens no topo esquerdo. 
+        // Vamos usar exclusivamente o "transform" (placa gráfica) para as mover a partir de agora.
+        el.style.top = '0px';
+        el.style.left = '0px';
+        
         el.style.transformOrigin = 'center center';
         return {
             elemento: el,
@@ -63,7 +67,6 @@ function limitarScale(valor) {
     return Math.max(MIN_SCALE, Math.min(valor, MAX_SCALE));
 }
 
-// NOVA FUNÇÃO: Apenas calcula onde o mapa "devia" estar para respeitar os limites, mas não impõe nada
 function getTargetPan() {
     if (fotosCache.length === 0) return { x: panX, y: panY };
 
@@ -113,7 +116,6 @@ function getTargetPan() {
     return { x: targetX, y: targetY };
 }
 
-// LIMPA: Apenas aplica a matemática visual (sem proibições de movimento)
 function aplicarTransform() {
     const cosR = Math.cos(globalRotation);
     const sinR = Math.sin(globalRotation);
@@ -129,9 +131,10 @@ function aplicarTransform() {
         foto.rx = ox * cosR - oy * sinR;
         foto.ry = ox * sinR + oy * cosR;
 
-        foto.elemento.style.left = (foto.rx + panX) + 'px';
-        foto.elemento.style.top = (foto.ry + panY) + 'px';
-        foto.elemento.style.transform = `scale(${fotoScale})`; 
+        // OTIMIZAÇÃO: "translate3d" força o telemóvel a usar o acelerador de Hardware (GPU)
+        const posX = foto.rx + panX;
+        const posY = foto.ry + panY;
+        foto.elemento.style.transform = `translate3d(${posX}px, ${posY}px, 0) scale(${fotoScale})`; 
     }
 }
 
@@ -161,13 +164,15 @@ function iniciarInerciaFoto(foto, vx, vy) {
         vx *= 0.92; 
         vy *= 0.92;
 
-        if (Math.abs(vx) < 0.1 && Math.abs(vy) < 0.1) return; 
+        if (Math.abs(vx) < 0.1 && Math.abs(vy) < 0.1) {
+            // OTIMIZAÇÃO: O HTML só é atualizado com as coordenadas finais quando a inércia pára
+            foto.elemento.setAttribute('data-left', foto.left);
+            foto.elemento.setAttribute('data-top', foto.top);
+            return;
+        }
 
         foto.left += vx;
         foto.top += vy;
-        
-        foto.elemento.setAttribute('data-left', foto.left);
-        foto.elemento.setAttribute('data-top', foto.top);
 
         aplicarTransform();
         inerciaAnimId = requestAnimationFrame(animar);
@@ -176,7 +181,7 @@ function iniciarInerciaFoto(foto, vx, vy) {
 }
 
 function iniciarInerciaMapa() {
-    cancelAnimationFrame(mapInerciaAnimId); // Garante que não há conflitos
+    cancelAnimationFrame(mapInerciaAnimId); 
     
     function animar() {
         let moving = false;
@@ -203,13 +208,12 @@ function iniciarInerciaMapa() {
             panY = lastZoomCY + dx * sinA + dy * cosA;
         }
 
-        // A MÁGICA DOS LIMITES: Efeito "Mola" suave
         const target = getTargetPan();
         const dx = target.x - panX;
         const dy = target.y - panY;
 
         if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
-            panX += dx * 0.15; // Puxa o ecrã para os limites a 15% de velocidade por frame
+            panX += dx * 0.15; 
             panY += dy * 0.15;
             moving = true;
         }
@@ -233,7 +237,7 @@ function touchStart(e) {
     }
     
     cancelAnimationFrame(inerciaAnimId);
-    cancelAnimationFrame(mapInerciaAnimId); // Pôr o dedo pára a inércia e o efeito mola imediatamente
+    cancelAnimationFrame(mapInerciaAnimId); 
     
     velX = 0; velY = 0;
     mapVelX = 0; mapVelY = 0; mapVelScale = 0; mapVelRotation = 0;
@@ -291,15 +295,13 @@ function touchMove(e) {
             velX = (velX * 0.4) + (mapDx * 0.6);
             velY = (velY * 0.4) + (mapDy * 0.6);
             
-            fotoEmArrasto.elemento.setAttribute('data-left', fotoEmArrasto.left);
-            fotoEmArrasto.elemento.setAttribute('data-top', fotoEmArrasto.top);
+            // OTIMIZAÇÃO: Removemos os setAttributes daqui. Guardamos apenas no JavaScript!
             
         } else {
             const target = getTargetPan();
             let resX = 1;
             let resY = 1;
             
-            // EFEITO ELÁSTICO (Rubber-banding): Fica 3x mais pesado se arrastares fora dos limites
             if ((panX < target.x && deltaX < 0) || (panX > target.x && deltaX > 0)) resX = 0.3;
             if ((panY < target.y && deltaY < 0) || (panY > target.y && deltaY > 0)) resY = 0.3;
 
@@ -326,7 +328,6 @@ function touchMove(e) {
         const deltaX = currX - refX;
         const deltaY = currY - refY;
 
-        // Movimento totalmente livre durante os gestos de Zoom/Rotação
         panX += deltaX;
         panY += deltaY;
         
@@ -377,13 +378,14 @@ function touchEnd(e) {
         if (fotoEmArrasto) {
             if (Math.abs(velX) > 0.5 || Math.abs(velY) > 0.5) {
                 iniciarInerciaFoto(fotoEmArrasto, velX, velY);
+            } else {
+                // Atualiza o DOM caso a foto não ganhe inércia (largou sem empurrar)
+                fotoEmArrasto.elemento.setAttribute('data-left', fotoEmArrasto.left);
+                fotoEmArrasto.elemento.setAttribute('data-top', fotoEmArrasto.top);
             }
         } 
         
-        // Chamamos SEMPRE a inércia do mapa ao largar o ecrã.
-        // Assim, quer tenhas inércia de movimento ou não, a mola puxa o mapa de volta aos limites.
         iniciarInerciaMapa();
-        
         fotoEmArrasto = null;
     }
 

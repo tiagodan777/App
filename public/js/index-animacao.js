@@ -73,9 +73,7 @@
         const holeX = cx + Math.sin(holeTime * 0.7) * (cx * 0.9) + Math.cos(holeTime * 0.3) * (cx * 0.3);
         const holeY = cy + Math.cos(holeTime * 0.8) * (cy * 0.9) + Math.sin(holeTime * 0.4) * (cy * 0.3);
 
-        // 1. Buraco mais pequeno para não engolir o ecrã
         const holeRadius = 160; 
-        // 2. Transição mantida curta
         const edgeSoftness = 60; 
 
         for (let i = 0; i < points.length; i++) {
@@ -105,12 +103,14 @@
 
             if (finalAlpha < 0.05) continue;
             
-            ctx.beginPath();
-            ctx.arc(finalX, finalY, 1.2, 0, Math.PI * 2);
-            
             const rgb = getGradientColorRGB(waveValue);
-            ctx.fillStyle = `rgba(${rgb}, ${finalAlpha.toFixed(2)})`;
-            ctx.fill();
+            
+            // OTIMIZAÇÃO: "Math.round" em vez de "toFixed()" para acelerar o processamento
+            ctx.fillStyle = `rgba(${rgb}, ${Math.round(finalAlpha * 100) / 100})`;
+            
+            // OTIMIZAÇÃO CRÍTICA: Desenhar quadrados perfeitos (2.4x2.4px) em vez de círculos (arc). 
+            // Elimina o estrangulamento da placa gráfica. O olho humano vê a mesma bolinha.
+            ctx.fillRect(finalX - 1.2, finalY - 1.2, 2.4, 2.4);
         }
 
         requestAnimationFrame(draw);
