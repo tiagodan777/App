@@ -65,13 +65,9 @@ ws.onmessage = function(event) {
 
         $img.attr('data-top', pessoa.top);
         $img.attr('data-left', pessoa.left);
-
-        $img.css({
-            position: 'absolute'
-        });
-
-        aplicarTransform();
     });
+
+    aplicarTransform();
 };
 
 ws.onerror = function (error) {

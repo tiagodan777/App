@@ -10,10 +10,9 @@
 html, body {
     margin: 0;
     width: 100%;
-    min-height: 100dvh;
+    height: 100%;
     overflow: hidden;
-    background: #f7f7f8;
-    
+    touch-action: none;
 }
 
 #gridCanvas {

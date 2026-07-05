@@ -7,6 +7,10 @@ let panY = 0;
 let ultimaDistancia = null;
 let ultimoCentro = null;
 
+const MIN_SCALE = 0.3;
+const MAX_SCALE = 5;
+const FOTO_ZOOM_INTENSIDADE = 0.25;
+
 function getDedosArray() {
     return Object.values(dedos);
 }
@@ -14,6 +18,7 @@ function getDedosArray() {
 function distancia(a, b) {
     const dx = b.x - a.x;
     const dy = b.y - a.y;
+
     return Math.sqrt(dx * dx + dy * dy);
 }
 
@@ -24,16 +29,39 @@ function centro(a, b) {
     };
 }
 
+function limitarScale(valor) {
+    return Math.max(MIN_SCALE, Math.min(valor, MAX_SCALE));
+}
+
 function aplicarTransform() {
     $('.foto').each(function() {
         const topOriginal = Number($(this).attr('data-top'));
         const leftOriginal = Number($(this).attr('data-left'));
 
+        const fotoScale = 1 + (scale - 1) * FOTO_ZOOM_INTENSIDADE;
+
         $(this).css({
+            position: 'absolute',
+
+            left: (leftOriginal * scale + panX) + 'px',
             top: (topOriginal * scale + panY) + 'px',
-            left: (leftOriginal * scale + panX) + 'px'
+
+            transform: `scale(${fotoScale})`,
+            transformOrigin: 'center center'
         });
     });
+}
+
+function zoomNoPonto(screenX, screenY, zoomFactor) {
+    const scaleAntes = scale;
+
+    const novoScale = limitarScale(scale * zoomFactor);
+    const realZoomFactor = novoScale / scaleAntes;
+
+    scale = novoScale;
+
+    panX = screenX - (screenX - panX) * realZoomFactor;
+    panY = screenY - (screenY - panY) * realZoomFactor;
 }
 
 function touchStart(e) {
@@ -68,7 +96,7 @@ function touchMove(e) {
 
     const lista = getDedosArray();
 
-    // 1 dedo = pan
+    // 1 dedo = arrastar / pan
     if (lista.length === 1) {
         const id = Object.keys(dedos)[0];
 
@@ -89,23 +117,16 @@ function touchMove(e) {
         const cAtual = centro(lista[0], lista[1]);
 
         if (ultimaDistancia !== null && ultimoCentro !== null) {
+            const dxCentro = cAtual.x - ultimoCentro.x;
+            const dyCentro = cAtual.y - ultimoCentro.y;
+
+            // Primeiro: pan pelo movimento do centro dos dedos
+            panX += dxCentro;
+            panY += dyCentro;
+
+            // Segundo: zoom no ponto médio atual dos dedos
             const zoomFactor = dAtual / ultimaDistancia;
-
-            const antesScale = scale;
-            scale *= zoomFactor;
-
-            // limitar zoom
-            scale = Math.max(0.3, Math.min(scale, 5));
-
-            const realZoomFactor = scale / antesScale;
-
-            // pan normal pelo movimento do centro dos dedos
-            panX += cAtual.x - ultimoCentro.x;
-            panY += cAtual.y - ultimoCentro.y;
-
-            // corrigir para o zoom acontecer no centro dos dedos
-            panX = cAtual.x - (cAtual.x - panX) * realZoomFactor;
-            panY = cAtual.y - (cAtual.y - panY) * realZoomFactor;
+            zoomNoPonto(cAtual.x, cAtual.y, zoomFactor);
 
             aplicarTransform();
         }
@@ -122,10 +143,8 @@ function touchEnd(e) {
 
     const lista = getDedosArray();
 
-    if (lista.length < 2) {
-        ultimaDistancia = null;
-        ultimoCentro = null;
-    }
+    ultimaDistancia = null;
+    ultimoCentro = null;
 
     if (lista.length === 2) {
         ultimaDistancia = distancia(lista[0], lista[1]);
