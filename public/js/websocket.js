@@ -54,7 +54,9 @@ ws.onmessage = function(event) {
         $img.attr('data-left', pessoa.left);
     });
 
-    aplicarTransform();
+    // AQUI ESTÁ A MUDANÇA:
+    // Como chegaram fotos novas ou posições novas, atualizamos a cache do zoom!
+    inicializarFotos();
 };
 
 ws.onerror = function (error) {
