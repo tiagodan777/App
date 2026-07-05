@@ -12,6 +12,14 @@
 
     const spacing = 18;
 
+    if (!window.radarView) {
+        window.radarView = {
+            scale: 1,
+            panX: 0,
+            panY: 0
+        };
+    }
+
     const flow = {
         offsetX: 0,
         offsetY: 0,
@@ -55,7 +63,6 @@
             height = window.innerHeight;
         }
 
-        // margem extra para garantir que chega ao fundo
         height += 140;
 
         canvas.style.width = width + 'px';
@@ -72,11 +79,11 @@
     function createPoints() {
         points = [];
 
-        const cols = Math.ceil(width / spacing) + 8;
-        const rows = Math.ceil(height / spacing) + 8;
+        const cols = Math.ceil(width / spacing) + 12;
+        const rows = Math.ceil(height / spacing) + 12;
 
-        const startX = -spacing * 4;
-        const startY = -spacing * 4;
+        const startX = -spacing * 6;
+        const startY = -spacing * 6;
 
         for (let row = 0; row < rows; row++) {
             for (let col = 0; col < cols; col++) {
@@ -141,12 +148,10 @@
             [-speed, 0],
             [0, speed],
             [0, -speed],
-
             [speed * 0.75, speed * 0.45],
             [speed * 0.75, -speed * 0.45],
             [-speed * 0.75, speed * 0.45],
             [-speed * 0.75, -speed * 0.45],
-
             [speed * 0.35, speed * 0.9],
             [-speed * 0.35, speed * 0.9],
             [speed * 0.35, -speed * 0.9],
@@ -232,14 +237,20 @@
 
         time += delta * 0.62;
 
+        const appScale = window.radarView.scale || 1;
+        const appPanX = window.radarView.panX || 0;
+        const appPanY = window.radarView.panY || 0;
+
         const breath = 0.5 + 0.5 * Math.sin(time * 0.9);
-        const zoom = 0.93 + breath * 0.19;
+
+        const baseZoom = 0.93 + breath * 0.19;
+        const zoom = baseZoom * (0.85 + appScale * 0.15);
 
         const driftX = flow.offsetX * 0.0022;
         const driftY = flow.offsetY * 0.0022;
 
-        const cx = width / 2;
-        const cy = height / 2;
+        const cx = width / 2 - appPanX * 0.35;
+        const cy = height / 2 - appPanY * 0.35;
 
         for (const p of points) {
             let nx = (p.x - cx) / cx;
