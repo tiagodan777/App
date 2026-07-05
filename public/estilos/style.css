@@ -88,6 +88,15 @@ img {
     transform: translate(-50%, -50%);
 }
 
+.foto {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    transform-origin: center center;
+    /* Isto avisa a placa gráfica da Apple que esta imagem vai andar a voar pelo ecrã */
+    will-change: transform, opacity; 
+}
+
 #tiago {
     top: 50%;
     left: 50%;
