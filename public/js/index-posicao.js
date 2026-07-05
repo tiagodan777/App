@@ -13,13 +13,13 @@ window.radarView = {
     panY: 0
 };
 
+const MIN_SCALE_TECNICO = 0.05;
 const MAX_SCALE = 8;
-const FOTO_ZOOM_INTENSIDADE = 0.25;
 
-const SAFE_TOP = 20;
-const SAFE_LEFT = 20;
-const SAFE_RIGHT = 20;
-const SAFE_BOTTOM = 100;
+// quando scale <= 1, não deixa fazer pan
+const SEM_PAN_ABAIXO_DE = 1;
+
+const FOTO_ZOOM_INTENSIDADE = 0.25;
 
 function getDedosArray() {
     return Object.values(dedos);
@@ -39,7 +39,14 @@ function centro(a, b) {
 }
 
 function limitarScale(valor) {
-    return Math.max(0.05, Math.min(valor, MAX_SCALE));
+    return Math.max(MIN_SCALE_TECNICO, Math.min(valor, MAX_SCALE));
+}
+
+function limitarPanQuandoZoomMinimo() {
+    if (scale <= SEM_PAN_ABAIXO_DE) {
+        panX = 0;
+        panY = 0;
+    }
 }
 
 function atualizarRadarView() {
@@ -48,14 +55,8 @@ function atualizarRadarView() {
     window.radarView.panY = panY;
 }
 
-function limitarPan() {
-    const LIMITE_PAN = 300;
-
-    panX = Math.max(-LIMITE_PAN, Math.min(panX, LIMITE_PAN));
-    panY = Math.max(-LIMITE_PAN, Math.min(panY, LIMITE_PAN));
-}
-
 function aplicarTransform() {
+    limitarPanQuandoZoomMinimo();
     atualizarRadarView();
 
     $('.foto').each(function() {
@@ -117,23 +118,29 @@ function touchMove(e) {
 
     const lista = getDedosArray();
 
+    // 1 dedo = pan
     if (lista.length === 1) {
         const id = Object.keys(dedos)[0];
         if (!dedosAntes[id]) return;
 
-        panX += dedos[id].x - dedosAntes[id].x;
-        panY += dedos[id].y - dedosAntes[id].y;
+        if (scale > SEM_PAN_ABAIXO_DE) {
+            panX += dedos[id].x - dedosAntes[id].x;
+            panY += dedos[id].y - dedosAntes[id].y;
+        }
 
         aplicarTransform();
     }
 
+    // 2 dedos = pinch zoom + pan
     if (lista.length === 2) {
         const dAtual = distancia(lista[0], lista[1]);
         const cAtual = centro(lista[0], lista[1]);
 
         if (ultimaDistancia !== null && ultimoCentro !== null) {
-            panX += cAtual.x - ultimoCentro.x;
-            panY += cAtual.y - ultimoCentro.y;
+            if (scale > SEM_PAN_ABAIXO_DE) {
+                panX += cAtual.x - ultimoCentro.x;
+                panY += cAtual.y - ultimoCentro.y;
+            }
 
             const zoomFactor = dAtual / ultimaDistancia;
             zoomNoPonto(cAtual.x, cAtual.y, zoomFactor);
