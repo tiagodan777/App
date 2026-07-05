@@ -7,15 +7,15 @@ let panY = 0;
 let ultimaDistancia = null;
 let ultimoCentro = null;
 
-window.radarView = {
-    scale: 1,
-    panX: 0,
-    panY: 0
-};
 
-const MIN_SCALE_TECNICO = 0.05;
-const MAX_SCALE = 8;
+const MIN_SCALE = 0.7;
+const MAX_SCALE = 5;
 const FOTO_ZOOM_INTENSIDADE = 0.25;
+
+const SAFE_TOP = 20;
+const SAFE_LEFT = 20;
+const SAFE_RIGHT = 20;
+const SAFE_BOTTOM = 100;
 
 function getDedosArray() {
     return Object.values(dedos);
@@ -35,35 +35,67 @@ function centro(a, b) {
 }
 
 function limitarScale(valor) {
-    return Math.max(MIN_SCALE_TECNICO, Math.min(valor, MAX_SCALE));
+    return Math.max(MIN_SCALE, Math.min(valor, MAX_SCALE));
 }
 
-function atualizarRadarView() {
-    window.radarView.scale = scale;
-    window.radarView.panX = panX;
-    window.radarView.panY = panY;
+function limitarPan() {
+    const fotos = $('.foto');
+
+    if (fotos.length === 0) return;
+
+    let minLeft = Infinity;
+    let maxLeft = -Infinity;
+    let minTop = Infinity;
+    let maxTop = -Infinity;
+
+    fotos.each(function() {
+        const topOriginal = Number($(this).attr('data-top'));
+        const leftOriginal = Number($(this).attr('data-left'));
+
+        minLeft = Math.min(minLeft, leftOriginal * scale);
+        maxLeft = Math.max(maxLeft, leftOriginal * scale);
+
+        minTop = Math.min(minTop, topOriginal * scale);
+        maxTop = Math.max(maxTop, topOriginal * scale);
+    });
+
+    const screenW = window.innerWidth;
+    const screenH = window.innerHeight;
+
+    const minPanX = SAFE_LEFT - minLeft;
+    const maxPanX = (screenW - SAFE_RIGHT) - maxLeft;
+
+    const minPanY = SAFE_TOP - minTop;
+    const maxPanY = (screenH - SAFE_BOTTOM) - maxTop;
+
+    if (minPanX > maxPanX) {
+        panX = (minPanX + maxPanX) / 2;
+    } else {
+        panX = Math.max(minPanX, Math.min(panX, maxPanX));
+    }
+
+    if (minPanY > maxPanY) {
+        panY = (minPanY + maxPanY) / 2;
+    } else {
+        panY = Math.max(minPanY, Math.min(panY, maxPanY));
+    }
 }
 
 function aplicarTransform() {
-    atualizarRadarView();
+    limitarPan();
 
     $('.foto').each(function() {
         const topOriginal = Number($(this).attr('data-top'));
         const leftOriginal = Number($(this).attr('data-left'));
 
-
-        if (isNaN(topOriginal) || isNaN(leftOriginal)) return;
-
         const fotoScale = 1 + (scale - 1) * FOTO_ZOOM_INTENSIDADE;
 
         $(this).css({
-            display: 'block',
             position: 'absolute',
             left: (leftOriginal * scale + panX) + 'px',
             top: (topOriginal * scale + panY) + 'px',
-            transform: `translate(-50%, -50%) scale(${fotoScale})`,
-            transformOrigin: 'center center',
-            zIndex: 9999
+            transform: `scale(${fotoScale})`,
+            transformOrigin: 'center center'
         });
     });
 }
@@ -130,8 +162,8 @@ function touchMove(e) {
             panY += cAtual.y - ultimoCentro.y;
 
             const zoomFactor = dAtual / ultimaDistancia;
-
             zoomNoPonto(cAtual.x, cAtual.y, zoomFactor);
+
             aplicarTransform();
         }
 
