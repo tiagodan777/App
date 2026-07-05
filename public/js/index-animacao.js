@@ -1,15 +1,6 @@
 (() => {
     const canvas = document.getElementById('gridCanvas');
-    if (!canvas) return;
-
     const ctx = canvas.getContext('2d');
-
-    const isTouch = window.matchMedia('(pointer: coarse)').matches;
-
-    const spacing = isTouch ? 34 : 18;
-    const maxDpr = isTouch ? 1 : 2;
-    const fps = isTouch ? 30 : 60;
-    const frameInterval = 1000 / fps;
 
     let width = 0;
     let height = 0;
@@ -18,23 +9,16 @@
 
     let time = 0;
     let lastNow = performance.now();
-    let lastFrame = 0;
 
-    if (!window.radarView) {
-        window.radarView = {
-            scale: 1,
-            panX: 0,
-            panY: 0
-        };
-    }
+    const spacing = 18;
 
     const flow = {
         offsetX: 0,
         offsetY: 0,
-        vx: 0.22,
-        vy: 0.10,
-        targetVx: 0.22,
-        targetVy: 0.10,
+        vx: 0.28,
+        vy: 0.12,
+        targetVx: 0.28,
+        targetVy: 0.12,
         nextTurn: 0
     };
 
@@ -42,25 +26,37 @@
         a: 2.2,
         b: 1.9,
         c: 1.6,
+        d: 2.4,
 
         targetA: 2.2,
         targetB: 1.9,
         targetC: 1.6,
+        targetD: 2.4,
 
-        phase1: 0,
+        phase1: 0.0,
         phase2: 1.5,
+        phase3: 3.0,
 
-        targetPhase1: 0,
+        targetPhase1: 0.0,
         targetPhase2: 1.5,
+        targetPhase3: 3.0,
 
         nextChange: 0
     };
 
     function resize() {
-        dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
 
         width = window.innerWidth;
-        height = window.innerHeight + 50;
+
+        if (window.visualViewport) {
+            height = window.visualViewport.height;
+        } else {
+            height = window.innerHeight;
+        }
+
+        // margem extra para garantir que chega ao fundo
+        height += 140;
 
         canvas.style.width = width + 'px';
         canvas.style.height = height + 'px';
@@ -76,13 +72,11 @@
     function createPoints() {
         points = [];
 
-        const extra = isTouch ? 4 : 6;
+        const cols = Math.ceil(width / spacing) + 8;
+        const rows = Math.ceil(height / spacing) + 8;
 
-        const cols = Math.ceil(width / spacing) + extra;
-        const rows = Math.ceil(height / spacing) + extra;
-
-        const startX = -spacing * (extra / 2);
-        const startY = -spacing * (extra / 2);
+        const startX = -spacing * 4;
+        const startY = -spacing * 4;
 
         for (let row = 0; row < rows; row++) {
             for (let col = 0; col < cols; col++) {
@@ -95,6 +89,14 @@
             }
         }
     }
+
+    window.addEventListener('resize', resize);
+
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', resize);
+    }
+
+    resize();
 
     function lerp(a, b, t) {
         return a + (b - a) * t;
@@ -132,17 +134,23 @@
     }
 
     function chooseDirection(now) {
-        const speed = isTouch ? 0.22 : 0.34;
+        const speed = 0.34;
 
         const directions = [
             [speed, 0],
             [-speed, 0],
             [0, speed],
             [0, -speed],
-            [speed * 0.65, speed * 0.45],
-            [speed * 0.65, -speed * 0.45],
-            [-speed * 0.65, speed * 0.45],
-            [-speed * 0.65, -speed * 0.45]
+
+            [speed * 0.75, speed * 0.45],
+            [speed * 0.75, -speed * 0.45],
+            [-speed * 0.75, speed * 0.45],
+            [-speed * 0.75, -speed * 0.45],
+
+            [speed * 0.35, speed * 0.9],
+            [-speed * 0.35, speed * 0.9],
+            [speed * 0.35, -speed * 0.9],
+            [-speed * 0.35, -speed * 0.9]
         ];
 
         const dir = directions[Math.floor(Math.random() * directions.length)];
@@ -150,87 +158,92 @@
         flow.targetVx = dir[0];
         flow.targetVy = dir[1];
 
-        flow.nextTurn = now + 3500 + Math.random() * 3500;
+        flow.nextTurn = now + 3000 + Math.random() * 3000;
     }
 
     function choosePattern(now) {
-        pattern.targetA = 1.7 + Math.random() * 1.5;
-        pattern.targetB = 1.6 + Math.random() * 1.5;
-        pattern.targetC = 1.4 + Math.random() * 1.5;
+        pattern.targetA = 1.7 + Math.random() * 1.7;
+        pattern.targetB = 1.6 + Math.random() * 1.8;
+        pattern.targetC = 1.4 + Math.random() * 1.9;
+        pattern.targetD = 1.5 + Math.random() * 1.8;
 
-        pattern.targetPhase1 += -0.7 + Math.random() * 1.4;
-        pattern.targetPhase2 += -0.7 + Math.random() * 1.4;
+        pattern.targetPhase1 += -0.8 + Math.random() * 1.6;
+        pattern.targetPhase2 += -0.8 + Math.random() * 1.6;
+        pattern.targetPhase3 += -0.8 + Math.random() * 1.6;
 
-        pattern.nextChange = now + 4200 + Math.random() * 4200;
+        pattern.nextChange = now + 3600 + Math.random() * 3600;
     }
 
-    function updateFlow(now, delta) {
-        if (now >= flow.nextTurn) chooseDirection(now);
-        if (now >= pattern.nextChange) choosePattern(now);
+    chooseDirection(performance.now());
+    choosePattern(performance.now());
 
-        flow.vx = lerp(flow.vx, flow.targetVx, 0.014);
-        flow.vy = lerp(flow.vy, flow.targetVy, 0.014);
+    function updateFlow(now, delta) {
+        if (now >= flow.nextTurn) {
+            chooseDirection(now);
+        }
+
+        if (now >= pattern.nextChange) {
+            choosePattern(now);
+        }
+
+        flow.vx = lerp(flow.vx, flow.targetVx, 0.016);
+        flow.vy = lerp(flow.vy, flow.targetVy, 0.016);
 
         flow.offsetX += flow.vx * delta * 60;
         flow.offsetY += flow.vy * delta * 60;
 
-        pattern.a = lerp(pattern.a, pattern.targetA, 0.004);
-        pattern.b = lerp(pattern.b, pattern.targetB, 0.004);
-        pattern.c = lerp(pattern.c, pattern.targetC, 0.004);
+        pattern.a = lerp(pattern.a, pattern.targetA, 0.005);
+        pattern.b = lerp(pattern.b, pattern.targetB, 0.005);
+        pattern.c = lerp(pattern.c, pattern.targetC, 0.005);
+        pattern.d = lerp(pattern.d, pattern.targetD, 0.005);
 
-        pattern.phase1 = lerp(pattern.phase1, pattern.targetPhase1, 0.004);
-        pattern.phase2 = lerp(pattern.phase2, pattern.targetPhase2, 0.004);
+        pattern.phase1 = lerp(pattern.phase1, pattern.targetPhase1, 0.005);
+        pattern.phase2 = lerp(pattern.phase2, pattern.targetPhase2, 0.005);
+        pattern.phase3 = lerp(pattern.phase3, pattern.targetPhase3, 0.005);
     }
 
     function field(nx, ny, t) {
         const layer1 =
-            Math.sin(nx * pattern.a + t * 0.55 + pattern.phase1) +
-            Math.cos(ny * pattern.b - t * 0.42 + pattern.phase2);
+            Math.sin(nx * pattern.a + t * 0.58 + pattern.phase1) +
+            Math.cos(ny * pattern.b - t * 0.44 + pattern.phase2);
 
         const layer2 =
-            Math.sin((nx + ny) * pattern.c - t * 0.34 + pattern.phase2) +
-            Math.cos((nx - ny) * 2.0 + t * 0.40 + pattern.phase1);
+            Math.sin((nx + ny) * pattern.c - t * 0.38 + pattern.phase2) +
+            Math.cos((nx - ny) * pattern.d + t * 0.46 + pattern.phase3);
 
-        return layer1 * 0.55 + layer2 * 0.45;
+        const layer3 =
+            Math.sin(nx * 3.2 - ny * 1.1 + t * 0.31 + pattern.phase3) +
+            Math.cos(ny * 2.7 + nx * 1.0 - t * 0.29 + pattern.phase1);
+
+        const organic =
+            Math.sin(nx * 5.0 + ny * 2.6 + t * 0.25 + pattern.phase2) * 0.22;
+
+        return layer1 * 0.34 + layer2 * 0.38 + layer3 * 0.24 + organic;
     }
 
     function draw(now) {
-        requestAnimationFrame(draw);
-
-        if (now - lastFrame < frameInterval) return;
-        lastFrame = now;
-
         const rawDelta = (now - lastNow) / 1000;
-        const delta = Math.min(rawDelta, 0.05);
+        const delta = Math.min(rawDelta, 0.033);
         lastNow = now;
 
         ctx.clearRect(0, 0, width, height);
 
         updateFlow(now, delta);
 
-        time += delta * 0.55;
+        time += delta * 0.62;
 
-        const appScale = window.radarView.scale || 1;
-        const appPanX = window.radarView.panX || 0;
-        const appPanY = window.radarView.panY || 0;
+        const breath = 0.5 + 0.5 * Math.sin(time * 0.9);
+        const zoom = 0.93 + breath * 0.19;
 
-        const breath = 0.5 + 0.5 * Math.sin(time * 0.85);
+        const driftX = flow.offsetX * 0.0022;
+        const driftY = flow.offsetY * 0.0022;
 
-        const baseZoom = 0.95 + breath * 0.14;
-        const zoom = baseZoom * (0.9 + appScale * 0.10);
-
-        const driftX = flow.offsetX * 0.002;
-        const driftY = flow.offsetY * 0.002;
-
-        const cx = width / 2 - appPanX * 0.22;
-        const cy = height / 2 - appPanY * 0.22;
-
-        const invCx = 1 / cx;
-        const invCy = 1 / cy;
+        const cx = width / 2;
+        const cy = height / 2;
 
         for (const p of points) {
-            let nx = (p.x - cx) * invCx;
-            let ny = (p.y - cy) * invCy;
+            let nx = (p.x - cx) / cx;
+            let ny = (p.y - cy) / cy;
 
             nx /= zoom;
             ny /= zoom;
@@ -239,53 +252,47 @@
             ny += driftY;
 
             const warpX =
-                Math.sin(ny * 1.4 + time * 0.32 + pattern.phase1) * 0.045;
+                Math.sin(ny * 1.7 + time * 0.38 + pattern.phase1) * 0.065 +
+                Math.sin((nx + ny) * 2.2 + time * 0.22 + p.seed) * 0.025;
 
             const warpY =
-                Math.cos(nx * 1.4 - time * 0.34 + pattern.phase2) * 0.045;
+                Math.cos(nx * 1.6 - time * 0.42 + pattern.phase2) * 0.065 +
+                Math.cos((nx - ny) * 2.0 - time * 0.24 + p.seed) * 0.025;
 
             const sx = nx + warpX;
             const sy = ny + warpY;
 
             const v = field(sx, sy, time);
-            const n = clamp((v + 2.0) / 4.0, 0, 1);
-            const density = smoothstep(0.14, 0.92, n);
 
-            const color = getGradientColor(n);
+            const n = clamp((v + 2.1) / 4.2, 0, 1);
+            const density = smoothstep(0.12, 0.92, n);
+
+            const [r, g, b] = getGradientColor(n);
 
             const localPulse =
-                0.5 + 0.5 * Math.sin(time * 1.3 + p.seed + n * 2.4);
+                0.5 + 0.5 * Math.sin(time * 1.55 + p.seed + n * 2.8);
 
             const radius =
                 0.55 +
-                density * (isTouch ? 2.2 : 2.85) * p.sizeSeed +
-                localPulse * density * 0.42;
+                density * 2.85 * p.sizeSeed +
+                localPulse * density * 0.55;
 
-            const alpha = 0.18 + density * 0.65;
+            const alpha = 0.20 + density * 0.70;
 
-            const pushAmount = (density - 0.5) * 4.2 + (breath - 0.5) * 3.8;
+            const pushAmount = (density - 0.5) * 5.8 + (breath - 0.5) * 5.0;
             const angle = n * Math.PI * 2 + p.seed * 0.2;
 
-            const px = p.x + Math.cos(angle) * pushAmount * 0.35;
-            const py = p.y + Math.sin(angle) * pushAmount * 0.35;
+            const px = p.x + Math.cos(angle) * pushAmount * 0.38;
+            const py = p.y + Math.sin(angle) * pushAmount * 0.38;
 
             ctx.beginPath();
             ctx.arc(px, py, radius, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${alpha})`;
+            ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
             ctx.fill();
         }
+
+        requestAnimationFrame(draw);
     }
-
-    let resizeTimeout = null;
-
-    window.addEventListener('resize', () => {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(resize, 150);
-    });
-
-    chooseDirection(performance.now());
-    choosePattern(performance.now());
-    resize();
 
     requestAnimationFrame(draw);
 })();
