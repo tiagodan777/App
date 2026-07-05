@@ -8,10 +8,10 @@ let refX = 0;
 let refY = 0;
 let ultimaDistancia = 0;
 
-// Variável para saber qual é a foto que estamos a mover (se houver alguma)
 let fotoEmArrasto = null;
 
-const MIN_SCALE = 0.7;
+// AQUI ESTÁ A ALTERAÇÃO: Mudei de 0.7 para 0.3 para dar muito mais zoom out
+const MIN_SCALE = 0.3; 
 const MAX_SCALE = 5;
 const FOTO_ZOOM_INTENSIDADE = 0.25;
 
@@ -110,17 +110,14 @@ function touchStart(e) {
     
     const chaves = Object.keys(ativos);
     
-    // Se pusermos um dedo, verificamos se acertámos numa foto
     if (chaves.length === 1) {
         const alvoFoto = e.target.closest('.foto');
         if (alvoFoto) {
-            // Encontramos a foto na memória (cache) para a podermos editar diretamente
             fotoEmArrasto = fotosCache.find(f => f.elemento === alvoFoto);
         } else {
             fotoEmArrasto = null;
         }
     } else {
-        // Se puser o segundo dedo, cancelamos o arrasto da foto para poder fazer zoom
         fotoEmArrasto = null;
     }
 
@@ -148,17 +145,13 @@ function touchMove(e) {
         const deltaY = currY - refY;
 
         if (fotoEmArrasto) {
-            // MOVER APENAS A FOTO
-            // Dividimos pelo "scale" para o movimento ser 1:1 com o dedo, independentemente do zoom
             fotoEmArrasto.left += deltaX / scale;
             fotoEmArrasto.top += deltaY / scale;
             
-            // Atualizar os atributos no HTML (será útil no futuro)
             fotoEmArrasto.elemento.setAttribute('data-left', fotoEmArrasto.left);
             fotoEmArrasto.elemento.setAttribute('data-top', fotoEmArrasto.top);
             
         } else {
-            // MOVER O MAPA INTEIRO
             panX += deltaX;
             panY += deltaY;
         }
@@ -169,7 +162,7 @@ function touchMove(e) {
         aplicarTransform();
 
     } else if (chaves.length === 2) {
-        fotoEmArrasto = null; // Cancela arrastar a foto isolada
+        fotoEmArrasto = null; 
         
         const currX = (ativos[chaves[0]].x + ativos[chaves[1]].x) / 2;
         const currY = (ativos[chaves[0]].y + ativos[chaves[1]].y) / 2;
@@ -195,7 +188,6 @@ function touchEnd(e) {
         delete ativos[touch.identifier];
     }
     
-    // Se todos os dedos saírem do ecrã, limpamos a foto selecionada
     if (Object.keys(ativos).length === 0) {
         fotoEmArrasto = null;
     }
