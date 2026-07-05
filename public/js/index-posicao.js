@@ -46,8 +46,7 @@ function inicializarFotos() {
             left: Number(el.getAttribute('data-left')) || 0
         };
     });
-    // Ao iniciar, aplicamos os limites para garantir que arranca no centro
-    aplicarTransform(false); 
+    aplicarTransform();
 }
 
 function distancia(a, b) {
@@ -64,17 +63,27 @@ function limitarScale(valor) {
     return Math.max(MIN_SCALE, Math.min(valor, MAX_SCALE));
 }
 
-function limitarPan() {
-    if (fotosCache.length === 0) return;
+// NOVA FUNÇÃO: Apenas calcula onde o mapa "devia" estar para respeitar os limites, mas não impõe nada
+function getTargetPan() {
+    if (fotosCache.length === 0) return { x: panX, y: panY };
 
     let minLeft = Infinity, maxLeft = -Infinity;
     let minTop = Infinity, maxTop = -Infinity;
 
+    const cosR = Math.cos(globalRotation);
+    const sinR = Math.sin(globalRotation);
+
     for (const foto of fotosCache) {
-        minLeft = Math.min(minLeft, foto.rx);
-        maxLeft = Math.max(maxLeft, foto.rx);
-        minTop = Math.min(minTop, foto.ry);
-        maxTop = Math.max(maxTop, foto.ry);
+        const ox = foto.left * scale;
+        const oy = foto.top * scale;
+        
+        const rx = ox * cosR - oy * sinR;
+        const ry = ox * sinR + oy * cosR;
+
+        minLeft = Math.min(minLeft, rx);
+        maxLeft = Math.max(maxLeft, rx);
+        minTop = Math.min(minTop, ry);
+        maxTop = Math.max(maxTop, ry);
     }
 
     const screenW = window.innerWidth;
@@ -86,23 +95,32 @@ function limitarPan() {
     const maxAllowedPanY = SAFE_TOP - minTop;
     const minAllowedPanY = (screenH - SAFE_BOTTOM) - maxTop;
 
+    let targetX = panX;
+    let targetY = panY;
+
     if (minAllowedPanX < maxAllowedPanX) {
-        panX = Math.max(minAllowedPanX, Math.min(panX, maxAllowedPanX));
+        targetX = Math.max(minAllowedPanX, Math.min(panX, maxAllowedPanX));
     } else {
-        panX = (minAllowedPanX + maxAllowedPanX) / 2;
+        targetX = (minAllowedPanX + maxAllowedPanX) / 2;
     }
 
     if (minAllowedPanY < maxAllowedPanY) {
-        panY = Math.max(minAllowedPanY, Math.min(panY, maxAllowedPanY));
+        targetY = Math.max(minAllowedPanY, Math.min(panY, maxAllowedPanY));
     } else {
-        panY = (minAllowedPanY + maxAllowedPanY) / 2;
+        targetY = (minAllowedPanY + maxAllowedPanY) / 2;
     }
+
+    return { x: targetX, y: targetY };
 }
 
-// CORREÇÃO: Adicionado o parâmetro para podermos desligar os limites temporariamente
-function aplicarTransform(ignorarLimites = false) {
+// LIMPA: Apenas aplica a matemática visual (sem proibições de movimento)
+function aplicarTransform() {
     const cosR = Math.cos(globalRotation);
     const sinR = Math.sin(globalRotation);
+
+    let fotoScale = scale < 1 
+        ? Math.max(MIN_FOTO_SCALE, 1 + (scale - 1) * 0.8) 
+        : 1 + (scale - 1) * FOTO_ZOOM_INTENSIDADE;
 
     for (const foto of fotosCache) {
         const ox = foto.left * scale;
@@ -110,18 +128,7 @@ function aplicarTransform(ignorarLimites = false) {
         
         foto.rx = ox * cosR - oy * sinR;
         foto.ry = ox * sinR + oy * cosR;
-    }
 
-    // Só limitamos o ecrã se não houver gestos complexos a decorrer
-    if (!ignorarLimites) {
-        limitarPan();
-    }
-
-    let fotoScale = scale < 1 
-        ? Math.max(MIN_FOTO_SCALE, 1 + (scale - 1) * 0.8) 
-        : 1 + (scale - 1) * FOTO_ZOOM_INTENSIDADE;
-
-    for (const foto of fotosCache) {
         foto.elemento.style.left = (foto.rx + panX) + 'px';
         foto.elemento.style.top = (foto.ry + panY) + 'px';
         foto.elemento.style.transform = `scale(${fotoScale})`; 
@@ -162,34 +169,32 @@ function iniciarInerciaFoto(foto, vx, vy) {
         foto.elemento.setAttribute('data-left', foto.left);
         foto.elemento.setAttribute('data-top', foto.top);
 
-        // Enquanto a foto desliza com inércia, ignoramos os limites para o ecrã não tremer
-        aplicarTransform(true);
+        aplicarTransform();
         inerciaAnimId = requestAnimationFrame(animar);
     }
     animar();
 }
 
 function iniciarInerciaMapa() {
+    cancelAnimationFrame(mapInerciaAnimId); // Garante que não há conflitos
+    
     function animar() {
+        let moving = false;
+
         mapVelX *= 0.92;
         mapVelY *= 0.92;
         mapVelScale *= 0.88; 
         mapVelRotation *= 0.88;
 
-        if (Math.abs(mapVelX) < 0.1 && Math.abs(mapVelY) < 0.1 && Math.abs(mapVelScale) < 0.001 && Math.abs(mapVelRotation) < 0.001) {
-            return;
-        }
-
         panX += mapVelX;
         panY += mapVelY;
+        globalRotation += mapVelRotation;
 
         if (Math.abs(mapVelScale) > 0.0001) {
             zoomNoPonto(lastZoomCX, lastZoomCY, 1 + mapVelScale);
         }
 
         if (Math.abs(mapVelRotation) > 0.0001) {
-            globalRotation += mapVelRotation;
-            
             const cosA = Math.cos(mapVelRotation);
             const sinA = Math.sin(mapVelRotation);
             const dx = panX - lastZoomCX;
@@ -198,9 +203,26 @@ function iniciarInerciaMapa() {
             panY = lastZoomCY + dx * sinA + dy * cosA;
         }
 
-        // Aplicamos com limites ligados (false) para que o mapa trave suavemente nas bordas
-        aplicarTransform(false);
-        mapInerciaAnimId = requestAnimationFrame(animar);
+        // A MÁGICA DOS LIMITES: Efeito "Mola" suave
+        const target = getTargetPan();
+        const dx = target.x - panX;
+        const dy = target.y - panY;
+
+        if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
+            panX += dx * 0.15; // Puxa o ecrã para os limites a 15% de velocidade por frame
+            panY += dy * 0.15;
+            moving = true;
+        }
+
+        if (Math.abs(mapVelX) > 0.1 || Math.abs(mapVelY) > 0.1 || Math.abs(mapVelScale) > 0.001 || Math.abs(mapVelRotation) > 0.001) {
+            moving = true;
+        }
+
+        aplicarTransform();
+
+        if (moving) {
+            mapInerciaAnimId = requestAnimationFrame(animar);
+        }
     }
     animar();
 }
@@ -211,7 +233,7 @@ function touchStart(e) {
     }
     
     cancelAnimationFrame(inerciaAnimId);
-    cancelAnimationFrame(mapInerciaAnimId);
+    cancelAnimationFrame(mapInerciaAnimId); // Pôr o dedo pára a inércia e o efeito mola imediatamente
     
     velX = 0; velY = 0;
     mapVelX = 0; mapVelY = 0; mapVelScale = 0; mapVelRotation = 0;
@@ -272,22 +294,26 @@ function touchMove(e) {
             fotoEmArrasto.elemento.setAttribute('data-left', fotoEmArrasto.left);
             fotoEmArrasto.elemento.setAttribute('data-top', fotoEmArrasto.top);
             
-            // CORREÇÃO: Ignorar limites enquanto arrastamos uma foto
-            aplicarTransform(true);
-            
         } else {
-            panX += deltaX;
-            panY += deltaY;
+            const target = getTargetPan();
+            let resX = 1;
+            let resY = 1;
+            
+            // EFEITO ELÁSTICO (Rubber-banding): Fica 3x mais pesado se arrastares fora dos limites
+            if ((panX < target.x && deltaX < 0) || (panX > target.x && deltaX > 0)) resX = 0.3;
+            if ((panY < target.y && deltaY < 0) || (panY > target.y && deltaY > 0)) resY = 0.3;
+
+            panX += deltaX * resX;
+            panY += deltaY * resY;
             
             mapVelX = (mapVelX * 0.4) + (deltaX * 0.6);
             mapVelY = (mapVelY * 0.4) + (deltaY * 0.6);
-            
-            // CORREÇÃO: Manter os limites ligados enquanto arrastamos o mapa geral
-            aplicarTransform(false);
         }
 
         refX = currX;
         refY = currY;
+
+        aplicarTransform();
 
     } else if (chaves.length === 2) {
         fotoEmArrasto = null; 
@@ -300,6 +326,7 @@ function touchMove(e) {
         const deltaX = currX - refX;
         const deltaY = currY - refY;
 
+        // Movimento totalmente livre durante os gestos de Zoom/Rotação
         panX += deltaX;
         panY += deltaY;
         
@@ -337,8 +364,7 @@ function touchMove(e) {
         ultimaDistancia = dAtual;
         ultimoAngulo = aAtual;
 
-        // CORREÇÃO: Ignorar limites enquanto os 2 dedos estão no ecrã (Zoom livre)
-        aplicarTransform(true);
+        aplicarTransform();
     }
 }
 
@@ -348,19 +374,16 @@ function touchEnd(e) {
     }
     
     if (Object.keys(ativos).length === 0) {
-        
-        // CORREÇÃO: Assim que largas o ecrã, forçamos os limites para o mapa "encaixar" de volta
-        aplicarTransform(false);
-
         if (fotoEmArrasto) {
             if (Math.abs(velX) > 0.5 || Math.abs(velY) > 0.5) {
                 iniciarInerciaFoto(fotoEmArrasto, velX, velY);
             }
-        } else {
-            if (Math.abs(mapVelX) > 0.5 || Math.abs(mapVelY) > 0.5 || Math.abs(mapVelScale) > 0.005 || Math.abs(mapVelRotation) > 0.005) {
-                iniciarInerciaMapa();
-            }
-        }
+        } 
+        
+        // Chamamos SEMPRE a inércia do mapa ao largar o ecrã.
+        // Assim, quer tenhas inércia de movimento ou não, a mola puxa o mapa de volta aos limites.
+        iniciarInerciaMapa();
+        
         fotoEmArrasto = null;
     }
 
