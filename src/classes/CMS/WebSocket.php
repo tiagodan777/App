@@ -71,7 +71,12 @@ class WebSocket implements MessageComponentInterface {
     }
 
     private function sendNewState(ConnectionInterface $conn, $data) {
-        $conn->send(json_encode($data));
+        $dados = array_map(function($pessoa) use ($conn) {
+            $pessoa['souEu'] = ($pessoa['id'] == $conn->resourceId);
+            return $pessoa;
+        }, $data);
+
+        $conn->send(json_encode($dados));
     }
 }
 

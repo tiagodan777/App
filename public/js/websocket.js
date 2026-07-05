@@ -65,6 +65,18 @@ ws.onmessage = function(event) {
 
         $img.attr('data-top', pessoa.top);
         $img.attr('data-left', pessoa.left);
+
+        if (pessoa.souEu) {
+            minhaPosicao = {
+                top: pessoa.top,
+                left: pessoa.left,
+                id: pessoa.id
+        };
+
+        $img.addClass('minha-foto');
+        } else {
+            $img.removeClass('minha-foto');
+        }
     });
 
     aplicarTransform();
