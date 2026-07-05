@@ -93,12 +93,12 @@ img {
 #menuPrincipal > nav > ul > li > a {
     text-decoration: none;
     color: black;
+    padding: 0px 35px;
 }
 
 #menuPrincipal > nav > ul > li > a > img {
     width: 26px;
     height: 26px;
-    padding: 0px 35px;
 }
 
 #tiago {
