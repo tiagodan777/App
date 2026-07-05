@@ -88,8 +88,6 @@ img {
 #menuPrincipal > nav > ul > li {
     color: black;
     z-index: 10;
-    width: 26px;
-    height: 26px;
 }
 
 #menuPrincipal > nav > ul > li > img {
