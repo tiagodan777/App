@@ -46,6 +46,20 @@ img {
     will-change: transform, opacity; 
 }
 
+.mini-menu {
+    width: 100vw;
+    height: 50vh;
+    border-radius: 50px 50px 0px 0px;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04),
+                inset 0 6px 18px rgba(0, 0, 0, 0.06),
+                inset 0 14px 32px rgba(0, 0, 0, 0.08);
+    
+    display: flex;
+    flex-flow: column nowrap;
+    justify-content: space-evenly;
+    align-items: center;
+}
+
 #menuPrincipal {
     width: 90%;
     height: 56px;
@@ -101,12 +115,3 @@ img {
     height: 26px;
 }
 
-#tiago {
-    top: 50%;
-    left: 50%;
-}
-
-#douradinho {
-    top: 25%;
-    left: 25%;
-}

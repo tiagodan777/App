@@ -3,7 +3,9 @@ $(function() {
         var top = $(this).attr('data-top');
         var left = $(this).attr('data-left');
 
-        console.log(top);
-        console.log(left);
+        var $div = ('<div class="mini-menu"></div>');
+
+        $div.slideUp()
+
     });
 });
