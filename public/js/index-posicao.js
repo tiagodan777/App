@@ -65,25 +65,49 @@ function limitarPan() {
         const leftOriginal = Number($(this).attr('data-left'));
         const topOriginal = Number($(this).attr('data-top'));
 
+        if (isNaN(leftOriginal) || isNaN(topOriginal)) return;
+
         const x = leftOriginal * scale;
         const y = topOriginal * scale;
 
         minX = Math.min(minX, x);
         maxX = Math.max(maxX, x);
+
         minY = Math.min(minY, y);
         maxY = Math.max(maxY, y);
     });
 
+    if (!isFinite(minX) || !isFinite(maxX) || !isFinite(minY) || !isFinite(maxY)) return;
+
     const margem = FOTO_TAMANHO / 2;
 
-    const minPanX = window.innerWidth - SAFE_RIGHT - margem - maxX;
-    const maxPanX = SAFE_LEFT + margem - minX;
+    const areaLeft = SAFE_LEFT + margem;
+    const areaRight = window.innerWidth - SAFE_RIGHT - margem;
 
-    const minPanY = window.innerHeight - SAFE_BOTTOM - margem - maxY;
-    const maxPanY = SAFE_TOP + margem - minY;
+    const areaTop = SAFE_TOP + margem;
+    const areaBottom = window.innerHeight - SAFE_BOTTOM - margem;
 
-    panX = Math.max(minPanX, Math.min(panX, maxPanX));
-    panY = Math.max(minPanY, Math.min(panY, maxPanY));
+    const conteudoW = maxX - minX;
+    const areaW = areaRight - areaLeft;
+
+    const conteudoH = maxY - minY;
+    const areaH = areaBottom - areaTop;
+
+    if (conteudoW <= areaW) {
+        panX = ((areaLeft + areaRight) / 2) - ((minX + maxX) / 2);
+    } else {
+        const minPanX = areaRight - maxX;
+        const maxPanX = areaLeft - minX;
+        panX = Math.max(minPanX, Math.min(panX, maxPanX));
+    }
+
+    if (conteudoH <= areaH) {
+        panY = ((areaTop + areaBottom) / 2) - ((minY + maxY) / 2);
+    } else {
+        const minPanY = areaBottom - maxY;
+        const maxPanY = areaTop - minY;
+        panY = Math.max(minPanY, Math.min(panY, maxPanY));
+    }
 }
 
 function aplicarTransform() {
@@ -94,14 +118,18 @@ function aplicarTransform() {
         const topOriginal = Number($(this).attr('data-top'));
         const leftOriginal = Number($(this).attr('data-left'));
 
+        if (isNaN(topOriginal) || isNaN(leftOriginal)) return;
+
         const fotoScale = 1 + (scale - 1) * FOTO_ZOOM_INTENSIDADE;
 
         $(this).css({
+            display: 'block',
             position: 'absolute',
             left: (leftOriginal * scale + panX) + 'px',
             top: (topOriginal * scale + panY) + 'px',
             transform: `translate(-50%, -50%) scale(${fotoScale})`,
-            transformOrigin: 'center center'
+            transformOrigin: 'center center',
+            zIndex: 5
         });
     });
 }
