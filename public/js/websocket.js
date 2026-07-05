@@ -1,4 +1,4 @@
-var ws = new WebSocket('ws://' + location.hostname + '/ws');
+var ws = new WebSocket('ws://' + location.hostname + ':8080');
 
 var resourceId;
 
