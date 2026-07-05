@@ -10,7 +10,11 @@ let ultimaDistancia = 0;
 
 let fotoEmArrasto = null;
 
-// AQUI ESTÁ A ALTERAÇÃO: Mudei de 0.7 para 0.3 para dar muito mais zoom out
+// NOVAS VARIÁVEIS PARA A INÉRCIA (FÍSICA)
+let inerciaAnimId = null;
+let velX = 0;
+let velY = 0;
+
 const MIN_SCALE = 0.3; 
 const MAX_SCALE = 5;
 const FOTO_ZOOM_INTENSIDADE = 0.25;
@@ -99,10 +103,41 @@ function atualizarReferencias() {
     }
 }
 
+// NOVA FUNÇÃO: O "Motor" da Física
+function iniciarInercia(foto, vx, vy) {
+    function animar() {
+        // Multiplicar por 0.92 cria a fricção. Quanto mais perto de 1, mais desliza.
+        vx *= 0.92; 
+        vy *= 0.92;
+
+        // Quando a velocidade é quase zero, paramos a animação para poupar bateria
+        if (Math.abs(vx) < 0.1 && Math.abs(vy) < 0.1) {
+            return; 
+        }
+
+        foto.left += vx;
+        foto.top += vy;
+        
+        foto.elemento.setAttribute('data-left', foto.left);
+        foto.elemento.setAttribute('data-top', foto.top);
+
+        aplicarTransform();
+        
+        // Pede ao navegador para calcular o próximo frame
+        inerciaAnimId = requestAnimationFrame(animar);
+    }
+    animar();
+}
+
 function touchStart(e) {
     if(e.target.closest('.foto') || e.target.id === 'mapa-container' || e.target.tagName.toLowerCase() === 'canvas') {
         e.preventDefault();
     }
+    
+    // Parar qualquer inércia que esteja a acontecer no momento em que tocamos no ecrã
+    cancelAnimationFrame(inerciaAnimId);
+    velX = 0;
+    velY = 0;
     
     for (const touch of e.changedTouches) {
         ativos[touch.identifier] = { x: touch.clientX, y: touch.clientY };
@@ -145,8 +180,16 @@ function touchMove(e) {
         const deltaY = currY - refY;
 
         if (fotoEmArrasto) {
-            fotoEmArrasto.left += deltaX / scale;
-            fotoEmArrasto.top += deltaY / scale;
+            const dx = deltaX / scale;
+            const dy = deltaY / scale;
+            
+            fotoEmArrasto.left += dx;
+            fotoEmArrasto.top += dy;
+            
+            // Gravar a velocidade do movimento. 
+            // Usamos uma média (0.4 do antigo + 0.6 do novo) para evitar arranques bruscos
+            velX = (velX * 0.4) + (dx * 0.6);
+            velY = (velY * 0.4) + (dy * 0.6);
             
             fotoEmArrasto.elemento.setAttribute('data-left', fotoEmArrasto.left);
             fotoEmArrasto.elemento.setAttribute('data-top', fotoEmArrasto.top);
@@ -189,6 +232,10 @@ function touchEnd(e) {
     }
     
     if (Object.keys(ativos).length === 0) {
+        // Se a foto estava a ser arrastada e tem velocidade suficiente, atira-a com inércia
+        if (fotoEmArrasto && (Math.abs(velX) > 0.5 || Math.abs(velY) > 0.5)) {
+            iniciarInercia(fotoEmArrasto, velX, velY);
+        }
         fotoEmArrasto = null;
     }
 
