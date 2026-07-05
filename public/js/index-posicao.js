@@ -57,7 +57,6 @@ function limitarPan() {
 }
 
 function aplicarTransform() {
-    limitarPan();
     atualizarRadarView();
 
     $('.foto').each(function() {
