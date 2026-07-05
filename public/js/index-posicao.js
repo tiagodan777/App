@@ -3,12 +3,12 @@ let ativos = {};
 let scale = 1;
 let panX = 0;
 let panY = 0;
-let rotation = 0; // NOVA VARIÁVEL: Ângulo atual de rotação
+let globalRotation = 0; // A rotação do mapa inteiro (em radianos)
 
 let refX = 0;
 let refY = 0;
 let ultimaDistancia = 0;
-let ultimoAngulo = 0; // NOVA VARIÁVEL: Ângulo inicial dos dedos
+let ultimoAngulo = 0;
 
 let fotoEmArrasto = null;
 
@@ -17,12 +17,12 @@ let inerciaAnimId = null;
 let velX = 0;
 let velY = 0;
 
-// FÍSICA DO MAPA (PAN, ZOOM E ROTAÇÃO)
+// FÍSICA DO MAPA
 let mapInerciaAnimId = null;
 let mapVelX = 0;
 let mapVelY = 0;
 let mapVelScale = 0;
-let mapVelRotation = 0; // NOVA VARIÁVEL: Velocidade da rotação (inércia)
+let mapVelRotation = 0; 
 let lastZoomCX = window.innerWidth / 2;
 let lastZoomCY = window.innerHeight / 2;
 
@@ -55,7 +55,6 @@ function distancia(a, b) {
     return Math.sqrt(dx * dx + dy * dy);
 }
 
-// NOVA FUNÇÃO: Calcula o ângulo entre os dois dedos (em radianos)
 function angulo(a, b) {
     return Math.atan2(b.y - a.y, b.x - a.x);
 }
@@ -64,47 +63,53 @@ function limitarScale(valor) {
     return Math.max(MIN_SCALE, Math.min(valor, MAX_SCALE));
 }
 
-function limitarPan() {
-    if (fotosCache.length === 0) return;
+// O limitarPan foi fundido com esta função para calcular os limites com as fotos a girar
+function aplicarTransform() {
+    const cosR = Math.cos(globalRotation);
+    const sinR = Math.sin(globalRotation);
 
     let minLeft = Infinity, maxLeft = -Infinity;
     let minTop = Infinity, maxTop = -Infinity;
 
+    // 1. Calcular as novas posições no carrossel rotativo
     for (const foto of fotosCache) {
-        minLeft = Math.min(minLeft, foto.left * scale);
-        maxLeft = Math.max(maxLeft, foto.left * scale);
-        minTop = Math.min(minTop, foto.top * scale);
-        maxTop = Math.max(maxTop, foto.top * scale);
-    }
-
-    const screenW = window.innerWidth;
-    const screenH = window.innerHeight;
-
-    const minPanX = SAFE_LEFT - minLeft;
-    const maxPanX = (screenW - SAFE_RIGHT) - maxLeft;
-    const minPanY = SAFE_TOP - minTop;
-    const maxPanY = (screenH - SAFE_BOTTOM) - maxTop;
-
-    panX = minPanX > maxPanX ? (minPanX + maxPanX) / 2 : Math.max(minPanX, Math.min(panX, maxPanX));
-    panY = minPanY > maxPanY ? (minPanY + maxPanY) / 2 : Math.max(minPanY, Math.min(panY, maxPanY));
-}
-
-function aplicarTransform() {
-    limitarPan();
-    
-    let fotoScale;
-    if (scale < 1) {
-        fotoScale = Math.max(MIN_FOTO_SCALE, 1 + (scale - 1) * 0.8);
-    } else {
-        fotoScale = 1 + (scale - 1) * FOTO_ZOOM_INTENSIDADE;
-    }
-
-    for (const foto of fotosCache) {
-        foto.elemento.style.left = (foto.left * scale + panX) + 'px';
-        foto.elemento.style.top = (foto.top * scale + panY) + 'px';
+        const ox = foto.left * scale;
+        const oy = foto.top * scale;
         
-        // APLICAR ROTAÇÃO: Adicionado o "rotate" à propriedade CSS transform
-        foto.elemento.style.transform = `scale(${fotoScale}) rotate(${rotation}deg)`;
+        // Rotação matemática das coordenadas do mundo
+        foto.rx = ox * cosR - oy * sinR;
+        foto.ry = ox * sinR + oy * cosR;
+
+        minLeft = Math.min(minLeft, foto.rx);
+        maxLeft = Math.max(maxLeft, foto.rx);
+        minTop = Math.min(minTop, foto.ry);
+        maxTop = Math.max(maxTop, foto.ry);
+    }
+
+    // 2. Limitar o movimento tendo em conta os novos limites rodados
+    if (fotosCache.length > 0) {
+        const screenW = window.innerWidth;
+        const screenH = window.innerHeight;
+
+        const minPanX = SAFE_LEFT - minLeft;
+        const maxPanX = (screenW - SAFE_RIGHT) - maxLeft;
+        const minPanY = SAFE_TOP - minTop;
+        const maxPanY = (screenH - SAFE_BOTTOM) - maxTop;
+
+        panX = minPanX > maxPanX ? (minPanX + maxPanX) / 2 : Math.max(minPanX, Math.min(panX, maxPanX));
+        panY = minPanY > maxPanY ? (minPanY + maxPanY) / 2 : Math.max(minPanY, Math.min(panY, maxPanY));
+    }
+
+    // 3. Desenhar no ecrã
+    let fotoScale = scale < 1 
+        ? Math.max(MIN_FOTO_SCALE, 1 + (scale - 1) * 0.8) 
+        : 1 + (scale - 1) * FOTO_ZOOM_INTENSIDADE;
+
+    for (const foto of fotosCache) {
+        foto.elemento.style.left = (foto.rx + panX) + 'px';
+        foto.elemento.style.top = (foto.ry + panY) + 'px';
+        // Repara que retirámos o CSS 'rotate' daqui. As imagens ficam sempre verticais!
+        foto.elemento.style.transform = `scale(${fotoScale})`; 
     }
 }
 
@@ -125,7 +130,7 @@ function atualizarReferencias() {
         refX = (ativos[chaves[0]].x + ativos[chaves[1]].x) / 2;
         refY = (ativos[chaves[0]].y + ativos[chaves[1]].y) / 2;
         ultimaDistancia = distancia(ativos[chaves[0]], ativos[chaves[1]]);
-        ultimoAngulo = angulo(ativos[chaves[0]], ativos[chaves[1]]); // Gravar o ângulo base
+        ultimoAngulo = angulo(ativos[chaves[0]], ativos[chaves[1]]);
     }
 }
 
@@ -153,18 +158,29 @@ function iniciarInerciaMapa() {
         mapVelX *= 0.92;
         mapVelY *= 0.92;
         mapVelScale *= 0.88; 
-        mapVelRotation *= 0.88; // Desaceleração da rotação
+        mapVelRotation *= 0.88;
 
-        if (Math.abs(mapVelX) < 0.1 && Math.abs(mapVelY) < 0.1 && Math.abs(mapVelScale) < 0.001 && Math.abs(mapVelRotation) < 0.05) {
+        if (Math.abs(mapVelX) < 0.1 && Math.abs(mapVelY) < 0.1 && Math.abs(mapVelScale) < 0.001 && Math.abs(mapVelRotation) < 0.001) {
             return;
         }
 
         panX += mapVelX;
         panY += mapVelY;
-        rotation += mapVelRotation; // Aplicar inércia de giro
 
         if (Math.abs(mapVelScale) > 0.0001) {
             zoomNoPonto(lastZoomCX, lastZoomCY, 1 + mapVelScale);
+        }
+
+        if (Math.abs(mapVelRotation) > 0.0001) {
+            globalRotation += mapVelRotation;
+            
+            // Fazer a inércia do mapa orbitar sobre o último ponto de toque
+            const cosA = Math.cos(mapVelRotation);
+            const sinA = Math.sin(mapVelRotation);
+            const dx = panX - lastZoomCX;
+            const dy = panY - lastZoomCY;
+            panX = lastZoomCX + dx * cosA - dy * sinA;
+            panY = lastZoomCY + dx * sinA + dy * cosA;
         }
 
         aplicarTransform();
@@ -225,14 +241,19 @@ function touchMove(e) {
         const deltaY = currY - refY;
 
         if (fotoEmArrasto) {
-            const dx = deltaX / scale;
-            const dy = deltaY / scale;
+            // Se movermos a foto mas o mundo estiver rodado, precisamos inverter a matemática
+            // para a foto acompanhar o dedo na perfeição na perspetiva certa.
+            const invCos = Math.cos(-globalRotation);
+            const invSin = Math.sin(-globalRotation);
             
-            fotoEmArrasto.left += dx;
-            fotoEmArrasto.top += dy;
+            const mapDx = (deltaX * invCos - deltaY * invSin) / scale;
+            const mapDy = (deltaX * invSin + deltaY * invCos) / scale;
             
-            velX = (velX * 0.4) + (dx * 0.6);
-            velY = (velY * 0.4) + (dy * 0.6);
+            fotoEmArrasto.left += mapDx;
+            fotoEmArrasto.top += mapDy;
+            
+            velX = (velX * 0.4) + (mapDx * 0.6);
+            velY = (velY * 0.4) + (mapDy * 0.6);
             
             fotoEmArrasto.elemento.setAttribute('data-left', fotoEmArrasto.left);
             fotoEmArrasto.elemento.setAttribute('data-top', fotoEmArrasto.top);
@@ -256,7 +277,7 @@ function touchMove(e) {
         const currX = (ativos[chaves[0]].x + ativos[chaves[1]].x) / 2;
         const currY = (ativos[chaves[0]].y + ativos[chaves[1]].y) / 2;
         const dAtual = distancia(ativos[chaves[0]], ativos[chaves[1]]);
-        const aAtual = angulo(ativos[chaves[0]], ativos[chaves[1]]); // Calcular ângulo atual
+        const aAtual = angulo(ativos[chaves[0]], ativos[chaves[1]]);
 
         const deltaX = currX - refX;
         const deltaY = currY - refY;
@@ -277,16 +298,23 @@ function touchMove(e) {
             lastZoomCY = currY;
         }
 
-        // CALCULAR DELTA DA ROTAÇÃO
+        // CALCULAR DELTA DA ROTAÇÃO PARA O MUNDO INTEIRO
         let deltaAngle = aAtual - ultimoAngulo;
         
-        // Evita saltos bruscos se o ângulo der a volta completa ao círculo
         if (deltaAngle > Math.PI) deltaAngle -= Math.PI * 2;
         if (deltaAngle < -Math.PI) deltaAngle += Math.PI * 2;
 
-        const graus = deltaAngle * (180 / Math.PI); // Radianos para graus
-        rotation += graus;
-        mapVelRotation = (mapVelRotation * 0.4) + (graus * 0.6);
+        globalRotation += deltaAngle;
+        mapVelRotation = (mapVelRotation * 0.4) + (deltaAngle * 0.6);
+
+        // Compensar o movimento do "chão" rodando em torno dos dois dedos
+        const cosA = Math.cos(deltaAngle);
+        const sinA = Math.sin(deltaAngle);
+        const dx = panX - currX;
+        const dy = panY - currY;
+        
+        panX = currX + dx * cosA - dy * sinA;
+        panY = currY + dx * sinA + dy * cosA;
 
         refX = currX;
         refY = currY;
@@ -308,8 +336,7 @@ function touchEnd(e) {
                 iniciarInerciaFoto(fotoEmArrasto, velX, velY);
             }
         } else {
-            // Se houver velocidade no zoom, pan ou rotação, dispara inércia
-            if (Math.abs(mapVelX) > 0.5 || Math.abs(mapVelY) > 0.5 || Math.abs(mapVelScale) > 0.005 || Math.abs(mapVelRotation) > 0.5) {
+            if (Math.abs(mapVelX) > 0.5 || Math.abs(mapVelY) > 0.5 || Math.abs(mapVelScale) > 0.005 || Math.abs(mapVelRotation) > 0.005) {
                 iniciarInerciaMapa();
             }
         }
