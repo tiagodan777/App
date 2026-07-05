@@ -3,7 +3,7 @@ let ativos = {};
 let scale = 1;
 let panX = 0;
 let panY = 0;
-let globalRotation = 0; // A rotação do mapa inteiro (em radianos)
+let globalRotation = 0; 
 
 let refX = 0;
 let refY = 0;
@@ -46,7 +46,8 @@ function inicializarFotos() {
             left: Number(el.getAttribute('data-left')) || 0
         };
     });
-    aplicarTransform();
+    // Ao iniciar, aplicamos os limites para garantir que arranca no centro
+    aplicarTransform(false); 
 }
 
 function distancia(a, b) {
@@ -79,15 +80,12 @@ function limitarPan() {
     const screenW = window.innerWidth;
     const screenH = window.innerHeight;
 
-    // CORREÇÃO AQUI: Lógica de limites invertida corrigida
     const maxAllowedPanX = SAFE_LEFT - minLeft;
     const minAllowedPanX = (screenW - SAFE_RIGHT) - maxLeft;
 
     const maxAllowedPanY = SAFE_TOP - minTop;
     const minAllowedPanY = (screenH - SAFE_BOTTOM) - maxTop;
 
-    // Se o mapa for maior que o ecrã (zoom in), bloqueia apenas nas margens (permite drag).
-    // Se for menor (zoom out), centra o mapa.
     if (minAllowedPanX < maxAllowedPanX) {
         panX = Math.max(minAllowedPanX, Math.min(panX, maxAllowedPanX));
     } else {
@@ -101,7 +99,8 @@ function limitarPan() {
     }
 }
 
-function aplicarTransform() {
+// CORREÇÃO: Adicionado o parâmetro para podermos desligar os limites temporariamente
+function aplicarTransform(ignorarLimites = false) {
     const cosR = Math.cos(globalRotation);
     const sinR = Math.sin(globalRotation);
 
@@ -113,7 +112,10 @@ function aplicarTransform() {
         foto.ry = ox * sinR + oy * cosR;
     }
 
-    limitarPan();
+    // Só limitamos o ecrã se não houver gestos complexos a decorrer
+    if (!ignorarLimites) {
+        limitarPan();
+    }
 
     let fotoScale = scale < 1 
         ? Math.max(MIN_FOTO_SCALE, 1 + (scale - 1) * 0.8) 
@@ -160,7 +162,8 @@ function iniciarInerciaFoto(foto, vx, vy) {
         foto.elemento.setAttribute('data-left', foto.left);
         foto.elemento.setAttribute('data-top', foto.top);
 
-        aplicarTransform();
+        // Enquanto a foto desliza com inércia, ignoramos os limites para o ecrã não tremer
+        aplicarTransform(true);
         inerciaAnimId = requestAnimationFrame(animar);
     }
     animar();
@@ -195,7 +198,8 @@ function iniciarInerciaMapa() {
             panY = lastZoomCY + dx * sinA + dy * cosA;
         }
 
-        aplicarTransform();
+        // Aplicamos com limites ligados (false) para que o mapa trave suavemente nas bordas
+        aplicarTransform(false);
         mapInerciaAnimId = requestAnimationFrame(animar);
     }
     animar();
@@ -268,18 +272,22 @@ function touchMove(e) {
             fotoEmArrasto.elemento.setAttribute('data-left', fotoEmArrasto.left);
             fotoEmArrasto.elemento.setAttribute('data-top', fotoEmArrasto.top);
             
+            // CORREÇÃO: Ignorar limites enquanto arrastamos uma foto
+            aplicarTransform(true);
+            
         } else {
             panX += deltaX;
             panY += deltaY;
             
             mapVelX = (mapVelX * 0.4) + (deltaX * 0.6);
             mapVelY = (mapVelY * 0.4) + (deltaY * 0.6);
+            
+            // CORREÇÃO: Manter os limites ligados enquanto arrastamos o mapa geral
+            aplicarTransform(false);
         }
 
         refX = currX;
         refY = currY;
-
-        aplicarTransform();
 
     } else if (chaves.length === 2) {
         fotoEmArrasto = null; 
@@ -329,7 +337,8 @@ function touchMove(e) {
         ultimaDistancia = dAtual;
         ultimoAngulo = aAtual;
 
-        aplicarTransform();
+        // CORREÇÃO: Ignorar limites enquanto os 2 dedos estão no ecrã (Zoom livre)
+        aplicarTransform(true);
     }
 }
 
@@ -339,6 +348,10 @@ function touchEnd(e) {
     }
     
     if (Object.keys(ativos).length === 0) {
+        
+        // CORREÇÃO: Assim que largas o ecrã, forçamos os limites para o mapa "encaixar" de volta
+        aplicarTransform(false);
+
         if (fotoEmArrasto) {
             if (Math.abs(velX) > 0.5 || Math.abs(velY) > 0.5) {
                 iniciarInerciaFoto(fotoEmArrasto, velX, velY);
