@@ -50,8 +50,6 @@
     function lerp(a, b, t) { return a + (b - a) * t; }
     function clamp(v, min, max) { return v < min ? min : (v > max ? max : v); }
 
-    // Alterado ligeiramente para devolver apenas a string "R, G, B"
-    // para podermos injetar a opacidade (alpha) mais à frente.
     function getGradientColorRGB(t) {
         t = clamp(t, 0, 1);
         let c1, c2, factor;
@@ -66,8 +64,19 @@
     function draw() {
         ctx.clearRect(0, 0, width, height);
 
-        // PASSO 1: Animação mais lenta
         time += 0.001; 
+
+        // 1. CÁLCULO DO BURACO:
+        // Usamos várias ondas misturadas para o percurso não ser mecânico, mas sim orgânico
+        const cx = width / 2;
+        const cy = height / 2;
+        const holeTime = time * 3.5; // O buraco move-se um pouco mais rápido para ser notório
+        
+        const holeX = cx + Math.sin(holeTime * 0.7) * (cx * 0.9) + Math.cos(holeTime * 0.3) * (cx * 0.3);
+        const holeY = cy + Math.cos(holeTime * 0.8) * (cy * 0.9) + Math.sin(holeTime * 0.4) * (cy * 0.3);
+
+        // O tamanho do raio do buraco. Podes aumentar ou diminuir este valor.
+        const holeRadius = 220; 
 
         for (let i = 0; i < points.length; i++) {
             const p = points[i];
@@ -83,22 +92,29 @@
 
             const waveValue = (Math.sin(nx * 2.2 + time * 1.5) + Math.cos(ny * 2.2 + time * 1.5) + 2) / 4; 
             
-            // PASSO 2: Lógica de aparecer e desaparecer (Nuvens de opacidade)
-            // Esta onda cruza o ecrã com uma frequência diferente do movimento e da cor
-            const alphaWave = (Math.sin(nx * 3.5 - time * 2.0) + Math.cos(ny * 2.8 + time * 1.8) + 2) / 4;
-            
-            // Subtraímos um valor para garantir que a onda desce até zero (invisível) nalgumas zonas
-            const alpha = clamp((alphaWave - 0.3) * 1.5, 0, 1);
+            // 2. LÓGICA DE REGENERAÇÃO:
+            // Verificamos a distância do ponto atual ao centro do buraco
+            const dx = finalX - holeX;
+            const dy = finalY - holeY;
+            const dist = Math.sqrt(dx * dx + dy * dy);
 
-            // Otimização: se o ponto está transparente, não gastamos recursos a desenhá-lo
-            if (alpha < 0.05) continue;
+            // A opacidade base começa como "apagada" (0) perto do centro e sobe até 1 nas bordas do raio
+            let alpha = clamp(dist / holeRadius, 0, 1);
+            
+            // Adicionamos um ruído (noise) para as bordas do buraco parecerem desfeitas em vez de um corte a direito
+            const borderNoise = Math.sin(nx * 15 + time * 5) * 0.15;
+            alpha = clamp(alpha + borderNoise, 0, 1);
+
+            // Fora do buraco, os pontos pulsam levemente (entre 80% e 100%) para dar um aspeto de "respiração", mas cheios de vida
+            const finalAlpha = alpha * (0.8 + waveValue * 0.2);
+
+            if (finalAlpha < 0.05) continue;
             
             ctx.beginPath();
             ctx.arc(finalX, finalY, 1.2, 0, Math.PI * 2);
             
-            // Juntamos a cor (RGB) e a opacidade (Alpha) calculadas
             const rgb = getGradientColorRGB(waveValue);
-            ctx.fillStyle = `rgba(${rgb}, ${alpha.toFixed(2)})`;
+            ctx.fillStyle = `rgba(${rgb}, ${finalAlpha.toFixed(2)})`;
             ctx.fill();
         }
 
