@@ -73,10 +73,10 @@
         const holeX = cx + Math.sin(holeTime * 0.7) * (cx * 0.9) + Math.cos(holeTime * 0.3) * (cx * 0.3);
         const holeY = cy + Math.cos(holeTime * 0.8) * (cy * 0.9) + Math.sin(holeTime * 0.4) * (cy * 0.3);
 
-        // 1. Buraco maior
-        const holeRadius = 340; 
-        // 2. Transição muito mais curta para não esbater demasiado
-        const edgeSoftness = 70; 
+        // 1. Buraco mais pequeno para não engolir o ecrã
+        const holeRadius = 160; 
+        // 2. Transição mantida curta
+        const edgeSoftness = 60; 
 
         for (let i = 0; i < points.length; i++) {
             const p = points[i];
@@ -96,7 +96,6 @@
             const dy = finalY - holeY;
             const dist = Math.sqrt(dx * dx + dy * dy);
 
-            // A matemática agora empurra rapidamente a opacidade de 0 (dentro do buraco) para 1 (fora do buraco)
             let alpha = clamp((dist - holeRadius) / edgeSoftness, 0, 1);
             
             const borderNoise = Math.sin(nx * 15 + time * 5) * 0.15;
@@ -104,7 +103,6 @@
 
             const finalAlpha = alpha * (0.8 + waveValue * 0.2);
 
-            // Se o finalAlpha for quase zero (está no núcleo do buraco), ele é ignorado e o ecrã fica 100% branco por trás
             if (finalAlpha < 0.05) continue;
             
             ctx.beginPath();
