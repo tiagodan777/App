@@ -1,4 +1,4 @@
-var ws = new WebSocket('ws://' + location.hostname);
+var ws = new WebSocket('ws://' + location.hostname + '/ws');
 
 var resourceId;
 
