@@ -16,10 +16,14 @@ window.radarView = {
 const MIN_SCALE_TECNICO = 0.05;
 const MAX_SCALE = 8;
 
-// quando scale <= 1, não deixa fazer pan
-const SEM_PAN_ABAIXO_DE = 1;
-
 const FOTO_ZOOM_INTENSIDADE = 0.25;
+
+const SAFE_TOP = 20;
+const SAFE_LEFT = 20;
+const SAFE_RIGHT = 20;
+const SAFE_BOTTOM = 100;
+
+const FOTO_TAMANHO = 60;
 
 function getDedosArray() {
     return Object.values(dedos);
@@ -42,21 +46,62 @@ function limitarScale(valor) {
     return Math.max(MIN_SCALE_TECNICO, Math.min(valor, MAX_SCALE));
 }
 
-function limitarPanQuandoZoomMinimo() {
-    if (scale <= SEM_PAN_ABAIXO_DE) {
-        panX = 0;
-        panY = 0;
-    }
-}
-
 function atualizarRadarView() {
     window.radarView.scale = scale;
     window.radarView.panX = panX;
     window.radarView.panY = panY;
 }
 
+function limitarPan() {
+    const fotos = $('.foto');
+
+    if (fotos.length === 0) return;
+
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+
+    fotos.each(function() {
+        const leftOriginal = Number($(this).attr('data-left'));
+        const topOriginal = Number($(this).attr('data-top'));
+
+        const x = leftOriginal * scale;
+        const y = topOriginal * scale;
+
+        minX = Math.min(minX, x);
+        maxX = Math.max(maxX, x);
+
+        minY = Math.min(minY, y);
+        maxY = Math.max(maxY, y);
+    });
+
+    const screenW = window.innerWidth;
+    const screenH = window.innerHeight;
+
+    const margemFoto = FOTO_TAMANHO / 2;
+
+    const minPanX = SAFE_LEFT + margemFoto - minX;
+    const maxPanX = screenW - SAFE_RIGHT - margemFoto - maxX;
+
+    const minPanY = SAFE_TOP + margemFoto - minY;
+    const maxPanY = screenH - SAFE_BOTTOM - margemFoto - maxY;
+
+    if (minPanX <= maxPanX) {
+        panX = (minPanX + maxPanX) / 2;
+    } else {
+        panX = Math.min(minPanX, Math.max(panX, maxPanX));
+    }
+
+    if (minPanY <= maxPanY) {
+        panY = (minPanY + maxPanY) / 2;
+    } else {
+        panY = Math.min(minPanY, Math.max(panY, maxPanY));
+    }
+}
+
 function aplicarTransform() {
-    limitarPanQuandoZoomMinimo();
+    limitarPan();
     atualizarRadarView();
 
     $('.foto').each(function() {
@@ -118,33 +163,27 @@ function touchMove(e) {
 
     const lista = getDedosArray();
 
-    // 1 dedo = pan
     if (lista.length === 1) {
         const id = Object.keys(dedos)[0];
         if (!dedosAntes[id]) return;
 
-        if (scale > SEM_PAN_ABAIXO_DE) {
-            panX += dedos[id].x - dedosAntes[id].x;
-            panY += dedos[id].y - dedosAntes[id].y;
-        }
+        panX += dedos[id].x - dedosAntes[id].x;
+        panY += dedos[id].y - dedosAntes[id].y;
 
         aplicarTransform();
     }
 
-    // 2 dedos = pinch zoom + pan
     if (lista.length === 2) {
         const dAtual = distancia(lista[0], lista[1]);
         const cAtual = centro(lista[0], lista[1]);
 
         if (ultimaDistancia !== null && ultimoCentro !== null) {
-            if (scale > SEM_PAN_ABAIXO_DE) {
-                panX += cAtual.x - ultimoCentro.x;
-                panY += cAtual.y - ultimoCentro.y;
-            }
+            panX += cAtual.x - ultimoCentro.x;
+            panY += cAtual.y - ultimoCentro.y;
 
             const zoomFactor = dAtual / ultimaDistancia;
-            zoomNoPonto(cAtual.x, cAtual.y, zoomFactor);
 
+            zoomNoPonto(cAtual.x, cAtual.y, zoomFactor);
             aplicarTransform();
         }
 
