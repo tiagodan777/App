@@ -28,6 +28,24 @@ html, body {
     height: 100vh;
 }
 
+img {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    position: absolute;
+    z-index: 10;
+    transform: translate(-50%, -50%);
+}
+
+.foto {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    transform-origin: center center;
+    /* Isto avisa a placa gráfica da Apple que esta imagem vai andar a voar pelo ecrã */
+    will-change: transform, opacity; 
+}
+
 #menuPrincipal {
     width: 90%;
     height: 56px;
@@ -77,24 +95,6 @@ html, body {
 #menuPrincipal > nav > ul > li > img {
     width: 26px;
     height: 26px;
-}
-
-img {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    position: absolute;
-    z-index: 10;
-    transform: translate(-50%, -50%);
-}
-
-.foto {
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    transform-origin: center center;
-    /* Isto avisa a placa gráfica da Apple que esta imagem vai andar a voar pelo ecrã */
-    will-change: transform, opacity; 
 }
 
 #tiago {
