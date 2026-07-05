@@ -15,15 +15,7 @@ window.radarView = {
 
 const MIN_SCALE_TECNICO = 0.05;
 const MAX_SCALE = 8;
-
 const FOTO_ZOOM_INTENSIDADE = 0.25;
-
-const SAFE_TOP = 20;
-const SAFE_LEFT = 20;
-const SAFE_RIGHT = 20;
-const SAFE_BOTTOM = 100;
-
-const FOTO_TAMANHO = 60;
 
 function getDedosArray() {
     return Object.values(dedos);
@@ -52,71 +44,14 @@ function atualizarRadarView() {
     window.radarView.panY = panY;
 }
 
-function limitarPan() {
-    const fotos = $('.foto');
-    if (fotos.length === 0) return;
-
-    let minX = Infinity;
-    let maxX = -Infinity;
-    let minY = Infinity;
-    let maxY = -Infinity;
-
-    fotos.each(function() {
-        const leftOriginal = Number($(this).attr('data-left'));
-        const topOriginal = Number($(this).attr('data-top'));
-
-        if (isNaN(leftOriginal) || isNaN(topOriginal)) return;
-
-        const x = leftOriginal * scale;
-        const y = topOriginal * scale;
-
-        minX = Math.min(minX, x);
-        maxX = Math.max(maxX, x);
-
-        minY = Math.min(minY, y);
-        maxY = Math.max(maxY, y);
-    });
-
-    if (!isFinite(minX) || !isFinite(maxX) || !isFinite(minY) || !isFinite(maxY)) return;
-
-    const margem = FOTO_TAMANHO / 2;
-
-    const areaLeft = SAFE_LEFT + margem;
-    const areaRight = window.innerWidth - SAFE_RIGHT - margem;
-
-    const areaTop = SAFE_TOP + margem;
-    const areaBottom = window.innerHeight - SAFE_BOTTOM - margem;
-
-    const conteudoW = maxX - minX;
-    const areaW = areaRight - areaLeft;
-
-    const conteudoH = maxY - minY;
-    const areaH = areaBottom - areaTop;
-
-    if (conteudoW <= areaW) {
-        panX = ((areaLeft + areaRight) / 2) - ((minX + maxX) / 2);
-    } else {
-        const minPanX = areaRight - maxX;
-        const maxPanX = areaLeft - minX;
-        panX = Math.max(minPanX, Math.min(panX, maxPanX));
-    }
-
-    if (conteudoH <= areaH) {
-        panY = ((areaTop + areaBottom) / 2) - ((minY + maxY) / 2);
-    } else {
-        const minPanY = areaBottom - maxY;
-        const maxPanY = areaTop - minY;
-        panY = Math.max(minPanY, Math.min(panY, maxPanY));
-    }
-}
-
 function aplicarTransform() {
-    limitarPan();
     atualizarRadarView();
 
     $('.foto').each(function() {
         const topOriginal = Number($(this).attr('data-top'));
         const leftOriginal = Number($(this).attr('data-left'));
+
+        console.log('foto:', this.id, topOriginal, leftOriginal);
 
         if (isNaN(topOriginal) || isNaN(leftOriginal)) return;
 
@@ -129,7 +64,7 @@ function aplicarTransform() {
             top: (topOriginal * scale + panY) + 'px',
             transform: `translate(-50%, -50%) scale(${fotoScale})`,
             transformOrigin: 'center center',
-            zIndex: 5
+            zIndex: 9999
         });
     });
 }

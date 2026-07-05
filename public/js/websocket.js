@@ -35,6 +35,8 @@ $('#botoes').on('click', 'input[type="button"]', function(e) {
 ws.onmessage = function(event) {
     var data = JSON.parse(event.data);
 
+    console.log('DATA:', data);
+
     var idsAtuais = data.map(function(pessoa) {
         return String(pessoa.id);
     });
