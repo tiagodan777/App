@@ -110,23 +110,3 @@ img {
     top: 25%;
     left: 25%;
 }
-
-#botoes {
-    position: fixed;
-    z-index: 10;
-    left: 50%;
-    bottom: 10%;
-
-    transform: translate(-50%, -50%);
-
-    z-index: 10;
-
-    display: flex;
-    flex-flow: row nowrap;
-    justify-content: space-evenly;
-    align-items: center;
-}
-
-#botoes > input {
-    touch-action: auto;
-}
