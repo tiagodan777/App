@@ -6,10 +6,8 @@
     let points = [];
     let time = 0;
 
-    // Distância entre os pontos da malha
     const spacing = 18; 
 
-    // As três cores vibrantes que pediste
     const colorYellow = [255, 215, 0];
     const colorBlue = [0, 100, 255];
     const colorPurple = [138, 43, 226];
@@ -33,7 +31,6 @@
         const cols = Math.ceil(width / spacing) + 6;
         const rows = Math.ceil(height / spacing) + 6;
         
-        // Margem extra para os pontos não desaparecerem bruscamente nos cantos
         const startX = -spacing * 3;
         const startY = -spacing * 3;
 
@@ -53,8 +50,9 @@
     function lerp(a, b, t) { return a + (b - a) * t; }
     function clamp(v, min, max) { return v < min ? min : (v > max ? max : v); }
 
-    // Função que mistura o Amarelo > Azul > Roxo dependendo da posição
-    function getGradientColor(t) {
+    // Alterado ligeiramente para devolver apenas a string "R, G, B"
+    // para podermos injetar a opacidade (alpha) mais à frente.
+    function getGradientColorRGB(t) {
         t = clamp(t, 0, 1);
         let c1, c2, factor;
         if (t < 0.5) {
@@ -62,36 +60,45 @@
         } else {
             c1 = colorBlue; c2 = colorPurple; factor = (t - 0.5) * 2.0;
         }
-        return `rgb(${Math.floor(lerp(c1[0], c2[0], factor))}, ${Math.floor(lerp(c1[1], c2[1], factor))}, ${Math.floor(lerp(c1[2], c2[2], factor))})`;
+        return `${Math.floor(lerp(c1[0], c2[0], factor))}, ${Math.floor(lerp(c1[1], c2[1], factor))}, ${Math.floor(lerp(c1[2], c2[2], factor))}`;
     }
 
     function draw() {
         ctx.clearRect(0, 0, width, height);
 
-        time += 0.002; // Velocidade geral do movimento (suave e rítmica)
+        // PASSO 1: Animação mais lenta
+        time += 0.001; 
 
         for (let i = 0; i < points.length; i++) {
             const p = points[i];
             
-            // Normalizar coordenadas para a matemática fluir bem independentemente do ecrã
             const nx = p.baseX * 0.003;
             const ny = p.baseY * 0.003;
 
-            // LÓGICA DE MOVIMENTO: Usar ondas para empurrar os pontos da sua posição fixa
-            // Isto cria o tal movimento orgânico, mas ordenado
             const waveX = Math.sin(ny * 2.5 + time * 2.5) * 18 + Math.cos(nx * 1.8 - time) * 12;
             const waveY = Math.cos(nx * 2.5 - time * 2.5) * 18 + Math.sin(ny * 1.8 + time) * 12;
 
             const finalX = p.baseX + waveX;
             const finalY = p.baseY + waveY;
 
-            // LÓGICA DA COR: Mapear a posição das ondas para criar manchas de cor dinâmicas
             const waveValue = (Math.sin(nx * 2.2 + time * 1.5) + Math.cos(ny * 2.2 + time * 1.5) + 2) / 4; 
             
+            // PASSO 2: Lógica de aparecer e desaparecer (Nuvens de opacidade)
+            // Esta onda cruza o ecrã com uma frequência diferente do movimento e da cor
+            const alphaWave = (Math.sin(nx * 3.5 - time * 2.0) + Math.cos(ny * 2.8 + time * 1.8) + 2) / 4;
+            
+            // Subtraímos um valor para garantir que a onda desce até zero (invisível) nalgumas zonas
+            const alpha = clamp((alphaWave - 0.3) * 1.5, 0, 1);
+
+            // Otimização: se o ponto está transparente, não gastamos recursos a desenhá-lo
+            if (alpha < 0.05) continue;
+            
             ctx.beginPath();
-            // Pontos muito mais pequenos e fixos (raio 1.2), sem piscar de tamanho
             ctx.arc(finalX, finalY, 1.2, 0, Math.PI * 2);
-            ctx.fillStyle = getGradientColor(waveValue);
+            
+            // Juntamos a cor (RGB) e a opacidade (Alpha) calculadas
+            const rgb = getGradientColorRGB(waveValue);
+            ctx.fillStyle = `rgba(${rgb}, ${alpha.toFixed(2)})`;
             ctx.fill();
         }
 
