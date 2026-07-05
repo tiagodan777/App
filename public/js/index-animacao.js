@@ -66,17 +66,17 @@
 
         time += 0.001; 
 
-        // 1. CÁLCULO DO BURACO:
-        // Usamos várias ondas misturadas para o percurso não ser mecânico, mas sim orgânico
         const cx = width / 2;
         const cy = height / 2;
-        const holeTime = time * 3.5; // O buraco move-se um pouco mais rápido para ser notório
+        const holeTime = time * 3.5; 
         
         const holeX = cx + Math.sin(holeTime * 0.7) * (cx * 0.9) + Math.cos(holeTime * 0.3) * (cx * 0.3);
         const holeY = cy + Math.cos(holeTime * 0.8) * (cy * 0.9) + Math.sin(holeTime * 0.4) * (cy * 0.3);
 
-        // O tamanho do raio do buraco. Podes aumentar ou diminuir este valor.
-        const holeRadius = 220; 
+        // 1. Buraco maior
+        const holeRadius = 340; 
+        // 2. Transição muito mais curta para não esbater demasiado
+        const edgeSoftness = 70; 
 
         for (let i = 0; i < points.length; i++) {
             const p = points[i];
@@ -92,22 +92,19 @@
 
             const waveValue = (Math.sin(nx * 2.2 + time * 1.5) + Math.cos(ny * 2.2 + time * 1.5) + 2) / 4; 
             
-            // 2. LÓGICA DE REGENERAÇÃO:
-            // Verificamos a distância do ponto atual ao centro do buraco
             const dx = finalX - holeX;
             const dy = finalY - holeY;
             const dist = Math.sqrt(dx * dx + dy * dy);
 
-            // A opacidade base começa como "apagada" (0) perto do centro e sobe até 1 nas bordas do raio
-            let alpha = clamp(dist / holeRadius, 0, 1);
+            // A matemática agora empurra rapidamente a opacidade de 0 (dentro do buraco) para 1 (fora do buraco)
+            let alpha = clamp((dist - holeRadius) / edgeSoftness, 0, 1);
             
-            // Adicionamos um ruído (noise) para as bordas do buraco parecerem desfeitas em vez de um corte a direito
             const borderNoise = Math.sin(nx * 15 + time * 5) * 0.15;
             alpha = clamp(alpha + borderNoise, 0, 1);
 
-            // Fora do buraco, os pontos pulsam levemente (entre 80% e 100%) para dar um aspeto de "respiração", mas cheios de vida
             const finalAlpha = alpha * (0.8 + waveValue * 0.2);
 
+            // Se o finalAlpha for quase zero (está no núcleo do buraco), ele é ignorado e o ecrã fica 100% branco por trás
             if (finalAlpha < 0.05) continue;
             
             ctx.beginPath();
