@@ -30,7 +30,7 @@ html, body {
 
 #menuPrincipal {
     width: 90%;
-    height: 64px;
+    height: 48px;
     position: fixed;
     left: 50%;
     transform: translateX(-50%);
@@ -50,7 +50,7 @@ html, body {
 }
 
 #menuPrincipal > nav > ul {
-    width: 90%;
+    width: 95%;
     height: 100%;
     list-style: none;
     padding-left: 0px;
@@ -73,8 +73,8 @@ html, body {
 }
 
 #menuPrincipal > nav > ul > li > img {
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
 }
 
 img {
