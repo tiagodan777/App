@@ -105,5 +105,6 @@ form > div#gostos > p > input[type="button"] {
 
 form > div#contactos > p > input {
     border: none;
+    border-radius: none;
     border-bottom: 1px solid #888888;
 }
