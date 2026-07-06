@@ -55,6 +55,17 @@ form > div > p > input {
     border-bottom: 1px solid #888888;
 }
 
+form > div > nav.anterior-proximo {
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: space-around;
+    align-items: center;
+}
+
+form > div#nome > a {
+    align-self: flex-end;
+}
+
 form > div#nascimento > nav {
     display: flex;
     flex-flow: row nowrap;
