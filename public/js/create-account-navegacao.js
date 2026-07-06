@@ -23,7 +23,7 @@ $(function() {
                 }, 350);
             } else {
                 $('form').animate({
-                    marginLeft: '-200%'
+                    marginLeft: '-100%'
                 }, 350);
             }
 
