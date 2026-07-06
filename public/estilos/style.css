@@ -78,10 +78,21 @@ img {
     align-items: center;
 }
 
-.mini-menu > img {
+.mini-menu > header {
+    display: flex;
+    flex-flow: column nowrap;
+    justify-content: space-evenly;
+    align-items: center;
+}
+
+.mini-menu > header > img {
     width: 20vw;
     height: 20vw;
     border-radius: 50%;
+}
+
+.mini-menu > header > h1 {
+    font-size: 2em;
 }
 
 .mini-menu > div {
