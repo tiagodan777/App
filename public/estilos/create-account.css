@@ -21,7 +21,7 @@ form > div {
     align-items: center;
 }
 
-form > div#nome > h1 {
+form > div > h1 {
     font-size: 2.5em;
     font-weight: bold;
     font-family: 'Alfa Slab One';
