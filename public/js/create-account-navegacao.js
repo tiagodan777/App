@@ -24,11 +24,15 @@ $(function() {
 });
 
 $(function() {
-    var dados;
+    let dados = {};
+
     $(document).on('click', 'nav.anterior-proximo > a', function(e) {
         e.preventDefault();
 
-        dados += $('form').serialize();
-        alert(dados)
-    })
-})
+        $('form').serializeArray().forEach(function(campo) {
+            dados[campo.name] = campo.value;
+        });
+
+        alert($.param(dados));
+    });
+});
