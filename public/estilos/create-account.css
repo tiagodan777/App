@@ -67,3 +67,7 @@ form > div > nav > div {
     justify-content: space-evenly;
     align-items: center;
 }
+
+form > div > nav > div > input {
+    width: 20%;
+}
