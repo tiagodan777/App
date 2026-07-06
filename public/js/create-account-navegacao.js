@@ -37,3 +37,12 @@ $(function() {
         alert($.param(dados));
     });
 });
+
+$(function() {
+    $form.on('submit', function(e) {
+        e.preventDefaul();
+        var dadosFormulario = dados.serialize();
+        alert(dadosFormulario);
+        $.post('/create-acount', dados);
+    })
+})
