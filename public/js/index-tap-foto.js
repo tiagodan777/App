@@ -5,9 +5,7 @@ $(function () {
 
         $('.mini-menu').remove();
 
-        var $div = $('<div class="mini-menu"></div>');
-
-        $('body').append($div);
+        var $div = $('.mini-menu');
 
         $div.animate({
             bottom: '-35%'
