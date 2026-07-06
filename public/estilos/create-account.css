@@ -102,7 +102,9 @@ form > div#gostos > p > input[type="text"] {
 }
 
 form > div#gostos > p > input[type="text"]:focus {
-    
+    border: none;
+    outline: none;
+    border-bottom: 1px solid red;
 }
 
 form > div#gostos > p > input[type="button"] {
