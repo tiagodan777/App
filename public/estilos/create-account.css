@@ -63,8 +63,8 @@ form > div > nav {
 
 form > div > nav > div {
     display: flex;
-    flex-flow: row nowrap;
-    justify-content: flex-start;
+    flex-flow: column nowrap;
+    justify-content: space-evenly;
     align-items: center;
 }
 
