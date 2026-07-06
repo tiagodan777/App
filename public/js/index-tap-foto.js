@@ -7,7 +7,7 @@ $(function() {
 
         $('body').append($div);
         $div.animate({
-            bottom: '50%'
+            bottom: '0%'
         }, 500)
     });
 });
