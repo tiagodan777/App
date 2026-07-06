@@ -6,7 +6,7 @@ $(function () {
         var $div = $('.mini-menu');
 
         $div.animate({
-            bottom: '-35%'
+            bottom: '-25%'
         }, 500);
     });
 
