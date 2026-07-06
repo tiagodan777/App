@@ -21,7 +21,7 @@ $(function () {
             position: 'fixed',
             left: '0',
             bottom: '0',
-            transform: 'translateY(25%)',
+            transform: 'translateY(0%)',
             transition: 'transform 0.5s cubic-bezier(.2,.8,.2,1)'
         });
     }
@@ -32,14 +32,14 @@ $(function () {
 
         $menu.css({
             transform: 'translateY(100%)',
-            transition: 'transform 0.5s cubic-bezier(.4,0,1,1)'
+            transition: 'transform 0.3s cubic-bezier(.4,0,1,1)'
         });
     }
 
     function voltarMenu() {
         $menu.css({
-            transform: 'translateY(25%)',
-            transition: 'transform 0.5s cubic-bezier(.2,.8,.2,1)'
+            transform: 'translateY(0%)',
+            transition: 'transform 0.3s cubic-bezier(.2,.8,.2,1)'
         });
     }
 
