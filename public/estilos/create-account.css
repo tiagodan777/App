@@ -73,5 +73,6 @@ form > div > nav > div > label {
 }
 
 form > div > nav > div > input {
-    width: 30%;
+    width: 40%;
+    font-size: 1.2em;
 }
