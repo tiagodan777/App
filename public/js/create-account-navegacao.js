@@ -9,7 +9,9 @@ $(function() {
         e.preventDefault();
 
         var url = this.id;
-        
-        $('form').load('/create-account-campos ' + url);
+
+        $('form').load('/create-account-campos ' + url).animate({
+            marginRight: '0%'
+        }, 350);
     });
 });
