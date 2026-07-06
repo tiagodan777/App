@@ -10,7 +10,7 @@ $(function () {
         $('body').append($div);
 
         $div.animate({
-            bottom: '0'
+            bottom: '-45%'
         }, 500);
     });
 
