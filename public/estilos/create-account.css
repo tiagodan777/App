@@ -77,4 +77,5 @@ form > div > nav > div > input {
     width: 70%;
     font-size: 1.2em;
     border-radius: 35px;
+    border: 1px solid #888888;
 }
