@@ -21,7 +21,7 @@ $(function () {
             position: 'fixed',
             left: '0',
             bottom: '0',
-            transform: 'translateY(0%)',
+            transform: 'translateY(15%)',
             transition: 'transform 0.5s cubic-bezier(.2,.8,.2,1)'
         });
     }
@@ -38,7 +38,7 @@ $(function () {
 
     function voltarMenu() {
         $menu.css({
-            transform: 'translateY(0%)',
+            transform: 'translateY(15%)',
             transition: 'transform 0.3s cubic-bezier(.2,.8,.2,1)'
         });
     }
