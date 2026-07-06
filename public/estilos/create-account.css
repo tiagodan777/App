@@ -108,3 +108,8 @@ form > div#contactos > p > input {
     border-radius: none;
     border-bottom: 1px solid #888888;
 }
+
+form > div#contactos > p > input:focus {
+    border: none;
+    outline: none;
+}
