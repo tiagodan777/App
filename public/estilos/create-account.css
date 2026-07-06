@@ -49,6 +49,7 @@ form > div > p > label {
 form > div > p > input {
     width: 75%;
     font-size: 1.1em;
+    padding: 5px 0px 5px 15px;
     border-radius: 35px;
     border: 1px solid #888888;
 }
