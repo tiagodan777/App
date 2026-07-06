@@ -35,4 +35,5 @@ form > div#nome > p {
 
 form > div#nome > p > label {
     font-weight: bold;
+    margin-right: 15px;
 }
