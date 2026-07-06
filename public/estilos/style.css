@@ -86,13 +86,13 @@ img {
 }
 
 .mini-menu > header > img {
-    width: 20vw;
-    height: 20vw;
+    width: 25vw;
+    height: 25vw;
     border-radius: 50%;
 }
 
 .mini-menu > header > h1 {
-    font-size: 2em;
+    font-size: 1.5em;
 }
 
 .mini-menu > div {
