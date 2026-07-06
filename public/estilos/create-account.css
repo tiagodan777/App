@@ -28,8 +28,8 @@ form > div#nome > h1 {
 
 form > div#nome > p {
     display: flex;
-    flex-flow: row nowrap;
-    justify-content: flex-start;
+    flex-flow: column nowrap;
+    justify-content: space-evenly;
     align-items: center; 
 }
 
