@@ -1,5 +1,5 @@
 $(function() {
-    $(document).on('click', '.foto', function(e) {
+    $(document).on('click', '.foto', function() {
         var $backdrop = $('<div class="back-drop"></div>');
         var $div = $('<div class="mini-menu"></div>');
 
@@ -8,8 +8,15 @@ $(function() {
 
         $backdrop.animate({
             bottom: '0%'
-        }, 500)
+        }, 500);
     });
 
+    $('.back-drop').on('click', function() {
+        $(this).animate({
+            bottom: '-100%'
+        }, 500);
+
+        $(this).remove();
+    })
 
 });
