@@ -78,13 +78,13 @@ img {
     align-items: center;
 }
 
-.mini-menu > header > img {
+.mini-menu > img {
     width: 20vw;
     height: 20vw;
     border-radius: 50%;
 }
 
-.mini-menu > header > div {
+.mini-menu > div {
     width: 40vw;
     height: 40vw;
     background-color: red;
@@ -96,7 +96,7 @@ img {
     align-items: center;
 }
 
-.mini-menu > header > div > p {
+.mini-menu > div > p {
     color: white;
     font-weight: bold;
     font-size: 3em;
