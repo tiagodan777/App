@@ -32,7 +32,9 @@ form > div > h1 {
 }
 
 form > div > p {
-    font-size: 1.2em;
+    width: 100%;
+    font-size: 1em;
+
     display: flex;
     flex-flow: column nowrap;
     justify-content: space-evenly;
@@ -41,6 +43,11 @@ form > div > p {
 
 form > div > p > label {
     font-weight: bold;
-    margin-bottom: 15px;
-    margin-right: 15px;
+    margin-bottom: 10px;
+}
+
+form > div > p > input {
+    width: 75%;
+    border-radius: 35px;
+    border: 1px solid #888888;
 }
