@@ -14,20 +14,12 @@ $(function() {
 
         $('form').load('/create-account-campos ' + url, function() {
             $('form > div').css({
-                marginLeft: '200%'
-            })
-            
-            if (e.target.class == 'proximo') {
-                $('form').animate({
-                    marginLeft: '0%'
-                }, 350);
-            } else {
-                $('form').animate({
-                    marginLeft: '100%'
-                }, 350);
-            }
+                marginLeft: '100%'
+            }).animate({
+                marginLeft: '0%'
+            }, 350);
 
-            
+            alert($(this).attr('class'))
         });
     });
 });
