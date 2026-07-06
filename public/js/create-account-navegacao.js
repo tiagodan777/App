@@ -1,7 +1,5 @@
 $(function() {
-    $('form').load('/create-account-campos #nome').animate({
-            marginRight: '0%'
-        }, 350);
+    $('form').load('/create-account-campos #nome').hide();
 });
 
 $(function() {
