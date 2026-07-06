@@ -2,10 +2,14 @@
 {% block content %}
 <form action="{{ doc_root }}create-account" method="post">
     <div id="nome">
-        <label for="primeiro_nome">Primeiro Nome</label>
-        <input type="text" name="primeiro_nome" id="primeiro_nome" required>
-        <label for="ultimo_nome">Último Nome</label>
-        <input type="text" name="ultimo_nome" id="ultimo_nome" required>
+        <p>
+            <label for="primeiro_nome">Primeiro Nome</label>
+            <input type="text" name="primeiro_nome" id="primeiro_nome" required>
+        </p>
+        <p>
+            <label for="ultimo_nome">Último Nome</label>
+            <input type="text" name="ultimo_nome" id="ultimo_nome" required>
+        </p>
     </div>
     <div id="nascimento">
         <label for="data-nascimento">Data de nascimento</label>
