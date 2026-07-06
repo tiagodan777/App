@@ -5,7 +5,7 @@ $(function() {
 });
 
 $(function() {
-    $(document).on('click', 'nav.anterior-proximo a', function(e) {
+    $(document).on('click', 'nav.anterior-proximo > a', function(e) {
         e.preventDefault();
 
         var url = this.href;
