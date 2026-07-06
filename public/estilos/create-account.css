@@ -68,6 +68,10 @@ form > div > nav > div {
     align-items: center;
 }
 
+form > div > nav > div > label {
+    font-weight: bold;
+}
+
 form > div > nav > div > input {
-    width: 20%;
+    width: 30%;
 }
