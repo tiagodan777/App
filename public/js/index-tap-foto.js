@@ -41,13 +41,15 @@ $(function () {
         });
     }
 
-    $(document).on('pointerdown', '.foto', function (e) {
+    // Abre SÓ com click na foto
+    $(document).on('click', '.foto', function (e) {
         e.preventDefault();
         e.stopPropagation();
 
         abrirMenu();
     });
 
+    // Swipe dentro do menu
     $menu.on('pointerdown', function (e) {
         if (!aberto) return;
 
@@ -99,11 +101,13 @@ $(function () {
         e.stopPropagation();
     });
 
-    $(document).on('pointerdown', function (e) {
+    // Fecha ao clicar fora
+    $(document).on('click', function (e) {
         if (!aberto) return;
 
         if (!$(e.target).closest('.mini-menu, .foto').length) {
             fecharMenu();
         }
     });
+
 });
