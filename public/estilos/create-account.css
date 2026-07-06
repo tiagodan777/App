@@ -101,3 +101,8 @@ form > div#gostos > p > input[type="text"] {
 form > div#gostos > p > input[type="button"] {
     width: 20%;
 }
+
+form > div#contactos > p > input {
+    border: none;
+    border-bottom: 1px solid #888888;
+}
