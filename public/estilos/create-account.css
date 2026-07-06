@@ -97,12 +97,12 @@ form > div#gostos > p {
 }
 
 form > div#gostos > p > input[type="text"] {
-    width: 70%;
+    width: 65%;
     padding: 5px;
 }
 
 form > div#gostos > p > input[type="button"] {
-    width: 20%;
+    width: 25%;
     padding: 5px;
 }
 
