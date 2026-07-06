@@ -22,11 +22,13 @@ form > div {
 }
 
 form > div#nome > h1 {
+    font-size: 3em;
     font-weight: bold;
     font-family: 'Alfa Slab One';
 }
 
 form > div#nome > p {
+    font-size: 1.2em;
     display: flex;
     flex-flow: column nowrap;
     justify-content: space-evenly;
