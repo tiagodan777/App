@@ -47,6 +47,7 @@ img {
 }
 
 .back-drop {
+    position: relative;
     width: 100vw;
     height: 50vh;
     background-color: rgba(0, 0, 0, 0.4);
@@ -68,7 +69,6 @@ img {
                 0 6px 18px rgba(0, 0, 0, 0.06),
                 0 14px 32px rgba(0, 0, 0, 0.08);
     background-color: white;
-    bottom: -100%;
     z-index: 20;
     
     display: flex;
