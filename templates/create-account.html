@@ -1,67 +1,7 @@
 {% extends 'layout.html' %}
 {% block content %}
 <form action="{{ doc_root }}create-account" method="post">
-    <div id="nome">
-        <h1>Como te chamas?</h1>
-        <p>
-            <label for="primeiro_nome">Primeiro Nome</label>
-            <input type="text" name="primeiro_nome" id="primeiro_nome" required>
-        </p>
-        <p>
-            <label for="ultimo_nome">Último Nome</label>
-            <input type="text" name="ultimo_nome" id="ultimo_nome" required>
-        </p>
-    </div>
-    <div id="nascimento">
-        <h1>Quando nasceste?</h1>
-        <nav>
-            <div>
-                <label for="dia">Dia</label>
-                <input type="number" name="dia" id="dia" required>
-            </div>
-            <div>
-                <label for="mes">Mês</label>
-                <select id="mes" name="mes" required>
-                    <option value="01">Janeiro</option>
-                    <option value="02">Fevereiro</option>
-                    <option value="03">Março</option>
-                    <option value="04">Abril</option>
-                    <option value="05">Maio</option>
-                    <option value="06">Junho</option>
-                    <option value="07">Julho</option>
-                    <option value="08">Agosto</option>
-                    <option value="09">Setembro</option>
-                    <option value="10">Outubro</option>
-                    <option value="11">Novembro</option>
-                    <option value="12">Dezembro</option>
-                </select>
-            </div>
-            <div>
-                <label for="ano">Ano</label>
-                <input type="number" name="ano" id="ano" required>
-            </div>
-        </nav>
-    </div>
-    <div id="gostos">
-        <h1>O que gostas de fazer?</h1>
-        <p><input type="text" name="hobbie" id="hobbie"><input type="button" value="Adicionar"></p>
-        <div id="recomendacoes">
-
-        </div>
-        <div id="meus-gostos">
-
-        </div>
-    </div>
-    <div id="contactos">
-        <h1>Contactos</h1>
-        <p><label for="telefone">Qual é o teu número de telefone? </label><input type="number" name="" id=""></p>
-        <p><label for="email">E o teu email?</label><input type="email" name="email" id="email"></p>
-    </div>
-    <div id="descricao">
-        <h1>Fala sobre ti</h1>
-        <label for="sobre-ti">Sobre ti</label>
-        <textarea name="sobre-ti" id="sobre-ti" cols="30" rows="20"></textarea>
-    </div>
+    
 </form>
 <script src="{{ doc_root }}js/create-account-navegacao.js"></script>
 {% endblock %}
