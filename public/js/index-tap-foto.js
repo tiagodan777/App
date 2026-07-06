@@ -3,8 +3,6 @@ $(function () {
     $(document).on('click', '.foto', function (e) {
         e.stopPropagation();
 
-        $('.mini-menu').remove();
-
         var $div = $('.mini-menu');
 
         $div.animate({
@@ -16,9 +14,7 @@ $(function () {
         if (!$(e.target).closest('.mini-menu, .foto').length) {
             $('.mini-menu').animate({
                 bottom: '-100%'
-            }, 500, function () {
-                $(this).remove();
-            });
+            }, 500);
         }
     });
 
