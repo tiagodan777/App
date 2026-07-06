@@ -46,6 +46,19 @@ img {
     will-change: transform, opacity; 
 }
 
+.back-drop {
+    width: 100vw;
+    height: 50vh;
+    background-color: rgba(0, 0, 0, 0.4);
+    z-index: 20;
+    bottom: -100%;
+
+    display: flex;
+    flex-flow: column nowrap;
+    justify-content: flex-end;
+    align-items: center;
+}
+
 .mini-menu {
     position: relative;
     width: 100vw;

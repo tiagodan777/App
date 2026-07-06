@@ -1,13 +1,15 @@
 $(function() {
     $(document).on('click', '.foto', function(e) {
-        var top = $(this).attr('data-top');
-        var left = $(this).attr('data-left');
-
+        var $backdrop = $('<div class="back-drop"></div>');
         var $div = $('<div class="mini-menu"></div>');
 
-        $('body').append($div);
-        $div.animate({
-            bottom: '-50%'
+        $backdrop.append($div);
+        $('body').append($backdrop);
+
+        $backdrop.animate({
+            bottom: '0%'
         }, 500)
     });
+
+
 });
