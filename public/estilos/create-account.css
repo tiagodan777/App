@@ -5,8 +5,8 @@ form {
     height: 100vh;
 
     display: flex;
-    flex-flow: row nowrap;
-    justify-content: center;
+    flex-flow: column nowrap;
+    justify-content: space-evenly;
     align-items: center;
 }
 
