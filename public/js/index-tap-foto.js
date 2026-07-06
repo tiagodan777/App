@@ -1,22 +1,31 @@
-$(function() {
-    $(document).on('click', '.foto', function() {
+$(function () {
+
+    $(document).on('click', '.foto', function (e) {
+        e.stopPropagation();
+
+        $('.mini-menu').remove();
+
         var $div = $('<div class="mini-menu"></div>');
 
         $('body').append($div);
 
         $div.animate({
-            bottom: '0%'
+            bottom: '0'
         }, 500);
-
-        $div.focus();
     });
 
-    $('.mini-menu').on('blur', function() {
-        $(this).animate({
-            bottom: '-100%'
-        }, 500);
+    $(document).on('click', function (e) {
+        if (!$(e.target).closest('.mini-menu, .foto').length) {
+            $('.mini-menu').animate({
+                bottom: '-100%'
+            }, 500, function () {
+                $(this).remove();
+            });
+        }
+    });
 
-        $(this).remove();
-    })
+    $(document).on('click', '.mini-menu', function (e) {
+        e.stopPropagation();
+    });
 
 });
