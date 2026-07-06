@@ -37,10 +37,3 @@ $(function() {
         alert($.param(dados));
     });
 });
-
-$(function() {
-    $form.on('submit', function(e) {
-        e.preventDefaul();
-        $.post('/create-acount', dados);
-    })
-})
