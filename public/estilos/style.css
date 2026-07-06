@@ -73,7 +73,7 @@ img {
     z-index: 20;
     
     display: flex;
-    flex-flow: column nowrap;
+    flex-flow: row nowrap;
     justify-content: space-between;
     align-items: center;
 }
