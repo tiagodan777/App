@@ -87,8 +87,8 @@ img {
 }
 
 .mini-menu > header > img {
-    width: 25vw;
-    height: 25vw;
+    width: 22.5vw;
+    height: 22.5vw;
     border-radius: 50%;
 }
 
@@ -97,8 +97,8 @@ img {
 }
 
 .mini-menu > div {
-    width: 40vw;
-    height: 40vw;
+    width: 50vw;
+    height: 50vw;
     background-color: red;
     border-radius: 50%;
 
