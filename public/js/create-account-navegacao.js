@@ -22,3 +22,13 @@ $(function() {
         });
     });
 });
+
+$(function() {
+    var dados;
+    $(document).on('click', 'nav.anterior-proximo > a', function(e) {
+        e.preventDefault();
+
+        dados += $('form').serialize();
+        alert(dados)
+    })
+})
