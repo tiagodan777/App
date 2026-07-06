@@ -1,7 +1,7 @@
 $(function() {
     $('form').load('/create-account-campos #nome');
 
-    $('nav.anterior-proximo').on('click', 'a', function(e) {
+    $(document).on('click', 'nav.anterior-proximo a', function(e) {
         e.preventDefault();
 
         var url = this.href;
