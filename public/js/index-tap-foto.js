@@ -1,6 +1,6 @@
 $(function () {
 
-    $(document).on('click', '.foto', function (e) {
+    $(document).on('pointerdown', '.foto', function (e) {
         e.stopPropagation();
 
         var $div = $('.mini-menu');
@@ -10,7 +10,7 @@ $(function () {
         }, 500);
     });
 
-    $(document).on('click', function (e) {
+    $(document).on('pointerdown', function (e) {
         if (!$(e.target).closest('.mini-menu, .foto').length) {
             $('.mini-menu').animate({
                 bottom: '-100%'
