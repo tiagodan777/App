@@ -1,117 +1,240 @@
 (() => {
     const canvas = document.getElementById('gridCanvas');
-    const ctx = canvas.getContext('2d');
+    if (!canvas) return;
 
-    let width, height, dpr;
-    let points = [];
-    let time = 0;
+    const gl = canvas.getContext('webgl', {
+        alpha: true,
+        antialias: false,
+        depth: false,
+        stencil: false,
+        powerPreference: 'high-performance'
+    });
 
-    const spacing = 18; 
-
-    const colorYellow = [255, 215, 0];
-    const colorBlue = [0, 100, 255];
-    const colorPurple = [138, 43, 226];
-
-    function resize() {
-        dpr = Math.min(window.devicePixelRatio || 1, 2);
-        width = window.innerWidth;
-        height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-        
-        canvas.style.width = width + 'px';
-        canvas.style.height = height + 'px';
-        canvas.width = Math.floor(width * dpr);
-        canvas.height = Math.floor(height * dpr);
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-        createGrid();
+    if (!gl) {
+        console.warn('WebGL não suportado');
+        return;
     }
 
+    let width = 0;
+    let height = 0;
+    let dpr = 1;
+    let pointsCount = 0;
+    let startTime = performance.now();
+
+    const spacing = 19.5; // ~15% menos pontos que 18
+
+    const vertexShaderSource = `
+        attribute vec2 a_position;
+
+        uniform vec2 u_resolution;
+        uniform float u_time;
+
+        varying float v_alpha;
+        varying float v_mixValue;
+
+        float rand(vec2 co) {
+            return fract(sin(dot(co.xy, vec2(12.9898,78.233))) * 43758.5453);
+        }
+
+        void main() {
+            vec2 pos = a_position;
+
+            float nx = pos.x * 0.003;
+            float ny = pos.y * 0.003;
+
+            float waveX =
+                sin(ny * 2.5 + u_time * 2.5) * 18.0 +
+                cos(nx * 1.8 - u_time) * 12.0;
+
+            float waveY =
+                cos(nx * 2.5 - u_time * 2.5) * 18.0 +
+                sin(ny * 1.8 + u_time) * 12.0;
+
+            vec2 finalPos = pos + vec2(waveX, waveY);
+
+            vec2 center = u_resolution * 0.5;
+
+            float holeTime = u_time * 3.5;
+
+            float holeX =
+                center.x +
+                sin(holeTime * 0.7) * (center.x * 0.9) +
+                cos(holeTime * 0.3) * (center.x * 0.3);
+
+            float holeY =
+                center.y +
+                cos(holeTime * 0.8) * (center.y * 0.9) +
+                sin(holeTime * 0.4) * (center.y * 0.3);
+
+            vec2 hole = vec2(holeX, holeY);
+
+            float distToHole = distance(finalPos, hole);
+
+            float holeRadius = 160.0;
+            float edgeSoftness = 60.0;
+
+            float alpha = clamp((distToHole - holeRadius) / edgeSoftness, 0.0, 1.0);
+
+            float borderNoise = sin(nx * 15.0 + u_time * 5.0) * 0.15;
+            alpha = clamp(alpha + borderNoise, 0.0, 1.0);
+
+            float waveValue =
+                (
+                    sin(nx * 2.2 + u_time * 1.5) +
+                    cos(ny * 2.2 + u_time * 1.5) +
+                    2.0
+                ) / 4.0;
+
+            v_alpha = alpha * (0.8 + waveValue * 0.2);
+            v_mixValue = waveValue;
+
+            vec2 clip = (finalPos / u_resolution) * 2.0 - 1.0;
+            clip.y *= -1.0;
+
+            gl_Position = vec4(clip, 0.0, 1.0);
+            gl_PointSize = 3.0;
+        }
+    `;
+
+    const fragmentShaderSource = `
+        precision mediump float;
+
+        varying float v_alpha;
+        varying float v_mixValue;
+
+        void main() {
+            if (v_alpha < 0.05) discard;
+
+            vec2 coord = gl_PointCoord - vec2(0.5);
+            float dist = length(coord);
+
+            if (dist > 0.5) discard;
+
+            vec3 yellow = vec3(1.0, 0.843, 0.0);
+            vec3 blue = vec3(0.0, 0.392, 1.0);
+            vec3 purple = vec3(0.541, 0.169, 0.886);
+
+            vec3 color;
+
+            if (v_mixValue < 0.5) {
+                color = mix(yellow, blue, v_mixValue * 2.0);
+            } else {
+                color = mix(blue, purple, (v_mixValue - 0.5) * 2.0);
+            }
+
+            float softCircle = smoothstep(0.5, 0.15, dist);
+
+            gl_FragColor = vec4(color, v_alpha * softCircle);
+        }
+    `;
+
+    function createShader(type, source) {
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, source);
+        gl.compileShader(shader);
+
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+            console.error(gl.getShaderInfoLog(shader));
+            gl.deleteShader(shader);
+            return null;
+        }
+
+        return shader;
+    }
+
+    function createProgram(vertexSource, fragmentSource) {
+        const vertexShader = createShader(gl.VERTEX_SHADER, vertexSource);
+        const fragmentShader = createShader(gl.FRAGMENT_SHADER, fragmentSource);
+
+        const program = gl.createProgram();
+        gl.attachShader(program, vertexShader);
+        gl.attachShader(program, fragmentShader);
+        gl.linkProgram(program);
+
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+            console.error(gl.getProgramInfoLog(program));
+            return null;
+        }
+
+        return program;
+    }
+
+    const program = createProgram(vertexShaderSource, fragmentShaderSource);
+
+    const positionLocation = gl.getAttribLocation(program, 'a_position');
+    const resolutionLocation = gl.getUniformLocation(program, 'u_resolution');
+    const timeLocation = gl.getUniformLocation(program, 'u_time');
+
+    const positionBuffer = gl.createBuffer();
+
     function createGrid() {
-        points = [];
+        const points = [];
+
         const cols = Math.ceil(width / spacing) + 6;
         const rows = Math.ceil(height / spacing) + 6;
-        
+
         const startX = -spacing * 3;
         const startY = -spacing * 3;
 
         for (let row = 0; row < rows; row++) {
             for (let col = 0; col < cols; col++) {
-                points.push({
-                    baseX: startX + col * spacing,
-                    baseY: startY + row * spacing
-                });
+                points.push(startX + col * spacing);
+                points.push(startY + row * spacing);
             }
         }
+
+        pointsCount = points.length / 2;
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(points), gl.STATIC_DRAW);
+    }
+
+    function resize() {
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+        width = window.innerWidth;
+        height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+
+        canvas.style.width = width + 'px';
+        canvas.style.height = height + 'px';
+
+        canvas.width = Math.floor(width * dpr);
+        canvas.height = Math.floor(height * dpr);
+
+        gl.viewport(0, 0, canvas.width, canvas.height);
+
+        createGrid();
     }
 
     window.addEventListener('resize', resize);
-    resize();
 
-    function lerp(a, b, t) { return a + (b - a) * t; }
-    function clamp(v, min, max) { return v < min ? min : (v > max ? max : v); }
-
-    function getGradientColorRGB(t) {
-        t = clamp(t, 0, 1);
-        let c1, c2, factor;
-        if (t < 0.5) {
-            c1 = colorYellow; c2 = colorBlue; factor = t * 2.0;
-        } else {
-            c1 = colorBlue; c2 = colorPurple; factor = (t - 0.5) * 2.0;
-        }
-        return `${Math.floor(lerp(c1[0], c2[0], factor))}, ${Math.floor(lerp(c1[1], c2[1], factor))}, ${Math.floor(lerp(c1[2], c2[2], factor))}`;
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', resize);
     }
 
-    function draw() {
-        ctx.clearRect(0, 0, width, height);
+    resize();
 
-        time += 0.001; 
+    gl.useProgram(program);
 
-        const cx = width / 2;
-        const cy = height / 2;
-        const holeTime = time * 3.5; 
-        
-        const holeX = cx + Math.sin(holeTime * 0.7) * (cx * 0.9) + Math.cos(holeTime * 0.3) * (cx * 0.3);
-        const holeY = cy + Math.cos(holeTime * 0.8) * (cy * 0.9) + Math.sin(holeTime * 0.4) * (cy * 0.3);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
-        const holeRadius = 160; 
-        const edgeSoftness = 60; 
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    gl.enableVertexAttribArray(positionLocation);
+    gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
 
-        for (let i = 0; i < points.length; i++) {
-            const p = points[i];
-            
-            const nx = p.baseX * 0.003;
-            const ny = p.baseY * 0.003;
+    function draw(now) {
+        const time = (now - startTime) * 0.001;
 
-            const waveX = Math.sin(ny * 2.5 + time * 2.5) * 18 + Math.cos(nx * 1.8 - time) * 12;
-            const waveY = Math.cos(nx * 2.5 - time * 2.5) * 18 + Math.sin(ny * 1.8 + time) * 12;
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
 
-            const finalX = p.baseX + waveX;
-            const finalY = p.baseY + waveY;
+        gl.useProgram(program);
 
-            const waveValue = (Math.sin(nx * 2.2 + time * 1.5) + Math.cos(ny * 2.2 + time * 1.5) + 2) / 4; 
-            
-            const dx = finalX - holeX;
-            const dy = finalY - holeY;
-            const dist = Math.sqrt(dx * dx + dy * dy);
+        gl.uniform2f(resolutionLocation, width, height);
+        gl.uniform1f(timeLocation, time);
 
-            let alpha = clamp((dist - holeRadius) / edgeSoftness, 0, 1);
-            
-            const borderNoise = Math.sin(nx * 15 + time * 5) * 0.15;
-            alpha = clamp(alpha + borderNoise, 0, 1);
-
-            const finalAlpha = alpha * (0.8 + waveValue * 0.2);
-
-            if (finalAlpha < 0.05) continue;
-            
-            const rgb = getGradientColorRGB(waveValue);
-            
-            // OTIMIZAÇÃO: "Math.round" em vez de "toFixed()" para acelerar o processamento
-            ctx.fillStyle = `rgba(${rgb}, ${Math.round(finalAlpha * 100) / 100})`;
-            
-            // OTIMIZAÇÃO CRÍTICA: Desenhar quadrados perfeitos (2.4x2.4px) em vez de círculos (arc). 
-            // Elimina o estrangulamento da placa gráfica. O olho humano vê a mesma bolinha.
-            ctx.fillRect(finalX - 1.2, finalY - 1.2, 2.4, 2.4);
-        }
+        gl.drawArrays(gl.POINTS, 0, pointsCount);
 
         requestAnimationFrame(draw);
     }
