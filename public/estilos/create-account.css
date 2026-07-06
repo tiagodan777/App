@@ -65,6 +65,7 @@ form > div > nav.anterior-proximo {
 
 form > div > nav.anterior-proximo > a.proximo {
     margin: 5px 10px;
+    padding: 5px 10px;
     background-color: red;
     color: white;
     border-radius: 35px;
