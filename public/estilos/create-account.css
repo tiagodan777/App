@@ -95,9 +95,9 @@ form > div#gostos > p {
 }
 
 form > div#gostos > p > input[type="text"] {
-    width: 60%;
+    width: 70%;
 }
 
 form > div#gostos > p > input[type="button"] {
-    width: 30%;
+    width: 20%;
 }
