@@ -1,3 +1,3 @@
 $(function() {
-    $('form').load('create-account-campos.html #nome');
+    $('form').load('create-account-campos.html');
 });
