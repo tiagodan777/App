@@ -5,7 +5,7 @@ $(function() {
 
         var $div = $('<div class="mini-menu"></div>');
 
-        $(document).append($div);
+        $('body').append($div);
 
         $div.slideDown();
 
