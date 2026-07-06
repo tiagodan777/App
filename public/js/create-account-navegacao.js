@@ -11,6 +11,6 @@ $(function() {
         var url = this.href;
         alert(url)
 
-        $('form').load('/create-account-campos ' + url);
+        $('form').load('/create-account-campos #' + url);
     });
 });
