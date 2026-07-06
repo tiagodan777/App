@@ -1,8 +1,9 @@
 $(function() {
-    $('form').load('/create-account-campos #nome');
-    $('form > div').animate({
+    $('form').load('/create-account-campos #nome', function() {
+        $('form > div').animate({
             marginLeft: '0%'
         }, 350);
+    });
 });
 
 $(function() {
@@ -11,8 +12,12 @@ $(function() {
 
         var url = this.id;
 
-        $('form').load('/create-account-campos ' + url).animate({
-            marginRight: '0%'
-        }, 350);
+        $('form').load('/create-account-campos ' + url, function() {
+            $('form > div').css({
+                marginLeft: '100%'
+            }).animate({
+                marginLeft: '0%'
+            }, 350);
+        });
     });
 });
