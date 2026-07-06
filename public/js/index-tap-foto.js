@@ -2,7 +2,7 @@ $(function() {
     $(document).on('click', '.foto', function() {
         var $div = $('<div class="mini-menu"></div>');
 
-        $('body').append($backdrop);
+        $('body').append($div);
 
         $div.animate({
             bottom: '0%'
