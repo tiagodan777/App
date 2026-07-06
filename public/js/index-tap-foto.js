@@ -11,7 +11,7 @@ $(function() {
         }, 500);
     });
 
-    $('.back-drop').on('click', function() {
+    $('.mini-menu').on('blur', function() {
         $(this).animate({
             bottom: '-100%'
         }, 500);
