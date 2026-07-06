@@ -1,0 +1,9 @@
+{% extends 'layout.html' %}
+{% block content %}
+<form action="{{ doc_root }}create-account" method="post">
+    <label for="primeiro_nome">Primeiro Nome</label>
+    <input type="text" name="primeiro_nome" id="primeiro_nome">
+    <label for="ultimo_nome">Último Nome</label>
+    <input type="text" name="ultimo_nome" id="ultimo_nome">
+</form>
+{% endblock %}
