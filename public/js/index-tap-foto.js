@@ -6,6 +6,8 @@ $(function() {
         var $div = $('<div class="mini-menu"></div>');
 
         $('body').append($div);
-        $div.slideDown()
+        $div.animate({
+            bottom: '50%'
+        }, 500)
     });
 });
