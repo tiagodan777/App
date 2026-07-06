@@ -21,6 +21,11 @@ form > div {
     align-items: center;
 }
 
+form > div#nome > h1 {
+    font-weight: bold;
+    font-family: 'Alfa Slab One';
+}
+
 form > div#nome > p {
     display: flex;
     flex-flow: row nowrap;
@@ -30,5 +35,4 @@ form > div#nome > p {
 
 form > div#nome > p > label {
     font-weight: bold;
-    font-family: 'Alfa Slab One';
 }
