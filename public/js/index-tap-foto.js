@@ -3,30 +3,32 @@ $(function () {
     const $menu = $('.mini-menu');
 
     let aberto = false;
-    let dragging = false;
+    let draggingMenu = false;
 
     let startY = 0;
     let currentY = 0;
     let startTime = 0;
 
+    let fotoStartX = 0;
+    let fotoStartY = 0;
+    let fotoStartTime = 0;
+
     function abrirMenu() {
         aberto = true;
-        dragging = false;
+        draggingMenu = false;
 
-        $menu
-            .stop(true, true)
-            .css({
-                position: 'fixed',
-                left: '0',
-                bottom: '0',
-                transform: 'translateY(25%)',
-                transition: 'transform 0.5s cubic-bezier(.2,.8,.2,1)'
-            });
+        $menu.css({
+            position: 'fixed',
+            left: '0',
+            bottom: '0',
+            transform: 'translateY(25%)',
+            transition: 'transform 0.5s cubic-bezier(.2,.8,.2,1)'
+        });
     }
 
     function fecharMenu() {
         aberto = false;
-        dragging = false;
+        draggingMenu = false;
 
         $menu.css({
             transform: 'translateY(100%)',
@@ -41,19 +43,35 @@ $(function () {
         });
     }
 
-    // Abre SÓ com click na foto
-    $(document).on('click', '.foto', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
+    // Guarda onde o dedo começou na foto
+    $(document).on('pointerdown', '.foto', function (e) {
+        fotoStartX = e.clientX;
+        fotoStartY = e.clientY;
+        fotoStartTime = Date.now();
 
-        abrirMenu();
+        e.stopPropagation();
+    });
+
+    // Abre só se foi TAP, não arrasto
+    $(document).on('pointerup', '.foto', function (e) {
+        const diffX = Math.abs(e.clientX - fotoStartX);
+        const diffY = Math.abs(e.clientY - fotoStartY);
+        const time = Date.now() - fotoStartTime;
+
+        const foiTap = diffX < 12 && diffY < 12 && time < 350;
+
+        if (foiTap) {
+            e.preventDefault();
+            e.stopPropagation();
+            abrirMenu();
+        }
     });
 
     // Swipe dentro do menu
     $menu.on('pointerdown', function (e) {
         if (!aberto) return;
 
-        dragging = true;
+        draggingMenu = true;
         startY = e.clientY;
         currentY = e.clientY;
         startTime = Date.now();
@@ -68,7 +86,7 @@ $(function () {
     });
 
     $menu.on('pointermove', function (e) {
-        if (!dragging) return;
+        if (!draggingMenu) return;
 
         currentY = e.clientY;
 
@@ -81,16 +99,18 @@ $(function () {
         $menu.css({
             transform: `translateY(calc(25% + ${diffY}px))`
         });
+
+        e.preventDefault();
     });
 
     $menu.on('pointerup pointercancel', function (e) {
-        if (!dragging) return;
+        if (!draggingMenu) return;
 
-        dragging = false;
+        draggingMenu = false;
 
-        let distance = currentY - startY;
-        let time = Date.now() - startTime;
-        let velocity = distance / time;
+        const distance = currentY - startY;
+        const time = Date.now() - startTime;
+        const velocity = distance / time;
 
         if (distance > 120 || velocity > 0.7) {
             fecharMenu();
@@ -101,8 +121,8 @@ $(function () {
         e.stopPropagation();
     });
 
-    // Fecha ao clicar fora
-    $(document).on('click', function (e) {
+    // Fecha ao tocar fora
+    $(document).on('pointerup', function (e) {
         if (!aberto) return;
 
         if (!$(e.target).closest('.mini-menu, .foto').length) {
