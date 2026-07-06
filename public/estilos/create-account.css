@@ -80,3 +80,9 @@ form > div > nav > div > input {
     border-radius: 35px;
     border: 1px solid #888888;
 }
+
+form > div > nav > div > select {
+    font-size: 1.2em;
+    border-radius: 35px;
+    border: 1px solid #888888;
+}
