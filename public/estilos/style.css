@@ -32,9 +32,6 @@ img {
     width: 60px;
     height: 60px;
     border-radius: 50%;
-    position: absolute;
-    z-index: 10;
-    transform: translate(-50%, -50%);
 }
 
 .foto {
@@ -44,6 +41,9 @@ img {
     transform-origin: center center;
     /* Isto avisa a placa gráfica da Apple que esta imagem vai andar a voar pelo ecrã */
     will-change: transform, opacity; 
+    position: absolute;
+    z-index: 10;
+    transform: translate(-50%, -50%);
 }
 
 .back-drop {
