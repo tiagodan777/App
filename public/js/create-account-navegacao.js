@@ -40,9 +40,11 @@ $(function() {
 
 $(function() {
     $form.on('submit', function(e) {
-        e.preventDefaul();
-        var dadosFormulario = dados.serialize();
+        e.preventDefault();
+        var dadosFormulario = $.param(dados)
         alert(dadosFormulario);
-        $.post('/create-acount', dados);
+        $.post('/create-acount', dados, function(resposta) {
+            document.write(resposta);
+        });
     })
 })
