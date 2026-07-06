@@ -9,8 +9,7 @@ $(function() {
         e.preventDefault();
 
         var url = this.id;
-        alert(url)
-
+        
         $('form').load('/create-account-campos ' + url);
     });
 });
