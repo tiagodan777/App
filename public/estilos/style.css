@@ -75,6 +75,7 @@ img {
     z-index: 20;
     touch-action: none;
     will-change: transform;
+    transform: translateY(100%);
     
     display: flex;
     flex-flow: column nowrap;
