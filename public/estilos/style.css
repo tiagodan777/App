@@ -78,6 +78,29 @@ img {
     align-items: center;
 }
 
+.mini-menu > img {
+    width: 30vw;
+    height: 30vw;
+    border-radius: 50%;
+}
+
+.mini-menu > div.ola {
+    width: 50vw;
+    height: 50vw;
+    background-color: red;
+
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: center;
+    align-items: center;
+}
+
+.mini-menu > div > p {
+    color: white;
+    font-weight: bold;
+    font-size: 3em;
+}
+
 #menuPrincipal {
     width: 90%;
     height: 56px;
@@ -113,7 +136,7 @@ img {
     box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06),
                 inset 0 8px 20px rgba(0, 0, 0, 0.1)
                 inset 0 20px 40px rgba(0, 0, 0, 0.2),
-                inset 0 40 64px rgba(0, 0, 0, 0.15);
+                inset 0 40 64px rgba(0, 0, 0, 0.25);
 
     display: flex;
     flex-flow: row nowrap;
