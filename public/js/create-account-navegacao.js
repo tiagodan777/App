@@ -19,7 +19,6 @@ $(function() {
                 marginLeft: '0%'
             }, 350);
 
-            alert($(this).attr('class'))
         });
     });
 });
