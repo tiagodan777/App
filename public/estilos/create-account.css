@@ -50,8 +50,9 @@ form > div > p > input {
     width: 100%;
     font-size: 1.2em;
     padding: 10px 0px;
-    border-radius: 35px;
-    border: 1px solid #888888;
+    border-radius: 0px;
+    border: none;
+    border-bottom: 1px solid #888888;
 }
 
 form > div#nascimento > nav {
