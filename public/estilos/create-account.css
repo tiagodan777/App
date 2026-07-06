@@ -64,12 +64,13 @@ form > div > nav {
 form > div > nav > div {
     display: flex;
     flex-flow: row nowrap;
-    justify-content: space-evenly;
+    justify-content: flex-start;
     align-items: center;
 }
 
 form > div > nav > div > label {
     font-weight: bold;
+    margin-right: ;
 }
 
 form > div > nav > div > input {
