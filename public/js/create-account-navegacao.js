@@ -43,7 +43,7 @@ $(function() {
         e.preventDefault();
         var dadosFormulario = $.param(dados)
         alert(dadosFormulario);
-        $.post('/create-acount', dados, function(resposta) {
+        $.post('/create-account', dados, function(resposta) {
             document.write(resposta);
         });
     })
