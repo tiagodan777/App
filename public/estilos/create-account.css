@@ -70,7 +70,7 @@ form > div#nascimento > nav > div {
 
 form > div#nascimento > nav > div > label {
     font-weight: bold;
-    margin-right: 10px;
+    margin-bottom: 10px;
 }
 
 form > div#nascimento > nav > div > input {
@@ -92,4 +92,12 @@ form > div#gostos > p {
     flex-flow: row nowrap;
     justify-content: space-evenly;
     align-items: center;
+}
+
+form > div#gostos > p > input[type="text"] {
+    width: 60%;
+}
+
+form > div#gostos > p > input[type="button"] {
+    width: 30%;
 }
