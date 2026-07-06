@@ -6,6 +6,6 @@ $(function() {
         var $div = $('<div class="mini-menu"></div>');
 
         $('body').append($div);
-        $div.slideUp()
+        $div.slideDown()
     });
 });
