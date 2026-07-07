@@ -34,7 +34,7 @@ $(function() {
             dados[campo.name] = campo.value;
         });
 
-        alert($.param(dados));
+        // alert($.param(dados));
     });
 });
 
