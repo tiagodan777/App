@@ -36,17 +36,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $invalid = implode($erros);
     if (!$invalid) {
         $membro['nascimento'] = $membro['ano'] . '-' . $membro['mes'] . '-' . $membro['dia'];
-        //$result = $cms->getMember()->create($membro);
-        $result = true;
+        $result = $cms->getMember()->create($membro);
 
         if ($result === false) {
             $erros['email'] = 'O email já está a ser usado';
         } else {
-            /*$cms->getSession()->create(member_id: $result);
+            $cms->getSession()->create(member_id: $result);
             $tokenLogin = $cms->getToken()->create($result, 'login');
             $cms->getSession()->create($tokenLogin, 'login');
 
-            redirect(DOC_ROOT . 'index/?loginToken=' . $tokenLogin);*/
+            redirect(DOC_ROOT . 'index/?loginToken=' . $tokenLogin);
 
             var_dump($membro);
         }
