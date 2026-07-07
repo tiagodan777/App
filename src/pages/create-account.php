@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         } else {
             $cms->getSession()->create(member_id: $result);
             $tokenLogin = $cms->getToken()->create($result, 'login');
-            // $cms->getSession()->create($tokenLogin, 'login');
+            $cms->getSession()->create($tokenLogin, 'login');
 
             redirect(DOC_ROOT . 'index/?loginToken=' . $tokenLogin);
         }
