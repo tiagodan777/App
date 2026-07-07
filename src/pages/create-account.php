@@ -11,7 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $membro['dia'] = $_POST['dia'];
     $membro['mes'] = $_POST['mes'];
     $membro['ano'] = $_POST['ano'];
-    $membro['sexo'] = $_POST['sexo'];
+    $membro['genero'] = $_POST['genero'];
 
     // FALTA OS GOSTOS
 
@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $erros['dia'] = Validate::isNumber($membro['dia'], 1, 31) ? '' : 'Escolhe um dia válido sua parva';
     $erros['mes'] = Validate::isNumber($membro['mes'], 1, 12)? '' : 'Escolhe um mês válido sua parva';
     $erros['ano'] = Validate::isNumber($membro['ano'], 1900, date('Y')) ? '' : 'Escolhe um ano válido sua parva';
-    $erros['sexo'] = Validate::isGenero($membro['sexo'])? '' : 'Queres mais géneros para quê parvalhona?';
+    $erros['genero'] = Validate::isGenero($membro['genero'])? '' : 'Queres mais géneros para quê parvalhona?';
     $erros['telefone'] = Validate::isNumber($membro['telefone'], 0, 99999999999) ? '' : 'O número de telefone deve ser entre 9000000 e 999999999';
     $erros['email'] = Validate::isEmail($membro['email']) ? '' : 'Introduz um email válido';
     $erros['password'] = Validate::isPassword($membro['password']) ? '' : 'A password deve ter pelo menos 8 caracteres, 1 caracter minúsculo, 1 maiúsculo e 1 número';
