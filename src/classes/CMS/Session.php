@@ -1,0 +1,67 @@
+<?php
+namespace TiagoDaniel\CMS;
+
+class Session {
+    private $db;
+    public $id, $primeiro_nome, $foto_perfil, $seo_name, $token;
+
+    public function __construct($db)
+    {   
+        if (php_sapi_name() !== 'cli') {
+            session_start();
+        }
+        $this->db = $db;
+        $token = $_COOKIE['token'] ?? '';
+        if ($token) {
+            /*echo "<pre>";
+            var_dump($_COOKIE);*/
+            $this->create($token, 'stay_logged_id');
+            /*var_dump($_SESSION);
+            echo "</pre>";*/
+        }
+        $this->id = $_SESSION['id'] ?? 0;
+        $this->primeiro_nome = $_SESSION['primeiro_nome'] ?? '';
+        $this->foto_perfil = $_SESSION['foto_perfil'] ?? '';
+        // $this->role = $_SESSION['role'] ?? 'member';
+        // $this->seo_name = $_SESSION['seo_name'] ?? '';
+        $this->token = $_SESSION['token'] ?? '';
+    }
+
+    public function create($token = '', $proposito = 'stay_logged_id', int $membro_id = 0) {
+        session_regenerate_id(true);
+        if (!$membro_id) {
+            $arguments = [];
+            $sql = "SELECT membro_id FROM token
+                    WHERE token = :token AND proposito = :proposito AND expires > NOW()";
+            $membro_id = $this->db->runSQL($sql, ['token' => $token, 'proposito' => $proposito])->fetchColumn();
+
+            if (!$membro_id) {
+                // Token inválido → não atualiza a sessão
+                return;
+            }
+        }
+
+        $sql = "SELECT id, primeiro_nome, foto_perfil, role, seo_name
+                FROM membro
+                WHERE id = :membro_id;";
+        $arguments = $this->db->runSQL($sql, ['membro_id' => $membro_id])->fetch();
+
+        $_SESSION['id'] = $arguments['id'];
+        $_SESSION['primeiro_nome'] = $arguments['primeiro_nome'];
+        $_SESSION['foto_perfil'] = $arguments['foto_perfil'];
+        // $_SESSION['role'] = $arguments['role'];
+        // $_SESSION['seo_name'] = $arguments['seo_name'];
+        $_SESSION['token'] = $token;
+    }
+
+    public function update($token) {
+        $this->create($token);
+    }
+
+    public function delete() {
+        $_SESSION = [];
+        $param = session_get_cookie_params();
+        setcookie(session_name(), '', time() - 3600, $param['path'], $param['domain'], $param['secure'], $param['httponly']);
+        session_destroy();
+    }
+}

@@ -37,7 +37,7 @@ class CMS {
             $this->cookie = new Cookie($this->db);
         }
         return $this->cookie;
-    }
+    }*/
 
     public function getToken() {
         if ($this->token === null) {
@@ -46,6 +46,7 @@ class CMS {
         return $this->token;
     }
 
+    /*
     public function getOpinion() {
         if ($this->opinion === null) {
             $this->opinion = new Opinion($this->db);
@@ -65,14 +66,14 @@ class CMS {
             $this->content = new Content($this->db);
         }
         return $this->content;
-    }
+    }*/
 
     public function getSession() {
         if ($this->session === null) {
             $this->session = new Session($this->db);
         }
         return $this->session;
-    }*/
+    }
 
     public function getDatabase() {
         return $this->db;
