@@ -1,5 +1,5 @@
 <?php
-use TiagoDaniel\Validate\Validate;
+use App\Validate\Validate;
 
 $data = [];
 $membro = [];
