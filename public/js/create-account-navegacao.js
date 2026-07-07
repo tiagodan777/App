@@ -42,8 +42,10 @@ $(function() {
     var $meusGostos = $('#meus-gostos');
 
     $('div#gostos > p > input[type="button"]').on('click', function(e) {
-        var gosto = '<p>' + $(this).val() + '</p>';
+        var gosto = $('#hobbie').val()
+
         $meusGostos.append(gosto);
+        gosto.val('')
     })
 });
 
