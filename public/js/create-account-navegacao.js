@@ -3,7 +3,7 @@ var dados = {};
 
 $(function() {
     $form.load('/create-account-campos #nome', function() {
-        $('form > div').animate({
+        $('form > div').delay(100).animate({
             marginLeft: '0%'
         }, 350);
     });
@@ -17,8 +17,8 @@ $(function() {
 
         $form.load('/create-account-campos ' + url, function() {
             $('form > div').css({
-                marginLeft: '100%'
-            }).animate({
+                marginLeft: '200%'
+            }).delay(100).animate({
                 marginLeft: '0%'
             }, 350);
 
@@ -36,6 +36,15 @@ $(function() {
 
         // alert($.param(dados));
     });
+});
+
+$(function() {
+    var $meusGostos = $('#meus-gostos');
+
+    $('div#gostos > p > input[type="button"]').on('click', function(e) {
+        var gosto = '<p>' + $(this).val() + '</p>';
+        $meusGostos.append(gosto);
+    })
 });
 
 $(function() {
