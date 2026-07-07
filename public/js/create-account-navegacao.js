@@ -46,7 +46,7 @@ $(function() {
 
         if (gosto === '') return;
 
-        $('#meus-gostos').append('<p>' + gosto + '</p>');
+        $('#meus-gostos').append('<p class="meu-hobbie">' + gosto + '</p>');
         $('#hobbie').val('');
     });
 });

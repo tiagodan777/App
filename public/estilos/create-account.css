@@ -162,6 +162,21 @@ form > div#gostos > p > input[type="button"] {
     border-radius: 35px;
 }
 
+form > div#gostos > div#meus-gostos {
+    width: 100%;
+
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: space-evenly;
+    align-items: center;
+}
+
+form > div#gostos > div#meus-gostos > p {
+    padding: 10px 20px;
+    background-color: #dddddd;
+    border-radius: 35px;
+}
+
 form > div#contactos > p > input {
     border: none;
     border-radius: 0px;
