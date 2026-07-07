@@ -177,7 +177,7 @@ form > div#palavra-passe {
     display: flex;
     flex-flow: column nowrap;
     justify-content: space-evenly;
-    align-items: flex-start;
+    align-items: center;
 }
 
 form > div#palavra-passe > p {
