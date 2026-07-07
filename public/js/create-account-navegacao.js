@@ -38,15 +38,15 @@ $(function() {
     });
 });
 
-$(function() {
-    var $meusGostos = $('#meus-gostos');
+$(document).on('click', '#adicionar-gosto', function(e) {
+    e.preventDefault();
 
-    $('div#gostos > p > input[type="button"]').on('click', function(e) {
-        var gosto = $('#hobbie').val()
+    var gosto = $('#hobbie').val().trim();
 
-        $meusGostos.append(gosto);
-        gosto.val('');
-    })
+    if (gosto === '') return;
+
+    $('#meus-gostos').append('<p>' + gosto + '</p>');
+    $('#hobbie').val('');
 });
 
 $(function() {
