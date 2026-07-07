@@ -17,13 +17,14 @@ class CMS {
         $this->db = new Database($dsn, $username, $password);        
     }
 
-    /*public function getMember() {
+    public function getMember() {
         if ($this->member === null) {
             $this->member = new Member($this->db);
         }
         return $this->member;
     }
 
+    /*
     public function getNotification() {
         if ($this->notification === null) {
             $this->notification = new Notification($this->db);
