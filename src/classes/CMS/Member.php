@@ -64,8 +64,8 @@ class Member {
             unset($member['dia']);
             unset($member['mes']);
             unset($member['ano']);
-            $sql = "INSERT INTO membros (primeiro_nome, ultimo_nome, nascimento, genero, telefone, email, password)
-                    VALUES (:primeiro_nome, :ultimo_nome, :nascimento, :genero, :email, :telemovel, :password);";
+            $sql = "INSERT INTO membros (primeiro_nome, ultimo_nome, nascimento, sexo, telefone, email, password)
+                    VALUES (:primeiro_nome, :ultimo_nome, :nascimento, :sexo, :telefone, :email, :password);";
             $this->db->runSQL($sql, $member);
 
             $sql = "SELECT id FROM membro
