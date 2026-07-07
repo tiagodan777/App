@@ -167,7 +167,7 @@ form > div#gostos > div#meus-gostos {
 
     display: flex;
     flex-flow: row wrap;
-    justify-content: space-evenly;
+    justify-content: flex-start;
     align-items: center;
 }
 
