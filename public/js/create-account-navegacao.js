@@ -34,7 +34,7 @@ $(function() {
             dados[campo.name] = campo.value;
         });
 
-        // alert($.param(dados));
+        alert($.param(dados));
     });
 });
 
@@ -49,6 +49,10 @@ $(function() {
         $('#meus-gostos').append('<p class="meu-hobbie">' + gosto + '</p>');
         $('#hobbie').val('');
     });
+
+    $(document).on('click', '#meus-gostos > p', function(e) {
+        $(this).remove();
+    })
 });
 
 
