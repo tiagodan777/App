@@ -173,8 +173,15 @@ form > div#contactos > p > input:focus {
     border-bottom: 1px solid red;
 }
 
+form > div#palavra-passe {
+    display: flex;
+    flex-flow: column nowrap;
+    justify-content: space-evenly;
+    align-items: flex-start;
+}
+
 form > div#palavra-passe > input {
-    width: 100%;
+    width: 80%;
     font-size: 1.2em;
     padding: 10px 0px;
     border-radius: 0px;
