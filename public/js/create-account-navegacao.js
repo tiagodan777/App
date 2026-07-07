@@ -45,7 +45,7 @@ $(function() {
         var gosto = $('#hobbie').val()
 
         $meusGostos.append(gosto);
-        gosto.val('')
+        gosto.val('');
     })
 });
 
