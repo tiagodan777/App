@@ -190,8 +190,15 @@ form > div#palavra-passe > p {
     align-items: flex-start; 
 }
 
+form > div#palavra-passe > p#mostrar-password {
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: space-evenly;
+    align-items: center;
+}
+
 form > div#palavra-passe > p > input {
-    width: 80%;
+    width: 100%;
     font-size: 1.2em;
     padding: 10px 0px;
     border-radius: 0px;
