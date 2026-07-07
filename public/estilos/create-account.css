@@ -180,7 +180,17 @@ form > div#palavra-passe {
     align-items: flex-start;
 }
 
-form > div#palavra-passe > input {
+form > div#palavra-passe > p {
+    width: 80%;
+    font-size: 1em;
+
+    display: flex;
+    flex-flow: column nowrap;
+    justify-content: space-evenly;
+    align-items: flex-start; 
+}
+
+form > div#palavra-passe > p > input {
     width: 80%;
     font-size: 1.2em;
     padding: 10px 0px;
@@ -189,7 +199,7 @@ form > div#palavra-passe > input {
     border-bottom: 1px solid #888888;
 }
 
-form > div#palavra-passe > input:focus {
+form > div#palavra-passe > p > input:focus {
     border: none;
     outline: none;
     border-bottom: 1px solid red;
