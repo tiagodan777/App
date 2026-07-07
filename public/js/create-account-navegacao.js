@@ -33,7 +33,9 @@ $(function() {
         $form.serializeArray().forEach(function(campo) {
             dados[campo.name] = campo.value;
         });
-        dados['gostos'] = $('#meus-gostos').text();
+        if (!dados['gostos']) {
+            dados['gostos'] = $('#meus-gostos').text();
+        }
 
         alert($.param(dados));
     });
