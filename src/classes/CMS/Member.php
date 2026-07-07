@@ -64,7 +64,7 @@ class Member {
             unset($member['dia']);
             unset($member['mes']);
             unset($member['ano']);
-            $sql = "INSERT INTO membro (primeiro_nome, ultimo_nome, nascimento, genero, telefone, email, password)
+            $sql = "INSERT INTO membros (primeiro_nome, ultimo_nome, nascimento, genero, telefone, email, password)
                     VALUES (:primeiro_nome, :ultimo_nome, :nascimento, :genero, :email, :telemovel, :password);";
             $this->db->runSQL($sql, $member);
 

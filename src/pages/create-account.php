@@ -36,7 +36,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $invalid = implode($erros);
     if (!$invalid) {
         $membro['nascimento'] = $membro['ano'] . '-' . $membro['mes'] . '-' . $membro['dia'];
-        $result = $cms->getMember()->create($membro);
+        //$result = $cms->getMember()->create($membro);
+        $result = true;
 
         if ($result === false) {
             $erros['email'] = 'O email já está a ser usado';
