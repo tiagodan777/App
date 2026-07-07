@@ -172,3 +172,18 @@ form > div#contactos > p > input:focus {
     outline: none;
     border-bottom: 1px solid red;
 }
+
+form > div#palavra-passe > input {
+    width: 100%;
+    font-size: 1.2em;
+    padding: 10px 0px;
+    border-radius: 0px;
+    border: none;
+    border-bottom: 1px solid #888888;
+}
+
+form > div#palavra-passe > input:focus {
+    border: none;
+    outline: none;
+    border-bottom: 1px solid red;
+}
