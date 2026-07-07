@@ -175,6 +175,7 @@ form > div#gostos > div#meus-gostos > p {
     padding: 10px 20px;
     background-color: #dddddd;
     border-radius: 35px;
+    margin: 10px;
 }
 
 form > div#contactos > p > input {
