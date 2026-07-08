@@ -258,6 +258,7 @@ form > div#palavra-passe > p#mostrar-password {
 form > div#palavra-passe > p#mostrar-password > input {
     width: 15px;
     height: 15px;
+    margin-right: 10px;
 }
 
 form > div#palavra-passe > p > input:focus {
