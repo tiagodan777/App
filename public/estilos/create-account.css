@@ -207,6 +207,12 @@ form > div#contactos > p > input:focus {
     border-bottom: 1px solid red;
 }
 
+form > div#descricao > textarea {
+    font-family: Helvetica, sans-serif;
+    width: 90vw;
+    height: 45vw;
+}
+
 form > div#palavra-passe {
     display: flex;
     flex-flow: column nowrap;
