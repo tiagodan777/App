@@ -7,4 +7,5 @@ if ($gosto) {
 } else {
     echo '';
 }
+exit();
 ?>
