@@ -154,7 +154,7 @@ form > div#sexo > div > select {
 form > div#gostos > p {
     display: flex;
     flex-flow: row nowrap;
-    justify-content: space-evenly;
+    justify-content: space-around;
     align-items: center;
 }
 
