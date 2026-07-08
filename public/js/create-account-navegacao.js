@@ -70,5 +70,20 @@ $(function() {
         $.post('/create-account', dados, function(resposta) {
             document.write(resposta);
         });
+    });
+});
+
+$(function() {
+    var $passowrd = $('#password');
+    var $confirma = $('confirma-password');
+
+    $('#mostrar-password').on('click', function() {
+        if ($passowrd.attr('type') == 'password' && $confirma.attr('type') == 'password') {
+            $passowrd.attr('type', 'text');
+            $confirma.attr('type', 'text');
+        } else {
+            $passowrd.attr('type', 'password');
+            $confirma.attr('type', 'password');
+        }
     })
 })
