@@ -208,6 +208,7 @@ form > div#contactos > p > input:focus {
 
 form > div#descricao > label {
     margin-left: 10vw;
+    margin-bottom: 10px;
     align-self: flex-start;
 }
 
