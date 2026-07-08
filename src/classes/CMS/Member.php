@@ -57,20 +57,23 @@ class Member {
         return $this->db->runSQL($sql)->fetchColumn();
     }*/
 
-    public function create($member) {
-        $member['password'] = password_hash($member['password'], PASSWORD_DEFAULT);
+    public function create($membro) {
+        $membro['password'] = password_hash($membro['password'], PASSWORD_DEFAULT);
 
         try {
-            unset($member['dia']);
-            unset($member['mes']);
-            unset($member['ano']);
+            unset($membro['dia']);
+            unset($membro['mes']);
+            unset($membro['ano']);
+            echo "<pre>";
+            var_dump($membro);
+            echo "</pre>";
             $sql = "INSERT INTO membros (primeiro_nome, ultimo_nome, nascimento, genero, telefone, email, password)
                     VALUES (:primeiro_nome, :ultimo_nome, :nascimento, :genero, :telefone, :email, :password);";
-            $this->db->runSQL($sql, $member);
+            $this->db->runSQL($sql, $membro);
 
             $sql = "SELECT id FROM membro
                     WHERE email = :email;";
-            $id =  $this->db->runSQL($sql, [$member['email']])->fetchColumn();
+            $id =  $this->db->runSQL($sql, [$membro['email']])->fetchColumn();
 
             /*$sql = "INSERT INTO membros_gostos (membro_id, hobbie_id)
             VALUES (";*/
