@@ -74,16 +74,13 @@ $(function() {
 });
 
 $(function() {
-    var $passowrd = $('#password');
-    var $confirma = $('confirma-password');
+    var $password = $('#password');
+    var $confirma = $('#confirma-password');
 
-    $('#ver-password, #mostrar-password > label').on('click', function() {
-        if ($passowrd.attr('type') == 'password' && $confirma.attr('type') == 'password') {
-            $passowrd.attr('type', 'text');
-            $confirma.attr('type', 'text');
-        } else {
-            $passowrd.attr('type', 'password');
-            $confirma.attr('type', 'password');
-        }
-    })
-})
+    $('#ver-password').on('change', function() {
+        var tipo = $(this).is(':checked') ? 'text' : 'password';
+
+        $password.attr('type', tipo);
+        $confirma.attr('type', tipo);
+    });
+});
