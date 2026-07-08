@@ -45,11 +45,9 @@ $(function() {
         if (gosto === '') return;
 
         $('#meus-gostos').append('<p class="meu-hobbie">' + gosto + '</p>');
-        if (!dados['gostos']) {
-            dados['gostos'] = gosto;
-        } else {
-            dados['gostos'] += '#' + gosto;
-        }
+        
+        dados['gostos'][] = gosto;
+
         $('#hobbie').val('');
     });
 
