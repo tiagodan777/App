@@ -46,14 +46,19 @@ $(function() {
 
         $('#meus-gostos').append('<p class="meu-hobbie">' + gosto + '</p>');
         
-        dados['gostos'][] = gosto;
+        dados['gostos'] ??= [];
+        dados['gostos'].push(gosto);
 
         $('#hobbie').val('');
     });
 
-    $(document).on('click', '#meus-gostos > p', function(e) {
-        $(this).remove();
-    })
+    $(document).on('click', '#meus-gostos > p', function () {
+    const gosto = $(this).text();
+
+    dados['gostos'] = dados['gostos'].filter(g => g !== gosto);
+
+    $(this).remove();
+});
 });
 
 
