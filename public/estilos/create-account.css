@@ -123,12 +123,12 @@ form > div#nascimento > nav > div > select {
     border: 1px solid #888888;
 }
 
-form > div#genero > label {
+form > div#sexo > label {
     font-weight: bold;
     margin-bottom: 10px;
 }
 
-form > div#genero > select {
+form > div#sexo > select {
     font-size: 1.2em;
     border-radius: 35px;
     padding: 5px;
