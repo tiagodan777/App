@@ -12,8 +12,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $membro['mes'] = $_POST['mes'];
     $membro['ano'] = $_POST['ano'];
     $membro['genero'] = $_POST['genero'];
-
-    // FALTA OS GOSTOS
+    $membro['gostos'] = $_POST['gostos'];
+    $membro['sobre_ti'] = $_POST['sobre_ti'];
 
     $membro['telefone'] = $_POST['telefone'];
     $membro['email'] = $_POST['email'];
