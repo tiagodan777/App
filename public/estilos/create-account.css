@@ -95,6 +95,14 @@ form > div#nascimento > nav {
     align-items: center;
 }
 
+form > div#nascimento > nav.anterior-proximo {
+    width: 100%;
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: flex-end;
+    align-items: center;
+}
+
 form > div#nascimento > nav > div {
     display: flex;
     flex-flow: column nowrap;
