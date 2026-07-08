@@ -61,14 +61,15 @@ class Member {
         $membro['password'] = password_hash($membro['password'], PASSWORD_DEFAULT);
 
         try {
+            $gostos = $membro['gostos'];
+
             unset($membro['dia']);
             unset($membro['mes']);
             unset($membro['ano']);
-            echo "<pre>";
-            var_dump($membro);
-            echo "</pre>";
-            $sql = "INSERT INTO membros (primeiro_nome, ultimo_nome, nascimento, genero, telefone, email, password)
-                    VALUES (:primeiro_nome, :ultimo_nome, :nascimento, :genero, :telefone, :email, :password);";
+            unset($membro['gostos']);
+
+            $sql = "INSERT INTO membros (primeiro_nome, ultimo_nome, nascimento, genero, telefone, email, bio password)
+                    VALUES (:primeiro_nome, :ultimo_nome, :nascimento, :genero, :telefone, :email, :sobre_ti, :password);";
             $this->db->runSQL($sql, $membro);
 
             $sql = "SELECT id FROM membro
