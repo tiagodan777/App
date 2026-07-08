@@ -16,17 +16,9 @@ $(function() {
         var url = this.id;
 
         $form.load('/create-account-campos ' + url, function() {
-            if ($(this).text() == 'Próximo') {
-                $('form > div').animate({
-                    marginLeft: '0%'
-                }, 350);
-            } else {
-                $('form > div').css( {
-                    marginLeft: '0%'
-                }).animate({
-                    marginLeft: '-100%'
-                }, 350);
-            }
+            $('form > div').animate({
+                marginLeft: '0%'
+            }, 350);
 
         });
     });
