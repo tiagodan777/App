@@ -4,6 +4,7 @@ namespace App\CMS;
 class CMS {
     protected $db = null;
     private $member = null;
+    private $hobbie = null;
     private $notification = null;
     private $cookie = null;
     private $token = null;
@@ -22,6 +23,13 @@ class CMS {
             $this->member = new Member($this->db);
         }
         return $this->member;
+    }
+
+    public function getHobbie() {
+        if ($this->hobbie === null) {
+            $this->hobbie = new Hobbie($this->db);
+        }
+        return $this->hobbie;
     }
 
     /*

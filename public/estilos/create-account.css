@@ -178,6 +178,43 @@ form > div#gostos > p > input[type="button"] {
     border-radius: 35px;
 }
 
+form > div#gostos > div#recomendacoes {
+    width: 100%;
+    height: 400px;
+    margin-top: 10px;
+    border-radius: 10px;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+form > div#gostos > div#recomendacoes > ul {
+    width: 100%;
+    height: 100%;
+    list-style: none;
+    padding: 10px 10px 10px 0px;
+
+    display: flex;
+    flex-flow: column nowrap;
+    justify-content: flex-start;
+    align-items: flex-start;
+}
+
+form > div#gostos > div#recomendacoes > ul > li {
+    padding-left: 10px;
+    width: calc(100% - 10px);
+    flex: 0 0 35px;
+}
+
+form > div#gostos > div#recomendacoes> ul > li:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+form > div#gostos > div#recomendacoes > ul > li > a {
+    text-decoration: none;
+    font-weight: bold;
+    color: black;
+
+}
+
 form > div#gostos > div#meus-gostos {
     width: 100%;
 
