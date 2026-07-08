@@ -33,13 +33,6 @@ $(function() {
         $form.serializeArray().forEach(function(campo) {
             dados[campo.name] = campo.value;
         });
-        if (!dados['gostos']) {
-            var $gostos = $('#meus-gostos').html();
-
-            $gostos.forEach(function() {
-                dados['gostos'] += '#' + $(this).text();
-            })
-        }
     });
 });
 
@@ -52,6 +45,11 @@ $(function() {
         if (gosto === '') return;
 
         $('#meus-gostos').append('<p class="meu-hobbie">' + gosto + '</p>');
+        if (!dados['gostos']) {
+            dados['gostos'] = gosto;
+        } else {
+            dados['gostos'] += '#' + gosto;
+        }
         $('#hobbie').val('');
     });
 
