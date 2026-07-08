@@ -23,9 +23,7 @@ $(function () {
         }
 
         timeout = setTimeout(function () {
-            $.get('/create-account-autocompletar', {
-                hobbie: queryString
-            }, function (data) {
+            $.get('/create-account-autocompletar', {hobbie: queryString}, function (data) {
                 $lista.empty();
 
                 var dados = JSON.parse(data);
