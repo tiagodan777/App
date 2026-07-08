@@ -34,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $erros['confirma_password'] = ($membro['password'] == $confirma_password) ? '' : 'As passwords não são idênticas';
 
     $invalid = implode($erros);
-    if (!$invalid) {
+    /*if (!$invalid) {
         $membro['nascimento'] = $membro['ano'] . '-' . $membro['mes'] . '-' . $membro['dia'];
         $result = $cms->getMember()->create($membro);
 
@@ -49,7 +49,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
             var_dump($membro);
         }
-    }
+    }*/
+    echo "<pre>";
+    var_dump($_POST);
+    var_dump($membro);
+    echo "</pre>";
 }
 
 echo $twig->render('create-account.html', $data);

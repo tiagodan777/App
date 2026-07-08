@@ -36,8 +36,6 @@ $(function() {
         if (!dados['gostos']) {
             dados['gostos'] = $('#meus-gostos').text();
         }
-
-        alert($.param(dados));
     });
 });
 
