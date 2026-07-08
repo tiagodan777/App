@@ -53,12 +53,12 @@ $(function() {
     });
 
     $(document).on('click', '#meus-gostos > p', function () {
-    const gosto = $(this).text();
+        const gosto = $(this).text();
 
-    dados['gostos'] = dados['gostos'].filter(g => g !== gosto);
+        dados['gostos'] = dados['gostos'].filter(g => g !== gosto);
 
-    $(this).remove();
-});
+        $(this).remove();
+    });
 });
 
 
