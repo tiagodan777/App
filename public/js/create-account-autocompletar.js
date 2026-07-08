@@ -28,7 +28,7 @@ $(function () {
 
                 dados.forEach(function (hobbie) {
                     $lista.append(
-                        '<li><strong>' + hobbie.texto + '</strong></li>'
+                        '<li id="' + hobbie.id + '"><strong>' + hobbie.nome + '</strong></li>'
                     );
                 });
             },

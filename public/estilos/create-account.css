@@ -179,6 +179,7 @@ form > div#gostos > p > input[type="button"] {
 }
 
 form > div#gostos > div#recomendacoes {
+    display: none;
     width: 100%;
     height: 400px;
     margin-top: 10px;
