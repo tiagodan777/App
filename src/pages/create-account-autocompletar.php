@@ -1,11 +1,13 @@
 <?php
-$gosto = $_GET['gosto'] ?? null;
-if ($gosto) {
-    $autocomple = $cms->getHobbie()->get($gosto);
-    echo json_encode($autocomple);
-    die();
-} else {
-    echo '';
+header('Content-Type: application/json; charset=utf-8');
+
+$gosto = $_GET['gosto'] ?? '';
+
+if ($gosto !== '') {
+    $autocomplete = $cms->getHobbie()->get($gosto);
+    echo json_encode($autocomplete);
+    exit;
 }
-exit();
-?>
+
+echo json_encode([]);
+exit;

@@ -23,13 +23,17 @@ $(function () {
         }
 
         timeout = setTimeout(function () {
-            $.get('/create-account-autocompletar', { hobbie: queryString }, function (dados) {
-            $lista.empty();
+            $.get('/create-account-autocompletar', { gosto: queryString }, function (dados) {
+                $lista.empty();
 
-            dados.forEach(function (hobbie) {
-                $lista.append('<li><strong>' + hobbie.texto + '</strong></li>');
-            });
-        }, 'json');
+                dados.forEach(function (hobbie) {
+                    $lista.append(
+                        '<li><strong>' + hobbie.texto + '</strong></li>'
+                    );
+                });
+            },
+            'json'
+        );
             
         }, 250);
     });
