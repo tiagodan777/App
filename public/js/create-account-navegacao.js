@@ -74,13 +74,10 @@ $(function() {
 });
 
 $(function() {
-    var $password = $('#password');
-    var $confirma = $('#confirma-password');
-
-    $('#ver-password').on('change', function() {
+    $(document).on('change', '#ver-password', function() {
         var tipo = $(this).is(':checked') ? 'text' : 'password';
 
-        $password.attr('type', tipo);
-        $confirma.attr('type', tipo);
+        $('#password').attr('type', tipo);
+        $('#confirma-password').attr('type', tipo);
     });
 });
