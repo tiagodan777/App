@@ -1,31 +1,40 @@
-$(function() {
-    var $hobbie = $('#hobbie');
-    var $recomendacoes = $('#recomendacoes');
-    var $list = $('#lista');
+$(function () {
+    var timeout = null;
 
-    $recomendacoes.hide();
-
-    $hobbie.on('focus', function() {
-        $recomendacoes.fadeIn(100);
+    $(document).on('focus', '#hobbie', function () {
+        $('#recomendacoes').fadeIn(100);
     });
 
-    $hobbie.on('blur', function() {
-        $recomendacoes.fadeOut(100);
+    $(document).on('blur', '#hobbie', function () {
+        setTimeout(function () {
+            $('#recomendacoes').fadeOut(100);
+        }, 150);
     });
 
-    $hobbie.on('keyup', function() {
-        var queryString = $hobbie.val();
-        var timeout = setTimeout(function() {
-            $.get('/create-account-autocompletar', {hobbie: queryString}, function(data) {
-                if (queryString.length > 0) {
-                    $list.empty();
-                    var dados = JSON.parse(data);
-                    for (var c = 0; c < dados.length; c++) {
-                        $list.append('<li><strong>' + dados[c].texto + '</strong></li>');
-                    }
-                } else {
-                    $list.html('');
-                }
+    $(document).on('keyup', '#hobbie', function () {
+        clearTimeout(timeout);
+
+        var queryString = $(this).val().trim();
+        var $lista = $('#lista');
+
+        if (queryString === '') {
+            $lista.empty();
+            return;
+        }
+
+        timeout = setTimeout(function () {
+            $.get('/create-account-autocompletar', {
+                hobbie: queryString
+            }, function (data) {
+                $lista.empty();
+
+                var dados = JSON.parse(data);
+
+                dados.forEach(function (hobbie) {
+                    $lista.append(
+                        '<li><strong>' + hobbie.texto + '</strong></li>'
+                    );
+                });
             });
         }, 250);
     });
