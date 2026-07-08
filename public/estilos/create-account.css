@@ -131,12 +131,21 @@ form > div#nascimento > nav > div > select {
     border: 1px solid #888888;
 }
 
-form > div#sexo > label {
+form > div#sexo > div {
+    width: 100%;
+
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: space-evenly;
+    align-items: center;
+}
+
+form > div#sexo > div > label {
     font-weight: bold;
     margin-bottom: 10px;
 }
 
-form > div#sexo > select {
+form > div#sexo > div > select {
     font-size: 1.2em;
     border-radius: 35px;
     padding: 5px;
