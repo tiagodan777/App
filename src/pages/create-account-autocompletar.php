@@ -1,7 +1,7 @@
 <?php
-$search = $_GET['search'] ?? null;
-if ($search) {
-    $autocomple = 
+$gosto = $_GET['gosto'] ?? null;
+if ($gosto) {
+    $autocomple = $cms->getHobbie()->get($gosto);
     echo json_encode($autocomple);
     die();
 } else {
