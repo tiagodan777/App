@@ -34,7 +34,7 @@ $(function() {
             dados[campo.name] = campo.value;
         });
         if (!dados['gostos']) {
-            dados['gostos'] = $('#meus-gostos').text();
+            dados['gostos'] = $('#meus-gostos').html();
         }
     });
 });
