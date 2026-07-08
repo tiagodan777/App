@@ -211,6 +211,7 @@ form > div#descricao > textarea {
     font-family: Helvetica, sans-serif;
     width: 90vw;
     height: 45vw;
+    border: 1px solid #dddddd;
 }
 
 form > div#palavra-passe {
