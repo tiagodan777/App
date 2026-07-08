@@ -70,7 +70,12 @@ class Member {
 
             $sql = "SELECT id FROM membro
                     WHERE email = :email;";
-            return $this->db->runSQL($sql, [$member['email']])->fetchColumn();
+            $id =  $this->db->runSQL($sql, [$member['email']])->fetchColumn();
+
+            /*$sql = "INSERT INTO membros_gostos (membro_id, hobbie_id)
+            VALUES (";*/
+            
+            return $id;
         } catch (\PDOException $e) {
             if ($e->errorInfo[1] === 1062) {
                 return false;
