@@ -34,9 +34,11 @@ $(function() {
             dados[campo.name] = campo.value;
         });
         if (!dados['gostos']) {
-            dados['gostos'] = $('#meus-gostos').html(function() {
-                return '#' + $(this).text();
-            });
+            var $gostos = $('#meus-gostos').html();
+
+            $gostos.forEach(function() {
+                dados['gostos'] += '#' + $(this).text();
+            })
         }
     });
 });
