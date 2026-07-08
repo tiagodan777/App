@@ -77,7 +77,7 @@ $(function() {
     var $passowrd = $('#password');
     var $confirma = $('confirma-password');
 
-    $('#ver-password').on('check', function() {
+    $('#ver-password, #mostrar-password > label').on('click', function() {
         if ($passowrd.attr('type') == 'password' && $confirma.attr('type') == 'password') {
             $passowrd.attr('type', 'text');
             $confirma.attr('type', 'text');
