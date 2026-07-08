@@ -233,8 +233,12 @@ form > div#palavra-passe > p {
 form > div#palavra-passe > p#mostrar-password {
     display: flex;
     flex-flow: row nowrap;
-    justify-content: space-evenly;
+    justify-content: flex-start;
     align-items: center;
+}
+
+form > div#palavra-passe > p#mostrar-password > label {
+    margin-right: 10px;
 }
 
 form > div#palavra-passe > p > input {
