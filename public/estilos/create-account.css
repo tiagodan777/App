@@ -141,7 +141,6 @@ form > div#sexo > div {
 }
 
 form > div#sexo > div > label {
-    font-weight: bold;
     margin-right: 10px;
 }
 
@@ -205,6 +204,10 @@ form > div#contactos > p > input:focus {
     border: none;
     outline: none;
     border-bottom: 1px solid red;
+}
+
+form > div#descricao > label {
+    align-self: flex-start;
 }
 
 form > div#descricao > textarea {
