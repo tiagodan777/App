@@ -207,6 +207,7 @@ form > div#contactos > p > input:focus {
 }
 
 form > div#descricao > label {
+    width: 90vw;
     align-self: flex-start;
 }
 
