@@ -234,13 +234,6 @@ form > div#palavra-passe > p {
     align-items: flex-start; 
 }
 
-form > div#palavra-passe > p#mostrar-password {
-    display: flex;
-    flex-flow: row nowrap;
-    justify-content: flex-start;
-    align-items: center;
-}
-
 form > div#palavra-passe > p#mostrar-password > label {
     margin-right: 10px;
 }
@@ -252,6 +245,18 @@ form > div#palavra-passe > p > input {
     border-radius: 0px;
     border: none;
     border-bottom: 1px solid #888888;
+}
+
+form > div#palavra-passe > p#mostrar-password {
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+form > div#palavra-passe > p#mostrar-password > input {
+    width: 15px;
+    height: 15px;
 }
 
 form > div#palavra-passe > p > input:focus {
