@@ -9,22 +9,22 @@ class Token {
         $this->db = $db;
     }
 
-    public function create($id, $purpose) {
+    public function create($id, $proposito) {
         $arguments['token'] = bin2hex(random_bytes(64));
-        $arguments['expires'] = date('Y-m-d H:i:s', strtotime('+20 mins'));
-        $arguments['member_id'] = $id;
-        $arguments['purpose'] = $purpose;
+        $arguments['validade'] = date('Y-m-d H:i:s', strtotime('+20 mins'));
+        $arguments['membro_id'] = $id;
+        $arguments['proposito'] = $proposito;
 
-        $sql = "INSERT INTO token (token, expires, member_id, purpose)
-                VALUES (:token, :expires, :member_id, :purpose);";
+        $sql = "INSERT INTO token (token, validade, membro_id, proposito)
+                VALUES (:token, :validade, :membro_id, :proposito);";
         $this->db->runSQL($sql, $arguments);
         return $arguments['token'];
     }
 
-    public function getMemberId($token, $purpose) {
-        $arguments = ['token' => $token, 'purpose' => $purpose];
-        $sql = "SELECT member_id FROM token
-                WHERE token = :token AND purpose = :purpose AND expires > NOW();";
+    public function getMemberId($token, $proposito) {
+        $arguments = ['token' => $token, 'purpose' => $proposito];
+        $sql = "SELECT membro_id FROM token
+                WHERE token = :token AND proposito = :proposito AND validade > NOW();";
         return $this->db->runSQL($sql, $arguments)->fetchColumn();
     }
 }
