@@ -13,10 +13,10 @@ if ($logged_in != 0) {
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $utilizador = $_POST['utilizador'];
-    $passowrd = $_POST['password'];
+    $passowrd = $_POST['palavra_passe'];
     $remember = (isset($_POST['lembrar']) && $_POST['lembrar'] == 1) ? true : false;
     /*$errors['user'] = Validate::isEmail($user) ? '' : 'Por favor introduz um email/nº de telefone correto';*/
-    $erros['password'] = Validate::isPassword($passowrd) ? '' : 'Por favor introduz uma password válida';
+    $erros['palavra_passe'] = Validate::isPassword($passowrd) ? '' : 'Por favor introduz uma password válida';
 
     $invalid = implode($erros);
     if (!$invalid) {

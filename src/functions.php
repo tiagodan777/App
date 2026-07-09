@@ -25,7 +25,7 @@ function create_seo_name($string) {
 
 function require_login($session) {
     if ($session->id == 0) {
-        redirect(DOC_ROOT . 'login/', ['failure' => 'Tens de fazer login para ter acesso a essa funcionalidade']);
+        redirect(DOC_ROOT . 'login/');
     }
 }
 
