@@ -151,7 +151,7 @@ class Member {
         if (!$membro) {
             return false;
         }
-        $authenticated = password_verify($password, $membro['palavra_passe']);
+        $authenticated = password_verify($password, $membro['password']);
         return ($authenticated ? $membro : false);
     }
 
