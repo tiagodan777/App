@@ -6,6 +6,23 @@ function redirect($location, $parameters = [], $response_code = 302) {
     exit;
 }
 
+function create_filename($original) {
+    $ext = strtolower(pathinfo($original, PATHINFO_EXTENSION));
+    $unique = bin2hex(random_bytes(16)); // 32 chars únicos
+    return $unique . '.' . $ext;
+}
+
+function create_seo_name($string) {
+    $text = mb_strtolower($string);
+    $text = trim($text);
+    if (function_exists('transliterator_transliterate')) {
+        $text = transliterator_transliterate('Latin-ASCII', $text);
+    }
+    $text = preg_replace('/ /', '-', $text);
+    $text = preg_replace('/[^A-z0-9]/', '', $text);
+    return $text;
+}
+
 set_error_handler('handle_error');
 function handle_error($type, $message, $file, $line) {
     // Ignora deprecation warnings (PHP 8.2 compatibility)
