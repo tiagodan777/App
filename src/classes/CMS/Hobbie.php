@@ -60,6 +60,7 @@ class Hobbie {
     public function create($gosto) {
         $sql = "INSERT INTO hobbies (nome)
                 VALUES (:gosto);";
-        $this->db->runSQL($sql, $gosto);
+
+        $this->db->runSQL($sql, ['gosto' => $gosto]);
     }
 }

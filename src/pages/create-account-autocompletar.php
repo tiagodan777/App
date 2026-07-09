@@ -1,22 +1,26 @@
-<?php
 header('Content-Type: application/json; charset=utf-8');
 
-$gosto = $_GET['gosto'] ?? '';
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    $gosto = $_GET['gosto'] ?? '';
 
-if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     if ($gosto !== '') {
-        $autocompletar = $cms->getHobbie()->get($gosto);
-        echo json_encode($autocompletar);
+        echo json_encode($cms->getHobbie()->get($gosto));
         exit;
     }
 
     echo json_encode([]);
-} else {
-    if ($gosto !== '') {
-        $adicionar = $cms->getHobbie()->create($gosto);
-        exit;
-    }
+    exit;
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $gosto = $_POST['gosto'] ?? '';
 
-exit;
+    if ($gosto !== '') {
+        $cms->getHobbie()->create($gosto);
+        echo json_encode(['sucesso' => true]);
+        exit;
+    }
+
+    echo json_encode(['sucesso' => false]);
+    exit;
+}

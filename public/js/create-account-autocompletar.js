@@ -39,10 +39,17 @@ $(function () {
     });
 
     $(document).on('click', '#adicionar-gosto', function(e) {
+        e.preventDefault();
+
+        var gosto = $('#hobbie').val().trim();
         var $lista = $('#lista');
-        alert($lista.html());
-        if ($lista.html() == '') {
-            $.post('/create-account-autocompletar', { gosto: queryString })
+
+        if (gosto === '') return;
+
+        if ($lista.html().trim() === '') {
+            $.post('/create-account-autocompletar', { gosto: gosto }, function(resposta) {
+                console.log(resposta);
+            }, 'json');
         }
-    })
+    }); 
 });
