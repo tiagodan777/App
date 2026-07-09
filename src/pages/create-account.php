@@ -22,6 +22,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $nome_completo = $membro['primeiro_nome'] . ' ' . $membro['ultimo_nome'];
     $membro['seo_name'] = create_seo_name($nome_completo);
 
+    // TESTE
+
     $erros['primeiro_nome'] = Validate::isText($membro['primeiro_nome'], 1, 60) ? '' : 'O nome deve ter entre 1 e 60 caradteres';
     $erros['ultimo_nome'] = Validate::isText($membro['ultimo_nome'], 1, 60) ? '' : 'O nome deve ter entre 1 e 60 caradteres';
     $erros['dia'] = Validate::isNumber($membro['dia'], 1, 31) ? '' : 'Escolhe um dia válido sua parva';
