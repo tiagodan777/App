@@ -48,6 +48,7 @@ $(function() {
         dados['gostos'].push(gosto);
 
         $('#hobbie').val('');
+
     });
 
     $(document).on('click', '#meus-gostos > p', function () {
@@ -84,6 +85,8 @@ $(function() {
     $(document).on('click', '#lista > li', function(e) {
         $('#hobbie').val($(this).text());
         $('#adicionar-gosto').trigger('click');
+        $('#hobbie').val('');
+        $('#lista').empty();
         $('#recomendacoes').hide();
     });
 });
