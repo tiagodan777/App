@@ -87,3 +87,27 @@ main > form > input[type="submit"] {
     align-self: flex-end;
     border: none;
 }
+
+aside {
+    width: 85vw;
+    height: 20vh;
+
+    display: flex;
+    flex-flow: column nowrap;
+    justify-content: space-evenly;
+    align-items: center;
+}
+
+aside > a {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+aside > a#esqueci-palavra-passe {
+    color: rgb(66, 66, 247);
+}
+
+aside > a#registar {
+    color: rgb(181, 181, 28);
+}
