@@ -38,19 +38,28 @@ $(function () {
         }, 250);
     });
 
+
     $(document).on('click', '#adicionar-gosto', function(e) {
-        e.preventDefault();
+    e.preventDefault();
 
-        var gosto = $('#hobbie').val().trim();
-        var $lista = $('#lista');
+    var gosto = $('#hobbie').val().trim();
 
-        if (gosto === '') return;
+    console.log('Gosto:', gosto);
 
-        if ($lista.html().trim() === '') {
-            $.post('/create-account-autocompletar', { gosto: gosto }, function(resposta) {
-                console.log(resposta);
-            }, 'json');
+    $.ajax({
+        url: '/create-account-autocompletar',
+        type: 'POST',
+        data: { gosto: gosto },
+        dataType: 'json',
+        success: function(resposta) {
+            console.log('Sucesso:', resposta);
+            alert('Adicionado!');
+        },
+        error: function(xhr) {
+            console.log('Erro:', xhr.status);
+            console.log(xhr.responseText);
         }
-    }); 
+    });
+});
 });
 
