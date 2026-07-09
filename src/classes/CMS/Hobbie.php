@@ -61,6 +61,6 @@ class Hobbie {
         $sql = "INSERT INTO hobbies (nome)
                 VALUES (:gosto);";
 
-        $this->db->runSQL($sql, ['gosto' => $gosto])
+        $this->db->runSQL($sql, ['gosto' => $gosto]);
     }
 }
