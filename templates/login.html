@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="pt-pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#f7f7f8">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <link rel="stylesheet" href="{{ doc_root }}estilos/login.css">
+</head>
+<body>
+    <main>
+        <form action="{{ doc_root }}login" method="post">
+            <label for="utilizador">Nome de utilizador</label>
+            <input type="text" name="utilizador" id="utilizador">
+            <label for="palavra-passe">Palavra-Passe</label>
+            <input type="password" name="palavra_passe" id="palavra-passe">
+            <p><label for="mostrar-palavra-passe">Mostrar palavra-passe</label> <input type="checkbox" name="mostrar_palavra_passe" id="mostrar-palavra-passe"></p>
+            <p id="manter-sessao-iniciada"><label for="manter-sessao">Manter sessão iniciada</label> <input type="checkbox" name="manter_sessao" id="manter-sessao"></p>
+        </form>
+    </main>
+</body>
+</html>

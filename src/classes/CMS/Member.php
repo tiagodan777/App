@@ -107,7 +107,7 @@ class Member {
         }
     }
 
-    public function update($member, $admin = false) {
+    /*public function update($member, $admin = false) {
         try {
             unset($member['dia']);
             unset($member['mes']);
@@ -135,7 +135,7 @@ class Member {
             echo "</pre>";
             throw $e;
         }
-    }
+    }*/
 
     public function login($user, $password) {
         $arguments['user1'] = $user;
@@ -152,7 +152,7 @@ class Member {
         return ($authenticated ? $member : false);
     }
 
-    public function getIdByEmail($email) {
+    /*public function getIdByEmail($email) {
         $sql = "SELECT id FROM membro
                 WHERE email = :email;";
         return $this->db->runSQL($sql, [$email])->fetchColumn();
@@ -201,7 +201,7 @@ class Member {
         $sql = "UPDATE membro SET picture = 'blank.jpg' WHERE id = :id;";
         $this->db->runSQL($sql, [$id]);
         return true;
-    }
+    }*/
 
     public function delete($id) {
         try {
