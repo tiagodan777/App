@@ -43,7 +43,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         if ($result === false) {
             $erros['email'] = 'O email já está a ser usado';
         } else {
-            $cms->getSession()->create(member_id: $result);
+            $cms->getSession()->create(membro_id: $result);
+            var_dump($_SESSION);
             $tokenLogin = $cms->getToken()->create($result, 'login');
             // $cms->getSession()->create($tokenLogin, 'login');
 
