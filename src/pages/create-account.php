@@ -19,8 +19,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $membro['email'] = $_POST['email'];
     $membro['password'] = $_POST['password'];
     $confirma_password = $_POST['confirma_password'];
-    // $nome_completo = $membro['primeiro_nome'] . ' ' . $membro['ultimo_nome'];
-    // $membro['seo_name'] = create_seo_name($nome_completo);
+    $nome_completo = $membro['primeiro_nome'] . ' ' . $membro['ultimo_nome'];
+    $membro['seo_name'] = create_seo_name($nome_completo);
 
     $erros['primeiro_nome'] = Validate::isText($membro['primeiro_nome'], 1, 60) ? '' : 'O nome deve ter entre 1 e 60 caradteres';
     $erros['ultimo_nome'] = Validate::isText($membro['ultimo_nome'], 1, 60) ? '' : 'O nome deve ter entre 1 e 60 caradteres';
