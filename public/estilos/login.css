@@ -39,7 +39,6 @@ main > form > p > label {
     width: 100%;
     font-weight: bold;
     font-size: 0.8em;
-    margin-bottom: 10px;
 }
 
 main > form > p > input {
@@ -49,7 +48,6 @@ main > form > p > input {
     border: none;
     outline: none;
     border-bottom: 1px solid #888888;
-    margin-bottom: 0px;
 }
 
 main > form > p.em-linha > input {
