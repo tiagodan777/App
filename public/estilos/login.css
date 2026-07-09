@@ -60,7 +60,7 @@ main > form > p > input {
 }
 
 main > form > p.em-linha {
-
+    margin: 5px;
 }
 
 main > form > p.em-linha > input {
