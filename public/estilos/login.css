@@ -7,7 +7,7 @@ main {
 
     display: flex;
     flex-flow: column nowrap;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
 }
 
@@ -21,6 +21,8 @@ main  > h1 {
 main > form {
     width: 85vw;
     height: 50vh;
+
+    margin-top: 20%;
 
     display: flex;
     flex-flow: column nowrap;
