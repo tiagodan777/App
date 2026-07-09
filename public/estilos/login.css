@@ -44,7 +44,7 @@ main > form > p.em-linha {
 }
 
 main > form > p > label {
-    width: 65%;
+    width: 100%;
     font-weight: bold;
     font-size: 0.8em;
 }
@@ -65,6 +65,10 @@ main > form > p.em-linha {
 main > form > p.em-linha > input {
     width: 15px;
     height: 15px;
+}
+
+main > form > p.em-linha > label {
+    width: 50%;
 }
 
 main > form > p > input:focus {
