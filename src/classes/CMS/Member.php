@@ -76,8 +76,19 @@ class Member {
                     WHERE email = :email;";
             $id =  $this->db->runSQL($sql, [$membro['email']])->fetchColumn();
 
-            /*$sql = "INSERT INTO membros_gostos (membro_id, hobbie_id)
-            VALUES (";*/
+            $hobbie_ids = [];
+
+            foreach ($membro['gostos'] as $gosto) {
+                $sql = "SELECT id FROM hobbies
+                        WHERE nome = :gosto";
+                $hobbie_ids[] = $this->db->runSQL($sql, $gosto);
+            } 
+
+            foreach ($hobbie_ids as $hobbie_id) {
+                $sql = "INSERT INTO membros_gostos (membro_id, hobbie_id)
+                        VALUES (:membro_id, :hobbie_id)";
+                $this->db->runSQL($sql, ['membro_id' => $id, 'hobbie_id' => $hobbie_id]);
+            }
             
             return $id;
         } catch (\PDOException $e) {
