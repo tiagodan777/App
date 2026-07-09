@@ -59,8 +59,8 @@ main > form > p > input {
 }
 
 main > form > p.em-linha {
-    margin-top: -10%;
-    margin-bottom: -10%;
+    margin-top: -20%;
+    margin-bottom: -20%;
 }
 
 main > form > p.em-linha > input {
