@@ -7,7 +7,7 @@ main {
 
     display: flex;
     flex-flow: column nowrap;
-    justify-content: flex-start;
+    justify-content: center;
     align-items: center;
 }
 
@@ -21,14 +21,12 @@ main  > h1 {
 main > form {
     width: 85vw;
     height: 50vh;
-
-    margin-top: 50%;
+    margin-top: -25%;
 
     display: flex;
     flex-flow: column nowrap;
     justify-content: flex-start;
     align-items: center;
-
 }
 
 main > form > p {
@@ -69,7 +67,6 @@ main > form > p.em-linha {
 main > form > p.em-linha > input {
     width: 15px;
     height: 15px;
-    margin-right: 10px;
 }
 
 main > form > p.em-linha > label {
