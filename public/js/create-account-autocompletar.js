@@ -12,9 +12,8 @@ $(function () {
 
     $(document).on('keyup', '#hobbie', function () {
         clearTimeout(timeout);
-        $(document).on('focus', '#hobbie', function () {
-            $recomendacoes.show();
-        });
+        
+        $recomendacoes.show();
 
         var queryString = $(this).val().trim();
         var $lista = $('#lista');
