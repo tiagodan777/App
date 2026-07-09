@@ -1,10 +1,6 @@
 $(function () {
     var timeout = null;
 
-    $(document).on('focus', '#hobbie', function () {
-        $('#recomendacoes').fadeIn(100);
-    });
-
     $(document).on('blur', '#hobbie', function () {
         setTimeout(function () {
             $('#recomendacoes').fadeOut(100);
@@ -13,6 +9,9 @@ $(function () {
 
     $(document).on('keyup', '#hobbie', function () {
         clearTimeout(timeout);
+        $(document).on('focus', '#hobbie', function () {
+            $('#recomendacoes').show();
+        });
 
         var queryString = $(this).val().trim();
         var $lista = $('#lista');
