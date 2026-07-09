@@ -41,8 +41,9 @@ class Session {
             }
         }
 
-        $sql = "SELECT id, primeiro_nome, foto_perfil, nome_seo
-                FROM membros
+        $sql = "SELECT m.id, m.primeiro_nome, f.nome_arquivo, m.nome_seo
+                FROM membros AS m
+                JOIN fotos_perfil AS f ON f.membro_id = m.id
                 WHERE id = :membro_id;";
         $arguments = $this->db->runSQL($sql, ['membro_id' => $membro_id])->fetch();
 
