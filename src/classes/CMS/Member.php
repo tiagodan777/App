@@ -63,42 +63,46 @@ class Member {
         try {
             $gostos = $membro['gostos'];
 
-            unset($membro['dia']);
-            unset($membro['mes']);
-            unset($membro['ano']);
-            unset($membro['gostos']);
+            unset($membro['dia'], $membro['mes'], $membro['ano'], $membro['gostos']);
 
-            echo "<pre>";
-            var_dump($membro);
-            echo "</pre>";
+            $sql = "INSERT INTO membros 
+                    (primeiro_nome, ultimo_nome, nascimento, genero, telefone, email, bio, password, nome_seo)
+                    VALUES 
+                    (:primeiro_nome, :ultimo_nome, :nascimento, :genero, :telefone, :email, :sobre_ti, :password, :nome_seo);";
 
-            $sql = "INSERT INTO membros (primeiro_nome, ultimo_nome, nascimento, genero, telefone, email, bio, password, nome_seo)
-                    VALUES (:primeiro_nome, :ultimo_nome, :nascimento, :genero, :telefone, :email, :sobre_ti, :password, :nome_seo);";
             $this->db->runSQL($sql, $membro);
 
-            $sql = "SELECT id FROM membros
-                    WHERE email = :email;";
-            $id =  $this->db->runSQL($sql, [$membro['email']])->fetchColumn();
+            $sql = "SELECT id FROM membros WHERE email = :email;";
 
-            $hobbie_ids = [];
+            $id = $this->db->runSQL($sql, [
+                'email' => $membro['email']
+            ])->fetchColumn();
 
             foreach ($gostos as $gosto) {
-                $sql = "SELECT id FROM hobbies
-                        WHERE nome = :gosto";
-                $hobbie_ids[] = $this->db->runSQL($sql, $gosto);
-            } 
+                $sql = "SELECT id FROM hobbies WHERE nome = :gosto";
 
-            foreach ($hobbie_ids as $hobbie_id) {
-                $sql = "INSERT INTO membros_gostos (membro_id, hobbie_id)
-                        VALUES (:membro_id, :hobbie_id)";
-                $this->db->runSQL($sql, ['membro_id' => $id, 'hobbie_id' => $hobbie_id]);
+                $hobbie_id = $this->db->runSQL($sql, [
+                    'gosto' => $gosto
+                ])->fetchColumn();
+
+                if ($hobbie_id) {
+                    $sql = "INSERT INTO membros_gostos (membro_id, hobbie_id)
+                            VALUES (:membro_id, :hobbie_id)";
+
+                    $this->db->runSQL($sql, [
+                        'membro_id' => $id,
+                        'hobbie_id' => $hobbie_id
+                    ]);
+                }
             }
-            
+
             return $id;
+
         } catch (\PDOException $e) {
             if ($e->errorInfo[1] === 1062) {
                 return false;
             }
+
             throw $e;
         }
     }
