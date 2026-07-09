@@ -140,10 +140,10 @@ class Member {
     public function login($utilizador, $password) {
         $arguments['utilizador1'] = $utilizador;
         $arguments['utilizador2'] = $utilizador;
-        $sql = "SELECT id, primeiro_nome, ultimo_nome, nascimento, genero, email, telefone, password,
-                adesao, bio, nome_seo, f.nome_arquivo AS foto_perfil
+        $sql = "SELECT m.id, m.primeiro_nome, m.ultimo_nome, m.nascimento, m.genero, m.email, m.telefone, m.password,
+                m.adesao, m.bio, m.nome_seo, f.nome_arquivo AS foto_perfil
 
-                FROM membros
+                FROM membros AS m
                 LEFT JOIN fotos_perfil AS f ON f.membro_id = m.id
                 WHERE email = :utilizador1
                 OR telefone = :utilizador2;";
