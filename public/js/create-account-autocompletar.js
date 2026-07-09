@@ -37,4 +37,11 @@ $(function () {
             
         }, 250);
     });
+
+    $(document).on('click', '#adicionar-gosto', function(e) {
+        var $lista = $('#lista');
+        if ($lista.length == 0) {
+            alert('OK');
+        }
+    })
 });
