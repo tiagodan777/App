@@ -41,18 +41,24 @@ class Session {
             }
         }
 
-        $sql = "SELECT m.id, m.primeiro_nome, f.nome_arquivo, m.nome_seo
+        $sql = "SELECT m.id, m.primeiro_nome, f.nome_arquivo AS foto_perfil, m.nome_seo
                 FROM membros AS m
-                JOIN fotos_perfil AS f ON f.membro_id = m.id
-                WHERE id = :membro_id;";
+                LEFT JOIN fotos_perfil AS f ON f.membro_id = m.id
+                WHERE m.id = :membro_id;";
+        
         $arguments = $this->db->runSQL($sql, ['membro_id' => $membro_id])->fetch();
+
+        if (!$arguments) {
+            return false;
+        }
 
         $_SESSION['id'] = $arguments['id'];
         $_SESSION['primeiro_nome'] = $arguments['primeiro_nome'];
-        $_SESSION['foto_perfil'] = $arguments['foto_perfil'];
-        // $_SESSION['role'] = $arguments['role'];
-        // $_SESSION['seo_name'] = $arguments['seo_name'];
+        $_SESSION['foto_perfil'] = $arguments['foto_perfil'] ?? 'default.webp';
+        $_SESSION['seo_name'] = $arguments['nome_seo'];
         $_SESSION['token'] = $token;
+
+        return true;
     }
 
     public function update($token) {
