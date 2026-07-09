@@ -26,6 +26,8 @@ main > form {
     flex-flow: column nowrap;
     justify-content: flex-start;
     align-items: center;
+
+    margin-top: -10%;
 }
 
 main > form > p {
