@@ -27,7 +27,6 @@ main > form {
     justify-content: flex-start;
     align-items: center;
 
-    margin-top: -10%;
 }
 
 main > form > p {
@@ -68,7 +67,7 @@ main > form > p.em-linha {
 main > form > p.em-linha > input {
     width: 15px;
     height: 15px;
-    mar
+    margin-right: 10px;
 }
 
 main > form > p.em-linha > label {
