@@ -49,12 +49,12 @@ main > form > p > input {
     border: none;
     outline: none;
     border-bottom: 1px solid #888888;
+    margin-bottom: 0px;
 }
 
 main > form > p.em-linha > input {
     width: 15px;
     height: 15px;
-    margin-bottom: 0px;
 }
 
 main > form > p > input:focus {
