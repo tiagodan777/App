@@ -57,10 +57,13 @@ main > form > p > input {
     border-bottom: 1px solid #888888;
 }
 
+main > form > p.em-linha {
+    margin-bottom: -30%;
+}
+
 main > form > p.em-linha > input {
     width: 15px;
     height: 15px;
-    margin-bottom: -20%;
 }
 
 main > form > p > input:focus {
