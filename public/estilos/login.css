@@ -28,6 +28,13 @@ main > form > p {
     align-items: center;
 }
 
+main > form > p.em-linha {
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: flex-start;
+    align-items: center;
+}
+
 main > form > p > label {
     width: 100%;
     font-weight: bold;
