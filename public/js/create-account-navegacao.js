@@ -79,3 +79,10 @@ $(function() {
         $('#confirma-password').attr('type', tipo);
     });
 });
+
+$(function() {
+    $('#lista').on('click', 'li', function(e) {
+        $('#hobbie').val($(this).text());
+        $('#recomendacoes').hide();
+    })
+})
