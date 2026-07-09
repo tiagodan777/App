@@ -44,7 +44,7 @@ main > form > p.em-linha {
 }
 
 main > form > p > label {
-    width: 100%;
+    width: 65%;
     font-weight: bold;
     font-size: 0.8em;
 }
