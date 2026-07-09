@@ -23,7 +23,7 @@ class Session {
         $this->primeiro_nome = $_SESSION['primeiro_nome'] ?? '';
         $this->foto_perfil = $_SESSION['foto_perfil'] ?? '';
         // $this->role = $_SESSION['role'] ?? 'member';
-        // $this->seo_name = $_SESSION['seo_name'] ?? '';
+        $this->seo_name = $_SESSION['nome_seo'] ?? '';
         $this->token = $_SESSION['token'] ?? '';
     }
 
