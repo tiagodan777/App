@@ -1,5 +1,5 @@
 <?php
-namespace TiagoDaniel\CMS;
+namespace App\CMS;
 
 class Cookie {
     private $db;
