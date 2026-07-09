@@ -11,13 +11,6 @@ main {
     align-items: center;
 }
 
-main  > h1 {
-    text-align: center;
-    font-size: 2.5em;
-    font-weight: bold;
-    font-family: 'Alfa Slab One';
-}
-
 main > form {
     width: 85vw;
     height: 50vh;
@@ -27,6 +20,13 @@ main > form {
     flex-flow: column nowrap;
     justify-content: flex-start;
     align-items: center;
+}
+
+main > form > h1 {
+    text-align: center;
+    font-size: 2.5em;
+    font-weight: bold;
+    font-family: 'Alfa Slab One';
 }
 
 main > form > p {
