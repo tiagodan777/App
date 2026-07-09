@@ -60,3 +60,11 @@ main > form > p > input:focus {
     outline: none;
     border-bottom: 1px solid #888888;
 }
+
+main > form > input[type="submit"] {
+    padding: 10px 20px;
+    border-radius: 15px;
+    background-color: red;
+    color: white;
+    align-self: flex-end;
+}
