@@ -20,16 +20,18 @@ main  > h1 {
 
 main > form {
     width: 85vw;
-    height: 60vh;
+    height: 50vh;
 
     display: flex;
     flex-flow: column nowrap;
-    justify-content: space-evenly;
+    justify-content: flex-start;
     align-items: center;
 }
 
 main > form > p {
     width: 100%;
+    margin-bottom: 5vh;
+    
     display: flex;
     flex-flow: column nowrap;
     justify-content: space-evenly;
