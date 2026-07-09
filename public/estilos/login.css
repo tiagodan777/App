@@ -67,4 +67,5 @@ main > form > input[type="submit"] {
     background-color: red;
     color: white;
     align-self: flex-end;
+    border: none;
 }
