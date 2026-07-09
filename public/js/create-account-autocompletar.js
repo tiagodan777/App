@@ -1,16 +1,19 @@
 $(function () {
     var timeout = null;
+    var $recomendacoes = $('#recomendacoes');
+
+    $recomendacoes.hide();
 
     $(document).on('blur', '#hobbie', function () {
         setTimeout(function () {
-            $('#recomendacoes').fadeOut(100);
+            $recomendacoes.fadeOut(100);
         }, 150);
     });
 
     $(document).on('keyup', '#hobbie', function () {
         clearTimeout(timeout);
         $(document).on('focus', '#hobbie', function () {
-            $('#recomendacoes').show();
+            $recomendacoes.show();
         });
 
         var queryString = $(this).val().trim();
