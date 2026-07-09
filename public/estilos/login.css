@@ -36,6 +36,8 @@ main > form > p > label {
 
 main > form > p > input {
     width: 100%;
+    font-size: 1.2em;
+    padding: 10px;
     border: none;
     outline: none;
     border-bottom: 1px solid #888888;
