@@ -40,12 +40,13 @@ class CMS {
         return $this->notification;
     }*/
 
+    
     public function getCookie() {
         if ($this->cookie === null) {
             $this->cookie = new Cookie($this->db);
         }
         return $this->cookie;
-    }*/
+    }
 
     public function getToken() {
         if ($this->token === null) {
