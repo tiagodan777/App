@@ -48,15 +48,6 @@ class Session {
         
         $arguments = $this->db->runSQL($sql, ['membro_id' => $membro_id])->fetch();
 
-        echo '<pre>';
-        echo "MEMBRO ID:\n";
-        var_dump($membro_id);
-
-        echo "ARGUMENTS:\n";
-        var_dump($arguments);
-        echo '</pre>';
-        die();
-
         if (!$arguments) {
             return false;
         }
