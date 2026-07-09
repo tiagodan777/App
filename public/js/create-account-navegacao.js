@@ -84,3 +84,37 @@ $(function() {
         $('#adicionar-gosto').trigger('click');
     });
 });
+
+$(function() {
+    $(document).on('click', '#adicionar-gosto', function(e) {
+        e.preventDefault();
+
+        var gosto = $('#hobbie').val().trim();
+
+        if (gosto === '') return;
+
+        $('#meus-gostos').append('<p class="meu-hobbie">' + gosto + '</p>');
+
+        dados['gostos'] ??= [];
+        dados['gostos'].push(gosto);
+
+        criarHobbieSeNaoExistir(gosto);
+
+        $('#hobbie').val('');
+        $('#lista').empty();
+        $('#recomendacoes').hide();
+    });
+
+    $(document).on('click', '#meus-gostos > p', function () {
+        var gosto = $(this).text();
+
+        dados['gostos'] = dados['gostos'].filter(g => g !== gosto);
+
+        $(this).remove();
+    });
+
+    $(document).on('click', '#lista > li', function(e) {
+        $('#hobbie').val($(this).text());
+        $('#adicionar-gosto').trigger('click');
+    });
+});
