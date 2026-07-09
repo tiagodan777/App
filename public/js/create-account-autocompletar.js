@@ -42,7 +42,7 @@ $(function () {
         var $lista = $('#lista');
         alert($lista.html());
         if ($lista.html() == '') {
-            alert('OK');
+            $.post('/create-account-autocompletar', { gosto: queryString })
         }
     })
 });

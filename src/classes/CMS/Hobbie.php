@@ -56,4 +56,10 @@ class Hobbie {
                                         'starts' => '%' . $gosto,
                                         'exact' => $gosto,])->fetchAll();
     }
+
+    public function create($gosto) {
+        $sql = "INSERT INTO hobbies (nome)
+                VALUES (:gosto);";
+        $this->db->runSQL($sql, $gosto);
+    }
 }
