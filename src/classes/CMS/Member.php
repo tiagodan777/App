@@ -137,19 +137,22 @@ class Member {
         }
     }*/
 
-    public function login($user, $password) {
-        $arguments['user1'] = $user;
-        $arguments['user2'] = $user;
-        $sql = "SELECT id, forename, surname, nascimento, genero, email, telefone, password, joined, bio, picture, role, seo_name
-                FROM membro
-                WHERE email = :user1
-                OR telefone = :user2;";
-        $member = $this->db->runSQL($sql, $arguments)->fetch();
-        if (!$member) {
+    public function login($utilizador, $password) {
+        $arguments['utilizador1'] = $utilizador;
+        $arguments['utilizador2'] = $utilizador;
+        $sql = "SELECT id, primeiro_nome, ultimo_nome, nascimento, genero, email, telefone, password,
+                adesao, bio, nome_seo, f.nome_arquivo AS foto_perfil AS foto_perfil
+
+                FROM membros
+                LEFT JOIN fotos_perfil AS f ON f.membro_id = m.id
+                WHERE email = :utilizador1
+                OR telefone = :utilizador2;";
+        $membro = $this->db->runSQL($sql, $arguments)->fetch();
+        if (!$membro) {
             return false;
         }
-        $authenticated = password_verify($password, $member['password']);
-        return ($authenticated ? $member : false);
+        $authenticated = password_verify($password, $membro['palavra_passe']);
+        return ($authenticated ? $membro : false);
     }
 
     /*public function getIdByEmail($email) {
