@@ -32,7 +32,7 @@ class Session {
         if (!$membro_id) {
             $arguments = [];
             $sql = "SELECT membro_id FROM token
-                    WHERE token = :token AND proposito = :proposito AND expires > NOW()";
+                    WHERE token = :token AND proposito = :proposito AND validade > NOW()";
             $membro_id = $this->db->runSQL($sql, ['token' => $token, 'proposito' => $proposito])->fetchColumn();
 
             if (!$membro_id) {
