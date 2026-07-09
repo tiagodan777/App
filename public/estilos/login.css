@@ -54,6 +54,7 @@ main > form > p > input {
 main > form > p.em-linha > input {
     width: 15px;
     height: 15px;
+    margin-bottom: 0px;
 }
 
 main > form > p > input:focus {
