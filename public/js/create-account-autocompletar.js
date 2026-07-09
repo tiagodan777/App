@@ -50,6 +50,7 @@ $(function () {
             $.post('/create-account-autocompletar', { gosto: gosto }, function(resposta) {
                 console.log(resposta);
             }, 'json');
+            $lista.empty();
         }
     }); 
 });
