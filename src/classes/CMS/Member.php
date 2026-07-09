@@ -141,7 +141,7 @@ class Member {
         $arguments['utilizador1'] = $utilizador;
         $arguments['utilizador2'] = $utilizador;
         $sql = "SELECT id, primeiro_nome, ultimo_nome, nascimento, genero, email, telefone, password,
-                adesao, bio, nome_seo, f.nome_arquivo AS foto_perfil AS foto_perfil
+                adesao, bio, nome_seo, f.nome_arquivo AS foto_perfil
 
                 FROM membros
                 LEFT JOIN fotos_perfil AS f ON f.membro_id = m.id
