@@ -181,8 +181,8 @@ form > div#gostos > p > input[type="button"] {
 
 form > div#gostos > div#recomendacoes {
     display: none;
-    width: 80%;
-    height: 60%;
+    width: 80vw;
+    height: 60vw;
     margin: 10px 0px 20px 0px;
     border-radius: 10px;
     box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.05),
