@@ -21,6 +21,7 @@ main  > h1 {
 main > form {
     width: 85vw;
     height: 50vh;
+    margin-top: -25%;
 
     display: flex;
     flex-flow: column nowrap;
@@ -60,7 +61,7 @@ main > form > p > input {
 }
 
 main > form > p.em-linha {
-    margin: 5px;
+    margin: 5px 0px;
 }
 
 main > form > p.em-linha > input {
