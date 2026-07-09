@@ -108,6 +108,6 @@ aside > a#esqueci-palavra-passe {
     color: rgb(66, 66, 247);
 }
 
-aside > a#registar {
+aside > a#registar > span {
     color: rgb(181, 181, 28);
 }
