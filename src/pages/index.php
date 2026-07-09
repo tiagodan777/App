@@ -1,8 +1,6 @@
 <?php
 $data = [];
 
-if ($session->id == 0) {
-    redirect(DOC_ROOT . 'index');
-}
+require_login($session);
 
 echo $twig->render('index.html', $data);

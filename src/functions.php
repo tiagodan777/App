@@ -23,6 +23,12 @@ function create_seo_name($string) {
     return $text;
 }
 
+function require_login($session) {
+    if ($session->id == 0) {
+        redirect(DOC_ROOT . 'login/', ['failure' => 'Tens de fazer login para ter acesso a essa funcionalidade']);
+    }
+}
+
 set_error_handler('handle_error');
 function handle_error($type, $message, $file, $line) {
     // Ignora deprecation warnings (PHP 8.2 compatibility)
