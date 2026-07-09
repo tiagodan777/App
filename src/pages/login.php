@@ -20,17 +20,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     $invalid = implode($erros);
     if (!$invalid) {
-        $member = $cms->getMember()->login($utilizador, $passowrd);
+        $membro = $cms->getMember()->login($utilizador, $passowrd);
         /*if ($member && $member['role'] == 'suspended') {
             $erros['message'] = 'Conta suspensa';
-        } else*/if ($member) {
+        } else*/if ($membro) {
             if ($remember) {
-                $token = $cms->getCookie()->create($member);
+                $token = $cms->getCookie()->create($membro);
                 $cms->getSession()->create($token);
-                $tokenLogin = $cms->getToken()->create($member['id'], 'login');
+                $tokenLogin = $cms->getToken()->create($membro['id'], 'login');
             } else {
-                $cms->getSession()->create(member_id: $member['id']);
-                $tokenLogin = $cms->getToken()->create($member['id'], 'login');
+                $cms->getSession()->create(membro_id: $membro['id']);
+                $tokenLogin = $cms->getToken()->create($membro['id'], 'login');
             }
             // $cms->getSession()->create($tokenLogin, 'login');
 
