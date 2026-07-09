@@ -31,19 +31,12 @@ $(function () {
                         '<li id="' + hobbie.id + '"><strong>' + hobbie.nome + '</strong></li>'
                     );
                 });
-            }, 'json');
+            },
+            'json'
+        );
+            
         }, 250);
     });
+
 });
 
-function criarHobbieSeNaoExistir(gosto) {
-    var existe = $('#lista > li').filter(function() {
-        return $(this).text().trim().toLowerCase() === gosto.toLowerCase();
-    }).length > 0;
-
-    if (!existe) {
-        $.post('/create-account-autocompletar', { gosto: gosto }, function(resposta) {
-            console.log(resposta);
-        }, 'json');
-    }
-}
