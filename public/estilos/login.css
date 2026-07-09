@@ -51,6 +51,11 @@ main > form > p > input {
     border-bottom: 1px solid #888888;
 }
 
+main > form > p.em-linha > input {
+    width: 15px;
+    height: 15px;
+}
+
 main > form > p > input:focus {
     border: none;
     outline: none;
