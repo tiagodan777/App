@@ -68,6 +68,10 @@ class Member {
             unset($membro['ano']);
             unset($membro['gostos']);
 
+            echo "<pre>";
+            var_dump($membro);
+            echo "</pre>";
+
             $sql = "INSERT INTO membros (primeiro_nome, ultimo_nome, nascimento, genero, telefone, email, bio, password)
                     VALUES (:primeiro_nome, :ultimo_nome, :nascimento, :genero, :telefone, :email, :sobre_ti, :password);";
             $this->db->runSQL($sql, $membro);
