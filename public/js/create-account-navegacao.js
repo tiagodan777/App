@@ -46,9 +46,6 @@ $(function() {
         
         dados['gostos'] ??= [];
         dados['gostos'].push(gosto);
-
-        $('#hobbie').val('');
-
     });
 
     $(document).on('click', '#meus-gostos > p', function () {
