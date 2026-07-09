@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $membro['password'] = $_POST['password'];
     $confirma_password = $_POST['confirma_password'];
     $nome_completo = $membro['primeiro_nome'] . ' ' . $membro['ultimo_nome'];
-    $membro['seo_name'] = create_seo_name($nome_completo);
+    $membro['nome_seo'] = create_seo_name($nome_completo);
 
     // TESTE
 
