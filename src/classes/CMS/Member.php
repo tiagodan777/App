@@ -73,7 +73,7 @@ class Member {
             echo "</pre>";
 
             $sql = "INSERT INTO membros (primeiro_nome, ultimo_nome, nascimento, genero, telefone, email, bio, password, nome_seo)
-                    VALUES (:primeiro_nome, :ultimo_nome, :nascimento, :genero, :telefone, :email, :sobre_ti, :password, nome_seo);";
+                    VALUES (:primeiro_nome, :ultimo_nome, :nascimento, :genero, :telefone, :email, :sobre_ti, :password, :nome_seo);";
             $this->db->runSQL($sql, $membro);
 
             $sql = "SELECT id FROM membro
