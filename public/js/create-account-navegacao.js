@@ -82,5 +82,8 @@ $(function() {
     $(document).on('click', '#lista > li', function(e) {
         $('#hobbie').val($(this).text());
         $('#adicionar-gosto').trigger('click');
+        $('#hobbie').val('');
+        $('#lista').empty();
+        $('#recomendacoes').hide();
     });
 });

@@ -35,8 +35,23 @@ $(function () {
             'json'
         );
             
-        }, 200);
+        }, 250);
     });
 
+    $(document).on('click', '#adicionar-gosto', function(e) {
+        e.preventDefault();
+
+        var gosto = $('#hobbie').val().trim();
+        var $lista = $('#lista');
+
+        if (gosto === '') return;
+
+        if ($lista.html().trim() === '') {
+            $.post('/create-account-autocompletar', { gosto: gosto }, function(resposta) {
+                console.log(resposta);
+            }, 'json');
+        }
+        $lista.empty();
+    }); 
 });
 
