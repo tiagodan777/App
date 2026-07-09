@@ -23,18 +23,15 @@ $(function () {
         }
 
         timeout = setTimeout(function () {
-            $.get('/create-account-autocompletar', { gosto: queryString }, function (dados) {
+            $.get('/create-account-autocompletar', { gosto: queryString }, function (dadosResposta) {
                 $lista.empty();
 
-                dados.forEach(function (hobbie) {
+                dadosResposta.forEach(function (hobbie) {
                     $lista.append(
-                        '<li id="' + hobbie.id + '"><strong>' + hobbie.nome + '</strong></li>'
+                        '<li data-id="' + hobbie.id + '"><strong>' + hobbie.nome + '</strong></li>'
                     );
                 });
-            },
-            'json'
-        );
-            
+            }, 'json');
         }, 250);
     });
 
@@ -46,12 +43,31 @@ $(function () {
 
         if (gosto === '') return;
 
+        dados['gostos'] ??= [];
+
+        if (!dados['gostos'].includes(gosto)) {
+            dados['gostos'].push(gosto);
+            $('#meus-gostos').append('<p class="meu-hobbie">' + gosto + '</p>');
+        }
+
         if ($lista.html().trim() === '') {
             $.post('/create-account-autocompletar', { gosto: gosto }, function(resposta) {
                 console.log(resposta);
             }, 'json');
         }
-        $lista.empty();
-    }); 
-});
 
+        $('#hobbie').val('');
+        $lista.empty();
+        $('#recomendacoes').hide();
+    });
+
+    $(document).on('click', '#meus-gostos > p', function () {
+        var gosto = $(this).text().trim();
+
+        dados['gostos'] = dados['gostos'].filter(function(g) {
+            return g !== gosto;
+        });
+
+        $(this).remove();
+    });
+});

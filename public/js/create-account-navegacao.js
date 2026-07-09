@@ -1,5 +1,15 @@
 var $form = $('form');
-var dados = {};
+var dados = {
+    gostos: []
+};
+
+function guardarCamposAtuais() {
+    $form.serializeArray().forEach(function(campo) {
+        dados[campo.name] = campo.value;
+    });
+
+    dados['gostos'] ??= [];
+}
 
 $(function() {
     $form.load('/create-account-campos #nome', function() {
@@ -7,11 +17,11 @@ $(function() {
             marginLeft: '0%'
         }, 500);
     });
-});
 
-$(function() {
     $(document).on('click', 'nav.anterior-proximo > a', function(e) {
         e.preventDefault();
+
+        guardarCamposAtuais();
 
         var url = this.id;
 
@@ -19,72 +29,30 @@ $(function() {
             $('form > div').animate({
                 marginLeft: '0%'
             }, 500);
-
         });
     });
-});
 
-$(function() {
-    $(document).on('click', 'nav.anterior-proximo > a', function(e) {
-        e.preventDefault();
-
-        $form.serializeArray().forEach(function(campo) {
-            dados[campo.name] = campo.value;
-        });
-    });
-});
-
-$(function() {
-    $(document).on('click', '#adicionar-gosto', function(e) {
-        e.preventDefault();
-
-        var gosto = $('#hobbie').val().trim();
-
-        if (gosto === '') return;
-
-        $('#meus-gostos').append('<p class="meu-hobbie">' + gosto + '</p>');
-        
-        dados['gostos'] ??= [];
-        dados['gostos'].push(gosto);
-    });
-
-    $(document).on('click', '#meus-gostos > p', function () {
-        const gosto = $(this).text();
-
-        dados['gostos'] = dados['gostos'].filter(g => g !== gosto);
-
-        $(this).remove();
-    });
-});
-
-
-$(function() {
     $form.on('submit', function(e) {
         e.preventDefault();
 
-        dados['gostos'] ??= [];
+        guardarCamposAtuais();
+
+        console.log(dados);
 
         $.post('/create-account', dados, function(resposta) {
             document.write(resposta);
         });
     });
-});
 
-$(function() {
     $(document).on('change', '#ver-password', function() {
         var tipo = $(this).is(':checked') ? 'text' : 'password';
 
         $('#password').attr('type', tipo);
         $('#confirma-password').attr('type', tipo);
     });
-});
 
-$(function() {
     $(document).on('click', '#lista > li', function(e) {
-        $('#hobbie').val($(this).text());
+        $('#hobbie').val($(this).text().trim());
         $('#adicionar-gosto').trigger('click');
-        $('#hobbie').val('');
-        $('#lista').empty();
-        $('#recomendacoes').hide();
     });
 });
