@@ -38,7 +38,7 @@ class CMS {
             $this->notification = new Notification($this->db);
         }
         return $this->notification;
-    }
+    }*/
 
     public function getCookie() {
         if ($this->cookie === null) {

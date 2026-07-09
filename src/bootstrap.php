@@ -28,16 +28,16 @@ $twig->addGlobal('doc_root', DOC_ROOT);
 setlocale(LC_TIME, 'pt_PT.UTF-8', 'pt_PT', 'Portuguese_Portugal');
 date_default_timezone_set('Europe/Lisbon');*/
 
-//$cookie = $cms->getCookie();
-//$session = $cms->getSession();
-// $db = $cms->getDatabase();
+$cookie = $cms->getCookie();
+$session = $cms->getSession();
+$db = $cms->getDatabase();
 
-/*if ($cookie->token) {
+if ($cookie->token) {
     $session = $session->create($cookie->token);
-}*/
+}
 
-//$twig->addGlobal('cookie', $cookie);
-//$twig->addGlobal('session', $session);
+$twig->addGlobal('cookie', $cookie);
+$twig->addGlobal('session', $session);
 
 if (DEV === true) {
     $twig->addExtension(new \Twig\Extension\DebugExtension);
