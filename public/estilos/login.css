@@ -90,8 +90,8 @@ main > form > input[type="submit"] {
 
 aside {
     width: 100vw;
-    height: 15vh;
-    margin-top: 15vh;
+    height: 20vh;
+    margin-top: 25vh;
 
     display: flex;
     flex-flow: column nowrap;
