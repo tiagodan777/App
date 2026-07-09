@@ -29,6 +29,7 @@ main > form > p {
 }
 
 main > form > p > label {
+    width: 100%;
     font-weight: bold;
     font-size: 0.8em;
 }
