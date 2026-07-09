@@ -40,7 +40,7 @@ $(function () {
 
     $(document).on('click', '#adicionar-gosto', function(e) {
         var $lista = $('#lista');
-        if ($lista.length == 0) {
+        if ($lista.html() == '') {
             alert('OK');
         }
     })
