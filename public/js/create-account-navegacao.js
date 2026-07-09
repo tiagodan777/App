@@ -3,9 +3,9 @@ var dados = {};
 
 $(function() {
     $form.load('/create-account-campos #nome', function() {
-        $('form > div').delay(100).animate({
+        $('form > div').animate({
             marginLeft: '0%'
-        }, 350);
+        }, 500);
     });
 });
 
@@ -18,7 +18,7 @@ $(function() {
         $form.load('/create-account-campos ' + url, function() {
             $('form > div').animate({
                 marginLeft: '0%'
-            }, 350);
+            }, 500);
 
         });
     });
