@@ -21,7 +21,6 @@ main  > h1 {
 main > form {
     width: 85vw;
     height: 50vh;
-    margin-top: -25%;
 
     display: flex;
     flex-flow: column nowrap;
