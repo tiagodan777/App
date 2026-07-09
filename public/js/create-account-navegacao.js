@@ -81,7 +81,7 @@ $(function() {
 });
 
 $(function() {
-    $('#lista').on('click', 'li', function(e) {
+    $(document).on('click', '#lista > li', function(e) {
         $('#hobbie').val($(this).text());
         $('#recomendacoes').hide();
     })
