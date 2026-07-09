@@ -27,7 +27,7 @@ class Session {
         $this->token = $_SESSION['token'] ?? '';
     }
 
-    public function create($token = '', $proposito = 'stay_logged_id', int $membro_id = 0) {
+    public function create($token = '', $proposito = 'stay_logged_id', $membro_id = '') {
         session_regenerate_id(true);
         if (!$membro_id) {
             $arguments = [];
