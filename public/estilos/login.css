@@ -59,7 +59,7 @@ main > form > p > input {
 }
 
 main > form > p.em-linha {
-    margin-bottom: -30%;
+    margin-bottom: -10%;
 }
 
 main > form > p.em-linha > input {
