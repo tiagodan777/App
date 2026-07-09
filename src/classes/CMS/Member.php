@@ -61,7 +61,7 @@ class Member {
         $membro['password'] = password_hash($membro['password'], PASSWORD_DEFAULT);
 
         try {
-            $gostos = $membro['gostos'];
+            $gostos = $membro['gostos'] ?? [];
 
             unset($membro['dia'], $membro['mes'], $membro['ano'], $membro['gostos']);
 

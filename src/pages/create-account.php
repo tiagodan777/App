@@ -12,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $membro['mes'] = $_POST['mes'];
     $membro['ano'] = $_POST['ano'];
     $membro['genero'] = $_POST['genero'];
-    $membro['gostos'] = $_POST['gostos'];
+    $membro['gostos'] = $_POST['gostos'] ?? [];
     $membro['sobre_ti'] = $_POST['sobre_ti'];
 
     $membro['telefone'] = $_POST['telefone'];

@@ -61,8 +61,9 @@ $(function() {
 $(function() {
     $form.on('submit', function(e) {
         e.preventDefault();
-        var dadosFormulario = $.param(dados)
-        // alert(dadosFormulario);
+
+        dados['gostos'] ??= [];
+
         $.post('/create-account', dados, function(resposta) {
             document.write(resposta);
         });
