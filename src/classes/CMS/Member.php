@@ -76,7 +76,7 @@ class Member {
                     VALUES (:primeiro_nome, :ultimo_nome, :nascimento, :genero, :telefone, :email, :sobre_ti, :password, :nome_seo);";
             $this->db->runSQL($sql, $membro);
 
-            $sql = "SELECT id FROM membro
+            $sql = "SELECT id FROM membros
                     WHERE email = :email;";
             $id =  $this->db->runSQL($sql, [$membro['email']])->fetchColumn();
 
