@@ -42,17 +42,17 @@ $(function () {
         e.preventDefault();
 
         var gosto = $('#hobbie').val().trim();
-        var $lista = $('#lista');
 
         if (gosto === '') return;
 
-        if ($lista.html().trim() === '') {
-            $.post('/create-account-autocompletar', { gosto: gosto }, function(resposta) {
-                console.log(resposta);
-            }, 'json');
-        }
-        $lista.empty();
-        $lista.empty();
-    }); 
+        $('#meus-gostos').append('<p class="meu-hobbie">' + gosto + '</p>');
+        
+        dados['gostos'] ??= [];
+        dados['gostos'].push(gosto);
+
+        $('#hobbie').val('');
+        $('#lista').empty();
+        $('#recomendacoes').hide();
+    });
 });
 
