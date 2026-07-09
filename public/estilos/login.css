@@ -91,6 +91,7 @@ main > form > input[type="submit"] {
 aside {
     width: 100vw;
     height: 20vh;
+    margin-top: 10vh;
 
     display: flex;
     flex-flow: column nowrap;
