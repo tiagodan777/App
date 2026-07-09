@@ -32,6 +32,7 @@ main > form > p > label {
     width: 100%;
     font-weight: bold;
     font-size: 0.8em;
+    margin-bottom: 10px;
 }
 
 main > form > p > input {
