@@ -96,7 +96,7 @@ class Member {
                 }
             }
 
-            return $id;
+            return (int) $id;
 
         } catch (\PDOException $e) {
             if ($e->errorInfo[1] === 1062) {
