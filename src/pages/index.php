@@ -1,10 +1,9 @@
 <?php
+
 $data = [];
 
 require_login($session);
 
-echo "<pre>";
-var_dump($session);
-echo "</pre>";
+$data['membro_id'] = $session->id;
 
 echo $twig->render('index.html', $data);

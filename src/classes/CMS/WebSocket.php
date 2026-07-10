@@ -19,28 +19,64 @@ class WebSocket implements MessageComponentInterface {
         $this->pdo = $pdoFactory;
     }
 
-    public function onOpen(ConnectionInterface $conn) {
+    public function onOpen(ConnectionInterface $conn)
+    {
         $this->clients->attach($conn);
-        echo "Nova conexção!! - ({$conn->resourceId})\n";
-        
-        $this->pessoas[$conn->resourceId] = [
-            'id' => $conn->resourceId,
-            'src' => '/imagens/fotos-perfil/' . $_SESSION['foto_perfil'],
-            'top' => random_int(50, 600),
-            'left' => random_int(50, 400),
-        ];
-        var_dump($this->pessoas);
-        $this->broadcastNewState(array_values($this->pessoas));
+
+        echo "Nova conexão ({$conn->resourceId})\n";
     }
 
-    public function onMessage(ConnectionInterface $from, $msg) {
+   public function onMessage(ConnectionInterface $from, $msg)
+    {
         $data = json_decode($msg, true);
 
-        var_dump($data);
+        if (!is_array($data) || !isset($data['type'])) {
+            return;
+        }
+
+        if ($data['type'] === 'auth') {
+            $membro_id = $data['membro_id'] ?? '';
+
+            if ($membro_id === '') {
+                return;
+            }
+
+            $sql = "SELECT
+                        COALESCE(f.nome_arquivo, 'default.webp') AS foto_perfil
+                    FROM membros AS m
+                    LEFT JOIN fotos_perfil AS f
+                        ON f.membro_id = m.id
+                        AND f.ordem = 1
+                    WHERE m.id = :membro_id
+                    LIMIT 1";
+
+            $foto = $this->pdo->runSQL($sql, [
+                'membro_id' => $membro_id
+            ])->fetchColumn();
+
+            if (!$foto) {
+                $foto = 'default.webp';
+            }
+
+            $this->pessoas[$from->resourceId] = [
+                'id' => $from->resourceId,
+                'src' => '/imagens/fotos-perfil/' . $foto,
+                'top' => random_int(50, 600),
+                'left' => random_int(50, 400),
+            ];
+
+            $this->broadcastNewState(array_values($this->pessoas));
+
+            return;
+        }
 
         if ($data['type'] === 'move') {
-            $top = $data['top'] ?? 0;
-            $left = $data['left'] ?? 0;
+            if (!isset($this->pessoas[$from->resourceId])) {
+                return;
+            }
+
+            $top = (int) ($data['top'] ?? 0);
+            $left = (int) ($data['left'] ?? 0);
 
             $this->pessoas[$from->resourceId]['top'] += $top;
             $this->pessoas[$from->resourceId]['left'] += $left;
