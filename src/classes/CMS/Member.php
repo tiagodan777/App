@@ -137,40 +137,22 @@ class Member {
         }
     }*/
 
-    public function login($utilizador, $password)
-    {
-        $sql = "SELECT
-                    m.id,
-                    m.primeiro_nome,
-                    m.ultimo_nome,
-                    m.nascimento,
-                    m.genero,
-                    m.email,
-                    m.telefone,
-                    m.password,
-                    m.adesao,
-                    m.bio,
-                    m.nome_seo,
-                    f.nome_arquivo AS foto_perfil
+    public function login($utilizador, $password) {
+        $arguments['utilizador1'] = $utilizador;
+        $arguments['utilizador2'] = $utilizador;
+        $sql = "SELECT m.id, m.primeiro_nome, m.ultimo_nome, m.nascimento, m.genero, m.email, m.telefone, m.password,
+                m.adesao, m.bio, m.nome_seo, f.nome_arquivo AS foto_perfil
+
                 FROM membros AS m
-                LEFT JOIN fotos_perfil AS f
-                    ON f.membro_id = m.id
-                WHERE m.email = :utilizador1
-                OR m.telefone = :utilizador2
-                LIMIT 1";
-
-        $membro = $this->db->runSQL($sql, [
-            'utilizador1' => $utilizador,
-            'utilizador2' => $utilizador
-        ])->fetch();
-
+                LEFT JOIN fotos_perfil AS f ON f.membro_id = m.id
+                WHERE email = :utilizador1
+                OR telefone = :utilizador2;";
+        $membro = $this->db->runSQL($sql, $arguments)->fetch();
         if (!$membro) {
             return false;
         }
-
-        return password_verify($password, $membro['password'])
-            ? $membro
-            : false;
+        $authenticated = password_verify($password, $membro['password']);
+        return ($authenticated ? $membro : false);
     }
 
     /*public function getIdByEmail($email) {

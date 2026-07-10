@@ -23,9 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     var_dump($erros);
     if (!$invalid) {
         $membro = $cms->getMember()->login($utilizador, $passowrd);
-        /*if ($member && $member['role'] == 'suspended') {
-            $erros['message'] = 'Conta suspensa';
-        } else*/if ($membro) {
+        if ($membro) {
             if ($lembrar) {
                 $token = $cms->getCookie()->create($membro);
                 $cms->getSession()->create($token);
@@ -39,6 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             redirect(DOC_ROOT . 'index/?loginToken=' . $tokenLogin);
         } else {
             $erros['message'] = 'Por favor tenta novamente';
+            
         }
     }
 }
