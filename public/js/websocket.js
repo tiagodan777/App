@@ -90,7 +90,7 @@ ws.onmessage = function(event) {
 
             $img.attr('data-top', pessoa.top);
             $img.attr('data-left', pessoa.left);
-            // $img.attr('src', pessoa.src);
+            $img.attr('src', pessoa.src);
 
             // Adiciona ao bloco invisível em vez do body
             fragmento.appendChild($img[0]);
