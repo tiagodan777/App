@@ -137,22 +137,54 @@ class Member {
         }
     }*/
 
-    public function login($utilizador, $password) {
-        $arguments['utilizador1'] = $utilizador;
-        $arguments['utilizador2'] = $utilizador;
-        $sql = "SELECT m.id, m.primeiro_nome, m.ultimo_nome, m.nascimento, m.genero, m.email, m.telefone, m.password,
-                m.adesao, m.bio, m.nome_seo, f.nome_arquivo AS foto_perfil
-
+    public function login($utilizador, $password)
+    {
+        $sql = "SELECT
+                    m.id,
+                    m.primeiro_nome,
+                    m.ultimo_nome,
+                    m.nascimento,
+                    m.genero,
+                    m.email,
+                    m.telefone,
+                    m.password,
+                    m.adesao,
+                    m.bio,
+                    m.nome_seo,
+                    f.nome_arquivo AS foto_perfil
                 FROM membros AS m
-                LEFT JOIN fotos_perfil AS f ON f.membro_id = m.id
-                WHERE email = :utilizador1
-                OR telefone = :utilizador2;";
-        $membro = $this->db->runSQL($sql, $arguments)->fetch();
+                LEFT JOIN fotos_perfil AS f
+                    ON f.membro_id = m.id
+                WHERE m.email = :utilizador1
+                OR m.telefone = :utilizador2
+                LIMIT 1";
+
+        $membro = $this->db->runSQL($sql, [
+            'utilizador1' => $utilizador,
+            'utilizador2' => $utilizador
+        ])->fetch();
+
         if (!$membro) {
             return false;
         }
-        $authenticated = password_verify($password, $membro['password']);
-        return ($authenticated ? $membro : false);
+
+        echo '<pre>';
+
+        echo "PASSWORD INTRODUZIDA:\n";
+        var_dump($password);
+
+        echo "PASSWORD GUARDADA:\n";
+        var_dump($membro['password']);
+
+        echo "RESULTADO:\n";
+        var_dump(password_verify($password, $membro['password']));
+
+        echo '</pre>';
+        die();
+
+        return password_verify($password, $membro['password'])
+            ? $membro
+            : false;
     }
 
     /*public function getIdByEmail($email) {
