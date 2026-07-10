@@ -19,6 +19,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $erros['palavra_passe'] = Validate::isPassword($passowrd) ? '' : 'Por favor introduz uma password válida';
 
     $invalid = implode($erros);
+
+    var_dump($erros);
     if (!$invalid) {
         $membro = $cms->getMember()->login($utilizador, $passowrd);
         /*if ($member && $member['role'] == 'suspended') {
