@@ -168,20 +168,6 @@ class Member {
             return false;
         }
 
-        echo '<pre>';
-
-        echo "PASSWORD INTRODUZIDA:\n";
-        var_dump($password);
-
-        echo "PASSWORD GUARDADA:\n";
-        var_dump($membro['password']);
-
-        echo "RESULTADO:\n";
-        var_dump(password_verify($password, $membro['password']));
-
-        echo '</pre>';
-        die();
-
         return password_verify($password, $membro['password'])
             ? $membro
             : false;
