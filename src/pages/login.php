@@ -14,7 +14,7 @@ if ($logged_in != 0) {
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $utilizador = $_POST['utilizador'];
     $passowrd = $_POST['palavra_passe'];
-    $remember = (isset($_POST['mostrar_palavra_passe']) && $_POST['mostrar_palavra_passe'] == 1) ? true : false;
+    $lembrar = isset($_POST['manter_sessao']) && $_POST['mostrar_palavra_passe'] == 1 ? true : false;
     /*$errors['user'] = Validate::isEmail($user) ? '' : 'Por favor introduz um email/nº de telefone correto';*/
     $erros['palavra_passe'] = Validate::isPassword($passowrd) ? '' : 'Por favor introduz uma password válida';
 
@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         /*if ($member && $member['role'] == 'suspended') {
             $erros['message'] = 'Conta suspensa';
         } else*/if ($membro) {
-            if ($remember) {
+            if ($lembrar) {
                 $token = $cms->getCookie()->create($membro);
                 $cms->getSession()->create($token);
                 $tokenLogin = $cms->getToken()->create($membro['id'], 'login');
