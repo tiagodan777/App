@@ -149,17 +149,6 @@ class Member {
                 OR telefone = :utilizador2;";
         $membro = $this->db->runSQL($sql, $arguments)->fetch();
 
-        echo "<pre>";
-
-        echo "UTILIZADOR INTRODUZIDO:\n";
-        var_dump($utilizador);
-
-        echo "\nMEMBRO ENCONTRADO:\n";
-        var_dump($membro);
-
-        echo "</pre>";
-        die();
-
         if (!$membro) {
             return false;
         }
