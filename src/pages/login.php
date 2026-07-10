@@ -20,7 +20,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     $invalid = implode($erros);
 
-    var_dump($erros);
     if (!$invalid) {
         $membro = $cms->getMember()->login($utilizador, $passowrd);
        if ($membro) {
