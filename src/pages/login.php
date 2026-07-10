@@ -13,43 +13,27 @@ if ($logged_in != 0) {
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $utilizador = $_POST['utilizador'];
-    $passowrd = $_POST['palavra_passe'];
+    $password = $_POST['palavra_passe'];
     $lembrar = isset($_POST['manter_sessao']) && $_POST['manter_sessao'] == 1 ? true : false;
     /*$errors['user'] = Validate::isEmail($user) ? '' : 'Por favor introduz um email/nº de telefone correto';*/
-    $erros['palavra_passe'] = Validate::isPassword($passowrd) ? '' : 'Por favor introduz uma password válida';
+    $erros['palavra_passe'] = Validate::isPassword($password) ? '' : 'Por favor introduz uma password válida';
 
     $invalid = implode($erros);
 
     if (!$invalid) {
-        $membro = $cms->getMember()->login($utilizador, $passowrd);
-       if ($membro) {
+        $membro = $cms->getMember()->login($utilizador, $password);
+        if ($membro) {
+            if ($lembrar) {
+                $token = $cms->getCookie()->create($membro);
+                $cms->getSession()->create($token);
+                $tokenLogin = $cms->getToken()->create($membro['id'], 'login');
+            } else {
+                $cms->getSession()->create(membro_id: $membro['id']);
+                $tokenLogin = $cms->getToken()->create($membro['id'], 'login');
+            }
+            // $cms->getSession()->create($tokenLogin, 'login');
 
-        echo "<pre>";
-        echo "LOGIN OK\n";
-        var_dump($membro);
-
-        echo "\nANTES DA SESSION\n";
-        var_dump($_SESSION);
-
-        if ($lembrar) {
-            echo "\nVAI CRIAR COOKIE\n";
-            $token = $cms->getCookie()->create($membro);
-            $cms->getSession()->create($token);
-            $tokenLogin = $cms->getToken()->create($membro['id'], 'login');
-        } else {
-            echo "\nVAI CRIAR SESSION\n";
-            $cms->getSession()->create(membro_id: $membro['id']);
-
-            echo "\nSESSION DEPOIS:\n";
-            var_dump($_SESSION);
-
-            $tokenLogin = $cms->getToken()->create($membro['id'], 'login');
-        }
-
-        echo "\nTOKEN LOGIN:\n";
-        var_dump($tokenLogin);
-
-        die();
+            redirect(DOC_ROOT . 'index/?loginToken=' . $tokenLogin);
         } else {
             $erros['message'] = 'Por favor tenta novamente';
             

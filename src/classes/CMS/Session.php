@@ -27,27 +27,46 @@ class Session {
         $this->token = $_SESSION['token'] ?? '';
     }
 
-    public function create($token = '', $proposito = 'stay_logged_id', $membro_id = '') {
+    public function create(
+        $token = '',
+        $proposito = 'stay_logged_id',
+        $membro_id = ''
+    ) {
         session_regenerate_id(true);
+
         if (!$membro_id) {
-            $arguments = [];
-            $sql = "SELECT membro_id FROM token
-                    WHERE token = :token AND proposito = :proposito AND validade > NOW()";
-            $membro_id = $this->db->runSQL($sql, ['token' => $token, 'proposito' => $proposito])->fetchColumn();
+            $sql = "SELECT membro_id
+                    FROM token
+                    WHERE token = :token
+                    AND proposito = :proposito
+                    AND validade > NOW()
+                    LIMIT 1";
+
+            $membro_id = $this->db->runSQL($sql, [
+                'token' => $token,
+                'proposito' => $proposito
+            ])->fetchColumn();
 
             if (!$membro_id) {
-                // Token inválido → não atualiza a sessão
-                return;
+                return false;
             }
         }
 
-        $sql = "SELECT m.id, m.primeiro_nome, f.nome_arquivo AS foto_perfil, m.nome_seo
+        $sql = "SELECT
+                    m.id,
+                    m.primeiro_nome,
+                    f.nome_arquivo AS foto_perfil,
+                    m.nome_seo
                 FROM membros AS m
-                LEFT JOIN fotos_perfil AS f ON f.membro_id = m.id
+                LEFT JOIN fotos_perfil AS f
+                    ON f.membro_id = m.id
+                    AND f.ordem = 1
                 WHERE m.id = :membro_id
-                AND f.ordem = 1;";
-        
-        $arguments = $this->db->runSQL($sql, ['membro_id' => $membro_id])->fetch();
+                LIMIT 1";
+
+        $arguments = $this->db->runSQL($sql, [
+            'membro_id' => $membro_id
+        ])->fetch();
 
         if (!$arguments) {
             return false;
@@ -58,6 +77,12 @@ class Session {
         $_SESSION['foto_perfil'] = $arguments['foto_perfil'] ?? 'default.webp';
         $_SESSION['seo_name'] = $arguments['nome_seo'];
         $_SESSION['token'] = $token;
+
+        $this->id = $_SESSION['id'];
+        $this->primeiro_nome = $_SESSION['primeiro_nome'];
+        $this->foto_perfil = $_SESSION['foto_perfil'];
+        $this->seo_name = $_SESSION['seo_name'];
+        $this->token = $_SESSION['token'];
 
         return true;
     }
