@@ -25,7 +25,7 @@ class WebSocket implements MessageComponentInterface {
         
         $this->pessoas[$conn->resourceId] = [
             'id' => $conn->resourceId,
-            'src' => '/imagens/fotos-perfil/' . $_SESSION['foto-perfil'],
+            'src' => '/imagens/fotos-perfil/' . $_SESSION['foto_perfil'],
             'top' => random_int(50, 600),
             'left' => random_int(50, 400),
         ];
