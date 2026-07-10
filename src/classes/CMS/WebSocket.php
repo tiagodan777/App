@@ -14,9 +14,10 @@ class WebSocket implements MessageComponentInterface {
     private $pdo;
     private $pessoas;
 
-    public function __construct($pdoFactory) {
+    public function __construct($pdoFactory)
+    {
         $this->clients = new \SplObjectStorage;
-        $this->pdo = $pdoFactory;
+        $this->pdo = $pdoFactory();
     }
 
     public function onOpen(ConnectionInterface $conn)
