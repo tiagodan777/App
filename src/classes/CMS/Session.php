@@ -44,7 +44,8 @@ class Session {
         $sql = "SELECT m.id, m.primeiro_nome, f.nome_arquivo AS foto_perfil, m.nome_seo
                 FROM membros AS m
                 LEFT JOIN fotos_perfil AS f ON f.membro_id = m.id
-                WHERE m.id = :membro_id;";
+                WHERE m.id = :membro_id
+                AND f.ordem = 1;";
         
         $arguments = $this->db->runSQL($sql, ['membro_id' => $membro_id])->fetch();
 
