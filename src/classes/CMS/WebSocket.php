@@ -30,6 +30,9 @@ class WebSocket implements MessageComponentInterface {
     {
         $data = json_decode($msg, true);
 
+        echo "MENSAGEM RECEBIDA:\n";
+        var_dump($data);
+
         if (!is_array($data) || !isset($data['type'])) {
             return;
         }
