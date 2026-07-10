@@ -14,7 +14,7 @@ if ($logged_in != 0) {
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $utilizador = $_POST['utilizador'];
     $passowrd = $_POST['palavra_passe'];
-    $lembrar = isset($_POST['manter_sessao']) && $_POST['mostrar_palavra_passe'] == 1 ? true : false;
+    $lembrar = isset($_POST['manter_sessao']) && $_POST['manter_sessao'] == 1 ? true : false;
     /*$errors['user'] = Validate::isEmail($user) ? '' : 'Por favor introduz um email/nº de telefone correto';*/
     $erros['palavra_passe'] = Validate::isPassword($passowrd) ? '' : 'Por favor introduz uma password válida';
 
