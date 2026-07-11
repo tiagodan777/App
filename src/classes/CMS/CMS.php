@@ -12,6 +12,7 @@ class CMS {
     private $follow = null;
     private $content = null;
     private $session = null;
+    private $image = null;
 
     public function __construct($dsn, $username, $password)
     {
@@ -82,6 +83,13 @@ class CMS {
             $this->session = new Session($this->db);
         }
         return $this->session;
+    }
+
+    public function getImage() {
+        if ($this->image === null) {
+            $this->image = new Image($this->db);
+        }
+        return $this->image;
     }
 
     public function getDatabase() {
