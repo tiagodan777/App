@@ -1,6 +1,6 @@
 <?php
 
-namespace TiagoDaniel\CMS;
+namespace App\CMS;
 
 use InvalidArgumentException;
 use RuntimeException;
