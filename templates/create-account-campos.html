@@ -1,27 +1,55 @@
 <div id="nome">
     <h1>Como te chamas?</h1>
+
     <p>
-        <label for="primeiro_nome">Primeiro Nome</label>
-        <input type="text" name="primeiro_nome" id="primeiro_nome" required>
+        <label for="primeiro_nome">Primeiro nome</label>
+
+        <input
+            type="text"
+            name="primeiro_nome"
+            id="primeiro_nome"
+            required
+        >
     </p>
+
     <p>
-        <label for="ultimo_nome">Último Nome</label>
-        <input type="text" name="ultimo_nome" id="ultimo_nome" required>
+        <label for="ultimo_nome">Último nome</label>
+
+        <input
+            type="text"
+            name="ultimo_nome"
+            id="ultimo_nome"
+            required
+        >
     </p>
 
     <nav class="anterior-proximo">
-        <a id="#nascimento" class="proximo">Próximo</a>
+        <a id="#nascimento" class="proximo">
+            Próximo
+        </a>
     </nav>
 </div>
+
 <div id="nascimento">
     <h1>Quando nasceste?</h1>
-    <nav>
+
+    <nav class="campos-nascimento">
         <div>
             <label for="dia">Dia</label>
-            <input type="number" name="dia" id="dia" required>
+
+            <input
+                type="number"
+                name="dia"
+                id="dia"
+                min="1"
+                max="31"
+                required
+            >
         </div>
+
         <div>
             <label for="mes">Mês</label>
+
             <select id="mes" name="mes" required>
                 <option value="01">Janeiro</option>
                 <option value="02">Fevereiro</option>
@@ -37,20 +65,38 @@
                 <option value="12">Dezembro</option>
             </select>
         </div>
+
         <div>
             <label for="ano">Ano</label>
-            <input type="number" name="ano" id="ano" required>
+
+            <input
+                type="number"
+                name="ano"
+                id="ano"
+                min="1900"
+                max="2100"
+                required
+            >
         </div>
     </nav>
+
     <nav class="anterior-proximo">
-        <a id="#nome">Anterior</a>
-        <a id="#sexo" class="proximo">Próximo</a>
+        <a id="#nome" class="anterior">
+            Anterior
+        </a>
+
+        <a id="#sexo" class="proximo">
+            Próximo
+        </a>
     </nav>
 </div>
+
 <div id="sexo">
-    <h1>Qual o teu género?</h1>
-    <div>
+    <h1>Qual é o teu género?</h1>
+
+    <div class="campo-genero">
         <label for="genero">Género</label>
+
         <select name="genero" id="genero">
             <option value="M">Masculino</option>
             <option value="F">Feminino</option>
@@ -59,50 +105,115 @@
     </div>
 
     <nav class="anterior-proximo">
-        <a id="#nascimento">Anterior</a>
-        <a id="#gostos" class="proximo">Próximo</a>
+        <a id="#nascimento" class="anterior">
+            Anterior
+        </a>
+
+        <a id="#gostos" class="proximo">
+            Próximo
+        </a>
     </nav>
 </div>
+
 <div id="gostos">
     <h1>O que gostas de fazer?</h1>
-    <p><input type="text" name="hobbie" id="hobbie"><input type="button" id="adicionar-gosto" value="Adicionar">
+
+    <p class="adicionar-gosto">
+        <input
+            type="text"
+            name="hobbie"
+            id="hobbie"
+            autocomplete="off"
+        >
+
+        <input
+            type="button"
+            id="adicionar-gosto"
+            value="Adicionar"
+        >
+    </p>
+
     <div id="recomendacoes">
-        <ul id="lista">
-
-        </ul>
+        <ul id="lista"></ul>
     </div>
-    <div id="meus-gostos">
 
-    </div>
+    <div id="meus-gostos"></div>
 
     <nav class="anterior-proximo">
-        <a id="#sexo">Anterior</a>
-        <a id="#contactos" class="proximo">Próximo</a>
+        <a id="#sexo" class="anterior">
+            Anterior
+        </a>
+
+        <a id="#contactos" class="proximo">
+            Próximo
+        </a>
     </nav>
-    
 </div>
+
 <div id="contactos">
     <h1>Contactos</h1>
-    <p><label for="telefone">Qual é o teu número de telefone? </label><input type="tel" name="telefone" id="telefone"></p>
-    <p><label for="email">E o teu email?</label><input type="email" name="email" id="email"></p>
+
+    <p>
+        <label for="telefone">
+            Qual é o teu número de telefone?
+        </label>
+
+        <input
+            type="tel"
+            name="telefone"
+            id="telefone"
+            autocomplete="tel"
+        >
+    </p>
+
+    <p>
+        <label for="email">
+            E o teu email?
+        </label>
+
+        <input
+            type="email"
+            name="email"
+            id="email"
+            autocomplete="email"
+        >
+    </p>
 
     <nav class="anterior-proximo">
-        <a id="#gostos">Anterior</a>
-        <a id="#descricao" class="proximo">Próximo</a>
+        <a id="#gostos" class="anterior">
+            Anterior
+        </a>
+
+        <a id="#descricao" class="proximo">
+            Próximo
+        </a>
     </nav>
 </div>
+
 <div id="descricao">
     <h1>Fala sobre ti</h1>
 
-    <label for="sobre-ti">Sobre ti</label>
+    <label for="sobre-ti">
+        Sobre ti
+    </label>
 
-    <textarea id="sobre-ti" maxlength="1000"></textarea>
+    <textarea
+        name="sobre_ti"
+        id="sobre-ti"
+        maxlength="1000"
+    ></textarea>
 
     <nav class="anterior-proximo">
-        <a id="#contactos" class="anterior">Anterior</a>
-        <a id="#fotos" class="proximo">Próximo</a>
+        <a id="#contactos" class="anterior">
+            Anterior
+        </a>
+
+        <a id="#fotos" class="proximo">
+            Próximo
+        </a>
     </nav>
 </div>
+
 <div id="fotos">
 
     <div id="perfil-camera-interface">
@@ -116,7 +227,6 @@
         <canvas id="perfil-camera-canvas"></canvas>
 
         <div class="perfil-camera-header">
-
             <button
                 type="button"
                 id="perfil-fechar-camera"
@@ -131,8 +241,19 @@
                     stroke="currentColor"
                     stroke-width="2"
                 >
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                    <line
+                        x1="18"
+                        y1="6"
+                        x2="6"
+                        y2="18"
+                    ></line>
+
+                    <line
+                        x1="6"
+                        y1="6"
+                        x2="18"
+                        y2="18"
+                    ></line>
                 </svg>
             </button>
 
@@ -152,20 +273,27 @@
                 >
                     <path d="M23 4v6h-6"></path>
                     <path d="M1 20v-6h6"></path>
-                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"></path>
-                    <path d="M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+
+                    <path
+                        d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"
+                    ></path>
+
+                    <path
+                        d="M1 14l4.64 4.36A9 9 0 0 0 20.49 15"
+                    ></path>
                 </svg>
             </button>
-
         </div>
 
         <div class="perfil-camera-guia">
             <div class="perfil-camera-circulo"></div>
-            <p>Enquadra o teu rosto dentro do círculo</p>
+
+            <p>
+                Enquadra o teu rosto dentro do círculo
+            </p>
         </div>
 
         <div class="perfil-camera-footer">
-
             <button
                 type="button"
                 id="perfil-abrir-galeria-camera"
@@ -180,9 +308,23 @@
                     stroke="white"
                     stroke-width="2"
                 >
-                    <rect x="3" y="3" width="18" height="18" rx="2"></rect>
-                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                    <polyline points="21 15 16 10 5 21"></polyline>
+                    <rect
+                        x="3"
+                        y="3"
+                        width="18"
+                        height="18"
+                        rx="2"
+                    ></rect>
+
+                    <circle
+                        cx="8.5"
+                        cy="8.5"
+                        r="1.5"
+                    ></circle>
+
+                    <polyline
+                        points="21 15 16 10 5 21"
+                    ></polyline>
                 </svg>
             </button>
 
@@ -196,16 +338,15 @@
             </button>
 
             <div class="perfil-camera-espaco"></div>
-
         </div>
     </div>
 
     <div id="perfil-fotos-conteudo">
-
         <h1>Mostra quem és</h1>
 
         <p class="perfil-fotos-explicacao">
-            Adiciona até 6 fotografias. A primeira será a tua foto principal.
+            Adiciona até 6 fotografias. A primeira
+            será a tua foto principal.
         </p>
 
         <input
@@ -220,7 +361,6 @@
         <div id="perfil-lista-fotos"></div>
 
         <div class="perfil-fotos-acoes">
-
             <button
                 type="button"
                 id="perfil-tirar-foto"
@@ -234,8 +374,15 @@
                     stroke="currentColor"
                     stroke-width="2"
                 >
-                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-                    <circle cx="12" cy="13" r="4"></circle>
+                    <path
+                        d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"
+                    ></path>
+
+                    <circle
+                        cx="12"
+                        cy="13"
+                        r="4"
+                    ></circle>
                 </svg>
 
                 Tirar foto
@@ -254,47 +401,119 @@
                     stroke="currentColor"
                     stroke-width="2"
                 >
-                    <rect x="3" y="3" width="18" height="18" rx="2"></rect>
-                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                    <polyline points="21 15 16 10 5 21"></polyline>
+                    <rect
+                        x="3"
+                        y="3"
+                        width="18"
+                        height="18"
+                        rx="2"
+                    ></rect>
+
+                    <circle
+                        cx="8.5"
+                        cy="8.5"
+                        r="1.5"
+                    ></circle>
+
+                    <polyline
+                        points="21 15 16 10 5 21"
+                    ></polyline>
                 </svg>
 
                 Escolher fotos
             </button>
-
         </div>
 
-        <p id="perfil-fotos-erro" aria-live="polite"></p>
+        <p
+            id="perfil-fotos-erro"
+            aria-live="polite"
+        ></p>
 
         <nav class="anterior-proximo">
-            <a id="#descricao" class="anterior">Anterior</a>
-            <a id="#palavra-passe" class="proximo">Próximo</a>
-        </nav>
+            <a id="#descricao" class="anterior">
+                Anterior
+            </a>
 
+            <a id="#palavra-passe" class="proximo">
+                Próximo
+            </a>
+        </nav>
     </div>
 </div>
+
 <div id="palavra-passe">
     <h1>Cria a tua palavra-passe</h1>
+
     <p>
-        <label for="password">Palavra-passe</label>
-        <input type="password" name="password" id="password">
+        <label for="password">
+            Palavra-passe
+        </label>
+
+        <input
+            type="password"
+            name="password"
+            id="password"
+            autocomplete="new-password"
+        >
     </p>
+
     <p>
-        <label for="password-confirma">Confirma a palavra-passe</label>
-        <input type="password" name="confirma_password" id="confirma-password">
+        <label for="confirma-password">
+            Confirma a palavra-passe
+        </label>
+
+        <input
+            type="password"
+            name="confirma_password"
+            id="confirma-password"
+            autocomplete="new-password"
+        >
     </p>
+
     <p id="mostrar-password">
-        <input type="checkbox" name="ver_password" id="ver-password"><label for="ver-password">Mostrar palavra-passe</label>
+        <input
+            type="checkbox"
+            name="ver_password"
+            id="ver-password"
+        >
+
+        <label for="ver-password">
+            Mostrar palavra-passe
+        </label>
     </p>
+
     <nav class="anterior-proximo">
-        <a id="#fotos" class="anterior">Anterior</a>
-        <a id="#criar-conta" class="proximo">Próximo</a>
+        <a id="#fotos" class="anterior">
+            Anterior
+        </a>
+
+        <a id="#criar-conta" class="proximo">
+            Próximo
+        </a>
     </nav>
 </div>
+
 <div id="criar-conta">
     <h1>Tudo feito!</h1>
-    <input type="submit" value="Criar Conta">
+
+    <p class="texto-final">
+        Confirma os teus dados e cria a conta.
+    </p>
+
+    <p
+        id="create-account-erro"
+        aria-live="polite"
+    ></p>
+
+    <input
+        type="submit"
+        value="Criar conta"
+        id="criar-conta-submit"
+    >
+
     <nav class="anterior-proximo">
-        <a id="#palavra-passe">Anterior</a>
+        <a id="#palavra-passe" class="anterior">
+            Anterior
+        </a>
     </nav>
 </div>

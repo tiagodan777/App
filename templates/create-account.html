@@ -3,11 +3,14 @@
 {% block content %}
 
 <form
-    action="{{ doc_root }}create-account" method="post" enctype="multipart/form-data" id="create-account-form">
-</form>
+    action="{{ doc_root }}create-account"
+    method="post"
+    enctype="multipart/form-data"
+    id="create-account-form"
+></form>
 
-<script src="{{ doc_root }}js/create-account-navegacao.js"></script>
-<script src="{{ doc_root }}js/create-account-autocompletar.js"></script>
 <script src="{{ doc_root }}js/create-account-fotos.js"></script>
+<script src="{{ doc_root }}js/create-account-autocompletar.js"></script>
+<script src="{{ doc_root }}js/create-account-navegacao.js"></script>
 
 {% endblock %}

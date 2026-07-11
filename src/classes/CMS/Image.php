@@ -1,6 +1,10 @@
 <?php
 
-namespace App\CMS;
+namespace TiagoDaniel\CMS;
+
+use InvalidArgumentException;
+use RuntimeException;
+use Throwable;
 
 class Image
 {
@@ -12,10 +16,13 @@ class Image
     }
 
     public function prepareAllImages(
-        int $membroId,
+        string $membroId,
         array $imagens
     ): void {
-        foreach ($imagens as $ordem => $imagem) {
+        foreach (
+            $imagens
+            as $ordem => $imagem
+        ) {
             $sql = "
                 INSERT INTO fotos_perfil (
                     nome_arquivo,
@@ -31,29 +38,54 @@ class Image
                 )
             ";
 
-            $this->db->runSQL($sql, [
-                'nome_arquivo' => $imagem,
-                'membro_id' => $membroId,
-                'ordem' => $ordem,
-                'status' => 'pendente'
-            ]);
+            $this->db->runSQL(
+                $sql,
+                [
+                    'nome_arquivo' =>
+                        $imagem,
+
+                    'membro_id' =>
+                        $membroId,
+
+                    'ordem' =>
+                        $ordem,
+
+                    'status' =>
+                        'pendente'
+                ]
+            );
         }
     }
 
-    public function getUploadTemp(int $membroId): array
-    {
+    public function getUploadTemp(
+        string $membroId
+    ): array {
         $sql = "
-            SELECT *
+            SELECT
+                id,
+                nome_arquivo,
+                membro_id,
+                ordem,
+                status
             FROM fotos_perfil
-            WHERE status = 'pendente'
-            AND membro_id = :membro_id
-            ORDER BY ordem ASC
+            WHERE membro_id = :membro_id
+            AND (
+                status = 'pendente'
+                OR status IS NULL
+            )
+            ORDER BY
+                ordem IS NULL,
+                ordem ASC
         ";
 
         return $this->db
-            ->runSQL($sql, [
-                'membro_id' => $membroId
-            ])
+            ->runSQL(
+                $sql,
+                [
+                    'membro_id' =>
+                        $membroId
+                ]
+            )
             ->fetchAll();
     }
 
@@ -66,34 +98,54 @@ class Image
             WHERE nome_arquivo = :nome_arquivo
         ";
 
-        $this->db->runSQL($sql, [
-            'nome_arquivo' => $nomeArquivo
-        ]);
+        $this->db->runSQL(
+            $sql,
+            [
+                'nome_arquivo' =>
+                    $nomeArquivo
+            ]
+        );
     }
 
-    public function deleteUploadTemp(int $id): void
-    {
+    public function deleteUploadTemp(
+        string $id
+    ): void {
         $sql = "
             SELECT nome_arquivo
             FROM fotos_perfil
             WHERE id = :id
         ";
 
-        $file = $this->db
-            ->runSQL($sql, ['id' => $id])
-            ->fetchColumn();
+        $nomeArquivo =
+            $this->db
+                ->runSQL(
+                    $sql,
+                    [
+                        'id' => $id
+                    ]
+                )
+                ->fetchColumn();
 
-        if (!$file) {
+        if (!$nomeArquivo) {
             return;
         }
 
-        $path =
+        $temporario =
             APP_ROOT .
             '/public/imagens/fotos-perfil-temp/' .
-            $file;
+            $nomeArquivo;
 
-        if (is_file($path)) {
-            unlink($path);
+        $final =
+            APP_ROOT .
+            '/public/imagens/fotos-perfil/' .
+            $nomeArquivo;
+
+        if (is_file($temporario)) {
+            unlink($temporario);
+        }
+
+        if (is_file($final)) {
+            unlink($final);
         }
 
         $sql = "
@@ -101,11 +153,16 @@ class Image
             WHERE id = :id
         ";
 
-        $this->db->runSQL($sql, ['id' => $id]);
+        $this->db->runSQL(
+            $sql,
+            [
+                'id' => $id
+            ]
+        );
     }
 
     public function createImage(
-        int $id,
+        string $membroId,
         string $nomeArquivo,
         string $temp,
         string $type
@@ -114,19 +171,42 @@ class Image
         $ficheirosCriados = [];
 
         try {
-            $finfo = finfo_open(FILEINFO_MIME_TYPE);
-            $mime = finfo_file($finfo, $temp);
+            if (!is_file($temp)) {
+                throw new RuntimeException(
+                    'A imagem temporária não foi encontrada.'
+                );
+            }
+
+            $finfo =
+                finfo_open(
+                    FILEINFO_MIME_TYPE
+                );
+
+            $mime =
+                finfo_file(
+                    $finfo,
+                    $temp
+                );
+
             finfo_close($finfo);
 
-            if (in_array(
-                $mime,
-                ['image/heic', 'image/heif'],
-                true
-            )) {
+            if (
+                in_array(
+                    $mime,
+                    [
+                        'image/heic',
+                        'image/heif'
+                    ],
+                    true
+                )
+            ) {
                 $converted =
                     sys_get_temp_dir() .
                     '/' .
-                    uniqid('perfil_', true) .
+                    uniqid(
+                        'perfil_',
+                        true
+                    ) .
                     '.jpg';
 
                 $returnVar = -1;
@@ -150,56 +230,78 @@ class Image
                     $cmd =
                         escapeshellcmd($bin) .
                         ' ' .
-                        escapeshellarg($temp . '[0]') .
+                        escapeshellarg(
+                            $temp . '[0]'
+                        ) .
                         ' -auto-orient ' .
-                        escapeshellarg($converted) .
+                        escapeshellarg(
+                            $converted
+                        ) .
                         ' 2>&1';
 
-                    exec($cmd, $output, $returnVar);
-                }
-
-                if (
-                    $returnVar !== 0 ||
-                    !is_file($converted)
-                ) {
-                    $cmd =
-                        '/usr/bin/heif-convert -q 100 ' .
-                        escapeshellarg($temp) .
-                        ' ' .
-                        escapeshellarg($converted) .
-                        ' 2>&1';
-
-                    exec($cmd, $output, $returnVar);
-                }
-
-                if (
-                    $returnVar !== 0 ||
-                    !is_file($converted)
-                ) {
-                    $cmd =
-                        'ffmpeg -y -i ' .
-                        escapeshellarg($temp) .
-                        ' -vframes 1 -q:v 2 ' .
-                        escapeshellarg($converted) .
-                        ' 2>&1';
-
-                    exec($cmd, $output, $returnVar);
-                }
-
-                if (
-                    $returnVar !== 0 ||
-                    !is_file($converted)
-                ) {
-                    throw new \RuntimeException(
-                        'Falha ao converter imagem HEIC ou HEIF.'
+                    exec(
+                        $cmd,
+                        $output,
+                        $returnVar
                     );
                 }
-            }
 
-            if (!is_file($converted)) {
-                throw new \RuntimeException(
-                    'O ficheiro da imagem não foi encontrado.'
-                );
+                if (
+                    $returnVar !== 0 ||
+                    !is_file($converted)
+                ) {
+                    $output = [];
+
+                    $cmd =
+                        '/usr/bin/heif-convert -q 100 ' .
+                        escapeshellarg(
+                            $temp
+                        ) .
+                        ' ' .
+                        escapeshellarg(
+                            $converted
+                        ) .
+                        ' 2>&1';
+
+                    exec(
+                        $cmd,
+                        $output,
+                        $returnVar
+                    );
+                }
+
+                if (
+                    $returnVar !== 0 ||
+                    !is_file($converted)
+                ) {
+                    $output = [];
+
+                    $cmd =
+                        'ffmpeg -y -i ' .
+                        escapeshellarg(
+                            $temp
+                        ) .
+                        ' -vframes 1 -q:v 2 ' .
+                        escapeshellarg(
+                            $converted
+                        ) .
+                        ' 2>&1';
+
+                    exec(
+                        $cmd,
+                        $output,
+                        $returnVar
+                    );
+                }
+
+                if (
+                    $returnVar !== 0 ||
+                    !is_file($converted)
+                ) {
+                    throw new RuntimeException(
+                        'Falha ao converter a imagem HEIC ou HEIF.'
+                    );
+                }
             }
 
             $basename =
@@ -216,13 +318,19 @@ class Image
                         '/public/imagens/fotos-perfil/' .
                         $basename;
 
+                    $this->garantirPasta(
+                        dirname($destino)
+                    );
+
                     $this->processProfileImage(
                         $converted,
                         1200,
                         $destino
                     );
 
-                    $ficheirosCriados[] = $destino;
+                    $ficheirosCriados[] =
+                        $destino;
+
                     break;
 
                 case 'receita':
@@ -231,13 +339,19 @@ class Image
                         '/public/imagens/comida/' .
                         $basename;
 
+                    $this->garantirPasta(
+                        dirname($destino)
+                    );
+
                     $this->processImage(
                         $converted,
                         1440,
                         $destino
                     );
 
-                    $ficheirosCriados[] = $destino;
+                    $ficheirosCriados[] =
+                        $destino;
+
                     break;
 
                 case 'publicacao':
@@ -246,20 +360,49 @@ class Image
                         '/public/posts/' .
                         $basename;
 
+                    $this->garantirPasta(
+                        dirname($destino)
+                    );
+
                     $this->processImage(
                         $converted,
                         1440,
                         $destino
                     );
 
-                    $ficheirosCriados[] = $destino;
+                    $ficheirosCriados[] =
+                        $destino;
+
                     break;
 
                 default:
-                    throw new \InvalidArgumentException(
+                    throw new InvalidArgumentException(
                         'Tipo de imagem inválido.'
                     );
             }
+
+            $sql = "
+                UPDATE fotos_perfil
+                SET
+                    nome_arquivo = :nome_arquivo,
+                    status = 'completo'
+                WHERE membro_id = :membro_id
+                AND nome_arquivo = :nome_antigo
+            ";
+
+            $this->db->runSQL(
+                $sql,
+                [
+                    'nome_arquivo' =>
+                        $basename,
+
+                    'membro_id' =>
+                        $membroId,
+
+                    'nome_antigo' =>
+                        $nomeArquivo
+                ]
+            );
 
             if (
                 $converted !== $temp &&
@@ -272,23 +415,11 @@ class Image
                 unlink($temp);
             }
 
-            $sql = "
-                UPDATE fotos_perfil
-                SET
-                    nome_arquivo = :nome_arquivo,
-                    status = 'completo'
-                WHERE membro_id = :membro_id
-                AND nome_arquivo = :old_file
-            ";
-
-            $this->db->runSQL($sql, [
-                'nome_arquivo' => $basename,
-                'membro_id' => $id,
-                'old_file' => $nomeArquivo
-            ]);
-
-        } catch (\Throwable $erro) {
-            foreach ($ficheirosCriados as $ficheiro) {
+        } catch (Throwable $erro) {
+            foreach (
+                $ficheirosCriados
+                as $ficheiro
+            ) {
                 if (is_file($ficheiro)) {
                     unlink($ficheiro);
                 }
@@ -305,7 +436,46 @@ class Image
                 unlink($temp);
             }
 
+            $sql = "
+                UPDATE fotos_perfil
+                SET status = 'erro'
+                WHERE membro_id = :membro_id
+                AND nome_arquivo = :nome_arquivo
+            ";
+
+            $this->db->runSQL(
+                $sql,
+                [
+                    'membro_id' =>
+                        $membroId,
+
+                    'nome_arquivo' =>
+                        $nomeArquivo
+                ]
+            );
+
             throw $erro;
+        }
+    }
+
+    private function garantirPasta(
+        string $pasta
+    ): void {
+        if (is_dir($pasta)) {
+            return;
+        }
+
+        if (
+            !mkdir(
+                $pasta,
+                0775,
+                true
+            ) &&
+            !is_dir($pasta)
+        ) {
+            throw new RuntimeException(
+                'Não foi possível criar a pasta das imagens.'
+            );
         }
     }
 
@@ -314,20 +484,35 @@ class Image
         int $size,
         string $destination
     ): void {
-        $imagick = new \Imagick($sourcePath);
+        $inicio = microtime(true);
+
+        $imagick =
+            new \Imagick(
+                $sourcePath
+            );
+
+        if (
+            $imagick->getNumberImages() >
+            1
+        ) {
+            $imagick->setIteratorIndex(0);
+        }
 
         $imagick->autoOrient();
-        $imagick->setIteratorIndex(0);
-        $imagick->transformImageColorspace(
-            \Imagick::COLORSPACE_SRGB
-        );
+
+        $imagick
+            ->transformImageColorspace(
+                \Imagick::COLORSPACE_SRGB
+            );
 
         /*
-         * A foto é cortada para quadrado.
-         * Como o utilizador pode adicionar várias fotos,
-         * todas ficam consistentes na interface.
+         * Corta a partir do centro para criar
+         * uma fotografia quadrada.
          */
-        $imagick->cropThumbnailImage($size, $size);
+        $imagick->cropThumbnailImage(
+            $size,
+            $size
+        );
 
         $imagick->unsharpMaskImage(
             0,
@@ -336,13 +521,41 @@ class Image
             0.03
         );
 
-        $imagick->setImageFormat('webp');
-        $imagick->setImageCompressionQuality(84);
+        $imagick->setImageFormat(
+            'webp'
+        );
+
+        $imagick
+            ->setImageCompressionQuality(
+                84
+            );
+
         $imagick->stripImage();
-        $imagick->writeImage($destination);
+
+        if (
+            !$imagick->writeImage(
+                $destination
+            )
+        ) {
+            throw new RuntimeException(
+                'Não foi possível escrever a imagem WebP.'
+            );
+        }
 
         $imagick->clear();
         $imagick->destroy();
+
+        $tempo =
+            microtime(true) -
+            $inicio;
+
+        error_log(
+            'Foto de perfil ' .
+            basename($destination) .
+            ' processada em ' .
+            round($tempo, 3) .
+            ' segundos.'
+        );
     }
 
     private function processImage(
@@ -350,20 +563,34 @@ class Image
         int $maxSize,
         string $destination
     ): void {
-        $imagick = new \Imagick($sourcePath);
-
-        $imagick->autoOrient();
-        $imagick->setIteratorIndex(0);
-        $imagick->transformImageColorspace(
-            \Imagick::COLORSPACE_SRGB
-        );
-
-        $width = $imagick->getImageWidth();
-        $height = $imagick->getImageHeight();
+        $imagick =
+            new \Imagick(
+                $sourcePath
+            );
 
         if (
-            $width > $maxSize ||
-            $height > $maxSize
+            $imagick->getNumberImages() >
+            1
+        ) {
+            $imagick->setIteratorIndex(0);
+        }
+
+        $imagick->autoOrient();
+
+        $imagick
+            ->transformImageColorspace(
+                \Imagick::COLORSPACE_SRGB
+            );
+
+        $largura =
+            $imagick->getImageWidth();
+
+        $altura =
+            $imagick->getImageHeight();
+
+        if (
+            $largura > $maxSize ||
+            $altura > $maxSize
         ) {
             $imagick->thumbnailImage(
                 $maxSize,
@@ -380,11 +607,32 @@ class Image
             0.03
         );
 
-        $imagick->modulateImage(100, 105, 100);
-        $imagick->setImageFormat('webp');
-        $imagick->setImageCompressionQuality(82);
+        $imagick->modulateImage(
+            100,
+            105,
+            100
+        );
+
+        $imagick->setImageFormat(
+            'webp'
+        );
+
+        $imagick
+            ->setImageCompressionQuality(
+                82
+            );
+
         $imagick->stripImage();
-        $imagick->writeImage($destination);
+
+        if (
+            !$imagick->writeImage(
+                $destination
+            )
+        ) {
+            throw new RuntimeException(
+                'Não foi possível escrever a imagem.'
+            );
+        }
 
         $imagick->clear();
         $imagick->destroy();

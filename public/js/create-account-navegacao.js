@@ -1,47 +1,79 @@
-var $form = $('#create-account-form');
+var $form =
+    $('#create-account-form');
 
 var dados = {
     gostos: []
 };
 
 function guardarCamposAtuais() {
-    $form.serializeArray().forEach(function (campo) {
-        if (
-            campo.name === 'imagens[]' ||
-            campo.name === 'hobbie'
-        ) {
-            return;
-        }
+    $form
+        .serializeArray()
+        .forEach(function (campo) {
+            if (
+                campo.name === 'imagens[]' ||
+                campo.name === 'hobbie' ||
+                campo.name === 'ver_password'
+            ) {
+                return;
+            }
 
-        dados[campo.name] = campo.value;
-    });
+            dados[campo.name] =
+                campo.value;
+        });
 
     dados.gostos ??= [];
 }
 
 function restaurarCamposDaEtapa() {
-    Object.keys(dados).forEach(function (nome) {
-        if (nome === 'gostos') {
-            return;
-        }
+    Object.keys(dados).forEach(
+        function (nome) {
+            if (nome === 'gostos') {
+                return;
+            }
 
-        const $campo = $form.find('[name="' + nome + '"]');
+            var $campo =
+                $form.find(
+                    '[name="' +
+                    nome +
+                    '"]'
+                );
 
-        if (!$campo.length) {
-            return;
-        }
+            if (!$campo.length) {
+                return;
+            }
 
-        if ($campo.is(':checkbox')) {
-            $campo.prop(
-                'checked',
-                String(dados[nome]) === String($campo.val())
+            if ($campo.is(':checkbox')) {
+                $campo.prop(
+                    'checked',
+                    String(dados[nome]) ===
+                        String(
+                            $campo.val()
+                        )
+                );
+
+                return;
+            }
+
+            if ($campo.is(':radio')) {
+                $campo
+                    .filter(
+                        '[value="' +
+                        dados[nome] +
+                        '"]'
+                    )
+                    .prop(
+                        'checked',
+                        true
+                    );
+
+                return;
+            }
+
+            $campo.val(
+                dados[nome]
             );
-
-            return;
         }
-
-        $campo.val(dados[nome]);
-    });
+    );
 
     if (
         $('#gostos').length &&
@@ -49,31 +81,48 @@ function restaurarCamposDaEtapa() {
     ) {
         $('#meus-gostos').empty();
 
-        dados.gostos.forEach(function (gosto) {
-            $('#meus-gostos').append(
-                $('<p>', {
-                    class: 'meu-hobbie',
-                    text: gosto
-                })
-            );
-        });
+        dados.gostos.forEach(
+            function (gosto) {
+                $('#meus-gostos').append(
+                    $('<p>', {
+                        class:
+                            'meu-hobbie',
+
+                        text: gosto
+                    })
+                );
+            }
+        );
     }
 
-    if (typeof window.inicializarEtapaFotos === 'function') {
-        window.inicializarEtapaFotos();
+    if (
+        typeof window
+            .inicializarEtapaFotos ===
+        'function'
+    ) {
+        window
+            .inicializarEtapaFotos();
     }
 }
 
 function carregarEtapa(seletor) {
     if (
-        typeof window.pararCameraPerfil === 'function'
+        typeof window
+            .pararCameraPerfil ===
+        'function'
     ) {
         window.pararCameraPerfil();
     }
 
     $form.load(
-        '/create-account-campos ' + seletor,
-        function (resposta, estado, xhr) {
+        '/create-account-campos ' +
+            seletor,
+
+        function (
+            resposta,
+            estado,
+            xhr
+        ) {
             if (estado === 'error') {
                 console.error(
                     'Erro ao carregar etapa:',
@@ -81,73 +130,120 @@ function carregarEtapa(seletor) {
                     xhr.statusText
                 );
 
-                alert('Não foi possível carregar esta etapa.');
+                alert(
+                    'Não foi possível carregar esta etapa.'
+                );
+
                 return;
             }
 
             restaurarCamposDaEtapa();
 
-            $('form > div').css({
-                marginLeft: '200%'
-            });
+            $form
+                .children('div')
+                .css({
+                    marginLeft: '200%'
+                });
 
-            $('form > div').animate({
-                marginLeft: '0%'
-            }, 500);
+            $form
+                .children('div')
+                .animate({
+                    marginLeft: '0%'
+                }, 500);
         }
     );
 }
 
-function validarEtapaAtual(destino) {
-    const etapaAtual = $form.children('div').attr('id');
+function validarEtapaAtual(
+    destino
+) {
+    var etapaAtual =
+        $form
+            .children('div')
+            .attr('id');
 
     if (
         etapaAtual === 'fotos' &&
         destino !== '#descricao' &&
-        typeof window.validarFotosPerfil === 'function'
+        typeof window
+            .validarFotosPerfil ===
+        'function'
     ) {
-        return window.validarFotosPerfil();
+        return window
+            .validarFotosPerfil();
     }
 
     return true;
 }
 
 function criarFormData() {
-    const formData = new FormData();
+    var formData =
+        new FormData();
 
-    Object.keys(dados).forEach(function (chave) {
-        if (chave === 'gostos') {
-            dados.gostos.forEach(function (gosto) {
-                formData.append('gostos[]', gosto);
-            });
+    Object.keys(dados).forEach(
+        function (chave) {
+            if (chave === 'gostos') {
+                dados.gostos.forEach(
+                    function (gosto) {
+                        formData.append(
+                            'gostos[]',
+                            gosto
+                        );
+                    }
+                );
 
-            return;
+                return;
+            }
+
+            formData.append(
+                chave,
+                dados[chave]
+            );
         }
-
-        formData.append(chave, dados[chave]);
-    });
+    );
 
     if (
-        typeof window.adicionarFotosPerfilAoFormData === 'function'
+        typeof window
+            .adicionarFotosPerfilAoFormData ===
+        'function'
     ) {
-        window.adicionarFotosPerfilAoFormData(formData);
+        window
+            .adicionarFotosPerfilAoFormData(
+                formData
+            );
     }
 
     return formData;
 }
 
-function mostrarErroEnvio(mensagem) {
-    let $erro = $('#create-account-erro');
+function mostrarErroEnvio(
+    mensagem
+) {
+    var $erro =
+        $('#create-account-erro');
 
     if (!$erro.length) {
         $erro = $('<p>', {
-            id: 'create-account-erro'
+            id:
+                'create-account-erro',
+
+            'aria-live':
+                'polite'
         });
 
         $form.prepend($erro);
     }
 
-    $erro.text(mensagem);
+    $erro.text(
+        mensagem || ''
+    );
+}
+
+function obterUrlFormulario() {
+    return (
+        $form.attr('action') ||
+        '/create-account'
+    );
 }
 
 $(function () {
@@ -156,126 +252,221 @@ $(function () {
     $(document).on(
         'click',
         'nav.anterior-proximo > a',
+
         function (evento) {
             evento.preventDefault();
 
             guardarCamposAtuais();
 
-            const destino = this.id;
+            var destino =
+                this.id;
 
             if (!destino) {
                 return;
             }
 
-            if (!validarEtapaAtual(destino)) {
+            if (
+                !validarEtapaAtual(
+                    destino
+                )
+            ) {
                 return;
             }
 
-            carregarEtapa(destino);
+            carregarEtapa(
+                destino
+            );
         }
     );
 
-    $form.on('submit', function (evento) {
-        evento.preventDefault();
+    $form.on(
+        'submit',
+        function (evento) {
+            evento.preventDefault();
 
-        guardarCamposAtuais();
+            guardarCamposAtuais();
 
-        if (
-            typeof window.validarFotosPerfil === 'function' &&
-            !window.validarFotosPerfil()
-        ) {
-            carregarEtapa('#fotos');
-            return;
-        }
+            if (
+                typeof window
+                    .validarFotosPerfil ===
+                    'function' &&
+                !window
+                    .validarFotosPerfil()
+            ) {
+                carregarEtapa(
+                    '#fotos'
+                );
 
-        const formData = criarFormData();
-        const $botao = $form.find('input[type="submit"]');
-
-        $botao.prop('disabled', true);
-        $botao.val('A criar conta...');
-
-        mostrarErroEnvio('');
-
-        $.ajax({
-            url: '/create-account',
-            method: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            dataType: 'json',
-
-            success: function (resposta) {
-                if (resposta.success && resposta.redirect) {
-                    window.location.href = resposta.redirect;
-                    return;
-                }
-
-                if (resposta.erros) {
-                    const mensagens = Object.values(
-                        resposta.erros
-                    ).filter(Boolean);
-
-                    mostrarErroEnvio(
-                        mensagens.join(' ')
-                    );
-                } else {
-                    mostrarErroEnvio(
-                        resposta.message ||
-                        'Não foi possível criar a conta.'
-                    );
-                }
-            },
-
-            error: function (xhr) {
-                console.error(xhr.responseText);
-
-                let mensagem =
-                    'Ocorreu um erro ao criar a conta.';
-
-                try {
-                    const resposta = JSON.parse(
-                        xhr.responseText
-                    );
-
-                    if (resposta.message) {
-                        mensagem = resposta.message;
-                    }
-                } catch (erro) {
-                    // A resposta não era JSON.
-                }
-
-                mostrarErroEnvio(mensagem);
-            },
-
-            complete: function () {
-                $botao.prop('disabled', false);
-                $botao.val('Criar Conta');
+                return;
             }
-        });
-    });
+
+            var formData =
+                criarFormData();
+
+            var $botao =
+                $form.find(
+                    'input[type="submit"]'
+                );
+
+            $botao.prop(
+                'disabled',
+                true
+            );
+
+            $botao.val(
+                'A criar conta...'
+            );
+
+            mostrarErroEnvio('');
+
+            $.ajax({
+                url:
+                    obterUrlFormulario(),
+
+                method: 'POST',
+
+                data: formData,
+
+                processData: false,
+
+                contentType: false,
+
+                dataType: 'json',
+
+                success:
+                    function (resposta) {
+                        if (
+                            resposta.success &&
+                            resposta.redirect
+                        ) {
+                            window.location.href =
+                                resposta.redirect;
+
+                            return;
+                        }
+
+                        if (
+                            resposta.erros
+                        ) {
+                            var mensagens =
+                                Object.values(
+                                    resposta.erros
+                                ).filter(Boolean);
+
+                            mostrarErroEnvio(
+                                mensagens.join(
+                                    ' '
+                                )
+                            );
+
+                            return;
+                        }
+
+                        mostrarErroEnvio(
+                            resposta.message ||
+                            'Não foi possível criar a conta.'
+                        );
+                    },
+
+                error:
+                    function (xhr) {
+                        console.error(
+                            xhr.responseText
+                        );
+
+                        var mensagem =
+                            'Ocorreu um erro ao criar a conta.';
+
+                        try {
+                            var resposta =
+                                JSON.parse(
+                                    xhr.responseText
+                                );
+
+                            if (
+                                resposta.message
+                            ) {
+                                mensagem =
+                                    resposta.message;
+                            }
+
+                            if (
+                                resposta.erros
+                            ) {
+                                mensagem =
+                                    Object.values(
+                                        resposta.erros
+                                    )
+                                        .filter(
+                                            Boolean
+                                        )
+                                        .join(' ');
+                            }
+                        } catch (erro) {
+                            console.error(
+                                'A resposta não era JSON.',
+                                erro
+                            );
+                        }
+
+                        mostrarErroEnvio(
+                            mensagem
+                        );
+                    },
+
+                complete:
+                    function () {
+                        $botao.prop(
+                            'disabled',
+                            false
+                        );
+
+                        $botao.val(
+                            'Criar conta'
+                        );
+                    }
+            });
+        }
+    );
 
     $(document).on(
         'change',
         '#ver-password',
-        function () {
-            const tipo = $(this).is(':checked')
-                ? 'text'
-                : 'password';
 
-            $('#password').attr('type', tipo);
-            $('#confirma-password').attr('type', tipo);
+        function () {
+            var tipo =
+                $(this).is(
+                    ':checked'
+                )
+                    ? 'text'
+                    : 'password';
+
+            $('#password').attr(
+                'type',
+                tipo
+            );
+
+            $('#confirma-password')
+                .attr(
+                    'type',
+                    tipo
+                );
         }
     );
 
     $(document).on(
         'click',
         '#lista > li',
+
         function () {
             $('#hobbie').val(
-                $(this).text().trim()
+                $(this)
+                    .text()
+                    .trim()
             );
 
-            $('#adicionar-gosto').trigger('click');
+            $('#adicionar-gosto')
+                .trigger('click');
         }
     );
 });
