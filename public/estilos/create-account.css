@@ -308,3 +308,336 @@ form > div#palavra-passe > p > input:focus {
     outline: none;
     border-bottom: 1px solid red;
 }
+
+body.perfil-camera-aberta {
+    overflow: hidden;
+    background: #000;
+}
+
+body.perfil-camera-aberta header,
+body.perfil-camera-aberta footer {
+    display: none !important;
+}
+
+form > div#fotos {
+    height: auto;
+    min-height: 75%;
+    justify-content: center;
+}
+
+#perfil-fotos-conteudo {
+    width: 100%;
+    display: flex;
+    flex-flow: column nowrap;
+    justify-content: center;
+    align-items: center;
+}
+
+#perfil-fotos-conteudo > h1 {
+    margin-bottom: 8px;
+    text-align: center;
+    font-size: 2.2em;
+    font-weight: bold;
+    font-family: 'Alfa Slab One';
+}
+
+.perfil-fotos-explicacao {
+    width: 85%;
+    margin: 0 0 22px;
+    color: #666;
+    text-align: center;
+    line-height: 1.4;
+}
+
+#perfil-lista-fotos {
+    width: min(92vw, 560px);
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.perfil-foto-cartao,
+.perfil-foto-placeholder {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    border-radius: 18px;
+}
+
+.perfil-foto-cartao {
+    border: 2px solid transparent;
+    background: #eee;
+}
+
+.perfil-foto-cartao.principal {
+    border-color: red;
+}
+
+.perfil-foto-cartao img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+}
+
+.perfil-foto-placeholder {
+    border: 2px dashed #cfcfcf;
+    background: #f7f7f7;
+    color: #777;
+    cursor: pointer;
+
+    display: flex;
+    flex-flow: column nowrap;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+}
+
+.perfil-foto-placeholder span {
+    font-size: 0.72em;
+}
+
+.perfil-remover-foto {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.65);
+    color: white;
+    cursor: pointer;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.perfil-foto-principal {
+    position: absolute;
+    bottom: 7px;
+    left: 7px;
+    padding: 5px 9px;
+    border-radius: 20px;
+    background: red;
+    color: white;
+    font-size: 0.68em;
+    font-weight: bold;
+}
+
+.perfil-definir-principal {
+    position: absolute;
+    right: 5px;
+    bottom: 6px;
+    left: 5px;
+    padding: 6px 5px;
+    border: none;
+    border-radius: 20px;
+    background: rgba(0, 0, 0, 0.68);
+    color: white;
+    font-size: 0.65em;
+    cursor: pointer;
+}
+
+.perfil-fotos-acoes {
+    width: min(92vw, 560px);
+    margin-top: 18px;
+    display: flex;
+    gap: 10px;
+}
+
+.perfil-botao-foto {
+    flex: 1;
+    min-height: 44px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 30px;
+    background: white;
+    color: #222;
+    font-weight: 600;
+    cursor: pointer;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 7px;
+}
+
+.perfil-botao-foto:active {
+    transform: scale(0.98);
+}
+
+#perfil-fotos-erro,
+#create-account-erro {
+    width: 90%;
+    min-height: 20px;
+    margin: 10px auto;
+    color: red;
+    text-align: center;
+    font-size: 0.9em;
+}
+
+#perfil-camera-interface {
+    position: fixed;
+    z-index: 999999;
+    inset: 0;
+    width: 100vw;
+    height: 100dvh;
+    display: none;
+    flex-flow: column nowrap;
+    justify-content: space-between;
+    background: #000;
+}
+
+#perfil-camera-video {
+    position: absolute;
+    z-index: 1;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+#perfil-camera-canvas {
+    display: none;
+}
+
+.perfil-camera-header {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    padding:
+        calc(env(safe-area-inset-top) + 16px)
+        20px
+        20px;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    background:
+        linear-gradient(
+            to bottom,
+            rgba(0, 0, 0, 0.72),
+            transparent
+        );
+}
+
+.perfil-camera-icon {
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.42);
+    color: white;
+    backdrop-filter: blur(8px);
+    cursor: pointer;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.perfil-camera-guia {
+    position: relative;
+    z-index: 5;
+    width: 100%;
+    pointer-events: none;
+
+    display: flex;
+    flex-flow: column nowrap;
+    justify-content: center;
+    align-items: center;
+}
+
+.perfil-camera-circulo {
+    width: min(78vw, 430px);
+    aspect-ratio: 1 / 1;
+    border: 3px solid rgba(255, 255, 255, 0.9);
+    border-radius: 50%;
+    box-shadow:
+        0 0 0 200vmax rgba(0, 0, 0, 0.25);
+}
+
+.perfil-camera-guia p {
+    margin-top: 18px;
+    color: white;
+    font-size: 0.9em;
+    text-shadow: 0 1px 4px black;
+}
+
+.perfil-camera-footer {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    padding:
+        30px
+        30px
+        calc(env(safe-area-inset-bottom) + 28px);
+
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+
+    background:
+        linear-gradient(
+            to top,
+            rgba(0, 0, 0, 0.85),
+            transparent
+        );
+}
+
+.perfil-galeria-botao {
+    width: 48px;
+    height: 48px;
+    border: 2px solid white;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.15);
+    cursor: pointer;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.perfil-disparador {
+    width: 78px;
+    height: 78px;
+    padding: 4px;
+    border: 4px solid white;
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+}
+
+.perfil-disparador span {
+    width: 100%;
+    height: 100%;
+    display: block;
+    border-radius: 50%;
+    background: red;
+    transition: transform 0.15s ease;
+}
+
+.perfil-disparador.a-capturar {
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.perfil-disparador.a-capturar span {
+    transform: scale(0.82);
+}
+
+.perfil-camera-espaco {
+    width: 48px;
+}
+
+@media (min-width: 700px) {
+    #perfil-lista-fotos {
+        grid-template-columns: repeat(3, 150px);
+        justify-content: center;
+    }
+}
