@@ -1,118 +1,300 @@
 <?php
+
 namespace App\CMS;
 
 require_once './src/bootstrap.php';
-    
-use Ratchet\Http\HttpServer;
-use Ratchet\Server\IoServer;
-use Ratchet\WebSocket\WsServer;
+
 use Ratchet\MessageComponentInterface;
 use Ratchet\ConnectionInterface;
 
-class WebSocket implements MessageComponentInterface {
-    protected $clients;
+class WebSocket implements MessageComponentInterface
+{
+    protected \SplObjectStorage $clients;
+
     private $pdo;
-    private $pessoas;
 
-    public function __construct($pdoFactory)
-    {
-        $this->clients = new \SplObjectStorage;
-        $this->pdo = $pdoFactory();
+    private array $pessoas = [];
+
+    public function __construct(
+        $pdoFactory
+    ) {
+        $this->clients =
+            new \SplObjectStorage();
+
+        $this->pdo =
+            $pdoFactory();
     }
 
-    public function onOpen(ConnectionInterface $conn)
-    {
-        $this->clients->attach($conn);
+    public function onOpen(
+        ConnectionInterface $conn
+    ): void {
+        $this->clients->attach(
+            $conn
+        );
 
-        echo "Nova conexão ({$conn->resourceId})\n";
+        echo sprintf(
+            "Nova conexão (%d)\n",
+            $conn->resourceId
+        );
     }
 
-   public function onMessage(ConnectionInterface $from, $msg)
-    {
-        $data = json_decode($msg, true);
+    public function onMessage(
+        ConnectionInterface $from,
+        $msg
+    ): void {
+        $data = json_decode(
+            (string) $msg,
+            true
+        );
 
         echo "MENSAGEM RECEBIDA:\n";
         var_dump($data);
 
-        if (!is_array($data) || !isset($data['type'])) {
+        if (
+            !is_array($data) ||
+            !isset($data['type'])
+        ) {
             return;
         }
 
-        if ($data['type'] === 'auth') {
-            $membro_id = $data['membro_id'] ?? '';
+        switch ($data['type']) {
+            case 'auth':
+                $this->autenticarPessoa(
+                    $from,
+                    $data
+                );
+                break;
 
-            if ($membro_id === '') {
-                return;
-            }
+            case 'move':
+                $this->moverPessoa(
+                    $from,
+                    $data
+                );
+                break;
+        }
+    }
 
-            $sql = "SELECT
-                        COALESCE(f.nome_arquivo, 'default.webp') AS foto_perfil
-                    FROM membros AS m
-                    LEFT JOIN fotos_perfil AS f
-                        ON f.membro_id = m.id
-                        AND f.ordem = 1
-                    WHERE m.id = :membro_id
-                    LIMIT 1";
+    private function autenticarPessoa(
+        ConnectionInterface $conn,
+        array $data
+    ): void {
+        $membroId = trim(
+            (string) (
+                $data['membro_id']
+                ?? ''
+            )
+        );
 
-            $foto = $this->pdo->runSQL($sql, [
-                'membro_id' => $membro_id
-            ])->fetchColumn();
-
-            if (!$foto) {
-                $foto = 'default.webp';
-            }
-
-            $this->pessoas[$from->resourceId] = [
-                'id' => $from->resourceId,
-                'src' => '/imagens/fotos-perfil/' . $foto,
-                'top' => random_int(50, 600),
-                'left' => random_int(50, 400),
-            ];
-
-            $this->broadcastNewState(array_values($this->pessoas));
+        if ($membroId === '') {
+            echo "Autenticação sem membro_id.\n";
 
             return;
         }
 
-        if ($data['type'] === 'move') {
-            if (!isset($this->pessoas[$from->resourceId])) {
-                return;
-            }
+        /*
+         * A fotografia principal é a de menor ordem.
+         *
+         * Como as ordens começam normalmente em 0,
+         * não usamos f.ordem = 1.
+         *
+         * A subconsulta funciona também caso a ordem
+         * esteja NULL.
+         */
+        $sql = "
+            SELECT
+                m.id AS membro_id,
 
-            $top = (int) ($data['top'] ?? 0);
-            $left = (int) ($data['left'] ?? 0);
+                COALESCE(
+                    (
+                        SELECT
+                            fp.nome_arquivo
 
-            $this->pessoas[$from->resourceId]['top'] += $top;
-            $this->pessoas[$from->resourceId]['left'] += $left;
+                        FROM fotos_perfil AS fp
 
-            $this->broadcastNewState(array_values($this->pessoas));
+                        WHERE
+                            fp.membro_id = m.id
+
+                            AND (
+                                fp.status = 'completo'
+                                OR fp.status IS NULL
+                            )
+
+                        ORDER BY
+                            fp.ordem IS NULL ASC,
+                            fp.ordem ASC
+
+                        LIMIT 1
+                    ),
+                    'default.webp'
+                ) AS foto_perfil
+
+            FROM membros AS m
+
+            WHERE m.id = :membro_id
+
+            LIMIT 1
+        ";
+
+        $membro = $this->pdo
+            ->runSQL(
+                $sql,
+                [
+                    'membro_id' =>
+                        $membroId
+                ]
+            )
+            ->fetch();
+
+        if (!$membro) {
+            echo sprintf(
+                "Membro não encontrado: %s\n",
+                $membroId
+            );
+
+            return;
         }
+
+        $foto = basename(
+            (string) (
+                $membro['foto_perfil']
+                ?? 'default.webp'
+            )
+        );
+
+        if ($foto === '') {
+            $foto = 'default.webp';
+        }
+
+        $this->pessoas[
+            $conn->resourceId
+        ] = [
+            /*
+             * id identifica a ligação WebSocket.
+             * membro_id identifica o utilizador real.
+             */
+            'id' =>
+                $conn->resourceId,
+
+            'membro_id' =>
+                $membroId,
+
+            'src' =>
+                '/imagens/fotos-perfil/' .
+                $foto,
+
+            'top' =>
+                random_int(50, 600),
+
+            'left' =>
+                random_int(50, 400)
+        ];
+
+        echo sprintf(
+            "Ligação %d autenticada como %s com foto %s\n",
+            $conn->resourceId,
+            $membroId,
+            $foto
+        );
+
+        $this->broadcastNewState();
     }
 
-    public function onClose(ConnectionInterface $conn) {
-        $this->clients->detach($conn);
+    private function moverPessoa(
+        ConnectionInterface $conn,
+        array $data
+    ): void {
+        if (
+            !isset(
+                $this->pessoas[
+                    $conn->resourceId
+                ]
+            )
+        ) {
+            return;
+        }
 
-        unset($this->pessoas[$conn->resourceId]);
+        $top = (int) (
+            $data['top']
+            ?? 0
+        );
 
-        echo "Conexão ({$conn->resourceId}) desconectou-se\n";
+        $left = (int) (
+            $data['left']
+            ?? 0
+        );
 
-        $this->broadcastNewState(array_values($this->pessoas));
+        $this->pessoas[
+            $conn->resourceId
+        ]['top'] += $top;
+
+        $this->pessoas[
+            $conn->resourceId
+        ]['left'] += $left;
+
+        $this->broadcastNewState();
     }
 
-    public function onError(ConnectionInterface $conn, \Exception $e) {
-        echo "Ocorreu um erro: ({$e->getMessage()})\n";
+    public function onClose(
+        ConnectionInterface $conn
+    ): void {
+        $this->clients->detach(
+            $conn
+        );
+
+        unset(
+            $this->pessoas[
+                $conn->resourceId
+            ]
+        );
+
+        echo sprintf(
+            "Conexão (%d) desconectou-se\n",
+            $conn->resourceId
+        );
+
+        $this->broadcastNewState();
+    }
+
+    public function onError(
+        ConnectionInterface $conn,
+        \Exception $e
+    ): void {
+        echo sprintf(
+            "Erro na conexão %d: %s\n",
+            $conn->resourceId,
+            $e->getMessage()
+        );
+
         $conn->close();
     }
 
-    private function broadcastNewState($pessoas) {
-        foreach ($this->clients as $client) {
-            $this->sendNewState($client, $pessoas);
+    private function broadcastNewState(): void
+    {
+        $estado = array_values(
+            $this->pessoas
+        );
+
+        foreach (
+            $this->clients
+            as $client
+        ) {
+            $this->sendNewState(
+                $client,
+                $estado
+            );
         }
     }
 
-    private function sendNewState(ConnectionInterface $conn, $data) {
-        $conn->send(json_encode($data));
+    private function sendNewState(
+        ConnectionInterface $conn,
+        array $data
+    ): void {
+        $conn->send(
+            json_encode(
+                $data,
+                JSON_UNESCAPED_UNICODE |
+                JSON_UNESCAPED_SLASHES
+            )
+        );
     }
 }
-
-?>
