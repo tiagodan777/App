@@ -5,6 +5,6 @@ $(function() {
 
         $miniMenu.find('img').attr('src', $img.attr('src'));
         $miniMenu.find('h1').text($img.attr('data-nome'));
-        $miniMenu.find('form').attr('action', 'messages?sendTo=' + $img.data-membro-id);
+        $miniMenu.find('form').attr('action', 'messages?sendTo=' + $img.attr('data-membro-id'));
     }) 
 });
