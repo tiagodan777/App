@@ -13,6 +13,22 @@ class WebSocket implements MessageComponentInterface
 
     private $pdoFactory;
 
+    /**
+     * Ligações WebSocket autenticadas.
+     *
+     * Estrutura:
+     *
+     * [
+     *     resourceId => [
+     *         'id' => resourceId,
+     *         'membro_id' => UUID do membro,
+     *         'nome' => nome,
+     *         'src' => foto,
+     *         'top' => posição,
+     *         'left' => posição
+     *     ]
+     * ]
+     */
     private array $pessoas = [];
 
     public function __construct(callable $pdoFactory)
@@ -20,7 +36,7 @@ class WebSocket implements MessageComponentInterface
         $this->clients = new \SplObjectStorage();
 
         /*
-         * Não abrimos uma ligação permanente aqui.
+         * Não mantemos uma ligação permanente à base de dados.
          * Guardamos apenas a função que cria ligações novas.
          */
         $this->pdoFactory = $pdoFactory;
@@ -37,14 +53,20 @@ class WebSocket implements MessageComponentInterface
     {
         $this->clients->attach($conn);
 
-        echo "Nova conexão ({$conn->resourceId})\n";
+        echo sprintf(
+            "Nova conexão (%d)\n",
+            $conn->resourceId
+        );
     }
 
     public function onMessage(
         ConnectionInterface $from,
         $msg
     ): void {
-        $data = json_decode((string) $msg, true);
+        $data = json_decode(
+            (string) $msg,
+            true
+        );
 
         echo "MENSAGEM RECEBIDA:\n";
         var_dump($data);
@@ -59,11 +81,31 @@ class WebSocket implements MessageComponentInterface
         try {
             switch ($data['type']) {
                 case 'auth':
-                    $this->autenticarPessoa($from, $data);
+                    $this->autenticarPessoa(
+                        $from,
+                        $data
+                    );
                     break;
 
                 case 'move':
-                    $this->moverPessoa($from, $data);
+                    $this->moverPessoa(
+                        $from,
+                        $data
+                    );
+                    break;
+
+                case 'notify':
+                    $this->notificarPessoa(
+                        $from,
+                        $data
+                    );
+                    break;
+
+                default:
+                    echo sprintf(
+                        "Tipo de mensagem desconhecido: %s\n",
+                        (string) $data['type']
+                    );
                     break;
             }
         } catch (\Throwable $erro) {
@@ -73,14 +115,14 @@ class WebSocket implements MessageComponentInterface
                 $erro->getMessage()
             );
 
-            /*
-             * Um erro SQL não deve necessariamente expulsar
-             * imediatamente o utilizador do WebSocket.
-             */
-            $from->send(json_encode([
-                'type' => 'error',
-                'message' => 'Não foi possível processar o pedido.'
-            ]));
+            $this->enviarMensagem(
+                $from,
+                [
+                    'type' => 'error',
+                    'message' =>
+                        'Não foi possível processar o pedido.'
+                ]
+            );
         }
     }
 
@@ -94,53 +136,84 @@ class WebSocket implements MessageComponentInterface
 
         if ($membroId === '') {
             echo "Autenticação sem membro_id.\n";
+
+            $this->enviarMensagem(
+                $conn,
+                [
+                    'type' => 'error',
+                    'message' =>
+                        'Não foi possível autenticar o utilizador.'
+                ]
+            );
+
             return;
         }
 
         $sql = "
             SELECT
-                m.id AS membro_id, CONCAT(m.primeiro_nome, ' ', m.ultimo_nome) AS nome,
+                m.id AS membro_id,
+
+                CONCAT(
+                    m.primeiro_nome,
+                    ' ',
+                    m.ultimo_nome
+                ) AS nome,
 
                 COALESCE(
                     (
                         SELECT fp.nome_arquivo
+
                         FROM fotos_perfil AS fp
+
                         WHERE fp.membro_id = m.id
+
                         AND (
                             fp.status = 'completo'
                             OR fp.status IS NULL
                         )
+
                         ORDER BY
                             fp.ordem IS NULL ASC,
                             fp.ordem ASC
+
                         LIMIT 1
                     ),
+
                     'default.webp'
                 ) AS foto_perfil
 
             FROM membros AS m
+
             WHERE m.id = :membro_id
+
             LIMIT 1
         ";
 
-        /*
-         * Ligação nova para esta consulta.
-         */
         $db = $this->getDatabase();
 
         $membro = $db
-            ->runSQL($sql, [
-                'membro_id' => $membroId
-            ])
+            ->runSQL(
+                $sql,
+                [
+                    'membro_id' => $membroId
+                ]
+            )
             ->fetch();
 
-        /*
-         * Liberta a referência à ligação depois da consulta.
-         */
         unset($db);
 
         if (!$membro) {
             echo "Membro não encontrado: {$membroId}\n";
+
+            $this->enviarMensagem(
+                $conn,
+                [
+                    'type' => 'error',
+                    'message' =>
+                        'O utilizador não foi encontrado.'
+                ]
+            );
+
             return;
         }
 
@@ -157,11 +230,21 @@ class WebSocket implements MessageComponentInterface
 
         $this->pessoas[$conn->resourceId] = [
             'id' => $conn->resourceId,
-            'membro_id' => $membroId,
-            'nome' => $membro['nome'] ?? '',
-            'src' => '/imagens/fotos-perfil/' . $foto,
-            'top' => random_int(50, 600),
-            'left' => random_int(50, 400)
+
+            'membro_id' =>
+                (string) $membro['membro_id'],
+
+            'nome' =>
+                (string) ($membro['nome'] ?? ''),
+
+            'src' =>
+                '/imagens/fotos-perfil/' . $foto,
+
+            'top' =>
+                random_int(50, 600),
+
+            'left' =>
+                random_int(50, 400)
         ];
 
         echo sprintf(
@@ -180,7 +263,9 @@ class WebSocket implements MessageComponentInterface
     ): void {
         if (
             !isset(
-                $this->pessoas[$conn->resourceId]
+                $this->pessoas[
+                    $conn->resourceId
+                ]
             )
         ) {
             return;
@@ -200,16 +285,181 @@ class WebSocket implements MessageComponentInterface
         $this->broadcastNewState();
     }
 
+    private function notificarPessoa(
+        ConnectionInterface $from,
+        array $data
+    ): void {
+        /*
+         * Nunca confiamos num membro_id do remetente enviado
+         * pelo JavaScript.
+         *
+         * O remetente é obtido através da ligação WebSocket
+         * que já foi autenticada.
+         */
+        $remetente = $this->pessoas[
+            $from->resourceId
+        ] ?? null;
+
+        if (!$remetente) {
+            $this->enviarMensagem(
+                $from,
+                [
+                    'type' => 'error',
+                    'message' =>
+                        'Tens de estar autenticado para enviar um Hey.'
+                ]
+            );
+
+            return;
+        }
+
+        $destinatarioId = trim(
+            (string) (
+                $data['destinatario_id']
+                ?? ''
+            )
+        );
+
+        if ($destinatarioId === '') {
+            $this->enviarMensagem(
+                $from,
+                [
+                    'type' => 'error',
+                    'message' =>
+                        'O destinatário não é válido.'
+                ]
+            );
+
+            return;
+        }
+
+        if (
+            $destinatarioId ===
+            (string) $remetente['membro_id']
+        ) {
+            $this->enviarMensagem(
+                $from,
+                [
+                    'type' => 'error',
+                    'message' =>
+                        'Não podes enviar um Hey para ti próprio.'
+                ]
+            );
+
+            return;
+        }
+
+        $entregue = false;
+
+        /*
+         * Um membro pode ter mais do que uma ligação:
+         * por exemplo, telemóvel e computador.
+         *
+         * Nesse caso, recebe em todas as ligações abertas.
+         */
+        foreach ($this->clients as $client) {
+            $destinatario = $this->pessoas[
+                $client->resourceId
+            ] ?? null;
+
+            if (!$destinatario) {
+                continue;
+            }
+
+            if (
+                (string) $destinatario['membro_id']
+                !== $destinatarioId
+            ) {
+                continue;
+            }
+
+            $this->enviarMensagem(
+                $client,
+                [
+                    'type' => 'notification',
+
+                    'notification_type' => 'hey',
+
+                    'title' =>
+                        'Recebeste um Hey!',
+
+                    'body' => sprintf(
+                        '%s enviou-te um Hey.',
+                        (string) $remetente['nome']
+                    ),
+
+                    'from_member_id' =>
+                        (string) $remetente['membro_id'],
+
+                    'from_name' =>
+                        (string) $remetente['nome'],
+
+                    'from_photo' =>
+                        (string) $remetente['src']
+                ]
+            );
+
+            $entregue = true;
+        }
+
+        if ($entregue) {
+            echo sprintf(
+                "Hey enviado por %s para %s\n",
+                (string) $remetente['membro_id'],
+                $destinatarioId
+            );
+
+            $this->enviarMensagem(
+                $from,
+                [
+                    'type' => 'notification_sent',
+                    'destinatario_id' =>
+                        $destinatarioId,
+
+                    'message' =>
+                        'Hey enviado.'
+                ]
+            );
+
+            return;
+        }
+
+        /*
+         * Nesta fase ainda não temos push notifications.
+         * Portanto, se não houver ligação WebSocket ativa,
+         * a notificação não pode ser entregue.
+         */
+        $this->enviarMensagem(
+            $from,
+            [
+                'type' => 'notification_not_delivered',
+
+                'destinatario_id' =>
+                    $destinatarioId,
+
+                'message' =>
+                    'Este utilizador não está online.'
+            ]
+        );
+    }
+
     public function onClose(
         ConnectionInterface $conn
     ): void {
-        $this->clients->detach($conn);
+        if ($this->clients->contains($conn)) {
+            $this->clients->detach($conn);
+        }
 
         unset(
-            $this->pessoas[$conn->resourceId]
+            $this->pessoas[
+                $conn->resourceId
+            ]
         );
 
-        echo "Conexão ({$conn->resourceId}) desconectou-se\n";
+        echo sprintf(
+            "Conexão (%d) desconectou-se\n",
+            $conn->resourceId
+        );
 
         $this->broadcastNewState();
     }
@@ -234,14 +484,14 @@ class WebSocket implements MessageComponentInterface
         );
 
         foreach ($this->clients as $client) {
-            $this->sendNewState(
+            $this->enviarMensagem(
                 $client,
                 $estado
             );
         }
     }
 
-    private function sendNewState(
+    private function enviarMensagem(
         ConnectionInterface $conn,
         array $data
     ): void {

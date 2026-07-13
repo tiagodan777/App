@@ -1,28 +1,70 @@
 {% extends 'layout.html' %}
+
 {% block content %}
 
-<canvas id="gridCanvas">
+<canvas id="gridCanvas"></canvas>
 
-</canvas>
+<button
+    type="button"
+    id="ativar-notificacoes"
+>
+    Ativar notificações
+</button>
 
-<div class="mini-menu">
+<div
+    class="mini-menu"
+    data-destinatario-id=""
+>
     <header>
-        <img src="" alt="">
+        <img
+            src="/imagens/fotos-perfil/default.webp"
+            alt=""
+        >
+
         <h1></h1>
     </header>
-    <div class="ola"><p>Hey</p></div>
-    <form action="" method="post">
-        <input type="text" name="mensagem" id="mensagem">
-        <input type="submit" value="Enviar">
+
+    <button
+        type="button"
+        class="ola"
+        id="enviar-hey"
+    >
+        Hey
+    </button>
+
+    <form
+        action=""
+        method="post"
+    >
+        <input
+            type="text"
+            name="mensagem"
+            id="mensagem"
+        >
+
+        <input
+            type="submit"
+            value="Enviar"
+        >
     </form>
 </div>
 
 <script>
-    window.membroId = {{ membro_id|json_encode|raw }};
+    window.membroId =
+        {{ membro_id|json_encode|raw }};
+
+    window.messagesUrl =
+        {{ (doc_root ~ 'messages')|json_encode|raw }};
 </script>
+
 <script src="{{ doc_root }}js/index-posicao.js?v=1"></script>
-<script src="{{ doc_root }}js/websocket.js?v=1"></script>
-<script src="{{ doc_root }}js/index-mini-menu.js?v=1"></script>
+
+<script src="{{ doc_root }}js/websocket.js?v=2"></script>
+
+<script src="{{ doc_root }}js/index-mini-menu.js?v=2"></script>
+
 <script src="{{ doc_root }}js/index-animacao.js?v=1"></script>
+
 <script src="{{ doc_root }}js/index-tap-foto.js?v=1"></script>
+
 {% endblock %}
