@@ -158,6 +158,7 @@ class WebSocket implements MessageComponentInterface
         $this->pessoas[$conn->resourceId] = [
             'id' => $conn->resourceId,
             'membro_id' => $membroId,
+            'nome' => $membro['nome'] ?? '',
             'src' => '/imagens/fotos-perfil/' . $foto,
             'top' => random_int(50, 600),
             'left' => random_int(50, 400)

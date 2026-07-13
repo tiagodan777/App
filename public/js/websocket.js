@@ -138,18 +138,14 @@ ws.onmessage = function (event) {
             id: id,
             class: 'foto',
             src: src,
-            alt: 'Foto de perfil'
+            alt: pessoa.nome || 'Foto de perfil'
         });
 
         $img.attr({
-            'data-top':
-                Number(pessoa.top) || 0,
-
-            'data-left':
-                Number(pessoa.left) || 0,
-
-            'data-membro-id':
-                pessoa.membro_id || ''
+            'data-top': Number(pessoa.top) || 0,
+            'data-left': Number(pessoa.left) || 0,
+            'data-membro-id': pessoa.membro_id || '',
+            'data-nome': pessoa.nome || ''
         });
 
         $img.css({
