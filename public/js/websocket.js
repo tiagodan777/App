@@ -11,46 +11,6 @@ ws.onopen = function () {
     }));
 };
 
-$('#botoes').on(
-    'click',
-    'input[type="button"]',
-    function () {
-        var top = 0;
-        var left = 0;
-
-        switch ($(this).val()) {
-            case '⬆️':
-                top = -25;
-                break;
-
-            case '⬇️':
-                top = 25;
-                break;
-
-            case '➡️':
-                left = 25;
-                break;
-
-            case '⬅️':
-                left = -25;
-                break;
-        }
-
-        if (
-            ws.readyState !==
-            WebSocket.OPEN
-        ) {
-            return;
-        }
-
-        ws.send(JSON.stringify({
-            type: 'move',
-            top: top,
-            left: left
-        }));
-    }
-);
-
 ws.onmessage = function (event) {
     var data;
 
@@ -162,6 +122,9 @@ ws.onmessage = function (event) {
 
                 'data-membro-id':
                     pessoa.membro_id || '',
+
+                'data-nome': 
+                    pessoa.nome || '',
 
                 src: src
             });

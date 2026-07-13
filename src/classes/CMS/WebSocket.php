@@ -99,7 +99,7 @@ class WebSocket implements MessageComponentInterface
 
         $sql = "
             SELECT
-                m.id AS membro_id,
+                m.id AS membro_id, CONCAT(m.primeiro_nome, ' ', m.ultimo_nome) AS nome,
 
                 COALESCE(
                     (
