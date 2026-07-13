@@ -32,8 +32,12 @@ $cookie = $cms->getCookie();
 $session = $cms->getSession();
 $db = $cms->getDatabase();
 
+$cookie = $cms->getCookie();
+$session = $cms->getSession();
+$db = $cms->getDatabase();
+
 if ($cookie->token) {
-    $session = $session->create($cookie->token);
+    $session->create($cookie->token);
 }
 
 $twig->addGlobal('cookie', $cookie);
