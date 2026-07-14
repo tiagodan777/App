@@ -1,9 +1,8 @@
 @charset "UTF-8";
 
 * {
-    font-size: 1em;
     box-sizing: border-box;
-    font-family: Helvetica, sans-serif;
+    font-family: Helvetica, Arial, sans-serif;
 }
 
 html {
@@ -29,42 +28,39 @@ body {
     background-color: #ffffff;
 }
 
-/*
- * O canvas ultrapassa a parte inferior do layout viewport.
- * Isto permite pintar também a safe area inferior no iPhone.
- */
 #gridCanvas {
     position: fixed;
-
     top: 0;
     right: 0;
-    left: 0;
-
     bottom: calc(
         0px -
         env(safe-area-inset-bottom, 0px) -
         80px
     );
+    left: 0;
 
     display: block;
 
     width: 100vw;
     height: auto;
-
     margin: 0;
     padding: 0;
 
+    background-color: #ffffff;
+
     pointer-events: none;
     touch-action: none;
-
-    background-color: #ffffff;
 
     z-index: 0;
 }
 
 img {
+    display: block;
+
     width: 60px;
     height: 60px;
+
+    object-fit: cover;
     border-radius: 50%;
 }
 
@@ -72,22 +68,37 @@ img {
     position: absolute !important;
     top: 0 !important;
     left: 0 !important;
+
+    width: 60px;
+    height: 60px;
+    margin: 0;
+
+    object-fit: cover;
+    border-radius: 50%;
+
     transform-origin: center center;
-    /* Isto avisa a placa gráfica da Apple que esta imagem vai andar a voar pelo ecrã */
-    will-change: transform, opacity; 
+    will-change: transform, opacity;
+
     z-index: 10;
-    transform: translate(-50%, -50%);
+
     cursor: pointer;
     touch-action: manipulation;
+    user-select: none;
+    -webkit-user-drag: none;
 }
 
 .back-drop {
     position: relative;
+
     width: 100vw;
     height: 100vh;
-    background-color: rgba(0, 0, 0, 0.4);
-    z-index: 25;
+
     bottom: -100%;
+
+    background-color:
+        rgba(0, 0, 0, 0.4);
+
+    z-index: 25;
 
     display: flex;
     flex-flow: column nowrap;
@@ -97,19 +108,39 @@ img {
 
 .mini-menu {
     position: fixed;
+    left: 0;
+    bottom: 0;
+
     width: 100vw;
     height: 75vh;
-    bottom: 0;
-    border-radius: 50px 50px 0px 0px;
-    box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.1),
-                0px 6px 18px rgba(0, 0, 0, 0.2),
-                0px 14px 32px rgba(0, 0, 0, 0.3);
-    background-color: white;
-    z-index: 20;
+
+    padding-bottom:
+        env(
+            safe-area-inset-bottom,
+            0px
+        );
+
+    border-radius:
+        50px 50px 0 0;
+
+    box-shadow:
+        0 1px 2px
+            rgba(0, 0, 0, 0.1),
+        0 6px 18px
+            rgba(0, 0, 0, 0.2),
+        0 14px 32px
+            rgba(0, 0, 0, 0.3);
+
+    background-color: #ffffff;
+
+    z-index: 40;
+
     touch-action: none;
     will-change: transform;
-    transform: translateY(100%);
-    
+
+    transform:
+        translateY(100%);
+
     display: flex;
     flex-flow: column nowrap;
     justify-content: space-around;
@@ -126,29 +157,84 @@ img {
 .mini-menu > header > img {
     width: 22.5vw;
     height: 22.5vw;
+
+    max-width: 180px;
+    max-height: 180px;
+
+    object-fit: cover;
     border-radius: 50%;
 }
 
 .mini-menu > header > h1 {
-    font-size: 1.5em;
+    margin: 16px 0 0;
+
+    font-size: 1.5rem;
+    text-align: center;
 }
 
-.mini-menu > div {
-    width: 50vw;
-    height: 50vw;
-    background-color: red;
-    border-radius: 50%;
-
+.mini-menu .ola {
     display: flex;
-    flex-flow: row nowrap;
-    justify-content: center;
     align-items: center;
+    justify-content: center;
+
+    min-width: 110px;
+    min-height: 50px;
+
+    padding: 12px 24px;
+
+    border: 0;
+    border-radius: 30px;
+
+    background-color: #111111;
+    color: #ffffff;
+
+    font-size: 1rem;
+    font-weight: bold;
+
+    cursor: pointer;
 }
 
-.mini-menu > div > p {
-    color: white;
-    font-weight: bold;
-    font-size: 3em;
+.mini-menu .ola:disabled {
+    opacity: 0.5;
+
+    pointer-events: none;
+    cursor: default;
+}
+
+.mini-menu form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    width: min(
+        90%,
+        500px
+    );
+}
+
+.mini-menu form input[type="text"] {
+    flex: 1;
+
+    min-width: 0;
+
+    padding: 12px 14px;
+
+    border: 1px solid
+        rgba(0, 0, 0, 0.2);
+
+    border-radius: 20px;
+}
+
+.mini-menu form input[type="submit"] {
+    padding: 12px 16px;
+
+    border: 0;
+    border-radius: 20px;
+
+    background-color: #111111;
+    color: #ffffff;
+
+    cursor: pointer;
 }
 
 #menuPrincipal {
@@ -158,10 +244,14 @@ img {
 
     bottom: calc(
         12px +
-        env(safe-area-inset-bottom, 0px)
+        env(
+            safe-area-inset-bottom,
+            0px
+        )
     );
 
-    transform: translateX(-50%);
+    transform:
+        translateX(-50%);
 
     width: 90%;
     height: 56px;
@@ -174,10 +264,10 @@ img {
     height: 100%;
 
     display: flex;
-    flex-flow: row nowrap;
     justify-content: center;
     align-items: center;
 }
+
 #menuPrincipal > nav > ul {
     width: 95%;
     height: 100%;
@@ -188,10 +278,12 @@ img {
     list-style: none;
 
     border-radius: 35px;
-    border: 1px solid rgba(0, 0, 0, 0.1);
 
     background-color:
-        rgba(255, 255, 255, 0.15);
+        rgba(255, 255, 255, 0.55);
+
+    border: 1px solid
+        rgba(0, 0, 0, 0.1);
 
     box-shadow:
         inset 0 1px 2px
@@ -199,246 +291,116 @@ img {
         inset 0 8px 20px
             rgba(0, 0, 0, 0.1),
         inset 0 20px 40px
-            rgba(0, 0, 0, 0.2),
+            rgba(0, 0, 0, 0.12),
         inset 0 40px 64px
-            rgba(0, 0, 0, 0.25);
+            rgba(0, 0, 0, 0.14),
+        0 5px 20px
+            rgba(0, 0, 0, 0.12);
+
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter:
+        blur(16px);
 
     display: flex;
-    flex-flow: row nowrap;
     justify-content: space-around;
     align-items: center;
 }
 
 #menuPrincipal > nav > ul > li {
-    color: black;
-    z-index: 10;
-    padding: 20px 45px;
+    height: 48px;
+
+    padding: 0 45px;
+
     border-radius: 35px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    color: #000000;
+
+    z-index: 10;
 }
 
 #menuPrincipal > nav > ul > li.active {
-    background-color: rgba(0, 0, 0, 0.15);
-    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.08),
-                inset 0 6px 18px rgba(0, 0, 0, 0.12);
+    background-color:
+        rgba(0, 0, 0, 0.15);
+
+    box-shadow:
+        inset 0 1px 2px
+            rgba(255, 255, 255, 0.08),
+        inset 0 6px 18px
+            rgba(0, 0, 0, 0.12);
 }
 
 #menuPrincipal > nav > ul > li > a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
     text-decoration: none;
-    color: black;
+    color: #000000;
 }
 
 #menuPrincipal > nav > ul > li > a > img {
     width: 26px;
     height: 26px;
-}
 
-/*
-|--------------------------------------------------------------------------
-| Botão para ativar notificações
-|--------------------------------------------------------------------------
-*/
+    object-fit: contain;
+    border-radius: 0;
+}
 
 #ativar-notificacoes {
     position: fixed;
-    top: max(15px, env(safe-area-inset-top));
+
+    top: max(
+        15px,
+        env(
+            safe-area-inset-top,
+            0px
+        )
+    );
+
     right: 15px;
+
     z-index: 9000;
 
     padding: 10px 14px;
 
     border: 0;
-    border-radius: 20px;
-
-    background: rgba(20, 20, 20, 0.85);
-    color: white;
-
-    cursor: pointer;
-}
-
-/*
-|--------------------------------------------------------------------------
-| Botão Hey
-|--------------------------------------------------------------------------
-*/
-
-.mini-menu .ola {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    border: 0;
-
-    cursor: pointer;
-}
-
-.mini-menu .ola:disabled {
-    opacity: 0.5;
-    cursor: default;
-}
-
-/*
-|--------------------------------------------------------------------------
-| Notificação recebida dentro da página
-|--------------------------------------------------------------------------
-*/
-
-.notificacao-interna {
-    position: fixed;
-
-    top: max(
-        15px,
-        env(safe-area-inset-top)
-    );
-
-    left: 50%;
-
-    z-index: 10000;
-
-    width: calc(100% - 30px);
-    max-width: 420px;
-
-    display: flex;
-    align-items: center;
-    gap: 12px;
-
-    padding: 12px 16px;
-
-    border: 0;
-    border-radius: 18px;
+    border-radius: 22px;
 
     background:
-        rgba(20, 20, 20, 0.95);
+        rgba(30, 30, 30, 0.88);
 
-    color: white;
-
-    text-align: left;
-
-    box-shadow:
-        0 8px 30px
-        rgba(0, 0, 0, 0.25);
-
-    transform:
-        translate(-50%, -150%);
-
-    opacity: 0;
-
-    transition:
-        transform 0.3s ease,
-        opacity 0.3s ease;
+    color: #ffffff;
 
     cursor: pointer;
-}
-
-.notificacao-interna.visivel {
-    transform:
-        translate(-50%, 0);
-
-    opacity: 1;
-}
-
-.notificacao-interna > img {
-    width: 48px;
-    height: 48px;
-
-    flex: 0 0 48px;
-
-    object-fit: cover;
-
-    border-radius: 50%;
-}
-
-.notificacao-interna-conteudo {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-
-    min-width: 0;
-}
-
-.notificacao-interna-conteudo strong {
-    display: block;
-
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.notificacao-interna-conteudo span {
-    display: block;
-
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-
-    opacity: 0.85;
-}
-
-/*
-|--------------------------------------------------------------------------
-| Mensagens de confirmação e erro
-|--------------------------------------------------------------------------
-*/
-
-.mensagem-websocket {
-    position: fixed;
-
-    left: 50%;
-    bottom: calc(
-        25px +
-        env(safe-area-inset-bottom)
-    );
-
-    z-index: 10001;
-
-    max-width: calc(100% - 30px);
-
-    padding: 11px 16px;
-
-    border-radius: 20px;
-
-    color: white;
-
-    text-align: center;
-
-    transform:
-        translate(-50%, 30px);
-
-    opacity: 0;
-
-    transition:
-        transform 0.3s ease,
-        opacity 0.3s ease;
-}
-
-.mensagem-websocket.visivel {
-    transform:
-        translate(-50%, 0);
-
-    opacity: 1;
-}
-
-.mensagem-websocket.sucesso {
-    background:
-        rgba(30, 130, 70, 0.95);
-}
-
-.mensagem-websocket.erro {
-    background:
-        rgba(180, 40, 40, 0.95);
 }
 
 #estado-ligacao {
     position: fixed;
-    top: 15px;
+
+    top: max(
+        15px,
+        env(
+            safe-area-inset-top,
+            0px
+        )
+    );
+
     left: 15px;
+
     z-index: 9000;
 
     padding: 7px 11px;
 
     border-radius: 20px;
 
-    background: rgba(30, 30, 30, 0.82);
-    color: white;
+    background:
+        rgba(30, 30, 30, 0.82);
+
+    color: #ffffff;
 
     font-size: 0.8rem;
 
@@ -447,7 +409,9 @@ img {
 
 #estado-ligacao[data-status="connected"] {
     opacity: 0;
-    transition: opacity 0.4s ease;
+
+    transition:
+        opacity 0.4s ease;
 }
 
 #estado-ligacao[data-status="connecting"],
@@ -456,34 +420,15 @@ img {
     opacity: 1;
 }
 
-#ativar-notificacoes {
-    position: fixed;
-    top: 15px;
-    right: 15px;
-    z-index: 9000;
-
-    padding: 10px 14px;
-
-    border: 0;
-    border-radius: 22px;
-
-    background: rgba(30, 30, 30, 0.88);
-    color: white;
-
-    cursor: pointer;
-}
-
-.mini-menu .ola:disabled {
-    opacity: 0.5;
-    pointer-events: none;
-}
-
 .notificacao-interna {
     position: fixed;
 
     top: max(
         15px,
-        env(safe-area-inset-top)
+        env(
+            safe-area-inset-top,
+            0px
+        )
     );
 
     left: 50%;
@@ -502,14 +447,16 @@ img {
     border: 0;
     border-radius: 18px;
 
-    background: rgba(20, 20, 20, 0.96);
-    color: white;
+    background:
+        rgba(20, 20, 20, 0.96);
+
+    color: #ffffff;
 
     text-align: left;
 
     box-shadow:
         0 8px 30px
-        rgba(0, 0, 0, 0.25);
+            rgba(0, 0, 0, 0.25);
 
     transform:
         translate(-50%, -150%);
@@ -567,8 +514,11 @@ img {
     left: 50%;
 
     bottom: calc(
-        25px +
-        env(safe-area-inset-bottom)
+        85px +
+        env(
+            safe-area-inset-bottom,
+            0px
+        )
     );
 
     z-index: 10001;
@@ -579,7 +529,8 @@ img {
 
     border-radius: 20px;
 
-    color: white;
+    color: #ffffff;
+
     text-align: center;
 
     transform:
@@ -607,4 +558,27 @@ img {
 .mensagem-websocket.erro {
     background:
         rgba(180, 40, 40, 0.96);
+}
+
+@media (max-width: 600px) {
+    #menuPrincipal {
+        width: calc(100% - 28px);
+    }
+
+    #menuPrincipal > nav > ul {
+        width: 100%;
+
+        padding-right: 8px;
+        padding-left: 8px;
+    }
+
+    #menuPrincipal > nav > ul > li {
+        padding-right: 28px;
+        padding-left: 28px;
+    }
+
+    .mini-menu > header > img {
+        width: 34vw;
+        height: 34vw;
+    }
 }
