@@ -85,8 +85,14 @@
 
         painel.textContent =
             'innerHeight: ' + window.innerHeight +
-            ' | clientHeight: ' + document.documentElement.clientHeight +
-            ' | screenHeight: ' + screen.height;
+            ' | screenHeight: ' + screen.height +
+            ' | display-mode: ' +
+            (
+                window.matchMedia('(display-mode: standalone)').matches
+                    ? 'standalone'
+                    : 'browser'
+            ) +
+            ' | navigator.standalone: ' + navigator.standalone;
 
         document.body.appendChild(painel);
     });
