@@ -1,20 +1,40 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\CMS;
 
+use PDO;
 use Ratchet\ConnectionInterface;
 use Ratchet\MessageComponentInterface;
 
 class WebSocket implements MessageComponentInterface
 {
+    /**
+     * Todas as ligações WebSocket abertas.
+     */
     protected \SplObjectStorage $clients;
 
+    /**
+     * Função que cria uma nova ligação PDO.
+     */
     private $pdoFactory;
 
     /**
-     * Dados associados a cada ligação.
+     * Pessoas autenticadas por resourceId.
      *
-     * Chave: resourceId da ligação.
+     * Exemplo:
+     *
+     * [
+     *     123 => [
+     *         'id' => 123,
+     *         'membro_id' => 'uuid',
+     *         'nome' => 'Tiago Daniel',
+     *         'src' => '/imagens/fotos-perfil/foto.webp',
+     *         'top' => 200,
+     *         'left' => 300
+     *     ]
+     * ]
      */
     private array $pessoas = [];
 
@@ -24,15 +44,22 @@ class WebSocket implements MessageComponentInterface
         $this->pdoFactory = $pdoFactory;
     }
 
-    private function getDatabase()
+    /**
+     * Cria uma nova ligação à base de dados.
+     */
+    private function getDatabase(): PDO
     {
         $factory = $this->pdoFactory;
 
         return $factory();
     }
 
-    public function onOpen(ConnectionInterface $conn): void
-    {
+    /**
+     * Nova ligação WebSocket.
+     */
+    public function onOpen(
+        ConnectionInterface $conn
+    ): void {
         $this->clients->attach($conn);
 
         echo sprintf(
@@ -46,6 +73,9 @@ class WebSocket implements MessageComponentInterface
         ]);
     }
 
+    /**
+     * Receção de uma mensagem WebSocket.
+     */
     public function onMessage(
         ConnectionInterface $from,
         $msg
@@ -128,6 +158,9 @@ class WebSocket implements MessageComponentInterface
         }
     }
 
+    /**
+     * Autentica uma ligação através do membro_id.
+     */
     private function autenticarPessoa(
         ConnectionInterface $conn,
         array $data
@@ -157,7 +190,8 @@ class WebSocket implements MessageComponentInterface
 
                 COALESCE(
                     (
-                        SELECT fp.nome_arquivo
+                        SELECT
+                            fp.nome_arquivo
 
                         FROM fotos_perfil AS fp
 
@@ -185,19 +219,32 @@ class WebSocket implements MessageComponentInterface
             LIMIT 1
         ";
 
-        $db = $this->getDatabase();
+        $db = null;
+        $stmt = null;
 
         try {
-            $membro = $db
-                ->runSQL($sql, [
-                    'membro_id' => $membroId
-                ])
-                ->fetch();
+            $db = $this->getDatabase();
+
+            $stmt = $db->prepare($sql);
+
+            $stmt->execute([
+                'membro_id' => $membroId
+            ]);
+
+            $membro = $stmt->fetch(
+                PDO::FETCH_ASSOC
+            );
         } finally {
-            unset($db);
+            $stmt = null;
+            $db = null;
         }
 
         if (!$membro) {
+            echo sprintf(
+                "[AUTH ERROR] Membro não encontrado: %s\n",
+                $membroId
+            );
+
             $this->enviarErro(
                 $conn,
                 'O membro não foi encontrado.'
@@ -220,25 +267,34 @@ class WebSocket implements MessageComponentInterface
         }
 
         /*
-         * Se esta ligação já tinha posição, preservamo-la.
+         * Preserva a posição caso a mesma ligação
+         * seja autenticada novamente.
          */
         $pessoaAnterior =
-            $this->pessoas[$conn->resourceId]
-            ?? null;
+            $this->pessoas[
+                $conn->resourceId
+            ] ?? null;
 
-        $this->pessoas[$conn->resourceId] = [
-            'id' => $conn->resourceId,
+        $this->pessoas[
+            $conn->resourceId
+        ] = [
+            'id' =>
+                $conn->resourceId,
 
             'membro_id' =>
                 (string) $membro['membro_id'],
 
             'nome' =>
                 trim(
-                    (string) ($membro['nome'] ?? '')
+                    (string) (
+                        $membro['nome']
+                        ?? ''
+                    )
                 ),
 
             'src' =>
-                '/imagens/fotos-perfil/' . $foto,
+                '/imagens/fotos-perfil/' .
+                $foto,
 
             'top' =>
                 $pessoaAnterior['top']
@@ -250,9 +306,10 @@ class WebSocket implements MessageComponentInterface
         ];
 
         echo sprintf(
-            "[AUTH] Ligação %d autenticada como %s\n",
+            "[AUTH] Ligação %d autenticada como %s. Pessoas online: %d\n",
             $conn->resourceId,
-            $membroId
+            $membroId,
+            count($this->pessoas)
         );
 
         $this->enviar($conn, [
@@ -260,9 +317,15 @@ class WebSocket implements MessageComponentInterface
             'membro_id' => $membroId
         ]);
 
+        /*
+         * Envia a lista completa para todos.
+         */
         $this->broadcastEstado();
     }
 
+    /**
+     * Atualiza a posição de uma pessoa.
+     */
     private function moverPessoa(
         ConnectionInterface $conn,
         array $data
@@ -299,6 +362,9 @@ class WebSocket implements MessageComponentInterface
         $this->broadcastEstado();
     }
 
+    /**
+     * Envia um Hey para um membro específico.
+     */
     private function notificarPessoa(
         ConnectionInterface $from,
         array $data
@@ -313,7 +379,9 @@ class WebSocket implements MessageComponentInterface
         }
 
         $remetente =
-            $this->pessoas[$from->resourceId];
+            $this->pessoas[
+                $from->resourceId
+            ];
 
         $destinatarioId = trim(
             (string) (
@@ -363,11 +431,14 @@ class WebSocket implements MessageComponentInterface
             }
 
             $this->enviar($client, [
-                'type' => 'notification',
+                'type' =>
+                    'notification',
 
-                'notification_type' => 'hey',
+                'notification_type' =>
+                    'hey',
 
-                'title' => 'Recebeste um Hey!',
+                'title' =>
+                    'Recebeste um Hey!',
 
                 'body' => sprintf(
                     '%s enviou-te um Hey.',
@@ -406,7 +477,8 @@ class WebSocket implements MessageComponentInterface
         }
 
         $this->enviar($from, [
-            'type' => 'notification_sent',
+            'type' =>
+                'notification_sent',
 
             'destinatario_id' =>
                 $destinatarioId,
@@ -419,26 +491,30 @@ class WebSocket implements MessageComponentInterface
         ]);
 
         echo sprintf(
-            "[HEY] %s enviou um Hey para %s (%d entrega(s))\n",
-            $remetente['membro_id'],
+            "[HEY] %s enviou um Hey para %s. Entregas: %d\n",
+            (string) $remetente['membro_id'],
             $destinatarioId,
             $numeroEntregas
         );
     }
 
+    /**
+     * Ligação terminada.
+     */
     public function onClose(
         ConnectionInterface $conn
     ): void {
-        if ($this->clients->contains($conn)) {
+        if (
+            $this->clients->contains($conn)
+        ) {
             $this->clients->detach($conn);
         }
 
-        $estavaAutenticado =
-            isset(
-                $this->pessoas[
-                    $conn->resourceId
-                ]
-            );
+        $estavaAutenticado = isset(
+            $this->pessoas[
+                $conn->resourceId
+            ]
+        );
 
         unset(
             $this->pessoas[
@@ -447,8 +523,9 @@ class WebSocket implements MessageComponentInterface
         );
 
         echo sprintf(
-            "[CLOSE] Ligação %d fechada\n",
-            $conn->resourceId
+            "[CLOSE] Ligação %d fechada. Pessoas online: %d\n",
+            $conn->resourceId,
+            count($this->pessoas)
         );
 
         if ($estavaAutenticado) {
@@ -456,12 +533,15 @@ class WebSocket implements MessageComponentInterface
         }
     }
 
+    /**
+     * Erro numa ligação.
+     */
     public function onError(
         ConnectionInterface $conn,
         \Exception $e
     ): void {
         echo sprintf(
-            "[ERROR] Ligação %d: %s\n",
+            "[CONNECTION ERROR] Ligação %d: %s\n",
             $conn->resourceId,
             $e->getMessage()
         );
@@ -469,15 +549,25 @@ class WebSocket implements MessageComponentInterface
         $conn->close();
     }
 
+    /**
+     * Envia a lista completa de pessoas para todos os clientes.
+     */
     private function broadcastEstado(): void
     {
+        $pessoas = array_values(
+            $this->pessoas
+        );
+
         $mensagem = [
             'type' => 'state',
-
-            'people' => array_values(
-                $this->pessoas
-            )
+            'people' => $pessoas
         ];
+
+        echo sprintf(
+            "[STATE] A enviar %d pessoa(s) para %d ligação(ões)\n",
+            count($pessoas),
+            count($this->clients)
+        );
 
         foreach ($this->clients as $client) {
             $this->enviar(
@@ -487,6 +577,9 @@ class WebSocket implements MessageComponentInterface
         }
     }
 
+    /**
+     * Verifica se uma ligação está autenticada.
+     */
     private function estaAutenticado(
         ConnectionInterface $conn
     ): bool {
@@ -497,6 +590,9 @@ class WebSocket implements MessageComponentInterface
         );
     }
 
+    /**
+     * Envia uma mensagem de erro.
+     */
     private function enviarErro(
         ConnectionInterface $conn,
         string $mensagem
@@ -507,6 +603,9 @@ class WebSocket implements MessageComponentInterface
         ]);
     }
 
+    /**
+     * Envia JSON para uma ligação.
+     */
     private function enviar(
         ConnectionInterface $conn,
         array $data
@@ -529,6 +628,9 @@ class WebSocket implements MessageComponentInterface
         }
     }
 
+    /**
+     * Limita um número entre um mínimo e um máximo.
+     */
     private function limitarNumero(
         int $numero,
         int $minimo,
@@ -536,7 +638,10 @@ class WebSocket implements MessageComponentInterface
     ): int {
         return max(
             $minimo,
-            min($maximo, $numero)
+            min(
+                $maximo,
+                $numero
+            )
         );
     }
 }
