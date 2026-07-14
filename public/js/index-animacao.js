@@ -1,383 +1,280 @@
-(function () {
-    'use strict';
-
+(() => {
     const canvas = document.getElementById('gridCanvas');
 
     if (!canvas) {
         return;
     }
 
-    const context = canvas.getContext('2d', {
+    const ctx = canvas.getContext('2d', {
         alpha: false
     });
 
-    if (!context) {
+    if (!ctx) {
         return;
     }
 
     let width = 0;
     let height = 0;
-    let pixelRatio = 1;
+    let dpr = 1;
     let points = [];
-    let animationTime = 0;
-    let lastFrameTime = 0;
-    let resizeAnimationFrame = null;
+    let time = 0;
+    let lastFrame = 0;
+    let resizeTimeout = null;
 
     const FPS = 45;
-    const FRAME_INTERVAL = 1000 / FPS;
-    const POINT_SPACING = 19.5;
+    const FRAME_TIME = 1000 / FPS;
+
+    const SPACING = 19.5;
 
     /*
-     * Espaço adicional para cobrir completamente a safe area
-     * inferior do iPhone em modo PWA.
+     * Área adicional desenhada por baixo do ecrã.
      */
-    const BOTTOM_OVERSCAN = 80;
+    const BOTTOM_OVERSCAN = 120;
 
-    const COLOR_YELLOW = [255, 215, 0];
-    const COLOR_BLUE = [0, 100, 255];
-    const COLOR_PURPLE = [138, 43, 226];
+    const colorYellow = [255, 215, 0];
+    const colorBlue = [0, 100, 255];
+    const colorPurple = [138, 43, 226];
 
     function getViewportWidth() {
         return Math.max(
             window.innerWidth || 0,
             document.documentElement.clientWidth || 0,
-            window.visualViewport
-                ? window.visualViewport.width
-                : 0
+            document.body ? document.body.clientWidth : 0
         );
     }
 
     function getViewportHeight() {
-        const innerHeight =
-            window.innerHeight || 0;
-
-        const documentHeight =
-            document.documentElement.clientHeight || 0;
-
-        const visualHeight =
-            window.visualViewport
-                ? (
-                    window.visualViewport.height +
-                    window.visualViewport.offsetTop
-                )
-                : 0;
-
         /*
-         * Adicionamos uma margem inferior real ao canvas.
-         * Desta forma, os pontos continuam a ser desenhados
-         * atrás da área do indicador Home.
+         * Não utilizar visualViewport.height aqui.
+         *
+         * No iOS, visualViewport pode excluir a zona inferior
+         * ou diminuir quando aparece o teclado.
          */
         return Math.max(
-            innerHeight,
-            documentHeight,
-            visualHeight
-        ) + BOTTOM_OVERSCAN;
+            window.innerHeight || 0,
+            document.documentElement.clientHeight || 0,
+            document.body ? document.body.clientHeight : 0
+        );
     }
 
-    function resizeCanvas() {
-        width = getViewportWidth();
-        height = getViewportHeight();
-
-        pixelRatio = Math.min(
+    function resize() {
+        dpr = Math.min(
             window.devicePixelRatio || 1,
             1.5
         );
 
-        canvas.style.width =
-            width + 'px';
+        width = Math.ceil(getViewportWidth());
 
-        canvas.style.height =
-            height + 'px';
+        height =
+            Math.ceil(getViewportHeight()) +
+            BOTTOM_OVERSCAN;
 
-        canvas.width =
-            Math.ceil(
-                width * pixelRatio
-            );
+        /*
+         * O tamanho visual do canvas.
+         */
+        canvas.style.width = width + 'px';
+        canvas.style.height = height + 'px';
 
-        canvas.height =
-            Math.ceil(
-                height * pixelRatio
-            );
+        /*
+         * O tamanho real interno do desenho.
+         */
+        canvas.width = Math.ceil(width * dpr);
+        canvas.height = Math.ceil(height * dpr);
 
-        context.setTransform(
-            pixelRatio,
+        ctx.setTransform(
+            dpr,
             0,
             0,
-            pixelRatio,
+            dpr,
             0,
             0
         );
 
+        ctx.imageSmoothingEnabled = false;
+
         createGrid();
     }
 
-    function scheduleResize() {
-        if (resizeAnimationFrame !== null) {
-            cancelAnimationFrame(
-                resizeAnimationFrame
-            );
-        }
+    function requestResize() {
+        clearTimeout(resizeTimeout);
 
-        resizeAnimationFrame =
-            requestAnimationFrame(
-                function () {
-                    resizeAnimationFrame = null;
-                    resizeCanvas();
-                }
-            );
+        resizeTimeout = setTimeout(() => {
+            resize();
+        }, 60);
     }
 
     function createGrid() {
         points = [];
 
-        const columns =
-            Math.ceil(
-                width / POINT_SPACING
-            ) + 8;
+        const cols =
+            Math.ceil(width / SPACING) +
+            6;
 
         const rows =
-            Math.ceil(
-                height / POINT_SPACING
-            ) + 8;
+            Math.ceil(height / SPACING) +
+            6;
 
-        const startX =
-            -POINT_SPACING * 4;
+        const startX = -SPACING * 3;
+        const startY = -SPACING * 3;
 
-        const startY =
-            -POINT_SPACING * 4;
-
-        for (
-            let row = 0;
-            row < rows;
-            row++
-        ) {
-            for (
-                let column = 0;
-                column < columns;
-                column++
-            ) {
+        for (let row = 0; row < rows; row++) {
+            for (let col = 0; col < cols; col++) {
                 points.push({
                     baseX:
                         startX +
-                        column *
-                        POINT_SPACING,
+                        col * SPACING,
 
                     baseY:
                         startY +
-                        row *
-                        POINT_SPACING
+                        row * SPACING
                 });
             }
         }
     }
 
-    function lerp(start, end, factor) {
-        return (
-            start +
-            (end - start) *
-            factor
-        );
+    function lerp(a, b, amount) {
+        return a + (b - a) * amount;
     }
 
-    function clamp(value, minimum, maximum) {
-        return Math.max(
-            minimum,
-            Math.min(
-                value,
-                maximum
-            )
-        );
+    function clamp(value, min, max) {
+        if (value < min) {
+            return min;
+        }
+
+        if (value > max) {
+            return max;
+        }
+
+        return value;
     }
 
-    function getGradientColor(value) {
-        value = clamp(
-            value,
-            0,
-            1
-        );
+    function getGradientColorRGB(value) {
+        value = clamp(value, 0, 1);
 
-        let firstColor;
-        let secondColor;
+        let color1;
+        let color2;
         let factor;
 
         if (value < 0.5) {
-            firstColor =
-                COLOR_YELLOW;
-
-            secondColor =
-                COLOR_BLUE;
-
-            factor =
-                value * 2;
+            color1 = colorYellow;
+            color2 = colorBlue;
+            factor = value * 2;
         } else {
-            firstColor =
-                COLOR_BLUE;
-
-            secondColor =
-                COLOR_PURPLE;
-
-            factor =
-                (value - 0.5) * 2;
+            color1 = colorBlue;
+            color2 = colorPurple;
+            factor = (value - 0.5) * 2;
         }
 
         const red = Math.floor(
             lerp(
-                firstColor[0],
-                secondColor[0],
+                color1[0],
+                color2[0],
                 factor
             )
         );
 
         const green = Math.floor(
             lerp(
-                firstColor[1],
-                secondColor[1],
+                color1[1],
+                color2[1],
                 factor
             )
         );
 
         const blue = Math.floor(
             lerp(
-                firstColor[2],
-                secondColor[2],
+                color1[2],
+                color2[2],
                 factor
             )
         );
 
-        return (
-            red +
-            ', ' +
-            green +
-            ', ' +
-            blue
-        );
+        return `${red}, ${green}, ${blue}`;
     }
 
-    function draw(timestamp) {
+    function draw(now) {
         requestAnimationFrame(draw);
 
-        if (
-            timestamp -
-            lastFrameTime <
-            FRAME_INTERVAL
-        ) {
+        if (now - lastFrame < FRAME_TIME) {
             return;
         }
 
-        lastFrameTime = timestamp;
+        lastFrame = now;
 
         /*
-         * Preenche explicitamente o canvas inteiro.
-         * O alpha:false também evita transparências estranhas
-         * na zona inferior no Safari.
+         * Como o contexto foi criado com alpha: false,
+         * pintamos sempre o fundo completamente.
          */
-        context.fillStyle = '#ffffff';
-
-        context.fillRect(
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(
             0,
             0,
             width,
             height
         );
 
-        animationTime += 0.0015;
+        time += 0.0015;
 
-        const centerX =
-            width / 2;
-
+        const centerX = width / 2;
         const centerY =
-            height / 2;
+            (height - BOTTOM_OVERSCAN) / 2;
 
-        const holeTime =
-            animationTime * 3.5;
+        const holeTime = time * 3.5;
 
         const holeX =
             centerX +
-            Math.sin(
-                holeTime * 0.7
-            ) *
-            (
-                centerX * 0.9
-            ) +
-            Math.cos(
-                holeTime * 0.3
-            ) *
-            (
-                centerX * 0.3
-            );
+            Math.sin(holeTime * 0.7) *
+                (centerX * 0.9) +
+            Math.cos(holeTime * 0.3) *
+                (centerX * 0.3);
 
         const holeY =
             centerY +
-            Math.cos(
-                holeTime * 0.8
-            ) *
-            (
-                centerY * 0.9
-            ) +
-            Math.sin(
-                holeTime * 0.4
-            ) *
-            (
-                centerY * 0.3
-            );
+            Math.cos(holeTime * 0.8) *
+                (centerY * 0.9) +
+            Math.sin(holeTime * 0.4) *
+                (centerY * 0.3);
 
         const holeRadius = 160;
-
         const holeRadiusSquared =
-            holeRadius *
-            holeRadius;
+            holeRadius * holeRadius;
 
         const edgeSoftness = 60;
-
-        const inverseEdgeSoftness =
-            1 /
-            edgeSoftness;
+        const edgeSoftnessInverse =
+            1 / edgeSoftness;
 
         for (
             let index = 0;
             index < points.length;
             index++
         ) {
-            const point =
-                points[index];
+            const point = points[index];
 
-            const normalizedX =
-                point.baseX *
-                0.003;
+            const normalX =
+                point.baseX * 0.003;
 
-            const normalizedY =
-                point.baseY *
-                0.003;
+            const normalY =
+                point.baseY * 0.003;
 
             const waveX =
                 Math.sin(
-                    normalizedY *
-                    2.5 +
-                    animationTime *
-                    2.5
-                ) *
-                18 +
+                    normalY * 2.5 +
+                    time * 2.5
+                ) * 18 +
                 Math.cos(
-                    normalizedX *
-                    1.8 -
-                    animationTime
-                ) *
-                12;
+                    normalX * 1.8 -
+                    time
+                ) * 12;
 
             const waveY =
                 Math.cos(
-                    normalizedX *
-                    2.5 -
-                    animationTime *
-                    2.5
-                ) *
-                18 +
+                    normalX * 2.5 -
+                    time * 2.5
+                ) * 18 +
                 Math.sin(
-                    normalizedY *
-                    1.8 +
-                    animationTime
-                ) *
-                12;
+                    normalY * 1.8 +
+                    time
+                ) * 12;
 
             const finalX =
                 point.baseX +
@@ -390,34 +287,27 @@
             const waveValue =
                 (
                     Math.sin(
-                        normalizedX *
-                        2.2 +
-                        animationTime *
-                        1.5
+                        normalX * 2.2 +
+                        time * 1.5
                     ) +
                     Math.cos(
-                        normalizedY *
-                        2.2 +
-                        animationTime *
-                        1.5
+                        normalY * 2.2 +
+                        time * 1.5
                     ) +
                     2
-                ) *
-                0.25;
+                ) * 0.25;
 
-            const deltaX =
+            const differenceX =
                 finalX -
                 holeX;
 
-            const deltaY =
+            const differenceY =
                 finalY -
                 holeY;
 
             const distanceSquared =
-                deltaX *
-                deltaX +
-                deltaY *
-                deltaY;
+                differenceX * differenceX +
+                differenceY * differenceY;
 
             let alpha;
 
@@ -437,7 +327,7 @@
                         distance -
                         holeRadius
                     ) *
-                    inverseEdgeSoftness,
+                    edgeSoftnessInverse,
                     0,
                     1
                 );
@@ -445,16 +335,12 @@
 
             const borderNoise =
                 Math.sin(
-                    normalizedX *
-                    15 +
-                    animationTime *
-                    5
-                ) *
-                0.15;
+                    normalX * 15 +
+                    time * 5
+                ) * 0.15;
 
             alpha = clamp(
-                alpha +
-                borderNoise,
+                alpha + borderNoise,
                 0,
                 1
             );
@@ -463,37 +349,27 @@
                 alpha *
                 (
                     0.8 +
-                    waveValue *
-                    0.2
+                    waveValue * 0.2
                 );
 
-            if (
-                finalAlpha <
-                0.05
-            ) {
+            if (finalAlpha < 0.05) {
                 continue;
             }
 
             const rgb =
-                getGradientColor(
+                getGradientColorRGB(
                     waveValue
                 );
 
             const roundedAlpha =
                 Math.round(
-                    finalAlpha *
-                    100
-                ) /
-                100;
+                    finalAlpha * 100
+                ) / 100;
 
-            context.fillStyle =
-                'rgba(' +
-                rgb +
-                ', ' +
-                roundedAlpha +
-                ')';
+            ctx.fillStyle =
+                `rgba(${rgb}, ${roundedAlpha})`;
 
-            context.fillRect(
+            ctx.fillRect(
                 finalX - 1.2,
                 finalY - 1.2,
                 2.4,
@@ -504,48 +380,39 @@
 
     window.addEventListener(
         'resize',
-        scheduleResize
+        requestResize
     );
 
     window.addEventListener(
         'orientationchange',
-        function () {
-            window.setTimeout(
-                scheduleResize,
-                200
-            );
+        () => {
+            setTimeout(resize, 100);
+            setTimeout(resize, 350);
+            setTimeout(resize, 700);
         }
     );
 
-    window.addEventListener(
-        'pageshow',
-        scheduleResize
-    );
-
-    window.addEventListener(
-        'focus',
-        scheduleResize
-    );
+    /*
+     * visualViewport pode avisar que algo mudou,
+     * mas nunca utilizamos a sua altura para dimensionar
+     * o canvas.
+     */
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener(
+            'resize',
+            requestResize
+        );
+    }
 
     document.addEventListener(
         'visibilitychange',
-        function () {
-            if (
-                document.visibilityState ===
-                'visible'
-            ) {
-                scheduleResize();
+        () => {
+            if (!document.hidden) {
+                setTimeout(resize, 100);
             }
         }
     );
 
-    if (window.visualViewport) {
-        window.visualViewport.addEventListener(
-            'resize',
-            scheduleResize
-        );
-    }
-
-    resizeCanvas();
+    resize();
     requestAnimationFrame(draw);
 })();
