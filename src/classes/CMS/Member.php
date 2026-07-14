@@ -1,7 +1,11 @@
 <?php
+
+declare(strict_types=1);
+
 namespace App\CMS;
 
-class Member {
+class Member
+{
     private $db;
 
     public function __construct($db)
@@ -9,255 +13,316 @@ class Member {
         $this->db = $db;
     }
 
-    /*public function get($id) {
-        $arguments['id1'] = $id;
-        $arguments['id2'] = $id;
-        $arguments['id3'] = $id;
-        $arguments['id4'] = $id;
+    public function create(array $membro): string|false
+    {
+        $gostos = $membro['gostos'] ?? [];
 
-        $sql = "SELECT id, CONCAT(forename, ' ', surname) AS nome, joined, bio, picture, seo_name,
-                (SELECT COUNT(membro_id_2) 
-                FROM seguir
-                WHERE membro_id_2 = :id1) AS followers,
-                (SELECT COUNT(membro_id_1)
-                FROM seguir
-                WHERE membro_id_1 = :id2) AS following,
-                (SELECT COUNT(id) FROM receita
-                WHERE membro_id = :id3) AS tot_receitas
-                FROM membro
-                WHERE id = :id4;";
-        return $this->db->runSQL($sql, $arguments)->fetch();
-    }
+        if (!is_array($gostos)) {
+            $gostos = [];
+        }
 
-    public function getPeople($myId) {
-        $sql = "SELECT id, CONCAT(forename, ' ', surname) AS nome, bio, picture, seo_name,
-                (SELECT COUNT(*) FROM seguir
-                WHERE (membro_id_1 = :myId AND membro_id_2 = id)) as sigo
-                FROM membro
-                ORDER BY joined
-                LIMIT 10;";
-        return $this->db->runSQL($sql, ['myId' => $myId])->fetchAll();
-    }
+        unset(
+            $membro['dia'],
+            $membro['mes'],
+            $membro['ano'],
+            $membro['gostos']
+        );
 
-    public function getFull($id) {
-        $sql = "SELECT id, forename, surname, joined, bio, picture, email, telefone, nascimento, genero, role
-                FROM membro
-                WHERE id = :id;";
-        return $this->db->runSQL($sql, [$id])->fetch();
-    }
-
-    public function getAll() {
-        $sql = "SELECT id, CONCAT(forename, ' ', surname) AS nome, joined, bio, picture, email, role
-                FROM membro;";
-        return $this->db->runSQL($sql)->fetchAll();
-    }
-
-    public function count() {
-        $sql = "SELECT COUNT(*) FROM membro;";
-        return $this->db->runSQL($sql)->fetchColumn();
-    }*/
-
-    public function create($membro) {
-        $membro['password'] = password_hash($membro['password'], PASSWORD_DEFAULT);
+        $membro['password'] = password_hash(
+            (string) $membro['password'],
+            PASSWORD_DEFAULT
+        );
 
         try {
-            $gostos = $membro['gostos'] ?? [];
+            $this->db->beginTransaction();
 
-            unset($membro['dia'], $membro['mes'], $membro['ano'], $membro['gostos']);
+            $sql = "
+                INSERT INTO membros (
+                    primeiro_nome,
+                    ultimo_nome,
+                    nascimento,
+                    genero,
+                    telefone,
+                    email,
+                    bio,
+                    password,
+                    nome_seo
+                )
+                VALUES (
+                    :primeiro_nome,
+                    :ultimo_nome,
+                    :nascimento,
+                    :genero,
+                    :telefone,
+                    :email,
+                    :sobre_ti,
+                    :password,
+                    :nome_seo
+                )
+            ";
 
-            $sql = "INSERT INTO membros 
-                    (primeiro_nome, ultimo_nome, nascimento, genero, telefone, email, bio, password, nome_seo)
-                    VALUES 
-                    (:primeiro_nome, :ultimo_nome, :nascimento, :genero, :telefone, :email, :sobre_ti, :password, :nome_seo);";
+            $this->db->runSQL($sql, [
+                'primeiro_nome' => $membro['primeiro_nome'],
+                'ultimo_nome' => $membro['ultimo_nome'],
+                'nascimento' => $membro['nascimento'],
+                'genero' => $membro['genero'],
+                'telefone' => $membro['telefone'],
+                'email' => $membro['email'],
+                'sobre_ti' => $membro['sobre_ti'],
+                'password' => $membro['password'],
+                'nome_seo' => $membro['nome_seo']
+            ]);
 
-            $this->db->runSQL($sql, $membro);
+            /*
+             * O ID é um UUID criado pela base de dados.
+             * Por isso, não usamos lastInsertId().
+             */
+            $sql = "
+                SELECT id
+                FROM membros
+                WHERE email = :email
+                LIMIT 1
+            ";
 
-            $sql = "SELECT id FROM membros WHERE email = :email;";
+            $id = $this->db
+                ->runSQL($sql, [
+                    'email' => $membro['email']
+                ])
+                ->fetchColumn();
 
-            $id = $this->db->runSQL($sql, [
-                'email' => $membro['email']
-            ])->fetchColumn();
+            if (!$id) {
+                throw new \RuntimeException(
+                    'Não foi possível obter o ID do membro criado.'
+                );
+            }
+
+            $id = (string) $id;
 
             foreach ($gostos as $gosto) {
-                $sql = "SELECT id FROM hobbies WHERE nome = :gosto";
+                $gosto = trim((string) $gosto);
 
-                $hobbie_id = $this->db->runSQL($sql, [
-                    'gosto' => $gosto
-                ])->fetchColumn();
-
-                if ($hobbie_id) {
-                    $sql = "INSERT INTO membros_gostos (membro_id, hobbie_id)
-                            VALUES (:membro_id, :hobbie_id)";
-
-                    $this->db->runSQL($sql, [
-                        'membro_id' => $id,
-                        'hobbie_id' => $hobbie_id
-                    ]);
+                if ($gosto === '') {
+                    continue;
                 }
+
+                $sql = "
+                    SELECT id
+                    FROM hobbies
+                    WHERE nome = :gosto
+                    LIMIT 1
+                ";
+
+                $hobbieId = $this->db
+                    ->runSQL($sql, [
+                        'gosto' => $gosto
+                    ])
+                    ->fetchColumn();
+
+                if (!$hobbieId) {
+                    continue;
+                }
+
+                $sql = "
+                    INSERT IGNORE INTO membros_gostos (
+                        membro_id,
+                        hobbie_id
+                    )
+                    VALUES (
+                        :membro_id,
+                        :hobbie_id
+                    )
+                ";
+
+                $this->db->runSQL($sql, [
+                    'membro_id' => $id,
+                    'hobbie_id' => $hobbieId
+                ]);
             }
 
-            return $id;
+            /*
+             * Não inserimos default.webp em fotos_perfil.
+             *
+             * Se o utilizador não tiver fotografias, as consultas
+             * usam COALESCE(..., 'default.webp').
+             */
+            $this->db->commit();
 
-        } catch (\PDOException $e) {
-            if ($e->errorInfo[1] === 1062) {
+            return $id;
+        } catch (\PDOException $erro) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+
+            $codigoMysql = (int) (
+                $erro->errorInfo[1] ?? 0
+            );
+
+            if ($codigoMysql === 1062) {
                 return false;
             }
 
-            throw $e;
+            throw $erro;
+        } catch (\Throwable $erro) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+
+            throw $erro;
         }
     }
 
-    /*public function update($member, $admin = false) {
-        try {
-            unset($member['dia']);
-            unset($member['mes']);
-            unset($member['ano']);
-            unset($member['joined']);
-            unset($member['picture']);
-            if (!$admin) {
-                unset($member['role']);
-            }
-            $sql = "UPDATE membro
-                    SET forename = :forename, surname = :surname, telefone = :telefone, email = :email, bio = :bio,
-                                    nascimento = :nascimento, genero = :genero, seo_name = :seo_name";
-                    if ($admin) {
-                        $sql .= ", role = :role ";
-                    }
-                    $sql .= " WHERE id = :id;";
-            $this->db->runSQL($sql, $member);
-            return true;
-        } catch (\PDOException $e) {
-            if ($e->errorInfo[1] == 1062) {
-                return false;
-            }
-            echo "<pre>";
-            var_dump($member);
-            echo "</pre>";
-            throw $e;
-        }
-    }*/
+    public function login(
+        string $utilizador,
+        string $password
+    ): array|false {
+        $sql = "
+            SELECT
+                m.id,
+                m.primeiro_nome,
+                m.ultimo_nome,
+                m.nascimento,
+                m.genero,
+                m.email,
+                m.telefone,
+                m.password,
+                m.adesao,
+                m.bio,
+                m.nome_seo,
 
-    public function login($utilizador, $password) {
-        $arguments['utilizador1'] = $utilizador;
-        $arguments['utilizador2'] = $utilizador;
-        $sql = "SELECT m.id, m.primeiro_nome, m.ultimo_nome, m.nascimento, m.genero, m.email, m.telefone, m.password,
-                m.adesao, m.bio, m.nome_seo, f.nome_arquivo AS foto_perfil
+                COALESCE(
+                    (
+                        SELECT fp.nome_arquivo
+                        FROM fotos_perfil AS fp
+                        WHERE fp.membro_id = m.id
+                        AND (
+                            fp.status = 'completo'
+                            OR fp.status IS NULL
+                        )
+                        ORDER BY
+                            fp.ordem IS NULL ASC,
+                            fp.ordem ASC
+                        LIMIT 1
+                    ),
+                    'default.webp'
+                ) AS foto_perfil
 
-                FROM membros AS m
-                LEFT JOIN fotos_perfil AS f ON f.membro_id = m.id
-                WHERE email = :utilizador1
-                OR telefone = :utilizador2;";
-        $membro = $this->db->runSQL($sql, $arguments)->fetch();
+            FROM membros AS m
+
+            WHERE
+                m.email = :utilizador_email
+                OR m.telefone = :utilizador_telefone
+
+            LIMIT 1
+        ";
+
+        $membro = $this->db
+            ->runSQL($sql, [
+                'utilizador_email' => $utilizador,
+                'utilizador_telefone' => $utilizador
+            ])
+            ->fetch();
 
         if (!$membro) {
             return false;
         }
 
-        $authenticated = password_verify($password, $membro['password']);
-        return ($authenticated ? $membro : false);
-    }
+        $passwordValida = password_verify(
+            $password,
+            (string) $membro['password']
+        );
 
-    /*public function getIdByEmail($email) {
-        $sql = "SELECT id FROM membro
-                WHERE email = :email;";
-        return $this->db->runSQL($sql, [$email])->fetchColumn();
-    }
-
-    public function passwordUpdate($id, $password) {
-        $hash = password_hash($password, PASSWORD_DEFAULT);
-        $sql = "UPDATE membro
-                SET password = :hash
-                WHERE id = :id;";
-        $this->db->runSQL($sql, ['id' => $id, 'hash' => $hash,]);
-        return true;
-    }
-
-    public function pictureCreate($member, $temp, $destination) {
-        try {   
-            $imagick = new \Imagick($temp);
-            $imagick->cropThumbnailImage(300, 300);
-            $imagick->writeImage($destination);
-
-            $sql = "UPDATE membro
-                    SET picture = :picture
-                    WHERE id = :id;";
-            $this->db->runSQL($sql, [$member['picture'], $member['id']]);
-            return true;
-        } catch (\Exception $e) {
-            if (file_exists($destination)) {
-                unlink($destination);
-            }
-            throw $e;
-        }
-    }
-
-    public function pictureDelete($id, $path) {
-        $sql = "SELECT picture FROM membro WHERE id = :id";
-        $file = $this->db->runSQL($sql, [$id])->fetchColumn();
-
-        $path .= $file;
-
-        if (file_exists($path)) {
-            unlink($path);
-        } else {
+        if (!$passwordValida) {
             return false;
         }
 
-        $sql = "UPDATE membro SET picture = 'blank.jpg' WHERE id = :id;";
-        $this->db->runSQL($sql, [$id]);
-        return true;
-    }*/
+        return $membro;
+    }
 
-    public function delete($id) {
+    public function delete(string $id): bool
+    {
         try {
             $this->db->beginTransaction();
 
-            $sql = "DELETE FROM receita 
-                    WHERE membro_id = :id;";
-            $this->db->runSQL($sql, [$id]);
+            $sql = "
+                DELETE FROM membros_gostos
+                WHERE membro_id = :id
+            ";
 
-            $sql = "DELETE FROM publicacao_simples 
-                    WHERE membro_id = :id;";
-            $this->db->runSQL($sql, [$id]);
+            $this->db->runSQL($sql, [
+                'id' => $id
+            ]);
 
-            $sql = "DELETE FROM quik
-                    WHERE membro_id = :id;";
-            $this->db->runSQL($sql, [$id]);
+            $sql = "
+                DELETE FROM fotos_perfil
+                WHERE membro_id = :id
+            ";
 
-            $sql = "DELETE FROM video_longo
-                    WHERE membro_id = :id;";
-            $this->db->runSQL($sql, [$id]);
+            $this->db->runSQL($sql, [
+                'id' => $id
+            ]);
 
-            $sql = "DELETE FROM likes 
-                    WHERE membro_id = :id;";
-            $this->db->runSQL($sql, [$id]);
+            /*
+             * Mantém estas eliminações apenas se as tabelas
+             * ainda existirem neste projeto.
+             */
+            $tabelasComMembroId = [
+                'receita',
+                'publicacao_simples',
+                'quik',
+                'video_longo',
+                'likes',
+                'opiniao'
+            ];
 
-            $arguments['id1'] = $id;
-            $sql = "DELETE FROM notificacao 
-                    WHERE emissor_id = :id1;";
-            $this->db->runSQL($sql, $arguments);
+            foreach ($tabelasComMembroId as $tabela) {
+                $sql = "
+                    DELETE FROM {$tabela}
+                    WHERE membro_id = :id
+                ";
 
-            $sql = "DELETE FROM opiniao
-                    WHERE membro_id = :id;";
-            $this->db->runSQL($sql, [$id]);
+                $this->db->runSQL($sql, [
+                    'id' => $id
+                ]);
+            }
 
-            $arguments['id1'] = $id;
-            $arguments['id2'] = $id;
-            $sql = "DELETE FROM seguir
-                    WHERE membro_id_1 = :id1
-                    OR membro_id_2 = :id2;";
-            $this->db->runSQL($sql, $arguments);
+            $sql = "
+                DELETE FROM notificacao
+                WHERE emissor_id = :id
+            ";
 
-            $sql = "DELETE FROM membro
-                    WHERE id = :id;";
-            $this->db->runSQL($sql, [$id]);
+            $this->db->runSQL($sql, [
+                'id' => $id
+            ]);
+
+            $sql = "
+                DELETE FROM seguir
+                WHERE membro_id_1 = :id1
+                OR membro_id_2 = :id2
+            ";
+
+            $this->db->runSQL($sql, [
+                'id1' => $id,
+                'id2' => $id
+            ]);
+
+            $sql = "
+                DELETE FROM membros
+                WHERE id = :id
+            ";
+
+            $this->db->runSQL($sql, [
+                'id' => $id
+            ]);
 
             $this->db->commit();
-            return true;
-        } catch (\PDOException $e) {
-            $this->db->rollBack();
 
-            throw $e;
+            return true;
+        } catch (\Throwable $erro) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+
+            throw $erro;
         }
     }
 }

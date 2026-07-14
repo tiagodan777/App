@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Validate\Validate;
 
 $pathImagensTemporarias =
@@ -29,7 +31,15 @@ function apagarImagensTemporarias(
     string $pasta
 ): void {
     foreach ($imagens as $imagem) {
-        $caminho = $pasta . $imagem;
+        $nomeFicheiro = basename(
+            (string) $imagem
+        );
+
+        if ($nomeFicheiro === '') {
+            continue;
+        }
+
+        $caminho = $pasta . $nomeFicheiro;
 
         if (is_file($caminho)) {
             unlink($caminho);
@@ -37,8 +47,17 @@ function apagarImagensTemporarias(
     }
 }
 
+/*
+|--------------------------------------------------------------------------
+| Apresentar a página
+|--------------------------------------------------------------------------
+*/
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    echo $twig->render('create-account.html', []);
+    echo $twig->render(
+        'create-account.html',
+        []
+    );
 
     exit;
 }
@@ -50,6 +69,12 @@ $membro = [];
 $erros = [];
 $imagens = [];
 
+/*
+|--------------------------------------------------------------------------
+| Preparar pasta temporária
+|--------------------------------------------------------------------------
+*/
+
 if (!is_dir($pathImagensTemporarias)) {
     $pastaCriada = mkdir(
         $pathImagensTemporarias,
@@ -57,7 +82,10 @@ if (!is_dir($pathImagensTemporarias)) {
         true
     );
 
-    if (!$pastaCriada && !is_dir($pathImagensTemporarias)) {
+    if (
+        !$pastaCriada &&
+        !is_dir($pathImagensTemporarias)
+    ) {
         responderJson([
             'success' => false,
             'message' =>
@@ -68,7 +96,7 @@ if (!is_dir($pathImagensTemporarias)) {
 
 /*
 |--------------------------------------------------------------------------
-| Upload das fotografias
+| Upload opcional das fotografias
 |--------------------------------------------------------------------------
 */
 
@@ -99,13 +127,21 @@ if (
             ?? UPLOAD_ERR_NO_FILE;
 
         $tamanho =
-            $_FILES['imagens']['size'][$indice]
-            ?? 0;
+            (int) (
+                $_FILES['imagens']['size'][$indice]
+                ?? 0
+            );
 
-        $nomeOriginal =
-            $_FILES['imagens']['name'][$indice]
-            ?? '';
+        $nomeOriginal = trim(
+            (string) (
+                $_FILES['imagens']['name'][$indice]
+                ?? ''
+            )
+        );
 
+        /*
+         * Não enviar fotografias é permitido.
+         */
         if ($erroUpload === UPLOAD_ERR_NO_FILE) {
             continue;
         }
@@ -125,6 +161,9 @@ if (
                 UPLOAD_ERR_CANT_WRITE =>
                     'Não foi possível guardar a fotografia no servidor.',
 
+                UPLOAD_ERR_EXTENSION =>
+                    'O envio da fotografia foi interrompido pelo servidor.',
+
                 default =>
                     'Ocorreu um erro ao enviar uma das fotografias.'
             };
@@ -133,7 +172,7 @@ if (
         }
 
         if (
-            !$temp ||
+            $temp === '' ||
             !is_uploaded_file($temp)
         ) {
             $erros['imagens'] =
@@ -142,15 +181,32 @@ if (
             continue;
         }
 
-        if ($tamanho > MAX_SIZE) {
+        if (
+            $tamanho <= 0 ||
+            $tamanho > MAX_SIZE
+        ) {
             $erros['imagens'] =
-                'Uma das fotografias é demasiado grande.';
+                'Uma das fotografias é demasiado grande ou está vazia.';
 
             continue;
         }
 
-        $finfo = finfo_open(FILEINFO_MIME_TYPE);
-        $mime = finfo_file($finfo, $temp);
+        $finfo = finfo_open(
+            FILEINFO_MIME_TYPE
+        );
+
+        if ($finfo === false) {
+            $erros['imagens'] =
+                'Não foi possível verificar uma das fotografias.';
+
+            continue;
+        }
+
+        $mime = finfo_file(
+            $finfo,
+            $temp
+        );
+
         finfo_close($finfo);
 
         $mimesPermitidos = [
@@ -162,7 +218,14 @@ if (
             'image/heif'
         ];
 
-        if (!in_array($mime, $mimesPermitidos, true)) {
+        if (
+            !is_string($mime) ||
+            !in_array(
+                $mime,
+                $mimesPermitidos,
+                true
+            )
+        ) {
             $erros['imagens'] =
                 'Tipo de imagem não suportado. Usa JPEG, PNG, GIF, WebP ou HEIC.';
 
@@ -204,11 +267,27 @@ if (
             $pathImagensTemporarias
         );
 
+        $filename = basename(
+            (string) $filename
+        );
+
+        if ($filename === '') {
+            $erros['imagens'] =
+                'Não foi possível criar o nome de uma das fotografias.';
+
+            continue;
+        }
+
         $destino =
             $pathImagensTemporarias .
             $filename;
 
-        if (!move_uploaded_file($temp, $destino)) {
+        if (
+            !move_uploaded_file(
+                $temp,
+                $destino
+            )
+        ) {
             $erros['imagens'] =
                 'Não foi possível guardar uma das fotografias.';
 
@@ -219,11 +298,6 @@ if (
     }
 }
 
-if (count($imagens) === 0) {
-    $erros['imagens'] =
-        'Adiciona pelo menos uma fotografia.';
-}
-
 /*
 |--------------------------------------------------------------------------
 | Dados do membro
@@ -231,40 +305,70 @@ if (count($imagens) === 0) {
 */
 
 $membro['primeiro_nome'] = trim(
-    $_POST['primeiro_nome'] ?? ''
+    (string) (
+        $_POST['primeiro_nome']
+        ?? ''
+    )
 );
 
 $membro['ultimo_nome'] = trim(
-    $_POST['ultimo_nome'] ?? ''
+    (string) (
+        $_POST['ultimo_nome']
+        ?? ''
+    )
 );
 
-$membro['dia'] = $_POST['dia'] ?? '';
-$membro['mes'] = $_POST['mes'] ?? '';
-$membro['ano'] = $_POST['ano'] ?? '';
+$membro['dia'] =
+    $_POST['dia'] ?? '';
 
-$membro['genero'] =
-    $_POST['genero'] ?? '';
+$membro['mes'] =
+    $_POST['mes'] ?? '';
+
+$membro['ano'] =
+    $_POST['ano'] ?? '';
+
+$membro['genero'] = trim(
+    (string) (
+        $_POST['genero']
+        ?? ''
+    )
+);
 
 $membro['gostos'] =
     $_POST['gostos'] ?? [];
 
 $membro['sobre_ti'] = trim(
-    $_POST['sobre_ti'] ?? ''
+    (string) (
+        $_POST['sobre_ti']
+        ?? ''
+    )
 );
 
 $membro['telefone'] = trim(
-    $_POST['telefone'] ?? ''
+    (string) (
+        $_POST['telefone']
+        ?? ''
+    )
 );
 
 $membro['email'] = trim(
-    $_POST['email'] ?? ''
+    (string) (
+        $_POST['email']
+        ?? ''
+    )
 );
 
 $membro['password'] =
-    $_POST['password'] ?? '';
+    (string) (
+        $_POST['password']
+        ?? ''
+    );
 
 $confirmaPassword =
-    $_POST['confirma_password'] ?? '';
+    (string) (
+        $_POST['confirma_password']
+        ?? ''
+    );
 
 $nomeCompleto = trim(
     $membro['primeiro_nome'] .
@@ -273,7 +377,37 @@ $nomeCompleto = trim(
 );
 
 $membro['nome_seo'] =
-    create_seo_name($nomeCompleto);
+    create_seo_name(
+        $nomeCompleto
+    );
+
+/*
+|--------------------------------------------------------------------------
+| Normalizar gostos
+|--------------------------------------------------------------------------
+*/
+
+if (!is_array($membro['gostos'])) {
+    $membro['gostos'] = [];
+}
+
+$membro['gostos'] = array_values(
+    array_unique(
+        array_filter(
+            array_map(
+                static function ($gosto): string {
+                    return trim(
+                        (string) $gosto
+                    );
+                },
+                $membro['gostos']
+            ),
+            static function (string $gosto): bool {
+                return $gosto !== '';
+            }
+        )
+    )
+);
 
 /*
 |--------------------------------------------------------------------------
@@ -303,15 +437,26 @@ $dia = (int) $membro['dia'];
 $mes = (int) $membro['mes'];
 $ano = (int) $membro['ano'];
 
-$erros['nascimento'] =
-    checkdate($mes, $dia, $ano) &&
+$dataNascimentoValida =
+    $dia >= 1 &&
+    $mes >= 1 &&
     $ano >= 1900 &&
-    $ano <= (int) date('Y')
+    $ano <= (int) date('Y') &&
+    checkdate(
+        $mes,
+        $dia,
+        $ano
+    );
+
+$erros['nascimento'] =
+    $dataNascimentoValida
         ? ''
         : 'Escolhe uma data de nascimento válida.';
 
 $erros['genero'] =
-    Validate::isGenero($membro['genero'])
+    Validate::isGenero(
+        $membro['genero']
+    )
         ? ''
         : 'Escolhe um género válido.';
 
@@ -325,19 +470,23 @@ $erros['telefone'] =
         : 'Introduz um número de telefone válido.';
 
 $erros['email'] =
-    Validate::isEmail($membro['email'])
+    Validate::isEmail(
+        $membro['email']
+    )
         ? ''
         : 'Introduz um email válido.';
 
 $erros['password'] =
-    Validate::isPassword($membro['password'])
+    Validate::isPassword(
+        $membro['password']
+    )
         ? ''
         : 'A palavra-passe deve ter pelo menos 8 caracteres, uma minúscula, uma maiúscula e um número.';
 
 $erros['confirma_password'] =
     hash_equals(
-        (string) $membro['password'],
-        (string) $confirmaPassword
+        $membro['password'],
+        $confirmaPassword
     )
         ? ''
         : 'As palavras-passe não são idênticas.';
@@ -351,27 +500,14 @@ $erros['sobre_ti'] =
         ? ''
         : 'A descrição pode ter no máximo 1000 caracteres.';
 
-if (!is_array($membro['gostos'])) {
-    $membro['gostos'] = [];
-}
-
-$membro['gostos'] = array_values(
-    array_unique(
-        array_filter(
-            array_map(
-                static fn ($gosto) => trim((string) $gosto),
-                $membro['gostos']
-            )
-        )
-    )
-);
-
 $erros = array_filter(
     $erros,
-    static fn ($erro) => $erro !== ''
+    static function ($erro): bool {
+        return $erro !== '';
+    }
 );
 
-if ($erros) {
+if ($erros !== []) {
     apagarImagensTemporarias(
         $imagens,
         $pathImagensTemporarias
@@ -385,7 +521,7 @@ if ($erros) {
 
 /*
 |--------------------------------------------------------------------------
-| Criação da conta
+| Preparar dados finais
 |--------------------------------------------------------------------------
 */
 
@@ -402,6 +538,12 @@ unset(
     $membro['ano']
 );
 
+/*
+|--------------------------------------------------------------------------
+| Criar conta
+|--------------------------------------------------------------------------
+*/
+
 try {
     $membroId = $cms
         ->getMember()
@@ -417,37 +559,53 @@ try {
             'success' => false,
             'erros' => [
                 'email' =>
-                    'O email já está a ser usado.'
+                    'O email ou o número de telefone já está a ser usado.'
             ]
         ], 409);
     }
 
-    /*
-     * O ID é UUID, portanto mantém-se como string.
-     */
     $membroId = (string) $membroId;
 
-    $cms
-        ->getImage()
-        ->prepareAllImages(
-            $membroId,
-            $imagens
-        );
-
     /*
-     * Usa o caminho real do teu worker.
+     * As fotografias são opcionais.
+     *
+     * Sem fotografias, não é criado nenhum registo em fotos_perfil.
+     * As consultas usam default.webp através de COALESCE().
      */
-    $worker =
-        APP_ROOT .
-        '/src/pages/profile-image-worker.php';
+    if ($imagens !== []) {
+        $cms
+            ->getImage()
+            ->prepareAllImages(
+                $membroId,
+                $imagens
+            );
 
-    $comando = sprintf(
-        'php %s %s > /dev/null 2>&1 &',
-        escapeshellarg($worker),
-        escapeshellarg($membroId)
-    );
+        $worker =
+            APP_ROOT .
+            '/src/pages/profile-image-worker.php';
 
-    exec($comando);
+        if (is_file($worker)) {
+            $comando = sprintf(
+                '%s %s %s > /dev/null 2>&1 &',
+                escapeshellarg(
+                    PHP_BINARY
+                ),
+                escapeshellarg(
+                    $worker
+                ),
+                escapeshellarg(
+                    $membroId
+                )
+            );
+
+            exec($comando);
+        } else {
+            error_log(
+                'Worker de imagens não encontrado: ' .
+                $worker
+            );
+        }
+    }
 
     $cms
         ->getSession()
@@ -467,10 +625,11 @@ try {
         'redirect' =>
             DOC_ROOT .
             'index/?loginToken=' .
-            urlencode($tokenLogin)
+            urlencode(
+                (string) $tokenLogin
+            )
     ]);
-
-} catch (Throwable $erro) {
+} catch (\Throwable $erro) {
     apagarImagensTemporarias(
         $imagens,
         $pathImagensTemporarias
