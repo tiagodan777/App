@@ -13,60 +13,29 @@ class Session {
         $this->db = $db;
         $token = $_COOKIE['token'] ?? '';
         if ($token) {
-            /*echo "<pre>";
-            var_dump($_COOKIE);*/
             $this->create($token, 'stay_logged_id');
-            /*var_dump($_SESSION);
-            echo "</pre>";*/
         }
         $this->id = $_SESSION['id'] ?? 0;
         $this->primeiro_nome = $_SESSION['primeiro_nome'] ?? '';
         $this->foto_perfil = $_SESSION['foto_perfil'] ?? '';
-        // $this->role = $_SESSION['role'] ?? 'member';
         $this->seo_name = $_SESSION['nome_seo'] ?? '';
         $this->token = $_SESSION['token'] ?? '';
     }
 
-    public function create(
-        $token = '',
-        $proposito = 'stay_logged_id',
-        $membro_id = ''
-    ) {
+    public function create($token = '', $proposito = 'stay_logged_id', $membro_id = '') {
         session_regenerate_id(true);
 
         if (!$membro_id) {
-            $sql = "SELECT membro_id
-                    FROM token
-                    WHERE token = :token
-                    AND proposito = :proposito
-                    AND validade > NOW()
-                    LIMIT 1";
-
-            $membro_id = $this->db->runSQL($sql, [
-                'token' => $token,
-                'proposito' => $proposito
-            ])->fetchColumn();
+            $sql = "SELECT membro_id FROM token WHERE token = :token AND proposito = :proposito AND validade > NOW() LIMIT 1";
+            $membro_id = $this->db->runSQL($sql, ['token' => $token, 'proposito' => $proposito])->fetchColumn();
 
             if (!$membro_id) {
                 return false;
             }
         }
 
-        $sql = "SELECT
-                    m.id,
-                    m.primeiro_nome,
-                    f.nome_arquivo AS foto_perfil,
-                    m.nome_seo
-                FROM membros AS m
-                LEFT JOIN fotos_perfil AS f
-                    ON f.membro_id = m.id
-                    AND f.ordem = 1
-                WHERE m.id = :membro_id
-                LIMIT 1";
-
-        $arguments = $this->db->runSQL($sql, [
-            'membro_id' => $membro_id
-        ])->fetch();
+        $sql = "SELECT m.id, m.primeiro_nome, f.nome_arquivo AS foto_perfil, m.nome_seo FROM membros AS m LEFT JOIN fotos_perfil AS f ON f.membro_id = m.id AND f.ordem = 1 WHERE m.id = :membro_id LIMIT 1";
+        $arguments = $this->db->runSQL($sql, ['membro_id' => $membro_id])->fetch();
 
         if (!$arguments) {
             return false;

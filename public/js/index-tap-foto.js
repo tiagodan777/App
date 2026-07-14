@@ -1,14 +1,10 @@
 $(function () {
-
     const $menu = $('.mini-menu');
-
     let aberto = false;
     let draggingMenu = false;
-
     let startY = 0;
     let currentY = 0;
     let startTime = 0;
-
     let fotoStartX = 0;
     let fotoStartY = 0;
     let fotoStartTime = 0;
@@ -48,21 +44,34 @@ $(function () {
         fotoStartX = e.clientX;
         fotoStartY = e.clientY;
         fotoStartTime = Date.now();
-
         e.stopPropagation();
     });
 
-    // Abre só se foi TAP, não arrasto
+    // Abre só se foi TAP, não arrasto (agora com o preenchimento integrado)
     $(document).on('pointerup', '.foto', function (e) {
         const diffX = Math.abs(e.clientX - fotoStartX);
         const diffY = Math.abs(e.clientY - fotoStartY);
         const time = Date.now() - fotoStartTime;
-
         const foiTap = diffX < 12 && diffY < 12 && time < 350;
 
         if (foiTap) {
             e.preventDefault();
             e.stopPropagation();
+
+            var $img = $(this);
+            var membroId = String($img.attr('data-membro-id') || '').trim();
+            var nome = String($img.attr('data-nome') || '').trim();
+            var foto = String($img.attr('src') || '').trim();
+
+            $menu.find('img').attr({
+                src: foto || '/imagens/fotos-perfil/default.webp',
+                alt: nome || 'Foto de perfil'
+            });
+
+            $menu.find('h1').text(nome);
+            $menu.attr('data-destinatario-id', membroId);
+            $menu.find('form').attr('action', window.messagesUrl + '?sendTo=' + encodeURIComponent(membroId));
+
             abrirMenu();
         }
     });
@@ -77,7 +86,6 @@ $(function () {
         startTime = Date.now();
 
         $menu.css('transition', 'none');
-
         e.stopPropagation();
 
         if (this.setPointerCapture) {
@@ -87,9 +95,7 @@ $(function () {
 
     $menu.on('pointermove', function (e) {
         if (!draggingMenu) return;
-
         currentY = e.clientY;
-
         let diffY = currentY - startY;
 
         if (diffY < 0) {
@@ -99,13 +105,11 @@ $(function () {
         $menu.css({
             transform: `translateY(calc(25% + ${diffY}px))`
         });
-
         e.preventDefault();
     });
 
     $menu.on('pointerup pointercancel', function (e) {
         if (!draggingMenu) return;
-
         draggingMenu = false;
 
         const distance = currentY - startY;
@@ -117,17 +121,14 @@ $(function () {
         } else {
             voltarMenu();
         }
-
         e.stopPropagation();
     });
 
     // Fecha ao tocar fora
     $(document).on('pointerup', function (e) {
         if (!aberto) return;
-
         if (!$(e.target).closest('.mini-menu, .foto').length) {
             fecharMenu();
         }
     });
-
 });

@@ -17,8 +17,7 @@ class Cookie {
         $arguments['membro_id'] = $member['id'];
         $arguments['proposito'] = 'stay_logged_id';
 
-        $sql = "INSERT INTO token (token, validade, membro_id, proposito)
-                VALUES (:token, :validade, :membro_id, :proposito);";
+        $sql = "INSERT INTO token (token, validade, membro_id, proposito) VALUES (:token, :validade, :membro_id, :proposito);";
         $this->db->runSQL($sql, $arguments);
 
         setcookie('token', $arguments['token'], time() + 60 * 60 * 24 * 7 * 2, '/', '', false, true);
@@ -31,9 +30,7 @@ class Cookie {
     }
 
     public function delete() {
-        $sql = "DELETE FROM token
-                WHERE token = :token;";
-        // $this->db->runSQL($sql, [$_COOKIE['token']]);
+        $sql = "DELETE FROM token WHERE token = :token;";
         setcookie('token', '', time() - 3600, '/', '', false, true);
     }
 }
