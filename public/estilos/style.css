@@ -1,24 +1,40 @@
 @charset "UTF-8";
 
+:root {
+    --app-height: 100dvh;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+}
+
 * {
     box-sizing: border-box;
     font-family: Helvetica, Arial, sans-serif;
+    -webkit-tap-highlight-color: transparent;
 }
 
 html {
     width: 100%;
     height: 100%;
+    min-height: 100%;
+
     margin: 0;
     padding: 0;
 
     overflow: hidden;
+
     background-color: #ffffff;
 }
 
 body {
+    position: fixed;
+    inset: 0;
+
     width: 100%;
-    height: 100%;
-    min-height: 100%;
+    height: var(--app-height);
+    min-height: var(--app-height);
+
     margin: 0;
     padding: 0;
 
@@ -28,21 +44,51 @@ body {
     background-color: #ffffff;
 }
 
+/*
+|--------------------------------------------------------------------------
+| Fundo que cobre todo o ecrã do iPhone
+|--------------------------------------------------------------------------
+|
+| Esta camada fica por trás do canvas e estende-se para além da safe area.
+| Evita que o iOS mostre uma área sem fundo junto ao indicador inferior.
+|
+*/
+
+body::before {
+    content: "";
+
+    position: fixed;
+
+    top: calc(-1 * var(--safe-top));
+    right: calc(-1 * var(--safe-right));
+    bottom: calc(-1 * var(--safe-bottom));
+    left: calc(-1 * var(--safe-left));
+
+    background-color: #ffffff;
+
+    pointer-events: none;
+
+    z-index: -2;
+}
+
+/*
+|--------------------------------------------------------------------------
+| Canvas
+|--------------------------------------------------------------------------
+*/
+
 #gridCanvas {
     position: fixed;
-    top: 0;
-    right: 0;
-    bottom: calc(
-        0px -
-        env(safe-area-inset-bottom, 0px) -
-        80px
-    );
-    left: 0;
+    inset: 0;
 
     display: block;
 
-    width: 100vw;
-    height: auto;
+    width: 100%;
+    height: 100%;
+
+    min-width: 100%;
+    min-height: 100%;
+
     margin: 0;
     padding: 0;
 
@@ -54,6 +100,12 @@ body {
     z-index: 0;
 }
 
+/*
+|--------------------------------------------------------------------------
+| Fotografias no mapa
+|--------------------------------------------------------------------------
+*/
+
 img {
     display: block;
 
@@ -61,95 +113,109 @@ img {
     height: 60px;
 
     object-fit: cover;
+
     border-radius: 50%;
 }
 
 .foto {
     position: absolute !important;
+
     top: 0 !important;
     left: 0 !important;
 
     width: 60px;
     height: 60px;
+
     margin: 0;
 
     object-fit: cover;
+
     border-radius: 50%;
 
     transform-origin: center center;
+
     will-change: transform, opacity;
 
     z-index: 10;
 
     cursor: pointer;
+
     touch-action: manipulation;
+
     user-select: none;
+    -webkit-user-select: none;
     -webkit-user-drag: none;
 }
 
+/*
+|--------------------------------------------------------------------------
+| Backdrop
+|--------------------------------------------------------------------------
+*/
+
 .back-drop {
-    position: relative;
+    position: fixed;
+    inset: 0;
 
-    width: 100vw;
-    height: 100vh;
+    width: 100%;
+    height: 100%;
 
-    bottom: -100%;
-
-    background-color:
-        rgba(0, 0, 0, 0.4);
+    background-color: rgba(0, 0, 0, 0.4);
 
     z-index: 25;
 
     display: flex;
-    flex-flow: column nowrap;
+    flex-direction: column;
     justify-content: flex-end;
     align-items: center;
+
+    pointer-events: none;
+    opacity: 0;
 }
+
+/*
+|--------------------------------------------------------------------------
+| Mini-menu
+|--------------------------------------------------------------------------
+*/
 
 .mini-menu {
     position: fixed;
+
     left: 0;
     bottom: 0;
 
-    width: 100vw;
-    height: 75vh;
+    width: 100%;
+    height: 75%;
 
-    padding-bottom:
-        env(
-            safe-area-inset-bottom,
-            0px
-        );
+    padding-bottom: var(--safe-bottom);
 
-    border-radius:
-        50px 50px 0 0;
+    border-radius: 50px 50px 0 0;
 
     box-shadow:
-        0 1px 2px
-            rgba(0, 0, 0, 0.1),
-        0 6px 18px
-            rgba(0, 0, 0, 0.2),
-        0 14px 32px
-            rgba(0, 0, 0, 0.3);
+        0 1px 2px rgba(0, 0, 0, 0.1),
+        0 6px 18px rgba(0, 0, 0, 0.2),
+        0 14px 32px rgba(0, 0, 0, 0.3);
 
     background-color: #ffffff;
 
     z-index: 40;
 
     touch-action: none;
+
     will-change: transform;
 
-    transform:
-        translateY(100%);
+    transform: translate3d(0, 100%, 0);
 
     display: flex;
-    flex-flow: column nowrap;
+    flex-direction: column;
     justify-content: space-around;
     align-items: center;
 }
 
 .mini-menu > header {
     display: flex;
-    flex-flow: column nowrap;
+    flex-direction: column;
     justify-content: space-evenly;
     align-items: center;
 }
@@ -162,6 +228,7 @@ img {
     max-height: 180px;
 
     object-fit: cover;
+
     border-radius: 50%;
 }
 
@@ -206,10 +273,7 @@ img {
     align-items: center;
     gap: 10px;
 
-    width: min(
-        90%,
-        500px
-    );
+    width: min(90%, 500px);
 }
 
 .mini-menu form input[type="text"] {
@@ -219,9 +283,7 @@ img {
 
     padding: 12px 14px;
 
-    border: 1px solid
-        rgba(0, 0, 0, 0.2);
-
+    border: 1px solid rgba(0, 0, 0, 0.2);
     border-radius: 20px;
 }
 
@@ -237,6 +299,12 @@ img {
     cursor: pointer;
 }
 
+/*
+|--------------------------------------------------------------------------
+| Menu principal
+|--------------------------------------------------------------------------
+*/
+
 #menuPrincipal {
     position: fixed;
 
@@ -244,19 +312,17 @@ img {
 
     bottom: calc(
         12px +
-        env(
-            safe-area-inset-bottom,
-            0px
-        )
+        var(--safe-bottom)
     );
 
-    transform:
-        translateX(-50%);
+    transform: translateX(-50%);
 
     width: 90%;
     height: 56px;
 
     z-index: 30;
+
+    touch-action: manipulation;
 }
 
 #menuPrincipal > nav {
@@ -277,29 +343,20 @@ img {
 
     list-style: none;
 
+    border: 1px solid rgba(0, 0, 0, 0.1);
     border-radius: 35px;
 
-    background-color:
-        rgba(255, 255, 255, 0.55);
-
-    border: 1px solid
-        rgba(0, 0, 0, 0.1);
+    background-color: rgba(255, 255, 255, 0.55);
 
     box-shadow:
-        inset 0 1px 2px
-            rgba(0, 0, 0, 0.06),
-        inset 0 8px 20px
-            rgba(0, 0, 0, 0.1),
-        inset 0 20px 40px
-            rgba(0, 0, 0, 0.12),
-        inset 0 40px 64px
-            rgba(0, 0, 0, 0.14),
-        0 5px 20px
-            rgba(0, 0, 0, 0.12);
+        inset 0 1px 2px rgba(0, 0, 0, 0.06),
+        inset 0 8px 20px rgba(0, 0, 0, 0.1),
+        inset 0 20px 40px rgba(0, 0, 0, 0.12),
+        inset 0 40px 64px rgba(0, 0, 0, 0.14),
+        0 5px 20px rgba(0, 0, 0, 0.12);
 
     backdrop-filter: blur(16px);
-    -webkit-backdrop-filter:
-        blur(16px);
+    -webkit-backdrop-filter: blur(16px);
 
     display: flex;
     justify-content: space-around;
@@ -323,14 +380,11 @@ img {
 }
 
 #menuPrincipal > nav > ul > li.active {
-    background-color:
-        rgba(0, 0, 0, 0.15);
+    background-color: rgba(0, 0, 0, 0.15);
 
     box-shadow:
-        inset 0 1px 2px
-            rgba(255, 255, 255, 0.08),
-        inset 0 6px 18px
-            rgba(0, 0, 0, 0.12);
+        inset 0 1px 2px rgba(255, 255, 255, 0.08),
+        inset 0 6px 18px rgba(0, 0, 0, 0.12);
 }
 
 #menuPrincipal > nav > ul > li > a {
@@ -347,21 +401,28 @@ img {
     height: 26px;
 
     object-fit: contain;
+
     border-radius: 0;
 }
+
+/*
+|--------------------------------------------------------------------------
+| Ativar notificações
+|--------------------------------------------------------------------------
+*/
 
 #ativar-notificacoes {
     position: fixed;
 
-    top: max(
-        15px,
-        env(
-            safe-area-inset-top,
-            0px
-        )
+    top: calc(
+        15px +
+        var(--safe-top)
     );
 
-    right: 15px;
+    right: calc(
+        15px +
+        var(--safe-right)
+    );
 
     z-index: 9000;
 
@@ -370,26 +431,30 @@ img {
     border: 0;
     border-radius: 22px;
 
-    background:
-        rgba(30, 30, 30, 0.88);
-
+    background-color: rgba(30, 30, 30, 0.88);
     color: #ffffff;
 
     cursor: pointer;
 }
 
+/*
+|--------------------------------------------------------------------------
+| Estado da ligação
+|--------------------------------------------------------------------------
+*/
+
 #estado-ligacao {
     position: fixed;
 
-    top: max(
-        15px,
-        env(
-            safe-area-inset-top,
-            0px
-        )
+    top: calc(
+        15px +
+        var(--safe-top)
     );
 
-    left: 15px;
+    left: calc(
+        15px +
+        var(--safe-left)
+    );
 
     z-index: 9000;
 
@@ -397,9 +462,7 @@ img {
 
     border-radius: 20px;
 
-    background:
-        rgba(30, 30, 30, 0.82);
-
+    background-color: rgba(30, 30, 30, 0.82);
     color: #ffffff;
 
     font-size: 0.8rem;
@@ -410,8 +473,7 @@ img {
 #estado-ligacao[data-status="connected"] {
     opacity: 0;
 
-    transition:
-        opacity 0.4s ease;
+    transition: opacity 0.4s ease;
 }
 
 #estado-ligacao[data-status="connecting"],
@@ -420,15 +482,18 @@ img {
     opacity: 1;
 }
 
+/*
+|--------------------------------------------------------------------------
+| Notificação interna
+|--------------------------------------------------------------------------
+*/
+
 .notificacao-interna {
     position: fixed;
 
-    top: max(
-        15px,
-        env(
-            safe-area-inset-top,
-            0px
-        )
+    top: calc(
+        15px +
+        var(--safe-top)
     );
 
     left: 50%;
@@ -447,19 +512,15 @@ img {
     border: 0;
     border-radius: 18px;
 
-    background:
-        rgba(20, 20, 20, 0.96);
-
+    background-color: rgba(20, 20, 20, 0.96);
     color: #ffffff;
 
     text-align: left;
 
     box-shadow:
-        0 8px 30px
-            rgba(0, 0, 0, 0.25);
+        0 8px 30px rgba(0, 0, 0, 0.25);
 
-    transform:
-        translate(-50%, -150%);
+    transform: translate(-50%, -150%);
 
     opacity: 0;
 
@@ -471,8 +532,7 @@ img {
 }
 
 .notificacao-interna.visivel {
-    transform:
-        translate(-50%, 0);
+    transform: translate(-50%, 0);
 
     opacity: 1;
 }
@@ -484,6 +544,7 @@ img {
     flex: 0 0 48px;
 
     object-fit: cover;
+
     border-radius: 50%;
 }
 
@@ -508,6 +569,12 @@ img {
     opacity: 0.82;
 }
 
+/*
+|--------------------------------------------------------------------------
+| Mensagens temporárias
+|--------------------------------------------------------------------------
+*/
+
 .mensagem-websocket {
     position: fixed;
 
@@ -515,10 +582,7 @@ img {
 
     bottom: calc(
         85px +
-        env(
-            safe-area-inset-bottom,
-            0px
-        )
+        var(--safe-bottom)
     );
 
     z-index: 10001;
@@ -533,8 +597,7 @@ img {
 
     text-align: center;
 
-    transform:
-        translate(-50%, 30px);
+    transform: translate(-50%, 30px);
 
     opacity: 0;
 
@@ -544,21 +607,24 @@ img {
 }
 
 .mensagem-websocket.visivel {
-    transform:
-        translate(-50%, 0);
+    transform: translate(-50%, 0);
 
     opacity: 1;
 }
 
 .mensagem-websocket.sucesso {
-    background:
-        rgba(30, 130, 70, 0.96);
+    background-color: rgba(30, 130, 70, 0.96);
 }
 
 .mensagem-websocket.erro {
-    background:
-        rgba(180, 40, 40, 0.96);
+    background-color: rgba(180, 40, 40, 0.96);
 }
+
+/*
+|--------------------------------------------------------------------------
+| Telemóveis
+|--------------------------------------------------------------------------
+*/
 
 @media (max-width: 600px) {
     #menuPrincipal {
@@ -573,8 +639,10 @@ img {
     }
 
     #menuPrincipal > nav > ul > li {
-        padding-right: 28px;
-        padding-left: 28px;
+        flex: 1;
+
+        padding-right: 0;
+        padding-left: 0;
     }
 
     .mini-menu > header > img {
