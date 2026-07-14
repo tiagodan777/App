@@ -388,7 +388,9 @@ class WebSocket implements MessageComponentInterface
         $agora = time();
 
         foreach ($this->clients as $client) {
-            $membroId = $this->membroPorLigacao[$client->resourceId] ?? null;
+            $membroId =
+                $this->membroPorLigacao[$client->resourceId]
+                ?? null;
 
             if ($membroId === null) {
                 continue;
@@ -396,39 +398,80 @@ class WebSocket implements MessageComponentInterface
 
             $pessoasVisiveis = [];
 
-            foreach ($this->pessoas as $outroMembroId => $pessoa) {
+            $minhaLocalizacao =
+                $this->localizacoes[$membroId]
+                ?? null;
+
+            $minhaLocalizacaoValida =
+                $this->localizacaoEstaValida(
+                    $minhaLocalizacao,
+                    $agora
+                );
+
+            foreach (
+                $this->pessoas
+                as $outroMembroId => $pessoa
+            ) {
                 if ($outroMembroId === $membroId) {
                     $pessoa['distance_m'] = 0;
                     $pessoasVisiveis[] = $pessoa;
+
                     continue;
                 }
 
-                $localizacaoAtual = $this->localizacoes[$membroId] ?? null;
+                $outraLocalizacao =
+                    $this->localizacoes[$outroMembroId]
+                    ?? null;
 
-                $localizacaoOutra = $this->localizacoes[$outroMembroId] ?? null;
+                $outraLocalizacaoValida =
+                    $this->localizacaoEstaValida(
+                        $outraLocalizacao,
+                        $agora
+                    );
 
-                if (!$this->localizacaoEstaValida($localizacaoAtual, $agora) || !$this->localizacaoEstaValida($localizacaoOutra, $agora)) {
+                /*
+                * Fallback temporário para HTTP:
+                *
+                * enquanto não existir localização válida,
+                * mostra todas as pessoas online.
+                */
+                if (
+                    !$minhaLocalizacaoValida ||
+                    !$outraLocalizacaoValida
+                ) {
+                    $pessoa['distance_m'] = null;
+                    $pessoasVisiveis[] = $pessoa;
+
                     continue;
                 }
 
-                $distancia = $this->calcularDistanciaMetros(
-                    $localizacaoAtual['latitude'],
-                    $localizacaoAtual['longitude'],
-                    $localizacaoOutra['latitude'],
-                    $localizacaoOutra['longitude']
-                );
+                $distancia =
+                    $this->calcularDistanciaMetros(
+                        $minhaLocalizacao['latitude'],
+                        $minhaLocalizacao['longitude'],
+                        $outraLocalizacao['latitude'],
+                        $outraLocalizacao['longitude']
+                    );
 
-                if ($distancia > self::RAIO_MAXIMO_METROS) {
+                if (
+                    $distancia >
+                    self::RAIO_MAXIMO_METROS
+                ) {
                     continue;
                 }
 
-                $pessoa['distance_m'] = (int) round($distancia);
+                $pessoa['distance_m'] =
+                    (int) round($distancia);
+
                 $pessoasVisiveis[] = $pessoa;
             }
 
             $this->enviar($client, [
                 'type' => 'state',
-                'radius_m' => self::RAIO_MAXIMO_METROS,
+                'radius_m' =>
+                    self::RAIO_MAXIMO_METROS,
+                'location_filter_active' =>
+                    $minhaLocalizacaoValida,
                 'people' => $pessoasVisiveis
             ]);
         }
@@ -439,25 +482,54 @@ class WebSocket implements MessageComponentInterface
         );
     }
 
-    private function estaoDentroDoRaio(string $primeiroMembroId, string $segundoMembroId): bool {
+    private function estaoDentroDoRaio(
+        string $primeiroMembroId,
+        string $segundoMembroId
+    ): bool {
         $agora = time();
 
-        $primeira = $this->localizacoes[$primeiroMembroId] ?? null;
+        $primeira =
+            $this->localizacoes[$primeiroMembroId]
+            ?? null;
 
-        $segunda = $this->localizacoes[$segundoMembroId] ?? null;
+        $segunda =
+            $this->localizacoes[$segundoMembroId]
+            ?? null;
 
-        if (!$this->localizacaoEstaValida($primeira, $agora) ||!$this->localizacaoEstaValida($segunda, $agora)) {
-            return false;
+        /*
+        * Fallback temporário para HTTP.
+        *
+        * Sem localização, permite o Hey entre
+        * pessoas que estejam online.
+        */
+        if (
+            !$this->localizacaoEstaValida(
+                $primeira,
+                $agora
+            ) ||
+            !$this->localizacaoEstaValida(
+                $segunda,
+                $agora
+            )
+        ) {
+            return isset(
+                $this->pessoas[$primeiroMembroId],
+                $this->pessoas[$segundoMembroId]
+            );
         }
 
-        $distancia = $this->calcularDistanciaMetros(
-            $primeira['latitude'],
-            $primeira['longitude'],
-            $segunda['latitude'],
-            $segunda['longitude']
-        );
+        $distancia =
+            $this->calcularDistanciaMetros(
+                $primeira['latitude'],
+                $primeira['longitude'],
+                $segunda['latitude'],
+                $segunda['longitude']
+            );
 
-        return $distancia <= self::RAIO_MAXIMO_METROS;
+        return (
+            $distancia <=
+            self::RAIO_MAXIMO_METROS
+        );
     }
 
     private function localizacaoEstaValida(?array $localizacao,int $agora): bool {
