@@ -4,6 +4,14 @@
 
 <canvas id="gridCanvas"></canvas>
 
+<div
+    id="estado-ligacao"
+    data-status="connecting"
+    aria-live="polite"
+>
+    A ligar…
+</div>
+
 <button
     type="button"
     id="ativar-notificacoes"
@@ -20,6 +28,7 @@
             src="/imagens/fotos-perfil/default.webp"
             alt=""
         >
+
         <h1></h1>
     </header>
 
@@ -39,6 +48,7 @@
             type="text"
             name="mensagem"
             id="mensagem"
+            autocomplete="off"
         >
 
         <input
@@ -54,11 +64,19 @@
 
     window.messagesUrl =
         {{ (doc_root ~ 'messages')|json_encode|raw }};
+
+    /*
+     * Enquanto estás a usar HTTP e o IP:
+     */
+    window.webSocketUrl =
+        'ws://' +
+        window.location.hostname +
+        ':8080';
 </script>
 
 <script src="{{ doc_root }}js/index-posicao.js?v=1"></script>
-<script src="{{ doc_root }}js/websocket.js?v=2"></script>
-<script src="{{ doc_root }}js/index-mini-menu.js?v=2"></script>
+<script src="{{ doc_root }}js/websocket.js?v=3"></script>
+<script src="{{ doc_root }}js/index-mini-menu.js?v=3"></script>
 <script src="{{ doc_root }}js/index-animacao.js?v=1"></script>
 <script src="{{ doc_root }}js/index-tap-foto.js?v=1"></script>
 

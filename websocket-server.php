@@ -1,31 +1,111 @@
 <?php
+
+declare(strict_types=1);
+
 require_once __DIR__ . '/src/bootstrap.php';
 
-use Ratchet\Http\HttpServer;
-use Ratchet\Server\IoServer;
-use Ratchet\WebSocket\WsServer;
 use App\CMS\WebSocket;
 
+use Ratchet\Http\HttpServer;
+
+use Ratchet\Server\IoServer;
+
+use Ratchet\WebSocket\WsServer;
+
+use React\EventLoop\Loop;
+
+use React\Socket\SocketServer;
+
+
+$loop = Loop::get();
+
 $pdoFactory = function () use ($cms): \PDO {
+
     $pdo = $cms->getDatabase();
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    // estica o timeout da sessão (opcional)
-    try { $pdo->query("SET SESSION wait_timeout=28800"); } catch (\Throwable $e) {}
+
+    $pdo->setAttribute(
+
+        \PDO::ATTR_ERRMODE,
+
+        \PDO::ERRMODE_EXCEPTION
+
+    );
+
+    $pdo->setAttribute(
+
+        \PDO::ATTR_DEFAULT_FETCH_MODE,
+
+        \PDO::FETCH_ASSOC
+
+    );
+
+    try {
+        $pdo->exec(
+            'SET SESSION wait_timeout = 28800'
+        );
+
+    } catch (\Throwable $erro) {
+        echo sprintf(
+            "[DATABASE WARNING] %s\n",
+            $erro->getMessage()
+
+        );
+
+    }
     return $pdo;
 };
 
-// Instancia o componente com a fábrica de PDO
-$ws = new WebSocket($pdoFactory);
+$webSocket = new WebSocket(
 
-// Cria o servidor Ratchet
-$server = IoServer::factory(
-    new HttpServer(
-        new WsServer($ws)
-    ),
-    8080,
-    '0.0.0.0'
+    $pdoFactory
+
 );
 
-echo "WebSocket ligado na porta 8080\n";
+$wsServer = new WsServer(
 
-$server->run();
+    $webSocket
+
+);
+
+$wsServer->enableKeepAlive(
+
+    $loop,
+
+    30
+
+);
+
+$socket = new SocketServer(
+
+    '0.0.0.0:8080',
+
+    [],
+
+    $loop
+
+);
+
+$server = new IoServer(
+
+    new HttpServer(
+
+        $wsServer
+
+    ),
+
+    $socket,
+
+    $loop
+
+);
+
+echo sprintf(
+
+    "[%s] WebSocket ligado em 0.0.0.0:8080\n",
+
+    date('Y-m-d H:i:s')
+
+);
+
+$loop->run();
+
