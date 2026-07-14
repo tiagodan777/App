@@ -70,7 +70,27 @@
         window.location.hostname +
         ':8080';
 </script>
+<script>
+    window.addEventListener('load', function () {
+        const painel = document.createElement('div');
 
+        painel.style.position = 'fixed';
+        painel.style.left = '10px';
+        painel.style.bottom = '10px';
+        painel.style.zIndex = '999999';
+        painel.style.padding = '8px';
+        painel.style.background = 'black';
+        painel.style.color = 'white';
+        painel.style.fontSize = '12px';
+
+        painel.textContent =
+            'innerHeight: ' + window.innerHeight +
+            ' | clientHeight: ' + document.documentElement.clientHeight +
+            ' | screenHeight: ' + screen.height;
+
+        document.body.appendChild(painel);
+    });
+</script>
 <script src="{{ doc_root }}js/index-posicao.js?v=11"></script>
 <script src="{{ doc_root }}js/websocket.js?v=6"></script>
 <script src="{{ doc_root }}js/index-mini-menu.js?v=6"></script>
