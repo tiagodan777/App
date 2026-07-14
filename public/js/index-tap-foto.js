@@ -52,6 +52,10 @@ $(function () {
             $foto.attr('data-membro-id') || ''
         ).trim();
 
+        const meuMembroId = String(
+            window.membroId || ''
+        ).trim();
+
         const nome = String(
             $foto.attr('data-nome') || ''
         ).trim();
@@ -60,9 +64,13 @@ $(function () {
             $foto.attr('src') || ''
         ).trim();
 
+        const souEu =
+            membroId !== '' &&
+            membroId === meuMembroId;
+
         $menu.attr(
             'data-destinatario-id',
-            membroId
+            souEu ? '' : membroId
         );
 
         $menu.find('header img').attr({
@@ -75,9 +83,46 @@ $(function () {
                 'Foto de perfil'
         });
 
+        if (souEu) {
+            $menu
+                .find('header h1')
+                .text(
+                    nome !== ''
+                        ? 'Tu (' + nome + ')'
+                        : 'Tu'
+                );
+
+            $menu
+                .find('#enviar-hey')
+                .hide();
+
+            $menu
+                .find('form')
+                .hide()
+                .attr('action', '');
+
+            $menu.addClass(
+                'perfil-proprio'
+            );
+
+            return;
+        }
+
         $menu
             .find('header h1')
             .text(nome);
+
+        $menu
+            .find('#enviar-hey')
+            .show();
+
+        $menu
+            .find('form')
+            .show();
+
+        $menu.removeClass(
+            'perfil-proprio'
+        );
 
         if (window.messagesUrl) {
             $menu
@@ -92,12 +137,6 @@ $(function () {
                 );
         }
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Detetar toque numa fotografia
-    |--------------------------------------------------------------------------
-    */
 
     $(document).on(
         'pointerdown',
@@ -143,16 +182,6 @@ $(function () {
         }
     );
 
-    /*
-    |--------------------------------------------------------------------------
-    | Arrastar o mini-menu
-    |--------------------------------------------------------------------------
-    |
-    | Botões, inputs e formulários ficam excluídos.
-    | Assim, tocar em "Hey" não inicia um arrasto.
-    |--------------------------------------------------------------------------
-    */
-
     $menu.on(
         'pointerdown',
         function (event) {
@@ -160,7 +189,8 @@ $(function () {
                 return;
             }
 
-            const $alvo = $(event.target);
+            const $alvo =
+                $(event.target);
 
             if (
                 $alvo.closest(
@@ -266,12 +296,6 @@ $(function () {
         }
     );
 
-    /*
-    |--------------------------------------------------------------------------
-    | Não deixar os controlos do menu iniciarem gestos
-    |--------------------------------------------------------------------------
-    */
-
     $menu.on(
         'pointerdown pointerup',
         'button, input, textarea, select, form, a',
@@ -279,12 +303,6 @@ $(function () {
             event.stopPropagation();
         }
     );
-
-    /*
-    |--------------------------------------------------------------------------
-    | Fechar ao tocar fora
-    |--------------------------------------------------------------------------
-    */
 
     $(document).on(
         'pointerup',
