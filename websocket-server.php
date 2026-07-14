@@ -18,7 +18,7 @@ $pdoFactory = function () use ($cms): \PDO {
 
     if (!$pdo instanceof \PDO) {
         throw new \RuntimeException(
-            'getDatabase() não devolveu um objeto PDO.'
+            'getDatabase() não devolveu um PDO.'
         );
     }
 
@@ -35,21 +35,13 @@ $pdoFactory = function () use ($cms): \PDO {
     return $pdo;
 };
 
-$webSocket = new WebSocket(
-    $pdoFactory
-);
-
-$wsServer = new WsServer(
-    $webSocket
-);
+$webSocket = new WebSocket($pdoFactory);
+$wsServer = new WsServer($webSocket);
 
 /*
- * Keep-alive do protocolo WebSocket.
+ * Mantém as ligações ativas e deteta clientes mortos.
  */
-$wsServer->enableKeepAlive(
-    $loop,
-    30
-);
+$wsServer->enableKeepAlive($loop, 30);
 
 $socket = new SocketServer(
     '0.0.0.0:8080',
@@ -57,10 +49,8 @@ $socket = new SocketServer(
     $loop
 );
 
-$server = new IoServer(
-    new HttpServer(
-        $wsServer
-    ),
+new IoServer(
+    new HttpServer($wsServer),
     $socket,
     $loop
 );
