@@ -1,8 +1,7 @@
 (() => {
-    const canvas =
-        document.getElementById(
-            'gridCanvas'
-        );
+    'use strict';
+
+    const canvas = document.getElementById('gridCanvas');
 
     if (!canvas) {
         return;
@@ -20,6 +19,7 @@
     let points = [];
     let time = 0;
     let lastFrame = 0;
+    let resizeFrame = null;
 
     const FPS = 45;
     const FRAME_TIME = 1000 / FPS;
@@ -29,28 +29,47 @@
     const colorBlue = [0, 100, 255];
     const colorPurple = [138, 43, 226];
 
+    function obterLarguraEcra() {
+        return Math.max(
+            window.innerWidth || 0,
+            document.documentElement.clientWidth || 0
+        );
+    }
+
+    function obterAlturaEcra() {
+        const alturaJanela = window.innerHeight || 0;
+        const alturaDocumento =
+            document.documentElement.clientHeight || 0;
+
+        let alturaVisual = 0;
+
+        if (window.visualViewport) {
+            alturaVisual =
+                window.visualViewport.height +
+                window.visualViewport.offsetTop;
+        }
+
+        return Math.max(
+            alturaJanela,
+            alturaDocumento,
+            alturaVisual
+        );
+    }
+
     function resize() {
+        width = obterLarguraEcra();
+        height = obterAlturaEcra();
+
         dpr = Math.min(
             window.devicePixelRatio || 1,
             1.5
         );
 
-        width = window.innerWidth;
-
-        height = window.visualViewport
-            ? window.visualViewport.height
-            : window.innerHeight;
-
         canvas.style.width = width + 'px';
         canvas.style.height = height + 'px';
 
-        canvas.width = Math.floor(
-            width * dpr
-        );
-
-        canvas.height = Math.floor(
-            height * dpr
-        );
+        canvas.width = Math.round(width * dpr);
+        canvas.height = Math.round(height * dpr);
 
         ctx.setTransform(
             dpr,
@@ -64,6 +83,19 @@
         createGrid();
     }
 
+    function agendarResize() {
+        if (resizeFrame !== null) {
+            cancelAnimationFrame(resizeFrame);
+        }
+
+        resizeFrame = requestAnimationFrame(
+            function () {
+                resizeFrame = null;
+                resize();
+            }
+        );
+    }
+
     function createGrid() {
         points = [];
 
@@ -71,21 +103,18 @@
             Math.ceil(width / spacing) + 6;
 
         const rows =
-            Math.ceil(height / spacing) + 6;
+            Math.ceil(height / spacing) + 10;
 
         const startX = -spacing * 3;
         const startY = -spacing * 3;
 
         for (let row = 0; row < rows; row++) {
-            for (
-                let col = 0;
-                col < cols;
-                col++
-            ) {
+            for (let col = 0; col < cols; col++) {
                 points.push({
                     baseX:
                         startX +
                         col * spacing,
+
                     baseY:
                         startY +
                         row * spacing
@@ -99,11 +128,10 @@
     }
 
     function clamp(value, min, max) {
-        return value < min
-            ? min
-            : value > max
-                ? max
-                : value;
+        return Math.max(
+            min,
+            Math.min(value, max)
+        );
     }
 
     function getGradientColorRGB(value) {
@@ -120,8 +148,7 @@
         } else {
             color1 = colorBlue;
             color2 = colorPurple;
-            factor =
-                (value - 0.5) * 2;
+            factor = (value - 0.5) * 2;
         }
 
         const red = Math.floor(
@@ -152,8 +179,9 @@
     }
 
     function draw(now) {
+        requestAnimationFrame(draw);
+
         if (now - lastFrame < FRAME_TIME) {
-            requestAnimationFrame(draw);
             return;
         }
 
@@ -317,19 +345,37 @@
                 2.4
             );
         }
-
-        requestAnimationFrame(draw);
     }
 
     window.addEventListener(
         'resize',
-        resize
+        agendarResize
+    );
+
+    window.addEventListener(
+        'orientationchange',
+        function () {
+            window.setTimeout(
+                agendarResize,
+                150
+            );
+        }
+    );
+
+    window.addEventListener(
+        'pageshow',
+        agendarResize
     );
 
     if (window.visualViewport) {
         window.visualViewport.addEventListener(
             'resize',
-            resize
+            agendarResize
+        );
+
+        window.visualViewport.addEventListener(
+            'scroll',
+            agendarResize
         );
     }
 
