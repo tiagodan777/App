@@ -10,19 +10,18 @@ use Ratchet\MessageComponentInterface;
 
 class WebSocket implements MessageComponentInterface
 {
+    private const RAIO_MAXIMO_METROS = 100;
+    private const LOCALIZACAO_MAXIMA_IDADE_SEGUNDOS = 90;
+
     private \SplObjectStorage $clients;
     private $pdoFactory;
 
     /**
-     * Liga cada resourceId ao membro autenticado.
-     *
      * resourceId => membroId
      */
     private array $membroPorLigacao = [];
 
     /**
-     * Guarda todas as ligações de cada membro.
-     *
      * membroId => [
      *     resourceId => ConnectionInterface
      * ]
@@ -30,11 +29,30 @@ class WebSocket implements MessageComponentInterface
     private array $ligacoesPorMembro = [];
 
     /**
-     * Guarda uma única presença por membro.
+     * Uma única presença por membro.
      *
-     * membroId => dados da pessoa
+     * membroId => [
+     *     id,
+     *     membro_id,
+     *     nome,
+     *     src,
+     *     top,
+     *     left
+     * ]
      */
     private array $pessoas = [];
+
+    /**
+     * Última localização recebida de cada membro.
+     *
+     * membroId => [
+     *     latitude,
+     *     longitude,
+     *     accuracy,
+     *     updated_at
+     * ]
+     */
+    private array $localizacoes = [];
 
     public function __construct(callable $pdoFactory)
     {
@@ -116,6 +134,10 @@ class WebSocket implements MessageComponentInterface
                     $this->autenticarPessoa($from, $data);
                     break;
 
+                case 'location':
+                    $this->atualizarLocalizacao($from, $data);
+                    break;
+
                 case 'move':
                     $this->moverPessoa($from, $data);
                     break;
@@ -156,7 +178,9 @@ class WebSocket implements MessageComponentInterface
         ConnectionInterface $conn,
         array $data
     ): void {
-        $membroId = trim((string) ($data['membro_id'] ?? ''));
+        $membroId = trim(
+            (string) ($data['membro_id'] ?? '')
+        );
 
         if ($membroId === '') {
             $this->enviarErro(
@@ -167,9 +191,8 @@ class WebSocket implements MessageComponentInterface
             return;
         }
 
-        $membroAnterior = $this->membroPorLigacao[
-            $conn->resourceId
-        ] ?? null;
+        $membroAnterior =
+            $this->membroPorLigacao[$conn->resourceId] ?? null;
 
         if (
             $membroAnterior !== null &&
@@ -243,7 +266,7 @@ class WebSocket implements MessageComponentInterface
         }
 
         echo sprintf(
-            "[AUTH] Ligação %d autenticada como %s. Pessoas únicas: %d. Ligações deste membro: %d\n",
+            "[AUTH] Ligação %d autenticada como %s. Pessoas: %d. Ligações deste membro: %d\n",
             $conn->resourceId,
             $membroId,
             count($this->pessoas),
@@ -255,7 +278,7 @@ class WebSocket implements MessageComponentInterface
             'membro_id' => $membroId
         ]);
 
-        $this->broadcastEstado();
+        $this->enviarEstadosIndividuais();
     }
 
     private function obterMembro(string $membroId): array|false
@@ -316,7 +339,7 @@ class WebSocket implements MessageComponentInterface
         }
     }
 
-    private function moverPessoa(
+    private function atualizarLocalizacao(
         ConnectionInterface $conn,
         array $data
     ): void {
@@ -331,7 +354,85 @@ class WebSocket implements MessageComponentInterface
             return;
         }
 
-        if (!isset($this->pessoas[$membroId])) {
+        if (
+            !isset($data['latitude']) ||
+            !isset($data['longitude'])
+        ) {
+            $this->enviarErro(
+                $conn,
+                'A localização recebida está incompleta.'
+            );
+
+            return;
+        }
+
+        $latitude = filter_var(
+            $data['latitude'],
+            FILTER_VALIDATE_FLOAT
+        );
+
+        $longitude = filter_var(
+            $data['longitude'],
+            FILTER_VALIDATE_FLOAT
+        );
+
+        $accuracy = filter_var(
+            $data['accuracy'] ?? 0,
+            FILTER_VALIDATE_FLOAT
+        );
+
+        if (
+            $latitude === false ||
+            $longitude === false ||
+            $latitude < -90 ||
+            $latitude > 90 ||
+            $longitude < -180 ||
+            $longitude > 180
+        ) {
+            $this->enviarErro(
+                $conn,
+                'As coordenadas recebidas não são válidas.'
+            );
+
+            return;
+        }
+
+        if ($accuracy === false || $accuracy < 0) {
+            $accuracy = 0;
+        }
+
+        $this->localizacoes[$membroId] = [
+            'latitude' => (float) $latitude,
+            'longitude' => (float) $longitude,
+            'accuracy' => min((float) $accuracy, 10000),
+            'updated_at' => time()
+        ];
+
+        echo sprintf(
+            "[LOCATION] %s atualizou localização. Precisão: %.1f m\n",
+            $membroId,
+            $this->localizacoes[$membroId]['accuracy']
+        );
+
+        $this->enviar($conn, [
+            'type' => 'location_received',
+            'updated_at' =>
+                $this->localizacoes[$membroId]['updated_at']
+        ]);
+
+        $this->enviarEstadosIndividuais();
+    }
+
+    private function moverPessoa(
+        ConnectionInterface $conn,
+        array $data
+    ): void {
+        $membroId = $this->obterMembroDaLigacao($conn);
+
+        if (
+            $membroId === null ||
+            !isset($this->pessoas[$membroId])
+        ) {
             return;
         }
 
@@ -354,7 +455,7 @@ class WebSocket implements MessageComponentInterface
         $this->pessoas[$membroId]['top'] += $top;
         $this->pessoas[$membroId]['left'] += $left;
 
-        $this->broadcastEstado();
+        $this->enviarEstadosIndividuais();
     }
 
     private function notificarPessoa(
@@ -375,11 +476,6 @@ class WebSocket implements MessageComponentInterface
         $remetente = $this->pessoas[$remetenteId] ?? null;
 
         if (!$remetente) {
-            $this->enviarErro(
-                $from,
-                'O remetente não está disponível.'
-            );
-
             return;
         }
 
@@ -401,6 +497,26 @@ class WebSocket implements MessageComponentInterface
                 $from,
                 'Não podes enviar um Hey para ti próprio.'
             );
+
+            return;
+        }
+
+        /*
+         * Impede enviar Hey a alguém que já não está
+         * efetivamente dentro dos 100 metros.
+         */
+        if (
+            !$this->estaoDentroDoRaio(
+                $remetenteId,
+                $destinatarioId
+            )
+        ) {
+            $this->enviarErro(
+                $from,
+                'Esta pessoa já não está num raio de 100 metros.'
+            );
+
+            $this->enviarEstadosIndividuais();
 
             return;
         }
@@ -454,6 +570,155 @@ class WebSocket implements MessageComponentInterface
         );
     }
 
+    private function enviarEstadosIndividuais(): void
+    {
+        $agora = time();
+
+        foreach ($this->clients as $client) {
+            $membroId =
+                $this->membroPorLigacao[$client->resourceId] ?? null;
+
+            if ($membroId === null) {
+                continue;
+            }
+
+            $pessoasVisiveis = [];
+
+            foreach ($this->pessoas as $outroMembroId => $pessoa) {
+                /*
+                 * A própria pessoa aparece sempre.
+                 */
+                if ($outroMembroId === $membroId) {
+                    $pessoa['distance_m'] = 0;
+                    $pessoasVisiveis[] = $pessoa;
+                    continue;
+                }
+
+                $localizacaoAtual =
+                    $this->localizacoes[$membroId] ?? null;
+
+                $localizacaoOutra =
+                    $this->localizacoes[$outroMembroId] ?? null;
+
+                if (
+                    !$this->localizacaoEstaValida(
+                        $localizacaoAtual,
+                        $agora
+                    ) ||
+                    !$this->localizacaoEstaValida(
+                        $localizacaoOutra,
+                        $agora
+                    )
+                ) {
+                    continue;
+                }
+
+                $distancia = $this->calcularDistanciaMetros(
+                    $localizacaoAtual['latitude'],
+                    $localizacaoAtual['longitude'],
+                    $localizacaoOutra['latitude'],
+                    $localizacaoOutra['longitude']
+                );
+
+                if ($distancia > self::RAIO_MAXIMO_METROS) {
+                    continue;
+                }
+
+                /*
+                 * Não enviamos latitude nem longitude das outras pessoas.
+                 */
+                $pessoa['distance_m'] = (int) round($distancia);
+                $pessoasVisiveis[] = $pessoa;
+            }
+
+            $this->enviar($client, [
+                'type' => 'state',
+                'radius_m' => self::RAIO_MAXIMO_METROS,
+                'people' => $pessoasVisiveis
+            ]);
+        }
+
+        echo sprintf(
+            "[STATE] Estados individuais enviados para %d ligação(ões)\n",
+            count($this->clients)
+        );
+    }
+
+    private function estaoDentroDoRaio(
+        string $primeiroMembroId,
+        string $segundoMembroId
+    ): bool {
+        $agora = time();
+
+        $primeira =
+            $this->localizacoes[$primeiroMembroId] ?? null;
+
+        $segunda =
+            $this->localizacoes[$segundoMembroId] ?? null;
+
+        if (
+            !$this->localizacaoEstaValida($primeira, $agora) ||
+            !$this->localizacaoEstaValida($segunda, $agora)
+        ) {
+            return false;
+        }
+
+        $distancia = $this->calcularDistanciaMetros(
+            $primeira['latitude'],
+            $primeira['longitude'],
+            $segunda['latitude'],
+            $segunda['longitude']
+        );
+
+        return $distancia <= self::RAIO_MAXIMO_METROS;
+    }
+
+    private function localizacaoEstaValida(
+        ?array $localizacao,
+        int $agora
+    ): bool {
+        if ($localizacao === null) {
+            return false;
+        }
+
+        return (
+            $agora - (int) $localizacao['updated_at']
+        ) <= self::LOCALIZACAO_MAXIMA_IDADE_SEGUNDOS;
+    }
+
+    private function calcularDistanciaMetros(
+        float $latitude1,
+        float $longitude1,
+        float $latitude2,
+        float $longitude2
+    ): float {
+        $raioTerraMetros = 6371000;
+
+        $latitude1Rad = deg2rad($latitude1);
+        $latitude2Rad = deg2rad($latitude2);
+
+        $diferencaLatitude = deg2rad(
+            $latitude2 - $latitude1
+        );
+
+        $diferencaLongitude = deg2rad(
+            $longitude2 - $longitude1
+        );
+
+        $a =
+            sin($diferencaLatitude / 2) ** 2 +
+            cos($latitude1Rad) *
+            cos($latitude2Rad) *
+            sin($diferencaLongitude / 2) ** 2;
+
+        $c = 2 * atan2(
+            sqrt($a),
+            sqrt(1 - $a)
+        );
+
+        return $raioTerraMetros * $c;
+    }
+
     public function onClose(ConnectionInterface $conn): void
     {
         if ($this->clients->contains($conn)) {
@@ -470,13 +735,13 @@ class WebSocket implements MessageComponentInterface
         }
 
         echo sprintf(
-            "[CLOSE] Ligação %d fechada. Pessoas únicas: %d. Ligações: %d\n",
+            "[CLOSE] Ligação %d fechada. Pessoas: %d. Ligações: %d\n",
             $conn->resourceId,
             count($this->pessoas),
             count($this->clients)
         );
 
-        $this->broadcastEstado();
+        $this->enviarEstadosIndividuais();
     }
 
     private function removerLigacaoDoMembro(
@@ -484,9 +749,7 @@ class WebSocket implements MessageComponentInterface
         string $membroId
     ): void {
         unset(
-            $this->membroPorLigacao[
-                $conn->resourceId
-            ]
+            $this->membroPorLigacao[$conn->resourceId]
         );
 
         unset(
@@ -498,6 +761,7 @@ class WebSocket implements MessageComponentInterface
         if (empty($this->ligacoesPorMembro[$membroId])) {
             unset($this->ligacoesPorMembro[$membroId]);
             unset($this->pessoas[$membroId]);
+            unset($this->localizacoes[$membroId]);
         }
     }
 
@@ -512,24 +776,6 @@ class WebSocket implements MessageComponentInterface
         );
 
         $conn->close();
-    }
-
-    private function broadcastEstado(): void
-    {
-        $mensagem = [
-            'type' => 'state',
-            'people' => array_values($this->pessoas)
-        ];
-
-        echo sprintf(
-            "[STATE] %d pessoa(s) única(s) para %d ligação(ões)\n",
-            count($this->pessoas),
-            count($this->clients)
-        );
-
-        foreach ($this->clients as $client) {
-            $this->enviar($client, $mensagem);
-        }
     }
 
     private function obterMembroDaLigacao(

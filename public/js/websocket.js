@@ -7,10 +7,19 @@
     var pingTimer = null;
     var reconnectAttempts = 0;
 
+    var locationWatchId = null;
+    var lastLocationSentAt = 0;
+    var lastSentLatitude = null;
+    var lastSentLongitude = null;
+
     var RECONNECT_MIN_DELAY = 1000;
     var RECONNECT_MAX_DELAY = 30000;
     var CONNECTION_TIMEOUT = 12000;
     var PING_INTERVAL = 20000;
+
+    var LOCATION_MIN_INTERVAL = 15000;
+    var LOCATION_MIN_DISTANCE = 5;
+    var LOCATION_MAX_AGE = 10000;
 
     function getWebSocketUrl() {
         if (window.webSocketUrl) {
@@ -102,6 +111,7 @@
             setStatus('connected');
             authenticate();
             startPing();
+            startLocationTracking();
         };
 
         currentSocket.onmessage = function (event) {
@@ -207,6 +217,190 @@
         );
     }
 
+    function startLocationTracking() {
+        if (locationWatchId !== null) {
+            return;
+        }
+
+        if (!window.isSecureContext) {
+            mostrarMensagemTemporaria(
+                'A localização exige HTTPS.',
+                'erro'
+            );
+
+            console.warn(
+                'Geolocation indisponível: a página não está em HTTPS.'
+            );
+
+            return;
+        }
+
+        if (!('geolocation' in navigator)) {
+            mostrarMensagemTemporaria(
+                'Este dispositivo não suporta localização.',
+                'erro'
+            );
+
+            return;
+        }
+
+        locationWatchId =
+            navigator.geolocation.watchPosition(
+                handleLocationSuccess,
+                handleLocationError,
+                {
+                    enableHighAccuracy: true,
+                    maximumAge: LOCATION_MAX_AGE,
+                    timeout: 15000
+                }
+            );
+    }
+
+    function handleLocationSuccess(position) {
+        var latitude =
+            Number(position.coords.latitude);
+
+        var longitude =
+            Number(position.coords.longitude);
+
+        var accuracy =
+            Number(position.coords.accuracy) || 0;
+
+        if (
+            !Number.isFinite(latitude) ||
+            !Number.isFinite(longitude)
+        ) {
+            return;
+        }
+
+        var now = Date.now();
+
+        var movedDistance =
+            lastSentLatitude === null
+                ? Infinity
+                : calculateDistanceMeters(
+                    lastSentLatitude,
+                    lastSentLongitude,
+                    latitude,
+                    longitude
+                );
+
+        var enoughTimePassed =
+            now - lastLocationSentAt >=
+            LOCATION_MIN_INTERVAL;
+
+        var movedEnough =
+            movedDistance >=
+            LOCATION_MIN_DISTANCE;
+
+        if (
+            lastSentLatitude !== null &&
+            !enoughTimePassed &&
+            !movedEnough
+        ) {
+            return;
+        }
+
+        var sent = send({
+            type: 'location',
+            latitude: latitude,
+            longitude: longitude,
+            accuracy: accuracy,
+            timestamp: position.timestamp
+        });
+
+        if (!sent) {
+            return;
+        }
+
+        lastLocationSentAt = now;
+        lastSentLatitude = latitude;
+        lastSentLongitude = longitude;
+
+        console.log(
+            'Localização enviada:',
+            {
+                latitude: latitude,
+                longitude: longitude,
+                accuracy: accuracy,
+                movedDistance: movedDistance
+            }
+        );
+    }
+
+    function handleLocationError(error) {
+        var message;
+
+        switch (error.code) {
+            case error.PERMISSION_DENIED:
+                message =
+                    'A localização não foi autorizada.';
+                break;
+
+            case error.POSITION_UNAVAILABLE:
+                message =
+                    'A localização não está disponível.';
+                break;
+
+            case error.TIMEOUT:
+                message =
+                    'A localização demorou demasiado tempo.';
+                break;
+
+            default:
+                message =
+                    'Não foi possível obter a localização.';
+                break;
+        }
+
+        console.warn(
+            message,
+            error
+        );
+
+        mostrarMensagemTemporaria(
+            message,
+            'erro'
+        );
+    }
+
+    function calculateDistanceMeters(
+        latitude1,
+        longitude1,
+        latitude2,
+        longitude2
+    ) {
+        var earthRadius = 6371000;
+
+        var lat1 = toRadians(latitude1);
+        var lat2 = toRadians(latitude2);
+
+        var deltaLat = toRadians(
+            latitude2 - latitude1
+        );
+
+        var deltaLng = toRadians(
+            longitude2 - longitude1
+        );
+
+        var a =
+            Math.sin(deltaLat / 2) ** 2 +
+            Math.cos(lat1) *
+            Math.cos(lat2) *
+            Math.sin(deltaLng / 2) ** 2;
+
+        var c = 2 * Math.atan2(
+            Math.sqrt(a),
+            Math.sqrt(1 - a)
+        );
+
+        return earthRadius * c;
+    }
+
+    function toRadians(degrees) {
+        return degrees * Math.PI / 180;
+    }
+
     function scheduleReconnect() {
         if (
             reconnectTimer ||
@@ -269,6 +463,9 @@
                     'WebSocket autenticado:',
                     data.membro_id
                 );
+                break;
+
+            case 'location_received':
                 break;
 
             case 'state':
@@ -398,6 +595,10 @@
                             pessoa.membro_id || '',
                         'data-nome':
                             pessoa.nome || '',
+                        'data-distancia':
+                            Number(
+                                pessoa.distance_m
+                            ) || 0,
                         src: src,
                         alt:
                             pessoa.nome ||
@@ -427,7 +628,11 @@
                 'data-membro-id':
                     pessoa.membro_id || '',
                 'data-nome':
-                    pessoa.nome || ''
+                    pessoa.nome || '',
+                'data-distancia':
+                    Number(
+                        pessoa.distance_m
+                    ) || 0
             });
 
             $imagem.css({
@@ -452,6 +657,7 @@
                 }
 
                 this.dataset.fallbackAplicado = '1';
+
                 this.src =
                     '/imagens/fotos-perfil/default.webp';
             });
@@ -518,10 +724,6 @@
             notificacao.onclick = function () {
                 window.focus();
                 notificacao.close();
-
-                abrirPessoa(
-                    data.from_member_id
-                );
             };
         } catch (error) {
             console.error(
@@ -575,51 +777,18 @@
             }
         );
 
-        var timeout = window.setTimeout(
-            function () {
-                removerNotificacao($notificacao);
-            },
-            5000
-        );
-
-        $notificacao.on('click', function () {
-            window.clearTimeout(timeout);
-
-            var membroId = String(
-                $(this).attr(
-                    'data-membro-id'
-                ) || ''
-            );
-
-            removerNotificacao($(this));
-            abrirPessoa(membroId);
-        });
-    }
-
-    function abrirPessoa(membroId) {
-        if (!membroId) {
-            return;
-        }
-
-        var $foto = $(
-            '.foto[data-membro-id="' +
-            String(membroId) +
-            '"]'
-        );
-
-        if ($foto.length) {
-            $foto.first().trigger('pointerup');
-        }
-    }
-
-    function removerNotificacao($notificacao) {
-        $notificacao.removeClass('visivel');
-
         window.setTimeout(
             function () {
-                $notificacao.remove();
+                $notificacao.removeClass('visivel');
+
+                window.setTimeout(
+                    function () {
+                        $notificacao.remove();
+                    },
+                    300
+                );
             },
-            300
+            5000
         );
     }
 
@@ -704,12 +873,13 @@
     window.AppWebSocket = {
         connect: connect,
         send: send,
+        startLocationTracking:
+            startLocationTracking,
 
         isConnected: function () {
             return Boolean(
                 socket &&
-                socket.readyState ===
-                    WebSocket.OPEN
+                socket.readyState === WebSocket.OPEN
             );
         }
     };
