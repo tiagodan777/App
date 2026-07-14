@@ -1,29 +1,45 @@
 @charset "UTF-8";
 
 :root {
+    --app-width: 100vw;
+    --app-height: 100dvh;
+    --canvas-overscan: 160px;
+
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-right: env(safe-area-inset-right, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
     --safe-left: env(safe-area-inset-left, 0px);
 }
 
-* {
+*,
+*::before,
+*::after {
     box-sizing: border-box;
-    font-family: Helvetica, Arial, sans-serif;
 }
 
-html,
-body {
-    position: fixed;
-
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-
+html {
     width: 100%;
     height: 100%;
-    min-width: 100%;
+    min-height: 100%;
+
+    margin: 0;
+    padding: 0;
+
+    overflow: hidden;
+
+    background-color: #ffffff;
+
+    font-family:
+        Helvetica,
+        Arial,
+        sans-serif;
+
+    overscroll-behavior: none;
+}
+
+body {
+    width: 100%;
+    height: 100%;
     min-height: 100%;
 
     margin: 0;
@@ -35,47 +51,108 @@ body {
 
     overscroll-behavior: none;
 
-    -webkit-user-select: none;
-    user-select: none;
-}
-
-html {
-    height: 100vh;
-    height: 100dvh;
-    min-height: -webkit-fill-available;
-}
-
-body {
-    min-height: 100vh;
-    min-height: 100dvh;
-    min-height: -webkit-fill-available;
-
     touch-action: none;
 }
 
-/*
-|--------------------------------------------------------------------------
-| Canvas
-|--------------------------------------------------------------------------
-*/
-
-#gridCanvas {
+#app-root {
     position: fixed;
 
-    /*
-     * Prolongamos deliberadamente o canvas para além do limite inferior.
-     * Isto impede o WebKit de deixar visível uma faixa sem canvas.
-     */
     top: 0;
+    left: 0;
+
+    width: var(--app-width);
+    height: var(--app-height);
+
+    min-width: 100%;
+    min-height: 100%;
+
+    margin: 0;
+    padding: 0;
+
+    overflow: hidden;
+
+    background-color: #ffffff;
+
+    isolation: isolate;
+
+    transform: translateZ(0);
+}
+
+#app-root::after {
+    content: "";
+
+    position: absolute;
+
     right: 0;
-    bottom: -120px;
+    bottom: calc(
+        var(--canvas-overscan) * -1
+    );
+    left: 0;
+
+    height: var(--canvas-overscan);
+
+    background-color: #ffffff;
+
+    pointer-events: none;
+
+    z-index: -2;
+}
+
+#app-content {
+    position: absolute;
+
+    inset: 0;
+
+    width: 100%;
+    height: 100%;
+
+    margin: 0;
+    padding: 0;
+
+    overflow: hidden;
+
+    background-color: transparent;
+
+    z-index: 1;
+}
+
+#mapa-container {
+    position: absolute;
+
+    top: 0;
+    left: 0;
+
+    width: 100%;
+    height: calc(
+        100% +
+        var(--canvas-overscan)
+    );
+
+    margin: 0;
+    padding: 0;
+
+    overflow: visible;
+
+    background-color: #ffffff;
+
+    touch-action: none;
+
+    z-index: 0;
+}
+
+#gridCanvas {
+    position: absolute;
+
+    top: 0;
     left: 0;
 
     display: block;
 
-    width: 100vw;
-    height: calc(100dvh + 120px);
-    min-height: calc(100vh + 120px);
+    width: 100%;
+    height: calc(
+        100% +
+        var(--canvas-overscan)
+    );
 
     margin: 0;
     padding: 0;
@@ -87,14 +164,11 @@ body {
     pointer-events: none;
     touch-action: none;
 
+    transform: translateZ(0);
+    will-change: transform;
+
     z-index: 0;
 }
-
-/*
-|--------------------------------------------------------------------------
-| Imagens
-|--------------------------------------------------------------------------
-*/
 
 img {
     display: block;
@@ -103,6 +177,7 @@ img {
     height: 60px;
 
     object-fit: cover;
+
     border-radius: 50%;
 }
 
@@ -118,93 +193,90 @@ img {
     margin: 0;
 
     object-fit: cover;
+
     border-radius: 50%;
 
     transform-origin: center center;
     will-change: transform, opacity;
 
-    z-index: 10;
-
     cursor: pointer;
 
     touch-action: none;
 
-    -webkit-user-select: none;
     user-select: none;
-
+    -webkit-user-select: none;
     -webkit-user-drag: none;
-}
 
-/*
-|--------------------------------------------------------------------------
-| Backdrop
-|--------------------------------------------------------------------------
-*/
+    z-index: 10;
+}
 
 .back-drop {
     position: fixed;
+
     inset: 0;
 
     width: 100%;
     height: 100%;
 
-    background-color: rgba(0, 0, 0, 0.4);
+    background-color:
+        rgba(0, 0, 0, 0.4);
 
-    z-index: 25;
-
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    align-items: center;
+    opacity: 0;
 
     pointer-events: none;
-    opacity: 0;
-}
 
-/*
-|--------------------------------------------------------------------------
-| Mini-menu
-|--------------------------------------------------------------------------
-*/
+    z-index: 25;
+}
 
 .mini-menu {
     position: fixed;
 
-    left: 0;
+    right: 0;
     bottom: 0;
+    left: 0;
 
     width: 100%;
     height: 75%;
 
+    padding-right: var(--safe-right);
     padding-bottom: var(--safe-bottom);
+    padding-left: var(--safe-left);
 
     border-radius: 50px 50px 0 0;
+
+    background-color: #ffffff;
 
     box-shadow:
         0 1px 2px rgba(0, 0, 0, 0.1),
         0 6px 18px rgba(0, 0, 0, 0.2),
         0 14px 32px rgba(0, 0, 0, 0.3);
 
-    background-color: #ffffff;
-
-    z-index: 40;
-
-    touch-action: none;
-    will-change: transform;
-
-    transform: translate3d(0, 100%, 0);
-
     display: flex;
     flex-direction: column;
-    justify-content: space-around;
     align-items: center;
+    justify-content: space-around;
+
+    transform:
+        translate3d(
+            0,
+            100%,
+            0
+        );
+
+    transform-origin: bottom center;
+
+    will-change: transform;
+
+    touch-action: none;
+
+    z-index: 40;
 }
 
 .mini-menu > header {
     display: flex;
     flex-direction: column;
-    justify-content: space-evenly;
     align-items: center;
+    justify-content: center;
 }
 
 .mini-menu > header > img {
@@ -215,6 +287,7 @@ img {
     max-height: 180px;
 
     object-fit: cover;
+
     border-radius: 50%;
 }
 
@@ -226,10 +299,6 @@ img {
 }
 
 .mini-menu .ola {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
     min-width: 110px;
     min-height: 50px;
 
@@ -240,6 +309,10 @@ img {
 
     background-color: #111111;
     color: #ffffff;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
     font-size: 1rem;
     font-weight: bold;
@@ -269,7 +342,9 @@ img {
 
     padding: 12px 14px;
 
-    border: 1px solid rgba(0, 0, 0, 0.2);
+    border: 1px solid
+        rgba(0, 0, 0, 0.2);
+
     border-radius: 20px;
 }
 
@@ -285,34 +360,29 @@ img {
     cursor: pointer;
 }
 
-/*
-|--------------------------------------------------------------------------
-| Menu principal
-|--------------------------------------------------------------------------
-*/
-
 #menuPrincipal {
     position: fixed;
 
     left: 50%;
 
-    /*
-     * Não somamos safe-area-inset-bottom.
-     * Isso estava a empurrar o menu demasiado para cima.
-     */
-    bottom: 5px;
-
-    transform: translate3d(-50%, 0, 0);
+    bottom: calc(
+        12px +
+        var(--safe-bottom)
+    );
 
     width: 90%;
     height: 56px;
 
-    margin: 0;
-    padding: 0;
-
-    z-index: 30;
+    transform:
+        translate3d(
+            -50%,
+            0,
+            0
+        );
 
     touch-action: manipulation;
+
+    z-index: 30;
 }
 
 #menuPrincipal > nav {
@@ -320,8 +390,8 @@ img {
     height: 100%;
 
     display: flex;
-    justify-content: center;
     align-items: center;
+    justify-content: center;
 }
 
 #menuPrincipal > nav > ul {
@@ -331,26 +401,34 @@ img {
     margin: 0;
     padding: 10px 20px;
 
-    list-style: none;
+    border: 1px solid
+        rgba(0, 0, 0, 0.1);
 
-    border: 1px solid rgba(0, 0, 0, 0.1);
     border-radius: 35px;
 
-    background-color: rgba(255, 255, 255, 0.55);
+    background-color:
+        rgba(255, 255, 255, 0.55);
 
     box-shadow:
-        inset 0 1px 2px rgba(0, 0, 0, 0.06),
-        inset 0 8px 20px rgba(0, 0, 0, 0.1),
-        inset 0 20px 40px rgba(0, 0, 0, 0.12),
-        inset 0 40px 64px rgba(0, 0, 0, 0.14),
-        0 5px 20px rgba(0, 0, 0, 0.12);
+        inset 0 1px 2px
+            rgba(0, 0, 0, 0.06),
+        inset 0 8px 20px
+            rgba(0, 0, 0, 0.1),
+        inset 0 20px 40px
+            rgba(0, 0, 0, 0.12),
+        inset 0 40px 64px
+            rgba(0, 0, 0, 0.14),
+        0 5px 20px
+            rgba(0, 0, 0, 0.12);
 
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
 
+    list-style: none;
+
     display: flex;
-    justify-content: space-around;
     align-items: center;
+    justify-content: space-around;
 }
 
 #menuPrincipal > nav > ul > li {
@@ -365,14 +443,19 @@ img {
     justify-content: center;
 
     color: #000000;
+
+    z-index: 10;
 }
 
 #menuPrincipal > nav > ul > li.active {
-    background-color: rgba(0, 0, 0, 0.15);
+    background-color:
+        rgba(0, 0, 0, 0.15);
 
     box-shadow:
-        inset 0 1px 2px rgba(255, 255, 255, 0.08),
-        inset 0 6px 18px rgba(0, 0, 0, 0.12);
+        inset 0 1px 2px
+            rgba(255, 255, 255, 0.08),
+        inset 0 6px 18px
+            rgba(0, 0, 0, 0.12);
 }
 
 #menuPrincipal > nav > ul > li > a {
@@ -381,6 +464,7 @@ img {
     justify-content: center;
 
     text-decoration: none;
+
     color: #000000;
 }
 
@@ -389,83 +473,72 @@ img {
     height: 26px;
 
     object-fit: contain;
+
     border-radius: 0;
 }
-
-@media (max-width: 600px) {
-    #menuPrincipal {
-        width: calc(100% - 28px);
-    }
-
-    #menuPrincipal > nav > ul {
-        width: 100%;
-
-        padding-right: 8px;
-        padding-left: 8px;
-    }
-
-    #menuPrincipal > nav > ul > li {
-        flex: 1;
-
-        padding-right: 0;
-        padding-left: 0;
-    }
-}
-
-/*
-|--------------------------------------------------------------------------
-| Ativar notificações
-|--------------------------------------------------------------------------
-*/
 
 #ativar-notificacoes {
     position: fixed;
 
-    top: calc(15px + var(--safe-top));
-    right: calc(15px + var(--safe-right));
+    top: calc(
+        15px +
+        var(--safe-top)
+    );
 
-    z-index: 9000;
+    right: calc(
+        15px +
+        var(--safe-right)
+    );
 
     padding: 10px 14px;
 
     border: 0;
     border-radius: 22px;
 
-    background-color: rgba(30, 30, 30, 0.88);
+    background-color:
+        rgba(30, 30, 30, 0.88);
+
     color: #ffffff;
 
     cursor: pointer;
-}
 
-/*
-|--------------------------------------------------------------------------
-| Estado da ligação
-|--------------------------------------------------------------------------
-*/
+    z-index: 9000;
+}
 
 #estado-ligacao {
     position: fixed;
 
-    top: calc(15px + var(--safe-top));
-    left: calc(15px + var(--safe-left));
+    top: calc(
+        15px +
+        var(--safe-top)
+    );
 
-    z-index: 9000;
+    left: calc(
+        15px +
+        var(--safe-left)
+    );
 
     padding: 7px 11px;
 
     border-radius: 20px;
 
-    background-color: rgba(30, 30, 30, 0.82);
+    background-color:
+        rgba(30, 30, 30, 0.82);
+
     color: #ffffff;
 
     font-size: 0.8rem;
 
     pointer-events: none;
+
+    z-index: 9000;
 }
 
 #estado-ligacao[data-status="connected"] {
     opacity: 0;
-    transition: opacity 0.4s ease;
+
+    transition:
+        opacity 0.4s ease;
 }
 
 #estado-ligacao[data-status="connecting"],
@@ -474,19 +547,15 @@ img {
     opacity: 1;
 }
 
-/*
-|--------------------------------------------------------------------------
-| Notificação interna
-|--------------------------------------------------------------------------
-*/
-
 .notificacao-interna {
     position: fixed;
 
-    top: calc(15px + var(--safe-top));
-    left: 50%;
+    top: calc(
+        15px +
+        var(--safe-top)
+    );
 
-    z-index: 10000;
+    left: 50%;
 
     width: calc(100% - 30px);
     max-width: 420px;
@@ -496,15 +565,27 @@ img {
     border: 0;
     border-radius: 18px;
 
-    background-color: rgba(20, 20, 20, 0.96);
+    background-color:
+        rgba(20, 20, 20, 0.96);
+
     color: #ffffff;
+
+    display: flex;
+    align-items: center;
+    gap: 12px;
 
     text-align: left;
 
     box-shadow:
-        0 8px 30px rgba(0, 0, 0, 0.25);
+        0 8px 30px
+            rgba(0, 0, 0, 0.25);
 
-    transform: translate3d(-50%, -150%, 0);
+    transform:
+        translate3d(
+            -50%,
+            -150%,
+            0
+        );
 
     opacity: 0;
 
@@ -514,13 +595,17 @@ img {
 
     cursor: pointer;
 
-    display: flex;
-    align-items: center;
-    gap: 12px;
+    z-index: 10000;
 }
 
 .notificacao-interna.visivel {
-    transform: translate3d(-50%, 0, 0);
+    transform:
+        translate3d(
+            -50%,
+            0,
+            0
+        );
+
     opacity: 1;
 }
 
@@ -531,6 +616,7 @@ img {
     flex: 0 0 48px;
 
     object-fit: cover;
+
     border-radius: 50%;
 }
 
@@ -547,6 +633,7 @@ img {
     display: block;
 
     overflow: hidden;
+
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -555,19 +642,15 @@ img {
     opacity: 0.82;
 }
 
-/*
-|--------------------------------------------------------------------------
-| Mensagens temporárias
-|--------------------------------------------------------------------------
-*/
-
 .mensagem-websocket {
     position: fixed;
 
     left: 50%;
-    bottom: calc(85px + var(--safe-bottom));
 
-    z-index: 10001;
+    bottom: calc(
+        85px +
+        var(--safe-bottom)
+    );
 
     max-width: calc(100% - 30px);
 
@@ -579,33 +662,42 @@ img {
 
     text-align: center;
 
-    transform: translate3d(-50%, 30px, 0);
+    transform:
+        translate3d(
+            -50%,
+            30px,
+            0
+        );
 
     opacity: 0;
 
     transition:
         transform 0.3s ease,
         opacity 0.3s ease;
+
+    z-index: 10001;
 }
 
 .mensagem-websocket.visivel {
-    transform: translate3d(-50%, 0, 0);
+    transform:
+        translate3d(
+            -50%,
+            0,
+            0
+        );
+
     opacity: 1;
 }
 
 .mensagem-websocket.sucesso {
-    background-color: rgba(30, 130, 70, 0.96);
+    background-color:
+        rgba(30, 130, 70, 0.96);
 }
 
 .mensagem-websocket.erro {
-    background-color: rgba(180, 40, 40, 0.96);
+    background-color:
+        rgba(180, 40, 40, 0.96);
 }
-
-/*
-|--------------------------------------------------------------------------
-| Telemóveis
-|--------------------------------------------------------------------------
-*/
 
 @media (max-width: 600px) {
     #menuPrincipal {
