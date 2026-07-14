@@ -1,13 +1,17 @@
 (() => {
     'use strict';
 
-    const canvas = document.getElementById('gridCanvas');
+    const canvas =
+        document.getElementById(
+            'gridCanvas'
+        );
 
     if (!canvas) {
         return;
     }
 
-    const ctx = canvas.getContext('2d');
+    const ctx =
+        canvas.getContext('2d');
 
     if (!ctx) {
         return;
@@ -23,23 +27,53 @@
 
     const FPS = 45;
     const FRAME_TIME = 1000 / FPS;
-    const spacing = 19.5;
+    const SPACING = 19.5;
 
-    const colorYellow = [255, 215, 0];
-    const colorBlue = [0, 100, 255];
-    const colorPurple = [138, 43, 226];
+    /*
+     * Margem extra para garantir que o desenho continua
+     * por baixo da safe area inferior do iPhone.
+     */
+    const VERTICAL_OVERSCAN = 160;
 
-    function obterLarguraEcra() {
+    const COLOR_YELLOW = [
+        255,
+        215,
+        0
+    ];
+
+    const COLOR_BLUE = [
+        0,
+        100,
+        255
+    ];
+
+    const COLOR_PURPLE = [
+        138,
+        43,
+        226
+    ];
+
+    function obterLargura() {
         return Math.max(
             window.innerWidth || 0,
-            document.documentElement.clientWidth || 0
+            document.documentElement.clientWidth || 0,
+            canvas.getBoundingClientRect().width || 0
         );
     }
 
-    function obterAlturaEcra() {
-        const alturaJanela = window.innerHeight || 0;
+    function obterAltura() {
+        const rect =
+            canvas.getBoundingClientRect();
+
+        const alturaCanvas =
+            rect.height || 0;
+
+        const alturaJanela =
+            window.innerHeight || 0;
+
         const alturaDocumento =
-            document.documentElement.clientHeight || 0;
+            document.documentElement
+                .clientHeight || 0;
 
         let alturaVisual = 0;
 
@@ -50,26 +84,67 @@
         }
 
         return Math.max(
+            alturaCanvas,
             alturaJanela,
             alturaDocumento,
             alturaVisual
-        );
+        ) + VERTICAL_OVERSCAN;
     }
 
     function resize() {
-        width = obterLarguraEcra();
-        height = obterAlturaEcra();
+        width = Math.ceil(
+            obterLargura()
+        );
+
+        height = Math.ceil(
+            obterAltura()
+        );
 
         dpr = Math.min(
             window.devicePixelRatio || 1,
             1.5
         );
 
-        canvas.style.width = width + 'px';
-        canvas.style.height = height + 'px';
+        /*
+         * A altura CSS também recebe uma margem extra.
+         */
+        canvas.style.width =
+            width + 'px';
 
-        canvas.width = Math.round(width * dpr);
-        canvas.height = Math.round(height * dpr);
+        canvas.style.height =
+            height + 'px';
+
+        const pixelWidth =
+            Math.max(
+                1,
+                Math.round(
+                    width * dpr
+                )
+            );
+
+        const pixelHeight =
+            Math.max(
+                1,
+                Math.round(
+                    height * dpr
+                )
+            );
+
+        if (
+            canvas.width !==
+            pixelWidth
+        ) {
+            canvas.width =
+                pixelWidth;
+        }
+
+        if (
+            canvas.height !==
+            pixelHeight
+        ) {
+            canvas.height =
+                pixelHeight;
+        }
 
         ctx.setTransform(
             dpr,
@@ -80,112 +155,174 @@
             0
         );
 
-        createGrid();
+        criarGrelha();
     }
 
     function agendarResize() {
         if (resizeFrame !== null) {
-            cancelAnimationFrame(resizeFrame);
+            cancelAnimationFrame(
+                resizeFrame
+            );
         }
 
-        resizeFrame = requestAnimationFrame(
-            function () {
-                resizeFrame = null;
-                resize();
-            }
-        );
+        resizeFrame =
+            requestAnimationFrame(
+                function () {
+                    resizeFrame = null;
+                    resize();
+                }
+            );
     }
 
-    function createGrid() {
+    function criarGrelha() {
         points = [];
 
-        const cols =
-            Math.ceil(width / spacing) + 6;
+        const colunas =
+            Math.ceil(
+                width / SPACING
+            ) + 8;
 
-        const rows =
-            Math.ceil(height / spacing) + 10;
+        const linhas =
+            Math.ceil(
+                height / SPACING
+            ) + 8;
 
-        const startX = -spacing * 3;
-        const startY = -spacing * 3;
+        const inicioX =
+            -SPACING * 4;
 
-        for (let row = 0; row < rows; row++) {
-            for (let col = 0; col < cols; col++) {
+        const inicioY =
+            -SPACING * 4;
+
+        for (
+            let linha = 0;
+            linha < linhas;
+            linha++
+        ) {
+            for (
+                let coluna = 0;
+                coluna < colunas;
+                coluna++
+            ) {
                 points.push({
                     baseX:
-                        startX +
-                        col * spacing,
+                        inicioX +
+                        coluna * SPACING,
 
                     baseY:
-                        startY +
-                        row * spacing
+                        inicioY +
+                        linha * SPACING
                 });
             }
         }
     }
 
-    function lerp(a, b, factor) {
-        return a + (b - a) * factor;
-    }
-
-    function clamp(value, min, max) {
-        return Math.max(
-            min,
-            Math.min(value, max)
+    function interpolar(
+        inicio,
+        fim,
+        fator
+    ) {
+        return (
+            inicio +
+            (
+                fim -
+                inicio
+            ) *
+                fator
         );
     }
 
-    function getGradientColorRGB(value) {
-        value = clamp(value, 0, 1);
+    function limitar(
+        valor,
+        minimo,
+        maximo
+    ) {
+        return Math.max(
+            minimo,
+            Math.min(
+                maximo,
+                valor
+            )
+        );
+    }
 
-        let color1;
-        let color2;
-        let factor;
+    function obterCorGradiente(
+        valor
+    ) {
+        valor = limitar(
+            valor,
+            0,
+            1
+        );
 
-        if (value < 0.5) {
-            color1 = colorYellow;
-            color2 = colorBlue;
-            factor = value * 2;
+        let cor1;
+        let cor2;
+        let fator;
+
+        if (valor < 0.5) {
+            cor1 = COLOR_YELLOW;
+            cor2 = COLOR_BLUE;
+            fator = valor * 2;
         } else {
-            color1 = colorBlue;
-            color2 = colorPurple;
-            factor = (value - 0.5) * 2;
+            cor1 = COLOR_BLUE;
+            cor2 = COLOR_PURPLE;
+
+            fator =
+                (
+                    valor -
+                    0.5
+                ) *
+                2;
         }
 
-        const red = Math.floor(
-            lerp(
-                color1[0],
-                color2[0],
-                factor
-            )
-        );
+        const vermelho =
+            Math.floor(
+                interpolar(
+                    cor1[0],
+                    cor2[0],
+                    fator
+                )
+            );
 
-        const green = Math.floor(
-            lerp(
-                color1[1],
-                color2[1],
-                factor
-            )
-        );
+        const verde =
+            Math.floor(
+                interpolar(
+                    cor1[1],
+                    cor2[1],
+                    fator
+                )
+            );
 
-        const blue = Math.floor(
-            lerp(
-                color1[2],
-                color2[2],
-                factor
-            )
-        );
+        const azul =
+            Math.floor(
+                interpolar(
+                    cor1[2],
+                    cor2[2],
+                    fator
+                )
+            );
 
-        return `${red}, ${green}, ${blue}`;
+        return (
+            vermelho +
+            ', ' +
+            verde +
+            ', ' +
+            azul
+        );
     }
 
-    function draw(now) {
-        requestAnimationFrame(draw);
+    function desenhar(agora) {
+        requestAnimationFrame(
+            desenhar
+        );
 
-        if (now - lastFrame < FRAME_TIME) {
+        if (
+            agora - lastFrame <
+            FRAME_TIME
+        ) {
             return;
         }
 
-        lastFrame = now;
+        lastFrame = agora;
 
         ctx.clearRect(
             0,
@@ -196,147 +333,226 @@
 
         time += 0.0015;
 
-        const centerX = width / 2;
-        const centerY = height / 2;
-        const holeTime = time * 3.5;
+        const centroX =
+            width / 2;
 
-        const holeX =
-            centerX +
-            Math.sin(holeTime * 0.7) *
-                (centerX * 0.9) +
-            Math.cos(holeTime * 0.3) *
-                (centerX * 0.3);
+        const centroY =
+            height / 2;
 
-        const holeY =
-            centerY +
-            Math.cos(holeTime * 0.8) *
-                (centerY * 0.9) +
-            Math.sin(holeTime * 0.4) *
-                (centerY * 0.3);
+        const tempoBuraco =
+            time * 3.5;
 
-        const holeRadius = 160;
-        const holeRadiusSq =
-            holeRadius * holeRadius;
+        const buracoX =
+            centroX +
+            Math.sin(
+                tempoBuraco *
+                    0.7
+            ) *
+                (
+                    centroX *
+                    0.9
+                ) +
+            Math.cos(
+                tempoBuraco *
+                    0.3
+            ) *
+                (
+                    centroX *
+                    0.3
+                );
 
-        const edgeSoftness = 60;
-        const edgeSoftnessInv =
-            1 / edgeSoftness;
+        const buracoY =
+            centroY +
+            Math.cos(
+                tempoBuraco *
+                    0.8
+            ) *
+                (
+                    centroY *
+                    0.9
+                ) +
+            Math.sin(
+                tempoBuraco *
+                    0.4
+            ) *
+                (
+                    centroY *
+                    0.3
+                );
+
+        const raioBuraco =
+            160;
+
+        const raioBuracoQuadrado =
+            raioBuraco *
+            raioBuraco;
+
+        const suavidadeMargem =
+            60;
+
+        const inversoSuavidade =
+            1 /
+            suavidadeMargem;
 
         for (
-            let index = 0;
-            index < points.length;
-            index++
+            let indice = 0;
+            indice < points.length;
+            indice++
         ) {
-            const point = points[index];
+            const ponto =
+                points[indice];
 
-            const normalizedX =
-                point.baseX * 0.003;
+            const normalizadoX =
+                ponto.baseX *
+                0.003;
 
-            const normalizedY =
-                point.baseY * 0.003;
+            const normalizadoY =
+                ponto.baseY *
+                0.003;
 
-            const waveX =
+            const ondaX =
                 Math.sin(
-                    normalizedY * 2.5 +
-                    time * 2.5
-                ) * 18 +
+                    normalizadoY *
+                        2.5 +
+                    time *
+                        2.5
+                ) *
+                    18 +
                 Math.cos(
-                    normalizedX * 1.8 -
+                    normalizadoX *
+                        1.8 -
                     time
-                ) * 12;
+                ) *
+                    12;
 
-            const waveY =
+            const ondaY =
                 Math.cos(
-                    normalizedX * 2.5 -
-                    time * 2.5
-                ) * 18 +
+                    normalizadoX *
+                        2.5 -
+                    time *
+                        2.5
+                ) *
+                    18 +
                 Math.sin(
-                    normalizedY * 1.8 +
+                    normalizadoY *
+                        1.8 +
                     time
-                ) * 12;
+                ) *
+                    12;
 
             const finalX =
-                point.baseX + waveX;
+                ponto.baseX +
+                ondaX;
 
             const finalY =
-                point.baseY + waveY;
+                ponto.baseY +
+                ondaY;
 
-            const waveValue =
+            const valorOnda =
                 (
                     Math.sin(
-                        normalizedX * 2.2 +
-                        time * 1.5
+                        normalizadoX *
+                            2.2 +
+                        time *
+                            1.5
                     ) +
                     Math.cos(
-                        normalizedY * 2.2 +
-                        time * 1.5
+                        normalizadoY *
+                            2.2 +
+                        time *
+                            1.5
                     ) +
                     2
-                ) * 0.25;
+                ) *
+                0.25;
 
             const deltaX =
-                finalX - holeX;
+                finalX -
+                buracoX;
 
             const deltaY =
-                finalY - holeY;
+                finalY -
+                buracoY;
 
-            const distanceSq =
-                deltaX * deltaX +
-                deltaY * deltaY;
+            const distanciaQuadrada =
+                deltaX *
+                    deltaX +
+                deltaY *
+                    deltaY;
 
             let alpha;
 
-            if (distanceSq < holeRadiusSq) {
+            if (
+                distanciaQuadrada <
+                raioBuracoQuadrado
+            ) {
                 alpha = 0;
             } else {
-                const distance =
-                    Math.sqrt(distanceSq);
+                const distancia =
+                    Math.sqrt(
+                        distanciaQuadrada
+                    );
 
-                alpha = clamp(
+                alpha = limitar(
                     (
-                        distance -
-                        holeRadius
-                    ) * edgeSoftnessInv,
+                        distancia -
+                        raioBuraco
+                    ) *
+                        inversoSuavidade,
                     0,
                     1
                 );
             }
 
-            const borderNoise =
+            const ruidoMargem =
                 Math.sin(
-                    normalizedX * 15 +
-                    time * 5
-                ) * 0.15;
+                    normalizadoX *
+                        15 +
+                    time *
+                        5
+                ) *
+                0.15;
 
-            alpha = clamp(
-                alpha + borderNoise,
+            alpha = limitar(
+                alpha +
+                    ruidoMargem,
                 0,
                 1
             );
 
-            const finalAlpha =
+            const alphaFinal =
                 alpha *
                 (
                     0.8 +
-                    waveValue * 0.2
+                    valorOnda *
+                        0.2
                 );
 
-            if (finalAlpha < 0.05) {
+            if (
+                alphaFinal <
+                0.05
+            ) {
                 continue;
             }
 
             const rgb =
-                getGradientColorRGB(
-                    waveValue
+                obterCorGradiente(
+                    valorOnda
                 );
 
-            const roundedAlpha =
+            const alphaArredondado =
                 Math.round(
-                    finalAlpha * 100
-                ) / 100;
+                    alphaFinal *
+                        100
+                ) /
+                100;
 
             ctx.fillStyle =
-                `rgba(${rgb}, ${roundedAlpha})`;
+                'rgba(' +
+                rgb +
+                ', ' +
+                alphaArredondado +
+                ')';
 
             ctx.fillRect(
                 finalX - 1.2,
@@ -357,28 +573,67 @@
         function () {
             window.setTimeout(
                 agendarResize,
-                150
+                100
+            );
+
+            window.setTimeout(
+                agendarResize,
+                400
+            );
+
+            window.setTimeout(
+                agendarResize,
+                1000
             );
         }
     );
 
     window.addEventListener(
         'pageshow',
-        agendarResize
+        function () {
+            agendarResize();
+
+            window.setTimeout(
+                agendarResize,
+                300
+            );
+        }
+    );
+
+    document.addEventListener(
+        'visibilitychange',
+        function () {
+            if (
+                document.visibilityState ===
+                'visible'
+            ) {
+                agendarResize();
+
+                window.setTimeout(
+                    agendarResize,
+                    300
+                );
+            }
+        }
     );
 
     if (window.visualViewport) {
-        window.visualViewport.addEventListener(
-            'resize',
-            agendarResize
-        );
+        window.visualViewport
+            .addEventListener(
+                'resize',
+                agendarResize
+            );
 
-        window.visualViewport.addEventListener(
-            'scroll',
-            agendarResize
-        );
+        window.visualViewport
+            .addEventListener(
+                'scroll',
+                agendarResize
+            );
     }
 
     resize();
-    requestAnimationFrame(draw);
+
+    requestAnimationFrame(
+        desenhar
+    );
 })();
