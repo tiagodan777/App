@@ -69,24 +69,35 @@ $(function () {
             src:
                 src ||
                 '/imagens/fotos-perfil/default.webp',
+
             alt:
                 nome ||
                 'Foto de perfil'
         });
 
-        $menu.find('header h1').text(nome);
+        $menu
+            .find('header h1')
+            .text(nome);
 
         if (window.messagesUrl) {
-            $menu.find('form').attr(
-                'action',
-                window.messagesUrl +
-                    '?sendTo=' +
-                    encodeURIComponent(
-                        membroId
-                    )
-            );
+            $menu
+                .find('form')
+                .attr(
+                    'action',
+                    window.messagesUrl +
+                        '?sendTo=' +
+                        encodeURIComponent(
+                            membroId
+                        )
+                );
         }
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Detetar toque numa fotografia
+    |--------------------------------------------------------------------------
+    */
 
     $(document).on(
         'pointerdown',
@@ -132,6 +143,16 @@ $(function () {
         }
     );
 
+    /*
+    |--------------------------------------------------------------------------
+    | Arrastar o mini-menu
+    |--------------------------------------------------------------------------
+    |
+    | Botões, inputs e formulários ficam excluídos.
+    | Assim, tocar em "Hey" não inicia um arrasto.
+    |--------------------------------------------------------------------------
+    */
+
     $menu.on(
         'pointerdown',
         function (event) {
@@ -139,18 +160,48 @@ $(function () {
                 return;
             }
 
+            const $alvo = $(event.target);
+
+            if (
+                $alvo.closest(
+                    'button, input, textarea, select, form, a'
+                ).length
+            ) {
+                draggingMenu = false;
+                return;
+            }
+
             draggingMenu = true;
+
             startY = event.clientY;
             currentY = event.clientY;
             startTime = Date.now();
 
-            $menu.css('transition', 'none');
+            $menu.css(
+                'transition',
+                'none'
+            );
+
             event.stopPropagation();
 
-            if (this.setPointerCapture) {
-                this.setPointerCapture(
-                    event.originalEvent.pointerId
-                );
+            const pointerId =
+                event.originalEvent &&
+                event.originalEvent.pointerId;
+
+            if (
+                pointerId !== undefined &&
+                this.setPointerCapture
+            ) {
+                try {
+                    this.setPointerCapture(
+                        pointerId
+                    );
+                } catch (error) {
+                    console.warn(
+                        'Não foi possível capturar o pointer:',
+                        error
+                    );
+                }
             }
         }
     );
@@ -173,7 +224,9 @@ $(function () {
 
             $menu.css({
                 transform:
-                    `translateY(calc(15% + ${diffY}px))`
+                    'translateY(calc(15% + ' +
+                    diffY +
+                    'px))'
             });
 
             event.preventDefault();
@@ -192,11 +245,10 @@ $(function () {
             const distancia =
                 currentY - startY;
 
-            const tempo =
-                Math.max(
-                    Date.now() - startTime,
-                    1
-                );
+            const tempo = Math.max(
+                Date.now() - startTime,
+                1
+            );
 
             const velocidade =
                 distancia / tempo;
@@ -213,6 +265,26 @@ $(function () {
             event.stopPropagation();
         }
     );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Não deixar os controlos do menu iniciarem gestos
+    |--------------------------------------------------------------------------
+    */
+
+    $menu.on(
+        'pointerdown pointerup',
+        'button, input, textarea, select, form, a',
+        function (event) {
+            event.stopPropagation();
+        }
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Fechar ao tocar fora
+    |--------------------------------------------------------------------------
+    */
 
     $(document).on(
         'pointerup',
