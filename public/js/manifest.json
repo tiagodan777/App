@@ -1,22 +1,8 @@
 {
-    "name": "App",
-    "short_name": "App",
-    "description": "Encontra pessoas próximas.",
-    "start_url": "/",
-    "scope": "/",
-    "display": "standalone",
-    "display_override": [
-        "standalone",
-        "minimal-ui"
-    ],
-    "orientation": "portrait-primary",
-    "background_color": "#ffffff",
-    "theme_color": "#ffffff",
-    "icons": [
-        {
-            "src": "/favicon.ico",
-            "sizes": "48x48",
-            "type": "image/x-icon"
-        }
-    ]
+  "name": "App",
+  "short_name": "App",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ff0000",
+  "theme_color": "#ff0000"
 }

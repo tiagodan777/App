@@ -1,160 +1,52 @@
 @charset "UTF-8";
 
-:root {
-    --app-width: 100vw;
-    --app-height: 100dvh;
-    --canvas-overscan: 160px;
-
-    --safe-top: env(safe-area-inset-top, 0px);
-    --safe-right: env(safe-area-inset-right, 0px);
-    --safe-bottom: env(safe-area-inset-bottom, 0px);
-    --safe-left: env(safe-area-inset-left, 0px);
-}
-
-*,
-*::before,
-*::after {
+* {
+    font-size: 1em;
     box-sizing: border-box;
+    font-family: Helvetica, sans-serif;
 }
 
 html {
+    margin: 0;
+    padding: 0;
+
     width: 100%;
     height: 100%;
     min-height: 100%;
 
-    margin: 0;
-    padding: 0;
-
-    overflow: hidden;
-
     background-color: #ffffff;
-
-    font-family:
-        Helvetica,
-        Arial,
-        sans-serif;
-
-    overscroll-behavior: none;
 }
 
 body {
+    position: fixed;
+    inset: 0;
+
+    margin: 0;
+    padding: 0;
+
     width: 100%;
     height: 100%;
-    min-height: 100%;
-
-    margin: 0;
-    padding: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
 
     overflow: hidden;
-
-    background-color: #ffffff;
-
     overscroll-behavior: none;
 
-    touch-action: none;
+    background-color: #ffffff;
 }
 
-#app-root {
+#gridCanvas {
+    display: block;
+
     position: fixed;
-
-    top: 0;
-    left: 0;
-
-    width: var(--app-width);
-    height: var(--app-height);
-
-    min-width: 100%;
-    min-height: 100%;
-
-    margin: 0;
-    padding: 0;
-
-    overflow: visible; /* ALTERADO: era "hidden" — estava a cortar o ::after de segurança */
-
-    background-color: #ffffff;
-
-    isolation: isolate;
-
-    transform: translateZ(0);
-}
-
-#app-root::after {
-    content: "";
-
-    position: absolute;
-
-    right: 0;
-    bottom: calc(
-        var(--canvas-overscan) * -1
-    );
-    left: 0;
-
-    height: var(--canvas-overscan);
-
-    background-color: #ffffff;
-
-    pointer-events: none;
-
-    z-index: -2;
-}
-
-#app-content {
-    position: absolute;
-
     inset: 0;
 
     width: 100%;
     height: 100%;
-
-    margin: 0;
-    padding: 0;
-
-    overflow: hidden;
-
-    background-color: transparent;
-
-    z-index: 1;
-}
-
-#mapa-container {
-    position: absolute;
-
-    top: 0;
-    left: 0;
-
-    width: 100%;
-    height: calc(
-        100% +
-        var(--canvas-overscan)
-    );
-
-    margin: 0;
-    padding: 0;
-
-    overflow: visible;
+    min-height: 100vh;
+    min-height: 100dvh;
 
     background-color: #ffffff;
-
-    touch-action: none;
-
-    z-index: 0;
-}
-
-#gridCanvas {
-    position: fixed;
-
-    top: 0;
-    left: 0;
-
-    display: block;
-
-    width: 100%;
-    height: calc(100% + 62px);
-
-    margin: 0;
-    padding: 0;
-
-    background: #ffffff;
 
     pointer-events: none;
     touch-action: none;
@@ -163,216 +55,107 @@ body {
 }
 
 img {
-    display: block;
-
     width: 60px;
     height: 60px;
-
-    object-fit: cover;
-
     border-radius: 50%;
 }
 
 .foto {
     position: absolute !important;
-
     top: 0 !important;
     left: 0 !important;
-
-    width: 60px;
-    height: 60px;
-
-    margin: 0;
-
-    object-fit: cover;
-
-    border-radius: 50%;
-
     transform-origin: center center;
-    will-change: transform, opacity;
-
-    cursor: pointer;
-
-    touch-action: none;
-
-    user-select: none;
-    -webkit-user-select: none;
-    -webkit-user-drag: none;
-
+    /* Isto avisa a placa gráfica da Apple que esta imagem vai andar a voar pelo ecrã */
+    will-change: transform, opacity; 
     z-index: 10;
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+    touch-action: manipulation;
 }
 
 .back-drop {
-    position: fixed;
-
-    inset: 0;
-
-    width: 100%;
-    height: 100%;
-
-    background-color:
-        rgba(0, 0, 0, 0.4);
-
-    opacity: 0;
-
-    pointer-events: none;
-
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.4);
     z-index: 25;
+    bottom: -100%;
+
+    display: flex;
+    flex-flow: column nowrap;
+    justify-content: flex-end;
+    align-items: center;
 }
 
 .mini-menu {
     position: fixed;
-
-    right: 0;
+    width: 100vw;
+    height: 75vh;
     bottom: 0;
-    left: 0;
-
-    width: 100%;
-    height: 75%;
-
-    padding-right: var(--safe-right);
-    padding-bottom: var(--safe-bottom);
-    padding-left: var(--safe-left);
-
-    border-radius: 50px 50px 0 0;
-
-    background-color: #ffffff;
-
-    box-shadow:
-        0 1px 2px rgba(0, 0, 0, 0.1),
-        0 6px 18px rgba(0, 0, 0, 0.2),
-        0 14px 32px rgba(0, 0, 0, 0.3);
-
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-around;
-
-    transform:
-        translate3d(
-            0,
-            100%,
-            0
-        );
-
-    transform-origin: bottom center;
-
-    will-change: transform;
-
+    border-radius: 50px 50px 0px 0px;
+    box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.1),
+                0px 6px 18px rgba(0, 0, 0, 0.2),
+                0px 14px 32px rgba(0, 0, 0, 0.3);
+    background-color: white;
+    z-index: 20;
     touch-action: none;
-
-    z-index: 40;
+    will-change: transform;
+    transform: translateY(100%);
+    
+    display: flex;
+    flex-flow: column nowrap;
+    justify-content: space-around;
+    align-items: center;
 }
 
 .mini-menu > header {
     display: flex;
-    flex-direction: column;
+    flex-flow: column nowrap;
+    justify-content: space-evenly;
     align-items: center;
-    justify-content: center;
 }
 
 .mini-menu > header > img {
     width: 22.5vw;
     height: 22.5vw;
-
-    max-width: 180px;
-    max-height: 180px;
-
-    object-fit: cover;
-
     border-radius: 50%;
 }
 
 .mini-menu > header > h1 {
-    margin: 16px 0 0;
-
-    font-size: 1.5rem;
-    text-align: center;
+    font-size: 1.5em;
 }
 
-.mini-menu .ola {
-    min-width: 110px;
-    min-height: 50px;
-
-    padding: 12px 24px;
-
-    border: 0;
-    border-radius: 30px;
-
-    background-color: #111111;
-    color: #ffffff;
+.mini-menu > div {
+    width: 50vw;
+    height: 50vw;
+    background-color: red;
+    border-radius: 50%;
 
     display: flex;
-    align-items: center;
+    flex-flow: row nowrap;
     justify-content: center;
-
-    font-size: 1rem;
-    font-weight: bold;
-
-    cursor: pointer;
-}
-
-.mini-menu .ola:disabled {
-    opacity: 0.5;
-
-    pointer-events: none;
-    cursor: default;
-}
-
-.mini-menu form {
-    width: min(90%, 500px);
-
-    display: flex;
     align-items: center;
-    gap: 10px;
 }
 
-.mini-menu form input[type="text"] {
-    flex: 1;
-
-    min-width: 0;
-
-    padding: 12px 14px;
-
-    border: 1px solid
-        rgba(0, 0, 0, 0.2);
-
-    border-radius: 20px;
-}
-
-.mini-menu form input[type="submit"] {
-    padding: 12px 16px;
-
-    border: 0;
-    border-radius: 20px;
-
-    background-color: #111111;
-    color: #ffffff;
-
-    cursor: pointer;
+.mini-menu > div > p {
+    color: white;
+    font-weight: bold;
+    font-size: 3em;
 }
 
 #menuPrincipal {
     position: fixed;
 
     left: 50%;
-
     bottom: calc(
-        12px +
-        var(--safe-bottom)
+        20px +
+        env(safe-area-inset-bottom)
     );
+
+    transform: translateX(-50%);
 
     width: 90%;
     height: 56px;
-
-    transform:
-        translate3d(
-            -50%,
-            0,
-            0
-        );
-
-    touch-action: manipulation;
 
     z-index: 30;
 }
@@ -382,10 +165,10 @@ img {
     height: 100%;
 
     display: flex;
-    align-items: center;
+    flex-flow: row nowrap;
     justify-content: center;
+    align-items: center;
 }
-
 #menuPrincipal > nav > ul {
     width: 95%;
     height: 100%;
@@ -393,13 +176,13 @@ img {
     margin: 0;
     padding: 10px 20px;
 
-    border: 1px solid
-        rgba(0, 0, 0, 0.1);
+    list-style: none;
 
     border-radius: 35px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
 
     background-color:
-        rgba(255, 255, 255, 0.55);
+        rgba(255, 255, 255, 0.15);
 
     box-shadow:
         inset 0 1px 2px
@@ -407,177 +190,126 @@ img {
         inset 0 8px 20px
             rgba(0, 0, 0, 0.1),
         inset 0 20px 40px
-            rgba(0, 0, 0, 0.12),
+            rgba(0, 0, 0, 0.2),
         inset 0 40px 64px
-            rgba(0, 0, 0, 0.14),
-        0 5px 20px
-            rgba(0, 0, 0, 0.12);
-
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-
-    list-style: none;
+            rgba(0, 0, 0, 0.25);
 
     display: flex;
-    align-items: center;
+    flex-flow: row nowrap;
     justify-content: space-around;
+    align-items: center;
 }
 
 #menuPrincipal > nav > ul > li {
-    height: 48px;
-
-    padding: 0 45px;
-
-    border-radius: 35px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    color: #000000;
-
+    color: black;
     z-index: 10;
+    padding: 20px 45px;
+    border-radius: 35px;
 }
 
 #menuPrincipal > nav > ul > li.active {
-    background-color:
-        rgba(0, 0, 0, 0.15);
-
-    box-shadow:
-        inset 0 1px 2px
-            rgba(255, 255, 255, 0.08),
-        inset 0 6px 18px
-            rgba(0, 0, 0, 0.12);
+    background-color: rgba(0, 0, 0, 0.15);
+    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.08),
+                inset 0 6px 18px rgba(0, 0, 0, 0.12);
 }
 
 #menuPrincipal > nav > ul > li > a {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
     text-decoration: none;
-
-    color: #000000;
+    color: black;
 }
 
 #menuPrincipal > nav > ul > li > a > img {
     width: 26px;
     height: 26px;
-
-    object-fit: contain;
-
-    border-radius: 0;
 }
+
+/*
+|--------------------------------------------------------------------------
+| Botão para ativar notificações
+|--------------------------------------------------------------------------
+*/
 
 #ativar-notificacoes {
     position: fixed;
-
-    top: calc(
-        15px +
-        var(--safe-top)
-    );
-
-    right: calc(
-        15px +
-        var(--safe-right)
-    );
+    top: max(15px, env(safe-area-inset-top));
+    right: 15px;
+    z-index: 9000;
 
     padding: 10px 14px;
 
     border: 0;
-    border-radius: 22px;
-
-    background-color:
-        rgba(30, 30, 30, 0.88);
-
-    color: #ffffff;
-
-    cursor: pointer;
-
-    z-index: 9000;
-}
-
-#estado-ligacao {
-    position: fixed;
-
-    top: calc(
-        15px +
-        var(--safe-top)
-    );
-
-    left: calc(
-        15px +
-        var(--safe-left)
-    );
-
-    padding: 7px 11px;
-
     border-radius: 20px;
 
-    background-color:
-        rgba(30, 30, 30, 0.82);
+    background: rgba(20, 20, 20, 0.85);
+    color: white;
 
-    color: #ffffff;
-
-    font-size: 0.8rem;
-
-    pointer-events: none;
-
-    z-index: 9000;
+    cursor: pointer;
 }
 
-#estado-ligacao[data-status="connected"] {
-    opacity: 0;
+/*
+|--------------------------------------------------------------------------
+| Botão Hey
+|--------------------------------------------------------------------------
+*/
 
-    transition:
-        opacity 0.4s ease;
+.mini-menu .ola {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 0;
+
+    cursor: pointer;
 }
 
-#estado-ligacao[data-status="connecting"],
-#estado-ligacao[data-status="disconnected"],
-#estado-ligacao[data-status="offline"] {
-    opacity: 1;
+.mini-menu .ola:disabled {
+    opacity: 0.5;
+    cursor: default;
 }
+
+/*
+|--------------------------------------------------------------------------
+| Notificação recebida dentro da página
+|--------------------------------------------------------------------------
+*/
 
 .notificacao-interna {
     position: fixed;
 
-    top: calc(
-        15px +
-        var(--safe-top)
+    top: max(
+        15px,
+        env(safe-area-inset-top)
     );
 
     left: 50%;
 
+    z-index: 10000;
+
     width: calc(100% - 30px);
     max-width: 420px;
+
+    display: flex;
+    align-items: center;
+    gap: 12px;
 
     padding: 12px 16px;
 
     border: 0;
     border-radius: 18px;
 
-    background-color:
-        rgba(20, 20, 20, 0.96);
+    background:
+        rgba(20, 20, 20, 0.95);
 
-    color: #ffffff;
-
-    display: flex;
-    align-items: center;
-    gap: 12px;
+    color: white;
 
     text-align: left;
 
     box-shadow:
         0 8px 30px
-            rgba(0, 0, 0, 0.25);
+        rgba(0, 0, 0, 0.25);
 
     transform:
-        translate3d(
-            -50%,
-            -150%,
-            0
-        );
+        translate(-50%, -150%);
 
     opacity: 0;
 
@@ -586,17 +318,11 @@ img {
         opacity 0.3s ease;
 
     cursor: pointer;
-
-    z-index: 10000;
 }
 
 .notificacao-interna.visivel {
     transform:
-        translate3d(
-            -50%,
-            0,
-            0
-        );
+        translate(-50%, 0);
 
     opacity: 1;
 }
@@ -613,6 +339,199 @@ img {
 }
 
 .notificacao-interna-conteudo {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+
+    min-width: 0;
+}
+
+.notificacao-interna-conteudo strong {
+    display: block;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.notificacao-interna-conteudo span {
+    display: block;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    opacity: 0.85;
+}
+
+/*
+|--------------------------------------------------------------------------
+| Mensagens de confirmação e erro
+|--------------------------------------------------------------------------
+*/
+
+.mensagem-websocket {
+    position: fixed;
+
+    left: 50%;
+    bottom: calc(
+        25px +
+        env(safe-area-inset-bottom)
+    );
+
+    z-index: 10001;
+
+    max-width: calc(100% - 30px);
+
+    padding: 11px 16px;
+
+    border-radius: 20px;
+
+    color: white;
+
+    text-align: center;
+
+    transform:
+        translate(-50%, 30px);
+
+    opacity: 0;
+
+    transition:
+        transform 0.3s ease,
+        opacity 0.3s ease;
+}
+
+.mensagem-websocket.visivel {
+    transform:
+        translate(-50%, 0);
+
+    opacity: 1;
+}
+
+.mensagem-websocket.sucesso {
+    background:
+        rgba(30, 130, 70, 0.95);
+}
+
+.mensagem-websocket.erro {
+    background:
+        rgba(180, 40, 40, 0.95);
+}
+
+#estado-ligacao {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 9000;
+
+    padding: 7px 11px;
+
+    border-radius: 20px;
+
+    background: rgba(30, 30, 30, 0.82);
+    color: white;
+
+    font-size: 0.8rem;
+
+    pointer-events: none;
+}
+
+#estado-ligacao[data-status="connected"] {
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+#estado-ligacao[data-status="connecting"],
+#estado-ligacao[data-status="disconnected"],
+#estado-ligacao[data-status="offline"] {
+    opacity: 1;
+}
+
+#ativar-notificacoes {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    z-index: 9000;
+
+    padding: 10px 14px;
+
+    border: 0;
+    border-radius: 22px;
+
+    background: rgba(30, 30, 30, 0.88);
+    color: white;
+
+    cursor: pointer;
+}
+
+.mini-menu .ola:disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.notificacao-interna {
+    position: fixed;
+
+    top: max(
+        15px,
+        env(safe-area-inset-top)
+    );
+
+    left: 50%;
+
+    z-index: 10000;
+
+    width: calc(100% - 30px);
+    max-width: 420px;
+
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    padding: 12px 16px;
+
+    border: 0;
+    border-radius: 18px;
+
+    background: rgba(20, 20, 20, 0.96);
+    color: white;
+
+    text-align: left;
+
+    box-shadow:
+        0 8px 30px
+        rgba(0, 0, 0, 0.25);
+
+    transform:
+        translate(-50%, -150%);
+
+    opacity: 0;
+
+    transition:
+        transform 0.3s ease,
+        opacity 0.3s ease;
+
+    cursor: pointer;
+}
+
+.notificacao-interna.visivel {
+    transform:
+        translate(-50%, 0);
+
+    opacity: 1;
+}
+
+.notificacao-interna > img {
+    width: 48px;
+    height: 48px;
+
+    flex: 0 0 48px;
+
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.notificacao-interna-conteudo {
     min-width: 0;
 
     display: flex;
@@ -625,7 +544,6 @@ img {
     display: block;
 
     overflow: hidden;
-
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -640,9 +558,11 @@ img {
     left: 50%;
 
     bottom: calc(
-        85px +
-        var(--safe-bottom)
+        25px +
+        env(safe-area-inset-bottom)
     );
+
+    z-index: 10001;
 
     max-width: calc(100% - 30px);
 
@@ -650,68 +570,32 @@ img {
 
     border-radius: 20px;
 
-    color: #ffffff;
-
+    color: white;
     text-align: center;
 
     transform:
-        translate3d(
-            -50%,
-            30px,
-            0
-        );
+        translate(-50%, 30px);
 
     opacity: 0;
 
     transition:
         transform 0.3s ease,
         opacity 0.3s ease;
-
-    z-index: 10001;
 }
 
 .mensagem-websocket.visivel {
     transform:
-        translate3d(
-            -50%,
-            0,
-            0
-        );
+        translate(-50%, 0);
 
     opacity: 1;
 }
 
 .mensagem-websocket.sucesso {
-    background-color:
+    background:
         rgba(30, 130, 70, 0.96);
 }
 
 .mensagem-websocket.erro {
-    background-color:
+    background:
         rgba(180, 40, 40, 0.96);
-}
-
-@media (max-width: 600px) {
-    #menuPrincipal {
-        width: calc(100% - 28px);
-    }
-
-    #menuPrincipal > nav > ul {
-        width: 100%;
-
-        padding-right: 8px;
-        padding-left: 8px;
-    }
-
-    #menuPrincipal > nav > ul > li {
-        flex: 1;
-
-        padding-right: 0;
-        padding-left: 0;
-    }
-
-    .mini-menu > header > img {
-        width: 34vw;
-        height: 34vw;
-    }
 }

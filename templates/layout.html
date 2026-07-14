@@ -3,100 +3,62 @@
 <head>
     <meta charset="UTF-8">
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
-    >
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 
-    <meta
-        name="theme-color"
-        content="#ffffff"
-    >
+    <meta name="theme-color" content="#ffffff"> 
 
-    <meta
-        name="apple-mobile-web-app-capable"
-        content="yes"
-    >
+    <meta name="apple-mobile-web-app-capable"content="yes">
 
-    <meta
-        name="mobile-web-app-capable"
-        content="yes"
-    >
+    <meta name="mobile-web-app -capable"content="yes">
 
-    <meta
-        name="apple-mobile-web-app-status-bar-style"
-        content="black-translucent"
-    >
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-    <meta
-        name="format-detection"
-        content="telephone=no"
-    >
-
-    <link
-        rel="manifest"
-        href="{{ doc_root }}js/manifest.json?v=100"
-    >
+    <link rel="manifest" href="{{ doc_root }}js/manifest.json">
 
     <title>App</title>
 
-    <script src="{{ doc_root }}js/viewport.js?v=100"></script>
+    <link rel="stylesheet" href="{{ doc_root }}estilos/style.css?v=7">
 
-    <link
-        rel="stylesheet"
-        href="{{ doc_root }}estilos/style.css?v=100"
-    >
-
-    <link
-        rel="stylesheet"
-        href="{{ doc_root }}estilos/create-account.css?v=100"
-    >
+    <link rel="stylesheet" href="{{ doc_root }}estilos/create-account.css?v=7">
 </head>
 
 <body>
-    <div id="app-root">
-        <main id="app-content">
-            {% block content %}
-            {% endblock %}
-        </main>
-
-        <footer id="menuPrincipal">
-            <nav aria-label="Menu principal">
-                <ul>
-                    <li class="active">
-                        <a href="{{ doc_root }}index">
-                            <img
-                                src="{{ doc_root }}imagens/icones-menu/home.png"
-                                alt="Início"
-                            >
-                        </a>
-                    </li>
-
-                    <li>
-                        <a href="{{ doc_root }}messages">
-                            <img
-                                src="{{ doc_root }}imagens/icones-menu/messages.png"
-                                alt="Mensagens"
-                            >
-                        </a>
-                    </li>
-
-                    <li>
-                        <a href="{{ doc_root }}profile">
-                            <img
-                                src="{{ doc_root }}imagens/icones-menu/user.png"
-                                alt="Perfil"
-                            >
-                        </a>
-                    </li>
-                </ul>
-            </nav>
-        </footer>
-    </div>
-
     <script src="{{ doc_root }}js/jquery-4.0.0.js"></script>
 
-    {% block scripts %}
+    {% block content %}
     {% endblock %}
+
+    <footer id="menuPrincipal">
+        <nav>
+            <ul>
+                <li class="active">
+                    <a href="{{ doc_root }}index">
+                        <img
+                            src="{{ doc_root }}imagens/icones-menu/home.png"
+                            alt="Início"
+                        >
+                    </a>
+                </li>
+
+                <li>
+                    <a href="{{ doc_root }}messages">
+                        <img
+                            src="{{ doc_root }}imagens/icones-menu/messages.png"
+                            alt="Mensagens"
+                        >
+                    </a>
+                </li>
+
+                <li>
+                    <a href="{{ doc_root }}profile">
+                        <img
+                            src="{{ doc_root }}imagens/icones-menu/user.png"
+                            alt="Perfil"
+                        >
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </footer>
 </body>
 </html>

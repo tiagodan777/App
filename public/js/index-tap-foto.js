@@ -52,10 +52,6 @@ $(function () {
             $foto.attr('data-membro-id') || ''
         ).trim();
 
-        const meuMembroId = String(
-            window.membroId || ''
-        ).trim();
-
         const nome = String(
             $foto.attr('data-nome') || ''
         ).trim();
@@ -64,77 +60,31 @@ $(function () {
             $foto.attr('src') || ''
         ).trim();
 
-        const souEu =
-            membroId !== '' &&
-            membroId === meuMembroId;
-
         $menu.attr(
             'data-destinatario-id',
-            souEu ? '' : membroId
+            membroId
         );
 
         $menu.find('header img').attr({
             src:
                 src ||
                 '/imagens/fotos-perfil/default.webp',
-
             alt:
                 nome ||
                 'Foto de perfil'
         });
 
-        if (souEu) {
-            $menu
-                .find('header h1')
-                .text(
-                    nome !== ''
-                        ? 'Tu (' + nome + ')'
-                        : 'Tu'
-                );
-
-            $menu
-                .find('#enviar-hey')
-                .hide();
-
-            $menu
-                .find('form')
-                .hide()
-                .attr('action', '');
-
-            $menu.addClass(
-                'perfil-proprio'
-            );
-
-            return;
-        }
-
-        $menu
-            .find('header h1')
-            .text(nome);
-
-        $menu
-            .find('#enviar-hey')
-            .show();
-
-        $menu
-            .find('form')
-            .show();
-
-        $menu.removeClass(
-            'perfil-proprio'
-        );
+        $menu.find('header h1').text(nome);
 
         if (window.messagesUrl) {
-            $menu
-                .find('form')
-                .attr(
-                    'action',
-                    window.messagesUrl +
-                        '?sendTo=' +
-                        encodeURIComponent(
-                            membroId
-                        )
-                );
+            $menu.find('form').attr(
+                'action',
+                window.messagesUrl +
+                    '?sendTo=' +
+                    encodeURIComponent(
+                        membroId
+                    )
+            );
         }
     }
 
@@ -189,49 +139,18 @@ $(function () {
                 return;
             }
 
-            const $alvo =
-                $(event.target);
-
-            if (
-                $alvo.closest(
-                    'button, input, textarea, select, form, a'
-                ).length
-            ) {
-                draggingMenu = false;
-                return;
-            }
-
             draggingMenu = true;
-
             startY = event.clientY;
             currentY = event.clientY;
             startTime = Date.now();
 
-            $menu.css(
-                'transition',
-                'none'
-            );
-
+            $menu.css('transition', 'none');
             event.stopPropagation();
 
-            const pointerId =
-                event.originalEvent &&
-                event.originalEvent.pointerId;
-
-            if (
-                pointerId !== undefined &&
-                this.setPointerCapture
-            ) {
-                try {
-                    this.setPointerCapture(
-                        pointerId
-                    );
-                } catch (error) {
-                    console.warn(
-                        'Não foi possível capturar o pointer:',
-                        error
-                    );
-                }
+            if (this.setPointerCapture) {
+                this.setPointerCapture(
+                    event.originalEvent.pointerId
+                );
             }
         }
     );
@@ -254,9 +173,7 @@ $(function () {
 
             $menu.css({
                 transform:
-                    'translateY(calc(15% + ' +
-                    diffY +
-                    'px))'
+                    `translateY(calc(15% + ${diffY}px))`
             });
 
             event.preventDefault();
@@ -275,10 +192,11 @@ $(function () {
             const distancia =
                 currentY - startY;
 
-            const tempo = Math.max(
-                Date.now() - startTime,
-                1
-            );
+            const tempo =
+                Math.max(
+                    Date.now() - startTime,
+                    1
+                );
 
             const velocidade =
                 distancia / tempo;
@@ -292,14 +210,6 @@ $(function () {
                 voltarMenu();
             }
 
-            event.stopPropagation();
-        }
-    );
-
-    $menu.on(
-        'pointerdown pointerup',
-        'button, input, textarea, select, form, a',
-        function (event) {
             event.stopPropagation();
         }
     );
