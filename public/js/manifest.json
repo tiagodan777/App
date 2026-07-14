@@ -2,7 +2,7 @@
   "name": "App",
   "short_name": "App",
   "start_url": "/",
-  "display": "standalone",
-  "background_color": "#f7f7f8",
-  "theme_color": "#f7f7f8"
+  "display": "fullscreen",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff"
 }
