@@ -1,5 +1,4 @@
 $(function () {
-    'use strict';
 
     const $menu = $('.mini-menu');
 
@@ -23,8 +22,7 @@ $(function () {
             left: '0',
             bottom: '0',
             transform: 'translateY(15%)',
-            transition:
-                'transform 0.5s cubic-bezier(.2,.8,.2,1)'
+            transition: 'transform 0.5s cubic-bezier(.2,.8,.2,1)'
         });
     }
 
@@ -34,204 +32,102 @@ $(function () {
 
         $menu.css({
             transform: 'translateY(100%)',
-            transition:
-                'transform 0.3s cubic-bezier(.4,0,1,1)'
+            transition: 'transform 0.3s cubic-bezier(.4,0,1,1)'
         });
     }
 
     function voltarMenu() {
         $menu.css({
             transform: 'translateY(15%)',
-            transition:
-                'transform 0.3s cubic-bezier(.2,.8,.2,1)'
+            transition: 'transform 0.3s cubic-bezier(.2,.8,.2,1)'
         });
     }
 
-    function preencherMenu($foto) {
-        const membroId = String(
-            $foto.attr('data-membro-id') || ''
-        ).trim();
+    // Guarda onde o dedo começou na foto
+    $(document).on('pointerdown', '.foto', function (e) {
+        fotoStartX = e.clientX;
+        fotoStartY = e.clientY;
+        fotoStartTime = Date.now();
 
-        const nome = String(
-            $foto.attr('data-nome') || ''
-        ).trim();
+        e.stopPropagation();
+    });
 
-        const src = String(
-            $foto.attr('src') || ''
-        ).trim();
+    // Abre só se foi TAP, não arrasto
+    $(document).on('pointerup', '.foto', function (e) {
+        const diffX = Math.abs(e.clientX - fotoStartX);
+        const diffY = Math.abs(e.clientY - fotoStartY);
+        const time = Date.now() - fotoStartTime;
 
-        $menu.attr(
-            'data-destinatario-id',
-            membroId
-        );
+        const foiTap = diffX < 12 && diffY < 12 && time < 350;
 
-        $menu.find('header img').attr({
-            src:
-                src ||
-                '/imagens/fotos-perfil/default.webp',
-            alt:
-                nome ||
-                'Foto de perfil'
-        });
-
-        $menu.find('header h1').text(nome);
-
-        if (window.messagesUrl) {
-            $menu.find('form').attr(
-                'action',
-                window.messagesUrl +
-                    '?sendTo=' +
-                    encodeURIComponent(
-                        membroId
-                    )
-            );
-        }
-    }
-
-    $(document).on(
-        'pointerdown',
-        '.foto',
-        function (event) {
-            fotoStartX = event.clientX;
-            fotoStartY = event.clientY;
-            fotoStartTime = Date.now();
-
-            event.stopPropagation();
-        }
-    );
-
-    $(document).on(
-        'pointerup',
-        '.foto',
-        function (event) {
-            const diffX = Math.abs(
-                event.clientX - fotoStartX
-            );
-
-            const diffY = Math.abs(
-                event.clientY - fotoStartY
-            );
-
-            const tempo =
-                Date.now() - fotoStartTime;
-
-            const foiTap =
-                diffX < 12 &&
-                diffY < 12 &&
-                tempo < 350;
-
-            if (!foiTap) {
-                return;
-            }
-
-            event.preventDefault();
-            event.stopPropagation();
-
-            preencherMenu($(this));
+        if (foiTap) {
+            e.preventDefault();
+            e.stopPropagation();
             abrirMenu();
         }
-    );
+    });
 
-    $menu.on(
-        'pointerdown',
-        function (event) {
-            if (!aberto) {
-                return;
-            }
+    // Swipe dentro do menu
+    $menu.on('pointerdown', function (e) {
+        if (!aberto) return;
 
-            draggingMenu = true;
-            startY = event.clientY;
-            currentY = event.clientY;
-            startTime = Date.now();
+        draggingMenu = true;
+        startY = e.clientY;
+        currentY = e.clientY;
+        startTime = Date.now();
 
-            $menu.css('transition', 'none');
-            event.stopPropagation();
+        $menu.css('transition', 'none');
 
-            if (this.setPointerCapture) {
-                this.setPointerCapture(
-                    event.originalEvent.pointerId
-                );
-            }
+        e.stopPropagation();
+
+        if (this.setPointerCapture) {
+            this.setPointerCapture(e.originalEvent.pointerId);
         }
-    );
+    });
 
-    $menu.on(
-        'pointermove',
-        function (event) {
-            if (!draggingMenu) {
-                return;
-            }
+    $menu.on('pointermove', function (e) {
+        if (!draggingMenu) return;
 
-            currentY = event.clientY;
+        currentY = e.clientY;
 
-            let diffY =
-                currentY - startY;
+        let diffY = currentY - startY;
 
-            if (diffY < 0) {
-                diffY *= 0.25;
-            }
-
-            $menu.css({
-                transform:
-                    `translateY(calc(15% + ${diffY}px))`
-            });
-
-            event.preventDefault();
+        if (diffY < 0) {
+            diffY = diffY * 0.25;
         }
-    );
 
-    $menu.on(
-        'pointerup pointercancel',
-        function (event) {
-            if (!draggingMenu) {
-                return;
-            }
+        $menu.css({
+            transform: `translateY(calc(25% + ${diffY}px))`
+        });
 
-            draggingMenu = false;
+        e.preventDefault();
+    });
 
-            const distancia =
-                currentY - startY;
+    $menu.on('pointerup pointercancel', function (e) {
+        if (!draggingMenu) return;
 
-            const tempo =
-                Math.max(
-                    Date.now() - startTime,
-                    1
-                );
+        draggingMenu = false;
 
-            const velocidade =
-                distancia / tempo;
+        const distance = currentY - startY;
+        const time = Date.now() - startTime;
+        const velocity = distance / time;
 
-            if (
-                distancia > 120 ||
-                velocidade > 0.7
-            ) {
-                fecharMenu();
-            } else {
-                voltarMenu();
-            }
-
-            event.stopPropagation();
+        if (distance > 120 || velocity > 0.7) {
+            fecharMenu();
+        } else {
+            voltarMenu();
         }
-    );
 
-    $(document).on(
-        'pointerup',
-        function (event) {
-            if (!aberto) {
-                return;
-            }
+        e.stopPropagation();
+    });
 
-            if (
-                $(event.target)
-                    .closest(
-                        '.mini-menu, .foto'
-                    )
-                    .length
-            ) {
-                return;
-            }
+    // Fecha ao tocar fora
+    $(document).on('pointerup', function (e) {
+        if (!aberto) return;
 
+        if (!$(e.target).closest('.mini-menu, .foto').length) {
             fecharMenu();
         }
-    );
+    });
+
 });
