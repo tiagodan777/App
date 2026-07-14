@@ -141,10 +141,33 @@
     }
 
     /*
+     * NOVO: no arranque a partir do ícone do ecrã principal
+     * (modo standalone), o iOS por vezes só reporta a altura
+     * real do viewport passado algum tempo. Forçamos várias
+     * re-medições nos primeiros instantes para apanhar esse
+     * valor tardio, mesmo que nenhum evento de resize dispare.
+     */
+    var RETRY_DELAYS = [0, 50, 150, 300, 600, 1000, 1600];
+
+    RETRY_DELAYS.forEach(function (delay) {
+        window.setTimeout(applyViewportSize, delay);
+    });
+
+    /*
      * É executado logo no head para reduzir o aparecimento
      * momentâneo da zona branca.
      */
     applyViewportSize();
+
+    window.addEventListener(
+        'load',
+        function () {
+            RETRY_DELAYS.forEach(function (delay) {
+                window.setTimeout(applyViewportSize, delay);
+            });
+        },
+        { passive: true }
+    );
 
     window.addEventListener(
         'resize',
@@ -172,7 +195,11 @@
 
     window.addEventListener(
         'pageshow',
-        scheduleViewportUpdate,
+        function () {
+            RETRY_DELAYS.forEach(function (delay) {
+                window.setTimeout(applyViewportSize, delay);
+            });
+        },
         { passive: true }
     );
 

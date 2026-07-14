@@ -69,7 +69,7 @@ body {
     margin: 0;
     padding: 0;
 
-    overflow: hidden;
+    overflow: visible; /* ALTERADO: era "hidden" — estava a cortar o ::after de segurança */
 
     background-color: #ffffff;
 
@@ -141,7 +141,7 @@ body {
 }
 
 #gridCanvas {
-    position: absolute;
+    position: fixed;
 
     top: 0;
     left: 0;
@@ -149,23 +149,15 @@ body {
     display: block;
 
     width: 100%;
-    height: calc(
-        100% +
-        var(--canvas-overscan)
-    );
+    height: calc(100% + 62px);
 
     margin: 0;
     padding: 0;
 
-    border: 0;
-
-    background-color: #ffffff;
+    background: #ffffff;
 
     pointer-events: none;
     touch-action: none;
-
-    transform: translateZ(0);
-    will-change: transform;
 
     z-index: 0;
 }
