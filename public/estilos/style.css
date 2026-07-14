@@ -81,6 +81,13 @@ img {
     flex-flow: column nowrap;
     justify-content: space-around;
     align-items: center;
+
+    will-change: transform;
+
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+
+    z-index: 40;
 }
 
 .mini-menu > header {
