@@ -79,7 +79,28 @@
         window.location.hostname +
         ':8080';
 </script>
-
+<div id="debug-viewport" style="position:fixed;bottom:70px;left:0;right:0;z-index:99999;background:#000;color:#0f0;font-size:11px;padding:6px;text-align:center;">
+    a carregar...
+</div>
+<script>
+    (function () {
+        function atualizar() {
+            var d = document.getElementById('debug-viewport');
+            var vv = window.visualViewport;
+            d.textContent =
+                'standalone=' + (window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches) +
+                ' | innerH=' + window.innerHeight +
+                ' | clientH=' + document.documentElement.clientHeight +
+                ' | vvH=' + (vv ? Math.round(vv.height) : 'n/a') +
+                ' | screenH=' + window.screen.height +
+                ' | availH=' + window.screen.availHeight +
+                ' | appH-css=' + getComputedStyle(document.documentElement).getPropertyValue('--app-height') +
+                ' | canvasH=' + (document.getElementById('gridCanvas') ? document.getElementById('gridCanvas').style.height : 'n/a');
+        }
+        atualizar();
+        setInterval(atualizar, 500);
+    })();
+</script>
 <script src="{{ doc_root }}js/index-posicao.js?v=100"></script>
 <script src="{{ doc_root }}js/websocket.js?v=100"></script>
 <script src="{{ doc_root }}js/index-mini-menu.js?v=100"></script>
