@@ -2,18 +2,22 @@
     'use strict';
 
     var socket = null;
+
     var reconnectTimer = null;
+    var connectionTimeout = null;
     var pingTimer = null;
+
     var reconnectAttempts = 0;
-    var manualClose = false;
 
     var RECONNECT_MIN_DELAY = 1000;
     var RECONNECT_MAX_DELAY = 30000;
-    var PING_INTERVAL = 25000;
+
+    var CONNECTION_TIMEOUT = 12000;
+    var PING_INTERVAL = 20000;
 
     /*
     |--------------------------------------------------------------------------
-    | Endereço do WebSocket
+    | URL
     |--------------------------------------------------------------------------
     */
 
@@ -37,20 +41,13 @@
 
     /*
     |--------------------------------------------------------------------------
-    | Ligar ao servidor
+    | Ligação
     |--------------------------------------------------------------------------
     */
 
     function connect() {
-        if (manualClose) {
-            return;
-        }
-
         if (!navigator.onLine) {
-            console.warn(
-                'Sem internet. O WebSocket será ligado quando a internet voltar.'
-            );
-
+            setStatus('offline');
             return;
         }
 
@@ -65,7 +62,10 @@
         }
 
         clearReconnectTimer();
+        clearConnectionTimeout();
         clearPingTimer();
+
+        setStatus('connecting');
 
         var url = getWebSocketUrl();
 
@@ -78,9 +78,11 @@
             socket = new WebSocket(url);
         } catch (error) {
             console.error(
-                'Erro ao criar o WebSocket:',
+                'Erro ao criar WebSocket:',
                 error
             );
+
+            socket = null;
 
             scheduleReconnect();
             return;
@@ -88,61 +90,99 @@
 
         window.ws = socket;
 
-        socket.onopen = function () {
-            console.log(
-                'WebSocket ligado com sucesso'
+        var currentSocket = socket;
+
+        connectionTimeout =
+            window.setTimeout(
+                function () {
+                    if (
+                        currentSocket.readyState ===
+                        WebSocket.CONNECTING
+                    ) {
+                        currentSocket.close();
+                    }
+                },
+                CONNECTION_TIMEOUT
             );
 
-            reconnectAttempts = 0;
-
-            authenticate();
-            startPing();
-
-            $(document).trigger(
-                'websocket:status',
-                ['connected']
-            );
-        };
-
-        socket.onmessage = function (event) {
-            handleMessage(event);
-        };
-
-        socket.onerror = function (event) {
-            console.error(
-                'Erro no WebSocket:',
-                event
-            );
-        };
-
-        socket.onclose = function (event) {
-            console.warn(
-                'WebSocket fechado:',
-                {
-                    code: event.code,
-                    reason: event.reason,
-                    wasClean: event.wasClean
+        currentSocket.onopen =
+            function () {
+                if (
+                    currentSocket !== socket
+                ) {
+                    return;
                 }
-            );
 
-            clearPingTimer();
+                console.log(
+                    'WebSocket ligado'
+                );
 
-            socket = null;
-            window.ws = null;
+                clearConnectionTimeout();
 
-            $(document).trigger(
-                'websocket:status',
-                [
+                reconnectAttempts = 0;
+
+                setStatus('connected');
+
+                authenticate();
+                startPing();
+            };
+
+        currentSocket.onmessage =
+            function (event) {
+                if (
+                    currentSocket !== socket
+                ) {
+                    return;
+                }
+
+                handleMessage(event);
+            };
+
+        currentSocket.onerror =
+            function (event) {
+                if (
+                    currentSocket !== socket
+                ) {
+                    return;
+                }
+
+                console.error(
+                    'Erro no WebSocket:',
+                    event
+                );
+            };
+
+        currentSocket.onclose =
+            function (event) {
+                if (
+                    currentSocket !== socket
+                ) {
+                    return;
+                }
+
+                console.warn(
+                    'WebSocket fechado:',
+                    {
+                        code: event.code,
+                        reason: event.reason,
+                        wasClean: event.wasClean
+                    }
+                );
+
+                clearConnectionTimeout();
+                clearPingTimer();
+
+                socket = null;
+                window.ws = null;
+
+                setStatus(
                     navigator.onLine
                         ? 'disconnected'
                         : 'offline'
-                ]
-            );
+                );
 
-            if (!manualClose) {
                 scheduleReconnect();
-            }
-        };
+            };
     }
 
     /*
@@ -152,7 +192,11 @@
     */
 
     function authenticate() {
-        if (!window.membroId) {
+        var membroId = String(
+            window.membroId || ''
+        ).trim();
+
+        if (membroId === '') {
             console.error(
                 'window.membroId não está definido.'
             );
@@ -162,13 +206,13 @@
 
         send({
             type: 'auth',
-            membro_id: window.membroId
+            membro_id: membroId
         });
     }
 
     /*
     |--------------------------------------------------------------------------
-    | Enviar mensagens
+    | Enviar
     |--------------------------------------------------------------------------
     */
 
@@ -177,11 +221,6 @@
             !socket ||
             socket.readyState !== WebSocket.OPEN
         ) {
-            console.warn(
-                'Tentativa de envio sem WebSocket ligado:',
-                data
-            );
-
             return false;
         }
 
@@ -203,7 +242,7 @@
 
     /*
     |--------------------------------------------------------------------------
-    | Ping periódico
+    | Ping
     |--------------------------------------------------------------------------
     */
 
@@ -223,13 +262,12 @@
 
     /*
     |--------------------------------------------------------------------------
-    | Reconexão automática
+    | Reconexão
     |--------------------------------------------------------------------------
     */
 
     function scheduleReconnect() {
         if (
-            manualClose ||
             reconnectTimer ||
             !navigator.onLine
         ) {
@@ -252,7 +290,7 @@
         );
 
         console.log(
-            'Nova tentativa de ligação em ' +
+            'Nova tentativa WebSocket em ' +
             delay +
             ' ms'
         );
@@ -269,7 +307,7 @@
 
     /*
     |--------------------------------------------------------------------------
-    | Receber mensagens
+    | Mensagens recebidas
     |--------------------------------------------------------------------------
     */
 
@@ -282,24 +320,10 @@
             );
         } catch (error) {
             console.error(
-                'Mensagem WebSocket inválida:',
+                'JSON inválido recebido:',
                 event.data
             );
 
-            return;
-        }
-
-        console.log(
-            'Mensagem recebida:',
-            data
-        );
-
-        /*
-         * Versão atual do servidor:
-         * envia diretamente um array com as pessoas.
-         */
-        if (Array.isArray(data)) {
-            atualizarPessoasNoMapa(data);
             return;
         }
 
@@ -310,141 +334,128 @@
             return;
         }
 
-        /*
-         * Compatibilidade com a versão em que
-         * o servidor envia { type: "state", people: [] }.
-         */
-        if (
-            data.type === 'state' &&
-            Array.isArray(data.people)
-        ) {
-            atualizarPessoasNoMapa(
-                data.people
-            );
+        switch (data.type) {
+            case 'connected':
+                break;
 
-            return;
-        }
+            case 'authenticated':
+                console.log(
+                    'WebSocket autenticado:',
+                    data.membro_id
+                );
+                break;
 
-        if (
-            data.type === 'notification'
-        ) {
-            mostrarNotificacao(data);
-            return;
-        }
+            case 'state':
+                atualizarPessoasNoMapa(
+                    Array.isArray(data.people)
+                        ? data.people
+                        : []
+                );
+                break;
 
-        if (
-            data.type ===
-                'notification_sent'
-        ) {
-            mostrarMensagemTemporaria(
-                data.message ||
-                    'Hey enviado.',
-                'sucesso'
-            );
+            case 'notification':
+                mostrarNotificacao(
+                    data
+                );
+                break;
 
-            return;
-        }
+            case 'notification_sent':
+                mostrarMensagemTemporaria(
+                    data.message ||
+                        'Hey enviado.',
+                    'sucesso'
+                );
+                break;
 
-        if (
-            data.type ===
-                'notification_not_delivered'
-        ) {
-            mostrarMensagemTemporaria(
-                data.message ||
-                    'O utilizador não está online.',
-                'erro'
-            );
+            case 'notification_not_delivered':
+                mostrarMensagemTemporaria(
+                    data.message ||
+                        'O utilizador não está online.',
+                    'erro'
+                );
+                break;
 
-            return;
-        }
+            case 'pong':
+                break;
 
-        if (data.type === 'pong') {
-            return;
-        }
+            case 'error':
+                console.error(
+                    'Erro do servidor:',
+                    data.message
+                );
 
-        if (
-            data.type === 'error'
-        ) {
-            console.error(
-                'Erro do servidor:',
-                data.message
-            );
+                mostrarMensagemTemporaria(
+                    data.message ||
+                        'Ocorreu um erro.',
+                    'erro'
+                );
+                break;
 
-            mostrarMensagemTemporaria(
-                data.message ||
-                    'Ocorreu um erro.',
-                'erro'
-            );
+            default:
+                console.warn(
+                    'Mensagem desconhecida:',
+                    data
+                );
+                break;
         }
     }
 
     /*
     |--------------------------------------------------------------------------
-    | Atualizar as pessoas no mapa
+    | Mapa
     |--------------------------------------------------------------------------
     */
 
     function atualizarPessoasNoMapa(
         pessoas
     ) {
-        var idsAtuais =
-            pessoas.map(
-                function (pessoa) {
-                    return String(
-                        pessoa.id
-                    );
-                }
-            );
-
-        /*
-         * Remover imagens de ligações que já fecharam.
-         */
-        $('.foto').each(
-            function () {
-                var $foto = $(this);
-
-                var id = String(
-                    $foto.attr('id') || ''
-                );
-
-                if (
-                    idsAtuais.includes(id) ||
-                    $foto.hasClass(
-                        'a-remover'
-                    )
-                ) {
-                    return;
-                }
-
-                $foto.addClass(
-                    'a-remover'
-                );
-
-                $foto.css({
-                    opacity: '0',
-                    transition:
-                        'opacity 0.4s ease-out'
-                });
-
-                window.setTimeout(
-                    function () {
-                        $foto.remove();
-
-                        reinicializarFotos();
-                    },
-                    400
+        var idsAtuais = pessoas.map(
+            function (pessoa) {
+                return String(
+                    pessoa.id
                 );
             }
         );
+
+        /*
+         * Remover pessoas que deixaram de estar online.
+         */
+        $('.foto').each(function () {
+            var $foto = $(this);
+
+            var id = String(
+                $foto.attr('id') || ''
+            );
+
+            if (
+                idsAtuais.includes(id) ||
+                $foto.hasClass('a-remover')
+            ) {
+                return;
+            }
+
+            $foto.addClass('a-remover');
+
+            $foto.css({
+                opacity: '0',
+                transition:
+                    'opacity 0.4s ease-out'
+            });
+
+            window.setTimeout(
+                function () {
+                    $foto.remove();
+                    reinicializarFotos();
+                },
+                400
+            );
+        });
 
         var fragmento =
             document.createDocumentFragment();
 
         var inseriuImagem = false;
 
-        /*
-         * Criar ou atualizar imagens.
-         */
         pessoas.forEach(
             function (pessoa) {
                 if (
@@ -477,39 +488,35 @@
                         $(imagemExistente);
 
                     $imagemExistente
-                        .removeClass(
-                            'a-remover'
+                        .removeClass('a-remover')
+                        .attr({
+                            'data-top':
+                                Number(
+                                    pessoa.top
+                                ) || 0,
+
+                            'data-left':
+                                Number(
+                                    pessoa.left
+                                ) || 0,
+
+                            'data-membro-id':
+                                pessoa.membro_id ||
+                                '',
+
+                            'data-nome':
+                                pessoa.nome || '',
+
+                            src: src,
+
+                            alt:
+                                pessoa.nome ||
+                                'Foto de perfil'
+                        })
+                        .css(
+                            'opacity',
+                            '1'
                         );
-
-                    $imagemExistente.attr({
-                        'data-top':
-                            Number(
-                                pessoa.top
-                            ) || 0,
-
-                        'data-left':
-                            Number(
-                                pessoa.left
-                            ) || 0,
-
-                        'data-membro-id':
-                            pessoa.membro_id ||
-                            '',
-
-                        'data-nome':
-                            pessoa.nome || '',
-
-                        src: src,
-
-                        alt:
-                            pessoa.nome ||
-                            'Foto de perfil'
-                    });
-
-                    $imagemExistente.css(
-                        'opacity',
-                        '1'
-                    );
 
                     return;
                 }
@@ -546,6 +553,7 @@
 
                 $imagem.css({
                     opacity: '0',
+
                     transition:
                         'opacity 0.4s ease-out'
                 });
@@ -568,7 +576,7 @@
                     function () {
                         if (
                             this.dataset
-                                .imagemFallback ===
+                                .fallbackAplicado ===
                             '1'
                         ) {
                             $(this).css(
@@ -580,7 +588,7 @@
                         }
 
                         this.dataset
-                            .imagemFallback =
+                            .fallbackAplicado =
                             '1';
 
                         this.src =
@@ -602,12 +610,6 @@
 
         reinicializarFotos();
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Reinicializar posicionamento do mapa
-    |--------------------------------------------------------------------------
-    */
 
     function reinicializarFotos() {
         window.clearTimeout(
@@ -632,70 +634,18 @@
 
     /*
     |--------------------------------------------------------------------------
-    | Notificação recebida dentro da página
+    | Notificações internas
     |--------------------------------------------------------------------------
     */
 
     function mostrarNotificacao(data) {
-        mostrarNotificacaoInterna(data);
-
-        if (
-            !window.isSecureContext ||
-            !('Notification' in window) ||
-            Notification.permission !==
-                'granted'
-        ) {
-            return;
-        }
-
-        try {
-            var notificacao =
-                new Notification(
-                    data.title ||
-                        'Nova notificação',
-                    {
-                        body:
-                            data.body || '',
-
-                        icon:
-                            data.from_photo ||
-                            '/imagens/fotos-perfil/default.webp',
-
-                        tag:
-                            'hey-' +
-                            (
-                                data.from_member_id ||
-                                'desconhecido'
-                            )
-                    }
-                );
-
-            notificacao.onclick =
-                function () {
-                    window.focus();
-                    notificacao.close();
-
-                    abrirPessoa(
-                        data.from_member_id
-                    );
-                };
-        } catch (error) {
-            console.error(
-                'Erro ao mostrar notificação:',
-                error
-            );
-        }
-    }
-
-    function mostrarNotificacaoInterna(
-        data
-    ) {
         $('.notificacao-interna')
             .remove();
 
         var $notificacao =
             $('<button>', {
                 type: 'button',
+
                 class:
                     'notificacao-interna',
 
@@ -763,18 +713,27 @@
                     timeout
                 );
 
-                var membroId =
+                var membroId = String(
                     $(this).attr(
                         'data-membro-id'
-                    );
+                    ) || ''
+                );
 
                 removerNotificacao(
                     $(this)
                 );
 
-                abrirPessoa(
-                    membroId
+                var $foto = $(
+                    '.foto[data-membro-id="' +
+                    membroId +
+                    '"]'
                 );
+
+                if ($foto.length) {
+                    $foto
+                        .first()
+                        .trigger('click');
+                }
             }
         );
     }
@@ -794,30 +753,6 @@
         );
     }
 
-    function abrirPessoa(membroId) {
-        if (!membroId) {
-            return;
-        }
-
-        var $foto = $(
-            '.foto[data-membro-id="' +
-            String(membroId) +
-            '"]'
-        );
-
-        if ($foto.length) {
-            $foto
-                .first()
-                .trigger('click');
-        }
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Mensagens de sucesso e erro
-    |--------------------------------------------------------------------------
-    */
-
     function mostrarMensagemTemporaria(
         mensagem,
         tipo
@@ -833,9 +768,7 @@
                         ? 'erro'
                         : 'sucesso'
                 )
-        });
-
-        $mensagem.text(mensagem);
+        }).text(mensagem);
 
         $('body').append(
             $mensagem
@@ -868,9 +801,22 @@
 
     /*
     |--------------------------------------------------------------------------
-    | Limpar timers
+    | Estado e timers
     |--------------------------------------------------------------------------
     */
+
+    function setStatus(status) {
+        document.documentElement
+            .setAttribute(
+                'data-websocket-status',
+                status
+            );
+
+        $(document).trigger(
+            'websocket:status',
+            [status]
+        );
+    }
 
     function clearReconnectTimer() {
         if (reconnectTimer) {
@@ -879,6 +825,16 @@
             );
 
             reconnectTimer = null;
+        }
+    }
+
+    function clearConnectionTimeout() {
+        if (connectionTimeout) {
+            window.clearTimeout(
+                connectionTimeout
+            );
+
+            connectionTimeout = null;
         }
     }
 
@@ -912,18 +868,12 @@
         }
     };
 
-    window.atualizarPessoasNoMapa =
-        atualizarPessoasNoMapa;
-
-    window.mostrarNotificacao =
-        mostrarNotificacao;
-
     window.mostrarMensagemTemporaria =
         mostrarMensagemTemporaria;
 
     /*
     |--------------------------------------------------------------------------
-    | Recuperação automática
+    | Recuperação
     |--------------------------------------------------------------------------
     */
 
@@ -938,15 +888,24 @@
     window.addEventListener(
         'offline',
         function () {
-            $(document).trigger(
-                'websocket:status',
-                ['offline']
-            );
+            setStatus('offline');
         }
     );
 
     window.addEventListener(
         'focus',
+        function () {
+            if (
+                !window.AppWebSocket
+                    .isConnected()
+            ) {
+                connect();
+            }
+        }
+    );
+
+    window.addEventListener(
+        'pageshow',
         function () {
             if (
                 !window.AppWebSocket
@@ -963,18 +922,6 @@
             if (
                 document.visibilityState ===
                     'visible' &&
-                !window.AppWebSocket
-                    .isConnected()
-            ) {
-                connect();
-            }
-        }
-    );
-
-    window.addEventListener(
-        'pageshow',
-        function () {
-            if (
                 !window.AppWebSocket
                     .isConnected()
             ) {

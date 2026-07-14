@@ -12,13 +12,6 @@
     A ligar…
 </div>
 
-<button
-    type="button"
-    id="ativar-notificacoes"
->
-    Ativar notificações
-</button>
-
 <div
     class="mini-menu"
     data-destinatario-id=""
@@ -65,9 +58,6 @@
     window.messagesUrl =
         {{ (doc_root ~ 'messages')|json_encode|raw }};
 
-    /*
-     * Enquanto estás a usar HTTP e o IP:
-     */
     window.webSocketUrl =
         'ws://' +
         window.location.hostname +
@@ -75,8 +65,8 @@
 </script>
 
 <script src="{{ doc_root }}js/index-posicao.js?v=1"></script>
-<script src="{{ doc_root }}js/websocket.js?v=3"></script>
-<script src="{{ doc_root }}js/index-mini-menu.js?v=3"></script>
+<script src="{{ doc_root }}js/websocket.js?v=5"></script>
+<script src="{{ doc_root }}js/index-mini-menu.js?v=5"></script>
 <script src="{{ doc_root }}js/index-animacao.js?v=1"></script>
 <script src="{{ doc_root }}js/index-tap-foto.js?v=1"></script>
 
