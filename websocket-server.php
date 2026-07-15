@@ -9,69 +9,32 @@ use Ratchet\WebSocket\WsServer;
 use React\EventLoop\Loop;
 use React\Socket\SocketServer;
 
-define(
-    'APP_ROOT',
-    __DIR__
-);
+define('APP_ROOT', __DIR_);
 
-require_once
-    APP_ROOT .
-    '/config/config.php';
+require_once APP_ROOT . '/config/config.php';
 
-require_once
-    APP_ROOT .
-    '/vendor/autoload.php';
+require_once APP_ROOT  '/vendor/autoload.php';
 
 $loop = Loop::get();
 
-$pdoFactory =
-    static function () use (
-        $dsn,
-        $username,
-        $password
-    ): PDO {
-        return new PDO(
-            $dsn,
-            $username,
-            $password,
-            [
-                PDO::ATTR_ERRMODE =>
-                    PDO::ERRMODE_EXCEPTION,
+$pdoFactory = static function () use ($dsn, $username, $password): PDO {
+    return new PDO($dsn, $username, $password,[
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
 
-                PDO::ATTR_DEFAULT_FETCH_MODE =>
-                    PDO::FETCH_ASSOC,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
 
-                PDO::ATTR_EMULATE_PREPARES =>
-                    false
+                PDO::ATTR_EMULATE_PREPARES => false
             ]
         );
     };
 
-$webSocket =
-    new WebSocket(
-        $pdoFactory
-    );
+$webSocket = new WebSocket($pdoFactory);
 
-$wsServer =
-    new WsServer(
-        $webSocket
-    );
+$wsServer = new WsServer($webSocket);
 
-/*
- * Envia pings e remove clientes que deixaram
- * de responder.
- */
-$wsServer->enableKeepAlive(
-    $loop,
-    30
-);
+$wsServer->enableKeepAlive($loop, 30);
 
-$socket =
-    new SocketServer(
-        '0.0.0.0:8080',
-        [],
-        $loop
-    );
+$socket = new SocketServer('0.0.0.0:8080',[], $loop);
 
 new IoServer(
     new HttpServer(
