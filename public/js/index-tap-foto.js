@@ -68,8 +68,19 @@ $(function () {
     });
 
     // Swipe dentro do menu
+    // Swipe dentro do menu
     $menu.on('pointerdown', function (e) {
         if (!aberto) return;
+
+        // Os elementos interativos recebem o clique normalmente.
+        // O resto do mini-menu continua arrastável.
+        if (
+            $(e.target).closest(
+                'button, input, textarea, select, option, a, label'
+            ).length
+        ) {
+            return;
+        }
 
         draggingMenu = true;
         startY = e.clientY;
@@ -81,7 +92,9 @@ $(function () {
         e.stopPropagation();
 
         if (this.setPointerCapture) {
-            this.setPointerCapture(e.originalEvent.pointerId);
+            this.setPointerCapture(
+                e.originalEvent.pointerId
+            );
         }
     });
 

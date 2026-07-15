@@ -232,6 +232,15 @@ function iniciarInerciaMapa() {
 }
 
 function touchStart(e) {
+    if (
+        e.target.closest(
+            '.mini-menu, #menuPrincipal, ' +
+            '#estado-ligacao, #ativar-notificacoes'
+        )
+    ) {
+        return;
+    }
+
     if(e.target.closest('.foto') || e.target.id === 'mapa-container' || e.target.tagName.toLowerCase() === 'canvas') {
         e.preventDefault();
     }
