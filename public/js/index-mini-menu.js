@@ -71,7 +71,7 @@
         );
 
         var imagem = $miniMenu
-            .find('header img')
+            .find('header a img')
             .get(0);
 
         if (imagem) {
@@ -87,7 +87,11 @@
         }
 
         $miniMenu
-            .find('header h1')
+            .find('header a')
+            .attr('href', '{{ doc_root}}profile?' + membroId);
+
+        $miniMenu
+            .find('header a h1')
             .text(nome || 'Utilizador');
 
         if (window.messagesUrl) {

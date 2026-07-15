@@ -10,200 +10,70 @@
 <canvas id="gridCanvas"></canvas>
 
 {#
-    Estes elementos continuam no DOM porque o websocket.js
-    pode procurá-los. Permanecem sempre invisíveis.
+    Estes elementos continuam no DOM porque o websocket.js atual
+    pode procurá-los. Permanecem sempre invisíveis através de CSS.
 #}
-<div
-    id="estado-ligacao"
-    data-status="connecting"
-    aria-hidden="true"
-    hidden
-></div>
+<div id="estado-ligacao" data-status="connecting" aria-hidden="true" hidden></div>
 
-<button
-    type="button"
-    id="ativar-notificacoes"
-    aria-hidden="true"
-    tabindex="-1"
-    hidden
-></button>
+<button type="button" id="ativar-notificacoes" aria-hidden="true" tabindex="-1" hidden></button>
 
-<button
-    type="button"
-    id="abrir-heys"
-    class="heys-abrir"
-    aria-label="Abrir Heys"
-    aria-controls="heys-area"
-    aria-expanded="false"
->
-    <svg
-        viewBox="0 0 24 24"
-        aria-hidden="true"
-    >
-        <path
-            d="M6.4 10.7V6.2a1.35 1.35 0 0 1 2.7 0v3.2-5a1.35 1.35 0 0 1 2.7 0v5-3.8a1.35 1.35 0 0 1 2.7 0v4.1-2.5a1.35 1.35 0 0 1 2.7 0v6.1c0 4-2.7 7.2-6.7 7.2h-.4c-2.5 0-4.5-1.1-5.8-3L1.8 14a1.45 1.45 0 0 1 2.3-1.7l2.3 2.6"
-        ></path>
+<button type="button" id="abrir-heys" class="heys-abrir" aria-label="Abrir Heys" aria-controls="heys-area" aria-expanded="false">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M6.4 10.7V6.2a1.35 1.35 0 0 1 2.7 0v3.2-5a1.35 1.35 0 0 1 2.7 0v5-3.8a1.35 1.35 0 0 1 2.7 0v4.1-2.5a1.35 1.35 0 0 1 2.7 0v6.1c0 4-2.7 7.2-6.7 7.2h-.4c-2.5 0-4.5-1.1-5.8-3L1.8 14a1.45 1.45 0 0 1 2.3-1.7l2.3 2.6"></path>
     </svg>
 
-    <span
-        id="heys-contador"
-        class="heys-contador"
-        aria-label="0 Heys por ler"
-        hidden
-    >
-        0
-    </span>
+    <span id="heys-contador" class="heys-contador" aria-label="0 Heys por ler" hidden>0</span>
 </button>
 
-<div
-    id="heys-area"
-    class="heys-area"
-    aria-hidden="true"
->
-    <button
-        type="button"
-        id="heys-fundo"
-        class="heys-fundo"
-        aria-label="Fechar Heys"
-        tabindex="-1"
-    ></button>
+<div id="heys-area" class="heys-area" aria-hidden="true">
+    <button type="button" id="heys-fundo" class="heys-fundo" aria-label="Fechar Heys" tabindex="-1"></button>
 
-    <section
-        id="heys-painel"
-        class="heys-painel"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="heys-titulo"
-        tabindex="-1"
-    >
+    <section id="heys-painel" class="heys-painel" role="dialog" aria-modal="true" aria-labelledby="heys-titulo" tabindex="-1">
         <header class="heys-cabecalho">
             <div>
                 <p>Atividade</p>
-
-                <h1 id="heys-titulo">
-                    Heys
-                </h1>
+                <h1 id="heys-titulo">Heys</h1>
             </div>
 
-            <button
-                type="button"
-                id="fechar-heys"
-                class="heys-fechar"
-                aria-label="Fechar"
-            >
-                <svg
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                >
-                    <path
-                        d="M6 6l12 12M18 6 6 18"
-                    ></path>
+            <button type="button" id="fechar-heys" class="heys-fechar" aria-label="Fechar">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 6l12 12M18 6 6 18"></path>
                 </svg>
             </button>
         </header>
 
-        <nav
-            class="heys-separadores"
-            role="tablist"
-            aria-label="Tipo de Hey"
-        >
-            <button
-                type="button"
-                id="heys-tab-recebidos"
-                class="ativo"
-                role="tab"
-                aria-selected="true"
-                data-direcao="recebido"
-            >
-                Recebidos
-            </button>
+        <nav class="heys-separadores" role="tablist" aria-label="Tipo de Hey">
+            <button type="button" id="heys-tab-recebidos" class="ativo" role="tab" aria-selected="true" data-direcao="recebido">Recebidos</button>
 
-            <button
-                type="button"
-                id="heys-tab-enviados"
-                role="tab"
-                aria-selected="false"
-                data-direcao="enviado"
-            >
-                Enviados
-            </button>
+            <button type="button" id="heys-tab-enviados" role="tab" aria-selected="false" data-direcao="enviado">Enviados</button>
         </nav>
 
-        <div
-            id="heys-lista"
-            class="heys-lista"
-            role="tabpanel"
-            aria-live="polite"
-        ></div>
+        <div id="heys-lista" class="heys-lista" role="tabpanel" aria-live="polite"></div>
 
-        <div
-            id="heys-carregando"
-            class="heys-estado"
-            hidden
-        >
-            A carregar…
-        </div>
+        <div id="heys-carregando" class="heys-estado" hidden>A carregar…</div>
 
-        <div
-            id="heys-vazio"
-            class="heys-estado"
-            hidden
-        >
-            Ainda não existem Heys.
-        </div>
+        <div id="heys-vazio" class="heys-estado" hidden >Ainda não existem Heys.</div>
 
-        <div
-            id="heys-erro"
-            class="heys-estado heys-estado-erro"
-            role="alert"
-            hidden
-        ></div>
+        <div id="heys-erro" class="heys-estado heys-estado-erro" role="alert" hidden></div>
     </section>
 </div>
 
-<div
-    id="heys-avisos"
-    class="heys-avisos"
-    aria-live="polite"
-    aria-atomic="true"
-></div>
+<div id="heys-avisos" class="heys-avisos" aria-live="polite" aria-atomic="true"></div>
 
-<div
-    class="mini-menu"
-    data-destinatario-id=""
->
+<div class="mini-menu" data-destinatario-id="">
     <header>
-        <img
-            src="{{ doc_root }}imagens/fotos-perfil/default.webp"
-            alt=""
-        >
-
-        <h1></h1>
+        <a href="">
+            <img src="{{ doc_root }}imagens/fotos-perfil/default.webp"alt="">
+            <h1></h1>
+        </a>
     </header>
 
-    <button
-        type="button"
-        class="ola"
-        id="enviar-hey"
-    >
-        Hey
-    </button>
+    <button type="button" class="ola" id="enviar-hey">Hey</button>
 
-    <form
-        action=""
-        method="post"
-    >
-        <input
-            type="text"
-            name="mensagem"
-            id="mensagem"
-            autocomplete="off"
-        >
+    <form action="" method="post">
+        <input type="text" name="mensagem" id="mensagem" autocomplete="off">
 
-        <input
-            type="submit"
-            value="Enviar"
-        >
+        <input type="submit" value="Enviar">
     </form>
 </div>
 
@@ -227,28 +97,11 @@
               ':8080';
 </script>
 
-<script
-    src="{{ doc_root }}js/index-posicao.js?v=12"
-></script>
-
-<script
-    src="{{ doc_root }}js/websocket.js?v=7"
-></script>
-
-<script
-    src="{{ doc_root }}js/index-mini-menu.js?v=8"
-></script>
-
-<script
-    src="{{ doc_root }}js/index-animacao.js?v=9"
-></script>
-
-<script
-    src="{{ doc_root }}js/index-tap-foto.js?v=9"
-></script>
-
-<script
-    src="{{ doc_root }}js/index-notificacoes.js?v=3"
-></script>
+<script src="{{ doc_root }}js/index-posicao.js?v=12"></script>
+<script src="{{ doc_root }}js/websocket.js?v=7"></script>
+<script src="{{ doc_root }}js/index-mini-menu.js?v=8"></script>
+<script src="{{ doc_root }}js/index-animacao.js?v=9"></script>
+<script src="{{ doc_root }}js/index-tap-foto.js?v=9"></script>
+<script src="{{ doc_root }}js/index-notificacoes.js?v=2"></script>
 
 {% endblock %}
