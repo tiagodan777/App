@@ -117,6 +117,7 @@
     function aplicarFoto(imagem, caminho) {
         imagem.onerror = function () {
             this.onerror = null;
+
             this.src = urlFoto(
                 '/imagens/fotos-perfil/default.webp'
             );
@@ -214,11 +215,13 @@
             document.createElement(nome);
 
         if (classe) {
-            elemento.className = classe;
+            elemento.className =
+                classe;
         }
 
         if (conteudo !== undefined) {
-            elemento.textContent = conteudo;
+            elemento.textContent =
+                conteudo;
         }
 
         return elemento;
@@ -269,7 +272,10 @@
                 'Alguém'
         );
 
-        if (item.direcao === 'enviado') {
+        if (
+            item.direcao ===
+            'enviado'
+        ) {
             frase.append(
                 'Enviaste um Hey a ',
                 nome,
@@ -369,6 +375,7 @@
                 foto,
                 dados.foto
             );
+
             foto.alt = '';
 
             aviso.appendChild(foto);
@@ -381,7 +388,9 @@
                     : '👋'
             );
 
-            aviso.appendChild(simbolo);
+            aviso.appendChild(
+                simbolo
+            );
         }
 
         var corpo = criarElemento(
@@ -445,14 +454,24 @@
 
         var opcoes = {
             body: mensagem,
-            icon: urlFoto(foto),
-            badge: urlFoto(
-                '/imagens/fotos-perfil/default.webp'
-            ),
-            tag: 'hey-recebido-' + Date.now(),
+
+            icon:
+                urlFoto(foto),
+
+            badge:
+                urlFoto(
+                    '/imagens/fotos-perfil/default.webp'
+                ),
+
+            tag:
+                'hey-recebido-' +
+                Date.now(),
+
             renotify: true,
+
             data: {
-                url: window.location.href
+                url:
+                    window.location.href
             }
         };
 
@@ -460,13 +479,16 @@
             if (
                 'serviceWorker' in navigator
             ) {
-                var registo = await navigator
-                    .serviceWorker.ready;
+                var registo =
+                    await navigator
+                        .serviceWorker
+                        .ready;
 
-                await registo.showNotification(
-                    titulo,
-                    opcoes
-                );
+                await registo
+                    .showNotification(
+                        titulo,
+                        opcoes
+                    );
 
                 return;
             }
@@ -480,7 +502,9 @@
             notificacao.onclick =
                 function () {
                     window.focus();
+
                     abrirPainel();
+
                     notificacao.close();
                 };
         } catch (falha) {
@@ -520,7 +544,9 @@
         }
 
         navigator.serviceWorker
-            .register('/service-worker.js')
+            .register(
+                '/service-worker.js'
+            )
             .catch(
                 function (falha) {
                     console.warn(
@@ -532,21 +558,22 @@
     }
 
     function prepararPedidoPermissao() {
-        var pedirUmaVez = function () {
-            pedirPermissao();
+        var pedirUmaVez =
+            function () {
+                pedirPermissao();
 
-            document.removeEventListener(
-                'pointerup',
-                pedirUmaVez,
-                true
-            );
+                document.removeEventListener(
+                    'pointerup',
+                    pedirUmaVez,
+                    true
+                );
 
-            document.removeEventListener(
-                'keydown',
-                pedirUmaVez,
-                true
-            );
-        };
+                document.removeEventListener(
+                    'keydown',
+                    pedirUmaVez,
+                    true
+                );
+            };
 
         document.addEventListener(
             'pointerup',
@@ -577,27 +604,38 @@
             );
         }
 
-        mostrarEstado(erro, false);
+        mostrarEstado(
+            erro,
+            false
+        );
 
         try {
-            var resposta = await fetch(
-                endpoint,
-                {
-                    method: 'GET',
-                    credentials: 'same-origin',
-                    cache: 'no-store',
-                    headers: {
-                        Accept: 'application/json'
+            var resposta =
+                await fetch(
+                    endpoint,
+                    {
+                        method: 'GET',
+
+                        credentials:
+                            'same-origin',
+
+                        cache:
+                            'no-store',
+
+                        headers: {
+                            Accept:
+                                'application/json'
+                        }
                     }
-                }
-            );
+                );
 
             if (!resposta.ok) {
                 var detalhe = '';
 
                 try {
                     var erroHttp =
-                        await resposta.json();
+                        await resposta
+                            .json();
 
                     detalhe = texto(
                         erroHttp.message
@@ -609,13 +647,16 @@
                 throw new Error(
                     'Resposta HTTP ' +
                     resposta.status +
-                    (detalhe
-                        ? ': ' + detalhe
-                        : '')
+                    (
+                        detalhe
+                            ? ': ' + detalhe
+                            : ''
+                    )
                 );
             }
 
-            var dados = await resposta.json();
+            var dados =
+                await resposta.json();
 
             if (!dados.success) {
                 throw new Error(
@@ -634,23 +675,34 @@
             if (estado.iniciou) {
                 recebidas.forEach(
                     function (item) {
-                        var id = numero(item.id);
+                        var id =
+                            numero(item.id);
 
                         if (
                             item.direcao ===
                                 'recebido' &&
                             !item.lida &&
-                            !estado.idsConhecidos
+                            !estado
+                                .idsConhecidos
                                 .has(id)
                         ) {
+                            var nome =
+                                texto(
+                                    item.outro_nome
+                                ) ||
+                                'Alguém';
+
+                            var mensagem =
+                                nome +
+                                ' enviou-te um Hey.';
+
                             mostrarAviso({
                                 titulo:
                                     'Recebeste um Hey!',
+
                                 mensagem:
-                                    texto(
-                                        item.outro_nome
-                                    ) +
-                                    ' enviou-te um Hey.',
+                                    mensagem,
+
                                 foto:
                                     texto(
                                         item.outro_foto_url
@@ -659,10 +711,7 @@
 
                             mostrarNotificacaoSistema(
                                 'Recebeste um Hey!',
-                                texto(
-                                    item.outro_nome
-                                ) +
-                                    ' enviou-te um Hey.',
+                                mensagem,
                                 texto(
                                     item.outro_foto_url
                                 )
@@ -679,7 +728,9 @@
                 new Set(
                     recebidas.map(
                         function (item) {
-                            return numero(item.id);
+                            return numero(
+                                item.id
+                            );
                         }
                     )
                 );
@@ -727,19 +778,27 @@
                 'mark_all_read'
             );
 
-            var resposta = await fetch(
-                endpoint,
-                {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    headers: {
-                        Accept: 'application/json',
-                        'Content-Type':
-                            'application/x-www-form-urlencoded;charset=UTF-8'
-                    },
-                    body: corpo.toString()
-                }
-            );
+            var resposta =
+                await fetch(
+                    endpoint,
+                    {
+                        method: 'POST',
+
+                        credentials:
+                            'same-origin',
+
+                        headers: {
+                            Accept:
+                                'application/json',
+
+                            'Content-Type':
+                                'application/x-www-form-urlencoded;charset=UTF-8'
+                        },
+
+                        body:
+                            corpo.toString()
+                    }
+                );
 
             if (!resposta.ok) {
                 return;
@@ -755,7 +814,9 @@
                             return Object.assign(
                                 {},
                                 item,
-                                { lida: true }
+                                {
+                                    lida: true
+                                }
                             );
                         }
 
@@ -764,6 +825,7 @@
                 );
 
             definirContador(0);
+
             renderizar();
         } catch (falha) {
             console.warn(
@@ -776,7 +838,10 @@
     function abrirPainel() {
         estado.aberto = true;
 
-        area.classList.add('aberta');
+        area.classList.add(
+            'aberta'
+        );
+
         area.setAttribute(
             'aria-hidden',
             'false'
@@ -797,7 +862,9 @@
 
         obterNotificacoes(true)
             .then(
-                function (carregou) {
+                function (
+                    carregou
+                ) {
                     if (carregou) {
                         marcarComoLidas();
                     }
@@ -808,7 +875,10 @@
     function fecharPainel() {
         estado.aberto = false;
 
-        area.classList.remove('aberta');
+        area.classList.remove(
+            'aberta'
+        );
+
         area.setAttribute(
             'aria-hidden',
             'true'
@@ -842,7 +912,8 @@
             .forEach(
                 function (separador) {
                     var ativo =
-                        separador === botao;
+                        separador ===
+                        botao;
 
                     separador.classList
                         .toggle(
@@ -878,9 +949,11 @@
             function (tipo) {
                 elemento.addEventListener(
                     tipo,
+
                     function (evento) {
                         evento.stopPropagation();
                     },
+
                     {
                         passive:
                             tipo !==
@@ -910,7 +983,8 @@
         'keydown',
         function (evento) {
             if (
-                evento.key === 'Escape' &&
+                evento.key ===
+                    'Escape' &&
                 estado.aberto
             ) {
                 fecharPainel();
@@ -953,11 +1027,15 @@
             }
 
             if (id > 0) {
-                estado.idsConhecidos.add(id);
+                estado.idsConhecidos.add(
+                    id
+                );
             }
 
             var nome =
-                texto(dados.from_name) ||
+                texto(
+                    dados.from_name
+                ) ||
                 'Alguém';
 
             var mensagem =
@@ -965,17 +1043,24 @@
                 ' enviou-te um Hey.';
 
             mostrarAviso({
-                titulo: 'Recebeste um Hey!',
-                mensagem: mensagem,
-                foto: texto(
-                    dados.from_photo
-                )
+                titulo:
+                    'Recebeste um Hey!',
+
+                mensagem:
+                    mensagem,
+
+                foto:
+                    texto(
+                        dados.from_photo
+                    )
             });
 
             mostrarNotificacaoSistema(
                 'Recebeste um Hey!',
                 mensagem,
-                texto(dados.from_photo)
+                texto(
+                    dados.from_photo
+                )
             );
 
             definirContador(
@@ -986,7 +1071,9 @@
 
             window.setTimeout(
                 function () {
-                    obterNotificacoes(false);
+                    obterNotificacoes(
+                        false
+                    );
                 },
                 250
             );
@@ -995,18 +1082,70 @@
 
     window.addEventListener(
         'app:hey-enviado',
-        function () {
+        function (evento) {
+            var dados =
+                evento.detail || {};
+
+            var miniMenu =
+                document.querySelector(
+                    '.mini-menu'
+                );
+
+            var nome =
+                texto(
+                    dados.destinatario_nome
+                ) ||
+                texto(
+                    miniMenu
+                        ?.querySelector(
+                            'header h1'
+                        )
+                        ?.textContent
+                ) ||
+                'A outra pessoa';
+
+            var foto =
+                texto(
+                    dados.destinatario_foto
+                ) ||
+                texto(
+                    miniMenu
+                        ?.querySelector(
+                            'header img'
+                        )
+                        ?.currentSrc
+                ) ||
+                texto(
+                    miniMenu
+                        ?.querySelector(
+                            'header img'
+                        )
+                        ?.src
+                );
+
             mostrarAviso({
-                titulo: 'Hey enviado',
+                titulo:
+                    'Hey enviado',
+
                 mensagem:
-                    'A outra pessoa recebeu o teu Hey.',
-                tipo: 'sucesso',
-                duracao: 2600
+                    nome +
+                    ' recebeu o teu Hey.',
+
+                foto:
+                    foto,
+
+                tipo:
+                    'sucesso',
+
+                duracao:
+                    2600
             });
 
             window.setTimeout(
                 function () {
-                    obterNotificacoes(false);
+                    obterNotificacoes(
+                        false
+                    );
                 },
                 250
             );
@@ -1019,50 +1158,78 @@
             mostrarAviso({
                 titulo:
                     'Não foi possível enviar',
+
                 mensagem:
                     texto(
-                        evento.detail?.message
+                        evento.detail
+                            ?.message
                     ) ||
                     'Tenta novamente.',
-                tipo: 'erro'
+
+                tipo:
+                    'erro'
             });
         }
     );
 
-    bloquearGestosDoMapa(abrir);
-    bloquearGestosDoMapa(area);
-    bloquearGestosDoMapa(painel);
+    bloquearGestosDoMapa(
+        abrir
+    );
+
+    bloquearGestosDoMapa(
+        area
+    );
+
+    bloquearGestosDoMapa(
+        painel
+    );
 
     window.mostrarMensagemTemporaria =
-        function (mensagem, tipo) {
+        function (
+            mensagem,
+            tipo
+        ) {
             var eErro =
                 tipo === 'erro';
 
             mostrarAviso({
-                titulo: eErro
-                    ? 'Não foi possível'
-                    : 'Tudo certo',
+                titulo:
+                    eErro
+                        ? 'Não foi possível'
+                        : 'Tudo certo',
+
                 mensagem:
                     texto(mensagem),
-                tipo: eErro
-                    ? 'erro'
-                    : 'sucesso',
-                duracao: eErro
-                    ? 4200
-                    : 2600
+
+                tipo:
+                    eErro
+                        ? 'erro'
+                        : 'sucesso',
+
+                duracao:
+                    eErro
+                        ? 4200
+                        : 2600
             });
         };
 
     registarServiceWorker();
+
     prepararPedidoPermissao();
+
     obterNotificacoes(false);
 
     window.setInterval(
         function () {
             if (!document.hidden) {
-                obterNotificacoes(false);
+                obterNotificacoes(
+                    false
+                );
             }
         },
         10000
     );
-})(window, document);
+})(
+    window,
+    document
+);

@@ -339,6 +339,10 @@ class WebSocket implements MessageComponentInterface
 
         $ligacoesDestinatario = $this->ligacoesPorMembro[$destinatarioId] ?? [];
 
+        $destinatario =
+            $this->pessoas[$destinatarioId]
+            ?? null;
+
         if ($ligacoesDestinatario === []) {
             $this->enviar($from, [
                 'type' => 'notification_not_delivered',
@@ -346,6 +350,15 @@ class WebSocket implements MessageComponentInterface
                 'message' =>
                     'O utilizador não está ligado neste momento.'
             ]);
+
+            return;
+        }
+
+        if (!$destinatario) {
+            $this->enviarErro(
+                $from,
+                'O destinatário já não está disponível.'
+            );
 
             return;
         }
@@ -380,8 +393,15 @@ class WebSocket implements MessageComponentInterface
             'type' => 'notification_sent',
             'notification_id' => $notificacaoId,
             'destinatario_id' => $destinatarioId,
+            'destinatario_nome' =>
+                (string) $destinatario['nome'],
+            'destinatario_foto' =>
+                (string) $destinatario['src'],
             'deliveries' => $numeroEntregas,
-            'message' => 'Hey enviado.'
+            'message' => sprintf(
+                '%s recebeu o teu Hey.',
+                (string) $destinatario['nome']
+            )
         ]);
 
         echo sprintf(

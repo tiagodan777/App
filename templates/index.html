@@ -10,8 +10,8 @@
 <canvas id="gridCanvas"></canvas>
 
 {#
-    Estes elementos continuam no DOM porque o websocket.js atual
-    pode procurá-los. Permanecem sempre invisíveis através de CSS.
+    Estes elementos continuam no DOM porque o websocket.js
+    pode procurá-los. Permanecem sempre invisíveis.
 #}
 <div
     id="estado-ligacao"
@@ -50,7 +50,9 @@
         class="heys-contador"
         aria-label="0 Heys por ler"
         hidden
-    >0</span>
+    >
+        0
+    </span>
 </button>
 
 <div
@@ -77,7 +79,10 @@
         <header class="heys-cabecalho">
             <div>
                 <p>Atividade</p>
-                <h1 id="heys-titulo">Heys</h1>
+
+                <h1 id="heys-titulo">
+                    Heys
+                </h1>
             </div>
 
             <button
@@ -90,7 +95,9 @@
                     viewBox="0 0 24 24"
                     aria-hidden="true"
                 >
-                    <path d="M6 6l12 12M18 6 6 18"></path>
+                    <path
+                        d="M6 6l12 12M18 6 6 18"
+                    ></path>
                 </svg>
             </button>
         </header>
@@ -107,7 +114,9 @@
                 role="tab"
                 aria-selected="true"
                 data-direcao="recebido"
-            >Recebidos</button>
+            >
+                Recebidos
+            </button>
 
             <button
                 type="button"
@@ -115,7 +124,9 @@
                 role="tab"
                 aria-selected="false"
                 data-direcao="enviado"
-            >Enviados</button>
+            >
+                Enviados
+            </button>
         </nav>
 
         <div
@@ -129,13 +140,17 @@
             id="heys-carregando"
             class="heys-estado"
             hidden
-        >A carregar…</div>
+        >
+            A carregar…
+        </div>
 
         <div
             id="heys-vazio"
             class="heys-estado"
             hidden
-        >Ainda não existem Heys.</div>
+        >
+            Ainda não existem Heys.
+        </div>
 
         <div
             id="heys-erro"
@@ -212,11 +227,28 @@
               ':8080';
 </script>
 
-<script src="{{ doc_root }}js/index-posicao.js?v=12"></script>
-<script src="{{ doc_root }}js/websocket.js?v=7"></script>
-<script src="{{ doc_root }}js/index-mini-menu.js?v=8"></script>
-<script src="{{ doc_root }}js/index-animacao.js?v=9"></script>
-<script src="{{ doc_root }}js/index-tap-foto.js?v=9"></script>
-<script src="{{ doc_root }}js/index-notificacoes.js?v=2"></script>
+<script
+    src="{{ doc_root }}js/index-posicao.js?v=12"
+></script>
+
+<script
+    src="{{ doc_root }}js/websocket.js?v=7"
+></script>
+
+<script
+    src="{{ doc_root }}js/index-mini-menu.js?v=8"
+></script>
+
+<script
+    src="{{ doc_root }}js/index-animacao.js?v=9"
+></script>
+
+<script
+    src="{{ doc_root }}js/index-tap-foto.js?v=9"
+></script>
+
+<script
+    src="{{ doc_root }}js/index-notificacoes.js?v=3"
+></script>
 
 {% endblock %}
