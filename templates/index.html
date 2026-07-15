@@ -66,9 +66,17 @@
         {{ (doc_root ~ 'messages')|json_encode|raw }};
 
     window.webSocketUrl =
-        'ws://' +
-        window.location.hostname +
-        ':8080';
+        window.location.protocol === 'https:'
+            ? (
+                'wss://' +
+                window.location.host +
+                '/ws/'
+            )
+            : (
+                'ws://' +
+                window.location.hostname +
+                ':8080'
+            );
 </script>
 
 <script src="{{ doc_root }}js/index-posicao.js?v=11"></script>
