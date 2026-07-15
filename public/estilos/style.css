@@ -97,13 +97,23 @@ img {
     align-items: center;
 }
 
-.mini-menu > header > img {
+.mini-menu > header > a {
+    text-decoration: none;
+    color: black;
+
+    display: flex;
+    flex-flow: column nowrap;
+    justify-content: space-evenly;
+    align-content: end;
+}
+
+.mini-menu > header > a > img {
     width: 22.5vw;
     height: 22.5vw;
     border-radius: 50%;
 }
 
-.mini-menu > header > h1 {
+.mini-menu > header > a > h1 {
     font-size: 1.5em;
 }
 

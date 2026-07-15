@@ -88,7 +88,7 @@
 
         $miniMenu
             .find('header a')
-            .attr('href', '{{ doc_root}}profile?' + membroId);
+            .attr('href', '/profile?' + membroId);
 
         $miniMenu
             .find('header a h1')
