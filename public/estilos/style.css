@@ -104,7 +104,7 @@ img {
     display: flex;
     flex-flow: column nowrap;
     justify-content: space-evenly;
-    align-content: end;
+    ali
 }
 
 .mini-menu > header > a > img {
