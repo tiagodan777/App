@@ -135,6 +135,16 @@ img {
     font-size: 3em;
 }
 
+.mini-menu > button#enviar-hey {
+    width: 50%;
+    height: 50%;
+
+    box-shadow: inset 0px 0px 4px rgba(255, 166, 0, 0.02),
+                inset 0px 0px 8px rgba(255, 166, 0, 0.04),
+                inset 0px 0px 16px rgba(0, 0, 255, 0.08),
+                inset 0px 0px 32px rgba(0, 0, 255, 0.16);
+}
+
 #menuPrincipal {
     width: 90%;
     height: 56px;
