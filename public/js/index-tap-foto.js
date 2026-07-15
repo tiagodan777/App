@@ -1,146 +1,276 @@
-$(function () {
+(function (window, document, $) {
+    'use strict';
 
-    const $menu = $('.mini-menu');
+    $(function () {
+        var $menu = $('.mini-menu');
 
-    let aberto = false;
-    let draggingMenu = false;
-
-    let startY = 0;
-    let currentY = 0;
-    let startTime = 0;
-
-    let fotoStartX = 0;
-    let fotoStartY = 0;
-    let fotoStartTime = 0;
-
-    function abrirMenu() {
-        aberto = true;
-        draggingMenu = false;
-
-        $menu.css({
-            position: 'fixed',
-            left: '0',
-            bottom: '0',
-            transform: 'translateY(15%)',
-            transition: 'transform 0.5s cubic-bezier(.2,.8,.2,1)'
-        });
-    }
-
-    function fecharMenu() {
-        aberto = false;
-        draggingMenu = false;
-
-        $menu.css({
-            transform: 'translateY(100%)',
-            transition: 'transform 0.3s cubic-bezier(.4,0,1,1)'
-        });
-    }
-
-    function voltarMenu() {
-        $menu.css({
-            transform: 'translateY(15%)',
-            transition: 'transform 0.3s cubic-bezier(.2,.8,.2,1)'
-        });
-    }
-
-    // Guarda onde o dedo começou na foto
-    $(document).on('pointerdown', '.foto', function (e) {
-        fotoStartX = e.clientX;
-        fotoStartY = e.clientY;
-        fotoStartTime = Date.now();
-
-        e.stopPropagation();
-    });
-
-    // Abre só se foi TAP, não arrasto
-    $(document).on('pointerup', '.foto', function (e) {
-        const diffX = Math.abs(e.clientX - fotoStartX);
-        const diffY = Math.abs(e.clientY - fotoStartY);
-        const time = Date.now() - fotoStartTime;
-
-        const foiTap = diffX < 12 && diffY < 12 && time < 350;
-
-        if (foiTap) {
-            e.preventDefault();
-            e.stopPropagation();
-            abrirMenu();
-        }
-    });
-
-    // Swipe dentro do menu
-    // Swipe dentro do menu
-    $menu.on('pointerdown', function (e) {
-        if (!aberto) return;
-
-        // Os elementos interativos recebem o clique normalmente.
-        // O resto do mini-menu continua arrastável.
-        if (
-            $(e.target).closest(
-                'button, input, textarea, select, option, a, label'
-            ).length
-        ) {
+        if ($menu.length === 0) {
             return;
         }
 
-        draggingMenu = true;
-        startY = e.clientY;
-        currentY = e.clientY;
-        startTime = Date.now();
+        var aberto = false;
+        var fotoInicioX = 0;
+        var fotoInicioY = 0;
+        var fotoInicioTempo = 0;
+        var fotoSelecionada = null;
 
-        $menu.css('transition', 'none');
+        var aArrastarMenu = false;
+        var menuInicioY = 0;
+        var menuAtualY = 0;
+        var menuInicioTempo = 0;
+        var ponteiroMenu = null;
 
-        e.stopPropagation();
-
-        if (this.setPointerCapture) {
-            this.setPointerCapture(
-                e.originalEvent.pointerId
+        function eInterativo(alvo) {
+            return Boolean(
+                $(alvo).closest(
+                    'button, a, input, textarea, select, label, form'
+                ).length
             );
         }
-    });
 
-    $menu.on('pointermove', function (e) {
-        if (!draggingMenu) return;
+        function prepararFoto(elemento) {
+            if (
+                typeof window.prepararMiniMenuDaFoto ===
+                'function'
+            ) {
+                return window
+                    .prepararMiniMenuDaFoto(
+                        elemento
+                    );
+            }
 
-        currentY = e.clientY;
-
-        let diffY = currentY - startY;
-
-        if (diffY < 0) {
-            diffY = diffY * 0.25;
+            return true;
         }
 
-        $menu.css({
-            transform: `translateY(calc(25% + ${diffY}px))`
-        });
+        function abrirMenu(elemento) {
+            if (!prepararFoto(elemento)) {
+                return;
+            }
 
-        e.preventDefault();
-    });
+            aberto = true;
 
-    $menu.on('pointerup pointercancel', function (e) {
-        if (!draggingMenu) return;
-
-        draggingMenu = false;
-
-        const distance = currentY - startY;
-        const time = Date.now() - startTime;
-        const velocity = distance / time;
-
-        if (distance > 120 || velocity > 0.7) {
-            fecharMenu();
-        } else {
-            voltarMenu();
+            $menu
+                .attr('aria-hidden', 'false')
+                .css({
+                    transform: 'translateY(15%)',
+                    transition:
+                        'transform 0.3s cubic-bezier(.2,.8,.2,1)'
+                });
         }
 
-        e.stopPropagation();
-    });
+        function fecharMenu() {
+            aberto = false;
+            aArrastarMenu = false;
+            ponteiroMenu = null;
 
-    // Fecha ao tocar fora
-    $(document).on('pointerup', function (e) {
-        if (!aberto) return;
-
-        if (!$(e.target).closest('.mini-menu, .foto').length) {
-            fecharMenu();
+            $menu
+                .attr('aria-hidden', 'true')
+                .css({
+                    transform: 'translateY(100%)',
+                    transition:
+                        'transform 0.3s cubic-bezier(.4,0,1,1)'
+                });
         }
-    });
 
-});
+        function voltarMenu() {
+            $menu.css({
+                transform: 'translateY(15%)',
+                transition:
+                    'transform 0.3s cubic-bezier(.2,.8,.2,1)'
+            });
+        }
+
+        $(document).on(
+            'pointerdown',
+            '.foto',
+            function (evento) {
+                fotoSelecionada = this;
+                fotoInicioX = evento.clientX;
+                fotoInicioY = evento.clientY;
+                fotoInicioTempo = Date.now();
+
+                prepararFoto(this);
+
+                evento.stopPropagation();
+            }
+        );
+
+        $(document).on(
+            'pointerup',
+            '.foto',
+            function (evento) {
+                if (
+                    !fotoSelecionada ||
+                    fotoSelecionada !== this
+                ) {
+                    return;
+                }
+
+                var distanciaX = Math.abs(
+                    evento.clientX - fotoInicioX
+                );
+
+                var distanciaY = Math.abs(
+                    evento.clientY - fotoInicioY
+                );
+
+                var duracao =
+                    Date.now() - fotoInicioTempo;
+
+                fotoSelecionada = null;
+
+                var foiToque =
+                    distanciaX < 14 &&
+                    distanciaY < 14 &&
+                    duracao < 450;
+
+                if (!foiToque) {
+                    return;
+                }
+
+                /*
+                 * Não usamos preventDefault aqui. No Safari/iOS isso
+                 * cancelava o click e deixava o mini-menu sem pessoa.
+                 */
+                evento.stopPropagation();
+                abrirMenu(this);
+            }
+        );
+
+        $(document).on(
+            'pointercancel',
+            '.foto',
+            function () {
+                fotoSelecionada = null;
+            }
+        );
+
+        $menu.on(
+            'pointerdown',
+            function (evento) {
+                if (!aberto || eInterativo(evento.target)) {
+                    aArrastarMenu = false;
+                    return;
+                }
+
+                aArrastarMenu = true;
+                menuInicioY = evento.clientY;
+                menuAtualY = evento.clientY;
+                menuInicioTempo = Date.now();
+                ponteiroMenu = evento.pointerId;
+
+                $menu.css('transition', 'none');
+
+                evento.stopPropagation();
+
+                if (this.setPointerCapture) {
+                    try {
+                        this.setPointerCapture(
+                            evento.pointerId
+                        );
+                    } catch (erro) {
+                        /* O Safari pode recusar a captura. */
+                    }
+                }
+            }
+        );
+
+        $menu.on(
+            'pointermove',
+            function (evento) {
+                if (
+                    !aArrastarMenu ||
+                    evento.pointerId !== ponteiroMenu
+                ) {
+                    return;
+                }
+
+                menuAtualY = evento.clientY;
+
+                var distancia =
+                    menuAtualY - menuInicioY;
+
+                if (distancia < 0) {
+                    distancia *= 0.22;
+                }
+
+                $menu.css(
+                    'transform',
+                    'translateY(calc(15% + ' +
+                        distancia +
+                        'px))'
+                );
+
+                evento.preventDefault();
+                evento.stopPropagation();
+            }
+        );
+
+        $menu.on(
+            'pointerup pointercancel',
+            function (evento) {
+                if (
+                    !aArrastarMenu ||
+                    evento.pointerId !== ponteiroMenu
+                ) {
+                    return;
+                }
+
+                aArrastarMenu = false;
+
+                var distancia =
+                    menuAtualY - menuInicioY;
+
+                var duracao = Math.max(
+                    1,
+                    Date.now() - menuInicioTempo
+                );
+
+                var velocidade =
+                    distancia / duracao;
+
+                if (this.releasePointerCapture) {
+                    try {
+                        this.releasePointerCapture(
+                            evento.pointerId
+                        );
+                    } catch (erro) {
+                        /* O ponteiro pode já ter sido libertado. */
+                    }
+                }
+
+                ponteiroMenu = null;
+
+                if (
+                    distancia > 110 ||
+                    velocidade > 0.65
+                ) {
+                    fecharMenu();
+                } else {
+                    voltarMenu();
+                }
+
+                evento.stopPropagation();
+            }
+        );
+
+        $(document).on(
+            'pointerup',
+            function (evento) {
+                if (!aberto) {
+                    return;
+                }
+
+                if (
+                    !$(evento.target).closest(
+                        '.mini-menu, .foto'
+                    ).length
+                ) {
+                    fecharMenu();
+                }
+            }
+        );
+
+        window.fecharMiniMenu = fecharMenu;
+    });
+})(window, document, jQuery);

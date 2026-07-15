@@ -96,6 +96,35 @@
             : 0;
     }
 
+    function urlFoto(valor) {
+        var caminho = texto(valor);
+
+        if (!caminho) {
+            caminho =
+                '/imagens/fotos-perfil/default.webp';
+        }
+
+        try {
+            return new URL(
+                caminho,
+                window.location.href
+            ).href;
+        } catch (falha) {
+            return '/imagens/fotos-perfil/default.webp';
+        }
+    }
+
+    function aplicarFoto(imagem, caminho) {
+        imagem.onerror = function () {
+            this.onerror = null;
+            this.src = urlFoto(
+                '/imagens/fotos-perfil/default.webp'
+            );
+        };
+
+        imagem.src = urlFoto(caminho);
+    }
+
     function definirContador(valor) {
         var total = Math.max(
             0,
@@ -215,11 +244,10 @@
             'hey-item-foto'
         );
 
-        imagem.src =
-            texto(
-                item.outro_foto_url
-            ) ||
-            '/imagens/fotos-perfil/default.webp';
+        aplicarFoto(
+            imagem,
+            item.outro_foto_url
+        );
 
         imagem.alt = '';
         imagem.loading = 'lazy';
@@ -337,7 +365,10 @@
                 'hey-aviso-foto'
             );
 
-            foto.src = dados.foto;
+            aplicarFoto(
+                foto,
+                dados.foto
+            );
             foto.alt = '';
 
             aviso.appendChild(foto);
@@ -399,7 +430,7 @@
         );
     }
 
-    function mostrarNotificacaoSistema(
+    async function mostrarNotificacaoSistema(
         titulo,
         mensagem,
         foto
@@ -412,18 +443,38 @@
             return;
         }
 
+        var opcoes = {
+            body: mensagem,
+            icon: urlFoto(foto),
+            badge: urlFoto(
+                '/imagens/fotos-perfil/default.webp'
+            ),
+            tag: 'hey-recebido-' + Date.now(),
+            renotify: true,
+            data: {
+                url: window.location.href
+            }
+        };
+
         try {
+            if (
+                'serviceWorker' in navigator
+            ) {
+                var registo = await navigator
+                    .serviceWorker.ready;
+
+                await registo.showNotification(
+                    titulo,
+                    opcoes
+                );
+
+                return;
+            }
+
             var notificacao =
                 new Notification(
                     titulo,
-                    {
-                        body: mensagem,
-                        icon:
-                            foto ||
-                            '/imagens/fotos-perfil/default.webp',
-                        tag: 'hey-recebido',
-                        renotify: true
-                    }
+                    opcoes
                 );
 
             notificacao.onclick =
@@ -458,6 +509,26 @@
                 falha
             );
         }
+    }
+
+    function registarServiceWorker() {
+        if (
+            !('serviceWorker' in navigator) ||
+            !window.isSecureContext
+        ) {
+            return;
+        }
+
+        navigator.serviceWorker
+            .register('/service-worker.js')
+            .catch(
+                function (falha) {
+                    console.warn(
+                        'Não foi possível iniciar as notificações da app.',
+                        falha
+                    );
+                }
+            );
     }
 
     function prepararPedidoPermissao() {
@@ -522,9 +593,25 @@
             );
 
             if (!resposta.ok) {
+                var detalhe = '';
+
+                try {
+                    var erroHttp =
+                        await resposta.json();
+
+                    detalhe = texto(
+                        erroHttp.message
+                    );
+                } catch (ignorar) {
+                    detalhe = '';
+                }
+
                 throw new Error(
                     'Resposta HTTP ' +
-                    resposta.status
+                    resposta.status +
+                    (detalhe
+                        ? ': ' + detalhe
+                        : '')
                 );
             }
 
@@ -556,20 +643,14 @@
                             !estado.idsConhecidos
                                 .has(id)
                         ) {
-                            var nome =
-                                texto(
-                                    item.outro_nome
-                                ) ||
-                                'Alguém';
-
-                            var mensagem =
-                                nome +
-                                ' enviou-te um Hey.';
-
                             mostrarAviso({
                                 titulo:
                                     'Recebeste um Hey!',
-                                mensagem: mensagem,
+                                mensagem:
+                                    texto(
+                                        item.outro_nome
+                                    ) +
+                                    ' enviou-te um Hey.',
                                 foto:
                                     texto(
                                         item.outro_foto_url
@@ -578,7 +659,10 @@
 
                             mostrarNotificacaoSistema(
                                 'Recebeste um Hey!',
-                                mensagem,
+                                texto(
+                                    item.outro_nome
+                                ) +
+                                    ' enviou-te um Hey.',
                                 texto(
                                     item.outro_foto_url
                                 )
@@ -607,6 +691,8 @@
             );
 
             renderizar();
+
+            return true;
         } catch (falha) {
             console.error(falha);
 
@@ -617,6 +703,8 @@
                     'Não foi possível carregar os Heys.'
                 );
             }
+
+            return false;
         } finally {
             estado.carregando = false;
 
@@ -667,9 +755,7 @@
                             return Object.assign(
                                 {},
                                 item,
-                                {
-                                    lida: true
-                                }
+                                { lida: true }
                             );
                         }
 
@@ -691,7 +777,6 @@
         estado.aberto = true;
 
         area.classList.add('aberta');
-
         area.setAttribute(
             'aria-hidden',
             'false'
@@ -711,14 +796,19 @@
         });
 
         obterNotificacoes(true)
-            .then(marcarComoLidas);
+            .then(
+                function (carregou) {
+                    if (carregou) {
+                        marcarComoLidas();
+                    }
+                }
+            );
     }
 
     function fecharPainel() {
         estado.aberto = false;
 
         area.classList.remove('aberta');
-
         area.setAttribute(
             'aria-hidden',
             'true'
@@ -952,20 +1042,18 @@
                 titulo: eErro
                     ? 'Não foi possível'
                     : 'Tudo certo',
-
                 mensagem:
                     texto(mensagem),
-
                 tipo: eErro
                     ? 'erro'
                     : 'sucesso',
-
                 duracao: eErro
                     ? 4200
                     : 2600
             });
         };
 
+    registarServiceWorker();
     prepararPedidoPermissao();
     obterNotificacoes(false);
 
@@ -975,6 +1063,6 @@
                 obterNotificacoes(false);
             }
         },
-        5000
+        10000
     );
 })(window, document);

@@ -2,13 +2,16 @@
 
 {% block content %}
 
-<link rel="stylesheet" href="{{ doc_root }}estilos/index-notificacoes.css?v=1">
+<link
+    rel="stylesheet"
+    href="{{ doc_root }}estilos/index-notificacoes.css?v=2"
+>
 
 <canvas id="gridCanvas"></canvas>
 
 {#
-    Permanecem no DOM para o websocket.js atual não falhar,
-    mas nunca ficam visíveis.
+    Estes elementos continuam no DOM porque o websocket.js atual
+    pode procurá-los. Permanecem sempre invisíveis através de CSS.
 #}
 <div
     id="estado-ligacao"
@@ -33,8 +36,13 @@
     aria-controls="heys-area"
     aria-expanded="false"
 >
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M6.4 10.7V6.2a1.35 1.35 0 0 1 2.7 0v3.2-5a1.35 1.35 0 0 1 2.7 0v5-3.8a1.35 1.35 0 0 1 2.7 0v4.1-2.5a1.35 1.35 0 0 1 2.7 0v6.1c0 4-2.7 7.2-6.7 7.2h-.4c-2.5 0-4.5-1.1-5.8-3L1.8 14a1.45 1.45 0 0 1 2.3-1.7l2.3 2.6"></path>
+    <svg
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+    >
+        <path
+            d="M6.4 10.7V6.2a1.35 1.35 0 0 1 2.7 0v3.2-5a1.35 1.35 0 0 1 2.7 0v5-3.8a1.35 1.35 0 0 1 2.7 0v4.1-2.5a1.35 1.35 0 0 1 2.7 0v6.1c0 4-2.7 7.2-6.7 7.2h-.4c-2.5 0-4.5-1.1-5.8-3L1.8 14a1.45 1.45 0 0 1 2.3-1.7l2.3 2.6"
+        ></path>
     </svg>
 
     <span
@@ -78,7 +86,10 @@
                 class="heys-fechar"
                 aria-label="Fechar"
             >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
+                <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                >
                     <path d="M6 6l12 12M18 6 6 18"></path>
                 </svg>
             </button>
@@ -163,7 +174,10 @@
         Hey
     </button>
 
-    <form action="" method="post">
+    <form
+        action=""
+        method="post"
+    >
         <input
             type="text"
             name="mensagem"
@@ -190,15 +204,19 @@
 
     window.webSocketUrl =
         window.location.protocol === 'https:'
-            ? 'wss://' + window.location.host + '/ws/'
-            : 'ws://' + window.location.hostname + ':8080';
+            ? 'wss://' +
+              window.location.host +
+              '/ws/'
+            : 'ws://' +
+              window.location.hostname +
+              ':8080';
 </script>
 
 <script src="{{ doc_root }}js/index-posicao.js?v=12"></script>
 <script src="{{ doc_root }}js/websocket.js?v=7"></script>
-<script src="{{ doc_root }}js/index-mini-menu.js?v=7"></script>
+<script src="{{ doc_root }}js/index-mini-menu.js?v=8"></script>
 <script src="{{ doc_root }}js/index-animacao.js?v=9"></script>
-<script src="{{ doc_root }}js/index-tap-foto.js?v=8"></script>
-<script src="{{ doc_root }}js/index-notificacoes.js?v=1"></script>
+<script src="{{ doc_root }}js/index-tap-foto.js?v=9"></script>
+<script src="{{ doc_root }}js/index-notificacoes.js?v=2"></script>
 
 {% endblock %}

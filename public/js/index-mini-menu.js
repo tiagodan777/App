@@ -1,303 +1,233 @@
-$(function () {
+(function (window, document, $) {
     'use strict';
 
-    var $miniMenu =
-        $('.mini-menu');
+    var $miniMenu = $('.mini-menu');
+    var aEnviarHey = false;
 
-    var sendingHey = false;
+    if ($miniMenu.length === 0) {
+        return;
+    }
 
-    $(document).on(
-        'click',
-        '.foto',
-        function () {
-            var $img = $(this);
+    function texto(valor) {
+        return String(valor || '').trim();
+    }
 
-            var membroId = String(
-                $img.attr(
-                    'data-membro-id'
-                ) || ''
-            ).trim();
+    function urlFoto(valor) {
+        var caminho = texto(valor);
 
-            var nome = String(
-                $img.attr(
-                    'data-nome'
-                ) || ''
-            ).trim();
+        if (!caminho) {
+            caminho = '/imagens/fotos-perfil/default.webp';
+        }
 
-            var foto = String(
-                $img.attr('src') ||
-                ''
-            ).trim();
+        try {
+            return new URL(
+                caminho,
+                window.location.href
+            ).href;
+        } catch (erro) {
+            return '/imagens/fotos-perfil/default.webp';
+        }
+    }
 
-            $miniMenu
-                .attr(
-                    'data-destinatario-id',
-                    membroId
+    function obterMembroId(elemento) {
+        return texto(
+            elemento.getAttribute('data-membro-id') ||
+            elemento.getAttribute('data-id') ||
+            elemento.id
+        );
+    }
+
+    function obterNome(elemento) {
+        return texto(
+            elemento.getAttribute('data-nome') ||
+            elemento.getAttribute('alt')
+        );
+    }
+
+    function obterFoto(elemento) {
+        return urlFoto(
+            elemento.currentSrc ||
+            elemento.src ||
+            elemento.getAttribute('src')
+        );
+    }
+
+    function prepararMiniMenu(elemento) {
+        if (!elemento) {
+            return false;
+        }
+
+        var membroId = obterMembroId(elemento);
+        var nome = obterNome(elemento);
+        var foto = obterFoto(elemento);
+
+        if (!membroId) {
+            return false;
+        }
+
+        $miniMenu.attr(
+            'data-destinatario-id',
+            membroId
+        );
+
+        var imagem = $miniMenu
+            .find('header img')
+            .get(0);
+
+        if (imagem) {
+            imagem.onerror = function () {
+                this.onerror = null;
+                this.src = urlFoto(
+                    '/imagens/fotos-perfil/default.webp'
                 );
+            };
 
-            $miniMenu
-                .find('header img')
-                .attr({
-                    src:
-                        foto ||
-                        '/imagens/fotos-perfil/default.webp',
+            imagem.src = foto;
+            imagem.alt = nome || 'Fotografia de perfil';
+        }
 
-                    alt:
-                        nome ||
-                        'Foto de perfil'
-                });
+        $miniMenu
+            .find('header h1')
+            .text(nome || 'Utilizador');
 
-            $miniMenu
-                .find('header h1')
-                .text(nome);
-
+        if (window.messagesUrl) {
             $miniMenu
                 .find('form')
                 .attr(
                     'action',
                     window.messagesUrl +
                     '?sendTo=' +
-                    encodeURIComponent(
-                        membroId
-                    )
+                    encodeURIComponent(membroId)
                 );
+        }
+
+        return true;
+    }
+
+    function mostrarMensagem(mensagem, tipo) {
+        if (
+            typeof window.mostrarMensagemTemporaria ===
+            'function'
+        ) {
+            window.mostrarMensagemTemporaria(
+                mensagem,
+                tipo
+            );
+        }
+    }
+
+    function libertarBotaoHey() {
+        aEnviarHey = false;
+
+        $('#enviar-hey')
+            .prop('disabled', false)
+            .removeAttr('aria-busy');
+    }
+
+    window.prepararMiniMenuDaFoto =
+        prepararMiniMenu;
+
+    $(document).on(
+        'pointerdown',
+        '.foto',
+        function () {
+            /*
+             * No iPhone, o pointerup usado para abrir o menu pode
+             * impedir o click seguinte. Guardamos os dados logo no
+             * primeiro contacto para o painel nunca abrir vazio.
+             */
+            prepararMiniMenu(this);
+        }
+    );
+
+    $(document).on(
+        'click',
+        '.foto',
+        function () {
+            prepararMiniMenu(this);
         }
     );
 
     $(document).on(
         'click',
         '#enviar-hey',
-        function () {
-            var $button = $(this);
+        function (evento) {
+            evento.preventDefault();
+            evento.stopPropagation();
 
-            if (sendingHey) {
+            if (aEnviarHey) {
                 return;
             }
 
-            var destinatarioId =
-                String(
-                    $miniMenu.attr(
-                        'data-destinatario-id'
-                    ) || ''
-                ).trim();
+            var $botao = $(this);
+
+            var destinatarioId = texto(
+                $miniMenu.attr(
+                    'data-destinatario-id'
+                )
+            );
 
             if (!destinatarioId) {
-                window
-                    .mostrarMensagemTemporaria(
-                        'Seleciona primeiro uma pessoa.',
-                        'erro'
-                    );
+                mostrarMensagem(
+                    'Seleciona primeiro uma pessoa.',
+                    'erro'
+                );
 
                 return;
             }
 
             if (
                 !window.AppWebSocket ||
-                !window.AppWebSocket
-                    .isConnected()
+                !window.AppWebSocket.isConnected()
             ) {
-                window
-                    .mostrarMensagemTemporaria(
-                        'A ligação está a ser restabelecida.',
-                        'erro'
-                    );
+                mostrarMensagem(
+                    'A ligação está a ser restabelecida.',
+                    'erro'
+                );
 
-                if (
-                    window.AppWebSocket
-                ) {
-                    window.AppWebSocket
-                        .connect();
+                if (window.AppWebSocket) {
+                    window.AppWebSocket.connect();
                 }
 
                 return;
             }
 
-            sendingHey = true;
+            aEnviarHey = true;
 
-            $button
+            $botao
                 .prop('disabled', true)
-                .attr(
-                    'aria-busy',
-                    'true'
+                .attr('aria-busy', 'true');
+
+            var enviado = window.AppWebSocket.send({
+                type: 'notify',
+                destinatario_id: destinatarioId
+            });
+
+            if (!enviado) {
+                libertarBotaoHey();
+
+                mostrarMensagem(
+                    'Não foi possível enviar o Hey.',
+                    'erro'
                 );
 
-            var sent =
-                window.AppWebSocket.send({
-                    type: 'notify',
-
-                    destinatario_id:
-                        destinatarioId
-                });
-
-            if (!sent) {
-                window
-                    .mostrarMensagemTemporaria(
-                        'Não foi possível enviar o Hey.',
-                        'erro'
-                    );
+                return;
             }
 
             window.setTimeout(
-                function () {
-                    sendingHey = false;
-
-                    $button
-                        .prop(
-                            'disabled',
-                            false
-                        )
-                        .removeAttr(
-                            'aria-busy'
-                        );
-                },
+                libertarBotaoHey,
                 1200
             );
         }
     );
 
-    $(document).on(
-        'click',
-        '#ativar-notificacoes',
-        async function () {
-            var $button =
-                $(this);
-
-            if (!window.isSecureContext) {
-                window
-                    .mostrarMensagemTemporaria(
-                        'As notificações nativas exigem HTTPS.',
-                        'erro'
-                    );
-
-                return;
-            }
-
-            if (
-                !('Notification' in window)
-            ) {
-                window
-                    .mostrarMensagemTemporaria(
-                        'Este browser não suporta notificações.',
-                        'erro'
-                    );
-
-                return;
-            }
-
-            if (
-                Notification.permission ===
-                'granted'
-            ) {
-                $button.text(
-                    'Notificações ativadas'
-                );
-
-                return;
-            }
-
-            if (
-                Notification.permission ===
-                'denied'
-            ) {
-                window
-                    .mostrarMensagemTemporaria(
-                        'As notificações estão bloqueadas nas definições do browser.',
-                        'erro'
-                    );
-
-                return;
-            }
-
-            try {
-                var permission =
-                    await Notification
-                        .requestPermission();
-
-                if (
-                    permission ===
-                    'granted'
-                ) {
-                    $button.text(
-                        'Notificações ativadas'
-                    );
-
-                    window
-                        .mostrarMensagemTemporaria(
-                            'Notificações ativadas.',
-                            'sucesso'
-                        );
-
-                    return;
-                }
-
-                window
-                    .mostrarMensagemTemporaria(
-                        'As notificações não foram autorizadas.',
-                        'erro'
-                    );
-            } catch (error) {
-                console.error(error);
-
-                window
-                    .mostrarMensagemTemporaria(
-                        'Não foi possível ativar as notificações.',
-                        'erro'
-                    );
-            }
-        }
+    window.addEventListener(
+        'app:hey-enviado',
+        libertarBotaoHey
     );
 
-    $(document).on(
-        'websocket:status',
-        function (
-            event,
-            status
-        ) {
-            var $status =
-                $('#estado-ligacao');
-
-            $status.attr(
-                'data-status',
-                status
-            );
-
-            switch (status) {
-                case 'connected':
-                    $status.text(
-                        'Ligado'
-                    );
-                    break;
-
-                case 'connecting':
-                    $status.text(
-                        'A ligar…'
-                    );
-                    break;
-
-                case 'offline':
-                    $status.text(
-                        'Sem internet'
-                    );
-                    break;
-
-                default:
-                    $status.text(
-                        'A restabelecer ligação…'
-                    );
-                    break;
-            }
-        }
+    window.addEventListener(
+        'app:hey-erro',
+        libertarBotaoHey
     );
-
-    if (
-        window.isSecureContext &&
-        'Notification' in window &&
-        Notification.permission ===
-            'granted'
-    ) {
-        $('#ativar-notificacoes')
-            .text(
-                'Notificações ativadas'
-            );
-    }
-});
+})(window, document, jQuery);
