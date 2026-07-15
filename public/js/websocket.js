@@ -26,17 +26,9 @@
             return window.webSocketUrl;
         }
 
-        var protocol =
-            window.location.protocol === 'https:'
-                ? 'wss:'
-                : 'ws:';
+        var protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 
-        return (
-            protocol +
-            '//' +
-            window.location.hostname +
-            ':8080'
-        );
+        return protocol + '//' + window.location.hostname + ':8080';
     }
 
     function connect() {
@@ -47,10 +39,7 @@
 
         if (
             socket &&
-            (
-                socket.readyState === WebSocket.OPEN ||
-                socket.readyState === WebSocket.CONNECTING
-            )
+            (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)
         ) {
             return;
         }
@@ -63,18 +52,12 @@
 
         var url = getWebSocketUrl();
 
-        console.log(
-            'A tentar ligar ao WebSocket:',
-            url
-        );
+        console.log('A tentar ligar ao WebSocket:', url);
 
         try {
             socket = new WebSocket(url);
         } catch (error) {
-            console.error(
-                'Erro ao criar WebSocket:',
-                error
-            );
+            console.error('Erro ao criar WebSocket:', error);
 
             socket = null;
             scheduleReconnect();
@@ -86,17 +69,11 @@
 
         var currentSocket = socket;
 
-        connectionTimeout = window.setTimeout(
-            function () {
-                if (
-                    currentSocket.readyState ===
-                    WebSocket.CONNECTING
-                ) {
-                    currentSocket.close();
-                }
-            },
-            CONNECTION_TIMEOUT
-        );
+        connectionTimeout = window.setTimeout(function () {
+            if (currentSocket.readyState === WebSocket.CONNECTING) {
+                currentSocket.close();
+            }
+        }, CONNECTION_TIMEOUT);
 
         currentSocket.onopen = function () {
             if (currentSocket !== socket) {
@@ -127,10 +104,7 @@
                 return;
             }
 
-            console.error(
-                'Erro no WebSocket:',
-                event
-            );
+            console.error('Erro no WebSocket:', event);
         };
 
         currentSocket.onclose = function (event) {
@@ -138,14 +112,11 @@
                 return;
             }
 
-            console.warn(
-                'WebSocket fechado:',
-                {
-                    code: event.code,
-                    reason: event.reason,
-                    wasClean: event.wasClean
-                }
-            );
+            console.warn('WebSocket fechado:', {
+                code: event.code,
+                reason: event.reason,
+                wasClean: event.wasClean,
+            });
 
             clearConnectionTimeout();
             clearPingTimer();
@@ -153,40 +124,29 @@
             socket = null;
             window.ws = null;
 
-            setStatus(
-                navigator.onLine
-                    ? 'disconnected'
-                    : 'offline'
-            );
+            setStatus(navigator.onLine ? 'disconnected' : 'offline');
 
             scheduleReconnect();
         };
     }
 
     function authenticate() {
-        var membroId = String(
-            window.membroId || ''
-        ).trim();
+        var membroId = String(window.membroId || '').trim();
 
         if (membroId === '') {
-            console.error(
-                'window.membroId não está definido.'
-            );
+            console.error('window.membroId não está definido.');
 
             return;
         }
 
         send({
             type: 'auth',
-            membro_id: membroId
+            membro_id: membroId,
         });
     }
 
     function send(data) {
-        if (
-            !socket ||
-            socket.readyState !== WebSocket.OPEN
-        ) {
+        if (!socket || socket.readyState !== WebSocket.OPEN) {
             return false;
         }
 
@@ -194,10 +154,7 @@
             socket.send(JSON.stringify(data));
             return true;
         } catch (error) {
-            console.error(
-                'Erro ao enviar mensagem:',
-                error
-            );
+            console.error('Erro ao enviar mensagem:', error);
 
             return false;
         }
@@ -206,15 +163,12 @@
     function startPing() {
         clearPingTimer();
 
-        pingTimer = window.setInterval(
-            function () {
-                send({
-                    type: 'ping',
-                    timestamp: Date.now()
-                });
-            },
-            PING_INTERVAL
-        );
+        pingTimer = window.setInterval(function () {
+            send({
+                type: 'ping',
+                timestamp: Date.now(),
+            });
+        }, PING_INTERVAL);
     }
 
     function startLocationTracking() {
@@ -223,53 +177,38 @@
         }
 
         if (!window.isSecureContext) {
-            mostrarMensagemTemporaria(
-                'A localização exige HTTPS.',
-                'erro'
-            );
+            mostrarMensagemTemporaria('A localização exige HTTPS.', 'erro');
 
-            console.warn(
-                'Geolocation indisponível: a página não está em HTTPS.'
-            );
+            console.warn('Geolocation indisponível: a página não está em HTTPS.');
 
             return;
         }
 
         if (!('geolocation' in navigator)) {
-            mostrarMensagemTemporaria(
-                'Este dispositivo não suporta localização.',
-                'erro'
-            );
+            mostrarMensagemTemporaria('Este dispositivo não suporta localização.', 'erro');
 
             return;
         }
 
-        locationWatchId =
-            navigator.geolocation.watchPosition(
-                handleLocationSuccess,
-                handleLocationError,
-                {
-                    enableHighAccuracy: true,
-                    maximumAge: LOCATION_MAX_AGE,
-                    timeout: 15000
-                }
-            );
+        locationWatchId = navigator.geolocation.watchPosition(
+            handleLocationSuccess,
+            handleLocationError,
+            {
+                enableHighAccuracy: true,
+                maximumAge: LOCATION_MAX_AGE,
+                timeout: 15000,
+            },
+        );
     }
 
     function handleLocationSuccess(position) {
-        var latitude =
-            Number(position.coords.latitude);
+        var latitude = Number(position.coords.latitude);
 
-        var longitude =
-            Number(position.coords.longitude);
+        var longitude = Number(position.coords.longitude);
 
-        var accuracy =
-            Number(position.coords.accuracy) || 0;
+        var accuracy = Number(position.coords.accuracy) || 0;
 
-        if (
-            !Number.isFinite(latitude) ||
-            !Number.isFinite(longitude)
-        ) {
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
             return;
         }
 
@@ -278,26 +217,13 @@
         var movedDistance =
             lastSentLatitude === null
                 ? Infinity
-                : calculateDistanceMeters(
-                    lastSentLatitude,
-                    lastSentLongitude,
-                    latitude,
-                    longitude
-                );
+                : calculateDistanceMeters(lastSentLatitude, lastSentLongitude, latitude, longitude);
 
-        var enoughTimePassed =
-            now - lastLocationSentAt >=
-            LOCATION_MIN_INTERVAL;
+        var enoughTimePassed = now - lastLocationSentAt >= LOCATION_MIN_INTERVAL;
 
-        var movedEnough =
-            movedDistance >=
-            LOCATION_MIN_DISTANCE;
+        var movedEnough = movedDistance >= LOCATION_MIN_DISTANCE;
 
-        if (
-            lastSentLatitude !== null &&
-            !enoughTimePassed &&
-            !movedEnough
-        ) {
+        if (lastSentLatitude !== null && !enoughTimePassed && !movedEnough) {
             return;
         }
 
@@ -306,7 +232,7 @@
             latitude: latitude,
             longitude: longitude,
             accuracy: accuracy,
-            timestamp: position.timestamp
+            timestamp: position.timestamp,
         });
 
         if (!sent) {
@@ -317,15 +243,12 @@
         lastSentLatitude = latitude;
         lastSentLongitude = longitude;
 
-        console.log(
-            'Localização enviada:',
-            {
-                latitude: latitude,
-                longitude: longitude,
-                accuracy: accuracy,
-                movedDistance: movedDistance
-            }
-        );
+        console.log('Localização enviada:', {
+            latitude: latitude,
+            longitude: longitude,
+            accuracy: accuracy,
+            movedDistance: movedDistance,
+        });
     }
 
     function handleLocationError(error) {
@@ -333,107 +256,70 @@
 
         switch (error.code) {
             case error.PERMISSION_DENIED:
-                message =
-                    'A localização não foi autorizada.';
+                message = 'A localização não foi autorizada.';
                 break;
 
             case error.POSITION_UNAVAILABLE:
-                message =
-                    'A localização não está disponível.';
+                message = 'A localização não está disponível.';
                 break;
 
             case error.TIMEOUT:
-                message =
-                    'A localização demorou demasiado tempo.';
+                message = 'A localização demorou demasiado tempo.';
                 break;
 
             default:
-                message =
-                    'Não foi possível obter a localização.';
+                message = 'Não foi possível obter a localização.';
                 break;
         }
 
-        console.warn(
-            message,
-            error
-        );
+        console.warn(message, error);
 
-        mostrarMensagemTemporaria(
-            message,
-            'erro'
-        );
+        mostrarMensagemTemporaria(message, 'erro');
     }
 
-    function calculateDistanceMeters(
-        latitude1,
-        longitude1,
-        latitude2,
-        longitude2
-    ) {
+    function calculateDistanceMeters(latitude1, longitude1, latitude2, longitude2) {
         var earthRadius = 6371000;
 
         var lat1 = toRadians(latitude1);
         var lat2 = toRadians(latitude2);
 
-        var deltaLat = toRadians(
-            latitude2 - latitude1
-        );
+        var deltaLat = toRadians(latitude2 - latitude1);
 
-        var deltaLng = toRadians(
-            longitude2 - longitude1
-        );
+        var deltaLng = toRadians(longitude2 - longitude1);
 
         var a =
             Math.sin(deltaLat / 2) ** 2 +
-            Math.cos(lat1) *
-            Math.cos(lat2) *
-            Math.sin(deltaLng / 2) ** 2;
+            Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLng / 2) ** 2;
 
-        var c = 2 * Math.atan2(
-            Math.sqrt(a),
-            Math.sqrt(1 - a)
-        );
+        var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
         return earthRadius * c;
     }
 
     function toRadians(degrees) {
-        return degrees * Math.PI / 180;
+        return (degrees * Math.PI) / 180;
     }
 
     function scheduleReconnect() {
-        if (
-            reconnectTimer ||
-            !navigator.onLine
-        ) {
+        if (reconnectTimer || !navigator.onLine) {
             return;
         }
 
         reconnectAttempts++;
 
         var delay = Math.min(
-            RECONNECT_MIN_DELAY *
-                Math.pow(2, reconnectAttempts - 1),
-            RECONNECT_MAX_DELAY
+            RECONNECT_MIN_DELAY * Math.pow(2, reconnectAttempts - 1),
+            RECONNECT_MAX_DELAY,
         );
 
-        delay += Math.floor(
-            Math.random() * 1000
-        );
+        delay += Math.floor(Math.random() * 1000);
 
-        console.log(
-            'Nova tentativa WebSocket em ' +
-            delay +
-            ' ms'
-        );
+        console.log('Nova tentativa WebSocket em ' + delay + ' ms');
 
-        reconnectTimer = window.setTimeout(
-            function () {
-                reconnectTimer = null;
-                connect();
-            },
-            delay
-        );
+        reconnectTimer = window.setTimeout(function () {
+            reconnectTimer = null;
+            connect();
+        }, delay);
     }
 
     function handleMessage(event) {
@@ -442,10 +328,7 @@
         try {
             data = JSON.parse(event.data);
         } catch (error) {
-            console.error(
-                'JSON inválido recebido:',
-                event.data
-            );
+            console.error('JSON inválido recebido:', event.data);
 
             return;
         }
@@ -459,21 +342,14 @@
                 break;
 
             case 'authenticated':
-                console.log(
-                    'WebSocket autenticado:',
-                    data.membro_id
-                );
+                console.log('WebSocket autenticado:', data.membro_id);
                 break;
 
             case 'location_received':
                 break;
 
             case 'state':
-                atualizarPessoasNoMapa(
-                    Array.isArray(data.people)
-                        ? data.people
-                        : []
-                );
+                atualizarPessoasNoMapa(Array.isArray(data.people) ? data.people : []);
                 break;
 
             case 'notification':
@@ -481,61 +357,38 @@
                 break;
 
             case 'notification_sent':
-                mostrarMensagemTemporaria(
-                    data.message || 'Hey enviado.',
-                    'sucesso'
-                );
+                mostrarMensagemTemporaria(data.message || 'Hey enviado.', 'sucesso');
                 break;
 
             case 'notification_not_delivered':
-                mostrarMensagemTemporaria(
-                    data.message ||
-                        'O utilizador não está online.',
-                    'erro'
-                );
+                mostrarMensagemTemporaria(data.message || 'O utilizador não está online.', 'erro');
                 break;
 
             case 'pong':
                 break;
 
             case 'error':
-                console.error(
-                    'Erro do servidor:',
-                    data.message
-                );
+                console.error('Erro do servidor:', data.message);
 
-                mostrarMensagemTemporaria(
-                    data.message || 'Ocorreu um erro.',
-                    'erro'
-                );
+                mostrarMensagemTemporaria(data.message || 'Ocorreu um erro.', 'erro');
                 break;
 
             default:
-                console.warn(
-                    'Mensagem WebSocket desconhecida:',
-                    data
-                );
+                console.warn('Mensagem WebSocket desconhecida:', data);
                 break;
         }
     }
 
     function atualizarPessoasNoMapa(pessoas) {
-        var idsAtuais = pessoas.map(
-            function (pessoa) {
-                return String(pessoa.id);
-            }
-        );
+        var idsAtuais = pessoas.map(function (pessoa) {
+            return String(pessoa.id);
+        });
 
         $('.foto').each(function () {
             var $foto = $(this);
-            var id = String(
-                $foto.attr('id') || ''
-            );
+            var id = String($foto.attr('id') || '');
 
-            if (
-                idsAtuais.includes(id) ||
-                $foto.hasClass('a-remover')
-            ) {
+            if (idsAtuais.includes(id) || $foto.hasClass('a-remover')) {
                 return;
             }
 
@@ -543,66 +396,45 @@
 
             $foto.css({
                 opacity: '0',
-                transition:
-                    'opacity 0.4s ease-out'
+                transition: 'opacity 0.4s ease-out',
             });
 
-            window.setTimeout(
-                function () {
-                    $foto.remove();
-                    reinicializarFotos();
-                },
-                400
-            );
+            window.setTimeout(function () {
+                $foto.remove();
+                reinicializarFotos();
+            }, 400);
         });
 
-        var fragmento =
-            document.createDocumentFragment();
+        var fragmento = document.createDocumentFragment();
 
         var inseriuImagem = false;
 
         pessoas.forEach(function (pessoa) {
-            if (
-                !pessoa ||
-                pessoa.id === undefined
-            ) {
+            if (!pessoa || pessoa.id === undefined) {
                 return;
             }
 
             var id = String(pessoa.id);
 
-            var src = String(
-                pessoa.src || ''
-            ).trim();
+            var src = String(pessoa.src || '').trim();
 
             if (src === '') {
-                src =
-                    '/imagens/fotos-perfil/default.webp';
+                src = '/imagens/fotos-perfil/default.webp';
             }
 
-            var imagemExistente =
-                document.getElementById(id);
+            var imagemExistente = document.getElementById(id);
 
             if (imagemExistente) {
                 $(imagemExistente)
                     .removeClass('a-remover')
                     .attr({
-                        'data-top':
-                            Number(pessoa.top) || 0,
-                        'data-left':
-                            Number(pessoa.left) || 0,
-                        'data-membro-id':
-                            pessoa.membro_id || '',
-                        'data-nome':
-                            pessoa.nome || '',
-                        'data-distancia':
-                            Number(
-                                pessoa.distance_m
-                            ) || 0,
+                        'data-top': Number(pessoa.top) || 0,
+                        'data-left': Number(pessoa.left) || 0,
+                        'data-membro-id': pessoa.membro_id || '',
+                        'data-nome': pessoa.nome || '',
+                        'data-distancia': Number(pessoa.distance_m) || 0,
                         src: src,
-                        alt:
-                            pessoa.nome ||
-                            'Foto de perfil'
+                        alt: pessoa.nome || 'Foto de perfil',
                     })
                     .css('opacity', '1');
 
@@ -615,30 +447,20 @@
                 id: id,
                 class: 'foto',
                 src: src,
-                alt:
-                    pessoa.nome ||
-                    'Foto de perfil'
+                alt: pessoa.nome || 'Foto de perfil',
             });
 
             $imagem.attr({
-                'data-top':
-                    Number(pessoa.top) || 0,
-                'data-left':
-                    Number(pessoa.left) || 0,
-                'data-membro-id':
-                    pessoa.membro_id || '',
-                'data-nome':
-                    pessoa.nome || '',
-                'data-distancia':
-                    Number(
-                        pessoa.distance_m
-                    ) || 0
+                'data-top': Number(pessoa.top) || 0,
+                'data-left': Number(pessoa.left) || 0,
+                'data-membro-id': pessoa.membro_id || '',
+                'data-nome': pessoa.nome || '',
+                'data-distancia': Number(pessoa.distance_m) || 0,
             });
 
             $imagem.css({
                 opacity: '0',
-                transition:
-                    'opacity 0.4s ease-out'
+                transition: 'opacity 0.4s ease-out',
             });
 
             $imagem[0].decoding = 'async';
@@ -648,23 +470,17 @@
             });
 
             $imagem.on('error', function () {
-                if (
-                    this.dataset.fallbackAplicado ===
-                    '1'
-                ) {
+                if (this.dataset.fallbackAplicado === '1') {
                     $(this).css('opacity', '1');
                     return;
                 }
 
                 this.dataset.fallbackAplicado = '1';
 
-                this.src =
-                    '/imagens/fotos-perfil/default.webp';
+                this.src = '/imagens/fotos-perfil/default.webp';
             });
 
-            fragmento.appendChild(
-                $imagem[0]
-            );
+            fragmento.appendChild($imagem[0]);
         });
 
         if (inseriuImagem) {
@@ -675,22 +491,13 @@
     }
 
     function reinicializarFotos() {
-        window.clearTimeout(
-            window.mapInitTimeout
-        );
+        window.clearTimeout(window.mapInitTimeout);
 
-        window.mapInitTimeout =
-            window.setTimeout(
-                function () {
-                    if (
-                        typeof window.inicializarFotos ===
-                        'function'
-                    ) {
-                        window.inicializarFotos();
-                    }
-                },
-                50
-            );
+        window.mapInitTimeout = window.setTimeout(function () {
+            if (typeof window.inicializarFotos === 'function') {
+                window.inicializarFotos();
+            }
+        }, 50);
     }
 
     function mostrarNotificacao(data) {
@@ -705,31 +512,18 @@
         }
 
         try {
-            var notificacao = new Notification(
-                data.title || 'Nova notificação',
-                {
-                    body: data.body || '',
-                    icon:
-                        data.from_photo ||
-                        '/imagens/fotos-perfil/default.webp',
-                    tag:
-                        'hey-' +
-                        (
-                            data.from_member_id ||
-                            'desconhecido'
-                        )
-                }
-            );
+            var notificacao = new Notification(data.title || 'Nova notificação', {
+                body: data.body || '',
+                icon: data.from_photo || '/imagens/fotos-perfil/default.webp',
+                tag: 'hey-' + (data.from_member_id || 'desconhecido'),
+            });
 
             notificacao.onclick = function () {
                 window.focus();
                 notificacao.close();
             };
         } catch (error) {
-            console.error(
-                'Erro ao mostrar notificação:',
-                error
-            );
+            console.error('Erro ao mostrar notificação:', error);
         }
     }
 
@@ -739,108 +533,66 @@
         var $notificacao = $('<button>', {
             type: 'button',
             class: 'notificacao-interna',
-            'data-membro-id':
-                data.from_member_id || ''
+            'data-membro-id': data.from_member_id || '',
         });
 
         var $imagem = $('<img>', {
-            src:
-                data.from_photo ||
-                '/imagens/fotos-perfil/default.webp',
-            alt: ''
+            src: data.from_photo || '/imagens/fotos-perfil/default.webp',
+            alt: '',
         });
 
         var $conteudo = $('<div>', {
-            class:
-                'notificacao-interna-conteudo'
+            class: 'notificacao-interna-conteudo',
         });
 
         $conteudo.append(
-            $('<strong>').text(
-                data.title || 'Nova notificação'
-            ),
-            $('<span>').text(
-                data.body || 'Recebeste um Hey.'
-            )
+            $('<strong>').text(data.title || 'Nova notificação'),
+            $('<span>').text(data.body || 'Recebeste um Hey.'),
         );
 
-        $notificacao.append(
-            $imagem,
-            $conteudo
-        );
+        $notificacao.append($imagem, $conteudo);
 
         $('body').append($notificacao);
 
-        window.requestAnimationFrame(
-            function () {
-                $notificacao.addClass('visivel');
-            }
-        );
+        window.requestAnimationFrame(function () {
+            $notificacao.addClass('visivel');
+        });
 
-        window.setTimeout(
-            function () {
-                $notificacao.removeClass('visivel');
+        window.setTimeout(function () {
+            $notificacao.removeClass('visivel');
 
-                window.setTimeout(
-                    function () {
-                        $notificacao.remove();
-                    },
-                    300
-                );
-            },
-            5000
-        );
+            window.setTimeout(function () {
+                $notificacao.remove();
+            }, 300);
+        }, 5000);
     }
 
-    function mostrarMensagemTemporaria(
-        mensagem,
-        tipo
-    ) {
+    function mostrarMensagemTemporaria(mensagem, tipo) {
         $('.mensagem-websocket').remove();
 
         var $mensagem = $('<div>', {
-            class:
-                'mensagem-websocket ' +
-                (
-                    tipo === 'erro'
-                        ? 'erro'
-                        : 'sucesso'
-                )
+            class: 'mensagem-websocket ' + (tipo === 'erro' ? 'erro' : 'sucesso'),
         }).text(mensagem);
 
         $('body').append($mensagem);
 
-        window.requestAnimationFrame(
-            function () {
-                $mensagem.addClass('visivel');
-            }
-        );
+        window.requestAnimationFrame(function () {
+            $mensagem.addClass('visivel');
+        });
 
-        window.setTimeout(
-            function () {
-                $mensagem.removeClass('visivel');
+        window.setTimeout(function () {
+            $mensagem.removeClass('visivel');
 
-                window.setTimeout(
-                    function () {
-                        $mensagem.remove();
-                    },
-                    300
-                );
-            },
-            3000
-        );
+            window.setTimeout(function () {
+                $mensagem.remove();
+            }, 300);
+        }, 3000);
     }
 
     function setStatus(status) {
-        document.documentElement.setAttribute(
-            'data-websocket-status',
-            status
-        );
+        document.documentElement.setAttribute('data-websocket-status', status);
 
-        $(document).trigger(
-            'websocket:status',
-            [status]
-        );
+        $(document).trigger('websocket:status', [status]);
     }
 
     function clearReconnectTimer() {
@@ -873,75 +625,43 @@
     window.AppWebSocket = {
         connect: connect,
         send: send,
-        startLocationTracking:
-            startLocationTracking,
+        startLocationTracking: startLocationTracking,
 
         isConnected: function () {
-            return Boolean(
-                socket &&
-                socket.readyState === WebSocket.OPEN
-            );
-        }
+            return Boolean(socket && socket.readyState === WebSocket.OPEN);
+        },
     };
 
-    window.mostrarMensagemTemporaria =
-        mostrarMensagemTemporaria;
+    window.mostrarMensagemTemporaria = mostrarMensagemTemporaria;
 
-    window.addEventListener(
-        'online',
-        function () {
-            reconnectAttempts = 0;
+    window.addEventListener('online', function () {
+        reconnectAttempts = 0;
+        connect();
+    });
+
+    window.addEventListener('offline', function () {
+        setStatus('offline');
+    });
+
+    window.addEventListener('focus', function () {
+        if (!window.AppWebSocket.isConnected()) {
             connect();
         }
-    );
+    });
 
-    window.addEventListener(
-        'offline',
-        function () {
-            setStatus('offline');
+    window.addEventListener('pageshow', function () {
+        if (!window.AppWebSocket.isConnected()) {
+            connect();
         }
-    );
+    });
 
-    window.addEventListener(
-        'focus',
-        function () {
-            if (
-                !window.AppWebSocket.isConnected()
-            ) {
-                connect();
-            }
+    document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'visible' && !window.AppWebSocket.isConnected()) {
+            connect();
         }
-    );
-
-    window.addEventListener(
-        'pageshow',
-        function () {
-            if (
-                !window.AppWebSocket.isConnected()
-            ) {
-                connect();
-            }
-        }
-    );
-
-    document.addEventListener(
-        'visibilitychange',
-        function () {
-            if (
-                document.visibilityState ===
-                    'visible' &&
-                !window.AppWebSocket.isConnected()
-            ) {
-                connect();
-            }
-        }
-    );
+    });
 
     $(function () {
         connect();
     });
-})(
-    window,
-    document,
-    jQuery
-);
+})(window, document, jQuery);

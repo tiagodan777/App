@@ -49,8 +49,10 @@ class WebSocket implements MessageComponentInterface
         );
 
         $this->enviar($conn, [
-            'type' => 'connected', 'resource_id' => $conn->resourceId]);
-        }
+            'type' => 'connected',
+            'resource_id' => $conn->resourceId
+        ]);
+    }
 
     public function onMessage(ConnectionInterface $from, $msg): void
     {
@@ -348,11 +350,17 @@ class WebSocket implements MessageComponentInterface
             return;
         }
 
+        $notificacaoId = $this->guardarNotificacao(
+            $remetenteId,
+            $destinatarioId
+        );
+
         $numeroEntregas = 0;
 
         foreach ($ligacoesDestinatario as $client) {
             $this->enviar($client, [
                 'type' => 'notification',
+                'notification_id' => $notificacaoId,
                 'notification_type' => 'hey',
                 'title' => 'Recebeste um Hey!',
                 'body' => sprintf(
@@ -370,6 +378,7 @@ class WebSocket implements MessageComponentInterface
 
         $this->enviar($from, [
             'type' => 'notification_sent',
+            'notification_id' => $notificacaoId,
             'destinatario_id' => $destinatarioId,
             'deliveries' => $numeroEntregas,
             'message' => 'Hey enviado.'
@@ -381,6 +390,47 @@ class WebSocket implements MessageComponentInterface
             $destinatarioId,
             $numeroEntregas
         );
+    }
+
+    private function guardarNotificacao(
+        string $emissorId,
+        string $destinatarioId
+    ): int {
+        $sql = "
+            INSERT INTO notificacao (
+                emissor_id,
+                destinatario_id,
+                tipo,
+                lida,
+                criada_em
+            )
+            VALUES (
+                :emissor_id,
+                :destinatario_id,
+                :tipo,
+                0,
+                NOW()
+            )
+        ";
+
+        $database = null;
+        $statement = null;
+
+        try {
+            $database = $this->getDatabase();
+            $statement = $database->prepare($sql);
+
+            $statement->execute([
+                'emissor_id' => $emissorId,
+                'destinatario_id' => $destinatarioId,
+                'tipo' => 'hey'
+            ]);
+
+            return (int) $database->lastInsertId();
+        } finally {
+            $statement = null;
+            $database = null;
+        }
     }
 
     private function enviarEstadosIndividuais(): void
