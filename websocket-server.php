@@ -9,11 +9,11 @@ use Ratchet\WebSocket\WsServer;
 use React\EventLoop\Loop;
 use React\Socket\SocketServer;
 
-define('APP_ROOT', __DIR_);
+define('APP_ROOT', __DIR__);
 
 require_once APP_ROOT . '/config/config.php';
 
-require_once APP_ROOT  '/vendor/autoload.php';
+require_once APP_ROOT . '/vendor/autoload.php';
 
 $loop = Loop::get();
 
