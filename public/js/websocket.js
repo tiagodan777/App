@@ -353,15 +353,36 @@
                 break;
 
             case 'notification':
-                mostrarNotificacao(data);
+                window.dispatchEvent(
+                    new CustomEvent(
+                        'app:hey-recebido',
+                        {
+                            detail: data
+                        }
+                    )
+                );
                 break;
 
             case 'notification_sent':
-                mostrarMensagemTemporaria(data.message || 'Hey enviado.', 'sucesso');
+                window.dispatchEvent(
+                    new CustomEvent(
+                        'app:hey-enviado',
+                        {
+                            detail: data
+                        }
+                    )
+                );
                 break;
 
             case 'notification_not_delivered':
-                mostrarMensagemTemporaria(data.message || 'O utilizador não está online.', 'erro');
+                window.dispatchEvent(
+                    new CustomEvent(
+                        'app:hey-erro',
+                        {
+                            detail: data
+                        }
+                    )
+                );
                 break;
 
             case 'pong':
