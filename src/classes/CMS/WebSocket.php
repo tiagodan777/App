@@ -10,7 +10,7 @@ use Ratchet\MessageComponentInterface;
 
 class WebSocket implements MessageComponentInterface
 {
-    private const RAIO_MAXIMO_METROS = 100;
+    private const RAIO_MAXIMO_METROS = 150;
     private const LOCALIZACAO_MAXIMA_IDADE_SEGUNDOS = 90;
 
     private \SplObjectStorage $clients;
