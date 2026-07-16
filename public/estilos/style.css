@@ -165,6 +165,11 @@ img {
     margin: 10px 0px;
 }
 
+.mini-menu.perfil-proprio #enviar-hey,
+.mini-menu.perfil-proprio form {
+    display: none !important;
+}
+
 .mini-menu > form {
     width: 100%;
     margin-top: 25px;

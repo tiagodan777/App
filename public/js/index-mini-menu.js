@@ -28,18 +28,6 @@
         );
     }
 
-    function obterNome(elemento) {
-        return texto(
-            elemento.getAttribute('data-nome') ||
-            elemento.getAttribute('alt') ||
-            elemento.getAttribute('title')
-        );
-    }
-
-    function obterFoto(elemento) {
-        return urlFoto(elemento.currentSrc || elemento.src || elemento.getAttribute('src'));
-    }
-
     function prepararMiniMenu(elemento) {
         if (!elemento) return false;
 
@@ -48,11 +36,11 @@
 
         var nome = obterNome(elemento) || 'Utilizador';
         var foto = obterFoto(elemento);
-        var $cabecalho = $miniMenu.find('header');
-        var $link = $cabecalho.find('a');
-        var imagem = $cabecalho.find('img').get(0);
+        var souEu = membroId === texto(window.membroId);
+        var imagem = $miniMenu.find('header img').get(0);
 
         $miniMenu.attr('data-destinatario-id', membroId);
+        $miniMenu.toggleClass('perfil-proprio', souEu);
 
         if (imagem) {
             imagem.onerror = function () {
@@ -64,11 +52,7 @@
             imagem.alt = nome;
         }
 
-        $cabecalho.find('h1').text(nome);
-
-        if ($link.length) {
-            $link.attr('href', (window.profileUrl || '/profile') + '?' + encodeURIComponent(membroId));
-        }
+        $miniMenu.find('header h1').text(nome);
 
         if (window.messagesUrl) {
             $miniMenu.find('form').attr('action', window.messagesUrl + '?sendTo=' + encodeURIComponent(membroId));
