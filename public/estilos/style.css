@@ -127,8 +127,8 @@ img {
 }
 
 .mini-menu > div {
-    width: 50vw;
-    height: 50vw;
+    width: 70vw;
+    height: 70vw;
     background-color: red;
     border-radius: 50%;
 
@@ -167,6 +167,7 @@ img {
 
 .mini-menu > form {
     width: 100%;
+    margin-top: 25PX;
 
     display: flex;
     flex-flow: row nowrap;
