@@ -73,7 +73,8 @@
         !abrir ||
         !area ||
         !painel ||
-        !lista
+        !lista ||
+        !contador
     ) {
         return;
     }
@@ -91,7 +92,9 @@
                 10
             );
 
-        return Number.isFinite(resultado)
+        return Number.isFinite(
+            resultado
+        )
             ? resultado
             : 0;
     }
@@ -110,20 +113,28 @@
                 window.location.href
             ).href;
         } catch (falha) {
-            return '/imagens/fotos-perfil/default.webp';
+            return (
+                '/imagens/fotos-perfil/' +
+                'default.webp'
+            );
         }
     }
 
-    function aplicarFoto(imagem, caminho) {
-        imagem.onerror = function () {
-            this.onerror = null;
+    function aplicarFoto(
+        imagem,
+        caminho
+    ) {
+        imagem.onerror =
+            function () {
+                this.onerror = null;
 
-            this.src = urlFoto(
-                '/imagens/fotos-perfil/default.webp'
-            );
-        };
+                this.src = urlFoto(
+                    '/imagens/fotos-perfil/default.webp'
+                );
+            };
 
-        imagem.src = urlFoto(caminho);
+        imagem.src =
+            urlFoto(caminho);
     }
 
     function definirContador(valor) {
@@ -156,9 +167,13 @@
             return '';
         }
 
-        var normalizada = String(valor)
-            .trim()
-            .replace(' ', 'T');
+        var normalizada =
+            String(valor)
+                .trim()
+                .replace(
+                    ' ',
+                    'T'
+                );
 
         if (
             !/[zZ]|[+-]\d\d:\d\d$/.test(
@@ -168,7 +183,8 @@
             normalizada += 'Z';
         }
 
-        var data = new Date(normalizada);
+        var data =
+            new Date(normalizada);
 
         if (
             Number.isNaN(
@@ -198,12 +214,15 @@
             return;
         }
 
-        if (mensagem !== undefined) {
+        if (
+            mensagem !== undefined
+        ) {
             elemento.textContent =
                 mensagem;
         }
 
-        elemento.hidden = !mostrar;
+        elemento.hidden =
+            !mostrar;
     }
 
     function criarElemento(
@@ -212,14 +231,18 @@
         conteudo
     ) {
         var elemento =
-            document.createElement(nome);
+            document.createElement(
+                nome
+            );
 
         if (classe) {
             elemento.className =
                 classe;
         }
 
-        if (conteudo !== undefined) {
+        if (
+            conteudo !== undefined
+        ) {
             elemento.textContent =
                 conteudo;
         }
@@ -228,13 +251,15 @@
     }
 
     function criarItem(item) {
-        var artigo = criarElemento(
-            'article',
-            'hey-item'
-        );
+        var artigo =
+            criarElemento(
+                'article',
+                'hey-item'
+            );
 
         if (
-            item.direcao === 'recebido' &&
+            item.direcao ===
+                'recebido' &&
             !item.lida
         ) {
             artigo.classList.add(
@@ -242,10 +267,11 @@
             );
         }
 
-        var imagem = criarElemento(
-            'img',
-            'hey-item-foto'
-        );
+        var imagem =
+            criarElemento(
+                'img',
+                'hey-item-foto'
+            );
 
         aplicarFoto(
             imagem,
@@ -255,22 +281,27 @@
         imagem.alt = '';
         imagem.loading = 'lazy';
 
-        var corpo = criarElemento(
-            'div',
-            'hey-item-corpo'
-        );
+        var corpo =
+            criarElemento(
+                'div',
+                'hey-item-corpo'
+            );
 
-        var frase = criarElemento(
-            'p',
-            'hey-item-frase'
-        );
+        var frase =
+            criarElemento(
+                'p',
+                'hey-item-frase'
+            );
 
-        var nome = criarElemento(
-            'strong',
-            '',
-            texto(item.outro_nome) ||
+        var nome =
+            criarElemento(
+                'strong',
+                '',
+                texto(
+                    item.outro_nome
+                ) ||
                 'Alguém'
-        );
+            );
 
         if (
             item.direcao ===
@@ -288,14 +319,19 @@
             );
         }
 
-        var momento = criarElemento(
-            'time',
-            'hey-item-data',
-            dataLocal(item.criada_em)
-        );
+        var momento =
+            criarElemento(
+                'time',
+                'hey-item-data',
+                dataLocal(
+                    item.criada_em
+                )
+            );
 
         momento.dateTime =
-            texto(item.criada_em);
+            texto(
+                item.criada_em
+            );
 
         corpo.append(
             frase,
@@ -343,22 +379,25 @@
             return;
         }
 
-        var dados = Object.assign(
-            {
-                titulo: 'Hey',
-                mensagem: '',
-                foto: '',
-                tipo: 'hey',
-                duracao: 4800
-            },
-            opcoes || {}
-        );
+        var dados =
+            Object.assign(
+                {
+                    titulo: 'Hey',
+                    mensagem: '',
+                    foto: '',
+                    tipo: 'hey',
+                    duracao: 4800
+                },
+                opcoes || {}
+            );
 
-        var aviso = criarElemento(
-            'div',
-            'hey-aviso hey-aviso-' +
+        var aviso =
+            criarElemento(
+                'div',
+                'hey-aviso ' +
+                'hey-aviso-' +
                 dados.tipo
-        );
+            );
 
         aviso.setAttribute(
             'role',
@@ -366,10 +405,11 @@
         );
 
         if (dados.foto) {
-            var foto = criarElemento(
-                'img',
-                'hey-aviso-foto'
-            );
+            var foto =
+                criarElemento(
+                    'img',
+                    'hey-aviso-foto'
+                );
 
             aplicarFoto(
                 foto,
@@ -378,25 +418,30 @@
 
             foto.alt = '';
 
-            aviso.appendChild(foto);
-        } else {
-            var simbolo = criarElemento(
-                'span',
-                'hey-aviso-simbolo',
-                dados.tipo === 'erro'
-                    ? '!'
-                    : '👋'
+            aviso.appendChild(
+                foto
             );
+        } else {
+            var simbolo =
+                criarElemento(
+                    'span',
+                    'hey-aviso-simbolo',
+                    dados.tipo ===
+                        'erro'
+                        ? '!'
+                        : '👋'
+                );
 
             aviso.appendChild(
                 simbolo
             );
         }
 
-        var corpo = criarElemento(
-            'div',
-            'hey-aviso-corpo'
-        );
+        var corpo =
+            criarElemento(
+                'div',
+                'hey-aviso-corpo'
+            );
 
         corpo.append(
             criarElemento(
@@ -445,7 +490,10 @@
         foto
     ) {
         if (
-            !('Notification' in window) ||
+            !(
+                'Notification'
+                in window
+            ) ||
             Notification.permission !==
                 'granted'
         ) {
@@ -454,21 +502,14 @@
 
         var opcoes = {
             body: mensagem,
-
-            icon:
-                urlFoto(foto),
-
-            badge:
-                urlFoto(
-                    '/imagens/fotos-perfil/default.webp'
-                ),
-
+            icon: urlFoto(foto),
+            badge: urlFoto(
+                '/imagens/fotos-perfil/default.webp'
+            ),
             tag:
                 'hey-recebido-' +
                 Date.now(),
-
             renotify: true,
-
             data: {
                 url:
                     window.location.href
@@ -477,7 +518,8 @@
 
         try {
             if (
-                'serviceWorker' in navigator
+                'serviceWorker'
+                in navigator
             ) {
                 var registo =
                     await navigator
@@ -502,9 +544,7 @@
             notificacao.onclick =
                 function () {
                     window.focus();
-
                     abrirPainel();
-
                     notificacao.close();
                 };
         } catch (falha) {
@@ -517,7 +557,10 @@
 
     async function pedirPermissao() {
         if (
-            !('Notification' in window) ||
+            !(
+                'Notification'
+                in window
+            ) ||
             Notification.permission !==
                 'default'
         ) {
@@ -537,7 +580,10 @@
 
     function registarServiceWorker() {
         if (
-            !('serviceWorker' in navigator) ||
+            !(
+                'serviceWorker'
+                in navigator
+            ) ||
             !window.isSecureContext
         ) {
             return;
@@ -592,7 +638,7 @@
         mostrarCarregamento
     ) {
         if (estado.carregando) {
-            return;
+            return false;
         }
 
         estado.carregando = true;
@@ -615,13 +661,10 @@
                     endpoint,
                     {
                         method: 'GET',
-
                         credentials:
                             'same-origin',
-
                         cache:
                             'no-store',
-
                         headers: {
                             Accept:
                                 'application/json'
@@ -649,7 +692,8 @@
                     resposta.status +
                     (
                         detalhe
-                            ? ': ' + detalhe
+                            ? ': ' +
+                              detalhe
                             : ''
                     )
                 );
@@ -676,7 +720,9 @@
                 recebidas.forEach(
                     function (item) {
                         var id =
-                            numero(item.id);
+                            numero(
+                                item.id
+                            );
 
                         if (
                             item.direcao ===
@@ -699,10 +745,8 @@
                             mostrarAviso({
                                 titulo:
                                     'Recebeste um Hey!',
-
                                 mensagem:
                                     mensagem,
-
                                 foto:
                                     texto(
                                         item.outro_foto_url
@@ -783,25 +827,30 @@
                     endpoint,
                     {
                         method: 'POST',
-
                         credentials:
                             'same-origin',
-
+                        cache:
+                            'no-store',
                         headers: {
                             Accept:
                                 'application/json',
-
                             'Content-Type':
                                 'application/x-www-form-urlencoded;charset=UTF-8'
                         },
-
                         body:
                             corpo.toString()
                     }
                 );
 
             if (!resposta.ok) {
-                return;
+                return false;
+            }
+
+            var dados =
+                await resposta.json();
+
+            if (!dados.success) {
+                return false;
             }
 
             estado.notificacoes =
@@ -824,14 +873,21 @@
                     }
                 );
 
-            definirContador(0);
+            definirContador(
+                dados.unread_count
+                ?? 0
+            );
 
             renderizar();
+
+            return true;
         } catch (falha) {
             console.warn(
                 'Não foi possível marcar os Heys como lidos.',
                 falha
             );
+
+            return false;
         }
     }
 
@@ -862,9 +918,7 @@
 
         obterNotificacoes(true)
             .then(
-                function (
-                    carregou
-                ) {
+                function (carregou) {
                     if (carregou) {
                         marcarComoLidas();
                     }
@@ -898,7 +952,9 @@
         });
     }
 
-    function selecionarDirecao(botao) {
+    function selecionarDirecao(
+        botao
+    ) {
         estado.direcao =
             botao.dataset.direcao ===
                 'enviado'
@@ -907,7 +963,8 @@
 
         document
             .querySelectorAll(
-                '.heys-separadores [role="tab"]'
+                '.heys-separadores ' +
+                '[role="tab"]'
             )
             .forEach(
                 function (separador) {
@@ -949,11 +1006,10 @@
             function (tipo) {
                 elemento.addEventListener(
                     tipo,
-
                     function (evento) {
-                        evento.stopPropagation();
+                        evento
+                            .stopPropagation();
                     },
-
                     {
                         passive:
                             tipo !==
@@ -994,7 +1050,8 @@
 
     document
         .querySelectorAll(
-            '.heys-separadores [role="tab"]'
+            '.heys-separadores ' +
+            '[role="tab"]'
         )
         .forEach(
             function (botao) {
@@ -1015,21 +1072,22 @@
             var dados =
                 evento.detail || {};
 
-            var id = numero(
-                dados.notification_id
-            );
+            var id =
+                numero(
+                    dados.notification_id
+                );
 
             if (
                 id > 0 &&
-                estado.idsConhecidos.has(id)
+                estado.idsConhecidos
+                    .has(id)
             ) {
                 return;
             }
 
             if (id > 0) {
-                estado.idsConhecidos.add(
-                    id
-                );
+                estado.idsConhecidos
+                    .add(id);
             }
 
             var nome =
@@ -1045,10 +1103,8 @@
             mostrarAviso({
                 titulo:
                     'Recebeste um Hey!',
-
                 mensagem:
                     mensagem,
-
                 foto:
                     texto(
                         dados.from_photo
@@ -1126,17 +1182,13 @@
             mostrarAviso({
                 titulo:
                     'Hey enviado',
-
                 mensagem:
                     nome +
                     ' recebeu o teu Hey.',
-
                 foto:
                     foto,
-
                 tipo:
                     'sucesso',
-
                 duracao:
                     2600
             });
@@ -1158,14 +1210,12 @@
             mostrarAviso({
                 titulo:
                     'Não foi possível enviar',
-
                 mensagem:
                     texto(
                         evento.detail
                             ?.message
                     ) ||
                     'Tenta novamente.',
-
                 tipo:
                     'erro'
             });
@@ -1197,15 +1247,12 @@
                     eErro
                         ? 'Não foi possível'
                         : 'Tudo certo',
-
                 mensagem:
                     texto(mensagem),
-
                 tipo:
                     eErro
                         ? 'erro'
                         : 'sucesso',
-
                 duracao:
                     eErro
                         ? 4200
@@ -1214,9 +1261,7 @@
         };
 
     registarServiceWorker();
-
     prepararPedidoPermissao();
-
     obterNotificacoes(false);
 
     window.setInterval(

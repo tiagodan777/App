@@ -24,28 +24,44 @@ self.addEventListener(
         evento.notification.close();
 
         var destino =
-            evento.notification.data?.url ||
+            evento.notification
+                .data?.url ||
             '/index';
 
         evento.waitUntil(
             self.clients
                 .matchAll({
                     type: 'window',
-                    includeUncontrolled: true
+                    includeUncontrolled:
+                        true
                 })
                 .then(
                     function (janelas) {
-                        for (var janela of janelas) {
-                            if ('focus' in janela) {
-                                janela.navigate(destino);
+                        for (
+                            var janela
+                            of janelas
+                        ) {
+                            if (
+                                'focus'
+                                in janela
+                            ) {
+                                janela.navigate(
+                                    destino
+                                );
 
-                                return janela.focus();
+                                return janela
+                                    .focus();
                             }
                         }
 
-                        if (self.clients.openWindow) {
+                        if (
+                            self.clients
+                                .openWindow
+                        ) {
                             return self.clients
-                                .openWindow(destino);
+                                .openWindow(
+                                    destino
+                                );
                         }
 
                         return undefined;
