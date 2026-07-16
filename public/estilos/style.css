@@ -155,6 +155,10 @@ img {
     cursor: pointer;
 }
 
+.mini-menu > form {
+    transform: translateX(61.58px);
+}
+
 .mini-menu > form > input#mensagem { 
     border: 1px solid #dddddd;
     border-radius: 35px;
