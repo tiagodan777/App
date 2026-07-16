@@ -186,8 +186,7 @@ class WebSocket implements MessageComponentInterface
         $statement = null;
 
         try {
-            $database =
-                $this->getDatabase();
+            $database = $this->getDatabase();
 
             $statement = $database->prepare($sql);
 
@@ -234,179 +233,79 @@ class WebSocket implements MessageComponentInterface
         $this->localizacoes[$membroId] = ['latitude' => (float) $latitude, 'longitude' => (float) $longitude,
         'accuracy' => min((float) $accuracy,10000), 'updated_at' => time()];
 
-        echo sprintf(
-            "[LOCATION] %s atualizou localização. Precisão: %.1f m\n",
-            $membroId,
-            $this->localizacoes[
-                $membroId
-            ]['accuracy']
-        );
+        echo sprintf("[LOCATION] %s atualizou localização. Precisão: %.1f m\n", $membroId, $this->localizacoes[$membroId]['accuracy']);
 
-        $this->enviar($conn, [
-            'type' =>
-                'location_received',
-            'updated_at' =>
-                $this->localizacoes[
-                    $membroId
-                ]['updated_at']
-        ]);
+        $this->enviar($conn, ['type' => 'location_received', 'updated_at' => $this->localizacoes[$membroId]['updated_at']]);
 
         $this->enviarEstadosIndividuais();
     }
 
-    private function moverPessoa(
-        ConnectionInterface $conn,
-        array $data
-    ): void {
-        $membroId =
-            $this->obterMembroDaLigacao(
-                $conn
-            );
+    private function moverPessoa(ConnectionInterface $conn,array $data): void {
+        $membroId = $this->obterMembroDaLigacao($conn);
 
-        if (
-            $membroId === null ||
-            !isset(
-                $this->pessoas[
-                    $membroId
-                ]
-            )
-        ) {
+        if ($membroId === null || !isset($this->pessoas[$membroId])) {
             return;
         }
 
-        $top = $this->limitarNumero(
-            (int) (
-                $data['top']
-                ?? 0
-            ),
-            -2000,
-            2000
-        );
+        $top = $this->limitarNumero((int) ($data['top'] ?? 0), -2000, 2000);
 
-        $left = $this->limitarNumero(
-            (int) (
-                $data['left']
-                ?? 0
-            ),
-            -2000,
-            2000
-        );
+        $left = $this->limitarNumero((int) ($data['left'] ?? 0), -2000, 2000);
 
-        if (
-            $top === 0 &&
-            $left === 0
-        ) {
+        if ($top === 0 && $left === 0) {
             return;
         }
 
-        $this->pessoas[
-            $membroId
-        ]['top'] += $top;
+        $this->pessoas[$membroId]['top'] += $top;
 
-        $this->pessoas[
-            $membroId
-        ]['left'] += $left;
+        $this->pessoas[$membroId]['left'] += $left;
 
         $this->enviarEstadosIndividuais();
     }
 
-    private function notificarPessoa(
-        ConnectionInterface $from,
-        array $data
-    ): void {
-        $remetenteId =
-            $this->obterMembroDaLigacao(
-                $from
-            );
+    private function notificarPessoa(ConnectionInterface $from, array $data): void {
+        $remetenteId = $this->obterMembroDaLigacao($from);
 
-        if ($remetenteId === null) {
-            $this->enviarErro(
-                $from,
-                'Tens de estar autenticado para enviar um Hey.'
-            );
+        if ($remetenteId === null) {$this->enviarErro($from, 'Tens de estar autenticado para enviar um Hey.');
 
             return;
         }
 
-        $remetente =
-            $this->pessoas[
-                $remetenteId
-            ] ?? null;
+        $remetente = $this->pessoas[$remetenteId] ?? null;
 
         if (!$remetente) {
-            $this->enviarErro(
-                $from,
-                'O remetente já não está disponível.'
-            );
+            $this->enviarErro($from, 'O remetente já não está disponível.');
 
             return;
         }
 
-        $destinatarioId = trim(
-            (string) (
-                $data['destinatario_id']
-                ?? ''
-            )
-        );
+        $destinatarioId = trim((string) ($data['destinatario_id'] ?? ''));
 
         if ($destinatarioId === '') {
-            $this->enviarErro(
-                $from,
-                'O destinatário não é válido.'
-            );
+            $this->enviarErro($from, 'O destinatário não é válido.');
 
             return;
         }
 
-        if (
-            $destinatarioId ===
-            $remetenteId
-        ) {
-            $this->enviarErro(
-                $from,
-                'Não podes enviar um Hey para ti próprio.'
-            );
+        if ($destinatarioId === $remetenteId) {
+            $this->enviarErro($from, 'Não podes enviar um Hey para ti próprio.');
 
             return;
         }
 
-        if (
-            !$this->estaoDentroDoRaio(
-                $remetenteId,
-                $destinatarioId
-            )
-        ) {
-            $this->enviarErro(
-                $from,
-                'Esta pessoa já não está num raio de 100 metros.'
-            );
+        if (!$this->estaoDentroDoRaio($remetenteId, $destinatarioId)) {
+            $this->enviarErro($from, 'Esta pessoa já não está num raio de 100 metros.');
 
             $this->enviarEstadosIndividuais();
 
             return;
         }
 
-        $ligacoesDestinatario =
-            $this->ligacoesPorMembro[
-                $destinatarioId
-            ] ?? [];
+        $ligacoesDestinatario = $this->ligacoesPorMembro[$destinatarioId] ?? [];
 
-        $destinatario =
-            $this->pessoas[
-                $destinatarioId
-            ] ?? null;
+        $destinatario = $this->pessoas[$destinatarioId] ?? null;
 
-        if (
-            $ligacoesDestinatario === []
-        ) {
-            $this->enviar($from, [
-                'type' =>
-                    'notification_not_delivered',
-                'destinatario_id' =>
-                    $destinatarioId,
-                'message' =>
-                    'O utilizador não está ligado neste momento.'
-            ]);
+        if ($ligacoesDestinatario === []) {
+            $this->enviar($from, ['type' => 'notification_not_delivered', 'destinatario_id' => $destinatarioId, 'message' => 'O utilizador não está ligado neste momento.']);
 
             return;
         }

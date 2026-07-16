@@ -22,7 +22,7 @@ function responderNotificacoes(
 }
 
 function obterHeysRecebidos(
-    PDO $db,
+    $db,
     string $membroId
 ): array {
     $sql = "
@@ -36,7 +36,6 @@ function obterHeysRecebidos(
             n.lida_em,
             'recebido' AS direcao,
             m.id AS outro_membro_id,
-
             COALESCE(
                 NULLIF(
                     TRIM(
@@ -50,14 +49,11 @@ function obterHeysRecebidos(
                 ),
                 'Utilizador'
             ) AS outro_nome,
-
             COALESCE(
                 (
                     SELECT fp.nome_arquivo
                     FROM fotos_perfil AS fp
-                    WHERE
-                        fp.membro_id COLLATE utf8mb4_unicode_ci =
-                        m.id COLLATE utf8mb4_unicode_ci
+                    WHERE fp.membro_id = m.id
                     AND (
                         fp.status = 'completo'
                         OR fp.status IS NULL
@@ -69,36 +65,25 @@ function obterHeysRecebidos(
                 ),
                 'default.webp'
             ) AS outro_foto
-
         FROM notificacao AS n
-
         LEFT JOIN membros AS m
-            ON
-                m.id COLLATE utf8mb4_unicode_ci =
-                n.emissor_id COLLATE utf8mb4_unicode_ci
-
+            ON m.id = n.emissor_id
         WHERE n.destinatario_id = :membro_id
-
         ORDER BY
             n.criada_em DESC,
             n.id DESC
-
         LIMIT 100
     ";
 
-    $statement = $db->prepare($sql);
-
-    $statement->execute([
-        'membro_id' => $membroId
-    ]);
-
-    return $statement->fetchAll(
-        PDO::FETCH_ASSOC
-    );
+    return $db
+        ->runSQL($sql, [
+            'membro_id' => $membroId
+        ])
+        ->fetchAll();
 }
 
 function obterHeysEnviados(
-    PDO $db,
+    $db,
     string $membroId
 ): array {
     $sql = "
@@ -112,7 +97,6 @@ function obterHeysEnviados(
             n.lida_em,
             'enviado' AS direcao,
             m.id AS outro_membro_id,
-
             COALESCE(
                 NULLIF(
                     TRIM(
@@ -126,14 +110,11 @@ function obterHeysEnviados(
                 ),
                 'Utilizador'
             ) AS outro_nome,
-
             COALESCE(
                 (
                     SELECT fp.nome_arquivo
                     FROM fotos_perfil AS fp
-                    WHERE
-                        fp.membro_id COLLATE utf8mb4_unicode_ci =
-                        m.id COLLATE utf8mb4_unicode_ci
+                    WHERE fp.membro_id = m.id
                     AND (
                         fp.status = 'completo'
                         OR fp.status IS NULL
@@ -145,70 +126,43 @@ function obterHeysEnviados(
                 ),
                 'default.webp'
             ) AS outro_foto
-
         FROM notificacao AS n
-
         LEFT JOIN membros AS m
-            ON
-                m.id COLLATE utf8mb4_unicode_ci =
-                n.destinatario_id COLLATE utf8mb4_unicode_ci
-
+            ON m.id = n.destinatario_id
         WHERE n.emissor_id = :membro_id
-
         ORDER BY
             n.criada_em DESC,
             n.id DESC
-
         LIMIT 100
     ";
 
-    $statement = $db->prepare($sql);
-
-    $statement->execute([
-        'membro_id' => $membroId
-    ]);
-
-    return $statement->fetchAll(
-        PDO::FETCH_ASSOC
-    );
+    return $db
+        ->runSQL($sql, [
+            'membro_id' => $membroId
+        ])
+        ->fetchAll();
 }
 
 function prepararHeys(array $heys): array
 {
     usort(
         $heys,
-        function (
-            array $primeiro,
-            array $segundo
-        ): int {
+        function (array $primeiro, array $segundo): int {
             $comparacaoData = strcmp(
-                (string) (
-                    $segundo['criada_em']
-                    ?? ''
-                ),
-                (string) (
-                    $primeiro['criada_em']
-                    ?? ''
-                )
+                (string) ($segundo['criada_em'] ?? ''),
+                (string) ($primeiro['criada_em'] ?? '')
             );
 
             if ($comparacaoData !== 0) {
                 return $comparacaoData;
             }
 
-            return (
-                (int) ($segundo['id'] ?? 0)
-                <=>
-                (int) ($primeiro['id'] ?? 0)
-            );
+            return (int) ($segundo['id'] ?? 0)
+                <=> (int) ($primeiro['id'] ?? 0);
         }
     );
 
-    $heys = array_slice(
-        $heys,
-        0,
-        100
-    );
+    $heys = array_slice($heys, 0, 100);
 
     foreach ($heys as &$hey) {
         $foto = basename(
@@ -224,21 +178,10 @@ function prepararHeys(array $heys): array
             $foto = 'default.webp';
         }
 
-        $hey['id'] = (int) (
-            $hey['id']
-            ?? 0
-        );
-
-        $hey['lida'] = (bool) (
-            $hey['lida']
-            ?? false
-        );
-
+        $hey['id'] = (int) ($hey['id'] ?? 0);
+        $hey['lida'] = (bool) ($hey['lida'] ?? false);
         $hey['direcao'] =
-            (
-                $hey['direcao']
-                ?? ''
-            ) === 'enviado'
+            ($hey['direcao'] ?? '') === 'enviado'
                 ? 'enviado'
                 : 'recebido';
 
@@ -247,9 +190,7 @@ function prepararHeys(array $heys): array
             'imagens/fotos-perfil/' .
             rawurlencode($foto);
 
-        unset(
-            $hey['outro_foto']
-        );
+        unset($hey['outro_foto']);
     }
 
     unset($hey);
@@ -258,93 +199,40 @@ function prepararHeys(array $heys): array
 }
 
 $membroId = trim(
-    (string) (
-        $session->id
-        ?? ''
-    )
+    (string) ($session->id ?? '')
 );
 
-if (
-    $membroId === '' ||
-    $membroId === '0'
-) {
-    responderNotificacoes(
-        [
-            'success' => false,
-            'message' =>
-                'A sessão terminou.'
-        ],
-        401
-    );
+if ($membroId === '' || $membroId === '0') {
+    responderNotificacoes([
+        'success' => false,
+        'message' => 'A sessão terminou.'
+    ], 401);
 }
 
 try {
-    $database =
-        $cms->getDatabase();
-
-    if (
-        !$database instanceof PDO
-    ) {
-        throw new RuntimeException(
-            'getDatabase() não devolveu um PDO.'
-        );
-    }
-
-    $database->setAttribute(
-        PDO::ATTR_ERRMODE,
-        PDO::ERRMODE_EXCEPTION
-    );
-
-    $database->setAttribute(
-        PDO::ATTR_DEFAULT_FETCH_MODE,
-        PDO::FETCH_ASSOC
-    );
-
-    if (
-        $_SERVER['REQUEST_METHOD']
-        === 'POST'
-    ) {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $acao = trim(
-            (string) (
-                $_POST['action']
-                ?? ''
-            )
+            (string) ($_POST['action'] ?? '')
         );
 
-        if (
-            $acao !==
-            'mark_all_read'
-        ) {
-            responderNotificacoes(
-                [
-                    'success' => false,
-                    'message' =>
-                        'Ação inválida.'
-                ],
-                422
-            );
+        if ($acao !== 'mark_all_read') {
+            responderNotificacoes([
+                'success' => false,
+                'message' => 'Ação inválida.'
+            ], 422);
         }
 
         $sql = "
             UPDATE notificacao
             SET
                 lida = 1,
-                lida_em = COALESCE(
-                    lida_em,
-                    NOW()
-                )
-            WHERE
-                destinatario_id =
-                    :destinatario_id
+                lida_em = COALESCE(lida_em, NOW())
+            WHERE destinatario_id = :destinatario_id
             AND lida = 0
         ";
 
-        $statement =
-            $database->prepare($sql);
-
-        $statement->execute([
-            'destinatario_id' =>
-                $membroId
+        $db->runSQL($sql, [
+            'destinatario_id' => $membroId
         ]);
 
         responderNotificacoes([
@@ -353,35 +241,24 @@ try {
         ]);
     }
 
-    if (
-        $_SERVER['REQUEST_METHOD']
-        !== 'GET'
-    ) {
-        header(
-            'Allow: GET, POST'
-        );
+    if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+        header('Allow: GET, POST');
 
-        responderNotificacoes(
-            [
-                'success' => false,
-                'message' =>
-                    'Método não permitido.'
-            ],
-            405
-        );
+        responderNotificacoes([
+            'success' => false,
+            'message' => 'Método não permitido.'
+        ], 405);
     }
 
-    $recebidos =
-        obterHeysRecebidos(
-            $database,
-            $membroId
-        );
+    $recebidos = obterHeysRecebidos(
+        $db,
+        $membroId
+    );
 
-    $enviados =
-        obterHeysEnviados(
-            $database,
-            $membroId
-        );
+    $enviados = obterHeysEnviados(
+        $db,
+        $membroId
+    );
 
     $heys = prepararHeys(
         array_merge(
@@ -393,30 +270,20 @@ try {
     $sql = "
         SELECT COUNT(*)
         FROM notificacao
-        WHERE
-            destinatario_id =
-                :destinatario_id
+        WHERE destinatario_id = :destinatario_id
         AND lida = 0
     ";
 
-    $statement =
-        $database->prepare($sql);
-
-    $statement->execute([
-        'destinatario_id' =>
-            $membroId
-    ]);
-
-    $naoLidos = (int) (
-        $statement->fetchColumn()
-    );
+    $naoLidos = (int) $db
+        ->runSQL($sql, [
+            'destinatario_id' => $membroId
+        ])
+        ->fetchColumn();
 
     responderNotificacoes([
         'success' => true,
-        'unread_count' =>
-            $naoLidos,
-        'notifications' =>
-            $heys
+        'unread_count' => $naoLidos,
+        'notifications' => $heys
     ]);
 } catch (Throwable $erro) {
     error_log(
@@ -424,12 +291,8 @@ try {
         $erro->getMessage()
     );
 
-    responderNotificacoes(
-        [
-            'success' => false,
-            'message' =>
-                'Não foi possível carregar os Heys.'
-        ],
-        500
-    );
+    responderNotificacoes([
+        'success' => false,
+        'message' => 'Não foi possível carregar os Heys.'
+    ], 500);
 }

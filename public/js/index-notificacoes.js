@@ -64,6 +64,11 @@
             'heys-contador'
         );
 
+    var limparTodos =
+        document.getElementById(
+            'limpar-todos-heys'
+        );
+
     var avisos =
         document.getElementById(
             'heys-avisos'
@@ -73,8 +78,7 @@
         !abrir ||
         !area ||
         !painel ||
-        !lista ||
-        !contador
+        !lista
     ) {
         return;
     }
@@ -92,9 +96,7 @@
                 10
             );
 
-        return Number.isFinite(
-            resultado
-        )
+        return Number.isFinite(resultado)
             ? resultado
             : 0;
     }
@@ -113,28 +115,19 @@
                 window.location.href
             ).href;
         } catch (falha) {
-            return (
-                '/imagens/fotos-perfil/' +
-                'default.webp'
-            );
+            return '/imagens/fotos-perfil/default.webp';
         }
     }
 
-    function aplicarFoto(
-        imagem,
-        caminho
-    ) {
-        imagem.onerror =
-            function () {
-                this.onerror = null;
+    function aplicarFoto(imagem, caminho) {
+        imagem.onerror = function () {
+            this.onerror = null;
+            this.src = urlFoto(
+                '/imagens/fotos-perfil/default.webp'
+            );
+        };
 
-                this.src = urlFoto(
-                    '/imagens/fotos-perfil/default.webp'
-                );
-            };
-
-        imagem.src =
-            urlFoto(caminho);
+        imagem.src = urlFoto(caminho);
     }
 
     function definirContador(valor) {
@@ -167,13 +160,9 @@
             return '';
         }
 
-        var normalizada =
-            String(valor)
-                .trim()
-                .replace(
-                    ' ',
-                    'T'
-                );
+        var normalizada = String(valor)
+            .trim()
+            .replace(' ', 'T');
 
         if (
             !/[zZ]|[+-]\d\d:\d\d$/.test(
@@ -183,8 +172,7 @@
             normalizada += 'Z';
         }
 
-        var data =
-            new Date(normalizada);
+        var data = new Date(normalizada);
 
         if (
             Number.isNaN(
@@ -214,15 +202,12 @@
             return;
         }
 
-        if (
-            mensagem !== undefined
-        ) {
+        if (mensagem !== undefined) {
             elemento.textContent =
                 mensagem;
         }
 
-        elemento.hidden =
-            !mostrar;
+        elemento.hidden = !mostrar;
     }
 
     function criarElemento(
@@ -231,35 +216,27 @@
         conteudo
     ) {
         var elemento =
-            document.createElement(
-                nome
-            );
+            document.createElement(nome);
 
         if (classe) {
-            elemento.className =
-                classe;
+            elemento.className = classe;
         }
 
-        if (
-            conteudo !== undefined
-        ) {
-            elemento.textContent =
-                conteudo;
+        if (conteudo !== undefined) {
+            elemento.textContent = conteudo;
         }
 
         return elemento;
     }
 
     function criarItem(item) {
-        var artigo =
-            criarElemento(
-                'article',
-                'hey-item'
-            );
+        var artigo = criarElemento(
+            'article',
+            'hey-item'
+        );
 
         if (
-            item.direcao ===
-                'recebido' &&
+            item.direcao === 'recebido' &&
             !item.lida
         ) {
             artigo.classList.add(
@@ -267,11 +244,10 @@
             );
         }
 
-        var imagem =
-            criarElemento(
-                'img',
-                'hey-item-foto'
-            );
+        var imagem = criarElemento(
+            'img',
+            'hey-item-foto'
+        );
 
         aplicarFoto(
             imagem,
@@ -281,32 +257,24 @@
         imagem.alt = '';
         imagem.loading = 'lazy';
 
-        var corpo =
-            criarElemento(
-                'div',
-                'hey-item-corpo'
-            );
+        var corpo = criarElemento(
+            'div',
+            'hey-item-corpo'
+        );
 
-        var frase =
-            criarElemento(
-                'p',
-                'hey-item-frase'
-            );
+        var frase = criarElemento(
+            'p',
+            'hey-item-frase'
+        );
 
-        var nome =
-            criarElemento(
-                'strong',
-                '',
-                texto(
-                    item.outro_nome
-                ) ||
+        var nome = criarElemento(
+            'strong',
+            '',
+            texto(item.outro_nome) ||
                 'Alguém'
-            );
+        );
 
-        if (
-            item.direcao ===
-            'enviado'
-        ) {
+        if (item.direcao === 'enviado') {
             frase.append(
                 'Enviaste um Hey a ',
                 nome,
@@ -319,28 +287,47 @@
             );
         }
 
-        var momento =
-            criarElemento(
-                'time',
-                'hey-item-data',
-                dataLocal(
-                    item.criada_em
-                )
-            );
+        var momento = criarElemento(
+            'time',
+            'hey-item-data',
+            dataLocal(item.criada_em)
+        );
 
         momento.dateTime =
-            texto(
-                item.criada_em
-            );
+            texto(item.criada_em);
 
         corpo.append(
             frase,
             momento
         );
 
+        var botaoLimpar = criarElemento(
+            'button',
+            'hey-item-limpar'
+        );
+
+        botaoLimpar.type = 'button';
+
+        botaoLimpar.dataset.notificationId =
+            String(numero(item.id));
+
+        botaoLimpar.dataset.direction =
+            item.direcao;
+
+        botaoLimpar.setAttribute(
+            'aria-label',
+            'Limpar este Hey'
+        );
+
+        botaoLimpar.innerHTML =
+            '<svg viewBox="0 0 24 24" aria-hidden="true">' +
+                '<path d="M6 6l12 12M18 6 6 18"></path>' +
+            '</svg>';
+
         artigo.append(
             imagem,
-            corpo
+            corpo,
+            botaoLimpar
         );
 
         return artigo;
@@ -365,6 +352,17 @@
                 !estado.carregando
         );
 
+        if (limparTodos) {
+            limparTodos.hidden =
+                filtradas.length === 0 ||
+                estado.carregando;
+
+            limparTodos.textContent =
+                estado.direcao === 'enviado'
+                    ? 'Limpar enviados'
+                    : 'Limpar recebidos';
+        }
+
         filtradas.forEach(
             function (item) {
                 lista.appendChild(
@@ -379,25 +377,22 @@
             return;
         }
 
-        var dados =
-            Object.assign(
-                {
-                    titulo: 'Hey',
-                    mensagem: '',
-                    foto: '',
-                    tipo: 'hey',
-                    duracao: 4800
-                },
-                opcoes || {}
-            );
+        var dados = Object.assign(
+            {
+                titulo: 'Hey',
+                mensagem: '',
+                foto: '',
+                tipo: 'hey',
+                duracao: 4800
+            },
+            opcoes || {}
+        );
 
-        var aviso =
-            criarElemento(
-                'div',
-                'hey-aviso ' +
-                'hey-aviso-' +
+        var aviso = criarElemento(
+            'div',
+            'hey-aviso hey-aviso-' +
                 dados.tipo
-            );
+        );
 
         aviso.setAttribute(
             'role',
@@ -405,11 +400,10 @@
         );
 
         if (dados.foto) {
-            var foto =
-                criarElemento(
-                    'img',
-                    'hey-aviso-foto'
-                );
+            var foto = criarElemento(
+                'img',
+                'hey-aviso-foto'
+            );
 
             aplicarFoto(
                 foto,
@@ -418,30 +412,23 @@
 
             foto.alt = '';
 
-            aviso.appendChild(
-                foto
-            );
+            aviso.appendChild(foto);
         } else {
-            var simbolo =
-                criarElemento(
-                    'span',
-                    'hey-aviso-simbolo',
-                    dados.tipo ===
-                        'erro'
-                        ? '!'
-                        : '👋'
-                );
-
-            aviso.appendChild(
-                simbolo
+            var simbolo = criarElemento(
+                'span',
+                'hey-aviso-simbolo',
+                dados.tipo === 'erro'
+                    ? '!'
+                    : '👋'
             );
+
+            aviso.appendChild(simbolo);
         }
 
-        var corpo =
-            criarElemento(
-                'div',
-                'hey-aviso-corpo'
-            );
+        var corpo = criarElemento(
+            'div',
+            'hey-aviso-corpo'
+        );
 
         corpo.append(
             criarElemento(
@@ -490,10 +477,7 @@
         foto
     ) {
         if (
-            !(
-                'Notification'
-                in window
-            ) ||
+            !('Notification' in window) ||
             Notification.permission !==
                 'granted'
         ) {
@@ -511,26 +495,22 @@
                 Date.now(),
             renotify: true,
             data: {
-                url:
-                    window.location.href
+                url: window.location.href
             }
         };
 
         try {
             if (
-                'serviceWorker'
-                in navigator
+                'serviceWorker' in navigator
             ) {
                 var registo =
                     await navigator
-                        .serviceWorker
-                        .ready;
+                        .serviceWorker.ready;
 
-                await registo
-                    .showNotification(
-                        titulo,
-                        opcoes
-                    );
+                await registo.showNotification(
+                    titulo,
+                    opcoes
+                );
 
                 return;
             }
@@ -557,10 +537,7 @@
 
     async function pedirPermissao() {
         if (
-            !(
-                'Notification'
-                in window
-            ) ||
+            !('Notification' in window) ||
             Notification.permission !==
                 'default'
         ) {
@@ -580,10 +557,7 @@
 
     function registarServiceWorker() {
         if (
-            !(
-                'serviceWorker'
-                in navigator
-            ) ||
+            !('serviceWorker' in navigator) ||
             !window.isSecureContext
         ) {
             return;
@@ -604,22 +578,21 @@
     }
 
     function prepararPedidoPermissao() {
-        var pedirUmaVez =
-            function () {
-                pedirPermissao();
+        var pedirUmaVez = function () {
+            pedirPermissao();
 
-                document.removeEventListener(
-                    'pointerup',
-                    pedirUmaVez,
-                    true
-                );
+            document.removeEventListener(
+                'pointerup',
+                pedirUmaVez,
+                true
+            );
 
-                document.removeEventListener(
-                    'keydown',
-                    pedirUmaVez,
-                    true
-                );
-            };
+            document.removeEventListener(
+                'keydown',
+                pedirUmaVez,
+                true
+            );
+        };
 
         document.addEventListener(
             'pointerup',
@@ -638,7 +611,7 @@
         mostrarCarregamento
     ) {
         if (estado.carregando) {
-            return false;
+            return;
         }
 
         estado.carregando = true;
@@ -656,29 +629,26 @@
         );
 
         try {
-            var resposta =
-                await fetch(
-                    endpoint,
-                    {
-                        method: 'GET',
-                        credentials:
-                            'same-origin',
-                        cache:
-                            'no-store',
-                        headers: {
-                            Accept:
-                                'application/json'
-                        }
+            var resposta = await fetch(
+                endpoint,
+                {
+                    method: 'GET',
+                    credentials:
+                        'same-origin',
+                    cache: 'no-store',
+                    headers: {
+                        Accept:
+                            'application/json'
                     }
-                );
+                }
+            );
 
             if (!resposta.ok) {
                 var detalhe = '';
 
                 try {
                     var erroHttp =
-                        await resposta
-                            .json();
+                        await resposta.json();
 
                     detalhe = texto(
                         erroHttp.message
@@ -689,13 +659,12 @@
 
                 throw new Error(
                     'Resposta HTTP ' +
-                    resposta.status +
-                    (
-                        detalhe
-                            ? ': ' +
-                              detalhe
-                            : ''
-                    )
+                        resposta.status +
+                        (
+                            detalhe
+                                ? ': ' + detalhe
+                                : ''
+                        )
                 );
             }
 
@@ -705,7 +674,7 @@
             if (!dados.success) {
                 throw new Error(
                     dados.message ||
-                    'Não foi possível carregar os Heys.'
+                        'Não foi possível carregar os Heys.'
                 );
             }
 
@@ -720,16 +689,13 @@
                 recebidas.forEach(
                     function (item) {
                         var id =
-                            numero(
-                                item.id
-                            );
+                            numero(item.id);
 
                         if (
                             item.direcao ===
                                 'recebido' &&
                             !item.lida &&
-                            !estado
-                                .idsConhecidos
+                            !estado.idsConhecidos
                                 .has(id)
                         ) {
                             var nome =
@@ -812,6 +778,190 @@
         }
     }
 
+    async function enviarAcao(
+        acao,
+        valores
+    ) {
+        var corpo =
+            new URLSearchParams();
+
+        corpo.set(
+            'action',
+            acao
+        );
+
+        Object.entries(
+            valores || {}
+        ).forEach(
+            function (entrada) {
+                corpo.set(
+                    entrada[0],
+                    String(entrada[1])
+                );
+            }
+        );
+
+        var resposta = await fetch(
+            endpoint,
+            {
+                method: 'POST',
+                credentials:
+                    'same-origin',
+                cache: 'no-store',
+                headers: {
+                    Accept:
+                        'application/json',
+                    'Content-Type':
+                        'application/x-www-form-urlencoded;charset=UTF-8'
+                },
+                body: corpo.toString()
+            }
+        );
+
+        var dados = null;
+
+        try {
+            dados =
+                await resposta.json();
+        } catch (ignorar) {
+            dados = null;
+        }
+
+        if (
+            !resposta.ok ||
+            !dados ||
+            !dados.success
+        ) {
+            throw new Error(
+                texto(
+                    dados?.message
+                ) ||
+                'Não foi possível concluir a ação.'
+            );
+        }
+
+        return dados;
+    }
+
+    async function limparUmHey(
+        notificacaoId,
+        direcao,
+        botao
+    ) {
+        if (notificacaoId <= 0) {
+            return;
+        }
+
+        if (botao) {
+            botao.disabled = true;
+        }
+
+        try {
+            var dados =
+                await enviarAcao(
+                    'hide_one',
+                    {
+                        notification_id:
+                            notificacaoId,
+                        direction:
+                            direcao
+                    }
+                );
+
+            estado.notificacoes =
+                estado.notificacoes.filter(
+                    function (item) {
+                        return (
+                            numero(item.id) !==
+                            notificacaoId
+                        );
+                    }
+                );
+
+            definirContador(
+                dados.unread_count
+            );
+
+            renderizar();
+        } catch (falha) {
+            console.error(falha);
+
+            mostrarAviso({
+                titulo:
+                    'Não foi possível limpar',
+                mensagem:
+                    texto(
+                        falha.message
+                    ) ||
+                    'Tenta novamente.',
+                tipo: 'erro'
+            });
+
+            if (
+                botao &&
+                botao.isConnected
+            ) {
+                botao.disabled = false;
+            }
+        }
+    }
+
+    async function limparTodosHeys() {
+        if (
+            !limparTodos ||
+            limparTodos.disabled
+        ) {
+            return;
+        }
+
+        var direcao =
+            estado.direcao;
+
+        limparTodos.disabled = true;
+
+        try {
+            var dados =
+                await enviarAcao(
+                    'hide_all',
+                    {
+                        direction:
+                            direcao
+                    }
+                );
+
+            estado.notificacoes =
+                estado.notificacoes.filter(
+                    function (item) {
+                        return (
+                            item.direcao !==
+                            direcao
+                        );
+                    }
+                );
+
+            definirContador(
+                dados.unread_count
+            );
+
+            renderizar();
+        } catch (falha) {
+            console.error(falha);
+
+            mostrarAviso({
+                titulo:
+                    'Não foi possível limpar',
+                mensagem:
+                    texto(
+                        falha.message
+                    ) ||
+                    'Tenta novamente.',
+                tipo: 'erro'
+            });
+        } finally {
+            limparTodos.disabled = false;
+        }
+    }
+
     async function marcarComoLidas() {
         try {
             var corpo =
@@ -822,35 +972,25 @@
                 'mark_all_read'
             );
 
-            var resposta =
-                await fetch(
-                    endpoint,
-                    {
-                        method: 'POST',
-                        credentials:
-                            'same-origin',
-                        cache:
-                            'no-store',
-                        headers: {
-                            Accept:
-                                'application/json',
-                            'Content-Type':
-                                'application/x-www-form-urlencoded;charset=UTF-8'
-                        },
-                        body:
-                            corpo.toString()
-                    }
-                );
+            var resposta = await fetch(
+                endpoint,
+                {
+                    method: 'POST',
+                    credentials:
+                        'same-origin',
+                    cache: 'no-store',
+                    headers: {
+                        Accept:
+                            'application/json',
+                        'Content-Type':
+                            'application/x-www-form-urlencoded;charset=UTF-8'
+                    },
+                    body: corpo.toString()
+                }
+            );
 
             if (!resposta.ok) {
-                return false;
-            }
-
-            var dados =
-                await resposta.json();
-
-            if (!dados.success) {
-                return false;
+                return;
             }
 
             estado.notificacoes =
@@ -873,21 +1013,13 @@
                     }
                 );
 
-            definirContador(
-                dados.unread_count
-                ?? 0
-            );
-
+            definirContador(0);
             renderizar();
-
-            return true;
         } catch (falha) {
             console.warn(
                 'Não foi possível marcar os Heys como lidos.',
                 falha
             );
-
-            return false;
         }
     }
 
@@ -952,9 +1084,7 @@
         });
     }
 
-    function selecionarDirecao(
-        botao
-    ) {
+    function selecionarDirecao(botao) {
         estado.direcao =
             botao.dataset.direcao ===
                 'enviado'
@@ -963,8 +1093,7 @@
 
         document
             .querySelectorAll(
-                '.heys-separadores ' +
-                '[role="tab"]'
+                '.heys-separadores [role="tab"]'
             )
             .forEach(
                 function (separador) {
@@ -972,11 +1101,10 @@
                         separador ===
                         botao;
 
-                    separador.classList
-                        .toggle(
-                            'ativo',
-                            ativo
-                        );
+                    separador.classList.toggle(
+                        'ativo',
+                        ativo
+                    );
 
                     separador.setAttribute(
                         'aria-selected',
@@ -1007,8 +1135,7 @@
                 elemento.addEventListener(
                     tipo,
                     function (evento) {
-                        evento
-                            .stopPropagation();
+                        evento.stopPropagation();
                     },
                     {
                         passive:
@@ -1025,15 +1152,19 @@
         abrirPainel
     );
 
-    fechar?.addEventListener(
-        'click',
-        fecharPainel
-    );
+    if (fechar) {
+        fechar.addEventListener(
+            'click',
+            fecharPainel
+        );
+    }
 
-    fundo?.addEventListener(
-        'click',
-        fecharPainel
-    );
+    if (fundo) {
+        fundo.addEventListener(
+            'click',
+            fecharPainel
+        );
+    }
 
     document.addEventListener(
         'keydown',
@@ -1050,8 +1181,7 @@
 
     document
         .querySelectorAll(
-            '.heys-separadores ' +
-            '[role="tab"]'
+            '.heys-separadores [role="tab"]'
         )
         .forEach(
             function (botao) {
@@ -1066,28 +1196,78 @@
             }
         );
 
+    lista.addEventListener(
+        'click',
+        function (evento) {
+            var origem =
+                evento.target;
+
+            if (
+                !(origem instanceof Element)
+            ) {
+                return;
+            }
+
+            var botao =
+                origem.closest(
+                    '.hey-item-limpar'
+                );
+
+            if (
+                !botao ||
+                !lista.contains(botao)
+            ) {
+                return;
+            }
+
+            evento.preventDefault();
+            evento.stopPropagation();
+
+            limparUmHey(
+                numero(
+                    botao.dataset
+                        .notificationId
+                ),
+                botao.dataset.direction ===
+                    'enviado'
+                    ? 'enviado'
+                    : 'recebido',
+                botao
+            );
+        }
+    );
+
+    if (limparTodos) {
+        limparTodos.addEventListener(
+            'click',
+            function (evento) {
+                evento.preventDefault();
+                evento.stopPropagation();
+
+                limparTodosHeys();
+            }
+        );
+    }
+
     window.addEventListener(
         'app:hey-recebido',
         function (evento) {
             var dados =
                 evento.detail || {};
 
-            var id =
-                numero(
-                    dados.notification_id
-                );
+            var id = numero(
+                dados.notification_id
+            );
 
             if (
                 id > 0 &&
-                estado.idsConhecidos
-                    .has(id)
+                estado.idsConhecidos.has(id)
             ) {
                 return;
             }
 
             if (id > 0) {
-                estado.idsConhecidos
-                    .add(id);
+                estado.idsConhecidos.add(id);
             }
 
             var nome =
@@ -1222,23 +1402,12 @@
         }
     );
 
-    bloquearGestosDoMapa(
-        abrir
-    );
-
-    bloquearGestosDoMapa(
-        area
-    );
-
-    bloquearGestosDoMapa(
-        painel
-    );
+    bloquearGestosDoMapa(abrir);
+    bloquearGestosDoMapa(area);
+    bloquearGestosDoMapa(painel);
 
     window.mostrarMensagemTemporaria =
-        function (
-            mensagem,
-            tipo
-        ) {
+        function (mensagem, tipo) {
             var eErro =
                 tipo === 'erro';
 
@@ -1274,7 +1443,4 @@
         },
         10000
     );
-})(
-    window,
-    document
-);
+})(window, document);

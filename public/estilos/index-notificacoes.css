@@ -122,9 +122,7 @@
     box-shadow: 20px 0 50px rgba(0, 0, 0, 0.2);
     outline: none;
     transform: translateX(-104%);
-    transition:
-        transform 280ms
-        cubic-bezier(.2, .8, .2, 1);
+    transition: transform 280ms cubic-bezier(.2, .8, .2, 1);
     -webkit-backdrop-filter: blur(24px);
     backdrop-filter: blur(24px);
     touch-action: pan-y;
@@ -211,9 +209,39 @@
 .heys-separadores button.ativo {
     background: white;
     color: #111;
-    box-shadow:
-        0 2px 8px
-        rgba(0, 0, 0, 0.08);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.heys-acoes {
+    flex: 0 0 auto;
+    min-height: 32px;
+    margin: -4px 2px 6px;
+
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.heys-limpar-todos {
+    min-height: 30px;
+    padding: 5px 9px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: #c32638;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.heys-limpar-todos:active {
+    background: rgba(195, 38, 56, 0.09);
+}
+
+.heys-limpar-todos:disabled {
+    opacity: 0.45;
+    cursor: wait;
 }
 
 .heys-lista {
@@ -234,9 +262,7 @@
     position: relative;
     min-height: 76px;
     padding: 12px 8px;
-    border-bottom:
-        1px solid
-        rgba(0, 0, 0, 0.07);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.07);
 
     display: flex;
     align-items: center;
@@ -267,6 +293,43 @@
 .hey-item-corpo {
     min-width: 0;
     flex: 1 1 auto;
+}
+
+.hey-item-limpar {
+    flex: 0 0 34px;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #85858c;
+    cursor: pointer;
+    touch-action: manipulation;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hey-item-limpar:active {
+    background: #e9e9ed;
+    color: #c32638;
+}
+
+.hey-item-limpar:disabled {
+    opacity: 0.35;
+    cursor: wait;
+}
+
+.hey-item-limpar svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
 .hey-item-frase {
@@ -310,23 +373,16 @@
     width: min(100%, 420px);
     min-height: 72px;
     padding: 10px 14px 10px 10px;
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.74);
+    border: 1px solid rgba(255, 255, 255, 0.74);
     border-radius: 23px;
     background: rgba(28, 29, 34, 0.92);
     color: white;
-    box-shadow:
-        0 14px 38px
-        rgba(0, 0, 0, 0.26);
+    box-shadow: 0 14px 38px rgba(0, 0, 0, 0.26);
     opacity: 0;
-    transform:
-        translateY(-18px)
-        scale(0.96);
+    transform: translateY(-18px) scale(0.96);
     transition:
         opacity 220ms ease,
-        transform 260ms
-        cubic-bezier(.2, .8, .2, 1);
+        transform 260ms cubic-bezier(.2, .8, .2, 1);
     -webkit-backdrop-filter: blur(18px);
     backdrop-filter: blur(18px);
 
@@ -337,9 +393,7 @@
 
 .hey-aviso.visivel {
     opacity: 1;
-    transform:
-        translateY(0)
-        scale(1);
+    transform: translateY(0) scale(1);
 }
 
 .hey-aviso-foto,
@@ -355,12 +409,7 @@
 }
 
 .hey-aviso-simbolo {
-    background:
-        linear-gradient(
-            145deg,
-            #7657ff,
-            #438bff
-        );
+    background: linear-gradient(145deg, #7657ff, #438bff);
     font-size: 24px;
 
     display: flex;
@@ -368,14 +417,12 @@
     justify-content: center;
 }
 
-.hey-aviso-erro
-.hey-aviso-simbolo {
+.hey-aviso-erro .hey-aviso-simbolo {
     background: #d63143;
     font-weight: 900;
 }
 
-.hey-aviso-sucesso
-.hey-aviso-simbolo {
+.hey-aviso-sucesso .hey-aviso-simbolo {
     background: #20a864;
 }
 
@@ -391,13 +438,7 @@
 
 .hey-aviso-corpo p {
     margin: 0;
-    color:
-        rgba(
-            255,
-            255,
-            255,
-            0.8
-        );
+    color: rgba(255, 255, 255, 0.8);
     font-size: 13px;
     line-height: 1.35;
 }
@@ -416,16 +457,12 @@ body.heys-abertos {
         margin: 12px;
         top: 0;
         bottom: 0;
-        height:
-            calc(100% - 24px);
+        height: calc(100% - 24px);
         border-radius: 30px;
     }
 }
 
-@media (
-    prefers-reduced-motion:
-    reduce
-) {
+@media (prefers-reduced-motion: reduce) {
     .heys-fundo,
     .heys-painel,
     .hey-aviso {

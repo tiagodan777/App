@@ -4,11 +4,15 @@
 
 <link
     rel="stylesheet"
-    href="{{ doc_root }}estilos/index-notificacoes.css?v=2"
+    href="{{ doc_root }}estilos/index-notificacoes.css?v=3"
 >
 
 <canvas id="gridCanvas"></canvas>
 
+{#
+    Estes elementos continuam no DOM porque o websocket.js atual
+    pode procurá-los. Permanecem sempre invisíveis através de CSS.
+#}
 <div
     id="estado-ligacao"
     data-status="connecting"
@@ -73,10 +77,7 @@
         <header class="heys-cabecalho">
             <div>
                 <p>Atividade</p>
-
-                <h1 id="heys-titulo">
-                    Heys
-                </h1>
+                <h1 id="heys-titulo">Heys</h1>
             </div>
 
             <button
@@ -122,6 +123,17 @@
                 Enviados
             </button>
         </nav>
+
+        <div class="heys-acoes">
+            <button
+                type="button"
+                id="limpar-todos-heys"
+                class="heys-limpar-todos"
+                hidden
+            >
+                Limpar todos
+            </button>
+        </div>
 
         <div
             id="heys-lista"
@@ -226,6 +238,6 @@
 <script src="{{ doc_root }}js/index-mini-menu.js?v=8"></script>
 <script src="{{ doc_root }}js/index-animacao.js?v=9"></script>
 <script src="{{ doc_root }}js/index-tap-foto.js?v=9"></script>
-<script src="{{ doc_root }}js/index-notificacoes.js?v=4"></script>
+<script src="{{ doc_root }}js/index-notificacoes.js?v=5"></script>
 
 {% endblock %}
