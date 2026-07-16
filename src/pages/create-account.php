@@ -4,36 +4,21 @@ declare(strict_types=1);
 
 use App\Validate\Validate;
 
-$pathImagensTemporarias =
-    APP_ROOT . '/public/imagens/fotos-perfil-temp/';
+$pathImagensTemporarias = APP_ROOT . '/public/imagens/fotos-perfil-temp/';
 
-function responderJson(
-    array $resposta,
-    int $status = 200
-): never {
+function responderJson(array $resposta, int $status = 200): never {
     http_response_code($status);
 
-    header(
-        'Content-Type: application/json; charset=UTF-8'
-    );
+    header('Content-Type: application/json; charset=UTF-8');
 
-    echo json_encode(
-        $resposta,
-        JSON_UNESCAPED_UNICODE |
-        JSON_UNESCAPED_SLASHES
-    );
+    echo json_encode($resposta, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
     exit;
 }
 
-function apagarImagensTemporarias(
-    array $imagens,
-    string $pasta
-): void {
+function apagarImagensTemporarias(array $imagens, string $pasta): void {
     foreach ($imagens as $imagem) {
-        $nomeFicheiro = basename(
-            (string) $imagem
-        );
+        $nomeFicheiro = basename((string) $imagem);
 
         if ($nomeFicheiro === '') {
             continue;
@@ -54,10 +39,7 @@ function apagarImagensTemporarias(
 */
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    echo $twig->render(
-        'create-account.html',
-        []
-    );
+    echo $twig->render('create-account.html', []);
 
     exit;
 }
@@ -76,21 +58,10 @@ $imagens = [];
 */
 
 if (!is_dir($pathImagensTemporarias)) {
-    $pastaCriada = mkdir(
-        $pathImagensTemporarias,
-        0775,
-        true
-    );
+    $pastaCriada = mkdir($pathImagensTemporarias, 0775, true);
 
-    if (
-        !$pastaCriada &&
-        !is_dir($pathImagensTemporarias)
-    ) {
-        responderJson([
-            'success' => false,
-            'message' =>
-                'Não foi possível preparar a pasta das fotografias.'
-        ], 500);
+    if (!$pastaCriada && !is_dir($pathImagensTemporarias)) {
+        responderJson(['success' => false, 'message' => 'Não foi possível preparar a pasta das fotografias.'], 500);
     }
 }
 
@@ -100,44 +71,23 @@ if (!is_dir($pathImagensTemporarias)) {
 |--------------------------------------------------------------------------
 */
 
-if (
-    isset($_FILES['imagens']) &&
-    isset($_FILES['imagens']['tmp_name']) &&
-    is_array($_FILES['imagens']['tmp_name'])
-) {
-    $totalImagens = count(
-        $_FILES['imagens']['tmp_name']
-    );
+if (isset($_FILES['imagens']) && isset($_FILES['imagens']['tmp_name']) && is_array($_FILES['imagens']['tmp_name'])) {
+    $totalImagens = count($_FILES['imagens']['tmp_name']);
 
     if ($totalImagens > 6) {
-        $erros['imagens'] =
-            'Podes adicionar no máximo 6 fotografias.';
+        $erros['imagens'] = 'Podes adicionar no máximo 6 fotografias.';
     }
 
-    foreach (
-        $_FILES['imagens']['tmp_name']
-        as $indice => $temp
-    ) {
+    foreach ($_FILES['imagens']['tmp_name'] as $indice => $temp) {
         if ($indice >= 6) {
             break;
         }
 
-        $erroUpload =
-            $_FILES['imagens']['error'][$indice]
-            ?? UPLOAD_ERR_NO_FILE;
+        $erroUpload = $_FILES['imagens']['error'][$indice] ?? UPLOAD_ERR_NO_FILE;
 
-        $tamanho =
-            (int) (
-                $_FILES['imagens']['size'][$indice]
-                ?? 0
-            );
+        $tamanho = (int) ($_FILES['imagens']['size'][$indice] ?? 0);
 
-        $nomeOriginal = trim(
-            (string) (
-                $_FILES['imagens']['name'][$indice]
-                ?? ''
-            )
-        );
+        $nomeOriginal = trim((string) ($_FILES['imagens']['name'][$indice] ?? ''));
 
         /*
          * Não enviar fotografias é permitido.
