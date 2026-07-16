@@ -176,12 +176,12 @@ img {
 }
 
 .mini-menu > form > input#mensagem { 
-    width: 50%;
+    width: 65%;
     border: 1px solid #dddddd;
     border-radius: 35px;
     padding: 10px;
     font-size: 1em;
-
+    margin-right: 5px;
 }
 
 .mini-menu > form > input[type="submit"] {
