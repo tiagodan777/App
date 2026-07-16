@@ -28,6 +28,18 @@
         );
     }
 
+    function obterNome(elemento) {
+        return texto(
+            elemento.getAttribute('data-nome') ||
+            elemento.getAttribute('alt') ||
+            elemento.getAttribute('title')
+        );
+    }
+
+    function obterFoto(elemento) {
+        return urlFoto(elemento.currentSrc || elemento.src || elemento.getAttribute('src'));
+    }
+
     function prepararMiniMenu(elemento) {
         if (!elemento) return false;
 
