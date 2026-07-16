@@ -237,7 +237,10 @@ img {
 }
 
 #menuPrincipal > nav > ul > li {
-
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: center;
+    align-items: center;
 }
 
 /*#menuPrincipal > nav > ul > li.active {
