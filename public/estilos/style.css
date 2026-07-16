@@ -237,12 +237,7 @@ img {
 }
 
 #menuPrincipal > nav > ul > li {
-    color: black;
-    z-index: 10;
-    padding: 8px 32px;
-    margin: 0px 10px;
-    border-radius: 35px;
-    background-color: rgba(255, 255, 255, 0.5);
+
 }
 
 /*#menuPrincipal > nav > ul > li.active {
@@ -254,6 +249,12 @@ img {
 #menuPrincipal > nav > ul > li > a {
     text-decoration: none;
     color: black;
+    color: black;
+    z-index: 10;
+    padding: 8px 32px;
+    margin: 0px 10px;
+    border-radius: 35px;
+    background-color: rgba(255, 255, 255, 0.5);
 }
 
 #menuPrincipal > nav > ul > li > a > img {
