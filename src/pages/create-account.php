@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-$data = [];
-
 use App\Validate\Validate;
 
 $pathImagensTemporarias = APP_ROOT . '/public/imagens/fotos-perfil-temp/';
@@ -598,5 +596,3 @@ try {
             'Ocorreu um erro ao criar a conta.'
     ], 500);
 }
-
-echo $twig->render('create-account.html', $data);
