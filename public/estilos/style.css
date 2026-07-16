@@ -161,6 +161,7 @@ img {
 }
 
 .mini-menu > form > input#mensagem { 
+    width: 65%;
     border: 1px solid #dddddd;
     border-radius: 35px;
     padding: 10px;
