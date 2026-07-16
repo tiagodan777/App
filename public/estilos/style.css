@@ -136,8 +136,8 @@ img {
 }
 
 .mini-menu > button#enviar-hey {
-    width: 35vw;
-    height: 35vw;
+    width: 45vw;
+    height: 45vw;
 
     box-shadow: inset 0px 0px 4px rgba(255, 166, 0, 0.02),
                 inset 0px 0px 8px rgba(255, 166, 0, 0.04)
