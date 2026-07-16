@@ -410,6 +410,17 @@
     gap: 11px;
 }
 
+.hey-aviso-link {
+    pointer-events: auto;
+    color: white;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.hey-aviso-link:active {
+    transform: translateY(0) scale(0.98);
+}
+
 .hey-aviso.visivel {
     opacity: 1;
     transform: translateY(0) scale(1);
