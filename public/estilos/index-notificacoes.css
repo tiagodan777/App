@@ -5,7 +5,7 @@
     display: none !important;
 }
 
-.mini-menu > header > img {
+.mini-menu > header img {
     display: block;
     object-fit: cover;
     background: #ececf0;

@@ -4,26 +4,17 @@
     var $miniMenu = $('.mini-menu');
     var aEnviarHey = false;
 
-    if ($miniMenu.length === 0) {
-        return;
-    }
+    if ($miniMenu.length === 0) return;
 
     function texto(valor) {
         return String(valor || '').trim();
     }
 
     function urlFoto(valor) {
-        var caminho = texto(valor);
-
-        if (!caminho) {
-            caminho = '/imagens/fotos-perfil/default.webp';
-        }
+        var caminho = texto(valor) || '/imagens/fotos-perfil/default.webp';
 
         try {
-            return new URL(
-                caminho,
-                window.location.href
-            ).href;
+            return new URL(caminho, window.location.href).href;
         } catch (erro) {
             return '/imagens/fotos-perfil/default.webp';
         }
@@ -40,198 +31,106 @@
     function obterNome(elemento) {
         return texto(
             elemento.getAttribute('data-nome') ||
-            elemento.getAttribute('alt')
+            elemento.getAttribute('alt') ||
+            elemento.getAttribute('title')
         );
     }
 
     function obterFoto(elemento) {
-        return urlFoto(
-            elemento.currentSrc ||
-            elemento.src ||
-            elemento.getAttribute('src')
-        );
+        return urlFoto(elemento.currentSrc || elemento.src || elemento.getAttribute('src'));
     }
 
     function prepararMiniMenu(elemento) {
-        if (!elemento) {
-            return false;
-        }
+        if (!elemento) return false;
 
         var membroId = obterMembroId(elemento);
-        var nome = obterNome(elemento);
+        if (!membroId) return false;
+
+        var nome = obterNome(elemento) || 'Utilizador';
         var foto = obterFoto(elemento);
+        var $cabecalho = $miniMenu.find('header');
+        var $link = $cabecalho.find('a');
+        var imagem = $cabecalho.find('img').get(0);
 
-        if (!membroId) {
-            return false;
-        }
-
-        $miniMenu.attr(
-            'data-destinatario-id',
-            membroId
-        );
-
-        var imagem = $miniMenu
-            .find('header a img')
-            .get(0);
+        $miniMenu.attr('data-destinatario-id', membroId);
 
         if (imagem) {
             imagem.onerror = function () {
                 this.onerror = null;
-                this.src = urlFoto(
-                    '/imagens/fotos-perfil/default.webp'
-                );
+                this.src = urlFoto('/imagens/fotos-perfil/default.webp');
             };
 
             imagem.src = foto;
-            imagem.alt = nome || 'Fotografia de perfil';
+            imagem.alt = nome;
         }
 
-        $miniMenu
-            .find('header a')
-            .attr('href', '/profile?' + membroId);
+        $cabecalho.find('h1').text(nome);
 
-        $miniMenu
-            .find('header a h1')
-            .text(nome || 'Utilizador');
+        if ($link.length) {
+            $link.attr('href', (window.profileUrl || '/profile') + '?' + encodeURIComponent(membroId));
+        }
 
         if (window.messagesUrl) {
-            $miniMenu
-                .find('form')
-                .attr(
-                    'action',
-                    window.messagesUrl +
-                    '?sendTo=' +
-                    encodeURIComponent(membroId)
-                );
+            $miniMenu.find('form').attr('action', window.messagesUrl + '?sendTo=' + encodeURIComponent(membroId));
         }
 
         return true;
     }
 
     function mostrarMensagem(mensagem, tipo) {
-        if (
-            typeof window.mostrarMensagemTemporaria ===
-            'function'
-        ) {
-            window.mostrarMensagemTemporaria(
-                mensagem,
-                tipo
-            );
+        if (typeof window.mostrarMensagemTemporaria === 'function') {
+            window.mostrarMensagemTemporaria(mensagem, tipo);
         }
     }
 
     function libertarBotaoHey() {
         aEnviarHey = false;
-
-        $('#enviar-hey')
-            .prop('disabled', false)
-            .removeAttr('aria-busy');
+        $('#enviar-hey').prop('disabled', false).removeAttr('aria-busy');
     }
 
-    window.prepararMiniMenuDaFoto =
-        prepararMiniMenu;
+    window.prepararMiniMenuDaFoto = prepararMiniMenu;
 
-    $(document).on(
-        'pointerdown',
-        '.foto',
-        function () {
-            /*
-             * No iPhone, o pointerup usado para abrir o menu pode
-             * impedir o click seguinte. Guardamos os dados logo no
-             * primeiro contacto para o painel nunca abrir vazio.
-             */
-            prepararMiniMenu(this);
+    $(document).on('pointerdown click', '.foto', function () {
+        prepararMiniMenu(this);
+    });
+
+    $(document).on('click', '#enviar-hey', function (evento) {
+        evento.preventDefault();
+        evento.stopPropagation();
+
+        if (aEnviarHey) return;
+
+        var $botao = $(this);
+        var destinatarioId = texto($miniMenu.attr('data-destinatario-id'));
+
+        if (!destinatarioId) {
+            mostrarMensagem('Seleciona primeiro uma pessoa.', 'erro');
+            return;
         }
-    );
 
-    $(document).on(
-        'click',
-        '.foto',
-        function () {
-            prepararMiniMenu(this);
+        if (!window.AppWebSocket || !window.AppWebSocket.isConnected()) {
+            mostrarMensagem('A ligação está a ser restabelecida.', 'erro');
+            if (window.AppWebSocket) window.AppWebSocket.connect();
+            return;
         }
-    );
 
-    $(document).on(
-        'click',
-        '#enviar-hey',
-        function (evento) {
-            evento.preventDefault();
-            evento.stopPropagation();
+        aEnviarHey = true;
+        $botao.prop('disabled', true).attr('aria-busy', 'true');
 
-            if (aEnviarHey) {
-                return;
-            }
+        var enviado = window.AppWebSocket.send({
+            type: 'notify',
+            destinatario_id: destinatarioId
+        });
 
-            var $botao = $(this);
-
-            var destinatarioId = texto(
-                $miniMenu.attr(
-                    'data-destinatario-id'
-                )
-            );
-
-            if (!destinatarioId) {
-                mostrarMensagem(
-                    'Seleciona primeiro uma pessoa.',
-                    'erro'
-                );
-
-                return;
-            }
-
-            if (
-                !window.AppWebSocket ||
-                !window.AppWebSocket.isConnected()
-            ) {
-                mostrarMensagem(
-                    'A ligação está a ser restabelecida.',
-                    'erro'
-                );
-
-                if (window.AppWebSocket) {
-                    window.AppWebSocket.connect();
-                }
-
-                return;
-            }
-
-            aEnviarHey = true;
-
-            $botao
-                .prop('disabled', true)
-                .attr('aria-busy', 'true');
-
-            var enviado = window.AppWebSocket.send({
-                type: 'notify',
-                destinatario_id: destinatarioId
-            });
-
-            if (!enviado) {
-                libertarBotaoHey();
-
-                mostrarMensagem(
-                    'Não foi possível enviar o Hey.',
-                    'erro'
-                );
-
-                return;
-            }
-
-            window.setTimeout(
-                libertarBotaoHey,
-                1200
-            );
+        if (!enviado) {
+            libertarBotaoHey();
+            mostrarMensagem('Não foi possível enviar o Hey.', 'erro');
+            return;
         }
-    );
 
-    window.addEventListener(
-        'app:hey-enviado',
-        libertarBotaoHey
-    );
+        window.setTimeout(libertarBotaoHey, 1200);
+    });
 
-    window.addEventListener(
-        'app:hey-erro',
-        libertarBotaoHey
-    );
+    window.addEventListener('app:hey-enviado', libertarBotaoHey);
+    window.addEventListener('app:hey-erro', libertarBotaoHey);
 })(window, document, jQuery);
