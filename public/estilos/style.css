@@ -93,8 +93,8 @@ img {
 .mini-menu > div#barra {
     margin-top: 2px;
     width: 30vw;
-    height: 5px;
-    background-color: #dddddd;
+    height: 3.5px;
+    background-color: #e4e4e4;
     border-radius: 35px;
 }
 
