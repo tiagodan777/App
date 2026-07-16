@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+$data = [];
+
 use App\Validate\Validate;
 
 $pathImagensTemporarias = APP_ROOT . '/public/imagens/fotos-perfil-temp/';
