@@ -91,6 +91,7 @@ img {
 }
 
 .mini-menu > header {
+    margin-top: 15px;
     display: flex;
     flex-flow: column nowrap;
     justify-content: space-evenly;
