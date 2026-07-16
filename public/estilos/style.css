@@ -90,8 +90,16 @@ img {
     z-index: 40;
 }
 
+.mini-menu > div#barra {
+    margin-top: 3px;
+    width: 25vw;
+    height: 5px;
+    background-color: #dddddd;
+    border-radius: 35px;
+}
+
 .mini-menu > header {
-    margin-top: 15px;
+    margin-top: 18px;
     display: flex;
     flex-flow: column nowrap;
     justify-content: space-evenly;
