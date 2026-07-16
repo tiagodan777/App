@@ -158,6 +158,7 @@ img {
 }
 
 .mini-menu > form {
+    width: 100%;
     transform: translateX(30.79px);
 }
 
