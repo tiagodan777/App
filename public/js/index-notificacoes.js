@@ -119,6 +119,10 @@
         }
     }
 
+    function urlPerfil(membroId) {
+        return (window.profileUrl || '/profile') + '?' + encodeURIComponent(texto(membroId));
+    }
+
     function aplicarFoto(imagem, caminho) {
         imagem.onerror = function () {
             this.onerror = null;
@@ -230,105 +234,47 @@
     }
 
     function criarItem(item) {
-        var artigo = criarElemento(
-            'article',
-            'hey-item'
-        );
+        var artigo = criarElemento('article', 'hey-item');
 
-        if (
-            item.direcao === 'recebido' &&
-            !item.lida
-        ) {
-            artigo.classList.add(
-                'nao-lido'
-            );
-        }
+        if (item.direcao === 'recebido' && !item.lida) artigo.classList.add('nao-lido');
 
-        var imagem = criarElemento(
-            'img',
-            'hey-item-foto'
-        );
+        var perfil = urlPerfil(item.outro_membro_id);
+        var nomePessoa = texto(item.outro_nome) || 'Alguém';
 
-        aplicarFoto(
-            imagem,
-            item.outro_foto_url
-        );
+        var linkFoto = criarElemento('a', 'hey-item-foto-link');
+        linkFoto.href = perfil;
+        linkFoto.setAttribute('aria-label', 'Abrir perfil de ' + nomePessoa);
 
+        var imagem = criarElemento('img', 'hey-item-foto');
         imagem.alt = '';
         imagem.loading = 'lazy';
+        aplicarFoto(imagem, item.outro_foto_url);
+        linkFoto.appendChild(imagem);
 
-        var corpo = criarElemento(
-            'div',
-            'hey-item-corpo'
-        );
+        var corpo = criarElemento('div', 'hey-item-corpo');
+        var frase = criarElemento('p', 'hey-item-frase');
 
-        var frase = criarElemento(
-            'p',
-            'hey-item-frase'
-        );
-
-        var nome = criarElemento(
-            'strong',
-            '',
-            texto(item.outro_nome) ||
-                'Alguém'
-        );
+        var linkNome = criarElemento('a', 'hey-item-nome', nomePessoa);
+        linkNome.href = perfil;
 
         if (item.direcao === 'enviado') {
-            frase.append(
-                'Enviaste um Hey a ',
-                nome,
-                '.'
-            );
+            frase.append('Enviaste um Hey a ', linkNome, '.');
         } else {
-            frase.append(
-                nome,
-                ' enviou-te um Hey.'
-            );
+            frase.append(linkNome, ' enviou-te um Hey.');
         }
 
-        var momento = criarElemento(
-            'time',
-            'hey-item-data',
-            dataLocal(item.criada_em)
-        );
+        var momento = criarElemento('time', 'hey-item-data', dataLocal(item.criada_em));
+        momento.dateTime = texto(item.criada_em);
+        corpo.append(frase, momento);
 
-        momento.dateTime =
-            texto(item.criada_em);
-
-        corpo.append(
-            frase,
-            momento
-        );
-
-        var botaoLimpar = criarElemento(
-            'button',
-            'hey-item-limpar'
-        );
-
+        var botaoLimpar = criarElemento('button', 'hey-item-limpar');
         botaoLimpar.type = 'button';
+        botaoLimpar.dataset.notificationId = String(numero(item.id));
+        botaoLimpar.dataset.direction = item.direcao;
+        botaoLimpar.setAttribute('aria-label', 'Limpar este Hey');
+        botaoLimpar.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg>';
 
-        botaoLimpar.dataset.notificationId =
-            String(numero(item.id));
-
-        botaoLimpar.dataset.direction =
-            item.direcao;
-
-        botaoLimpar.setAttribute(
-            'aria-label',
-            'Limpar este Hey'
-        );
-
-        botaoLimpar.innerHTML =
-            '<svg viewBox="0 0 24 24" aria-hidden="true">' +
-                '<path d="M6 6l12 12M18 6 6 18"></path>' +
-            '</svg>';
-
-        artigo.append(
-            imagem,
-            corpo,
-            botaoLimpar
-        );
+        artigo.append(linkFoto, corpo, botaoLimpar);
 
         return artigo;
     }
