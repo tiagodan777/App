@@ -79,7 +79,7 @@ img {
     
     display: flex;
     flex-flow: column nowrap;
-    justify-content: space-evenly;
+    justify-content: flex-start;
     align-items: center;
 
     will-change: transform;
@@ -155,7 +155,7 @@ img {
     cursor: pointer;
 }
 
-.mini-menu > form > input#mensgem { 
+.mini-menu > form > input#mensagem { 
     border: 1px solid #dddddd;
     border-radius: 35px;
     padding: 10px;
@@ -169,6 +169,7 @@ img {
     font-weight: bold;
     font-size: 0.85em;
     padding: 10px;
+    border: none;
     border-radius: 35px;
 }
 
