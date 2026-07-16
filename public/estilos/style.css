@@ -170,6 +170,9 @@ img {
     transform: translateX(30.79px);
 
     display: flex;
+    flex-flow: row nowrap;
+    justify-content: center;
+    align-items: center;
 }
 
 .mini-menu > form > input#mensagem { 
