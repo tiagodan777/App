@@ -153,6 +153,7 @@ img {
     color: black;
     font-weight: bold;
     cursor: pointer;
+    margin: 10px 0px;
 }
 
 .mini-menu > form {
