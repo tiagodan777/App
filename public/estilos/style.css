@@ -67,7 +67,7 @@ img {
     width: 100vw;
     height: 75vh;
     bottom: 0;
-    border-radius: 50px 50px 0px 0px;
+    border-radius: 75px 75px 0px 0px;
     box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.1),
                 0px 6px 18px rgba(0, 0, 0, 0.2),
                 0px 14px 32px rgba(0, 0, 0, 0.3);
@@ -79,7 +79,7 @@ img {
     
     display: flex;
     flex-flow: column nowrap;
-    justify-content: space-around;
+    justify-content: space-evenly;
     align-items: center;
 
     will-change: transform;
@@ -108,8 +108,8 @@ img {
 }
 
 .mini-menu > header > a > img {
-    width: 30vw;
-    height: 30vw;
+    width: 35vw;
+    height: 35vw;
     border-radius: 50%;
 }
 
@@ -136,8 +136,8 @@ img {
 }
 
 .mini-menu > button#enviar-hey {
-    width: 45vw;
-    height: 45vw;
+    width: 40vw;
+    height: 40vw;
 
     box-shadow: inset 0px 0px 4px rgba(255, 166, 0, 0.02),
                 inset 0px 0px 8px rgba(255, 166, 0, 0.04)
@@ -150,8 +150,26 @@ img {
     border: none;
     border-radius: 50%;
     font-size: 3em;
+    color: black;
     font-weight: bold;
     cursor: pointer;
+}
+
+.mini-menu > form > input#mensgem { 
+    border: 1px solid #dddddd;
+    border-radius: 35px;
+    padding: 10px;
+    font-size: 1em;
+
+}
+
+.mini-menu > form > input[type="submit"] {
+    background-color: rgb(0, 136, 255);
+    color: white;
+    font-weight: bold;
+    font-size: 0.85em;
+    padding: 10px;
+    border-radius: 35px;
 }
 
 #menuPrincipal {
