@@ -38,77 +38,40 @@ class WebSocket implements MessageComponentInterface
             );
         }
 
-        $database->setAttribute(
-            PDO::ATTR_ERRMODE,
-            PDO::ERRMODE_EXCEPTION
-        );
+        $database->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-        $database->setAttribute(
-            PDO::ATTR_DEFAULT_FETCH_MODE,
-            PDO::FETCH_ASSOC
-        );
+        $database->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 
         return $database;
     }
 
-    public function onOpen(
-        ConnectionInterface $conn
-    ): void {
+    public function onOpen(ConnectionInterface $conn): void {
         $this->clients->attach($conn);
 
-        echo sprintf(
-            "[OPEN] Ligação %d aberta. Ligações: %d\n",
-            $conn->resourceId,
-            count($this->clients)
-        );
+        echo sprintf("[OPEN] Ligação %d aberta. Ligações: %d\n", $conn->resourceId, count($this->clients));
 
-        $this->enviar($conn, [
-            'type' => 'connected',
-            'resource_id' => $conn->resourceId
-        ]);
+        $this->enviar($conn, ['type' => 'connected', 'resource_id' => $conn->resourceId]);
     }
 
-    public function onMessage(
-        ConnectionInterface $from,
-        $msg
-    ): void {
+    public function onMessage(ConnectionInterface $from, $msg): void {
         try {
-            $data = json_decode(
-                (string) $msg,
-                true,
-                512,
-                JSON_THROW_ON_ERROR
-            );
+            $data = json_decode((string) $msg, true, 512, JSON_THROW_ON_ERROR);
         } catch (\JsonException) {
-            $this->enviarErro(
-                $from,
-                'A mensagem recebida não contém JSON válido.'
-            );
+            $this->enviarErro($from, 'A mensagem recebida não contém JSON válido.');
 
             return;
         }
 
         if (!is_array($data)) {
-            $this->enviarErro(
-                $from,
-                'A mensagem recebida não é válida.'
-            );
+            $this->enviarErro($from, 'A mensagem recebida não é válida.');
 
             return;
         }
 
-        $type = trim(
-            (string) (
-                $data['type']
-                ?? ''
-            )
-        );
+        $type = trim((string) ($data['type'] ?? ''));
 
         if ($type === '') {
-            $this->enviarErro(
-                $from,
-                'A mensagem não contém um tipo.'
-            );
+            $this->enviarErro($from,'A mensagem não contém um tipo.');
 
             return;
         }
@@ -116,260 +79,108 @@ class WebSocket implements MessageComponentInterface
         try {
             switch ($type) {
                 case 'auth':
-                    $this->autenticarPessoa(
-                        $from,
-                        $data
-                    );
+                    $this->autenticarPessoa($from, $data);
                     break;
 
                 case 'location':
-                    $this->atualizarLocalizacao(
-                        $from,
-                        $data
-                    );
+                    $this->atualizarLocalizacao($from,$data);
                     break;
 
                 case 'move':
-                    $this->moverPessoa(
-                        $from,
-                        $data
-                    );
+                    $this->moverPessoa($from, $data);
                     break;
 
                 case 'notify':
-                    $this->notificarPessoa(
-                        $from,
-                        $data
-                    );
+                    $this->notificarPessoa($from, $data);
                     break;
 
                 case 'ping':
-                    $this->enviar($from, [
-                        'type' => 'pong',
-                        'timestamp' => time()
-                    ]);
+                    $this->enviar($from, ['type' => 'pong', 'timestamp' => time()]);
                     break;
 
                 default:
-                    $this->enviarErro(
-                        $from,
-                        'Tipo de mensagem desconhecido.'
-                    );
+                    $this->enviarErro($from, 'Tipo de mensagem desconhecido.');
                     break;
             }
         } catch (\Throwable $erro) {
-            echo sprintf(
-                "[ERROR] Ligação %d: %s\n",
-                $from->resourceId,
-                $erro->getMessage()
-            );
+            echo sprintf("[ERROR] Ligação %d: %s\n", $from->resourceId, $erro->getMessage());
 
-            $this->enviarErro(
-                $from,
-                'Não foi possível processar o pedido.'
-            );
+            $this->enviarErro($from,'Não foi possível processar o pedido.');
         }
     }
 
-    private function autenticarPessoa(
-        ConnectionInterface $conn,
-        array $data
-    ): void {
-        $membroId = trim(
-            (string) (
-                $data['membro_id']
-                ?? ''
-            )
-        );
+    private function autenticarPessoa(ConnectionInterface $conn, array $data): void {
+        $membroId = trim((string) ($data['membro_id'] ?? ''));
 
         if ($membroId === '') {
-            $this->enviarErro(
-                $conn,
-                'Não foi recebido um membro válido.'
-            );
+            $this->enviarErro($conn,'Não foi recebido um membro válido.');
 
             return;
         }
 
-        $membroAnterior =
-            $this->membroPorLigacao[
-                $conn->resourceId
-            ] ?? null;
+        $membroAnterior = $this->membroPorLigacao[$conn->resourceId] ?? null;
 
-        if (
-            $membroAnterior !== null &&
-            $membroAnterior !== $membroId
-        ) {
-            $this->removerLigacaoDoMembro(
-                $conn,
-                $membroAnterior
-            );
+        if ($membroAnterior !== null && $membroAnterior !== $membroId) {
+            $this->removerLigacaoDoMembro($conn, $membroAnterior);
         }
 
-        $membro =
-            $this->obterMembro(
-                $membroId
-            );
+        $membro = $this->obterMembro($membroId);
 
         if (!$membro) {
-            echo sprintf(
-                "[AUTH ERROR] Membro não encontrado: %s\n",
-                $membroId
-            );
+            echo sprintf("[AUTH ERROR] Membro não encontrado: %s\n", $membroId);
 
-            $this->enviarErro(
-                $conn,
-                'O membro não foi encontrado.'
-            );
+            $this->enviarErro($conn, 'O membro não foi encontrado.');
 
             return;
         }
 
-        $foto = basename(
-            trim(
-                (string) (
-                    $membro['foto_perfil']
-                    ?? 'default.webp'
-                )
-            )
-        );
+        $foto = basename(trim((string) ($membro['foto_perfil'] ?? 'default.webp')));
 
         if ($foto === '') {
             $foto = 'default.webp';
         }
 
-        $this->membroPorLigacao[
-            $conn->resourceId
-        ] = $membroId;
+        $this->membroPorLigacao[$conn->resourceId] = $membroId;
 
-        if (
-            !isset(
-                $this->ligacoesPorMembro[
-                    $membroId
-                ]
-            )
-        ) {
-            $this->ligacoesPorMembro[
-                $membroId
-            ] = [];
+        if (!isset($this->ligacoesPorMembro[$membroId])) {
+            $this->ligacoesPorMembro[$membroId] = [];
         }
 
-        $this->ligacoesPorMembro[
-            $membroId
-        ][
-            $conn->resourceId
-        ] = $conn;
+        $this->ligacoesPorMembro[$membroId][$conn->resourceId] = $conn;
 
-        if (
-            !isset(
-                $this->pessoas[
-                    $membroId
-                ]
-            )
-        ) {
-            $this->pessoas[
-                $membroId
-            ] = [
-                'id' => $membroId,
-                'membro_id' => $membroId,
-                'nome' => trim(
-                    (string) (
-                        $membro['nome']
-                        ?? ''
-                    )
-                ),
-                'src' =>
-                    '/imagens/fotos-perfil/' .
-                    $foto,
-                'top' =>
-                    random_int(
-                        50,
-                        600
-                    ),
-                'left' =>
-                    random_int(
-                        50,
-                        400
-                    )
-            ];
+        if (!isset($this->pessoas[$membroId])) {
+            $this->pessoas[ $membroId] = ['id' => $membroId, 'membro_id' => $membroId, 'nome' => trim((string) ($membro['nome'] ?? '')), 'src' =>
+                    '/imagens/fotos-perfil/' . $foto, 'top' => random_int(50, 600), 'left' => random_int(50,400)];
         } else {
-            $this->pessoas[
-                $membroId
-            ]['nome'] = trim(
-                (string) (
-                    $membro['nome']
-                    ?? ''
-                )
-            );
+            $this->pessoas[$membroId]['nome'] = trim((string) ($membro['nome'] ?? ''));
 
-            $this->pessoas[
-                $membroId
-            ]['src'] =
-                '/imagens/fotos-perfil/' .
-                $foto;
+            $this->pessoas[$membroId]['src'] = '/imagens/fotos-perfil/' . $foto;
         }
 
-        echo sprintf(
-            "[AUTH] Ligação %d autenticada como %s. Pessoas: %d. Ligações deste membro: %d\n",
-            $conn->resourceId,
-            $membroId,
-            count($this->pessoas),
-            count(
-                $this->ligacoesPorMembro[
-                    $membroId
-                ]
-            )
-        );
+        echo sprintf("[AUTH] Ligação %d autenticada como %s. Pessoas: %d. Ligações deste membro: %d\n", $conn->resourceId, $membroId,
+            count($this->pessoas), count($this->ligacoesPorMembro[$membroId]));
 
-        $this->enviar($conn, [
-            'type' => 'authenticated',
-            'membro_id' => $membroId
-        ]);
+        $this->enviar($conn, ['type' => 'authenticated', 'membro_id' => $membroId]);
 
         $this->enviarEstadosIndividuais();
     }
 
-    private function obterMembro(
-        string $membroId
-    ): array|false {
-        $sql = "
-            SELECT
-                m.id AS membro_id,
-
-                CONCAT(
-                    m.primeiro_nome,
-                    ' ',
-                    m.ultimo_nome
-                ) AS nome,
-
+    private function obterMembro(string $membroId): array|false {
+        $sql = "SELECT m.id AS membro_id, CONCAT(m.primeiro_nome,' ', m.ultimo_nome) AS nome,
                 COALESCE(
-                    (
-                        SELECT fp.nome_arquivo
-                        FROM fotos_perfil AS fp
-                        WHERE
-                            fp.membro_id
-                                COLLATE utf8mb4_unicode_ci
-                            =
-                            m.id
-                                COLLATE utf8mb4_unicode_ci
-                        AND (
-                            fp.status = 'completo'
-                            OR fp.status IS NULL
-                        )
-                        ORDER BY
-                            fp.ordem IS NULL ASC,
-                            fp.ordem ASC
-                        LIMIT 1
+                    (SELECT fp.nome_arquivo
+                    FROM fotos_perfil AS fp
+                    WHERE fp.membro_id COLLATE utf8mb4_unicode_ci = m.id COLLATE utf8mb4_unicode_ci
+                    AND (fp.status = 'completo' OR fp.status IS NULL)
+                    ORDER BY fp.ordem IS NULL ASC, fp.ordem ASC
+                    LIMIT 1
                     ),
                     'default.webp'
                 ) AS foto_perfil
 
             FROM membros AS m
-
             WHERE m.id = :membro_id
-
-            LIMIT 1
-        ";
+            LIMIT 1";
 
         $database = null;
         $statement = null;
@@ -378,106 +189,50 @@ class WebSocket implements MessageComponentInterface
             $database =
                 $this->getDatabase();
 
-            $statement =
-                $database->prepare($sql);
+            $statement = $database->prepare($sql);
 
-            $statement->execute([
-                'membro_id' =>
-                    $membroId
-            ]);
+            $statement->execute(['membro_id' =>$membroId]);
 
-            return $statement->fetch(
-                PDO::FETCH_ASSOC
-            );
+            return $statement->fetch(PDO::FETCH_ASSOC);
         } finally {
             $statement = null;
             $database = null;
         }
     }
 
-    private function atualizarLocalizacao(
-        ConnectionInterface $conn,
-        array $data
-    ): void {
-        $membroId =
-            $this->obterMembroDaLigacao(
-                $conn
-            );
+    private function atualizarLocalizacao(ConnectionInterface $conn, array $data): void {
+        $membroId = $this->obterMembroDaLigacao($conn);
 
         if ($membroId === null) {
-            $this->enviarErro(
-                $conn,
-                'A ligação não está autenticada.'
-            );
+            $this->enviarErro($conn, 'A ligação não está autenticada.');
 
             return;
         }
 
-        if (
-            !isset($data['latitude']) ||
-            !isset($data['longitude'])
-        ) {
-            $this->enviarErro(
-                $conn,
-                'A localização recebida está incompleta.'
-            );
+        if (!isset($data['latitude']) || !isset($data['longitude'])) {
+            $this->enviarErro($conn, 'A localização recebida está incompleta.');
 
             return;
         }
 
-        $latitude = filter_var(
-            $data['latitude'],
-            FILTER_VALIDATE_FLOAT
-        );
+        $latitude = filter_var($data['latitude'], FILTER_VALIDATE_FLOAT);
 
-        $longitude = filter_var(
-            $data['longitude'],
-            FILTER_VALIDATE_FLOAT
-        );
+        $longitude = filter_var($data['longitude'], FILTER_VALIDATE_FLOAT);
 
-        $accuracy = filter_var(
-            $data['accuracy'] ?? 0,
-            FILTER_VALIDATE_FLOAT
-        );
+        $accuracy = filter_var($data['accuracy'] ?? 0, FILTER_VALIDATE_FLOAT);
 
-        if (
-            $latitude === false ||
-            $longitude === false ||
-            $latitude < -90 ||
-            $latitude > 90 ||
-            $longitude < -180 ||
-            $longitude > 180
-        ) {
-            $this->enviarErro(
-                $conn,
-                'As coordenadas recebidas não são válidas.'
-            );
+        if ($latitude === false || $longitude === false || $latitude < -90 || $latitude > 90 || $longitude < -180 || $longitude > 180) {
+            $this->enviarErro($conn,'As coordenadas recebidas não são válidas.');
 
             return;
         }
 
-        if (
-            $accuracy === false ||
-            $accuracy < 0
-        ) {
+        if ($accuracy === false || $accuracy < 0) {
             $accuracy = 0;
         }
 
-        $this->localizacoes[
-            $membroId
-        ] = [
-            'latitude' =>
-                (float) $latitude,
-            'longitude' =>
-                (float) $longitude,
-            'accuracy' =>
-                min(
-                    (float) $accuracy,
-                    10000
-                ),
-            'updated_at' =>
-                time()
-        ];
+        $this->localizacoes[$membroId] = ['latitude' => (float) $latitude, 'longitude' => (float) $longitude,
+        'accuracy' => min((float) $accuracy,10000), 'updated_at' => time()];
 
         echo sprintf(
             "[LOCATION] %s atualizou localização. Precisão: %.1f m\n",
