@@ -596,3 +596,5 @@ try {
             'Ocorreu um erro ao criar a conta.'
     ], 500);
 }
+
+echo $twig->render('create-account.html', $data);
