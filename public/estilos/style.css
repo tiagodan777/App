@@ -168,10 +168,12 @@ img {
 .mini-menu > form {
     width: 100%;
     transform: translateX(30.79px);
+
+    display: flex;
 }
 
 .mini-menu > form > input#mensagem { 
-    width: 65%;
+    width: 50%;
     border: 1px solid #dddddd;
     border-radius: 35px;
     padding: 10px;
