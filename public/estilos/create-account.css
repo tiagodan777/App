@@ -116,7 +116,7 @@ form > div#nascimento > nav > div > label {
 }
 
 form > div#nascimento > nav > div > input {
-    width: 50%;
+    width: 100%;
     text-align: center;
     font-size: 1.2em;
     padding: 10px;
