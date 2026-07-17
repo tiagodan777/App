@@ -104,6 +104,7 @@ form > div#nascimento > nav.anterior-proximo {
 }
 
 form > div#nascimento > nav > div {
+    margin: 0px 10px;
     display: flex;
     flex-flow: column nowrap;
     justify-content: space-evenly;
