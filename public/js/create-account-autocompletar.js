@@ -33,7 +33,7 @@ $(function () {
                     }));
                 });
             }, 'json');
-        }, 250);
+        }, 150);
     });
 
     $(document).on('click', '#adicionar-gosto', function (evento) {
