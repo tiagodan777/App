@@ -17,9 +17,7 @@ class Member
     {
         $gostos = $membro['gostos'] ?? [];
 
-        if (!is_array($gostos)) {
-            $gostos = [];
-        }
+        if (!is_array($gostos)) $gostos = [];
 
         unset(
             $membro['dia'],
@@ -42,17 +40,18 @@ class Member
                     ultimo_nome,
                     nascimento,
                     genero,
+                    objetivo,
                     telefone,
                     email,
                     bio,
                     password,
                     nome_seo
-                )
-                VALUES (
+                ) VALUES (
                     :primeiro_nome,
                     :ultimo_nome,
                     :nascimento,
                     :genero,
+                    :objetivo,
                     :telefone,
                     :email,
                     :sobre_ti,
@@ -66,6 +65,7 @@ class Member
                 'ultimo_nome' => $membro['ultimo_nome'],
                 'nascimento' => $membro['nascimento'],
                 'genero' => $membro['genero'],
+                'objetivo' => $membro['objetivo'],
                 'telefone' => $membro['telefone'],
                 'email' => $membro['email'],
                 'sobre_ti' => $membro['sobre_ti'],
@@ -73,21 +73,11 @@ class Member
                 'nome_seo' => $membro['nome_seo']
             ]);
 
-            /*
-             * O ID é um UUID criado pela base de dados.
-             * Por isso, não usamos lastInsertId().
-             */
-            $sql = "
-                SELECT id
-                FROM membros
-                WHERE email = :email
-                LIMIT 1
-            ";
-
             $id = $this->db
-                ->runSQL($sql, [
-                    'email' => $membro['email']
-                ])
+                ->runSQL(
+                    'SELECT id FROM membros WHERE email = :email LIMIT 1',
+                    ['email' => $membro['email']]
+                )
                 ->fetchColumn();
 
             if (!$id) {
@@ -101,80 +91,43 @@ class Member
             foreach ($gostos as $gosto) {
                 $gosto = trim((string) $gosto);
 
-                if ($gosto === '') {
-                    continue;
-                }
-
-                $sql = "
-                    SELECT id
-                    FROM hobbies
-                    WHERE nome = :gosto
-                    LIMIT 1
-                ";
+                if ($gosto === '') continue;
 
                 $hobbieId = $this->db
-                    ->runSQL($sql, [
-                        'gosto' => $gosto
-                    ])
+                    ->runSQL(
+                        'SELECT id FROM hobbies WHERE nome = :gosto LIMIT 1',
+                        ['gosto' => $gosto]
+                    )
                     ->fetchColumn();
 
-                if (!$hobbieId) {
-                    continue;
-                }
+                if (!$hobbieId) continue;
 
-                $sql = "
-                    INSERT IGNORE INTO membros_gostos (
-                        membro_id,
-                        hobbie_id
-                    )
-                    VALUES (
-                        :membro_id,
-                        :hobbie_id
-                    )
-                ";
-
-                $this->db->runSQL($sql, [
-                    'membro_id' => $id,
-                    'hobbie_id' => $hobbieId
-                ]);
+                $this->db->runSQL(
+                    'INSERT IGNORE INTO membros_gostos (membro_id, hobbie_id) VALUES (:membro_id, :hobbie_id)',
+                    [
+                        'membro_id' => $id,
+                        'hobbie_id' => $hobbieId
+                    ]
+                );
             }
 
-            /*
-             * Não inserimos default.webp em fotos_perfil.
-             *
-             * Se o utilizador não tiver fotografias, as consultas
-             * usam COALESCE(..., 'default.webp').
-             */
             $this->db->commit();
 
             return $id;
         } catch (\PDOException $erro) {
-            if ($this->db->inTransaction()) {
-                $this->db->rollBack();
-            }
-
-            $codigoMysql = (int) (
-                $erro->errorInfo[1] ?? 0
-            );
-
-            if ($codigoMysql === 1062) {
-                return false;
-            }
+            if ($this->db->inTransaction()) $this->db->rollBack();
+            if ((int) ($erro->errorInfo[1] ?? 0) === 1062) return false;
 
             throw $erro;
         } catch (\Throwable $erro) {
-            if ($this->db->inTransaction()) {
-                $this->db->rollBack();
-            }
+            if ($this->db->inTransaction()) $this->db->rollBack();
 
             throw $erro;
         }
     }
 
-    public function login(
-        string $utilizador,
-        string $password
-    ): array|false {
+    public function login(string $utilizador, string $password): array|false
+    {
         $sql = "
             SELECT
                 m.id,
@@ -182,13 +135,13 @@ class Member
                 m.ultimo_nome,
                 m.nascimento,
                 m.genero,
+                m.objetivo,
                 m.email,
                 m.telefone,
                 m.password,
                 m.adesao,
                 m.bio,
                 m.nome_seo,
-
                 COALESCE(
                     (
                         SELECT fp.nome_arquivo
@@ -205,13 +158,10 @@ class Member
                     ),
                     'default.webp'
                 ) AS foto_perfil
-
             FROM membros AS m
-
             WHERE
                 m.email = :utilizador_email
                 OR m.telefone = :utilizador_telefone
-
             LIMIT 1
         ";
 
@@ -222,16 +172,9 @@ class Member
             ])
             ->fetch();
 
-        if (!$membro) {
-            return false;
-        }
+        if (!$membro) return false;
 
-        $passwordValida = password_verify(
-            $password,
-            (string) $membro['password']
-        );
-
-        if (!$passwordValida) {
+        if (!password_verify($password, (string) $membro['password'])) {
             return false;
         }
 
@@ -243,84 +186,58 @@ class Member
         try {
             $this->db->beginTransaction();
 
-            $sql = "
-                DELETE FROM membros_gostos
-                WHERE membro_id = :id
-            ";
+            $this->db->runSQL(
+                'DELETE FROM membros_gostos WHERE membro_id = :id',
+                ['id' => $id]
+            );
 
-            $this->db->runSQL($sql, [
-                'id' => $id
-            ]);
+            $this->db->runSQL(
+                'DELETE FROM fotos_perfil WHERE membro_id = :id',
+                ['id' => $id]
+            );
 
-            $sql = "
-                DELETE FROM fotos_perfil
-                WHERE membro_id = :id
-            ";
-
-            $this->db->runSQL($sql, [
-                'id' => $id
-            ]);
-
-            /*
-             * Mantém estas eliminações apenas se as tabelas
-             * ainda existirem neste projeto.
-             */
-            $tabelasComMembroId = [
-                'receita',
-                'publicacao_simples',
-                'quik',
-                'video_longo',
-                'likes',
-                'opiniao'
-            ];
-
-            foreach ($tabelasComMembroId as $tabela) {
-                $sql = "
-                    DELETE FROM {$tabela}
-                    WHERE membro_id = :id
-                ";
-
-                $this->db->runSQL($sql, [
-                    'id' => $id
-                ]);
+            foreach (
+                [
+                    'receita',
+                    'publicacao_simples',
+                    'quik',
+                    'video_longo',
+                    'likes',
+                    'opiniao'
+                ] as $tabela
+            ) {
+                $this->db->runSQL(
+                    "DELETE FROM {$tabela} WHERE membro_id = :id",
+                    ['id' => $id]
+                );
             }
 
-            $sql = "
-                DELETE FROM notificacao
-                WHERE emissor_id = :id
-            ";
+            $this->db->runSQL(
+                'DELETE FROM notificacao WHERE emissor_id = :id1 OR destinatario_id = :id2',
+                [
+                    'id1' => $id,
+                    'id2' => $id
+                ]
+            );
 
-            $this->db->runSQL($sql, [
-                'id' => $id
-            ]);
+            $this->db->runSQL(
+                'DELETE FROM seguir WHERE membro_id_1 = :id1 OR membro_id_2 = :id2',
+                [
+                    'id1' => $id,
+                    'id2' => $id
+                ]
+            );
 
-            $sql = "
-                DELETE FROM seguir
-                WHERE membro_id_1 = :id1
-                OR membro_id_2 = :id2
-            ";
-
-            $this->db->runSQL($sql, [
-                'id1' => $id,
-                'id2' => $id
-            ]);
-
-            $sql = "
-                DELETE FROM membros
-                WHERE id = :id
-            ";
-
-            $this->db->runSQL($sql, [
-                'id' => $id
-            ]);
+            $this->db->runSQL(
+                'DELETE FROM membros WHERE id = :id',
+                ['id' => $id]
+            );
 
             $this->db->commit();
 
             return true;
         } catch (\Throwable $erro) {
-            if ($this->db->inTransaction()) {
-                $this->db->rollBack();
-            }
+            if ($this->db->inTransaction()) $this->db->rollBack();
 
             throw $erro;
         }

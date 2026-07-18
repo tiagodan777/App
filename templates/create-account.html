@@ -1,23 +1,13 @@
 {% extends 'layout.html' %}
 
 {% block styles %}
-<link
-    rel="stylesheet"
-    href="{{ doc_root }}estilos/create-account.css?v=8"
->
+<link rel="stylesheet" href="{{ doc_root }}estilos/create-account.css?v=10">
 {% endblock %}
 
 {% block content %}
-
-<form
-    action="{{ doc_root }}create-account"
-    method="post"
-    enctype="multipart/form-data"
-    id="create-account-form"
-></form>
+<form action="{{ doc_root }}create-account" method="post" enctype="multipart/form-data" id="create-account-form"></form>
 
 <script src="{{ doc_root }}js/create-account-fotos.js?v=3"></script>
-<script src="{{ doc_root }}js/create-account-autocompletar.js"></script>
-<script src="{{ doc_root }}js/create-account-navegacao.js?v=3"></script>
-
+<script src="{{ doc_root }}js/create-account-navegacao.js?v=5"></script>
+<script src="{{ doc_root }}js/create-account-autocompletar.js?v=3"></script>
 {% endblock %}
