@@ -1,5 +1,9 @@
 {% extends 'layout.html' %}
 
+{% block styles %}
+    <link rel="stylesheet" href="{{ doc_root }}estilos/profile.css?v=4">
+{% endblock %}
+
 {% block content %}
     <header>
         <img src="{{ doc_root }}imagens/fotos-perfil/{{ membro.fotos[0]['nome_arquivo'] }}" alt="Foto de perfil de {{ membro.nome }}">
