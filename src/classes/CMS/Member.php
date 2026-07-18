@@ -30,7 +30,7 @@ class Member
                             SELECT h.nome  
                             FROM hobbies AS h
                             JOIN membros_gostos AS mb ON mb.hobbie_id = h.id
-                            WHERE h.membro_id = :id1
+                            WHERE mb.membro_id = :id1
                         ) AS gostos
                 FROM membros AS m
                 WHERE id = :id2";
