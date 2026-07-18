@@ -38,13 +38,23 @@ body > header > img {
     padding: 0 18px;
 }
 
+#principal {
+    display: flex;
+    flex-flow: column nowrap;
+    justify-content: space-evenly;
+    align-items: flex-start;
+}
+
 #principal h1 {
     margin-bottom: 8px;
+    font-size: 2em;
 }
 
 #principal h2 {
     margin-top: 0;
 }
+
+#principal
 
 @media (display-mode: standalone) {
     body > header {
