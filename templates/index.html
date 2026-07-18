@@ -71,7 +71,7 @@
 <script>
     window.membroId = {{ membro_id|json_encode|raw }};
     window.messagesUrl = {{ (doc_root ~ 'messages')|json_encode|raw }};
-    window.profileUrl = {{ (doc_root ~ 'profile')|json_encode|raw }};
+    window.profileUrl = {{ (doc_root ~ 'profile/')|json_encode|raw }};
     window.heysUrl = {{ (doc_root ~ 'notifications')|json_encode|raw }};
     window.webSocketUrl = window.location.protocol === 'https:'
         ? 'wss://' + window.location.host + '/ws/'

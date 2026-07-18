@@ -50,9 +50,9 @@
     }
 
     function urlPerfil(membroId) {
-        return (window.profileUrl || '/profile/') + encodeURIComponent(texto(membroId));
+        var base = texto(window.profileUrl || '/profile');
+        return base.replace(/\/+$/, '') + '/' + encodeURIComponent(texto(membroId));
     }
-
     function aplicarFoto(imagem, caminho) {
         imagem.onerror = function () {
             this.onerror = null;
