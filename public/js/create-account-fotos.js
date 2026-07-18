@@ -466,16 +466,16 @@
                     .getUserMedia({
                         video: {
                             facingMode: {
-                                ideal:
-                                    cameraPerfil
+                                ideal: cameraPerfil
                             },
-
                             width: {
                                 ideal: 1920
                             },
-
                             height: {
-                                ideal: 1920
+                                ideal: 1440
+                            },
+                            aspectRatio: {
+                                ideal: 4 / 3
                             }
                         },
 
@@ -552,29 +552,29 @@
     }
 
     function criarCanvasProporcional(video, canvas) {
-    const larguraOrigem = video.videoWidth;
-    const alturaOrigem = video.videoHeight;
-    const ladoMaximo = 2400;
-    const escala = Math.min(1, ladoMaximo / Math.max(larguraOrigem, alturaOrigem));
-    const larguraSaida = Math.round(larguraOrigem * escala);
-    const alturaSaida = Math.round(alturaOrigem * escala);
+        const larguraOrigem = video.videoWidth;
+        const alturaOrigem = video.videoHeight;
+        const ladoMaximo = 2400;
+        const escala = Math.min(1, ladoMaximo / Math.max(larguraOrigem, alturaOrigem));
+        const larguraSaida = Math.round(larguraOrigem * escala);
+        const alturaSaida = Math.round(alturaOrigem * escala);
 
-    canvas.width = larguraSaida;
-    canvas.height = alturaSaida;
+        canvas.width = larguraSaida;
+        canvas.height = alturaSaida;
 
-    const contexto = canvas.getContext('2d');
-    contexto.save();
+        const contexto = canvas.getContext('2d');
+        contexto.save();
 
-    if (cameraPerfil === 'user') {
-        contexto.translate(larguraSaida, 0);
-        contexto.scale(-1, 1);
+        if (cameraPerfil === 'user') {
+            contexto.translate(larguraSaida, 0);
+            contexto.scale(-1, 1);
+        }
+
+        contexto.drawImage(video, 0, 0, larguraOrigem, alturaOrigem, 0, 0, larguraSaida, alturaSaida);
+        contexto.restore();
+
+        return canvas;
     }
-
-    contexto.drawImage(video, 0, 0, larguraOrigem, alturaOrigem, 0, 0, larguraSaida, alturaSaida);
-    contexto.restore();
-
-    return canvas;
-}
 
     function canvasParaBlob(
         canvas
@@ -653,11 +653,7 @@
             );
 
         try {
-            const canvas =
-                criarCanvasQuadrado(
-                    ui.video,
-                    ui.canvas
-                );
+            const canvas = criarCanvasProporcional(ui.video, ui.canvas);
 
             const blob =
                 await canvasParaBlob(
