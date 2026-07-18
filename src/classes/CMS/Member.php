@@ -35,6 +35,10 @@ class Member
                 WHERE mg.membro_id = :membro_id
                 ORDER BY h.nome ASC";
 
+        
+
+        $membro['gostos'] = $this->db->runSQL($sql, ['membro_id' => $id])->fetchAll();
+
         if (empty($membro['fotos'])) {
             $membro['fotos'] = [
                 [
