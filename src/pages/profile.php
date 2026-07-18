@@ -10,5 +10,6 @@ $idade = calcularIdade($membro['nascimento']);
 
 $data['membro'] = $membro;
 $data['idade'] = $idade;
+$data['id'] = $id;
 
 echo $twig->render('profile.html',$data);

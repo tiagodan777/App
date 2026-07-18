@@ -63,6 +63,9 @@
         <header class="perfil-identidade">
             <h1>{{ membro.nome }}</h1>
             <p>{{ idade }}</p>
+            {% if id == session.id %}
+                <p id="eitar"><a href="{{ doc_root }}profile/session.id">Editar</a></p>
+            {% endif %}
         </header>
 
         {% if membro.objetivo|default('') %}
