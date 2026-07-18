@@ -24,7 +24,7 @@ class Member
                         'default.webp') AS foto_perfil
                 FROM membros AS m
                 WHERE id = :id";
-        return $this->db->runSQL($sql, ['id' => $id]);
+        return $this->db->runSQL($sql, ['id' => $id])->fetch();
     }
 
     public function create(array $membro): string|false
