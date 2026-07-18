@@ -18,7 +18,7 @@ body {
 body > header {
     position: relative;
     width: 100%;
-    height: calc(60svh + env(safe-area-inset-top, 0px));
+    height: calc(70svh + env(safe-area-inset-top, 0px));
     margin-top: calc(-1 * env(safe-area-inset-top, 0px));
     overflow: hidden;
     background: #e8e8e8;
