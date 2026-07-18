@@ -29,6 +29,14 @@ function require_login($session) {
     }
 }
 
+function calcularIdade(string $dataNascimento): int
+{
+    $nascimento = new DateTime($dataNascimento);
+    $hoje = new DateTime();
+
+    return $nascimento->diff($hoje)->y;
+}
+
 set_error_handler('handle_error');
 function handle_error($type, $message, $file, $line) {
     // Ignora deprecation warnings (PHP 8.2 compatibility)
