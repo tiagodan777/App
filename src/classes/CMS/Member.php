@@ -15,7 +15,7 @@ class Member
 
     public function get($id) {
 
-        $sql = "SELECT m.id,CONCAT(m.primeiro_nome, ' ', m.ultimo_nome) AS nome, m.nascimento,m.objetivo, m.bio
+        $sql = "SELECT m.id,CONCAT(m.primeiro_nome, ' ', m.ultimo_nome) AS nome, m.nascimento, m.objetivo, m.bio
                 FROM membros AS m
                 WHERE m.id = :id
                 LIMIT 1";

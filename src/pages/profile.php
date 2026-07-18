@@ -8,9 +8,9 @@ $membro = $cms->getMember()->get($id);
 
 $idade = calcularIdade($membro['nascimento']);
 
-/*echo "<pre>";
+echo "<pre>";
 var_dump($membro);
-echo "</pre>";*/
+echo "</pre>";
 
 $data['membro'] = $membro;
 $data['idade'] = $idade;
