@@ -551,80 +551,30 @@
             );
     }
 
-    function criarCanvasQuadrado(
-        video,
-        canvas
-    ) {
-        const tamanhoOrigem =
-            Math.min(
-                video.videoWidth,
-                video.videoHeight
-            );
+    function criarCanvasProporcional(video, canvas) {
+    const larguraOrigem = video.videoWidth;
+    const alturaOrigem = video.videoHeight;
+    const ladoMaximo = 2400;
+    const escala = Math.min(1, ladoMaximo / Math.max(larguraOrigem, alturaOrigem));
+    const larguraSaida = Math.round(larguraOrigem * escala);
+    const alturaSaida = Math.round(alturaOrigem * escala);
 
-        const origemX =
-            Math.floor(
-                (
-                    video.videoWidth -
-                    tamanhoOrigem
-                ) / 2
-            );
+    canvas.width = larguraSaida;
+    canvas.height = alturaSaida;
 
-        const origemY =
-            Math.floor(
-                (
-                    video.videoHeight -
-                    tamanhoOrigem
-                ) / 2
-            );
+    const contexto = canvas.getContext('2d');
+    contexto.save();
 
-        const tamanhoSaida =
-            Math.min(
-                tamanhoOrigem,
-                1600
-            );
-
-        canvas.width =
-            tamanhoSaida;
-
-        canvas.height =
-            tamanhoSaida;
-
-        const contexto =
-            canvas.getContext('2d');
-
-        contexto.save();
-
-        if (
-            cameraPerfil ===
-            'user'
-        ) {
-            contexto.translate(
-                tamanhoSaida,
-                0
-            );
-
-            contexto.scale(
-                -1,
-                1
-            );
-        }
-
-        contexto.drawImage(
-            video,
-            origemX,
-            origemY,
-            tamanhoOrigem,
-            tamanhoOrigem,
-            0,
-            0,
-            tamanhoSaida,
-            tamanhoSaida
-        );
-
-        contexto.restore();
-
-        return canvas;
+    if (cameraPerfil === 'user') {
+        contexto.translate(larguraSaida, 0);
+        contexto.scale(-1, 1);
     }
+
+    contexto.drawImage(video, 0, 0, larguraOrigem, alturaOrigem, 0, 0, larguraSaida, alturaSaida);
+    contexto.restore();
+
+    return canvas;
+}
 
     function canvasParaBlob(
         canvas
