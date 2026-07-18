@@ -14,27 +14,38 @@ class Member
     }
 
     public function get($id) {
-        $arguments['id1'] = $id;
-        $arguments['id2'] = $id;
 
-        $sql = "SELECT CONCAT(m.primeiro_nome, ' ', m.ultimo_nome) AS nome, m.nascimento, m.objetivo, m.bio,
-                COALESCE(  
-                    (SELECT fp.nome_arquivo
-                        FROM fotos_perfil AS fp
-                        WHERE fp.membro_id = m.id
-                        AND (fp.status = 'completo' OR fp.status IS NULL)
-                        ORDER BY fp.ordem IS NULL ASC, fp.ordem ASC),
-                        'default.webp') AS foto_perfil,
-
-                        (
-                            SELECT h.nome  
-                            FROM hobbies AS h
-                            JOIN membros_gostos AS mb ON mb.hobbie_id = h.id
-                            WHERE mb.membro_id = :id1
-                        ) AS gostos
+        $sql = "SELECT m.id,CONCAT(m.primeiro_nome, ' ', m.ultimo_nome) AS nome, m.nascimento,m.objetivo, m.bio
                 FROM membros AS m
-                WHERE id = :id2";
-        return $this->db->runSQL($sql, $arguments)->fetch();
+                WHERE m.id = :id
+                LIMIT 1";
+        $membro = $this->db->runSQL($sql, ['id' => $id])->fetch();
+
+        $sql = "SELECT fp.id, fp.nome_arquivo, fp.ordem
+                FROM fotos_perfil AS fp
+                WHERE fp.membro_id = :membro_id
+                AND (fp.status = 'completo' OR fp.status IS NULL)
+                ORDER BY fp.ordem IS NULL ASC, fp.ordem ASC";
+
+        $membro['fotos'] = $this->db->runSQL($sql, ['membro_id' => $id])->fetchAll();
+
+        $sql = "SELECT h.id, h.nome
+                FROM hobbies AS h
+                INNER JOIN membros_gostos AS mg ON mg.hobbie_id = h.id
+                WHERE mg.membro_id = :membro_id
+                ORDER BY h.nome ASC";
+
+        if (empty($membro['fotos'])) {
+            $membro['fotos'] = [
+                [
+                    'id' => null,
+                    'nome_arquivo' => 'default.webp',
+                    'ordem' => 1
+                ]
+            ];
+        }
+
+        return $membro;
     }
 
     public function create(array $membro): string|false
