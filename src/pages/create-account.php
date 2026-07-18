@@ -248,13 +248,16 @@ try {
         $cms->getImage()->prepareAllImages($membroId, $imagens);
 
         $worker = APP_ROOT . '/src/pages/profile-image-worker.php';
+        $phpCli = '/usr/bin/php';
+        $logWorker = APP_ROOT . '/var/log/profile-image-worker.log';
 
         if (is_file($worker)) {
             $comando = sprintf(
-                '%s %s %s > /dev/null 2>&1 &',
-                escapeshellarg(PHP_BINARY),
+                'nohup %s %s %s >> %s 2>&1 &',
+                escapeshellarg($phpCli),
                 escapeshellarg($worker),
-                escapeshellarg($membroId)
+                escapeshellarg($membroId),
+                escapeshellarg($logWorker)
             );
 
             exec($comando);
