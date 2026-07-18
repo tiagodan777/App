@@ -8,6 +8,7 @@ $membro = $cms->getMember()->get($id);
 
 $idade = calcularIdade($membro['nascimento']);
 
+echo "<pre>";
 var_dump($membro);
 
 $data['membro'] = $membro;
