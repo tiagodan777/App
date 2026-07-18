@@ -23,7 +23,7 @@ class Member
                         ORDER BY fp.ordem IS NULL ASC, fp.ordem ASC),
                         'default.webp') AS foto_perfil
                 FROM membros AS m
-                WHERE id = m.id";
+                WHERE id = :id";
         return $this->db->runSQL($sql, ['id' => $id]);
     }
 
