@@ -1,18 +1,47 @@
 @charset "UTF-8";
 
-html, body {
-    overflow: auto; /* Impede que o ecrã ande para cima ou para baixo */
+html,
+body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    background: #fff;
 }
 
-header {
-    width: 100vw;
-    height: 60vh;
+body {
+    min-height: 100dvh;
 }
 
-header > img {
+body > header {
+    position: relative;
+    width: 100%;
+    height: calc(60svh + env(safe-area-inset-top, 0px));
+    margin-top: calc(-1 * env(safe-area-inset-top, 0px));
+    overflow: hidden;
+    background: #e8e8e8;
+}
+
+body > header > img {
+    display: block;
     width: 100%;
     height: 100%;
-    border-radius: 0px;
+    border-radius: 0;
+    object-fit: cover;
+    object-position: center;
+}
 
-    background-size: contain;
+#principal,
+#adicional {
+    padding: 0 18px;
+}
+
+#principal h1 {
+    margin-bottom: 8px;
+}
+
+#principal h2 {
+    margin-top: 0;
 }

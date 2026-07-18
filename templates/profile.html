@@ -1,22 +1,24 @@
 {% extends 'layout.html' %}
 
 {% block styles %}
-    <link rel="stylesheet" href="{{ doc_root }}estilos/profile.css">
+<link rel="stylesheet" href="{{ doc_root }}estilos/profile.css?v=2">
 {% endblock %}
 
 {% block content %}
-    <header>
-        <img src="{{ doc_root }}imagens/fotos-perfil-originais/{{ membro.fotos[0]['nome_arquivo'] }}" alt="Foto de perfil de {{ membro.nome }}">
-    </header>
-    <section id="principal">
-        <h1>{{ membro.nome }}</h1>
-        <h2>{{ idade }}</h2>
-        <p>{{ membro.objetivo }}</p>
-        <p>{{ membro.bio }}</p>
-    </section>
-    <section id="adicional">
-        <ul>
-            {{ gostos }}
-        </ul>
-    </section>
+<header>
+    <img src="{{ doc_root }}imagens/fotos-perfil-originais/{{ membro.fotos[0]['nome_arquivo'] }}" alt="Foto de perfil de {{ membro.nome }}" loading="eager" fetchpriority="high" onerror="this.onerror=null;this.src='{{ doc_root }}imagens/fotos-perfil/{{ membro.fotos[0]['nome_arquivo'] }}';">
+</header>
+
+<section id="principal">
+    <h1>{{ membro.nome }}</h1>
+    <h2>{{ idade }}</h2>
+    <p>{{ membro.objetivo }}</p>
+    <p>{{ membro.bio }}</p>
+</section>
+
+<section id="adicional">
+    <ul>
+        {{ gostos }}
+    </ul>
+</section>
 {% endblock %}
