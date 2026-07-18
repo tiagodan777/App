@@ -14,6 +14,9 @@ class Member
     }
 
     public function get($id) {
+        $arguments['id1'] = $id;
+        $arguments['id2'] = $id;
+
         $sql = "SELECT CONCAT(m.primeiro_nome, ' ', m.ultimo_nome) AS nome, m.nascimento, m.objetivo, m.bio,
                 COALESCE(  
                     (SELECT fp.nome_arquivo
@@ -21,10 +24,17 @@ class Member
                         WHERE fp.membro_id = m.id
                         AND (fp.status = 'completo' OR fp.status IS NULL)
                         ORDER BY fp.ordem IS NULL ASC, fp.ordem ASC),
-                        'default.webp') AS foto_perfil
+                        'default.webp') AS foto_perfil,
+
+                        (
+                            SELECT h.nome  
+                            FROM hobbies AS h
+                            JOIN membros_gostos AS mb ON mb.hobbie_id = h.id
+                            WHERE h.membro_id = :id1
+                        ) AS gostos
                 FROM membros AS m
-                WHERE id = :id";
-        return $this->db->runSQL($sql, ['id' => $id])->fetch();
+                WHERE id = :id2";
+        return $this->db->runSQL($sql, $arguments)->fetch();
     }
 
     public function create(array $membro): string|false
