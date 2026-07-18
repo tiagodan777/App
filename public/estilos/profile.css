@@ -50,11 +50,11 @@ body > header > img {
     font-size: 2em;
 }
 
-#principal h2 {
-    margin-top: 0;
+#principal h1 span {
+    font-size: 1.8em;
+    font-weight: normal;
 }
 
-#principal
 
 @media (display-mode: standalone) {
     body > header {
