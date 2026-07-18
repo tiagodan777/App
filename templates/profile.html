@@ -1,23 +1,103 @@
 {% extends 'layout.html' %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ doc_root }}estilos/profile.css?v=2">
+<link rel="stylesheet" href="{{ doc_root }}estilos/profile.css?v=3">
 {% endblock %}
 
 {% block content %}
-<header>
-    <img src="{{ doc_root }}imagens/fotos-perfil-originais/{{ membro.fotos[0]['nome_arquivo'] }}" alt="Foto de perfil de {{ membro.nome }}" loading="eager" fetchpriority="high" onerror="this.onerror=null;this.src='{{ doc_root }}imagens/fotos-perfil/{{ membro.fotos[0]['nome_arquivo'] }}';">
-</header>
+{% set fotos = membro.fotos|default([]) %}
+{% set total_fotos = fotos|length %}
+{% set total_slides = total_fotos > 0 ? total_fotos : 1 %}
 
-<section id="principal">
-    <h1>{{ membro.nome }} {{ membro.idade }}</h1>
-    <p id="objetivo">{{ membro.objetivo }}</p>
-    <p>{{ membro.bio }}</p>
-</section>
+{% set objetivos = {
+    'amizade': 'Fazer amigos',
+    'conhecer_pessoas': 'Conhecer pessoas novas',
+    'relacao_seria': 'Uma relação séria',
+    'algo_casual': 'Algo casual',
+    'conversar': 'Conversar',
+    'ainda_nao_sei': 'Ainda não sabe'
+} %}
 
-<section id="adicional">
-    <ul>
-        {{ gostos }}
-    </ul>
-</section>
+<main id="perfil">
+    <section id="perfil-galeria" class="perfil-galeria" aria-label="Fotografias de {{ membro.nome }}" tabindex="0">
+        {% if total_slides > 1 %}
+            <div id="perfil-indicadores" class="perfil-indicadores" aria-label="Escolher fotografia">
+                {% for indice in 0..(total_slides - 1) %}
+                    <button type="button" class="{{ loop.first ? 'ativo' : '' }}" data-indice="{{ indice }}" aria-label="Ver fotografia {{ indice + 1 }} de {{ total_slides }}" aria-current="{{ loop.first ? 'true' : 'false' }}">
+                        <span></span>
+                    </button>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div id="perfil-fotos" class="perfil-fotos">
+            {% if total_fotos > 0 %}
+                {% for foto in fotos %}
+                    <figure id="perfil-foto-{{ loop.index0 }}" class="perfil-slide" data-indice="{{ loop.index0 }}"aria-hidden="{{ loop.first ? 'false' : 'true' }}">
+                        <img src="{{ doc_root }}imagens/fotos-perfil-originais/{{ foto.nome_arquivo }}" data-fallback="{{ doc_root }}imagens/fotos-perfil/{{ foto.nome_arquivo }}" data-default="{{ doc_root }}imagens/fotos-perfil/default.webp" alt="Fotografia {{ loop.index }} de {{ membro.nome }}" loading="{{ loop.first ? 'eager' : 'lazy' }}" fetchpriority="{{ loop.first ? 'high' : 'auto' }}" draggable="false">
+                    </figure>
+                {% endfor %}
+            {% else %}
+                <figure id="perfil-foto-0" class="perfil-slide" data-indice="0" aria-hidden="false">
+                    <img src="{{ doc_root }}imagens/fotos-perfil/default.webp" data-default="{{ doc_root }}imagens/fotos-perfil/default.webp" alt="{{ membro.nome }} ainda não adicionou fotografias" loading="eager" fetchpriority="high" draggable="false">
+                </figure>
+            {% endif %}
+        </div>
+
+        {% if total_slides > 1 %}
+            <button type="button" id="perfil-anterior" class="perfil-navegacao perfil-anterior" aria-label="Fotografia anterior">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M15 5l-7 7 7 7"></path>
+                </svg>
+            </button>
+
+            <button type="button" id="perfil-seguinte" class="perfil-navegacao perfil-seguinte" aria-label="Fotografia seguinte">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M9 5l7 7-7 7"></path>
+                </svg>
+            </button>
+        {% endif %}
+    </section>
+
+    <section class="perfil-conteudo">
+        <header class="perfil-identidade">
+            <h1>{{ membro.nome }}</h1>
+            <p>{{ idade }}</p>
+        </header>
+
+        {% if membro.objetivo|default('') %}
+            <section class="perfil-bloco">
+                <h2>Procura</h2>
+
+                <p>
+                    {{ objetivos[membro.objetivo]|default(
+                        membro.objetivo|replace({'_': ' '})
+                    ) }}
+                </p>
+            </section>
+        {% endif %}
+
+        {% if membro.bio|default('') %}
+            <section class="perfil-bloco">
+                <h2>Sobre</h2>
+                <p>{{ membro.bio }}</p>
+            </section>
+        {% endif %}
+
+        {% if gostos|default('') %}
+            <section
+                id="adicional"
+                class="perfil-bloco perfil-gostos"
+            >
+                <h2>Gostos</h2>
+
+                <ul>
+                    {{ gostos }}
+                </ul>
+            </section>
+        {% endif %}
+    </section>
+</main>
+
+<script src="{{ doc_root }}js/profile.js?v=1"></script>
 {% endblock %}
