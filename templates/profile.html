@@ -2,7 +2,7 @@
 
 {% block content %}
     <header>
-        <img src="{{ doc_root }}imagens/fotos-perfil/{{ membro.foto_perfil }}" alt="Foto de perfil de {{ membro.nome }}">
+        <img src="{{ doc_root }}imagens/fotos-perfil/{{ membro.foto_perfil[0] }}" alt="Foto de perfil de {{ membro.nome }}">
     </header>
     <section id="principal">
         <h1>{{ membro.nome }}</h1>
