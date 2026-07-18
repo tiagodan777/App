@@ -53,7 +53,7 @@
 
         $miniMenu.attr('data-destinatario-id', membroId);
         $miniMenu.toggleClass('perfil-proprio', souEu);
-        $miniMenu.find('.mini-menu-perfil').attr('href', '/profile/?' + encodeURIComponent(membroId));
+        $miniMenu.find('.mini-menu-perfil').attr('href', '/profile/' + encodeURIComponent(membroId));
 
         if (imagem) {
             imagem.onerror = function () {
