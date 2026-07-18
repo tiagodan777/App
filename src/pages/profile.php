@@ -10,6 +10,7 @@ $idade = calcularIdade($membro['nascimento']);
 
 echo "<pre>";
 var_dump($membro);
+echo "</pre>";
 
 $data['membro'] = $membro;
 $data['idade'] = $idade;
