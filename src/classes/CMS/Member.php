@@ -13,6 +13,20 @@ class Member
         $this->db = $db;
     }
 
+    public function get($id) {
+        $sql = "SELECT CONCAT(m.primeiro_nome, ' ', m.ultimo_nome) AS nome, m.nascimento, m.objetivo, m.bio,
+                COALESCE(  
+                    (SELECT fp.nome_arquivo
+                        FROM fotos_perfil AS fp
+                        WHERE fp.membro_id = m.id
+                        AND (fp.status = 'completo' OR fp.status IS NULL)
+                        ORDER BY fp.ordem IS NULL ASC, fp.ordem ASC),
+                        'default.webp') AS foto_perfil
+                FROM membros AS m
+                WHERE id = m.id";
+        return $this->db->runSQL($sql, ['id' => $id]);
+    }
+
     public function create(array $membro): string|false
     {
         $gostos = $membro['gostos'] ?? [];
