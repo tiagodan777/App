@@ -52,3 +52,7 @@ body > header > img {
         margin-top: calc(-1 * env(safe-area-inset-top, 0px));
     }
 }
+
+#menuPrincipal {
+    bottom: 5%;
+}
