@@ -50,7 +50,7 @@
     }
 
     function urlPerfil(membroId) {
-        return (window.profileUrl || '/profile/') + texto(membroId);
+        return (window.profileUrl || '/profile/') + encodeURIComponent(texto(membroId));
     }
 
     function aplicarFoto(imagem, caminho) {
