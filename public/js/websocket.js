@@ -1,6 +1,8 @@
 (function (window, document, $) {
     'use strict';
 
+    if (window.AppWebSocket) return;
+
     var socket = null;
     var reconnectTimer = null;
     var connectionTimeout = null;
@@ -23,6 +25,7 @@
         if (window.webSocketUrl) return window.webSocketUrl;
 
         var protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+
         return protocol + '//' + window.location.hostname + ':8080';
     }
 
@@ -32,15 +35,7 @@
             return;
         }
 
-        if (
-            socket &&
-            (
-                socket.readyState === WebSocket.OPEN ||
-                socket.readyState === WebSocket.CONNECTING
-            )
-        ) {
-            return;
-        }
+        if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) return;
 
         clearReconnectTimer();
         clearConnectionTimeout();
@@ -57,12 +52,11 @@
         }
 
         window.ws = socket;
+
         var currentSocket = socket;
 
         connectionTimeout = window.setTimeout(function () {
-            if (currentSocket.readyState === WebSocket.CONNECTING) {
-                currentSocket.close();
-            }
+            if (currentSocket.readyState === WebSocket.CONNECTING) currentSocket.close();
         }, CONNECTION_TIMEOUT);
 
         currentSocket.onopen = function () {
@@ -74,9 +68,7 @@
             authenticate();
             startPing();
 
-            if (!window.disableLocationTracking) {
-                startLocationTracking();
-            }
+            if (!window.disableLocationTracking) startLocationTracking();
         };
 
         currentSocket.onmessage = function (evento) {
@@ -84,9 +76,7 @@
         };
 
         currentSocket.onerror = function (evento) {
-            if (currentSocket === socket) {
-                console.error('Erro no WebSocket:', evento);
-            }
+            if (currentSocket === socket) console.error('Erro no WebSocket:', evento);
         };
 
         currentSocket.onclose = function () {
@@ -150,22 +140,15 @@
         }
 
         if (!('geolocation' in navigator)) {
-            mostrarMensagemTemporaria(
-                'Este dispositivo não suporta localização.',
-                'erro'
-            );
+            mostrarMensagemTemporaria('Este dispositivo não suporta localização.', 'erro');
             return;
         }
 
-        locationWatchId = navigator.geolocation.watchPosition(
-            handleLocationSuccess,
-            handleLocationError,
-            {
-                enableHighAccuracy: true,
-                maximumAge: LOCATION_MAX_AGE,
-                timeout: 15000
-            }
-        );
+        locationWatchId = navigator.geolocation.watchPosition(handleLocationSuccess, handleLocationError, {
+            enableHighAccuracy: true,
+            maximumAge: LOCATION_MAX_AGE,
+            timeout: 15000
+        });
     }
 
     function handleLocationSuccess(position) {
@@ -173,34 +156,17 @@
         var longitude = Number(position.coords.longitude);
         var accuracy = Number(position.coords.accuracy) || 0;
 
-        if (
-            !Number.isFinite(latitude) ||
-            !Number.isFinite(longitude)
-        ) {
-            return;
-        }
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
 
         var agora = Date.now();
 
         var distancia = lastSentLatitude === null
             ? Infinity
-            : calculateDistanceMeters(
-                lastSentLatitude,
-                lastSentLongitude,
-                latitude,
-                longitude
-            );
+            : calculateDistanceMeters(lastSentLatitude, lastSentLongitude, latitude, longitude);
 
-        var passouTempo =
-            agora - lastLocationSentAt >= LOCATION_MIN_INTERVAL;
+        var passouTempo = agora - lastLocationSentAt >= LOCATION_MIN_INTERVAL;
 
-        if (
-            lastSentLatitude !== null &&
-            !passouTempo &&
-            distancia < LOCATION_MIN_DISTANCE
-        ) {
-            return;
-        }
+        if (lastSentLatitude !== null && !passouTempo && distancia < LOCATION_MIN_DISTANCE) return;
 
         if (!send({
             type: 'location',
@@ -208,9 +174,7 @@
             longitude: longitude,
             accuracy: accuracy,
             timestamp: position.timestamp
-        })) {
-            return;
-        }
+        })) return;
 
         lastLocationSentAt = agora;
         lastSentLatitude = latitude;
@@ -245,10 +209,7 @@
             Math.cos(latitude2) *
             Math.sin(diferencaLongitude / 2) ** 2;
 
-        return raio * 2 * Math.atan2(
-            Math.sqrt(a),
-            Math.sqrt(1 - a)
-        );
+        return raio * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
 
     function toRadians(valor) {
@@ -298,81 +259,65 @@
 
             case 'state':
                 if (document.getElementById('gridCanvas')) {
-                    atualizarPessoasNoMapa(
-                        Array.isArray(data.people) ? data.people : []
-                    );
+                    atualizarPessoasNoMapa(Array.isArray(data.people) ? data.people : []);
                 }
                 break;
 
             case 'notification':
-                window.dispatchEvent(new CustomEvent(
-                    'app:hey-recebido',
-                    { detail: data }
-                ));
+                window.dispatchEvent(new CustomEvent('app:hey-recebido', {
+                    detail: data
+                }));
                 break;
 
             case 'notification_sent':
-                window.dispatchEvent(new CustomEvent(
-                    'app:hey-enviado',
-                    { detail: data }
-                ));
+                window.dispatchEvent(new CustomEvent('app:hey-enviado', {
+                    detail: data
+                }));
                 break;
 
             case 'notification_not_delivered':
-                window.dispatchEvent(new CustomEvent(
-                    'app:hey-erro',
-                    { detail: data }
-                ));
+                window.dispatchEvent(new CustomEvent('app:hey-erro', {
+                    detail: data
+                }));
                 break;
 
             case 'chat_message':
-                window.dispatchEvent(new CustomEvent(
-                    'app:chat-message',
-                    { detail: data }
-                ));
+                window.dispatchEvent(new CustomEvent('app:chat-message', {
+                    detail: data
+                }));
 
-                atualizarBadgeMensagens(
-                    Number(data.unread_count) || 0
-                );
+                atualizarBadgeMensagens(Number(data.unread_count) || 0);
 
                 if (
                     data.message &&
-                    String(data.message.destinatario_id) ===
-                        String(window.membroId) &&
-                    String(window.chatMembroId || '') !==
-                        String(data.message.emissor_id)
+                    String(data.message.destinatario_id) === String(window.membroId) &&
+                    String(window.chatMembroId || '') !== String(data.message.emissor_id)
                 ) {
                     mostrarNotificacaoMensagem(data.message);
                 }
                 break;
 
             case 'chat_messages_read':
-                window.dispatchEvent(new CustomEvent(
-                    'app:chat-messages-read',
-                    { detail: data }
-                ));
+                window.dispatchEvent(new CustomEvent('app:chat-messages-read', {
+                    detail: data
+                }));
                 break;
 
             case 'chat_unread_count':
-                atualizarBadgeMensagens(
-                    Number(data.unread_count) || 0
-                );
+                atualizarBadgeMensagens(Number(data.unread_count) || 0);
 
-                window.dispatchEvent(new CustomEvent(
-                    'app:chat-unread-count',
-                    { detail: data }
-                ));
+                window.dispatchEvent(new CustomEvent('app:chat-unread-count', {
+                    detail: data
+                }));
                 break;
 
             case 'chat_error':
-                window.dispatchEvent(new CustomEvent(
-                    'app:chat-error',
-                    { detail: data }
-                ));
+                window.dispatchEvent(new CustomEvent('app:chat-error', {
+                    detail: data
+                }));
 
                 mostrarMensagemTemporaria(
-                    data.message ||
-                    'Não foi possível atualizar a conversa.',
+                    data.message || 'Não foi possível atualizar a conversa.',
                     'erro'
                 );
                 break;
@@ -382,18 +327,11 @@
 
             case 'error':
                 console.error('Erro do servidor:', data.message);
-
-                mostrarMensagemTemporaria(
-                    data.message || 'Ocorreu um erro.',
-                    'erro'
-                );
+                mostrarMensagemTemporaria(data.message || 'Ocorreu um erro.', 'erro');
                 break;
 
             default:
-                console.warn(
-                    'Mensagem WebSocket desconhecida:',
-                    data
-                );
+                console.warn('Mensagem WebSocket desconhecida:', data);
         }
     }
 
@@ -406,12 +344,7 @@
             var $foto = $(this);
             var id = String($foto.attr('id') || '');
 
-            if (
-                idsAtuais.includes(id) ||
-                $foto.hasClass('a-remover')
-            ) {
-                return;
-            }
+            if (idsAtuais.includes(id) || $foto.hasClass('a-remover')) return;
 
             $foto.addClass('a-remover').css({
                 opacity: '0',
@@ -433,9 +366,7 @@
             var id = String(pessoa.id);
             var src = String(pessoa.src || '').trim();
 
-            if (!src) {
-                src = '/imagens/fotos-perfil/default.webp';
-            }
+            if (!src) src = '/imagens/fotos-perfil/default.webp';
 
             var imagemExistente = document.getElementById(id);
 
@@ -494,9 +425,7 @@
             fragmento.appendChild($imagem[0]);
         });
 
-        if (inseriuImagem) {
-            document.body.appendChild(fragmento);
-        }
+        if (inseriuImagem) document.body.appendChild(fragmento);
 
         reinicializarFotos();
     }
@@ -505,9 +434,7 @@
         window.clearTimeout(window.mapInitTimeout);
 
         window.mapInitTimeout = window.setTimeout(function () {
-            if (typeof window.inicializarFotos === 'function') {
-                window.inicializarFotos();
-            }
+            if (typeof window.inicializarFotos === 'function') window.inicializarFotos();
         }, 50);
     }
 
@@ -515,9 +442,7 @@
         $('.mensagem-websocket').remove();
 
         var $mensagem = $('<div>', {
-            class:
-                'mensagem-websocket ' +
-                (tipo === 'erro' ? 'erro' : 'sucesso')
+            class: 'mensagem-websocket ' + (tipo === 'erro' ? 'erro' : 'sucesso')
         }).text(mensagem);
 
         $('body').append($mensagem);
@@ -548,9 +473,7 @@
             }).appendTo($link);
         }
 
-        $badge
-            .text(total > 99 ? '99+' : total)
-            .prop('hidden', total < 1);
+        $badge.text(total > 99 ? '99+' : total).prop('hidden', total < 1);
     }
 
     function mostrarAvisoMensagem(mensagem) {
@@ -644,15 +567,8 @@
     }
 
     function setStatus(status) {
-        document.documentElement.setAttribute(
-            'data-websocket-status',
-            status
-        );
-
-        $(document).trigger(
-            'websocket:status',
-            [status]
-        );
+        document.documentElement.setAttribute('data-websocket-status', status);
+        $(document).trigger('websocket:status', [status]);
     }
 
     function clearReconnectTimer() {
@@ -682,15 +598,11 @@
         startLocationTracking: startLocationTracking,
 
         isConnected: function () {
-            return Boolean(
-                socket &&
-                socket.readyState === WebSocket.OPEN
-            );
+            return Boolean(socket && socket.readyState === WebSocket.OPEN);
         }
     };
 
-    window.mostrarMensagemTemporaria =
-        mostrarMensagemTemporaria;
+    window.mostrarMensagemTemporaria = mostrarMensagemTemporaria;
 
     window.addEventListener('online', function () {
         reconnectAttempts = 0;
@@ -702,28 +614,16 @@
     });
 
     window.addEventListener('focus', function () {
-        if (!window.AppWebSocket.isConnected()) {
-            connect();
-        }
+        if (!window.AppWebSocket.isConnected()) connect();
     });
 
     window.addEventListener('pageshow', function () {
-        if (!window.AppWebSocket.isConnected()) {
-            connect();
-        }
+        if (!window.AppWebSocket.isConnected()) connect();
     });
 
-    document.addEventListener(
-        'visibilitychange',
-        function () {
-            if (
-                document.visibilityState === 'visible' &&
-                !window.AppWebSocket.isConnected()
-            ) {
-                connect();
-            }
-        }
-    );
+    document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'visible' && !window.AppWebSocket.isConnected()) connect();
+    });
 
     $(function () {
         connect();
