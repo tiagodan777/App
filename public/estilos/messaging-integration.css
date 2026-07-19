@@ -1,0 +1,40 @@
+.mini-menu-anexo {
+    flex: 0 0 40px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #efedf9;
+    color: #7657ff;
+    font-size: 25px;
+    font-weight: 500;
+    line-height: 40px;
+    text-align: center;
+    cursor: pointer;
+}
+
+.mini-menu-anexo.selecionado {
+    background: #20a864;
+    color: white;
+    font-size: 18px;
+}
+
+#menuPrincipal a {
+    position: relative;
+}
+
+.mensagens-badge {
+    position: absolute;
+    top: 1px;
+    right: 18px;
+    min-width: 19px;
+    height: 19px;
+    padding: 0 5px;
+    border: 2px solid white;
+    border-radius: 999px;
+    background: #ff3347;
+    color: white;
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 15px;
+    text-align: center;
+}

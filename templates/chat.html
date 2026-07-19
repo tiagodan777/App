@@ -1,0 +1,96 @@
+{% extends 'layout.html' %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ doc_root }}estilos/chat.css?v=1">
+<link rel="stylesheet" href="{{ doc_root }}estilos/messaging-integration.css?v=1">
+{% endblock %}
+
+{% block content %}
+<main id="chat-pagina" class="chat-pagina" data-outro-id="{{ outro.id }}">
+    <header class="chat-cabecalho">
+        <a href="{{ doc_root }}messages" class="chat-voltar" aria-label="Voltar às mensagens">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M15 5l-7 7 7 7"></path>
+            </svg>
+        </a>
+
+        <a href="{{ outro.perfil_url }}" class="chat-pessoa">
+            <img src="{{ outro.foto_url }}" alt="Fotografia de {{ outro.nome }}" onerror="this.onerror=null;this.src='{{ doc_root }}imagens/fotos-perfil/default.webp';">
+
+            <span>
+                <strong>{{ outro.nome }}</strong>
+                <small id="chat-estado">Margot</small>
+            </span>
+        </a>
+    </header>
+
+    <section id="chat-mensagens" class="chat-mensagens" aria-live="polite" aria-label="Conversa com {{ outro.nome }}">
+        {% for mensagem in mensagens %}
+            <article class="chat-mensagem {{ mensagem.minha ? 'minha' : 'recebida' }}" data-mensagem-id="{{ mensagem.id }}" data-emissor-id="{{ mensagem.emissor_id }}">
+                <div class="chat-balao">
+                    {% if mensagem.tipo == 'imagem' and mensagem.media_url %}
+                        <a href="{{ mensagem.media_url }}" target="_blank" rel="noopener" class="chat-media-link">
+                            <img src="{{ mensagem.media_url }}" alt="Fotografia enviada por {{ mensagem.emissor_nome }}" loading="lazy">
+                        </a>
+                    {% elseif mensagem.tipo == 'video' and mensagem.media_url %}
+                        <video controls playsinline preload="metadata">
+                            <source src="{{ mensagem.media_url }}" type="{{ mensagem.ficheiro_mime }}">
+                        </video>
+
+                        <a href="{{ mensagem.media_url }}" target="_blank" rel="noopener" class="chat-video-abrir">
+                            Abrir vídeo
+                        </a>
+                    {% endif %}
+
+                    {% if mensagem.texto %}
+                        <p>{{ mensagem.texto }}</p>
+                    {% endif %}
+
+                    <footer>
+                        <time datetime="{{ mensagem.criada_em }}" data-data-mensagem="{{ mensagem.criada_em }}"></time>
+
+                        {% if mensagem.minha %}
+                            <span class="chat-lida" aria-label="{{ mensagem.lida ? 'Lida' : 'Enviada' }}">
+                                {{ mensagem.lida ? '✓✓' : '✓' }}
+                            </span>
+                        {% endif %}
+                    </footer>
+                </div>
+            </article>
+        {% endfor %}
+    </section>
+
+    <form id="chat-form" class="chat-form" action="{{ doc_root }}messages/{{ outro.id }}" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="action" value="send">
+
+        <div id="chat-media-preview" class="chat-media-preview" hidden></div>
+
+        <div class="chat-compositor">
+            <label for="chat-media" class="chat-anexar" aria-label="Adicionar fotografia ou vídeo">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 5v14M5 12h14"></path>
+                </svg>
+            </label>
+
+            <input type="file" id="chat-media" name="media" accept="image/*,video/*" hidden>
+
+            <textarea id="chat-texto" name="mensagem" rows="1" maxlength="2000" placeholder="Mensagem…" aria-label="Mensagem"></textarea>
+
+            <button type="submit" id="chat-enviar">Enviar</button>
+        </div>
+
+        <p id="chat-erro" class="chat-erro" role="alert" hidden></p>
+    </form>
+</main>
+
+<script>
+window.membroId = {{ membro_id|json_encode|raw }};
+window.chatMembroId = {{ outro.id|json_encode|raw }};
+window.messagesUrl = {{ (doc_root ~ 'messages')|json_encode|raw }};
+window.disableLocationTracking = true;
+window.webSocketUrl = window.location.protocol === 'https:' ? 'wss://' + window.location.host + '/ws/' : 'ws://' + window.location.hostname + ':8080';
+</script>
+
+<script src="{{ doc_root }}js/websocket.js?v=8"></script>
+<script src="{{ doc_root }}js/chat.js?v=1"></script>
+{% endblock %}

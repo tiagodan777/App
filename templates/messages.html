@@ -1,9 +1,52 @@
 {% extends 'layout.html' %}
 
+{% block styles %}
+<link rel="stylesheet" href="{{ doc_root }}estilos/messages.css?v=1">
+<link rel="stylesheet" href="{{ doc_root }}estilos/messaging-integration.css?v=1">
+{% endblock %}
+
 {% block content %}
-<nav id="mensagens">
-    <ul>
-        
-    </ul>
-</nav>
+<main id="mensagens-pagina" class="mensagens-pagina">
+    <header class="mensagens-cabecalho">
+        <p>Margot</p>
+        <h1>Mensagens</h1>
+    </header>
+
+    <section id="conversas-lista" class="conversas-lista" aria-live="polite">
+        {% for conversa in conversas %}
+            <a href="{{ conversa.chat_url }}" class="conversa-item" data-membro-id="{{ conversa.outro_id }}" data-mensagem-id="{{ conversa.id }}">
+                <img src="{{ conversa.outro_foto_url }}" alt="Fotografia de {{ conversa.outro_nome }}" onerror="this.onerror=null;this.src='{{ doc_root }}imagens/fotos-perfil/default.webp';">
+
+                <span class="conversa-conteudo">
+                    <strong>{{ conversa.outro_nome }}</strong>
+                    <span class="conversa-resumo">{{ conversa.resumo }}</span>
+                </span>
+
+                <span class="conversa-meta">
+                    <time datetime="{{ conversa.criada_em }}" data-data-mensagem="{{ conversa.criada_em }}"></time>
+                    <span class="conversa-nao-lidas" {{ conversa.nao_lidas == 0 ? 'hidden' : '' }}>{{ conversa.nao_lidas }}</span>
+                </span>
+            </a>
+        {% else %}
+            <div id="conversas-vazio" class="conversas-vazio">
+                <span>💬</span>
+                <h2>Ainda não há conversas</h2>
+                <p>Abre uma pessoa no mapa e envia a primeira mensagem.</p>
+            </div>
+        {% endfor %}
+    </section>
+
+    <p id="conversas-erro" class="conversas-erro" role="alert" hidden></p>
+</main>
+
+<script>
+window.membroId = {{ membro_id|json_encode|raw }};
+window.messagesUrl = {{ (doc_root ~ 'messages')|json_encode|raw }};
+window.profileUrl = {{ (doc_root ~ 'profile/')|json_encode|raw }};
+window.disableLocationTracking = true;
+window.webSocketUrl = window.location.protocol === 'https:' ? 'wss://' + window.location.host + '/ws/' : 'ws://' + window.location.hostname + ':8080';
+</script>
+
+<script src="{{ doc_root }}js/websocket.js?v=8"></script>
+<script src="{{ doc_root }}js/messages.js?v=1"></script>
 {% endblock %}
