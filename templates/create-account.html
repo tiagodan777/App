@@ -7,7 +7,18 @@
 {% block content %}
 <form action="{{ doc_root }}create-account" method="post" enctype="multipart/form-data" id="create-account-form"></form>
 
-<script src="{{ doc_root }}js/create-account-fotos.js?v=3"></script>
-<script src="{{ doc_root }}js/create-account-navegacao.js?v=5"></script>
+<script>
+window.createAccountConfig = {
+    modoEdicao: {{ modo_edicao|json_encode|raw }},
+    membroId: {{ membro_id_edicao|json_encode|raw }},
+    dadosIniciais: {{ dados_iniciais|json_encode|raw }},
+    fotosExistentes: {{ fotos_existentes|json_encode|raw }},
+    camposUrl: {{ campos_url|json_encode|raw }},
+    perfilUrl: {{ perfil_url|json_encode|raw }}
+};
+</script>
+
+<script src="{{ doc_root }}js/create-account-fotos.js?v=4"></script>
+<script src="{{ doc_root }}js/create-account-navegacao.js?v=6"></script>
 <script src="{{ doc_root }}js/create-account-autocompletar.js?v=3"></script>
 {% endblock %}

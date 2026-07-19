@@ -15,6 +15,7 @@ $(function () {
 
     function adicionarGosto(gosto) {
         var dados = obterDados();
+
         gosto = String(gosto || '').trim();
 
         if (!gosto) return;
@@ -25,6 +26,7 @@ $(function () {
 
         if (!jaExiste) {
             dados.gostos.push(gosto);
+
             $('#meus-gostos').append($('<p>', {
                 class: 'meu-hobbie',
                 text: gosto
@@ -36,7 +38,9 @@ $(function () {
     }
 
     $(document).on('focus', '#hobbie', function () {
-        if ($('#lista').children().length) $('#recomendacoes').fadeIn(100);
+        if ($('#lista').children().length) {
+            $('#recomendacoes').fadeIn(100);
+        }
     });
 
     $(document).on('blur', '#hobbie', function () {
@@ -60,25 +64,38 @@ $(function () {
         }
 
         timeout = window.setTimeout(function () {
-            $.get('/create-account-autocompletar', {
-                gosto: gosto
-            }, function (hobbies) {
-                $lista.empty();
+            $.get(
+                '/create-account-autocompletar',
+                {
+                    gosto: gosto
+                },
+                function (hobbies) {
+                    $lista.empty();
 
-                hobbies.forEach(function (hobbie) {
-                    var nome = String(hobbie.nome || '').trim();
+                    hobbies.forEach(function (hobbie) {
+                        var nome = String(hobbie.nome || '').trim();
 
-                    if (!nome) return;
-                    if (nome.toLowerCase() === gosto.toLowerCase()) existeCorrespondenciaExata = true;
+                        if (!nome) return;
 
-                    $lista.append($('<li>', {
-                        'data-id': hobbie.id,
-                        text: nome
-                    }));
-                });
+                        if (
+                            nome.toLowerCase() ===
+                            gosto.toLowerCase()
+                        ) {
+                            existeCorrespondenciaExata = true;
+                        }
 
-                $('#recomendacoes').toggle($lista.children().length > 0);
-            }, 'json');
+                        $lista.append($('<li>', {
+                            'data-id': hobbie.id,
+                            text: nome
+                        }));
+                    });
+
+                    $('#recomendacoes').toggle(
+                        $lista.children().length > 0
+                    );
+                },
+                'json'
+            );
         }, 250);
     });
 
@@ -93,7 +110,12 @@ $(function () {
         var gosto = $('#hobbie').val().trim();
 
         if (!gosto) return;
-        if (!existeCorrespondenciaExata) $.post('/create-account-autocompletar', { gosto: gosto });
+
+        if (!existeCorrespondenciaExata) {
+            $.post('/create-account-autocompletar', {
+                gosto: gosto
+            });
+        }
 
         adicionarGosto(gosto);
     });
@@ -105,6 +127,8 @@ $(function () {
         dados.gostos = dados.gostos.filter(function (gostoGuardado) {
             return gostoGuardado.toLowerCase() !== gosto.toLowerCase();
         });
+
+        window.createAccountDados.gostos = dados.gostos;
 
         $(this).remove();
         window.guardarCamposCreateAccount();

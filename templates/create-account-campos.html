@@ -1,5 +1,5 @@
 <div id="nome">
-    <h1>Como te chamas?</h1>
+    <h1>{{ modo_edicao ? 'Qual é o teu nome?' : 'Como te chamas?' }}</h1>
 
     <p>
         <label for="primeiro_nome">Primeiro nome</label>
@@ -12,7 +12,7 @@
     </p>
 
     <nav class="anterior-proximo">
-        <a data-etapa="#nascimento" class=""proximo">Próximo</a>
+        <a data-etapa="#nascimento" class="proximo">Próximo</a>
     </nav>
 </div>
 
@@ -46,7 +46,7 @@
 
         <div>
             <label for="ano">Ano</label>
-            <input type="number" name="ano" id="ano" min="1900" max="2100" required>
+            <input type="number" name="ano" id="ano" min="1900" max="{{ ano_atual }}" required>
         </div>
     </nav>
 
@@ -62,7 +62,7 @@
     <div class="campo-genero">
         <label for="genero">Género</label>
 
-        <select name="genero" id="genero">
+        <select name="genero" id="genero" required>
             <option value="M">Masculino</option>
             <option value="F">Feminino</option>
             <option value="D">Personalizado</option>
@@ -150,7 +150,7 @@
 
     <p>
         <label for="email">E o teu email?</label>
-        <input type="email" name="email" id="email" autocomplete="email">
+        <input type="email" name="email" id="email" autocomplete="email" required>
     </p>
 
     <nav class="anterior-proximo">
@@ -217,7 +217,7 @@
     </div>
 
     <div id="perfil-fotos-conteudo">
-        <h1>Mostra quem és</h1>
+        <h1>{{ modo_edicao ? 'Atualiza as tuas fotografias' : 'Mostra quem és' }}</h1>
 
         <p class="perfil-fotos-explicacao">
             Adiciona até 6 fotografias. A primeira será a tua foto principal.
@@ -240,6 +240,7 @@
                     <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
                     <circle cx="12" cy="13" r="4"></circle>
                 </svg>
+
                 Tirar foto
             </button>
 
@@ -249,6 +250,7 @@
                     <circle cx="8.5" cy="8.5" r="1.5"></circle>
                     <polyline points="21 15 16 10 5 21"></polyline>
                 </svg>
+
                 Escolher fotos
             </button>
         </div>
@@ -263,16 +265,36 @@
 </div>
 
 <div id="palavra-passe">
-    <h1>Cria a tua palavra-passe</h1>
+    <h1>{{ modo_edicao ? 'Queres alterar a palavra-passe?' : 'Cria a tua palavra-passe' }}</h1>
+
+    {% if modo_edicao %}
+        <p class="password-opcional">
+            Deixa os dois campos em branco para manteres a palavra-passe atual.
+        </p>
+    {% endif %}
 
     <p>
-        <label for="password">Palavra-passe</label>
-        <input type="password" name="password" id="password" autocomplete="new-password" required>
+        <label for="password">{{ modo_edicao ? 'Nova palavra-passe' : 'Palavra-passe' }}</label>
+
+        <input
+            type="password"
+            name="password"
+            id="password"
+            autocomplete="new-password"
+            {% if not modo_edicao %}required{% endif %}
+        >
     </p>
 
     <p>
         <label for="confirma-password">Confirma a palavra-passe</label>
-        <input type="password" name="confirma_password" id="confirma-password" autocomplete="new-password" required>
+
+        <input
+            type="password"
+            name="confirma_password"
+            id="confirma-password"
+            autocomplete="new-password"
+            {% if not modo_edicao %}required{% endif %}
+        >
     </p>
 
     <p id="mostrar-password">
@@ -282,7 +304,10 @@
 
     <nav class="anterior-proximo">
         <a data-etapa="#fotos" class="anterior">Anterior</a>
-        <button type="submit" id="criar-conta-submit" class="proximo">Criar conta</button>
+
+        <button type="submit" id="criar-conta-submit" class="proximo">
+            {{ modo_edicao ? 'Guardar alterações' : 'Criar conta' }}
+        </button>
     </nav>
 
     <p id="create-account-erro" aria-live="polite"></p>

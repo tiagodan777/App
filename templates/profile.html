@@ -8,6 +8,7 @@
 {% set fotos = membro.fotos|default([]) %}
 {% set total_fotos = fotos|length %}
 {% set total_slides = total_fotos > 0 ? total_fotos : 1 %}
+'pode_editar' => (string) $membro['id'] === (string) ($session->id ?? '')
 
 {% set objetivos = {
     'amizade': 'Fazer amigos',
@@ -63,8 +64,10 @@
         <header class="perfil-identidade">
             <h1>{{ membro.nome }}</h1>
             <p>{{ idade }}</p>
-            {% if id == session.id %}
-                <p id="editar"><a href="{{ doc_root }}create-account/session.id">Editar</a></p>
+            {% if pode_editar %}
+                <a href="{{ doc_root }}create-account?editar=1" class="editar-perfil">
+                    Editar perfil
+                </a>
             {% endif %}
         </header>
 
