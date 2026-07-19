@@ -11,7 +11,7 @@ $idade = calcularIdade($membro['nascimento']);
 
 
 $data['membro'] = $membro;
-$data['primerio_gosto'] = $membro['gostos'][0];
+$data['primerio_gosto'] = $membro['gostos'][0]['nome'];
 $data['idade'] = $idade;
 $data['id'] = $id;
 
