@@ -13,7 +13,7 @@ var_dump($membro['gostos']);
 echo "</pre>";
 
 $data['membro'] = $membro;
-$data['primerio_gosto'] = $membro['gostos'][0];
+$data['primerio_gosto'] = $membro['gostos'][0]['nome'];
 $data['idade'] = $idade;
 $data['id'] = $id;
 
