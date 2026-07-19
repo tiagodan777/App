@@ -94,7 +94,9 @@
                 <h2>Gostos</h2>
 
                 <ul>
-                    {{ membro.gostos }}
+                    {% for gosto in membro.gostos %}
+                        <li>{{ gosto }}</li>
+                    {% endfor %}
                 </ul>
             </section>
         {% endif %}
