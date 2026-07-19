@@ -8,7 +8,7 @@ $membro = $cms->getMember()->get($id);
 
 $idade = calcularIdade($membro['nascimento']);
 
-var_dump($membro['gostos'])
+var_dump($membro['gostos']);
 
 $data['membro'] = $membro;
 $data['primerio_gosto'] = $membro['gostos'][0];
