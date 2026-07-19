@@ -8,7 +8,7 @@
 {% set fotos = membro.fotos|default([]) %}
 {% set total_fotos = fotos|length %}
 {% set total_slides = total_fotos > 0 ? total_fotos : 1 %}
-'pode_editar' => (string) $membro['id'] === (string) ($session->id ?? '')
+{% set pode_editar' = (string) $membro['id'] === (string) ($session->id ?? '') %}
 
 {% set objetivos = {
     'amizade': 'Fazer amigos',
