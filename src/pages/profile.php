@@ -14,7 +14,7 @@ $data['membro'] = $membro;
 $data['primerio_gosto'] = $membro['gostos'][0]['nome'];
 echo "<pre>";
 var_dump($membro['gostos']);
-var_dump($membro['gostos'][0]['nome'])
+var_dump($membro['gostos'][0]['nome']);
 echo "</pre>";
 $data['idade'] = $idade;
 $data['id'] = $id;
