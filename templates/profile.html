@@ -89,15 +89,12 @@
             </section>
         {% endif %}
 
-        {% if gostos|default('') %}
-            <section
-                id="adicional"
-                class="perfil-bloco perfil-gostos"
-            >
+        {% if membro.gostos|default('') %}
+            <section id="adicional" class="perfil-bloco perfil-gostos">
                 <h2>Gostos</h2>
 
                 <ul>
-                    {{ gostos }}
+                    {{ membro.gostos }}
                 </ul>
             </section>
         {% endif %}
