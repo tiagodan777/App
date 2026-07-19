@@ -251,9 +251,9 @@ body {
 
 .perfil-identidade a.editar-perfil {
     text-decoration: none;
-    color: rgb(215, 83, 109);
+    background-color: rgb(215, 83, 109);
     font-weight: bold;
-    background-color: rgba(255, 255, 255);
+    color: rgba(255, 255, 255);
     box-shadow: 0px 0px 3px rgba(0, 0, 0, 0.01),
                 0px 0px 9px rgba(0, 0, 0, 0.02),
                 0px 0px 18px rgba(0, 0, 0, 0.04),
