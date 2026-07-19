@@ -29,7 +29,7 @@ body {
 .perfil-galeria {
     position: relative;
     width: 100%;
-    height: 70svh;
+    height: 80svh;
     min-height: 460px;
     max-height: 850px;
     overflow: hidden;
