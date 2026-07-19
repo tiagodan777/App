@@ -426,3 +426,27 @@
     window,
     document
 );
+
+document.getElementById('enviar-hey-perfil')?.addEventListener('click', function () {
+    var botao = this;
+    var destinatarioId = botao.dataset.destinatarioId;
+
+    if (!window.AppWebSocket || !window.AppWebSocket.isConnected()) {
+        if (window.AppWebSocket) window.AppWebSocket.connect();
+        return;
+    }
+
+    botao.disabled = true;
+
+    window.AppWebSocket.send({
+        type: 'notify',
+        destinatario_id: destinatarioId
+    });
+
+    botao.textContent = 'Hey enviado';
+
+    setTimeout(function () {
+        botao.disabled = false;
+        botao.textContent = 'Hey';
+    }, 1200);
+});

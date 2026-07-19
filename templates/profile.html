@@ -101,11 +101,17 @@
             </section>
         {% endif %}
 
-        <button type="button" class="ola" id="enviar-hey">Hey</button>
+        {% if membro.id != session.id %}
+            <button type="button" class="ola" id="enviar-hey-perfil" data-destinatario-id="{{ membro.id }}">Hey</button>
+        {% endif %}
     </section>
 </main>
 
-<script src="{{ doc_root }}js/profile.js?v=1"></script>
+<script>
+    window.membroId = {{ session.id|json_encode|raw }};
+    window.webSocketUrl = window.location.protocol === 'https:' ? 'wss://' + window.location.host + '/ws/' : 'ws://' + window.location.hostname + ':8080';
+</script>
+
 <script src="{{ doc_root }}js/websocket.js?v=7"></script>
-<script src="{{ doc_root }}js/index-notificacoes.js?v=6"></script>
+<script src="{{ doc_root }}js/profile.js?v=2"></script>
 {% endblock %}
