@@ -553,71 +553,93 @@
             .prop('hidden', total < 1);
     }
 
+    function mostrarAvisoMensagem(mensagem) {
+        var nome = String(mensagem.emissor_nome || 'Alguém').trim() || 'Alguém';
+        var resumo = String(mensagem.texto || '').trim();
+        var foto = String(mensagem.emissor_foto_url || '/imagens/fotos-perfil/default.webp');
+        var conversaUrl = String(window.messagesUrl || '/messages').replace(/\/+$/, '') + '/' + encodeURIComponent(mensagem.emissor_id);
+
+        if (!resumo) resumo = mensagem.tipo === 'imagem' ? 'Enviou-te uma fotografia.' : 'Enviou-te um vídeo.';
+
+        var $avisos = $('#mensagens-avisos');
+
+        if (!$avisos.length) {
+            $avisos = $('<div>', {
+                id: 'mensagens-avisos',
+                class: 'mensagens-avisos',
+                'aria-live': 'polite',
+                'aria-atomic': 'true'
+            }).appendTo('body');
+        }
+
+        var $aviso = $('<a>', {
+            class: 'mensagem-aviso',
+            href: conversaUrl,
+            'aria-label': 'Abrir conversa com ' + nome
+        });
+
+        var $imagem = $('<img>', {
+            class: 'mensagem-aviso-foto',
+            src: foto,
+            alt: ''
+        }).on('error', function () {
+            this.onerror = null;
+            this.src = '/imagens/fotos-perfil/default.webp';
+        });
+
+        var $corpo = $('<span>', {
+            class: 'mensagem-aviso-corpo'
+        }).append(
+            $('<strong>').text('Nova mensagem de ' + nome),
+            $('<span>').text(resumo)
+        );
+
+        $aviso.append($imagem, $corpo);
+        $avisos.append($aviso);
+
+        requestAnimationFrame(function () {
+            $aviso.addClass('visivel');
+        });
+
+        var removerTimer = setTimeout(removerAviso, 5200);
+
+        $aviso.on('click', function () {
+            clearTimeout(removerTimer);
+        });
+
+        function removerAviso() {
+            $aviso.removeClass('visivel');
+
+            setTimeout(function () {
+                $aviso.remove();
+
+                if (!$avisos.children().length) $avisos.remove();
+            }, 260);
+        }
+
+        return resumo;
+    }
+
     function mostrarNotificacaoMensagem(mensagem) {
-        var nome = String(
-            mensagem.emissor_nome || 'Alguém'
-        );
+        var nome = String(mensagem.emissor_nome || 'Alguém');
+        var resumo = mostrarAvisoMensagem(mensagem);
 
-        var resumo = String(
-            mensagem.texto || ''
-        ).trim();
-
-        if (!resumo) {
-            resumo = mensagem.tipo === 'imagem'
-                ? 'Enviou-te uma fotografia.'
-                : 'Enviou-te um vídeo.';
-        }
-
-        mostrarMensagemTemporaria(
-            'Nova mensagem de ' + nome,
-            'sucesso'
-        );
-
-        if (
-            !window.isSecureContext ||
-            !('Notification' in window) ||
-            Notification.permission !== 'granted'
-        ) {
-            return;
-        }
+        if (!window.isSecureContext || !('Notification' in window) || Notification.permission !== 'granted') return;
 
         try {
-            var notificacao = new Notification(
-                'Nova mensagem de ' + nome,
-                {
-                    body: resumo,
-                    icon:
-                        mensagem.emissor_foto_url ||
-                        '/imagens/fotos-perfil/default.webp',
-                    tag:
-                        'chat-' +
-                        String(
-                            mensagem.emissor_id ||
-                            'desconhecido'
-                        )
-                }
-            );
+            var notificacao = new Notification('Nova mensagem de ' + nome, {
+                body: resumo,
+                icon: mensagem.emissor_foto_url || '/imagens/fotos-perfil/default.webp',
+                tag: 'chat-' + String(mensagem.emissor_id || 'desconhecido')
+            });
 
             notificacao.onclick = function () {
                 window.focus();
-
-                window.location.href =
-                    String(
-                        window.messagesUrl ||
-                        '/messages'
-                    ).replace(/\/+$/, '') +
-                    '/' +
-                    encodeURIComponent(
-                        mensagem.emissor_id
-                    );
-
+                window.location.href = String(window.messagesUrl || '/messages').replace(/\/+$/, '') + '/' + encodeURIComponent(mensagem.emissor_id);
                 notificacao.close();
             };
         } catch (erro) {
-            console.error(
-                'Erro ao mostrar notificação de mensagem:',
-                erro
-            );
+            console.error('Erro ao mostrar notificação de mensagem:', erro);
         }
     }
 
