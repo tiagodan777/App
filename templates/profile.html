@@ -89,17 +89,15 @@
             </section>
         {% endif %}
 
-        {% if membro.gostos %}
-            <section id="adicional" class="perfil-bloco perfil-gostos">
-                <h2>Gostos</h2>
+        <section id="adicional" class="perfil-bloco perfil-gostos">
+            <h2>Gostos</h2>
 
-                <ul>
-                    {% for gosto in membro.gostos %}
-                        <li>{{ gosto }}</li>
-                    {% endfor %}
-                </ul>
-            </section>
-        {% endif %}
+            <ul>
+                {% for gosto in membro.gostos %}
+                    <li>{{ gosto }}</li>
+                {% endfor %}
+            </ul>
+        </section>
     </section>
 </main>
 
