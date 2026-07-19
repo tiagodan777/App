@@ -32,7 +32,7 @@ class Member
 
         $membro['fotos'] = $this->db->runSQL($sql, ['membro_id' => $id])->fetchAll();
 
-        $sql = "SELECT h.id, h.nome
+        $sql = "SELECT h.nome
                 FROM hobbies AS h
                 INNER JOIN membros_gostos AS mg ON mg.hobbie_id = h.id
                 WHERE mg.membro_id = :membro_id
