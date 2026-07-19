@@ -3,24 +3,38 @@
 <head>
     <meta charset="UTF-8">
 
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
+    >
 
-    <meta name="theme-color" content="#ffffff"> 
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
 
-    <meta name="apple-mobile-web-app-capable"content="yes">
+    <meta
+        name="apple-mobile-web-app-status-bar-style"
+        content="black-translucent"
+    >
 
-    <meta name="mobile-web-app -capable"content="yes">
-
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
-    <link rel="manifest" href="{{ doc_root }}js/manifest.json">
+    <link
+        rel="manifest"
+        href="{{ doc_root }}js/manifest.json"
+    >
 
     <title>App</title>
 
-    <link rel="stylesheet" href="{{ doc_root }}estilos/style.css?v=8">
+    <link
+        rel="stylesheet"
+        href="{{ doc_root }}estilos/style.css?v=8"
+    >
+
+    <link
+        rel="stylesheet"
+        href="{{ doc_root }}estilos/create-account.css?v=7"
+    >
 
     {% block styles %}
-    
     {% endblock %}
 </head>
 
@@ -34,9 +48,9 @@
         <nav>
             <ul>
                 <li>
-                    <a href="{{ doc_root }}index" class="active">
+                    <a href="{{ doc_root }}index">
                         <img
-                            src="{{ doc_root }}imagens/icones-menu/home.png"
+                            src="{{ doc_root }}imagens/icones-menu/home.svg"
                             alt="Início"
                         >
                     </a>
@@ -45,16 +59,16 @@
                 <li>
                     <a href="{{ doc_root }}messages">
                         <img
-                            src="{{ doc_root }}imagens/icones-menu/messages.png"
+                            src="{{ doc_root }}imagens/icones-menu/messages.svg"
                             alt="Mensagens"
                         >
                     </a>
                 </li>
 
                 <li>
-                    <a href="{{ doc_root }}profile/{{ session.id }}">
+                    <a href="{{ doc_root }}profile">
                         <img
-                            src="{{ doc_root }}imagens/icones-menu/user.png"
+                            src="{{ doc_root }}imagens/icones-menu/user.svg"
                             alt="Perfil"
                         >
                     </a>
