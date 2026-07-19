@@ -200,17 +200,13 @@ img {
 }
 
 #menuPrincipal {
+    position: fixed !important;
+    left: 50%;
+    bottom: max(18px, env(safe-area-inset-bottom, 18px));
     width: 90%;
     height: 56px;
-    position: fixed;
-    left: 50%;
     transform: translateX(-50%);
-    bottom: 5%;
-
-
-    z-index: 10;
-
-    transition: ease-in-out;
+    z-index: 100;
 }
 
 #menuPrincipal > nav {
@@ -311,7 +307,6 @@ img {
         height: 100% !important;
     }
 
-    body:has(#gridCanvas) #menuPrincipal,
     body:has(#gridCanvas) .mini-menu {
         position: absolute;
     }
