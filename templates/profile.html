@@ -64,9 +64,7 @@
             <h1>{{ membro.nome }}</h1>
             <p>{{ idade }}</p>
             {% if membro.id == session.id %}
-                <a href="{{ doc_root }}create-account?editar=1" class="editar-perfil">
-                    Editar perfil
-                </a>
+                <a href="{{ doc_root }}create-account?editar=1" class="editar-perfil">Definições</a>
             {% endif %}
         </header>
 
