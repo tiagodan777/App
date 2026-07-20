@@ -38,10 +38,11 @@ main > nav > ul > li {
 
     display: flex;
     flex-flow: row nowrap;
-    justify-content: ;
+    justify-content: flex-start;
+    align-items: center;
 
 }
 
 main > nav > ul > li > img {
-    width: 75px;
+    width: 35px;
 }
