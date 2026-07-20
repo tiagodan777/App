@@ -36,18 +36,20 @@ main > nav > ul {
     align-items: center;
 }
 
-main > nav > ul > li > a {
-    color: black;
-    text-decoration: none;
+main > nav > ul > li {
     width: 90%;
     border-bottom: 1px solid #dddddd;
     margin-bottom: 20px;
+
+}
+
+main > nav > ul > li > a {
+    width: 100%;
 
     display: flex;
     flex-flow: row nowrap;
     justify-content: flex-start;
     align-items: center;
-
 }
 
 main > nav > ul > li > img {
