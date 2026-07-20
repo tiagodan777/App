@@ -13,6 +13,7 @@ main {
 main > nav {
     min-width: 600px;
     max-width: 1000px;
+    margin-top: -10vh;
 
     display: flex;
     flex-flow: column nowrap;
