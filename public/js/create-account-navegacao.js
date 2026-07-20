@@ -6,9 +6,18 @@
     var modoEdicao = config.modoEdicao === true;
     var STORAGE_KEY = modoEdicao ? 'editar-perfil-' + String(config.membroId || '') : 'create-account-dados';
     var ETAPA_INICIAL = '#nome';
-    var ETAPAS = modoEdicao
-    ? ['#nome', '#nascimento', '#sexo', '#gostos', '#objetivo', '#contactos', '#descricao', '#fotos', '#palavra-passe']
-    : ['#nome', '#nascimento', '#sexo', '#gostos', '#objetivo', '#contactos', '#descricao', '#fotos', '#permissoes', '#palavra-passe'];
+    var ETAPAS = [
+    '#nome',
+    '#nascimento',
+    '#sexo',
+    '#gostos',
+    '#objetivo',
+    '#contactos',
+    '#descricao',
+    '#fotos',
+    '#permissoes',
+    '#palavra-passe'
+];
     var dados = Object.assign({ gostos: [] }, config.dadosIniciais || {});
     var etapaAtual = null;
     var pedidoAtual = null;
@@ -164,6 +173,10 @@
         if (typeof window.inicializarEtapaFotos === 'function') {
             window.inicializarEtapaFotos();
         }
+
+        if (typeof window.inicializarEtapaPermissoes === 'function') {
+            window.inicializarEtapaPermissoes();
+        }
     }
 
     function pararRecursosDaEtapa() {
@@ -265,6 +278,10 @@
             typeof window.validarFotosPerfil === 'function'
         ) {
             return window.validarFotosPerfil();
+        }
+
+        if (obterEtapaVisivel() === '#permissoes' && typeof window.validarEtapaPermissoes === 'function') {
+            return window.validarEtapaPermissoes();
         }
 
         return true;

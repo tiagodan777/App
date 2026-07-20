@@ -50,9 +50,10 @@
     }
 
     function urlPerfil(membroId) {
-        var base = texto(window.profileUrl || '/profile');
-        return base.replace(/\/+$/, '') + '/' + encodeURIComponent(texto(membroId));
+        var base = texto(window.profileUrl || '/profile').replace(/\/+$/, '');
+        return base + '/' + encodeURIComponent(texto(membroId));
     }
+    
     function aplicarFoto(imagem, caminho) {
         imagem.onerror = function () {
             this.onerror = null;
@@ -247,6 +248,7 @@
     }
 
     async function mostrarNotificacaoSistema(titulo, mensagem, foto, url) {
+        if (window.disableNotifications) return;
         if (!('Notification' in window) || Notification.permission !== 'granted') {
             return;
         }
@@ -288,6 +290,7 @@
     }
 
     async function pedirPermissao() {
+        if (window.disableNotifications) return;
         if (!('Notification' in window) || Notification.permission !== 'default') {
             return;
         }
@@ -310,6 +313,7 @@
     }
 
     function prepararPedidoPermissao() {
+        if (window.disableNotifications) return;
         var pedirUmaVez = function () {
             pedirPermissao();
             document.removeEventListener('pointerup', pedirUmaVez, true);
@@ -819,14 +823,21 @@
         var mensagem = nome + ' enviou-te um Hey.';
         var perfil = urlPerfil(dados.from_member_id);
 
-        mostrarAviso({
-            titulo: 'Recebeste um Hey!',
-            mensagem: mensagem,
-            foto: texto(dados.from_photo),
-            url: perfil
-        });
+        if (!window.disableNotifications) {
+            mostrarAviso({
+                titulo: 'Recebeste um Hey!',
+                mensagem: mensagem,
+                foto: texto(dados.from_photo),
+                url: perfil
+            });
 
-        mostrarNotificacaoSistema('Recebeste um Hey!', mensagem, texto(dados.from_photo), perfil);
+            mostrarNotificacaoSistema(
+                'Recebeste um Hey!',
+                mensagem,
+                texto(dados.from_photo),
+                perfil
+            );
+        }
         definirContador(numero(contador.textContent) + 1);
 
         window.setTimeout(function () {

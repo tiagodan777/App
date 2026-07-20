@@ -20,6 +20,24 @@
     var LOCATION_MIN_INTERVAL = 15000;
     var LOCATION_MIN_DISTANCE = 5;
     var LOCATION_MAX_AGE = 10000;
+    
+    function aplicarPreferenciasGuardadas() {
+        if (window.MargotPreferencias) {
+            window.MargotPreferencias.aplicar();
+            return;
+        }
+
+        try {
+            var preferencias = JSON.parse(window.localStorage.getItem('margot-preferencias-v1') || '{}');
+            window.disableLocationTracking = preferencias.localizacao === false;
+            window.disableNotifications = preferencias.notificacoes === false;
+        } catch (erro) {
+            window.disableLocationTracking = false;
+            window.disableNotifications = false;
+        }
+    }
+
+    aplicarPreferenciasGuardadas();
 
     function getWebSocketUrl() {
         if (window.webSocketUrl) return window.webSocketUrl;
@@ -132,6 +150,7 @@
     }
 
     function startLocationTracking() {
+        if (window.disableLocationTracking) return;
         if (locationWatchId !== null) return;
 
         if (!window.isSecureContext) {
@@ -149,6 +168,17 @@
             maximumAge: LOCATION_MAX_AGE,
             timeout: 15000
         });
+    }
+
+    function stopLocationTracking() {
+        if (locationWatchId !== null && navigator.geolocation) {
+            navigator.geolocation.clearWatch(locationWatchId);
+        }
+
+        locationWatchId = null;
+        lastLocationSentAt = 0;
+        lastSentLatitude = null;
+        lastSentLongitude = null;
     }
 
     function handleLocationSuccess(position) {
@@ -544,6 +574,7 @@
     }
 
     function mostrarNotificacaoMensagem(mensagem) {
+        if (window.disableNotifications) return;
         var nome = String(mensagem.emissor_nome || 'Alguém');
         var resumo = mostrarAvisoMensagem(mensagem);
 
@@ -596,6 +627,7 @@
         connect: connect,
         send: send,
         startLocationTracking: startLocationTracking,
+        stopLocationTracking: stopLocationTracking,
 
         isConnected: function () {
             return Boolean(socket && socket.readyState === WebSocket.OPEN);
@@ -623,6 +655,26 @@
 
     document.addEventListener('visibilitychange', function () {
         if (document.visibilityState === 'visible' && !window.AppWebSocket.isConnected()) connect();
+    });
+
+    function aplicarPreferenciasEmTempoReal() {
+        if (window.disableLocationTracking) stopLocationTracking();
+
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.close(1000, 'Preferências alteradas');
+            return;
+        }
+
+        if (!socket) connect();
+    }
+
+    window.addEventListener('margot:preferencias-alteradas', aplicarPreferenciasEmTempoReal);
+
+    window.addEventListener('storage', function (evento) {
+        if (evento.key !== 'margot-preferencias-v1') return;
+
+        aplicarPreferenciasGuardadas();
+        aplicarPreferenciasEmTempoReal();
     });
 
     $(function () {
