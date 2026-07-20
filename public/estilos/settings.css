@@ -11,7 +11,8 @@ main {
 }
 
 main > nav {
-    max-width: 800px;
+    min-width: 600px;
+    max-width: 1000px;
 
     display: flex;
     flex-flow: column nowrap;
