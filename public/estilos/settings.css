@@ -36,7 +36,9 @@ main > nav > ul {
     align-items: center;
 }
 
-main > nav > ul > li {
+main > nav > ul > li > a {
+    color: black;
+    text-decoration: none;
     width: 90%;
     border-bottom: 1px solid #dddddd;
     margin-bottom: 20px;
