@@ -45,6 +45,7 @@ main > nav > ul > li {
 
 main > nav > ul > li > a {
     width: 100%;
+    color: #888888;
 
     display: flex;
     flex-flow: row nowrap;
