@@ -20,6 +20,10 @@ main > nav {
     align-items: center;
 }
 
+main > nav > h1 {
+    margin-bottom: 20vh;
+}
+
 main > nav > ul { 
     width: 100%;
     height: 100%;
@@ -46,6 +50,6 @@ main > nav > ul > li {
 
 main > nav > ul > li > img {
     width: 35px;
-    height: 50px;
+    height: 35px;
     margin-right: 20px;
 }
