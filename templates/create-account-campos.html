@@ -259,11 +259,52 @@
 
         <nav class="anterior-proximo">
             <a data-etapa="#descricao" class="anterior">Anterior</a>
-            <a data-etapa="#palavra-passe" class="proximo">Próximo</a>
+            <a data-etapa="{{ modo_edicao ? '#palavra-passe' : '#permissoes' }}" class="proximo">Próximo</a>
         </nav>
     </div>
 </div>
+{% if not modo_edicao %}
+<div id="permissoes">
+    <h1>Antes de começares</h1>
 
+    <p class="permissoes-explicacao">
+        A Margot utiliza a tua localização para mostrar pessoas próximas e notificações para te avisar quando recebes um Hey.
+    </p>
+
+    <div class="permissoes-lista">
+        <article class="permissao-cartao" data-permissao="localizacao" data-estado="prompt">
+            <div class="permissao-icone">📍</div>
+
+            <div class="permissao-conteudo">
+                <h2>Localização</h2>
+                <p>A tua posição permite encontrar pessoas que estão perto de ti.</p>
+                <small class="permissao-estado" aria-live="polite">Ainda não escolheste.</small>
+            </div>
+
+            <button type="button" class="permissao-pedir" data-permissao="localizacao">Escolher</button>
+        </article>
+
+        <article class="permissao-cartao" data-permissao="notificacoes" data-estado="prompt">
+            <div class="permissao-icone">👋</div>
+
+            <div class="permissao-conteudo">
+                <h2>Notificações</h2>
+                <p>Recebe um aviso quando alguém próximo te envia um Hey.</p>
+                <small class="permissao-estado" aria-live="polite">Ainda não escolheste.</small>
+            </div>
+
+            <button type="button" class="permissao-pedir" data-permissao="notificacoes">Escolher</button>
+        </article>
+    </div>
+
+    <p id="permissoes-erro" aria-live="polite"></p>
+
+    <nav class="anterior-proximo">
+        <a data-etapa="#fotos" class="anterior">Anterior</a>
+        <a data-etapa="#palavra-passe" id="permissoes-proximo" class="proximo desativado" aria-disabled="true">Próximo</a>
+    </nav>
+</div>
+{% endif %}
 <div id="palavra-passe">
     <h1>{{ modo_edicao ? 'Queres alterar a palavra-passe?' : 'Cria a tua palavra-passe' }}</h1>
 
@@ -303,7 +344,7 @@
     </p>
 
     <nav class="anterior-proximo">
-        <a data-etapa="#fotos" class="anterior">Anterior</a>
+        <a data-etapa="{{ modo_edicao ? '#fotos' : '#permissoes' }}" class="anterior">Anterior</a>
 
         <button type="submit" id="criar-conta-submit" class="proximo">
             {{ modo_edicao ? 'Guardar alterações' : 'Criar conta' }}
