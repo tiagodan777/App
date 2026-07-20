@@ -44,5 +44,6 @@ main > nav > ul > li {
 }
 
 main > nav > ul > li > img {
-    width: 35px;
+    width: 50px;
+    height: 50px;
 }
