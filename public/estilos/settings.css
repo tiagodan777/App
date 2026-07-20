@@ -36,6 +36,10 @@ main > nav > ul > li {
     width: 90%;
     border-bottom: 1px solid #dddddd;
 
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: ;
+
 }
 
 main > nav > ul > li > img {
