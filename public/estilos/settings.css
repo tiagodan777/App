@@ -11,7 +11,7 @@ main {
 }
 
 main > nav {
-    width: 80vw;
+    width: 90vw;
     margin-top: 20vh;
 
     display: flex;
@@ -20,7 +20,7 @@ main > nav {
     align-items: center;
 }
 
-main > nav > ul {
+main > nav > ul { 
     width: 100%;
     height: 100%;
     list-style: none;
