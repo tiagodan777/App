@@ -34,6 +34,7 @@ main > nav > ul {
 main > nav > ul > li {
     width: 90%;
     border-bottom: 1px solid #dddddd;
+    margin-bottom: 20px;
 
     display: flex;
     flex-flow: row nowrap;
