@@ -1,2 +1,32 @@
 @charset "UTF-8";
 
+main {
+    width: 100vw;
+    height: 100vh;
+}
+
+main > nav {
+    max-width: 800px;
+
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: center;
+    align-items: center;
+}
+
+main > nav > ul {
+    list-style: none;
+
+    display: flex;
+    flex-flow: column nowrap;
+    justify-content: space-evenly;
+    align-items: center;
+}
+
+main > nav > ul > li {
+
+}
+
+main > nav > ul > li > img {
+    width: 75px;
+}
