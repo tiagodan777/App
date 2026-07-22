@@ -12,7 +12,7 @@
 
     <title>App</title>
 
-    <link rel="stylesheet" href="{{ doc_root }}estilos/style.css?v=8">
+    <link rel="stylesheet" href="{{ doc_root }}estilos/style.css?v=9">
     <link rel="stylesheet" href="{{ doc_root }}estilos/create-account.css?v=7">
 
     {% if session.id %}
@@ -25,26 +25,60 @@
 <body>
     <script src="{{ doc_root }}js/jquery-4.0.0.js"></script>
 
+    {% if session.id %}
+        <script src="{{ doc_root }}js/preferencias.js?v=2"></script>
+    {% endif %}
+
     {% block content %}{% endblock %}
 
     <footer id="menuPrincipal">
-        <nav>
+        <nav aria-label="Menu principal">
             <ul>
                 <li>
-                    <a href="{{ doc_root }}index">
-                        <img src="{{ doc_root }}imagens/icones-menu/home.png" alt="Início">
+                    <a href="{{ doc_root }}index" aria-label="Início">
+                        <img src="{{ doc_root }}imagens/icones-menu/home.png" alt="">
                     </a>
                 </li>
 
                 <li>
-                    <a href="{{ doc_root }}messages">
-                        <img src="{{ doc_root }}imagens/icones-menu/messages.png" alt="Mensagens">
+                    <a href="{{ doc_root }}messages" aria-label="Mensagens">
+                        <img src="{{ doc_root }}imagens/icones-menu/messages.png" alt="">
                     </a>
                 </li>
 
+                {% if session.id %}
+                    <li class="menu-item-invisivel">
+                        <button
+                            type="button"
+                            id="alternar-invisivel"
+                            class="menu-principal-botao"
+                            data-invisivel="false"
+                            data-localizacao-desativada="false"
+                            aria-label="Ficar invisível"
+                            aria-pressed="false"
+                            title="Ficar invisível"
+                        >
+                            <svg class="menu-invisivel-icone menu-invisivel-icone-visivel" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6S2.5 12 2.5 12Z"></path>
+                                <circle cx="12" cy="12" r="2.8"></circle>
+                            </svg>
+
+                            <svg class="menu-invisivel-icone menu-invisivel-icone-oculto" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M3 3l18 18"></path>
+                                <path d="M10.6 6.2A11.6 11.6 0 0 1 12 6c6 0 9.5 6 9.5 6a15.7 15.7 0 0 1-3 3.7"></path>
+                                <path d="M6.2 6.8C3.8 8.5 2.5 12 2.5 12s3.5 6 9.5 6a10.6 10.6 0 0 0 3.1-.5"></path>
+                            </svg>
+
+                            <span id="alternar-invisivel-estado" class="texto-apenas-leitor">
+                                Modo invisível desativado
+                            </span>
+                        </button>
+                    </li>
+                {% endif %}
+
                 <li>
-                    <a href="{{ doc_root }}profile/{{ session.id }}">
-                        <img src="{{ doc_root }}imagens/icones-menu/user.png" alt="Perfil">
+                    <a href="{{ doc_root }}profile/{{ session.id }}" aria-label="Perfil">
+                        <img src="{{ doc_root }}imagens/icones-menu/user.png" alt="">
                     </a>
                 </li>
             </ul>
@@ -117,7 +151,8 @@
         </script>
 
         <script src="{{ doc_root }}js/index-notificacoes.js?v=7"></script>
-        <script src="{{ doc_root }}js/websocket.js?v=10"></script>
+        <script src="{{ doc_root }}js/websocket.js?v=11"></script>
+        <script src="{{ doc_root }}js/menu-invisivel.js?v=1"></script>
     {% endif %}
 </body>
 </html>

@@ -31,13 +31,36 @@
             var preferencias = JSON.parse(window.localStorage.getItem('margot-preferencias-v1') || '{}');
             window.disableLocationTracking = preferencias.localizacao === false;
             window.disableNotifications = preferencias.notificacoes === false;
+            window.margotInvisible = preferencias.invisivel === true;
+            window.disableMapPresence = window.disableLocationTracking || window.margotInvisible;
         } catch (erro) {
             window.disableLocationTracking = false;
             window.disableNotifications = false;
+            window.margotInvisible = false;
+            window.disableMapPresence = false;
         }
     }
 
     aplicarPreferenciasGuardadas();
+
+    function localizacaoEstaAtiva() {
+        return window.disableLocationTracking !== true;
+    }
+
+    function modoInvisivelEstaAtivo() {
+        return window.margotInvisible === true;
+    }
+
+    function deveAparecerNoMapa() {
+        return localizacaoEstaAtiva() && !modoInvisivelEstaAtivo();
+    }
+
+    function obterEstadoPresenca() {
+        return {
+            location_enabled: localizacaoEstaAtiva(),
+            map_presence: deveAparecerNoMapa()
+        };
+    }
 
     function getWebSocketUrl() {
         if (window.webSocketUrl) return window.webSocketUrl;
@@ -119,10 +142,13 @@
             return;
         }
 
+        var estadoPresenca = obterEstadoPresenca();
+
         send({
             type: 'auth',
             membro_id: membroId,
-            map_presence: !window.disableLocationTracking
+            location_enabled: estadoPresenca.location_enabled,
+            map_presence: estadoPresenca.map_presence
         });
     }
 
@@ -136,6 +162,16 @@
             console.error('Erro ao enviar mensagem:', erro);
             return false;
         }
+    }
+
+    function sendPresenceState() {
+        var estadoPresenca = obterEstadoPresenca();
+
+        return send({
+            type: 'presence_update',
+            location_enabled: estadoPresenca.location_enabled,
+            map_presence: estadoPresenca.map_presence
+        });
     }
 
     function startPing() {
@@ -183,6 +219,8 @@
     }
 
     function handleLocationSuccess(position) {
+        if (window.disableLocationTracking) return;
+
         var latitude = Number(position.coords.latitude);
         var longitude = Number(position.coords.longitude);
         var accuracy = Number(position.coords.accuracy) || 0;
@@ -283,14 +321,36 @@
 
             case 'authenticated':
                 console.log('WebSocket autenticado:', data.membro_id);
+
+                if (data.location_enabled === false) {
+                    limparMapaLocal();
+                } else if (data.map_presence === false) {
+                    removerPropriaFotoDoMapa();
+                }
                 break;
 
             case 'location_received':
                 break;
 
+            case 'presence_updated':
+                if (data.location_enabled === false) {
+                    limparMapaLocal();
+                } else if (data.map_presence === false) {
+                    removerPropriaFotoDoMapa();
+                }
+
+                window.dispatchEvent(new CustomEvent('app:map-presence-updated', {
+                    detail: data
+                }));
+                break;
+
             case 'state':
                 if (document.getElementById('gridCanvas')) {
-                    atualizarPessoasNoMapa(Array.isArray(data.people) ? data.people : []);
+                    atualizarPessoasNoMapa(
+                        window.disableLocationTracking
+                            ? []
+                            : (Array.isArray(data.people) ? data.people : [])
+                    );
                 }
                 break;
 
@@ -364,6 +424,38 @@
             default:
                 console.warn('Mensagem WebSocket desconhecida:', data);
         }
+    }
+
+    function removerPropriaFotoDoMapa() {
+        var membroId = String(window.membroId || '').trim();
+
+        if (!membroId) return;
+
+        var imagem = document.getElementById(membroId);
+
+        if (
+            !imagem ||
+            !imagem.classList.contains('foto') ||
+            imagem.classList.contains('a-remover')
+        ) return;
+
+        var $imagem = $(imagem);
+
+        $imagem.addClass('a-remover').css({
+            opacity: '0',
+            transition: 'opacity 0.25s ease-out'
+        });
+
+        window.setTimeout(function () {
+            $imagem.remove();
+            reinicializarFotos();
+        }, 260);
+    }
+
+    function limparMapaLocal() {
+        if (!document.getElementById('gridCanvas')) return;
+
+        atualizarPessoasNoMapa([]);
     }
 
     function atualizarPessoasNoMapa(pessoas) {
@@ -627,8 +719,10 @@
     window.AppWebSocket = {
         connect: connect,
         send: send,
+        updatePresence: sendPresenceState,
         startLocationTracking: startLocationTracking,
         stopLocationTracking: stopLocationTracking,
+        isInvisible: modoInvisivelEstaAtivo,
 
         isConnected: function () {
             return Boolean(socket && socket.readyState === WebSocket.OPEN);
@@ -659,26 +753,40 @@
     });
 
     function aplicarPreferenciasEmTempoReal() {
-        if (window.disableLocationTracking) stopLocationTracking();
+        aplicarPreferenciasGuardadas();
+
+        if (window.disableLocationTracking) {
+            stopLocationTracking();
+            limparMapaLocal();
+        } else {
+            if (window.margotInvisible) removerPropriaFotoDoMapa();
+            if (socket && socket.readyState === WebSocket.OPEN) startLocationTracking();
+        }
 
         if (socket && socket.readyState === WebSocket.OPEN) {
-            socket.close(1000, 'Preferências alteradas');
+            sendPresenceState();
             return;
         }
 
-        if (!socket) connect();
+        if (!socket || socket.readyState === WebSocket.CLOSED) connect();
     }
 
     window.addEventListener('margot:preferencias-alteradas', aplicarPreferenciasEmTempoReal);
 
     window.addEventListener('storage', function (evento) {
-        if (evento.key !== 'margot-preferencias-v1') return;
+        if (evento.key !== 'margot-preferencias-v1' || window.MargotPreferencias) return;
 
         aplicarPreferenciasGuardadas();
         aplicarPreferenciasEmTempoReal();
     });
 
     $(function () {
+        if (window.disableLocationTracking) {
+            limparMapaLocal();
+        } else if (window.margotInvisible) {
+            removerPropriaFotoDoMapa();
+        }
+
         connect();
     });
 })(window, document, jQuery);

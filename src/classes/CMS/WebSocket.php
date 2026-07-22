@@ -21,7 +21,8 @@ class WebSocket implements MessageComponentInterface
     private LoopInterface $loop;
 
     private array $membroPorLigacao = [];
-    private array $mapaPorLigacao = [];
+    private array $localizacaoPorLigacao = [];
+    private array $visibilidadePorLigacao = [];
     private array $ligacoesPorMembro = [];
     private array $pessoas = [];
     private array $localizacoes = [];
@@ -96,6 +97,10 @@ class WebSocket implements MessageComponentInterface
                     $this->atualizarLocalizacao($from, $data);
                     break;
 
+                case 'presence_update':
+                    $this->atualizarPresenca($from, $data);
+                    break;
+
                 case 'move':
                     $this->moverPessoa($from, $data);
                     break;
@@ -155,44 +160,43 @@ class WebSocket implements MessageComponentInterface
             return;
         }
 
+        $localizacaoAtiva = $this->lerBooleano(
+            $data,
+            'location_enabled',
+            $this->lerBooleano($data, 'map_presence', true)
+        );
+
+        $visivel = $localizacaoAtiva && $this->lerBooleano($data, 'map_presence', true);
+
         $this->cancelarSaidaAgendada($membroId);
 
-        $foto = basename(trim((string) ($membro['foto_perfil'] ?? 'default.webp')));
-
-        if ($foto === '') $foto = 'default.webp';
-
         $this->membroPorLigacao[$conn->resourceId] = $membroId;
-        $this->mapaPorLigacao[$conn->resourceId] = (bool) ($data['map_presence'] ?? true);
+        $this->localizacaoPorLigacao[$conn->resourceId] = $localizacaoAtiva;
+        $this->visibilidadePorLigacao[$conn->resourceId] = $visivel;
         $this->ligacoesPorMembro[$membroId] ??= [];
         $this->ligacoesPorMembro[$membroId][$conn->resourceId] = $conn;
 
-        if ($this->mapaPorLigacao[$conn->resourceId]) {
-            if (!isset($this->pessoas[$membroId])) {
-                $this->pessoas[$membroId] = [
-                    'id' => $membroId,
-                    'membro_id' => $membroId,
-                    'nome' => trim((string) ($membro['nome'] ?? '')),
-                    'src' => '/imagens/fotos-perfil/' . rawurlencode($foto),
-                    'top' => random_int(50, 600),
-                    'left' => random_int(50, 400)
-                ];
-            } else {
-                $this->pessoas[$membroId]['nome'] = trim((string) ($membro['nome'] ?? ''));
-                $this->pessoas[$membroId]['src'] = '/imagens/fotos-perfil/' . rawurlencode($foto);
-            }
+        if (!$this->membroTemLigacaoComLocalizacaoAtiva($membroId)) {
+            unset($this->localizacoes[$membroId]);
         }
 
+        $this->sincronizarVisibilidadeMembro($membroId, $membro);
+
         echo sprintf(
-            "[AUTH] Ligação %d autenticada como %s. Pessoas: %d. Ligações deste membro: %d\n",
+            "[AUTH] Ligação %d autenticada como %s. Localização: %s. Visível: %s. Pessoas: %d. Ligações deste membro: %d\n",
             $conn->resourceId,
             $membroId,
+            $localizacaoAtiva ? 'ativa' : 'inativa',
+            $visivel ? 'sim' : 'não',
             count($this->pessoas),
             count($this->ligacoesPorMembro[$membroId])
         );
 
         $this->enviar($conn, [
             'type' => 'authenticated',
-            'membro_id' => $membroId
+            'membro_id' => $membroId,
+            'location_enabled' => $localizacaoAtiva,
+            'map_presence' => $visivel
         ]);
 
         $this->enviarContadorMensagens($conn, $membroId);
@@ -237,6 +241,123 @@ class WebSocket implements MessageComponentInterface
         }
     }
 
+    private function atualizarPresenca(ConnectionInterface $conn, array $data): void
+    {
+        $membroId = $this->obterMembroDaLigacao($conn);
+
+        if ($membroId === null) {
+            $this->enviarErro($conn, 'A ligação não está autenticada.');
+            return;
+        }
+
+        $resourceId = $conn->resourceId;
+
+        $localizacaoAtiva = $this->lerBooleano(
+            $data,
+            'location_enabled',
+            $this->localizacaoPorLigacao[$resourceId] ?? true
+        );
+
+        $visivelSolicitado = $this->lerBooleano(
+            $data,
+            'map_presence',
+            $this->visibilidadePorLigacao[$resourceId] ?? true
+        );
+
+        $visivel = $localizacaoAtiva && $visivelSolicitado;
+
+        $this->localizacaoPorLigacao[$resourceId] = $localizacaoAtiva;
+        $this->visibilidadePorLigacao[$resourceId] = $visivel;
+
+        $this->cancelarSaidaAgendada($membroId);
+
+        if (!$this->membroTemLigacaoComLocalizacaoAtiva($membroId)) {
+            unset($this->localizacoes[$membroId]);
+        }
+
+        $this->sincronizarVisibilidadeMembro($membroId);
+
+        $this->enviar($conn, [
+            'type' => 'presence_updated',
+            'location_enabled' => $localizacaoAtiva,
+            'map_presence' => $visivel,
+            'member_visible' => $this->membroTemLigacaoVisivel($membroId)
+        ]);
+
+        echo sprintf(
+            "[PRESENCE] %s atualizou presença. Ligação %d: localização=%s, visível=%s.\n",
+            $membroId,
+            $resourceId,
+            $localizacaoAtiva ? 'ativa' : 'inativa',
+            $visivel ? 'sim' : 'não'
+        );
+
+        $this->enviarEstadosIndividuais();
+    }
+
+    private function sincronizarVisibilidadeMembro(string $membroId, ?array $membro = null): void
+    {
+        if ($this->membroTemLigacaoVisivel($membroId)) {
+            $this->garantirPessoaVisivel($membroId, $membro);
+            return;
+        }
+
+        unset($this->pessoas[$membroId]);
+    }
+
+    private function garantirPessoaVisivel(string $membroId, ?array $membro = null): void
+    {
+        if ($membro === null) {
+            $membro = $this->obterMembro($membroId);
+        }
+
+        if (!$membro) {
+            unset($this->pessoas[$membroId]);
+            return;
+        }
+
+        $foto = basename(trim((string) ($membro['foto_perfil'] ?? 'default.webp')));
+
+        if ($foto === '') $foto = 'default.webp';
+
+        $pessoaAtual = $this->pessoas[$membroId] ?? [];
+
+        $this->pessoas[$membroId] = [
+            'id' => $membroId,
+            'membro_id' => $membroId,
+            'nome' => trim((string) ($membro['nome'] ?? '')),
+            'src' => '/imagens/fotos-perfil/' . rawurlencode($foto),
+            'top' => isset($pessoaAtual['top'])
+                ? (int) $pessoaAtual['top']
+                : random_int(50, 600),
+            'left' => isset($pessoaAtual['left'])
+                ? (int) $pessoaAtual['left']
+                : random_int(50, 400)
+        ];
+    }
+
+    private function obterPessoaParaInteracao(string $membroId): ?array
+    {
+        if (isset($this->pessoas[$membroId])) {
+            return $this->pessoas[$membroId];
+        }
+
+        $membro = $this->obterMembro($membroId);
+
+        if (!$membro) return null;
+
+        $foto = basename(trim((string) ($membro['foto_perfil'] ?? 'default.webp')));
+
+        if ($foto === '') $foto = 'default.webp';
+
+        return [
+            'id' => $membroId,
+            'membro_id' => $membroId,
+            'nome' => trim((string) ($membro['nome'] ?? '')),
+            'src' => '/imagens/fotos-perfil/' . rawurlencode($foto)
+        ];
+    }
+
     private function atualizarLocalizacao(ConnectionInterface $conn, array $data): void
     {
         $membroId = $this->obterMembroDaLigacao($conn);
@@ -246,7 +367,7 @@ class WebSocket implements MessageComponentInterface
             return;
         }
 
-        if (!($this->mapaPorLigacao[$conn->resourceId] ?? false)) return;
+        if (!($this->localizacaoPorLigacao[$conn->resourceId] ?? false)) return;
 
         $latitude = filter_var($data['latitude'] ?? null, FILTER_VALIDATE_FLOAT);
         $longitude = filter_var($data['longitude'] ?? null, FILTER_VALIDATE_FLOAT);
@@ -293,7 +414,7 @@ class WebSocket implements MessageComponentInterface
 
         if (
             $membroId === null ||
-            !($this->mapaPorLigacao[$conn->resourceId] ?? false) ||
+            !($this->visibilidadePorLigacao[$conn->resourceId] ?? false) ||
             !isset($this->pessoas[$membroId])
         ) return;
 
@@ -317,7 +438,7 @@ class WebSocket implements MessageComponentInterface
             return;
         }
 
-        $remetente = $this->pessoas[$remetenteId] ?? null;
+        $remetente = $this->obterPessoaParaInteracao($remetenteId);
         $destinatarioId = trim((string) ($data['destinatario_id'] ?? ''));
 
         if (!$remetente || $destinatarioId === '') {
@@ -650,18 +771,21 @@ class WebSocket implements MessageComponentInterface
         $agora = time();
 
         foreach ($this->clients as $client) {
-            if (!($this->mapaPorLigacao[$client->resourceId] ?? false)) continue;
+            if (!($this->localizacaoPorLigacao[$client->resourceId] ?? false)) continue;
 
             $membroId = $this->membroPorLigacao[$client->resourceId] ?? null;
 
             if ($membroId === null) continue;
 
+            $ligacaoVisivel = $this->visibilidadePorLigacao[$client->resourceId] ?? false;
             $pessoasVisiveis = [];
             $minhaLocalizacao = $this->localizacoes[$membroId] ?? null;
             $minhaLocalizacaoValida = $this->localizacaoEstaValida($minhaLocalizacao, $agora);
 
             foreach ($this->pessoas as $outroMembroId => $pessoa) {
                 if ($outroMembroId === $membroId) {
+                    if (!$ligacaoVisivel) continue;
+
                     $pessoa['distance_m'] = 0;
                     $pessoasVisiveis[] = $pessoa;
                     continue;
@@ -692,6 +816,7 @@ class WebSocket implements MessageComponentInterface
             $this->enviar($client, [
                 'type' => 'state',
                 'radius_m' => self::RAIO_MAXIMO_METROS,
+                'map_presence' => $ligacaoVisivel,
                 'location_filter_active' => $minhaLocalizacaoValida,
                 'people' => $pessoasVisiveis
             ]);
@@ -780,19 +905,36 @@ class WebSocket implements MessageComponentInterface
     {
         unset(
             $this->membroPorLigacao[$conn->resourceId],
-            $this->mapaPorLigacao[$conn->resourceId],
+            $this->localizacaoPorLigacao[$conn->resourceId],
+            $this->visibilidadePorLigacao[$conn->resourceId],
             $this->ligacoesPorMembro[$membroId][$conn->resourceId]
         );
 
-        if (empty($this->ligacoesPorMembro[$membroId])) unset($this->ligacoesPorMembro[$membroId]);
+        if (empty($this->ligacoesPorMembro[$membroId])) {
+            unset($this->ligacoesPorMembro[$membroId]);
+        }
 
-        if (!$this->membroTemLigacaoNoMapa($membroId)) $this->agendarSaida($membroId);
+        if (
+            !$this->membroTemLigacaoVisivel($membroId) ||
+            !$this->membroTemLigacaoComLocalizacaoAtiva($membroId)
+        ) {
+            $this->agendarSaida($membroId);
+        }
     }
 
-    private function membroTemLigacaoNoMapa(string $membroId): bool
+    private function membroTemLigacaoVisivel(string $membroId): bool
     {
         foreach ($this->ligacoesPorMembro[$membroId] ?? [] as $resourceId => $ligacao) {
-            if ($this->mapaPorLigacao[$resourceId] ?? false) return true;
+            if ($this->visibilidadePorLigacao[$resourceId] ?? false) return true;
+        }
+
+        return false;
+    }
+
+    private function membroTemLigacaoComLocalizacaoAtiva(string $membroId): bool
+    {
+        foreach ($this->ligacoesPorMembro[$membroId] ?? [] as $resourceId => $ligacao) {
+            if ($this->localizacaoPorLigacao[$resourceId] ?? false) return true;
         }
 
         return false;
@@ -807,12 +949,23 @@ class WebSocket implements MessageComponentInterface
             function () use ($membroId): void {
                 unset($this->temporizadoresSaida[$membroId]);
 
-                if ($this->membroTemLigacaoNoMapa($membroId)) return;
+                $removeuPessoa = false;
+                $removeuLocalizacao = false;
 
-                unset($this->pessoas[$membroId], $this->localizacoes[$membroId]);
+                if (!$this->membroTemLigacaoVisivel($membroId)) {
+                    $removeuPessoa = isset($this->pessoas[$membroId]);
+                    unset($this->pessoas[$membroId]);
+                }
+
+                if (!$this->membroTemLigacaoComLocalizacaoAtiva($membroId)) {
+                    $removeuLocalizacao = isset($this->localizacoes[$membroId]);
+                    unset($this->localizacoes[$membroId]);
+                }
+
+                if (!$removeuPessoa && !$removeuLocalizacao) return;
 
                 echo sprintf(
-                    "[OFFLINE] %s removido após o período de tolerância. Pessoas: %d\n",
+                    "[OFFLINE] %s atualizado após o período de tolerância. Pessoas: %d\n",
                     $membroId,
                     count($this->pessoas)
                 );
@@ -873,6 +1026,15 @@ class WebSocket implements MessageComponentInterface
                 $erro->getMessage()
             );
         }
+    }
+
+    private function lerBooleano(array $data, string $chave, bool $padrao): bool
+    {
+        if (!array_key_exists($chave, $data)) return $padrao;
+
+        $valor = filter_var($data[$chave], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+
+        return $valor ?? $padrao;
     }
 
     private function limitarNumero(int $numero, int $minimo, int $maximo): int
