@@ -151,6 +151,7 @@
 
     function startLocationTracking() {
         if (window.disableLocationTracking) return;
+        
         if (locationWatchId !== null) return;
 
         if (!window.isSecureContext) {
