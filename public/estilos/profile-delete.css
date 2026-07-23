@@ -14,9 +14,11 @@ main#profile-delete > section#apagar {
     align-items: center;
 }
 
-main#profile-delete > section#apagar > h2 {
-    margin-bottom: -100px;
-    margin-top: 90px;
+main#profile-delete > section#apagar > h1 {
+    text-align: center;
+    font-size: 2.5em;
+    font-weight: bold;
+    font-family: 'Alfa Slab One';
 } 
 
 main#profile-delete > section#apagar > section.dados > p {
@@ -36,6 +38,7 @@ main#profile-delete > section#apagar > section#dados-apagar {
 
 main#profile-delete > section#apagar > section.dados > img {
     width: 150px;
+    height: 150px;
     margin-top: 20px;
     border-radius: 50%;
     align-self: center;
