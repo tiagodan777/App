@@ -205,23 +205,94 @@ class Member
 
     public function delete(string $id): bool
     {
+        $id = trim($id);
+        if ($id === '') return false;
+
+        $fotos = [];
+        $ficheirosMensagens = [];
+        $membroApagado = false;
+
         try {
             $this->db->beginTransaction();
 
-            $this->db->runSQL('DELETE FROM membros_gostos WHERE membro_id = :id', ['id' => $id]);
-            $this->db->runSQL('DELETE FROM fotos_perfil WHERE membro_id = :id', ['id' => $id]);
+            $fotos = $this->db->runSQL(
+                'SELECT nome_arquivo FROM fotos_perfil WHERE membro_id = :id',
+                ['id' => $id]
+            )->fetchAll(\PDO::FETCH_COLUMN);
+
+            $ficheirosMensagens = $this->db->runSQL(
+                'SELECT ficheiro_nome FROM mensagens_chat WHERE (emissor_id = :id1 OR destinatario_id = :id2) AND ficheiro_nome IS NOT NULL',
+                ['id1' => $id, 'id2' => $id]
+            )->fetchAll(\PDO::FETCH_COLUMN);
+
+            $this->db->runSQL(
+                'DELETE FROM mensagens_chat WHERE emissor_id = :id1 OR destinatario_id = :id2',
+                ['id1' => $id, 'id2' => $id]
+            );
+
             $this->db->runSQL(
                 'DELETE FROM notificacao WHERE emissor_id = :id1 OR destinatario_id = :id2',
                 ['id1' => $id, 'id2' => $id]
             );
-            $this->db->runSQL('DELETE FROM membros WHERE id = :id', ['id' => $id]);
+
+            $this->db->runSQL(
+                'DELETE FROM bloqueados WHERE pessoa_bloqueou_id = :id1 OR pessoa_bloqueada_id = :id2',
+                ['id1' => $id, 'id2' => $id]
+            );
+
+            $this->db->runSQL(
+                'DELETE FROM denuncias WHERE membro_denuncia = :id1 OR membro_denunciado = :id2',
+                ['id1' => $id, 'id2' => $id]
+            );
+
+            $this->db->runSQL('DELETE FROM token WHERE membro_id = :id', ['id' => $id]);
+            $this->db->runSQL('DELETE FROM localizacoes WHERE membro_id = :id', ['id' => $id]);
+            $this->db->runSQL('DELETE FROM membros_gostos WHERE membro_id = :id', ['id' => $id]);
+            $this->db->runSQL('DELETE FROM fotos_perfil WHERE membro_id = :id', ['id' => $id]);
+
+            $membroApagado = $this->db->runSQL(
+                'DELETE FROM membros WHERE id = :id',
+                ['id' => $id]
+            )->rowCount() === 1;
 
             $this->db->commit();
-
-            return true;
         } catch (\Throwable $erro) {
             if ($this->db->inTransaction()) $this->db->rollBack();
             throw $erro;
+        }
+
+        if (!$membroApagado) return false;
+
+        $this->apagarFicheiros($fotos, [
+            APP_ROOT . '/public/imagens/fotos-perfil/',
+            APP_ROOT . '/public/imagens/fotos-perfil-originais/',
+            APP_ROOT . '/public/imagens/fotos-perfil-temp/'
+        ], ['default.webp']);
+
+        $this->apagarFicheiros($ficheirosMensagens, [
+            APP_ROOT . '/public/media/mensagens/'
+        ]);
+
+        return true;
+    }
+
+    private function apagarFicheiros(array $nomes, array $pastas, array $protegidos = []): void
+    {
+        foreach (array_unique($nomes) as $nome) {
+            $nome = basename(trim((string) $nome));
+            if ($nome === '' || in_array($nome, $protegidos, true)) continue;
+
+            foreach ($pastas as $pasta) {
+                $caminho = rtrim($pasta, '/') . '/' . $nome;
+
+                try {
+                    if (is_file($caminho) && !unlink($caminho)) {
+                        error_log('Não foi possível apagar o ficheiro: ' . $caminho);
+                    }
+                } catch (\Throwable $erro) {
+                    error_log('Não foi possível apagar o ficheiro ' . $caminho . ': ' . $erro->getMessage());
+                }
+            }
         }
     }
 }
