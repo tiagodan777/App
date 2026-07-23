@@ -1,5 +1,5 @@
 <?php
-namespace TiagoDaniel\Email;
+namespace App\Email;
 
 class Email {
     private $phpmailer;
