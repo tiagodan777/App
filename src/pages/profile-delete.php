@@ -11,6 +11,10 @@ if (!$id) {
 
 $membro = $cms->getMember()->get($id);
 
+echo "<pre>";
+var_dump($membro);
+echo "</pre>";
+
 if ($_SERVER['REQUEST_METHOD']  == 'POST') {
     $email = $membro['email'];
 
