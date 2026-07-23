@@ -145,6 +145,7 @@ img {
 
 .mini-menu > header > span {
     font-size: 1.7em;
+    padding: 20px;
     font-family: Helvetica, sans-serif;
 
     position: absolute;
