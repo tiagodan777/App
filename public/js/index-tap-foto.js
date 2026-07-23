@@ -16,6 +16,25 @@
         var menuAtualY = 0;
         var menuInicioTempo = 0;
         var ponteiroMenu = null;
+        var acoesAbertas = false;
+
+        function posicaoBaseMenu() {
+            return acoesAbertas ? '0%' : '15%';
+        }
+
+        function colocarMenuNaPosicaoBase() {
+            $menu.css({
+                transform: 'translate3d(0, ' + posicaoBaseMenu() + ', 0)',
+                transition: 'transform 0.3s cubic-bezier(.2,.8,.2,1)'
+            });
+        }
+
+        function definirMiniMenuAcoes(abertas) {
+            acoesAbertas = Boolean(abertas);
+            $menu.toggleClass('mini-menu-acoes-abertas', acoesAbertas);
+
+            if (aberto) colocarMenuNaPosicaoBase();
+        }
 
         function eInterativo(alvo) {
             return Boolean($(alvo).closest('button, a, input, textarea, select, label, form').length);
@@ -33,31 +52,36 @@
             if (!prepararFoto(elemento)) return;
 
             aberto = true;
+            acoesAbertas = false;
 
-            $menu.attr('aria-hidden', 'false').css({
-                pointerEvents: 'auto',
-                transform: 'translate3d(0, 15%, 0)',
-                transition: 'transform 0.3s cubic-bezier(.2,.8,.2,1)'
-            });
+            $menu
+                .removeClass('mini-menu-acoes-abertas')
+                .attr('aria-hidden', 'false')
+                .css({
+                    pointerEvents: 'auto',
+                    transform: 'translate3d(0, ' + posicaoBaseMenu() + ', 0)',
+                    transition: 'transform 0.3s cubic-bezier(.2,.8,.2,1)'
+                });
         }
 
         function fecharMenu() {
             aberto = false;
+            acoesAbertas = false;
             aArrastarMenu = false;
             ponteiroMenu = null;
 
-            $menu.attr('aria-hidden', 'true').css({
-                pointerEvents: 'none',
-                transform: 'translate3d(0, calc(100% + 96px + env(safe-area-inset-bottom, 0px)), 0)',
-                transition: 'transform 0.3s cubic-bezier(.4,0,1,1)'
-            });
+            $menu
+                .removeClass('mini-menu-acoes-abertas')
+                .attr('aria-hidden', 'true')
+                .css({
+                    pointerEvents: 'none',
+                    transform: 'translate3d(0, calc(100% + 96px + env(safe-area-inset-bottom, 0px)), 0)',
+                    transition: 'transform 0.3s cubic-bezier(.4,0,1,1)'
+                });
         }
 
         function voltarMenu() {
-            $menu.css({
-                transform: 'translate3d(0, 15%, 0)',
-                transition: 'transform 0.3s cubic-bezier(.2,.8,.2,1)'
-            });
+            colocarMenuNaPosicaoBase();
         }
 
         $(document).on('pointerdown', '.foto', function (evento) {
@@ -124,7 +148,10 @@
 
             if (distancia < 0) distancia *= 0.22;
 
-            $menu.css('transform', 'translate3d(0, calc(15% + ' + distancia + 'px), 0)');
+            $menu.css(
+                'transform',
+                'translate3d(0, calc(' + posicaoBaseMenu() + ' + ' + distancia + 'px), 0)'
+            );
 
             evento.preventDefault();
             evento.stopPropagation();
@@ -167,5 +194,6 @@
         });
 
         window.fecharMiniMenu = fecharMenu;
+        window.definirMiniMenuAcoes = definirMiniMenuAcoes;
     });
 })(window, document, jQuery);

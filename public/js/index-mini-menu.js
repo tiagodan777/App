@@ -49,16 +49,24 @@
         return texto($miniMenu.find('header h1').text()) || 'esta pessoa';
     }
 
+    function ajustarAlturaMiniMenu(acoesAbertas) {
+        if (typeof window.definirMiniMenuAcoes === 'function') {
+            window.definirMiniMenuAcoes(acoesAbertas);
+        }
+    }
+
     function fecharAcoes() {
         $acoes.removeClass('aberta').attr('aria-hidden', 'true').prop('hidden', true);
         $maisOpcoes.attr('aria-expanded', 'false');
         $acoesPrincipal.prop('hidden', false);
         $formDenuncia.prop('hidden', true);
+        ajustarAlturaMiniMenu(false);
     }
 
     function abrirAcoes() {
         if ($miniMenu.hasClass('perfil-proprio') || !idSelecionado()) return;
 
+        ajustarAlturaMiniMenu(true);
         $acoes.prop('hidden', false).attr('aria-hidden', 'false').addClass('aberta');
         $maisOpcoes.attr('aria-expanded', 'true');
         $acoesPrincipal.prop('hidden', false);
@@ -83,6 +91,7 @@
         var imagem = $miniMenu.find('header img').get(0);
 
         fecharAcoes();
+
         $miniMenu.attr('data-destinatario-id', id).toggleClass('perfil-proprio', souEu);
         $miniMenu.find('.mini-menu-perfil').attr('href', baseUrl(window.profileUrl, '/profile') + '/' + encodeURIComponent(id));
         $miniMenu.find('header h1').text(membroNome);
@@ -180,7 +189,9 @@
 
         if (!window.AppWebSocket || !window.AppWebSocket.isConnected()) {
             aviso('A ligação está a ser restabelecida.', 'erro');
+
             if (window.AppWebSocket) window.AppWebSocket.connect();
+
             return;
         }
 
@@ -220,6 +231,7 @@
         if (!texto(dados.get('mensagem')) && !(ficheiro instanceof File && ficheiro.size)) return;
 
         dados.set('action', 'send');
+
         aEnviarMensagem = true;
         $botao.prop('disabled', true).val('A enviar…');
 
