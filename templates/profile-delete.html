@@ -1,6 +1,9 @@
 {% extends 'layout.html' %}
 {% block title %} {{ membro.nome }} {% endblock %}
 {% block content %}
+{% block styles %}
+    <link rel="stylesheet" href="{{ doc_root }}estilos/profile-delete.css">
+{% endblock %}
 <main id="profile-delete">
     <section id="apagar">
         {% if sent == false %}
