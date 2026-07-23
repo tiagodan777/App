@@ -14,6 +14,16 @@ $password = 'NovaFaseDaVidaEm2026';
 
 $dsn = "$type:host=$server;dbname=$db;port=$port;charset=$charset";
 
+$email_config = [
+    'server'   => 'smtp.sendgrid.net',
+    'port'     => 587,
+    'username' => 'apikey', // literal
+    'password' => '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', // a tua nova API key
+    'security' => 'tls',
+    'admin_email' => 'tiagoamdaniel488@gmail.com',
+    'debug' => (DEV) ? 2 : 0,
+];
+
 define('MEDIA_TYPES', ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic']);
 define('FILE_EXTENSIONS', ['jpeg', 'jpg', 'png', 'gif', 'webp', 'heic']);
 define('MAX_SIZE', '512000000');

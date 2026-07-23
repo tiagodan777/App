@@ -1,0 +1,21 @@
+{% extends 'layout.html' %}
+{% block title %} {{ membro.nome }} {% endblock %}
+{% block content %}
+<main id="profile-delete">
+    <section id="apagar">
+        <input type="file" name="message" id="message" value="{{ message }}">
+        <h2>Apagar Perfil</h2>
+        <section class="dados" id="dados-apagar">
+            <p>Confirma para apagares o teu perfil</p>
+            <img src="{{ doc_root }}imagens/fotos-perfil/{{ membro.picture }}" alt="Foto de perfil de {{ membro.forename }}" id="foto-perfil">
+        </section>
+        <section class="opcoes" id="opcoes-apagar">
+            <form action="{{ doc_root }}delete-account" method="post">
+                <a href="{{ doc_root }}edit-profile">Cancelar</a>
+                <input type="hidden" name="delete" value="1">
+                <input type="submit" value="Confirmar">
+            </form>
+        </section>
+    </section>
+</main>
+{% endblock %}
