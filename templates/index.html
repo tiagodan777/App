@@ -1,104 +1,103 @@
 {% extends 'layout.html' %}
 
 {% block styles %}
-    <link rel="stylesheet" href="{{ doc_root }}estilos/messaging-integration.css?v=3">
+<link rel="stylesheet" href="{{ doc_root }}estilos/messaging-integration.css?v=4">
 {% endblock %}
 
 {% block content %}
-    <canvas id="gridCanvas"></canvas>
+<canvas id="gridCanvas"></canvas>
 
-    <div class="mini-menu" data-destinatario-id="" aria-hidden="true">
-        <div id="barra"></div>
+<div class="mini-menu" data-destinatario-id="" aria-hidden="true">
+    <div id="barra"></div>
 
-        <header>
-            <a href="{{ doc_root }}profile/" class="mini-menu-perfil">
-                <img src="{{ doc_root }}imagens/fotos-perfil/default.webp" alt="">
-                <h1></h1>
-            </a>
+    <header>
+        <a href="{{ doc_root }}profile/" class="mini-menu-perfil">
+            <img src="{{ doc_root }}imagens/fotos-perfil/default.webp" alt="">
+            <h1></h1>
+        </a>
 
-            <button type="button" id="abrir-acoes-perfil" class="mais-opcoes" aria-label="Mais opções" aria-controls="acoes-perfil" aria-expanded="false">
-                <span aria-hidden="true">•••</span>
-            </button>
-        </header>
-
-        <section id="acoes-perfil" class="acoes-perfil" aria-hidden="true" hidden>
-            <button type="button" class="acoes-perfil-fundo" aria-label="Fechar opções" data-fechar-acoes></button>
-
-            <div class="acoes-perfil-caixa" role="dialog" aria-modal="true" aria-labelledby="acoes-perfil-titulo" tabindex="-1">
-                <div id="acoes-perfil-principal">
-                    <header class="acoes-perfil-cabecalho">
-                        <h2 id="acoes-perfil-titulo">Opções</h2>
-                        <button type="button" class="acoes-perfil-fechar" aria-label="Fechar" data-fechar-acoes>×</button>
-                    </header>
-
-                    <button type="button" id="bloquear-membro" class="acao-perfil acao-perfil-perigosa">
-                        <strong>Bloquear</strong>
-                        <span>Deixam de se ver no mapa.</span>
-                    </button>
-
-                    <button type="button" id="abrir-denuncia" class="acao-perfil">
-                        <strong>Denunciar</strong>
-                        <span>Envia uma denúncia privada.</span>
-                    </button>
-
-                    <button type="button" class="acao-perfil-cancelar" data-fechar-acoes>Cancelar</button>
-                </div>
-
-                <form id="form-denuncia" class="form-denuncia" hidden>
-                    <header class="acoes-perfil-cabecalho">
-                        <button type="button" id="voltar-denuncia" class="acoes-perfil-voltar" aria-label="Voltar">‹</button>
-                        <h2>Denunciar perfil</h2>
-                        <button type="button" class="acoes-perfil-fechar" aria-label="Fechar" data-fechar-acoes>×</button>
-                    </header>
-
-                    <label for="denuncia-motivo">Motivo</label>
-
-                    <select name="motivo" id="denuncia-motivo" required>
-                        <option value="">Escolhe um motivo</option>
-                        <option value="comportamento_inadequado">Comportamento inadequado</option>
-                        <option value="assedio">Assédio</option>
-                        <option value="perfil_falso">Perfil falso</option>
-                        <option value="spam">Spam</option>
-                        <option value="seguranca">Questão de segurança</option>
-                        <option value="outro">Outro</option>
-                    </select>
-
-                    <label for="denuncia-mensagem">
-                        Explica o que aconteceu <span>(opcional)</span>
-                    </label>
-
-                    <textarea name="mensagem" id="denuncia-mensagem" maxlength="2048" rows="5" placeholder="Escreve aqui…"></textarea>
-
-                    <button type="submit" class="denuncia-enviar">
-                        Enviar denúncia
-                    </button>
-                </form>
-            </div>
-        </section>
-
-        <button type="button" class="ola" id="enviar-hey">
-            Hey
+        <button type="button" id="abrir-acoes-perfil" class="mais-opcoes" aria-label="Mais opções" aria-controls="acoes-perfil" aria-expanded="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <circle cx="5" cy="12" r="2"></circle>
+                <circle cx="12" cy="12" r="2"></circle>
+                <circle cx="19" cy="12" r="2"></circle>
+            </svg>
         </button>
+    </header>
 
-        <form action="" method="post" enctype="multipart/form-data" class="mini-menu-mensagem">
-            <label for="mini-menu-media" class="mini-menu-anexo" aria-label="Adicionar fotografia ou vídeo">
-                +
-            </label>
+    <section id="acoes-perfil" class="acoes-perfil" aria-hidden="true" hidden>
+        <button type="button" class="acoes-perfil-fundo" aria-label="Fechar opções" data-fechar-acoes></button>
 
-            <input type="file" name="media" id="mini-menu-media" accept="image/*,video/*" hidden>
+        <div class="acoes-perfil-caixa" role="dialog" aria-modal="true" aria-labelledby="acoes-perfil-titulo" tabindex="-1">
+            <div id="acoes-perfil-principal">
+                <header class="acoes-perfil-cabecalho">
+                    <h2 id="acoes-perfil-titulo">Opções</h2>
 
-            <input type="text" name="mensagem" id="mensagem" maxlength="2000" autocomplete="off" placeholder="Mensagem…">
+                    <button type="button" class="acoes-perfil-fechar" aria-label="Fechar" data-fechar-acoes>×</button>
+                </header>
 
-            <input type="submit" value="Enviar">
-        </form>
-    </div>
+                <button type="button" id="bloquear-membro" class="acao-perfil acao-perfil-perigosa">
+                    <strong>Bloquear</strong>
+                    <span>Deixam de se ver no mapa.</span>
+                </button>
 
-    <script>
-        window.safetyUrl = {{ (doc_root ~ 'safety')|json_encode|raw }};
-    </script>
+                <button type="button" id="abrir-denuncia" class="acao-perfil">
+                    <strong>Denunciar</strong>
+                    <span>Envia uma denúncia privada.</span>
+                </button>
 
-    <script src="{{ doc_root }}js/index-posicao.js?v=12"></script>
-    <script src="{{ doc_root }}js/index-mini-menu.js?v=11"></script>
-    <script src="{{ doc_root }}js/index-animacao.js?v=9"></script>
-    <script src="{{ doc_root }}js/index-tap-foto.js?v=10"></script>
+                <button type="button" class="acao-perfil-cancelar" data-fechar-acoes>Cancelar</button>
+            </div>
+
+            <form id="form-denuncia" class="form-denuncia" hidden>
+                <header class="acoes-perfil-cabecalho">
+                    <button type="button" id="voltar-denuncia" class="acoes-perfil-voltar" aria-label="Voltar">‹</button>
+
+                    <h2>Denunciar perfil</h2>
+
+                    <button type="button" class="acoes-perfil-fechar" aria-label="Fechar" data-fechar-acoes>×</button>
+                </header>
+
+                <label for="denuncia-motivo">Motivo</label>
+
+                <select name="motivo" id="denuncia-motivo" required>
+                    <option value="">Escolhe um motivo</option>
+                    <option value="comportamento_inadequado">Comportamento inadequado</option>
+                    <option value="assedio">Assédio</option>
+                    <option value="perfil_falso">Perfil falso</option>
+                    <option value="spam">Spam</option>
+                    <option value="seguranca">Questão de segurança</option>
+                    <option value="outro">Outro</option>
+                </select>
+
+                <label for="denuncia-mensagem">Explica o que aconteceu <span>(opcional)</span></label>
+
+                <textarea name="mensagem" id="denuncia-mensagem" maxlength="2048" rows="5" placeholder="Escreve aqui…"></textarea>
+
+                <button type="submit" class="denuncia-enviar">Enviar denúncia</button>
+            </form>
+        </div>
+    </section>
+
+    <button type="button" class="ola" id="enviar-hey">Hey</button>
+
+    <form action="" method="post" enctype="multipart/form-data" class="mini-menu-mensagem">
+        <label for="mini-menu-media" class="mini-menu-anexo" aria-label="Adicionar fotografia ou vídeo">+</label>
+
+        <input type="file" name="media" id="mini-menu-media" accept="image/*,video/*" hidden>
+
+        <input type="text" name="mensagem" id="mensagem" maxlength="2000" autocomplete="off" placeholder="Mensagem…">
+
+        <input type="submit" value="Enviar">
+    </form>
+</div>
+
+<script>
+    window.safetyUrl = {{ (doc_root ~ 'safety')|json_encode|raw }};
+</script>
+
+<script src="{{ doc_root }}js/index-posicao.js?v=12"></script>
+<script src="{{ doc_root }}js/index-mini-menu.js?v=11"></script>
+<script src="{{ doc_root }}js/index-animacao.js?v=9"></script>
+<script src="{{ doc_root }}js/index-tap-foto.js?v=10"></script>
 {% endblock %}

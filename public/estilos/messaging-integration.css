@@ -117,11 +117,19 @@
     -webkit-line-clamp: 2;
 }
 
+.mini-menu > header {
+    width: 100%;
+}
+
+.mini-menu > header > .mini-menu-perfil {
+    width: 100%;
+}
+
 .mais-opcoes {
     position: absolute;
-    top: -8px;
+    top: 0;
     right: max(18px, env(safe-area-inset-right, 0px));
-    z-index: 4;
+    z-index: 10;
     width: 48px;
     height: 48px;
     padding: 0;
@@ -129,18 +137,24 @@
     border-radius: 50%;
     background: transparent;
     color: #111;
+    -webkit-appearance: none;
+    appearance: none;
     cursor: pointer;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: visible;
 }
 
-.mais-opcoes span {
+.mais-opcoes svg {
     display: block;
-    margin-top: -9px;
-    font-size: 28px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    line-height: 48px;
+    width: 28px;
+    height: 28px;
+    overflow: visible;
+    fill: currentColor;
+    pointer-events: none;
 }
 
 .mais-opcoes:active {
