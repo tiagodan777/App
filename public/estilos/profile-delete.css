@@ -29,7 +29,7 @@ main#profile-delete > section#apagar > h1 {
 main#profile-delete > section#apagar > section.dados > p {
     font-weight: bold;
     color: var(--cor4);
-    margin-top: 210px;
+    margin-top: 50px;
     margin-bottom: 20px;
     margin-left: 0px;
 }
