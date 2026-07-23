@@ -144,8 +144,8 @@ img {
 }
 
 .mini-menu > header > span {
-    font-weight: 2em;
-    
+    font-size: 2em;
+
     position: absolute;
     top: 10px;
     left: 90%;
