@@ -348,4 +348,15 @@
         'app:hey-erro',
         libertarHey
     );
+
+    $(document).on('click', '.mais-opcoes', function() {
+        var $div = $('<div class="area-bloquear-denunciar">');
+        var $bloquear = $('<input type="button" value="Bloquear" class="bloquear">');
+        var $denunciar = $('<input type"button" value="Denunciar" class="denunciar">');
+
+        $div.append($bloquear);
+        $div.append($denunciar);
+        
+        $miniMenu.append($div);
+    })
 })(window, document, jQuery);
