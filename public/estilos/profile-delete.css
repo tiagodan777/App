@@ -2,6 +2,11 @@
 
 main#profile-delete {
     width: 100vw;
+
+    display: flex;
+    flex-flow: column nowrap;
+    justify-content: space-evenly;
+    align-items: center;
 }   
 
 main#profile-delete > section#apagar {
