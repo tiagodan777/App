@@ -11,6 +11,7 @@
     "minimum-stability": "stable",
     "require": {
         "twig/twig": "^3.27",
-        "cboden/ratchet": "^0.4.4"
+        "cboden/ratchet": "^0.4.4",
+        "phpmailer/phpmailer": "^7.1"
     }
 }
