@@ -11,7 +11,7 @@
             <h2>Apagar Perfil</h2>
             <section class="dados" id="dados-apagar">
                 <p>Confirma para apagares o teu perfil</p>
-                <img src="{{ doc_root }}imagens/fotos-perfil/{{ membro.fotos[0] }}" alt="Foto de perfil de {{ membro.primeiro_nome }}" id="foto-perfil">
+                <img src="{{ doc_root }}imagens/fotos-perfil/{{ membro.fotos[0]['nome_arquivo'] }}" alt="Foto de perfil de {{ membro.primeiro_nome }}" id="foto-perfil">
             </section>
             <section class="opcoes" id="opcoes-apagar">
                 <form action="{{ doc_root }}profile-delete/{{ membro.id }}" method="post">
