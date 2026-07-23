@@ -151,6 +151,8 @@ img {
     position: absolute;
     top: 75%;
     left: 90%;
+
+    z-index: 1000;
 }
 
 .mini-menu > div {
