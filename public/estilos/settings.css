@@ -54,8 +54,8 @@ main > nav > ul > li > a {
     align-items: center;
 }
 
-main > nav > ul > li > img {
-    width: 20px;
-    height: 20px;
+main > nav > ul > li > a > img {
+    width: 35px;
+    height: 35px;
     margin-right: 45px;
 }
