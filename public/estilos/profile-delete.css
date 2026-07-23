@@ -67,7 +67,8 @@ main#profile-delete > section#apagar > section.opcoes > form > a {
     border: 1px solid transparent;
     padding: 10px;
     text-transform: uppercase;
-    font-weight: bold
+    font-weight: bold;
+    color: #28a35f;
 }
 
 main#profile-delete > section#apagar > section.opcoes > form > a:hover {
@@ -85,6 +86,7 @@ main#profile-delete > section#apagar > section.opcoes > form > input[type="submi
     text-transform: uppercase;
     font-weight: bold;
     cursor: pointer;
+    color: #cf264b;
 }
 
 main#profile-delete > section#apagar > section.opcoes > form > input[type="submit"]:hover {
