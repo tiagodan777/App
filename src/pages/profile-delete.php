@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD']  == 'POST') {
     $subject = 'Desejas mesmo deixar a Margot?';
     $body = 'É uma pena ver-te a deixar a nossa plataforma. Se pretenderes seguir com a tua decisão, clica no link <a href="' . $link . '">' . $link . '</a> para que a tua conta e todos os teus dados sejam apagados.';
     $message = 'Foi-te enviado um email para confirmares a remoção da tua conta';
-    $mail = new \TiagoDaniel\Email\Email($email_config);
+    $mail = new \App\Email\Email($email_config);
     $sent = $mail->sendEmail($email_config['admin_email'], $email, $subject, $body);
 }
 
