@@ -349,7 +349,7 @@
         libertarHey
     );
 
-    $(document).on('click', '.mais-opcoes', function() {
+    $(document).on('pointerdown', '.mais-opcoes', function() {
         var $div = $('<div class="area-bloquear-denunciar">');
         var $bloquear = $('<input type="button" value="Bloquear" class="bloquear">');
         var $denunciar = $('<input type"button" value="Denunciar" class="denunciar">');
