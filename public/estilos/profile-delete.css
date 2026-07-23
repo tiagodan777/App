@@ -1,0 +1,84 @@
+@charset "UTF-8";
+
+main#profile-delete {
+    width: 100vw;
+}   
+
+main#profile-delete > section#apagar {
+    width: 500px;
+    height: 600px;
+
+    display: flex;
+    flex-flow: column nowrap;
+    justify-content: space-evenly;
+    align-items: center;
+}
+
+main#profile-delete > section#apagar > h2 {
+    margin-bottom: -100px;
+    margin-top: 90px;
+} 
+
+main#profile-delete > section#apagar > section.dados > p {
+    font-weight: bold;
+    color: var(--cor4);
+    margin-top: 210px;
+    margin-bottom: 20px;
+    margin-left: 0px;
+}
+
+main#profile-delete > section#apagar > section#dados-apagar {
+    display: flex;
+    flex-flow: column nowrap;
+    justify-items: center;
+    align-items: center;
+}
+
+main#profile-delete > section#apagar > section.dados > img {
+    width: 150px;
+    margin-top: 20px;
+    border-radius: 50%;
+    align-self: center;
+}
+
+main#profile-delete > section#apagar > section.opcoes > form {
+    width: 500px;
+    height: 100px;
+
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: space-around;
+    align-items: center;
+}
+
+main#profile-delete > section#apagar > section.opcoes > form > a {
+    text-decoration: none;
+    color: var(--cor5);
+    background-color: var(--cor2);
+    border-radius: 5px;
+    border: 1px solid transparent;
+    padding: 10px;
+    text-transform: uppercase;
+    font-weight: bold
+}
+
+main#profile-delete > section#apagar > section.opcoes > form > a:hover {
+    background-color: #28a35f;
+    cursor: pointer;
+}
+
+main#profile-delete > section#apagar > section.opcoes > form > input[type="submit"] {
+    text-decoration: none;
+    color: var(--cor5);
+    background-color: var(--cor3);
+    border-radius: 5px;
+    border: 1px solid transparent;
+    padding: 10px;
+    text-transform: uppercase;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+main#profile-delete > section#apagar > section.opcoes > form > input[type="submit"]:hover {
+    background-color: #cf264b;
+}
