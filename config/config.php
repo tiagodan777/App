@@ -10,7 +10,7 @@ $db = 'app';
 $port = '3306';
 $charset = 'utf8mb4';
 $username = 'admin';
-$password = 'NovaFaseDaVidaEm2026';
+$password = '';
 
 $dsn = "$type:host=$server;dbname=$db;port=$port;charset=$charset";
 
@@ -18,9 +18,9 @@ $email_config = [
     'server'   => 'smtp.sendgrid.net',
     'port'     => 587,
     'username' => 'apikey', // literal
-    'password' => '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', // a tua nova API key
+    'password' => '', // a tua nova API key
     'security' => 'tls',
-    'admin_email' => 'tiagoamdaniel.python@gmail.com',
+    'admin_email' => '',
     'debug' => (DEV) ? 2 : 0,
 ];
 
