@@ -2,7 +2,13 @@
 use Twig\Extra\Intl\IntlExtension;
 
 define('APP_ROOT', dirname(__FILE__, 2));
-require_once APP_ROOT . '/config/config.php';
+$configFile = APP_ROOT . '/config/config.local.php';
+
+if (!file_exists($configFile)) {
+    $configFile = APP_ROOT . '/config/config.php';
+}
+
+require_once $configFile;
 require_once APP_ROOT . '/src/functions.php';
 require APP_ROOT . '/vendor/autoload.php';
 
