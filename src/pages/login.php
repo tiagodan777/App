@@ -22,6 +22,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     if (!$invalid) {
         $membro = $cms->getMember()->login($utilizador, $password);
+        echo '<pre>';
+        echo $utilizador . '<br>';
+        echo $password . '<br>';
+        var_dump($membro);
+        echo '</pre>';
         if ($membro) {
             if ($lembrar) {
                 $token = $cms->getCookie()->create($membro);
