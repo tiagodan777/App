@@ -16,9 +16,9 @@ $dsn = "$type:host=$server;dbname=$db;port=$port;charset=$charset";
 
 $email_config = [
     'server'   => 'smtp.sendgrid.net',
-    'port'     => 587,
+    'port'     => 465,
     'username' => 'apikey', // literal
-    'password' => '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', // a tua nova API key
+    'password' => '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', // a tua nova API key
     'security' => 'tls',
     'admin_email' => 'tiagoamdaniel.python@gmail.com',
     'debug' => (DEV) ? 2 : 0,
