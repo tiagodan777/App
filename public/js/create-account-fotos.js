@@ -12,6 +12,7 @@
     let streamPerfil = null;
     let cameraPerfil = 'user';
     let capturaEmCurso = false;
+    let fotosAlteradas = false;
 
     function obterElementos() {
         return {
@@ -29,15 +30,22 @@
 
     function mostrarErro(mensagem) {
         const erro = obterElementos().erro;
+
         if (erro) erro.textContent = mensagem || '';
     }
 
     function gerarIdFoto() {
-        if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+        if (
+            window.crypto &&
+            typeof window.crypto.randomUUID === 'function'
+        ) {
             return window.crypto.randomUUID();
         }
 
-        return Date.now().toString(36) + Math.random().toString(36).substring(2);
+        return (
+            Date.now().toString(36) +
+            Math.random().toString(36).substring(2)
+        );
     }
 
     function normalizarNomeFicheiro(nome) {
@@ -86,19 +94,24 @@
         mostrarErro('');
 
         const ficheiros = Array.from(files || []);
+
         const ultrapassouLimite =
             ficheiros.length >
             MAX_FOTOS - window.fotosPerfil.length;
+
+        let adicionou = false;
 
         for (const file of ficheiros) {
             if (window.fotosPerfil.length >= MAX_FOTOS) break;
             if (!file.type || !file.type.startsWith('image/')) continue;
 
             const jaExiste = window.fotosPerfil.some(function (foto) {
-                return foto.file &&
+                return (
+                    foto.file &&
                     foto.file.name === file.name &&
                     foto.file.size === file.size &&
-                    foto.file.lastModified === file.lastModified;
+                    foto.file.lastModified === file.lastModified
+                );
             });
 
             if (jaExiste) continue;
@@ -110,7 +123,11 @@
                 url: URL.createObjectURL(file),
                 fallback: ''
             });
+
+            adicionou = true;
         }
+
+        if (adicionou) fotosAlteradas = true;
 
         if (ultrapassouLimite) {
             mostrarErro('Podes adicionar no máximo 6 fotografias.');
@@ -128,10 +145,14 @@
 
         const foto = window.fotosPerfil[indice];
 
-        if (foto.existente) fotosRemovidas.add(foto.dbId);
+        if (foto.existente) {
+            fotosRemovidas.add(foto.dbId);
+        }
 
         libertarUrl(foto);
+
         window.fotosPerfil.splice(indice, 1);
+        fotosAlteradas = true;
 
         mostrarErro('');
         renderizarFotos();
@@ -147,6 +168,9 @@
         const foto = window.fotosPerfil.splice(indice, 1)[0];
 
         window.fotosPerfil.unshift(foto);
+
+        fotosAlteradas = true;
+
         renderizarFotos();
     }
 
@@ -172,11 +196,14 @@
         cartao.className = 'perfil-foto-cartao';
         cartao.dataset.id = foto.id;
 
-        if (indice === 0) cartao.classList.add('principal');
+        if (indice === 0) {
+            cartao.classList.add('principal');
+        }
 
         const imagem = document.createElement('img');
 
         imagem.src = foto.url;
+
         imagem.alt = indice === 0
             ? 'Foto principal'
             : 'Foto de perfil ' + (indice + 1);
@@ -194,7 +221,10 @@
         remover.type = 'button';
         remover.className = 'perfil-remover-foto';
         remover.dataset.id = foto.id;
-        remover.setAttribute('aria-label', 'Remover fotografia');
+        remover.setAttribute(
+            'aria-label',
+            'Remover fotografia'
+        );
 
         remover.innerHTML =
             '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">' +
@@ -234,7 +264,9 @@
         lista.innerHTML = '';
 
         window.fotosPerfil.forEach(function (foto, indice) {
-            lista.appendChild(criarCartaoFoto(foto, indice));
+            lista.appendChild(
+                criarCartaoFoto(foto, indice)
+            );
         });
 
         for (
@@ -265,7 +297,10 @@
             !navigator.mediaDevices ||
             !navigator.mediaDevices.getUserMedia
         ) {
-            mostrarErro('A câmara não está disponível neste dispositivo.');
+            mostrarErro(
+                'A câmara não está disponível neste dispositivo.'
+            );
+
             return;
         }
 
@@ -296,14 +331,22 @@
 
             ui.interfaceCamera.style.display = 'flex';
 
-            if (ui.conteudo) ui.conteudo.style.display = 'none';
+            if (ui.conteudo) {
+                ui.conteudo.style.display = 'none';
+            }
 
-            document.body.classList.add('perfil-camera-aberta');
+            document.body.classList.add(
+                'perfil-camera-aberta'
+            );
 
             await ui.video.play();
         } catch (erro) {
             console.error(erro);
-            mostrarErro('Não foi possível abrir a câmara. Verifica as permissões.');
+
+            mostrarErro(
+                'Não foi possível abrir a câmara. Verifica as permissões.'
+            );
+
             fecharCamera();
         }
     }
@@ -317,7 +360,9 @@
 
         streamPerfil = null;
 
-        const video = document.getElementById('perfil-camera-video');
+        const video = document.getElementById(
+            'perfil-camera-video'
+        );
 
         if (video) video.srcObject = null;
     }
@@ -327,15 +372,23 @@
 
         pararCamera();
 
-        if (ui.interfaceCamera) ui.interfaceCamera.style.display = 'none';
-        if (ui.conteudo) ui.conteudo.style.display = 'flex';
+        if (ui.interfaceCamera) {
+            ui.interfaceCamera.style.display = 'none';
+        }
 
-        document.body.classList.remove('perfil-camera-aberta');
+        if (ui.conteudo) {
+            ui.conteudo.style.display = 'flex';
+        }
+
+        document.body.classList.remove(
+            'perfil-camera-aberta'
+        );
     }
 
     function criarCanvasProporcional(video, canvas) {
         const larguraOrigem = video.videoWidth;
         const alturaOrigem = video.videoHeight;
+
         const escala = Math.min(
             1,
             LADO_MAXIMO /
@@ -358,7 +411,9 @@
         const contexto = canvas.getContext('2d');
 
         if (!contexto) {
-            throw new Error('Não foi possível preparar a fotografia.');
+            throw new Error(
+                'Não foi possível preparar a fotografia.'
+            );
         }
 
         contexto.save();
@@ -388,8 +443,15 @@
     function canvasParaBlob(canvas) {
         return new Promise(function (resolve, reject) {
             canvas.toBlob(function (blob) {
-                if (blob) resolve(blob);
-                else reject(new Error('Não foi possível gerar a fotografia.'));
+                if (blob) {
+                    resolve(blob);
+                } else {
+                    reject(
+                        new Error(
+                            'Não foi possível gerar a fotografia.'
+                        )
+                    );
+                }
             }, 'image/jpeg', 0.92);
         });
     }
@@ -411,22 +473,33 @@
             ui.video.videoWidth === 0 ||
             ui.video.videoHeight === 0
         ) {
-            mostrarErro('A câmara ainda está a iniciar.');
+            mostrarErro(
+                'A câmara ainda está a iniciar.'
+            );
+
             return;
         }
 
         if (window.fotosPerfil.length >= MAX_FOTOS) {
-            mostrarErro('Já adicionaste o máximo de 6 fotografias.');
+            mostrarErro(
+                'Já adicionaste o máximo de 6 fotografias.'
+            );
+
             fecharCamera();
+
             return;
         }
 
         capturaEmCurso = true;
+
         ui.capturar.classList.add('a-capturar');
 
         try {
             const blob = await canvasParaBlob(
-                criarCanvasProporcional(ui.video, ui.canvas)
+                criarCanvasProporcional(
+                    ui.video,
+                    ui.canvas
+                )
             );
 
             const agora = Date.now();
@@ -445,15 +518,22 @@
             fecharCamera();
         } catch (erro) {
             console.error(erro);
-            mostrarErro('Não foi possível tirar a fotografia.');
+
+            mostrarErro(
+                'Não foi possível tirar a fotografia.'
+            );
         } finally {
             capturaEmCurso = false;
-            ui.capturar.classList.remove('a-capturar');
+
+            ui.capturar.classList.remove(
+                'a-capturar'
+            );
         }
     }
 
     function abrirSeletorFotos() {
         const input = obterElementos().input;
+
         if (input) input.click();
     }
 
@@ -462,11 +542,17 @@
 
     window.validarFotosPerfil = function () {
         mostrarErro('');
+
         return true;
     };
 
     window.adicionarFotosPerfilAoFormData = function (formData) {
         let indiceNova = 0;
+
+        formData.append(
+            'fotos_alteradas',
+            fotosAlteradas ? '1' : '0'
+        );
 
         window.fotosPerfil.forEach(function (foto, indice) {
             if (foto.existente) {
@@ -485,20 +571,35 @@
                 '.jpg'
             );
 
-            formData.append('imagens[]', foto.file, nome);
-            formData.append('ordem_fotos[]', 'nova:' + indiceNova);
+            formData.append(
+                'imagens[]',
+                foto.file,
+                nome
+            );
+
+            formData.append(
+                'ordem_fotos[]',
+                'nova:' + indiceNova
+            );
 
             indiceNova++;
         });
 
         fotosRemovidas.forEach(function (id) {
-            formData.append('fotos_remover[]', id);
+            formData.append(
+                'fotos_remover[]',
+                id
+            );
         });
     };
 
     inicializarFotosExistentes();
 
-    $(document).on('click', '#perfil-tirar-foto', iniciarCamera);
+    $(document).on(
+        'click',
+        '#perfil-tirar-foto',
+        iniciarCamera
+    );
 
     $(document).on(
         'click',
@@ -506,36 +607,71 @@
         abrirSeletorFotos
     );
 
-    $(document).on('change', '#perfil-input-fotos', function () {
-        if (!this.files || !this.files.length) return;
+    $(document).on(
+        'change',
+        '#perfil-input-fotos',
+        function () {
+            if (!this.files || !this.files.length) return;
 
-        adicionarFicheiros(this.files);
-        this.value = '';
+            adicionarFicheiros(this.files);
 
-        fecharCamera();
-    });
+            this.value = '';
 
-    $(document).on('click', '.perfil-remover-foto', function (evento) {
-        evento.stopPropagation();
-        removerFoto(String($(this).data('id')));
-    });
+            fecharCamera();
+        }
+    );
 
-    $(document).on('click', '.perfil-definir-principal', function (evento) {
-        evento.stopPropagation();
-        definirComoPrincipal(String($(this).data('id')));
-    });
+    $(document).on(
+        'click',
+        '.perfil-remover-foto',
+        function (evento) {
+            evento.stopPropagation();
 
-    $(document).on('click', '#perfil-fechar-camera', fecharCamera);
-    $(document).on('click', '#perfil-capturar-foto', capturarFoto);
+            removerFoto(
+                String($(this).data('id'))
+            );
+        }
+    );
 
-    $(document).on('click', '#perfil-trocar-camera', function () {
-        cameraPerfil =
-            cameraPerfil === 'user'
-                ? 'environment'
-                : 'user';
+    $(document).on(
+        'click',
+        '.perfil-definir-principal',
+        function (evento) {
+            evento.stopPropagation();
 
-        iniciarCamera();
-    });
+            definirComoPrincipal(
+                String($(this).data('id'))
+            );
+        }
+    );
 
-    window.addEventListener('pagehide', pararCamera);
+    $(document).on(
+        'click',
+        '#perfil-fechar-camera',
+        fecharCamera
+    );
+
+    $(document).on(
+        'click',
+        '#perfil-capturar-foto',
+        capturarFoto
+    );
+
+    $(document).on(
+        'click',
+        '#perfil-trocar-camera',
+        function () {
+            cameraPerfil =
+                cameraPerfil === 'user'
+                    ? 'environment'
+                    : 'user';
+
+            iniciarCamera();
+        }
+    );
+
+    window.addEventListener(
+        'pagehide',
+        pararCamera
+    );
 })(window, document, jQuery);

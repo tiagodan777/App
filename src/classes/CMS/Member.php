@@ -52,10 +52,20 @@ class Member
         $gostos = $this->normalizarGostos($membro['gostos'] ?? []);
         unset($membro['dia'], $membro['mes'], $membro['ano'], $membro['gostos']);
 
-        $membro['password'] = password_hash((string) $membro['password'], PASSWORD_DEFAULT);
+        $membro['email'] = $this->normalizarEmail((string) ($membro['email'] ?? ''));
+        $membro['telefone'] = $this->normalizarTelefone((string) ($membro['telefone'] ?? ''));
+
+        $passwordHash = password_hash((string) $membro['password'], PASSWORD_DEFAULT);
+
+        if ($passwordHash === false) {
+            throw new \RuntimeException('Não foi possível proteger a palavra-passe.');
+        }
+
+        $membro['password'] = $passwordHash;
+        $gerirTransacao = !$this->db->inTransaction();
 
         try {
-            $this->db->beginTransaction();
+            if ($gerirTransacao) $this->db->beginTransaction();
 
             $sql = "INSERT INTO membros (primeiro_nome, ultimo_nome, nascimento, genero, objetivo, telefone, email, bio, password, nome_seo)
                     VALUES (:primeiro_nome, :ultimo_nome, :nascimento, :genero, :objetivo, :telefone, :email, :bio, :password, :nome_seo)";
@@ -78,19 +88,26 @@ class Member
                 ['email' => $membro['email']]
             )->fetchColumn();
 
-            if (!$id) throw new \RuntimeException('Não foi possível obter o ID do membro criado.');
+            if (!$id) {
+                throw new \RuntimeException('Não foi possível obter o ID do membro criado.');
+            }
 
             $id = (string) $id;
+
             $this->sincronizarGostos($id, $gostos);
-            $this->db->commit();
+
+            if ($gerirTransacao) $this->db->commit();
 
             return $id;
         } catch (\PDOException $erro) {
-            if ($this->db->inTransaction()) $this->db->rollBack();
+            if ($gerirTransacao && $this->db->inTransaction()) $this->db->rollBack();
+
             if ((int) ($erro->errorInfo[1] ?? 0) === 1062) return false;
+
             throw $erro;
         } catch (\Throwable $erro) {
-            if ($this->db->inTransaction()) $this->db->rollBack();
+            if ($gerirTransacao && $this->db->inTransaction()) $this->db->rollBack();
+
             throw $erro;
         }
     }
@@ -100,10 +117,14 @@ class Member
         $gostos = $this->normalizarGostos($membro['gostos'] ?? []);
         unset($membro['dia'], $membro['mes'], $membro['ano'], $membro['gostos']);
 
+        $membro['email'] = $this->normalizarEmail((string) ($membro['email'] ?? ''));
+        $membro['telefone'] = $this->normalizarTelefone((string) ($membro['telefone'] ?? ''));
+
         $alterarPassword = (string) ($membro['password'] ?? '') !== '';
+        $gerirTransacao = !$this->db->inTransaction();
 
         try {
-            $this->db->beginTransaction();
+            if ($gerirTransacao) $this->db->beginTransaction();
 
             $sql = "UPDATE membros SET primeiro_nome = :primeiro_nome, ultimo_nome = :ultimo_nome, nascimento = :nascimento, genero = :genero,
                     objetivo = :objetivo, telefone = :telefone, email = :email, bio = :bio, nome_seo = :nome_seo";
@@ -122,25 +143,49 @@ class Member
             ];
 
             if ($alterarPassword) {
+                $passwordHash = password_hash((string) $membro['password'], PASSWORD_DEFAULT);
+
+                if ($passwordHash === false) {
+                    throw new \RuntimeException('Não foi possível proteger a nova palavra-passe.');
+                }
+
                 $sql .= ', password = :password';
-                $parametros['password'] = password_hash((string) $membro['password'], PASSWORD_DEFAULT);
+                $parametros['password'] = $passwordHash;
             }
 
             $sql .= ' WHERE id = :id';
 
             $this->db->runSQL($sql, $parametros);
             $this->sincronizarGostos($id, $gostos);
-            $this->db->commit();
+
+            if ($gerirTransacao) $this->db->commit();
 
             return true;
         } catch (\PDOException $erro) {
-            if ($this->db->inTransaction()) $this->db->rollBack();
+            if ($gerirTransacao && $this->db->inTransaction()) $this->db->rollBack();
+
             if ((int) ($erro->errorInfo[1] ?? 0) === 1062) return false;
+
             throw $erro;
         } catch (\Throwable $erro) {
-            if ($this->db->inTransaction()) $this->db->rollBack();
+            if ($gerirTransacao && $this->db->inTransaction()) $this->db->rollBack();
+
             throw $erro;
         }
+    }
+
+    private function normalizarEmail(string $email): string
+    {
+        $email = trim($email);
+
+        return function_exists('mb_strtolower')
+            ? mb_strtolower($email, 'UTF-8')
+            : strtolower($email);
+    }
+
+    private function normalizarTelefone(string $telefone): string
+    {
+        return (string) preg_replace('/\D+/', '', trim($telefone));
     }
 
     private function normalizarGostos($gostos): array
@@ -177,6 +222,10 @@ class Member
 
     public function login(string $utilizador, string $password): array|false
     {
+        $utilizador = trim($utilizador);
+
+        if ($utilizador === '' || $password === '') return false;
+
         $sql = "SELECT m.id, m.primeiro_nome, m.ultimo_nome, m.nascimento, m.genero, m.objetivo, m.email, m.telefone, m.password, m.adesao, m.bio,
                 m.nome_seo, COALESCE(
                     (
@@ -189,16 +238,39 @@ class Member
                     ),
                     'default.webp'
                 ) AS foto_perfil
-                FROM membros AS m
-                WHERE m.email = :utilizador_email OR m.telefone = :utilizador_telefone
-                LIMIT 1";
+                FROM membros AS m";
 
-        $membro = $this->db->runSQL($sql, [
-            'utilizador_email' => $utilizador,
-            'utilizador_telefone' => $utilizador
-        ])->fetch();
+        if (filter_var($utilizador, FILTER_VALIDATE_EMAIL)) {
+            $sql .= ' WHERE LOWER(TRIM(m.email)) = :utilizador LIMIT 1';
+            $identificador = $this->normalizarEmail($utilizador);
+        } else {
+            $sql .= " WHERE REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+                        TRIM(m.telefone), '+', ''), ' ', ''), '-', ''), '(', ''), ')', ''), '.', ''), '/', '') = :utilizador
+                    LIMIT 1";
 
-        if (!$membro || !password_verify($password, (string) $membro['password'])) return false;
+            $identificador = $this->normalizarTelefone($utilizador);
+        }
+
+        if ($identificador === '') return false;
+
+        $membro = $this->db->runSQL($sql, ['utilizador' => $identificador])->fetch();
+
+        if (!$membro || !password_verify($password, (string) $membro['password'])) {
+            return false;
+        }
+
+        if (password_needs_rehash((string) $membro['password'], PASSWORD_DEFAULT)) {
+            $novoHash = password_hash($password, PASSWORD_DEFAULT);
+
+            if ($novoHash !== false) {
+                $this->db->runSQL(
+                    'UPDATE membros SET password = :password WHERE id = :id',
+                    ['password' => $novoHash, 'id' => $membro['id']]
+                );
+            }
+        }
+
+        unset($membro['password']);
 
         return $membro;
     }
@@ -206,6 +278,7 @@ class Member
     public function delete(string $id): bool
     {
         $id = trim($id);
+
         if ($id === '') return false;
 
         $fotos = [];
@@ -258,6 +331,7 @@ class Member
             $this->db->commit();
         } catch (\Throwable $erro) {
             if ($this->db->inTransaction()) $this->db->rollBack();
+
             throw $erro;
         }
 
@@ -280,6 +354,7 @@ class Member
     {
         foreach (array_unique($nomes) as $nome) {
             $nome = basename(trim((string) $nome));
+
             if ($nome === '' || in_array($nome, $protegidos, true)) continue;
 
             foreach ($pastas as $pasta) {
@@ -290,7 +365,12 @@ class Member
                         error_log('Não foi possível apagar o ficheiro: ' . $caminho);
                     }
                 } catch (\Throwable $erro) {
-                    error_log('Não foi possível apagar o ficheiro ' . $caminho . ': ' . $erro->getMessage());
+                    error_log(
+                        'Não foi possível apagar o ficheiro ' .
+                        $caminho .
+                        ': ' .
+                        $erro->getMessage()
+                    );
                 }
             }
         }

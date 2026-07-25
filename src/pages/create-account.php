@@ -25,7 +25,10 @@ function apagarImagensTemporariasCreateAccount(array $imagens, string $pasta): v
 {
     foreach ($imagens as $imagem) {
         $nome = basename((string) $imagem);
-        if ($nome !== '' && is_file($pasta . $nome)) @unlink($pasta . $nome);
+
+        if ($nome !== '' && is_file($pasta . $nome)) {
+            @unlink($pasta . $nome);
+        }
     }
 }
 
@@ -64,11 +67,12 @@ function sincronizarFotosCreateAccount(
     array $imagensNovas,
     array $ordemPedida,
     array $idsRemover
-): void {
+): array {
     $nomesApagar = [];
+    $gerirTransacao = !$db->inTransaction();
 
     try {
-        $db->beginTransaction();
+        if ($gerirTransacao) $db->beginTransaction();
 
         $registos = $db->runSQL(
             'SELECT id, nome_arquivo, status FROM fotos_perfil WHERE membro_id = :membro_id FOR UPDATE',
@@ -82,7 +86,9 @@ function sincronizarFotosCreateAccount(
             $id = (string) $registo['id'];
             $existentes[$id] = $registo;
 
-            if (($registo['status'] ?? '') === 'erro') $remover[$id] = true;
+            if (($registo['status'] ?? '') === 'erro') {
+                $remover[$id] = true;
+            }
         }
 
         $itens = [];
@@ -93,33 +99,50 @@ function sincronizarFotosCreateAccount(
             if (preg_match('/^existente:(.+)$/', $token, $partes)) {
                 $id = trim($partes[1]);
 
-                if (!isset($existentes[$id]) || isset($remover[$id]) || isset($existentesUsados[$id])) continue;
+                if (
+                    !isset($existentes[$id]) ||
+                    isset($remover[$id]) ||
+                    isset($existentesUsados[$id])
+                ) {
+                    continue;
+                }
 
                 $existentesUsados[$id] = true;
                 $itens[] = ['tipo' => 'existente', 'id' => $id];
+
                 continue;
             }
 
             if (preg_match('/^nova:(\d+)$/', $token, $partes)) {
                 $indice = (int) $partes[1];
 
-                if (!isset($imagensNovas[$indice]) || isset($novasUsadas[$indice])) continue;
+                if (!isset($imagensNovas[$indice]) || isset($novasUsadas[$indice])) {
+                    continue;
+                }
 
                 $novasUsadas[$indice] = true;
-                $itens[] = ['tipo' => 'nova', 'nome' => $imagensNovas[$indice]];
+                $itens[] = [
+                    'tipo' => 'nova',
+                    'nome' => $imagensNovas[$indice]
+                ];
             }
         }
 
         foreach ($existentes as $id => $registo) {
             if (isset($remover[$id]) || isset($existentesUsados[$id])) continue;
+
             $itens[] = ['tipo' => 'existente', 'id' => $id];
         }
 
         foreach ($imagensNovas as $indice => $nome) {
-            if (!isset($novasUsadas[$indice])) $itens[] = ['tipo' => 'nova', 'nome' => $nome];
+            if (!isset($novasUsadas[$indice])) {
+                $itens[] = ['tipo' => 'nova', 'nome' => $nome];
+            }
         }
 
-        if (count($itens) > 6) throw new \LengthException('Podes manter no máximo 6 fotografias.');
+        if (count($itens) > 6) {
+            throw new \LengthException('Podes manter no máximo 6 fotografias.');
+        }
 
         foreach ($remover as $id => $_) {
             if (!isset($existentes[$id])) continue;
@@ -141,7 +164,11 @@ function sincronizarFotosCreateAccount(
             if ($item['tipo'] === 'existente') {
                 $db->runSQL(
                     'UPDATE fotos_perfil SET ordem = :ordem WHERE id = :id AND membro_id = :membro_id',
-                    ['ordem' => $ordem, 'id' => $item['id'], 'membro_id' => $membroId]
+                    [
+                        'ordem' => $ordem,
+                        'id' => $item['id'],
+                        'membro_id' => $membroId
+                    ]
                 );
 
                 continue;
@@ -159,10 +186,12 @@ function sincronizarFotosCreateAccount(
             );
         }
 
-        $db->commit();
-        apagarFicheirosDePerfil($nomesApagar);
+        if ($gerirTransacao) $db->commit();
+
+        return $nomesApagar;
     } catch (\Throwable $erro) {
-        if ($db->inTransaction()) $db->rollBack();
+        if ($gerirTransacao && $db->inTransaction()) $db->rollBack();
+
         throw $erro;
     }
 }
@@ -189,6 +218,7 @@ function iniciarWorkerFotosCreateAccount(string $membroId): void
 }
 
 $metodo = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+
 $modoEdicao = $metodo === 'POST'
     ? (($_POST['modo'] ?? '') === 'editar')
     : (($_GET['editar'] ?? '') === '1');
@@ -235,15 +265,23 @@ if ($metodo !== 'POST') {
         ];
 
         foreach ($membroAtual['fotos'] ?? [] as $foto) {
-            if (empty($foto['id']) || ($foto['nome_arquivo'] ?? '') === 'default.webp') continue;
+            if (empty($foto['id']) || ($foto['nome_arquivo'] ?? '') === 'default.webp') {
+                continue;
+            }
 
             $nome = basename((string) $foto['nome_arquivo']);
 
             $fotosExistentes[] = [
                 'id' => (string) $foto['id'],
                 'nome' => $nome,
-                'url' => urlCreateAccount('imagens/fotos-perfil-originais/' . rawurlencode($nome)),
-                'fallback' => urlCreateAccount('imagens/fotos-perfil/' . rawurlencode($nome))
+                'url' => urlCreateAccount(
+                    'imagens/fotos-perfil-originais/' .
+                    rawurlencode($nome)
+                ),
+                'fallback' => urlCreateAccount(
+                    'imagens/fotos-perfil/' .
+                    rawurlencode($nome)
+                )
             ];
         }
     }
@@ -253,8 +291,13 @@ if ($metodo !== 'POST') {
         'membro_id_edicao' => $modoEdicao ? $membroIdSessao : '',
         'dados_iniciais' => $dadosIniciais,
         'fotos_existentes' => $fotosExistentes,
-        'campos_url' => urlCreateAccount('create-account-campos' . ($modoEdicao ? '?editar=1' : '')),
-        'perfil_url' => $modoEdicao ? urlCreateAccount('profile/' . rawurlencode($membroIdSessao)) : ''
+        'campos_url' => urlCreateAccount(
+            'create-account-campos' .
+            ($modoEdicao ? '?editar=1' : '')
+        ),
+        'perfil_url' => $modoEdicao
+            ? urlCreateAccount('profile/' . rawurlencode($membroIdSessao))
+            : ''
     ]);
 
     exit;
@@ -330,6 +373,7 @@ if (isset($_FILES['imagens']['tmp_name']) && is_array($_FILES['imagens']['tmp_na
         }
 
         $mime = finfo_file($finfo, $temp);
+
         finfo_close($finfo);
 
         $mimesPermitidos = [
@@ -342,7 +386,16 @@ if (isset($_FILES['imagens']['tmp_name']) && is_array($_FILES['imagens']['tmp_na
         ];
 
         $extensao = strtolower(pathinfo($nomeOriginal, PATHINFO_EXTENSION));
-        $extensoesPermitidas = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif'];
+
+        $extensoesPermitidas = [
+            'jpg',
+            'jpeg',
+            'png',
+            'gif',
+            'webp',
+            'heic',
+            'heif'
+        ];
 
         if (!is_string($mime) || !in_array($mime, $mimesPermitidos, true)) {
             $erros['imagens'] = 'Tipo de imagem não suportado. Usa JPEG, PNG, GIF, WebP ou HEIC.';
@@ -429,7 +482,7 @@ $erros['objetivo'] = in_array($membro['objetivo'], $objetivosPermitidos, true)
     ? ''
     : 'Escolhe o que procuras na Margot.';
 
-$erros['telefone'] = Validate::isNumber($membro['telefone'], 0, 99999999999)
+$erros['telefone'] = $membro['telefone'] === '' || Validate::isPhone($membro['telefone'])
     ? ''
     : 'Introduz um número de telefone válido.';
 
@@ -441,35 +494,70 @@ $erros['sobre_ti'] = Validate::isText($membro['sobre_ti'], 0, 1000)
     ? ''
     : 'A descrição pode ter no máximo 1000 caracteres.';
 
-$alterarPassword = !$modoEdicao || $membro['password'] !== '' || $confirmaPassword !== '';
+$alterarPassword =
+    !$modoEdicao ||
+    $membro['password'] !== '' ||
+    $confirmaPassword !== '';
 
 if ($alterarPassword) {
     $erros['password'] = Validate::isPassword($membro['password'])
         ? ''
         : 'A palavra-passe deve ter pelo menos 8 caracteres, uma minúscula, uma maiúscula e um número.';
 
-    $erros['confirma_password'] = hash_equals($membro['password'], $confirmaPassword)
+    $erros['confirma_password'] = hash_equals(
+        $membro['password'],
+        $confirmaPassword
+    )
         ? ''
         : 'As palavras-passe não são idênticas.';
 }
 
-$erros = array_filter($erros, static fn($erro): bool => $erro !== '');
+$erros = array_filter(
+    $erros,
+    static fn($erro): bool => $erro !== ''
+);
 
 if ($erros) {
-    apagarImagensTemporariasCreateAccount($imagens, $pathImagensTemporarias);
-    responderJsonCreateAccount(['success' => false, 'erros' => $erros], 422);
+    apagarImagensTemporariasCreateAccount(
+        $imagens,
+        $pathImagensTemporarias
+    );
+
+    responderJsonCreateAccount([
+        'success' => false,
+        'erros' => $erros
+    ], 422);
 }
 
-$membro['nascimento'] = sprintf('%04d-%02d-%02d', $ano, $mes, $dia);
+$membro['nascimento'] = sprintf(
+    '%04d-%02d-%02d',
+    $ano,
+    $mes,
+    $dia
+);
+
 unset($membro['dia'], $membro['mes'], $membro['ano']);
 
+$transacaoEscrita = false;
+$nomesFotosApagar = [];
+
 try {
+    $db->beginTransaction();
+    $transacaoEscrita = true;
+
     if ($modoEdicao) {
         $membroId = $membroIdSessao;
         $atualizado = $cms->getMember()->update($membroId, $membro);
 
         if (!$atualizado) {
-            apagarImagensTemporariasCreateAccount($imagens, $pathImagensTemporarias);
+            if ($db->inTransaction()) $db->rollBack();
+
+            $transacaoEscrita = false;
+
+            apagarImagensTemporariasCreateAccount(
+                $imagens,
+                $pathImagensTemporarias
+            );
 
             responderJsonCreateAccount([
                 'success' => false,
@@ -482,7 +570,14 @@ try {
         $membroId = $cms->getMember()->create($membro);
 
         if ($membroId === false) {
-            apagarImagensTemporariasCreateAccount($imagens, $pathImagensTemporarias);
+            if ($db->inTransaction()) $db->rollBack();
+
+            $transacaoEscrita = false;
+
+            apagarImagensTemporariasCreateAccount(
+                $imagens,
+                $pathImagensTemporarias
+            );
 
             responderJsonCreateAccount([
                 'success' => false,
@@ -495,11 +590,21 @@ try {
         $membroId = (string) $membroId;
     }
 
-    $ordemFotos = normalizarListaCreateAccount($_POST['ordem_fotos'] ?? []);
-    $fotosRemover = normalizarListaCreateAccount($_POST['fotos_remover'] ?? []);
+    $ordemFotos = normalizarListaCreateAccount(
+        $_POST['ordem_fotos'] ?? []
+    );
 
-    if ($modoEdicao || $imagens) {
-        sincronizarFotosCreateAccount(
+    $fotosRemover = normalizarListaCreateAccount(
+        $_POST['fotos_remover'] ?? []
+    );
+
+    $fotosAlteradas =
+        $imagens !== [] ||
+        $fotosRemover !== [] ||
+        (($_POST['fotos_alteradas'] ?? '') === '1');
+
+    if ($fotosAlteradas) {
+        $nomesFotosApagar = sincronizarFotosCreateAccount(
             $db,
             $membroId,
             $imagens,
@@ -508,36 +613,74 @@ try {
         );
     }
 
-    if ($imagens) iniciarWorkerFotosCreateAccount($membroId);
+    if ($transacaoEscrita) {
+        $db->commit();
+        $transacaoEscrita = false;
+    }
+
+    if ($nomesFotosApagar) {
+        apagarFicheirosDePerfil($nomesFotosApagar);
+    }
+
+    if ($imagens) {
+        iniciarWorkerFotosCreateAccount($membroId);
+    }
 
     if ($modoEdicao) {
         responderJsonCreateAccount([
             'success' => true,
-            'redirect' => urlCreateAccount('profile/' . rawurlencode($membroId))
+            'redirect' => urlCreateAccount(
+                'profile/' .
+                rawurlencode($membroId)
+            )
         ]);
     }
 
     $cms->getSession()->create(membro_id: $membroId);
-    $tokenLogin = $cms->getToken()->create($membroId, 'login');
+
+    $tokenLogin = $cms->getToken()->create(
+        $membroId,
+        'login'
+    );
 
     responderJsonCreateAccount([
         'success' => true,
         'redirect' => urlCreateAccount(
-            'index/?loginToken=' . urlencode((string) $tokenLogin)
+            'index/?loginToken=' .
+            urlencode((string) $tokenLogin)
         )
     ]);
 } catch (\LengthException $erro) {
-    apagarImagensTemporariasCreateAccount($imagens, $pathImagensTemporarias);
+    if ($transacaoEscrita && $db->inTransaction()) {
+        $db->rollBack();
+    }
+
+    apagarImagensTemporariasCreateAccount(
+        $imagens,
+        $pathImagensTemporarias
+    );
 
     responderJsonCreateAccount([
         'success' => false,
-        'erros' => ['imagens' => $erro->getMessage()]
+        'erros' => [
+            'imagens' => $erro->getMessage()
+        ]
     ], 422);
 } catch (\Throwable $erro) {
-    apagarImagensTemporariasCreateAccount($imagens, $pathImagensTemporarias);
+    if ($transacaoEscrita && $db->inTransaction()) {
+        $db->rollBack();
+    }
+
+    apagarImagensTemporariasCreateAccount(
+        $imagens,
+        $pathImagensTemporarias
+    );
 
     error_log(
-        ($modoEdicao ? 'Erro ao atualizar perfil: ' : 'Erro ao criar conta: ') .
+        ($modoEdicao
+            ? 'Erro ao atualizar perfil: '
+            : 'Erro ao criar conta: '
+        ) .
         $erro->getMessage()
     );
 
