@@ -16,7 +16,7 @@ $dsn = "$type:host=$server;dbname=$db;port=$port;charset=$charset";
 
 $email_config = [
     'server'   => 'smtp.sendgrid.net',
-    'port'     => 465,
+    'port'     => 587,
     'username' => 'apikey', // literal
     'password' => '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', // a tua nova API key
     'security' => 'tls',
