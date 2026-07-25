@@ -2,7 +2,7 @@
 define('DEV', false);
 define("ROOT_FOLTER", 'public');
 define("DOC_ROOT", '/');
-define('DOMAIN', 'http://34.14.62.235/');
+define('DOMAIN', 'https://margot-app.com/');
 
 $type = 'mysql';
 $server = 'localhost';
