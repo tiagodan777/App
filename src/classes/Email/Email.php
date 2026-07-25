@@ -14,7 +14,7 @@ class Email {
         $this->phpmailer->Port = $email_config['port'];
         $this->phpmailer->Username = $email_config['username'];
         $this->phpmailer->Password = $email_config['password'];
-        $this->phpmailer->SMTPDebug = $email_config['debug'];
+        $this->phpmailer->SMTPDebug = 3;
         $this->phpmailer->CharSet = 'UTF-8';
         $this->phpmailer->isHTML(true);
     }
