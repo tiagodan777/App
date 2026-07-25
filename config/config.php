@@ -20,7 +20,7 @@ $email_config = [
     'username' => 'apikey', // literal
     'password' => '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', // a tua nova API key
     'security' => 'tls',
-    'admin_email' => 'tiagoamdaniel488@gmail.com',
+    'admin_email' => 'tiagoamdaniel.python@gmail.com',
     'debug' => (DEV) ? 2 : 0,
 ];
 
