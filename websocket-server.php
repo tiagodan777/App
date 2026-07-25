@@ -11,7 +11,13 @@ use React\Socket\SocketServer;
 
 define('APP_ROOT', __DIR__);
 
-require_once APP_ROOT . '/config/config.php';
+$configFile = APP_ROOT . '/config/config.local.php';
+
+if (!file_exists($configFile)) {
+    $configFile = APP_ROOT . '/config/config.php';
+}
+
+require_once $configFile;
 require_once APP_ROOT . '/vendor/autoload.php';
 
 $loop = Loop::get();
