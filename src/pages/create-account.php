@@ -512,6 +512,14 @@ if ($alterarPassword) {
         : 'As palavras-passe não são idênticas.';
 }
 
+/*
+ * Em edição, não enviar uma password vazia para Member::update().
+ * Assim, guardar outra área do perfil nunca altera a password atual.
+ */
+if ($modoEdicao && !$alterarPassword) {
+    unset($membro['password']);
+}
+
 $erros = array_filter(
     $erros,
     static fn($erro): bool => $erro !== ''
