@@ -427,250 +427,26 @@
     document
 );
 
-(function (window, document) {
-    'use strict';
+document.getElementById('enviar-hey-perfil')?.addEventListener('click', function () {
+    var botao = this;
+    var destinatarioId = botao.dataset.destinatarioId;
 
-    var button = document.getElementById('enviar-hey-perfil');
-
-    if (!button) return;
-
-    var targetId = String(button.dataset.destinatarioId || '');
-    var timeout = null;
-
-    function finish(message, error) {
-        if (timeout !== null) {
-            window.clearTimeout(timeout);
-            timeout = null;
-        }
-
-        button.disabled = false;
-        button.textContent = 'Hey';
-
-        var status = document.getElementById('perfil-seguranca-estado');
-
-        if (status && message) {
-            status.textContent = message;
-            status.classList.toggle('erro', Boolean(error));
-        }
+    if (!window.AppWebSocket || !window.AppWebSocket.isConnected()) {
+        if (window.AppWebSocket) window.AppWebSocket.connect();
+        return;
     }
 
-    button.addEventListener('click', function () {
-        if (!window.AppWebSocket || !window.AppWebSocket.isConnected()) {
-            if (window.AppWebSocket) window.AppWebSocket.connect();
-            finish('A ligação está a ser restabelecida.', true);
-            return;
-        }
+    botao.disabled = true;
 
-        button.disabled = true;
-        button.textContent = 'A enviar…';
-
-        if (!window.AppWebSocket.send({
-            type: 'notify',
-            destinatario_id: targetId
-        })) {
-            finish('Não foi possível enviar o Hey.', true);
-            return;
-        }
-
-        timeout = window.setTimeout(function () {
-            finish(
-                'Não recebemos confirmação. Confirma a ligação e tenta novamente.',
-                true
-            );
-        }, 8000);
+    window.AppWebSocket.send({
+        type: 'notify',
+        destinatario_id: destinatarioId
     });
 
-    window.addEventListener('app:hey-enviado', function (event) {
-        if (String(event.detail?.destinatario_id || '') !== targetId) return;
+    botao.textContent = 'Hey enviado';
 
-        if (timeout !== null) {
-            window.clearTimeout(timeout);
-            timeout = null;
-        }
-
-        button.textContent = 'Hey enviado';
-
-        window.setTimeout(function () {
-            finish('Hey enviado.', false);
-        }, 900);
-    });
-
-    window.addEventListener('app:hey-erro', function (event) {
-        if (
-            event.detail?.destinatario_id &&
-            String(event.detail.destinatario_id) !== targetId
-        ) {
-            return;
-        }
-
-        finish(
-            String(event.detail?.message || 'Não foi possível enviar o Hey.'),
-            true
-        );
-    });
-})(window, document);
-
-(function (window, document) {
-    'use strict';
-
-    var heyButton = document.getElementById('enviar-hey-perfil');
-    var reportButton = document.getElementById('denunciar-perfil');
-    var blockButton = document.getElementById('bloquear-perfil');
-    var dialog = document.getElementById('perfil-denuncia-dialog');
-    var form = document.getElementById('perfil-denuncia-form');
-    var cancelButton = document.getElementById('perfil-denuncia-cancelar');
-    var submitButton = document.getElementById('perfil-denuncia-enviar');
-    var dialogError = document.getElementById('perfil-denuncia-erro');
-    var status = document.getElementById('perfil-seguranca-estado');
-    var targetId = String(heyButton?.dataset.destinatarioId || '');
-    var busy = false;
-
-    if (!targetId || !reportButton || !blockButton || !dialog || !form) return;
-
-    function setStatus(message, isError) {
-        if (!status) return;
-
-        status.textContent = String(message || '');
-        status.classList.toggle('erro', Boolean(isError));
-    }
-
-    function closeDialog() {
-        if (typeof dialog.close === 'function') {
-            dialog.close();
-        } else {
-            dialog.removeAttribute('open');
-        }
-    }
-
-    async function safetyRequest(action, fields) {
-        var body = new FormData();
-
-        body.set('action', action);
-        body.set('target_id', targetId);
-        body.set('context_type', 'perfil');
-        body.set('proximity_token', String(window.profileProximityToken || ''));
-        body.set('_csrf', String(window.csrfToken || ''));
-
-        Object.keys(fields || {}).forEach(function (key) {
-            body.set(key, fields[key]);
-        });
-
-        var response = await window.fetch(
-            String(window.profileSafetyUrl || '/safety'),
-            {
-                method: 'POST',
-                body: body,
-                credentials: 'same-origin',
-                headers: {
-                    'Accept': 'application/json',
-                    'X-CSRF-Token': String(window.csrfToken || ''),
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            }
-        );
-        var result = await response.json().catch(function () {
-            return {};
-        });
-
-        if (!response.ok || !result.success) {
-            throw new Error(
-                result.message ||
-                'Não foi possível concluir esta ação.'
-            );
-        }
-
-        return result;
-    }
-
-    reportButton.addEventListener('click', function () {
-        form.reset();
-        dialogError.hidden = true;
-        dialogError.textContent = '';
-
-        if (typeof dialog.showModal === 'function') {
-            dialog.showModal();
-        } else {
-            dialog.setAttribute('open', 'open');
-        }
-    });
-
-    cancelButton?.addEventListener('click', closeDialog);
-
-    form.addEventListener('submit', async function (event) {
-        event.preventDefault();
-
-        if (busy) return;
-
-        var reason = String(
-            document.getElementById('perfil-denuncia-motivo')?.value || ''
-        );
-        var message = String(
-            document.getElementById('perfil-denuncia-mensagem')?.value || ''
-        );
-
-        if (!reason) {
-            dialogError.textContent = 'Escolhe o motivo da denúncia.';
-            dialogError.hidden = false;
-            return;
-        }
-
-        busy = true;
-        submitButton.disabled = true;
-        dialogError.hidden = true;
-
-        try {
-            var result = await safetyRequest('report', {
-                motivo: reason,
-                mensagem: message
-            });
-            closeDialog();
-            setStatus(
-                'Denúncia enviada. Referência: ' +
-                    String(result.reference || 'indisponível') +
-                    '.',
-                false
-            );
-        } catch (error) {
-            dialogError.textContent = error.message;
-            dialogError.hidden = false;
-        } finally {
-            busy = false;
-            submitButton.disabled = false;
-        }
-    });
-
-    blockButton.addEventListener('click', async function () {
-        if (
-            busy ||
-            !window.confirm(
-                'Bloquear esta pessoa? Deixam imediatamente de se ver e contactar.'
-            )
-        ) {
-            return;
-        }
-
-        busy = true;
-        blockButton.disabled = true;
-        reportButton.disabled = true;
-
-        try {
-            await safetyRequest('block');
-
-            if (window.AppWebSocket?.isConnected()) {
-                window.AppWebSocket.send({
-                    type: 'block_refresh',
-                    target_id: targetId
-                });
-            }
-
-            window.location.assign(
-                String(window.profileHomeUrl || '/index')
-            );
-        } catch (error) {
-            setStatus(error.message, true);
-            busy = false;
-            blockButton.disabled = false;
-            reportButton.disabled = false;
-        }
-    });
-})(window, document);
+    setTimeout(function () {
+        botao.disabled = false;
+        botao.textContent = 'Hey';
+    }, 1200);
+});

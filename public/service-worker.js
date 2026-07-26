@@ -1,24 +1,5 @@
 'use strict';
 
-function obterDestinoSeguro(valor) {
-    try {
-        var url = new URL(
-            typeof valor === 'string' && valor.trim() !== ''
-                ? valor
-                : '/index',
-            self.location.origin
-        );
-
-        if (url.origin !== self.location.origin) {
-            return '/index';
-        }
-
-        return url.pathname + url.search + url.hash;
-    } catch (erro) {
-        return '/index';
-    }
-}
-
 self.addEventListener(
     'install',
     function (evento) {
@@ -42,9 +23,10 @@ self.addEventListener(
     function (evento) {
         evento.notification.close();
 
-        var destino = obterDestinoSeguro(
-            evento.notification.data?.url
-        );
+        var destino =
+            evento.notification
+                .data?.url ||
+            '/index';
 
         evento.waitUntil(
             self.clients

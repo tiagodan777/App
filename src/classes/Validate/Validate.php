@@ -34,8 +34,8 @@ class Validate {
     }
 
     public static function isGenero($genero) {
-        $allowed_types = ['M', 'F', 'P'];
-        return in_array($genero, $allowed_types, true);
+        $allowed_types = ['M', 'F', 'D'];
+        return in_array($genero, $allowed_types);
     }
 
     public static function isRole($role) {
@@ -54,11 +54,5 @@ class Validate {
         }
         return false;                                      // Invalid password
     }
-
-    public static function isPhone($phone): bool
-    {
-        $digits = (string) preg_replace('/\D+/', '', trim((string) $phone));
-
-        return strlen($digits) >= 7 && strlen($digits) <= 15;
-    }
 }
+

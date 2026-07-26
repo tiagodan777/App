@@ -9,12 +9,6 @@
     var $preview = $('#chat-media-preview');
     var $erro = $('#chat-erro');
     var $enviar = $('#chat-enviar');
-    var $denunciaDialog = $('#chat-denuncia-dialog');
-    var $denunciaForm = $('#chat-denuncia-form');
-    var $denunciaContexto = $('#chat-denuncia-contexto');
-    var $denunciaContextoId = $('#chat-denuncia-contexto-id');
-    var $denunciaErro = $('#chat-denuncia-erro');
-    var $denunciaEnviar = $('#chat-denuncia-enviar');
 
     var outroId = String(
         $pagina.attr('data-outro-id') ||
@@ -32,103 +26,6 @@
 
     function conversaUrl() {
         return baseUrl() + '/' + encodeURIComponent(outroId);
-    }
-
-    function safetyUrl() {
-        return String(window.safetyUrl || '/safety');
-    }
-
-    async function pedidoSeguranca(corpo) {
-        var resposta = await fetch(safetyUrl(), {
-            method: 'POST',
-            body: corpo,
-            credentials: 'same-origin',
-            headers: {
-                'X-CSRF-Token': String(window.csrfToken || ''),
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        });
-        var dados = await resposta.json();
-
-        if (!resposta.ok || !dados.success) {
-            throw new Error(
-                dados.message ||
-                'Não foi possível concluir esta ação.'
-            );
-        }
-
-        return dados;
-    }
-
-    function abrirDenuncia(tipo, mensagemId) {
-        $denunciaContexto.val(tipo);
-        $denunciaContextoId.val(mensagemId || '');
-        $denunciaErro.prop('hidden', true).text('');
-        $denunciaForm[0].reset();
-        $denunciaContexto.val(tipo);
-        $denunciaContextoId.val(mensagemId || '');
-
-        var dialog = $denunciaDialog[0];
-
-        if (dialog && typeof dialog.showModal === 'function') {
-            dialog.showModal();
-        } else {
-            $denunciaDialog.attr('open', 'open');
-        }
-    }
-
-    function fecharDenuncia() {
-        var dialog = $denunciaDialog[0];
-
-        if (dialog && typeof dialog.close === 'function') {
-            dialog.close();
-        } else {
-            $denunciaDialog.removeAttr('open');
-        }
-    }
-
-    async function enviarDenuncia(evento) {
-        evento.preventDefault();
-
-        $denunciaEnviar.prop('disabled', true).text('A enviar…');
-        $denunciaErro.prop('hidden', true).text('');
-
-        try {
-            var resultado = await pedidoSeguranca(
-                new FormData($denunciaForm[0])
-            );
-            fecharDenuncia();
-            $erro.text(
-                'Denúncia enviada. Referência: ' +
-                String(resultado.reference || 'indisponível') +
-                '.'
-            )
-                .prop('hidden', false);
-        } catch (erro) {
-            $denunciaErro.text(erro.message).prop('hidden', false);
-        } finally {
-            $denunciaEnviar.prop('disabled', false).text('Enviar denúncia');
-        }
-    }
-
-    async function bloquearPessoa() {
-        if (!window.confirm(
-            'Bloquear esta pessoa? A conversa deixa de ficar disponível.'
-        )) {
-            return;
-        }
-
-        var corpo = new FormData();
-        corpo.set('action', 'block');
-        corpo.set('target_id', outroId);
-        corpo.set('_csrf', String(window.csrfToken || ''));
-
-        try {
-            await pedidoSeguranca(corpo);
-            window.location.assign(baseUrl());
-        } catch (erro) {
-            $erro.text(erro.message).prop('hidden', false);
-        }
     }
 
     function dataLocal(valor) {
@@ -230,15 +127,6 @@
                         : '✓'
                 )
             );
-        } else {
-            $rodape.append(
-                $('<button>', {
-                    type: 'button',
-                    class: 'chat-denunciar-mensagem',
-                    'data-message-id': mensagem.id,
-                    'aria-label': 'Denunciar esta mensagem'
-                }).text('Denunciar')
-            );
         }
 
         return $artigo.append(
@@ -280,17 +168,15 @@
         if (!ficheiro) return;
 
         var eVideo = ficheiro.type.startsWith('video/');
-        var limite = 10 * 1024 * 1024;
-
-        if (eVideo) {
-            $erro.text('Nesta beta, o envio de vídeo está temporariamente desativado.')
-                .prop('hidden', false);
-            return;
-        }
+        var limite = eVideo
+            ? 100 * 1024 * 1024
+            : 15 * 1024 * 1024;
 
         if (ficheiro.size > limite) {
             $erro.text(
-                'A fotografia pode ter no máximo 10 MB.'
+                eVideo
+                    ? 'O vídeo pode ter no máximo 100 MB.'
+                    : 'A fotografia pode ter no máximo 15 MB.'
             ).prop('hidden', false);
 
             return;
@@ -358,10 +244,7 @@
             var resposta = await fetch(conversaUrl(), {
                 method: 'POST',
                 body: new FormData($form[0]),
-                credentials: 'same-origin',
-                headers: {
-                    'X-CSRF-Token': String(window.csrfToken || '')
-                }
+                credentials: 'same-origin'
             });
 
             var dados = await resposta.json();
@@ -396,16 +279,12 @@
         var corpo = new FormData();
 
         corpo.set('action', 'mark_read');
-        corpo.set('_csrf', String(window.csrfToken || ''));
 
         try {
             await fetch(conversaUrl(), {
                 method: 'POST',
                 body: corpo,
-                credentials: 'same-origin',
-                headers: {
-                    'X-CSRF-Token': String(window.csrfToken || '')
-                }
+                credentials: 'same-origin'
             });
 
             if (
@@ -497,21 +376,6 @@
         limparMedia
     );
 
-    $('#chat-denunciar-perfil').on('click', function () {
-        abrirDenuncia('perfil', '');
-    });
-
-    $('#chat-bloquear').on('click', bloquearPessoa);
-    $('#chat-denuncia-cancelar').on('click', fecharDenuncia);
-    $denunciaForm.on('submit', enviarDenuncia);
-
-    $mensagens.on('click', '.chat-denunciar-mensagem', function () {
-        abrirDenuncia(
-            'mensagem',
-            String($(this).attr('data-message-id') || '')
-        );
-    });
-
     $texto.on('input', function () {
         this.style.height = 'auto';
         this.style.height = Math.min(this.scrollHeight, 120) + 'px';
@@ -575,6 +439,5 @@
     window.addEventListener('pagehide', function () {
         window.clearInterval(temporizador);
         limparMedia();
-        fecharDenuncia();
     });
 })(window, document, jQuery);

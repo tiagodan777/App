@@ -3,54 +3,28 @@ namespace App\CMS;
 
 class Session {
     private $db;
-    public $id, $primeiro_nome, $foto_perfil, $seo_name, $auth_version;
+    public $id, $primeiro_nome, $foto_perfil, $seo_name, $token;
 
     public function __construct($db)
-    {
+    {   
         if (php_sapi_name() !== 'cli') {
-            $secure = APP_ENV === 'production' ||
-                (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
-
-            ini_set('session.use_strict_mode', '1');
-            ini_set('session.use_only_cookies', '1');
-            ini_set('session.cookie_httponly', '1');
-            ini_set('session.cookie_secure', $secure ? '1' : '0');
-            ini_set('session.cookie_samesite', 'Lax');
-            session_name('margot_session');
-            session_set_cookie_params([
-                'lifetime' => 0,
-                'path' => '/',
-                'secure' => $secure,
-                'httponly' => true,
-                'samesite' => 'Lax'
-            ]);
             session_start();
         }
-
         $this->db = $db;
-        $token = $_COOKIE[Cookie::NAME] ?? '';
-        $sessionMemberId = trim((string) ($_SESSION['id'] ?? ''));
-
-        if (
-            $token !== '' &&
-            ($sessionMemberId === '' || $sessionMemberId === '0')
-        ) {
-            if ($this->create($token, 'stay_logged_id')) {
-                /*
-                 * Um token persistente é de utilização rotativa: depois de
-                 * restaurar a sessão, o valor apresentado deixa de ser válido.
-                 */
-                (new Cookie($this->db))->create([
-                    'id' => (string) $this->id
-                ]);
-            }
+        $token = $_COOKIE['token'] ?? '';
+        if ($token) {
+            /*echo "<pre>";
+            var_dump($_COOKIE);*/
+            $this->create($token, 'stay_logged_id');
+            /*var_dump($_SESSION);
+            echo "</pre>";*/
         }
-
-        $this->id = $_SESSION['id'] ?? '';
+        $this->id = $_SESSION['id'] ?? 0;
         $this->primeiro_nome = $_SESSION['primeiro_nome'] ?? '';
         $this->foto_perfil = $_SESSION['foto_perfil'] ?? '';
-        $this->seo_name = $_SESSION['seo_name'] ?? '';
-        $this->auth_version = (int) ($_SESSION['auth_version'] ?? 0);
+        // $this->role = $_SESSION['role'] ?? 'member';
+        $this->seo_name = $_SESSION['nome_seo'] ?? '';
+        $this->token = $_SESSION['token'] ?? '';
     }
 
     public function create(
@@ -58,16 +32,18 @@ class Session {
         $proposito = 'stay_logged_id',
         $membro_id = ''
     ) {
+        session_regenerate_id(true);
+
         if (!$membro_id) {
             $sql = "SELECT membro_id
                     FROM token
                     WHERE token = :token
                     AND proposito = :proposito
-                    AND validade > UTC_TIMESTAMP()
+                    AND validade > NOW()
                     LIMIT 1";
 
             $membro_id = $this->db->runSQL($sql, [
-                'token' => hash('sha256', (string) $token),
+                'token' => $token,
                 'proposito' => $proposito
             ])->fetchColumn();
 
@@ -80,15 +56,12 @@ class Session {
                     m.id,
                     m.primeiro_nome,
                     f.nome_arquivo AS foto_perfil,
-                    m.nome_seo,
-                    m.auth_version
+                    m.nome_seo
                 FROM membros AS m
                 LEFT JOIN fotos_perfil AS f
                     ON f.membro_id = m.id
-                    AND f.ordem = 0
-                    AND f.status = 'completo'
+                    AND f.ordem = 1
                 WHERE m.id = :membro_id
-                AND m.estado = 'ativo'
                 LIMIT 1";
 
         $arguments = $this->db->runSQL($sql, [
@@ -99,21 +72,17 @@ class Session {
             return false;
         }
 
-        if (session_status() === PHP_SESSION_ACTIVE) {
-            session_regenerate_id(true);
-        }
-
         $_SESSION['id'] = $arguments['id'];
         $_SESSION['primeiro_nome'] = $arguments['primeiro_nome'];
         $_SESSION['foto_perfil'] = $arguments['foto_perfil'] ?? 'default.webp';
         $_SESSION['seo_name'] = $arguments['nome_seo'];
-        $_SESSION['auth_version'] = (int) $arguments['auth_version'];
+        $_SESSION['token'] = $token;
 
         $this->id = $_SESSION['id'];
         $this->primeiro_nome = $_SESSION['primeiro_nome'];
         $this->foto_perfil = $_SESSION['foto_perfil'];
         $this->seo_name = $_SESSION['seo_name'];
-        $this->auth_version = $_SESSION['auth_version'];
+        $this->token = $_SESSION['token'];
 
         return true;
     }
@@ -124,23 +93,8 @@ class Session {
 
     public function delete() {
         $_SESSION = [];
-
-        if (session_status() === PHP_SESSION_ACTIVE) {
-            $param = session_get_cookie_params();
-            setcookie(session_name(), '', [
-                'expires' => time() - 3600,
-                'path' => $param['path'] ?: '/',
-                'secure' => (bool) $param['secure'],
-                'httponly' => true,
-                'samesite' => 'Lax'
-            ]);
-            session_destroy();
-        }
-
-        $this->id = 0;
-        $this->primeiro_nome = '';
-        $this->foto_perfil = '';
-        $this->seo_name = '';
-        $this->auth_version = 0;
+        $param = session_get_cookie_params();
+        setcookie(session_name(), '', time() - 3600, $param['path'], $param['domain'], $param['secure'], $param['httponly']);
+        session_destroy();
     }
 }

@@ -2,25 +2,27 @@
 
 declare(strict_types=1);
 
-use App\CMS\Database;
-use App\CMS\Image;
-use App\Security\MemberMutex;
+/*
+ * Coloca aqui o mesmo bootstrap ou conjunto
+ * de requires usado no websocket-server.php
+ * ou noutro worker da aplicação.
+ *
+ * Exemplo:
+ *
+ * require_once dirname(__DIR__, 2) . '/src/bootstrap.php';
+ */
+
+/*
+ * SUBSTITUI esta linha pelo require correto
+ * da tua aplicação, caso o caminho seja diferente.
+ */
+require_once dirname(__DIR__, 2) . '/src/bootstrap.php';
 
 if (PHP_SAPI !== 'cli') {
     http_response_code(403);
 
     exit('Acesso negado.');
 }
-
-define('APP_ROOT', dirname(__DIR__, 2));
-
-require APP_ROOT . '/config/config.php';
-require APP_ROOT . '/vendor/autoload.php';
-
-$database = new Database($dsn, $username, $password);
-$imageService = new Image($database);
-$memberMutex = new MemberMutex($database);
-unset($dsn, $username, $password);
 
 $membroId = trim(
     (string) (
@@ -43,11 +45,11 @@ if (!$uuidValido) {
 }
 
 try {
-    if (!$memberMutex->acquire($membroId, 0)) {
-        exit(0);
-    }
-
-    $imagens = $imageService->getUploadTemp($membroId);
+    $imagens = $cms
+        ->getImage()
+        ->getUploadTemp(
+            $membroId
+        );
 
     foreach ($imagens as $imagem) {
         $nomeArquivo =
@@ -59,65 +61,53 @@ try {
         }
 
         $temp =
-            rtrim(PROFILE_PHOTO_TEMP_DIR, '/') .
-            '/' .
-            basename((string) $nomeArquivo);
+            APP_ROOT .
+            '/public/imagens/fotos-perfil-temp/' .
+            $nomeArquivo;
 
         if (!is_file($temp)) {
-            $database->runSQL(
-                "UPDATE fotos_perfil
-                 SET status = 'erro'
-                 WHERE id = :foto_id
-                 AND membro_id = :membro_id
-                 AND nome_arquivo = :nome_arquivo
-                 AND status = 'pendente'",
-                [
-                    'foto_id' => (string) ($imagem['id'] ?? ''),
-                    'membro_id' => $membroId,
-                    'nome_arquivo' => (string) $nomeArquivo
-                ]
-            );
-
-            error_log(DEV
-                ? '[profile-image-worker] Imagem temporária não encontrada: ' . $temp
-                : '[profile-image-worker] Uma imagem temporária não foi encontrada.'
+            error_log(
+                'Imagem temporária não encontrada: ' .
+                $temp
             );
 
             continue;
         }
 
         try {
-            $imageService->createImage(
-                (string) ($imagem['id'] ?? ''),
-                $membroId,
-                (string) $nomeArquivo,
-                $temp,
-                'perfil'
-            );
+            $cms
+                ->getImage()
+                ->createImage(
+                    $membroId,
+                    $nomeArquivo,
+                    $temp,
+                    'perfil'
+                );
 
         } catch (Throwable $erro) {
-            error_log(DEV
-                ? '[profile-image-worker] ' . $erro->getMessage()
-                : '[profile-image-worker] Não foi possível processar uma fotografia.'
+            error_log(
+                sprintf(
+                    'Erro ao processar a foto %s do membro %s: %s',
+                    $nomeArquivo,
+                    $membroId,
+                    $erro->getMessage()
+                )
             );
         }
     }
 
-    $memberMutex->release($membroId);
-
     exit(0);
 
 } catch (Throwable $erro) {
-    $memberMutex->release($membroId);
-
-    error_log(DEV
-        ? '[profile-image-worker] ' . $erro->getMessage()
-        : '[profile-image-worker] O processamento terminou com erro.'
+    error_log(
+        'Erro geral no worker de fotos de perfil: ' .
+        $erro->getMessage()
     );
 
     fwrite(
         STDERR,
-        "Não foi possível processar as fotografias.\n"
+        $erro->getMessage() .
+        PHP_EOL
     );
 
     exit(1);

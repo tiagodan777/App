@@ -1,5 +1,7 @@
 Options -Indexes
 
-Require all denied
+<FilesMatch "\.(php|phtml|phar|cgi|pl|py|sh)$">
+    Require all denied
+</FilesMatch>
 
 Header always set X-Content-Type-Options "nosniff"

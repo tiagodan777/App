@@ -1,34 +1,27 @@
 <?php
+header('Content-Type: application/json; charset=utf-8');
 
-declare(strict_types=1);
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    $gosto = $_GET['gosto'] ?? '';
 
-use App\Security\RateLimiter;
+    if ($gosto !== '') {
+        echo json_encode($cms->getHobbie()->get($gosto));
+        exit;
+    }
 
-header('Content-Type: application/json; charset=UTF-8');
-header('Cache-Control: no-store');
-
-if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
-    header('Allow: GET');
-    http_response_code(405);
-    echo json_encode(['success' => false, 'message' => 'Método não permitido.']);
+    echo json_encode([]);
     exit;
 }
 
-if (!RateLimiter::allow(
-    'hobby-search',
-    privacy_hash('ip:' . request_ip()),
-    60,
-    60
-)) {
-    http_response_code(429);
-    header('Retry-After: 60');
-    echo json_encode(['success' => false, 'message' => 'Demasiadas pesquisas.']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $gosto = $_POST['gosto'] ?? '';
+
+    if ($gosto !== '') {
+        $cms->getHobbie()->create($gosto);
+        echo json_encode(['sucesso' => true]);
+        exit;
+    }
+
+    echo json_encode(['sucesso' => false]);
     exit;
 }
-
-$query = mb_substr(trim((string) ($_GET['gosto'] ?? '')), 0, 64);
-
-echo json_encode(
-    $query === '' ? [] : $cms->getHobbie()->get($query),
-    JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
-);

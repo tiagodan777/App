@@ -1,3 +1,163 @@
+<div id="introducao">
+    <div class="margot-intro-marca" aria-hidden="true">Margot</div>
+
+    <h1>Vês alguém.<br>A Margot ajuda-te a dizer olá.</h1>
+
+    <p class="margot-intro-texto">
+        A Margot mostra-te outras pessoas que também estão por perto. Se reconheceres
+        alguém com quem gostavas de falar, podes enviar um Hey e quebrar o gelo.
+    </p>
+
+    <div class="margot-demo" aria-label="Exemplo: duas pessoas próximas encontram-se na Margot e começam uma conversa">
+        <div class="margot-demo-cenario" aria-hidden="true">
+            <span class="margot-demo-pessoa margot-demo-pessoa-a">🙂</span>
+            <span class="margot-demo-onda margot-demo-onda-a"></span>
+            <span class="margot-demo-onda margot-demo-onda-b"></span>
+            <span class="margot-demo-pessoa margot-demo-pessoa-b">😊</span>
+
+            <div class="margot-demo-telemovel">
+                <div class="margot-demo-perfil">😊</div>
+                <strong>Alguém perto de ti</strong>
+                <span>A cerca de 100 m</span>
+                <b>Hey 👋</b>
+            </div>
+        </div>
+    </div>
+
+    <p class="margot-intro-privacidade">
+        Só mostras o teu nome, idade, fotografias, gostos e o que procuras.
+        Os teus contactos e a tua localização nunca são mostrados.
+    </p>
+
+    <nav class="anterior-proximo">
+        <a data-etapa="#nome" class="proximo">Começar</a>
+    </nav>
+</div>
+
+<div id="editar-perfil">
+    <header class="editar-perfil-cabecalho">
+        <button type="button" class="editar-perfil-fechar" data-voltar-perfil aria-label="Fechar edição">×</button>
+
+        <div>
+            <span>O teu perfil</span>
+            <h1>O que queres editar?</h1>
+            <p>Escolhe uma área. Podes guardar e sair logo depois da alteração.</p>
+        </div>
+    </header>
+
+    <div class="editar-perfil-lista">
+        <button type="button" class="editar-area" data-etapa="#fotos">
+            <span class="editar-area-icone" aria-hidden="true">📷</span>
+
+            <span class="editar-area-texto">
+                <strong>Fotografias</strong>
+                <small data-resumo-campo="fotos">Gerir as tuas fotografias</small>
+            </span>
+
+            <span class="editar-area-seta" aria-hidden="true">›</span>
+        </button>
+
+        <button type="button" class="editar-area" data-etapa="#nome">
+            <span class="editar-area-icone" aria-hidden="true">👤</span>
+
+            <span class="editar-area-texto">
+                <strong>Nome</strong>
+                <small data-resumo-campo="nome">Editar o teu nome</small>
+            </span>
+
+            <span class="editar-area-seta" aria-hidden="true">›</span>
+        </button>
+
+        <button type="button" class="editar-area" data-etapa="#nascimento">
+            <span class="editar-area-icone" aria-hidden="true">🎂</span>
+
+            <span class="editar-area-texto">
+                <strong>Data de nascimento</strong>
+                <small data-resumo-campo="nascimento">Editar a data de nascimento</small>
+            </span>
+
+            <span class="editar-area-seta" aria-hidden="true">›</span>
+        </button>
+
+        <button type="button" class="editar-area" data-etapa="#sexo">
+            <span class="editar-area-icone" aria-hidden="true">✨</span>
+
+            <span class="editar-area-texto">
+                <strong>Género</strong>
+                <small data-resumo-campo="genero">Editar o género</small>
+            </span>
+
+            <span class="editar-area-seta" aria-hidden="true">›</span>
+        </button>
+
+        <button type="button" class="editar-area" data-etapa="#gostos">
+            <span class="editar-area-icone" aria-hidden="true">🎨</span>
+
+            <span class="editar-area-texto">
+                <strong>Gostos e interesses</strong>
+                <small data-resumo-campo="gostos">Editar os teus gostos</small>
+            </span>
+
+            <span class="editar-area-seta" aria-hidden="true">›</span>
+        </button>
+
+        <button type="button" class="editar-area" data-etapa="#objetivo">
+            <span class="editar-area-icone" aria-hidden="true">🧭</span>
+
+            <span class="editar-area-texto">
+                <strong>O que procuras</strong>
+                <small data-resumo-campo="objetivo">Editar o teu objetivo</small>
+            </span>
+
+            <span class="editar-area-seta" aria-hidden="true">›</span>
+        </button>
+
+        <button type="button" class="editar-area" data-etapa="#descricao">
+            <span class="editar-area-icone" aria-hidden="true">💬</span>
+
+            <span class="editar-area-texto">
+                <strong>Sobre ti</strong>
+                <small data-resumo-campo="sobre_ti">Editar a tua descrição</small>
+            </span>
+
+            <span class="editar-area-seta" aria-hidden="true">›</span>
+        </button>
+
+        <button type="button" class="editar-area" data-etapa="#contactos">
+            <span class="editar-area-icone" aria-hidden="true">🔐</span>
+
+            <span class="editar-area-texto">
+                <strong>Contactos</strong>
+                <small data-resumo-campo="contactos">Email e telefone privados</small>
+            </span>
+
+            <span class="editar-area-seta" aria-hidden="true">›</span>
+        </button>
+
+        <button type="button" class="editar-area" data-etapa="#permissoes">
+            <span class="editar-area-icone" aria-hidden="true">📍</span>
+
+            <span class="editar-area-texto">
+                <strong>Privacidade e permissões</strong>
+                <small data-resumo-campo="permissoes">Localização e notificações</small>
+            </span>
+
+            <span class="editar-area-seta" aria-hidden="true">›</span>
+        </button>
+
+        <button type="button" class="editar-area" data-etapa="#palavra-passe">
+            <span class="editar-area-icone" aria-hidden="true">🔑</span>
+
+            <span class="editar-area-texto">
+                <strong>Palavra-passe</strong>
+                <small>Alterar a palavra-passe</small>
+            </span>
+
+            <span class="editar-area-seta" aria-hidden="true">›</span>
+        </button>
+    </div>
+</div>
+
 <div id="nome">
     <h1>{{ modo_edicao ? 'Qual é o teu nome?' : 'Como te chamas?' }}</h1>
 
@@ -12,13 +172,23 @@
     </p>
 
     <nav class="anterior-proximo">
-        <a data-etapa="#nascimento" class="proximo">Próximo</a>
+        {% if modo_edicao %}
+            <a data-etapa="#editar-perfil" data-sem-validar="true" class="anterior">
+                Voltar à lista
+            </a>
+
+            <button type="submit" class="proximo guardar-secao">
+                Guardar e sair
+            </button>
+        {% else %}
+            <a data-etapa="#introducao" class="anterior">Anterior</a>
+            <a data-etapa="#nascimento" class="proximo">Próximo</a>
+        {% endif %}
     </nav>
 </div>
 
 <div id="nascimento">
     <h1>Quando nasceste?</h1>
-    <p>A Margot é exclusivamente para pessoas com 18 anos ou mais.</p>
 
     <nav class="campos-nascimento">
         <div>
@@ -47,34 +217,52 @@
 
         <div>
             <label for="ano">Ano</label>
-            <input type="number" name="ano" id="ano" min="1900" max="{{ ano_maximo }}" required>
+            <input type="number" name="ano" id="ano" min="1900" max="{{ ano_atual }}" required>
         </div>
     </nav>
 
     <nav class="anterior-proximo">
-        <a data-etapa="#nome" class="anterior">Anterior</a>
-        <a data-etapa="#sexo" class="proximo">Próximo</a>
+        {% if modo_edicao %}
+            <a data-etapa="#editar-perfil" data-sem-validar="true" class="anterior">
+                Voltar à lista
+            </a>
+
+            <button type="submit" class="proximo guardar-secao">
+                Guardar e sair
+            </button>
+        {% else %}
+            <a data-etapa="#nome" class="anterior">Anterior</a>
+            <a data-etapa="#sexo" class="proximo">Próximo</a>
+        {% endif %}
     </nav>
 </div>
 
 <div id="sexo">
     <h1>Qual é o teu género?</h1>
-    <p>Opcional. Podes deixar por indicar.</p>
 
     <div class="campo-genero">
         <label for="genero">Género</label>
 
-        <select name="genero" id="genero">
-            <option value="" {{ membro.genero|default('') == '' ? 'selected' : '' }}>Prefiro não indicar</option>
-            <option value="M" {{ membro.genero|default('') == 'M' ? 'selected' : '' }}>Masculino</option>
-            <option value="F" {{ membro.genero|default('') == 'F' ? 'selected' : '' }}>Feminino</option>
-            <option value="P" {{ membro.genero|default('') == 'P' ? 'selected' : '' }}>Personalizado</option>
+        <select name="genero" id="genero" required>
+            <option value="M">Masculino</option>
+            <option value="F">Feminino</option>
+            <option value="D">Personalizado</option>
         </select>
     </div>
 
     <nav class="anterior-proximo">
-        <a data-etapa="#nascimento" class="anterior">Anterior</a>
-        <a data-etapa="#gostos" class="proximo">Próximo</a>
+        {% if modo_edicao %}
+            <a data-etapa="#editar-perfil" data-sem-validar="true" class="anterior">
+                Voltar à lista
+            </a>
+
+            <button type="submit" class="proximo guardar-secao">
+                Guardar e sair
+            </button>
+        {% else %}
+            <a data-etapa="#nascimento" class="anterior">Anterior</a>
+            <a data-etapa="#gostos" class="proximo">Próximo</a>
+        {% endif %}
     </nav>
 </div>
 
@@ -93,8 +281,18 @@
     <div id="meus-gostos"></div>
 
     <nav class="anterior-proximo">
-        <a data-etapa="#sexo" class="anterior">Anterior</a>
-        <a data-etapa="#objetivo" class="proximo">Próximo</a>
+        {% if modo_edicao %}
+            <a data-etapa="#editar-perfil" data-sem-validar="true" class="anterior">
+                Voltar à lista
+            </a>
+
+            <button type="submit" class="proximo guardar-secao">
+                Guardar e sair
+            </button>
+        {% else %}
+            <a data-etapa="#sexo" class="anterior">Anterior</a>
+            <a data-etapa="#objetivo" class="proximo">Próximo</a>
+        {% endif %}
     </nav>
 </div>
 
@@ -138,22 +336,52 @@
     </div>
 
     <nav class="anterior-proximo">
-        <a data-etapa="#gostos" class="anterior">Anterior</a>
-        <a data-etapa="#contactos" class="proximo">Próximo</a>
+        {% if modo_edicao %}
+            <a data-etapa="#editar-perfil" data-sem-validar="true" class="anterior">
+                Voltar à lista
+            </a>
+
+            <button type="submit" class="proximo guardar-secao">
+                Guardar e sair
+            </button>
+        {% else %}
+            <a data-etapa="#gostos" class="anterior">Anterior</a>
+            <a data-etapa="#contactos" class="proximo">Próximo</a>
+        {% endif %}
     </nav>
 </div>
 
 <div id="contactos">
-    <h1>Contactos</h1>
+    <h1>Contactos privados</h1>
+
+    <div class="privacidade-nota privacidade-nota-contactos">
+        <span class="privacidade-nota-icone" aria-hidden="true">🔒</span>
+
+        <p>
+            O teu número de telefone e o teu email <strong>NUNCA</strong> são
+            mostrados no perfil nem partilhados com outros utilizadores.
+        </p>
+
+        <details class="privacidade-info">
+            <summary aria-label="Para que são utilizados os contactos?">i</summary>
+
+            <div>
+                <strong>Para que servem?</strong>
+
+                <p>
+                    São utilizados para iniciares sessão, recuperares o acesso ou
+                    mudares a palavra-passe, verificarmos e protegermos a conta e,
+                    quando for indispensável, enviarmos comunicações sobre segurança
+                    ou sobre o funcionamento do serviço.
+                </p>
+
+                <p>Podes ficar descansado: nunca aparecem publicamente.</p>
+            </div>
+        </details>
+    </div>
 
     <p>
-        O email e o telefone não aparecem no perfil nem são partilhados com outros utilizadores.
-        São usados para criar, recuperar e proteger a conta e para comunicações necessárias ao serviço.
-        Podem ser tratados pelos nossos fornecedores e comunicados quando a lei o exigir.
-    </p>
-
-    <p>
-        <label for="telefone">Qual é o teu número de telefone? <span>(opcional)</span></label>
+        <label for="telefone">Qual é o teu número de telefone?</label>
         <input type="tel" name="telefone" id="telefone" autocomplete="tel">
     </p>
 
@@ -163,8 +391,18 @@
     </p>
 
     <nav class="anterior-proximo">
-        <a data-etapa="#objetivo" class="anterior">Anterior</a>
-        <a data-etapa="#descricao" class="proximo">Próximo</a>
+        {% if modo_edicao %}
+            <a data-etapa="#editar-perfil" data-sem-validar="true" class="anterior">
+                Voltar à lista
+            </a>
+
+            <button type="submit" class="proximo guardar-secao">
+                Guardar e sair
+            </button>
+        {% else %}
+            <a data-etapa="#objetivo" class="anterior">Anterior</a>
+            <a data-etapa="#descricao" class="proximo">Próximo</a>
+        {% endif %}
     </nav>
 </div>
 
@@ -175,8 +413,18 @@
     <textarea name="sobre_ti" id="sobre-ti" maxlength="1000"></textarea>
 
     <nav class="anterior-proximo">
-        <a data-etapa="#contactos" class="anterior">Anterior</a>
-        <a data-etapa="#fotos" class="proximo">Próximo</a>
+        {% if modo_edicao %}
+            <a data-etapa="#editar-perfil" data-sem-validar="true" class="anterior">
+                Voltar à lista
+            </a>
+
+            <button type="submit" class="proximo guardar-secao">
+                Guardar e sair
+            </button>
+        {% else %}
+            <a data-etapa="#contactos" class="anterior">Anterior</a>
+            <a data-etapa="#fotos" class="proximo">Próximo</a>
+        {% endif %}
     </nav>
 </div>
 
@@ -267,8 +515,18 @@
         <p id="perfil-fotos-erro" aria-live="polite"></p>
 
         <nav class="anterior-proximo">
-            <a data-etapa="#descricao" class="anterior">Anterior</a>
-            <a data-etapa="#permissoes" class="proximo">Próximo</a>
+            {% if modo_edicao %}
+                <a data-etapa="#editar-perfil" data-sem-validar="true" class="anterior">
+                    Voltar à lista
+                </a>
+
+                <button type="submit" class="proximo guardar-secao">
+                    Guardar e sair
+                </button>
+            {% else %}
+                <a data-etapa="#descricao" class="anterior">Anterior</a>
+                <a data-etapa="#permissoes" class="proximo">Próximo</a>
+            {% endif %}
         </nav>
     </div>
 </div>
@@ -276,16 +534,32 @@
 <div id="permissoes">
     <h1>{{ modo_edicao ? 'Privacidade e permissões' : 'Antes de começares' }}</h1>
 
-    <p class="permissoes-explicacao">
-        Escolhe o que a Margot pode usar neste dispositivo. Podes alterar estas opções mais tarde ao editar o perfil.
-    </p>
+    <div class="privacidade-nota privacidade-nota-localizacao">
+        <span class="privacidade-nota-icone" aria-hidden="true">🛡️</span>
+
+        <p>
+            A tua localização <strong>NUNCA</strong> é mostrada publicamente nem
+            partilhada com outros utilizadores.
+        </p>
+
+        <details class="privacidade-info">
+            <summary aria-label="Como é utilizada a localização?">i</summary>
+
+            <div>
+                <strong>Como é utilizada?</strong>
+
+                <p>
+                    A Margot utiliza-a apenas para calcular uma distância aproximada
+                    e mostrar pessoas que estão, aproximadamente, num raio de 100
+                    metros de ti. Os outros utilizadores nunca veem a tua localização
+                    exata nem um ponto num mapa.
+                </p>
+            </div>
+        </details>
+    </div>
 
     <p class="permissoes-explicacao">
-        Quando ativas a descoberta, a Margot envia ao servidor as coordenadas fornecidas pelo teu
-        dispositivo para calcular, em tempo real, quem está até 100 m. As coordenadas não são
-        mostradas a outros utilizadores nem guardadas na base de dados e são removidas da memória
-        pouco depois de desativares a função ou saíres. As outras pessoas poderão inferir que estás
-        por perto. Podes desativar a qualquer momento; sem localização, a descoberta fica pausada.
+        Escolhe o que a Margot pode usar neste dispositivo. Podes alterar estas opções mais tarde.
     </p>
 
     <div class="permissoes-lista">
@@ -294,13 +568,18 @@
 
             <div class="permissao-conteudo">
                 <h2>Localização</h2>
-                <p>Permite encontrar e mostrar pessoas perto de ti.</p>
+                <p>Permite encontrar e mostrar apenas pessoas que estão aproximadamente até 100 m de ti.</p>
                 <span class="permissao-estado" aria-live="polite">A verificar…</span>
             </div>
 
             <div class="permissao-acoes">
-                <button type="button" class="permissao-ativar" data-permissao="localizacao">Ativar</button>
-                <button type="button" class="permissao-desativar" data-permissao="localizacao" hidden>Desativar</button>
+                <button type="button" class="permissao-ativar" data-permissao="localizacao">
+                    Ativar
+                </button>
+
+                <button type="button" class="permissao-desativar" data-permissao="localizacao" hidden>
+                    Desativar
+                </button>
             </div>
         </article>
 
@@ -314,8 +593,13 @@
             </div>
 
             <div class="permissao-acoes">
-                <button type="button" class="permissao-ativar" data-permissao="notificacoes">Ativar</button>
-                <button type="button" class="permissao-desativar" data-permissao="notificacoes" hidden>Desativar</button>
+                <button type="button" class="permissao-ativar" data-permissao="notificacoes">
+                    Ativar
+                </button>
+
+                <button type="button" class="permissao-desativar" data-permissao="notificacoes" hidden>
+                    Desativar
+                </button>
             </div>
         </article>
     </div>
@@ -323,85 +607,43 @@
     <p id="permissoes-erro" role="alert" aria-live="polite"></p>
 
     <nav class="anterior-proximo">
-        <a data-etapa="#fotos" class="anterior">Anterior</a>
-        <a data-etapa="{{ modo_edicao ? '#palavra-passe' : '#legal' }}" id="permissoes-proximo" class="proximo desativado" aria-disabled="true">Próximo</a>
-    </nav>
-</div>
+        {% if modo_edicao %}
+            <a data-etapa="#editar-perfil" data-sem-validar="true" class="anterior">
+                Voltar à lista
+            </a>
 
-{% if not modo_edicao %}
-<div id="legal">
-    <h1>Últimas confirmações</h1>
+            <button type="submit" class="proximo guardar-secao">
+                Guardar e sair
+            </button>
+        {% else %}
+            <a data-etapa="#fotos" class="anterior">Anterior</a>
 
-    <p>
-        Nome, idade, fotografias, objetivo, bio e gostos serão mostrados às pessoas autorizadas
-        a ver o teu perfil.
-    </p>
-
-    {% if registration_closed %}
-        <p>
-            <label for="beta-invite-code">Código de convite da beta</label>
-            <input
-                type="password"
-                name="beta_invite_code"
-                id="beta-invite-code"
-                autocomplete="off"
-                minlength="24"
-                maxlength="256"
-                required
+            <a
+                data-etapa="#palavra-passe"
+                id="permissoes-proximo"
+                class="proximo desativado"
+                aria-disabled="true"
             >
-        </p>
-        <p>O acesso está limitado a convidados enquanto testamos a Margot com um grupo pequeno.</p>
-    {% endif %}
-
-    <p class="em-linha">
-        <input type="checkbox" name="confirmar_18" id="confirmar-18" value="1" required>
-        <label for="confirmar-18">Confirmo que tenho pelo menos 18 anos.</label>
-    </p>
-
-    <p class="em-linha">
-        <input type="checkbox" name="aceitar_termos" id="aceitar-termos" value="1" required>
-        <label for="aceitar-termos">
-            Li e aceito os <a href="{{ doc_root }}terms" target="_blank" rel="noopener">Termos da Margot</a>.
-        </label>
-    </p>
-
-    <p class="em-linha">
-        <input type="checkbox" name="reconhecer_privacidade" id="reconhecer-privacidade" value="1" required>
-        <label for="reconhecer-privacidade">
-            Li e tomei conhecimento da
-            <a href="{{ doc_root }}privacy" target="_blank" rel="noopener">Política de Privacidade</a>.
-        </label>
-    </p>
-
-    <nav class="anterior-proximo">
-        <a data-etapa="#permissoes" class="anterior">Anterior</a>
-        <a data-etapa="#palavra-passe" class="proximo">Próximo</a>
+                Próximo
+            </a>
+        {% endif %}
     </nav>
 </div>
-{% endif %}
 
 <div id="palavra-passe">
-    <h1>{{ modo_edicao ? 'Queres alterar a palavra-passe?' : 'Cria a tua palavra-passe' }}</h1>
+    <h1>{{ modo_edicao ? 'Alterar palavra-passe' : 'Cria a tua palavra-passe' }}</h1>
 
     {% if modo_edicao %}
         <p class="password-opcional">
-            Deixa os dois campos em branco para manteres a palavra-passe atual.
-        </p>
-
-        <p>
-            <label for="password-atual">Palavra-passe atual</label>
-            <input
-                type="password"
-                name="password_atual"
-                id="password-atual"
-                autocomplete="current-password"
-                required
-            >
+            Escreve e confirma a nova palavra-passe. Se não quiseres alterá-la,
+            volta à lista sem preencher os campos.
         </p>
     {% endif %}
 
     <p>
-        <label for="password">{{ modo_edicao ? 'Nova palavra-passe' : 'Palavra-passe' }}</label>
+        <label for="password">
+            {{ modo_edicao ? 'Nova palavra-passe' : 'Palavra-passe' }}
+        </label>
 
         <input
             type="password"
@@ -430,10 +672,16 @@
     </p>
 
     <nav class="anterior-proximo">
-        <a data-etapa="{{ modo_edicao ? '#permissoes' : '#legal' }}" class="anterior">Anterior</a>
+        {% if modo_edicao %}
+            <a data-etapa="#editar-perfil" data-sem-validar="true" class="anterior">
+                Voltar à lista
+            </a>
+        {% else %}
+            <a data-etapa="#permissoes" class="anterior">Anterior</a>
+        {% endif %}
 
         <button type="submit" id="criar-conta-submit" class="proximo">
-            {{ modo_edicao ? 'Guardar alterações' : 'Criar conta' }}
+            {{ modo_edicao ? 'Guardar e sair' : 'Criar conta' }}
         </button>
     </nav>
 

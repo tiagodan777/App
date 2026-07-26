@@ -14,7 +14,7 @@ class Email {
         $this->phpmailer->Port = $email_config['port'];
         $this->phpmailer->Username = $email_config['username'];
         $this->phpmailer->Password = $email_config['password'];
-        $this->phpmailer->SMTPDebug = (int) ($email_config['debug'] ?? 0);
+        $this->phpmailer->SMTPDebug = 3;
         $this->phpmailer->CharSet = 'UTF-8';
         $this->phpmailer->isHTML(true);
     }
@@ -23,7 +23,7 @@ class Email {
         $this->phpmailer->setFrom($from);
         $this->phpmailer->addAddress($to);
         $this->phpmailer->Subject = $subject;
-        $this->phpmailer->Body = '<!DOCTYPE html><html lang="pt-PT"><body>' . $message . '</body></html>';
+        $this->phpmailer->Body = '<!DOCTYPE html<html lang="pt-pt"><body>' . $message . '</body></html>';
         $this->phpmailer->AltBody = strip_tags($message);
         $this->phpmailer->send();
         return true;

@@ -11,12 +11,7 @@
             <h1>Apagar Perfil</h1>
             <section class="dados" id="dados-apagar">
                 <p>Confirma para apagares o teu perfil</p>
-                <img
-                    src="{{ membro.fotos[0]['id'] ? doc_root ~ 'profile-photo/' ~ membro.fotos[0]['id'] ~ '?size=thumb' : doc_root ~ 'imagens/fotos-perfil/default.webp' }}"
-                    alt="Foto de perfil de {{ membro.primeiro_nome }}"
-                    id="foto-perfil"
-                    data-fallback-src="{{ doc_root }}imagens/fotos-perfil/default.webp"
-                >
+                <img src="{{ doc_root }}imagens/fotos-perfil/{{ membro.fotos[0]['nome_arquivo'] }}" alt="Foto de perfil de {{ membro.primeiro_nome }}" id="foto-perfil">
             </section>
             <section class="opcoes" id="opcoes-apagar">
                 <form action="{{ doc_root }}profile-delete/{{ membro.id }}" method="post">

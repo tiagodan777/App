@@ -34,8 +34,6 @@
     }
 
     function textoEstado(tipo, preferencia, nativo) {
-        if (aPedir[tipo]) return 'À espera da confirmação…';
-
         if (preferencia === false) {
             if (nativo === 'granted') return 'Desativada na Margot. O navegador ainda tem autorização.';
             if (nativo === 'denied') return 'Desativada e bloqueada nas definições do navegador.';
@@ -44,6 +42,7 @@
 
         if (nativo === 'denied') return 'Bloqueada no navegador. Altera a permissão nas definições deste site.';
         if (nativo === 'unsupported') return 'Não está disponível neste navegador ou dispositivo.';
+        if (aPedir[tipo]) return 'À espera da tua resposta…';
 
         if (preferencia === true) {
             return tipo === 'localizacao'
@@ -74,11 +73,7 @@
             renderizarTipo('notificacoes')
         ]);
 
-        var resolvido =
-            API.foiEscolhida('localizacao') &&
-            API.foiEscolhida('notificacoes') &&
-            !aPedir.localizacao &&
-            !aPedir.notificacoes;
+        var resolvido = API.foiEscolhida('localizacao') && API.foiEscolhida('notificacoes');
 
         $('#permissoes-proximo')
             .toggleClass('desativado', !resolvido)
@@ -87,59 +82,30 @@
         if (resolvido) definirErro('');
     }
 
-    async function definirEConfirmar(tipo, valor) {
-        if (!API.definir(tipo, valor)) return false;
-
-        if (typeof API.quandoConfirmada !== 'function') return true;
-
-        return API.quandoConfirmada(tipo);
-    }
-
     async function sincronizarComNavegador() {
         var localizacao = await estadoNativoLocalizacao();
         var notificacoes = estadoNativoNotificacoes();
-        var sincronizacoes = [];
-        var tiposSincronizados = [];
 
         if (localizacao === 'unsupported' || localizacao === 'denied') {
-            aPedir.localizacao = true;
-            tiposSincronizados.push('localizacao');
-            sincronizacoes.push(definirEConfirmar('localizacao', false));
+            API.definir('localizacao', false);
         } else if (!API.foiEscolhida('localizacao') && localizacao === 'granted') {
-            aPedir.localizacao = true;
-            tiposSincronizados.push('localizacao');
-            sincronizacoes.push(definirEConfirmar('localizacao', true));
+            API.definir('localizacao', true);
         }
 
         if (notificacoes === 'unsupported' || notificacoes === 'denied') {
-            aPedir.notificacoes = true;
-            tiposSincronizados.push('notificacoes');
-            sincronizacoes.push(definirEConfirmar('notificacoes', false));
+            API.definir('notificacoes', false);
         } else if (!API.foiEscolhida('notificacoes') && notificacoes === 'granted') {
-            aPedir.notificacoes = true;
-            tiposSincronizados.push('notificacoes');
-            sincronizacoes.push(definirEConfirmar('notificacoes', true));
+            API.definir('notificacoes', true);
         }
 
-        renderizar();
-        var resultados = await Promise.all(sincronizacoes);
-        tiposSincronizados.forEach(function (tipo) {
-            aPedir[tipo] = false;
-        });
         await renderizar();
-
-        if (resultados.some(function (resultado) { return resultado !== true; })) {
-            definirErro('Não foi possível guardar uma das preferências.');
-        }
     }
 
-    async function ativarLocalizacao() {
+    function ativarLocalizacao() {
         if (!window.isSecureContext || !navigator.geolocation) {
-            aPedir.localizacao = true;
-            await definirEConfirmar('localizacao', false);
-            aPedir.localizacao = false;
-            await renderizar();
+            API.definir('localizacao', false);
             definirErro('A localização não está disponível neste dispositivo.');
+            renderizar();
             return;
         }
 
@@ -148,33 +114,22 @@
         renderizar();
 
         navigator.geolocation.getCurrentPosition(
-            async function () {
-                var confirmada = await definirEConfirmar(
-                    'localizacao',
-                    true
-                );
+            function () {
                 aPedir.localizacao = false;
-                await renderizar();
-
-                if (!confirmada) {
-                    definirErro('Não foi possível guardar a preferência de localização.');
-                }
+                API.definir('localizacao', true);
+                renderizar();
             },
-            async function (erro) {
-                var confirmada = await definirEConfirmar(
-                    'localizacao',
-                    false
-                );
+            function (erro) {
                 aPedir.localizacao = false;
-                await renderizar();
+                API.definir('localizacao', false);
 
                 definirErro(
-                    !confirmada
-                        ? 'Não foi possível guardar a preferência de localização.'
-                        : erro.code === 1
+                    erro.code === 1
                         ? 'A localização está bloqueada. Podes permiti-la nas definições deste site.'
                         : 'Não foi possível obter a localização. Tenta novamente.'
                 );
+
+                renderizar();
             },
             {
                 enableHighAccuracy: true,
@@ -186,20 +141,16 @@
 
     async function ativarNotificacoes() {
         if (!window.isSecureContext || !('Notification' in window)) {
-            aPedir.notificacoes = true;
-            await definirEConfirmar('notificacoes', false);
-            aPedir.notificacoes = false;
-            await renderizar();
+            API.definir('notificacoes', false);
             definirErro('As notificações não estão disponíveis aqui. No iPhone, instala a Margot no ecrã principal.');
+            await renderizar();
             return;
         }
 
         if (Notification.permission === 'denied') {
-            aPedir.notificacoes = true;
-            await definirEConfirmar('notificacoes', false);
-            aPedir.notificacoes = false;
-            await renderizar();
+            API.definir('notificacoes', false);
             definirErro('As notificações estão bloqueadas. Permite-as nas definições deste site.');
+            await renderizar();
             return;
         }
 
@@ -213,46 +164,31 @@
                 : Notification.requestPermission();
 
             var resposta = await pedido;
-            var confirmada = await definirEConfirmar(
-                'notificacoes',
-                resposta === 'granted'
-            );
 
-            aPedir.notificacoes = false;
-            await renderizar();
+            API.definir('notificacoes', resposta === 'granted');
 
-            if (!confirmada) {
-                definirErro('Não foi possível guardar a preferência de notificações.');
-            } else if (resposta !== 'granted') {
+            if (resposta !== 'granted') {
                 definirErro('As notificações ficaram desativadas. Podes ativá-las mais tarde ao editar o perfil.');
             }
         } catch (erro) {
-            await definirEConfirmar('notificacoes', false);
-            aPedir.notificacoes = false;
-            await renderizar();
+            API.definir('notificacoes', false);
             definirErro('Não foi possível pedir a permissão para notificações.');
         }
+
+        aPedir.notificacoes = false;
+        await renderizar();
     }
 
-    async function desativar(tipo) {
-        aPedir[tipo] = true;
-        definirErro('');
-        renderizar();
-
-        var confirmada = await definirEConfirmar(tipo, false);
-        aPedir[tipo] = false;
-        await renderizar();
-
-        if (!confirmada) {
-            definirErro('Não foi possível guardar esta preferência.');
-            return;
-        }
+    function desativar(tipo) {
+        API.definir(tipo, false);
 
         definirErro(
             tipo === 'localizacao'
                 ? 'A Margot deixou de usar a tua localização. Para remover também a autorização do navegador, usa as definições deste site.'
                 : 'A Margot deixou de criar notificações. Para remover também a autorização do navegador, usa as definições deste site.'
         );
+
+        renderizar();
     }
 
     window.inicializarEtapaPermissoes = function () {
@@ -263,11 +199,7 @@
     };
 
     window.validarEtapaPermissoes = function () {
-        var valido =
-            API.foiEscolhida('localizacao') &&
-            API.foiEscolhida('notificacoes') &&
-            !aPedir.localizacao &&
-            !aPedir.notificacoes;
+        var valido = API.foiEscolhida('localizacao') && API.foiEscolhida('notificacoes');
 
         if (!valido) {
             definirErro('Escolhe se queres ativar ou desativar as duas opções.');

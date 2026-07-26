@@ -1,7 +1,7 @@
 {% extends 'layout.html' %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ doc_root }}estilos/profile.css?v=4">
+<link rel="stylesheet" href="{{ doc_root }}estilos/profile.css?v=3">
 {% endblock %}
 
 {% block content %}
@@ -34,7 +34,7 @@
             {% if total_fotos > 0 %}
                 {% for foto in fotos %}
                     <figure id="perfil-foto-{{ loop.index0 }}" class="perfil-slide" data-indice="{{ loop.index0 }}"aria-hidden="{{ loop.first ? 'false' : 'true' }}">
-                        <img src="{{ foto.url_original }}" data-fallback="{{ foto.url_thumb }}" data-default="{{ doc_root }}imagens/fotos-perfil/default.webp" alt="Fotografia {{ loop.index }} de {{ membro.nome }}" loading="{{ loop.first ? 'eager' : 'lazy' }}" fetchpriority="{{ loop.first ? 'high' : 'auto' }}" draggable="false">
+                        <img src="{{ doc_root }}imagens/fotos-perfil-originais/{{ foto.nome_arquivo }}" data-fallback="{{ doc_root }}imagens/fotos-perfil/{{ foto.nome_arquivo }}" data-default="{{ doc_root }}imagens/fotos-perfil/default.webp" alt="Fotografia {{ loop.index }} de {{ membro.nome }}" loading="{{ loop.first ? 'eager' : 'lazy' }}" fetchpriority="{{ loop.first ? 'high' : 'auto' }}" draggable="false">
                     </figure>
                 {% endfor %}
             {% else %}
@@ -101,51 +101,16 @@
         {% endif %}
 
         {% if membro.id != session.id %}
-            <div class="perfil-acoes" aria-label="Ações do perfil">
-                <button type="button" class="ola" id="enviar-hey-perfil" data-destinatario-id="{{ membro.id }}">Hey</button>
-                <button type="button" class="perfil-acao-secundaria" id="denunciar-perfil">Denunciar</button>
-                <button type="button" class="perfil-acao-perigosa" id="bloquear-perfil">Bloquear</button>
-            </div>
-
-            <p id="perfil-seguranca-estado" class="perfil-seguranca-estado" role="status" aria-live="polite"></p>
-
-            <dialog id="perfil-denuncia-dialog" class="perfil-denuncia-dialog">
-                <form id="perfil-denuncia-form" method="dialog">
-                    <h2>Denunciar perfil</h2>
-                    <p>Diz-nos o que aconteceu. A outra pessoa não será avisada.</p>
-
-                    <label for="perfil-denuncia-motivo">Motivo</label>
-                    <select id="perfil-denuncia-motivo" name="motivo" required>
-                        <option value="">Escolher…</option>
-                        <option value="assedio">Assédio ou intimidação</option>
-                        <option value="conteudo_inadequado">Conteúdo inadequado</option>
-                        <option value="comportamento_inadequado">Comportamento inadequado</option>
-                        <option value="perfil_falso">Perfil falso</option>
-                        <option value="spam">Spam</option>
-                        <option value="seguranca">Risco de segurança</option>
-                        <option value="outro">Outro</option>
-                    </select>
-
-                    <label for="perfil-denuncia-mensagem">Descrição opcional</label>
-                    <textarea id="perfil-denuncia-mensagem" name="mensagem" maxlength="2048" rows="4"></textarea>
-
-                    <p id="perfil-denuncia-erro" class="perfil-denuncia-erro" role="alert" hidden></p>
-
-                    <div class="perfil-denuncia-botoes">
-                        <button type="button" id="perfil-denuncia-cancelar">Cancelar</button>
-                        <button type="submit" id="perfil-denuncia-enviar">Enviar denúncia</button>
-                    </div>
-                </form>
-            </dialog>
+            <button type="button" class="ola" id="enviar-hey-perfil" data-destinatario-id="{{ membro.id }}">Hey</button>
         {% endif %}
     </section>
 </main>
 
-<script nonce="{{ csp_nonce }}">
-    window.profileProximityToken = {{ proximity_token|default('')|json_encode(json_script_flags)|raw }};
-    window.profileSafetyUrl = {{ (doc_root ~ 'safety')|json_encode(json_script_flags)|raw }};
-    window.profileHomeUrl = {{ (doc_root ~ 'index')|json_encode(json_script_flags)|raw }};
+<script>
+    window.membroId = {{ session.id|json_encode|raw }};
+    window.webSocketUrl = window.location.protocol === 'https:' ? 'wss://' + window.location.host + '/ws/' : 'ws://' + window.location.hostname + ':8080';
 </script>
 
-<script src="{{ doc_root }}js/profile.js?v=3"></script>
+<script src="{{ doc_root }}js/websocket.js?v=7"></script>
+<script src="{{ doc_root }}js/profile.js?v=2"></script>
 {% endblock %}

@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\CMS;
 
-use App\Security\MemberMutex;
-
 class Member
 {
     private $db;
@@ -29,7 +27,7 @@ class Member
         $sql = "SELECT fp.id, fp.nome_arquivo, fp.ordem
                 FROM fotos_perfil AS fp
                 WHERE fp.membro_id = :membro_id
-                AND fp.status = 'completo'
+                AND (fp.status = 'completo' OR fp.status IS NULL)
                 ORDER BY fp.ordem IS NULL ASC, fp.ordem ASC, fp.id ASC";
 
         $membro['fotos'] = $this->db->runSQL($sql, ['membro_id' => $id])->fetchAll();
@@ -44,49 +42,6 @@ class Member
 
         if (!$membro['fotos']) {
             $membro['fotos'] = [['id' => null, 'nome_arquivo' => 'default.webp', 'ordem' => 1]];
-        }
-
-        return $membro;
-    }
-
-    public function getPublic(string $id): array|false
-    {
-        $sql = "SELECT m.id, m.primeiro_nome, m.ultimo_nome,
-                       CONCAT(m.primeiro_nome, ' ', m.ultimo_nome) AS nome,
-                       m.nascimento, m.objetivo, m.bio, m.nome_seo
-                FROM membros AS m
-                WHERE m.id = :id
-                AND m.estado = 'ativo'
-                LIMIT 1";
-
-        $membro = $this->db->runSQL($sql, ['id' => $id])->fetch();
-
-        if (!$membro) return false;
-
-        $membro['fotos'] = $this->db->runSQL(
-            "SELECT fp.id, fp.nome_arquivo, fp.ordem
-             FROM fotos_perfil AS fp
-             WHERE fp.membro_id = :membro_id
-             AND fp.status = 'completo'
-             ORDER BY fp.ordem IS NULL ASC, fp.ordem ASC, fp.id ASC",
-            ['membro_id' => $id]
-        )->fetchAll();
-
-        $membro['gostos'] = $this->db->runSQL(
-            "SELECT h.nome
-             FROM hobbies AS h
-             INNER JOIN membros_gostos AS mg ON mg.hobbie_id = h.id
-             WHERE mg.membro_id = :membro_id
-             ORDER BY h.nome ASC",
-            ['membro_id' => $id]
-        )->fetchAll();
-
-        if (!$membro['fotos']) {
-            $membro['fotos'] = [[
-                'id' => null,
-                'nome_arquivo' => 'default.webp',
-                'ordem' => 1
-            ]];
         }
 
         return $membro;
@@ -194,9 +149,7 @@ class Member
                     throw new \RuntimeException('Não foi possível proteger a nova palavra-passe.');
                 }
 
-                $sql .=
-                    ', password = :password, ' .
-                    'auth_version = auth_version + 1';
+                $sql .= ', password = :password';
                 $parametros['password'] = $passwordHash;
             }
 
@@ -230,11 +183,9 @@ class Member
             : strtolower($email);
     }
 
-    private function normalizarTelefone(string $telefone): ?string
+    private function normalizarTelefone(string $telefone): string
     {
-        $telefone = (string) preg_replace('/\D+/', '', trim($telefone));
-
-        return $telefone === '' ? null : $telefone;
+        return (string) preg_replace('/\D+/', '', trim($telefone));
     }
 
     private function normalizarGostos($gostos): array
@@ -276,12 +227,12 @@ class Member
         if ($utilizador === '' || $password === '') return false;
 
         $sql = "SELECT m.id, m.primeiro_nome, m.ultimo_nome, m.nascimento, m.genero, m.objetivo, m.email, m.telefone, m.password, m.adesao, m.bio,
-                m.nome_seo, m.estado, COALESCE(
+                m.nome_seo, COALESCE(
                     (
                         SELECT fp.nome_arquivo
                         FROM fotos_perfil AS fp
                         WHERE fp.membro_id = m.id
-                        AND fp.status = 'completo'
+                        AND (fp.status = 'completo' OR fp.status IS NULL)
                         ORDER BY fp.ordem IS NULL ASC, fp.ordem ASC
                         LIMIT 1
                     ),
@@ -300,15 +251,11 @@ class Member
             $identificador = $this->normalizarTelefone($utilizador);
         }
 
-        if ($identificador === '' || $identificador === null) return false;
+        if ($identificador === '') return false;
 
         $membro = $this->db->runSQL($sql, ['utilizador' => $identificador])->fetch();
 
-        if (
-            !$membro ||
-            (string) ($membro['estado'] ?? '') !== 'ativo' ||
-            !password_verify($password, (string) $membro['password'])
-        ) {
+        if (!$membro || !password_verify($password, (string) $membro['password'])) {
             return false;
         }
 
@@ -323,21 +270,9 @@ class Member
             }
         }
 
-        unset($membro['password'], $membro['estado']);
+        unset($membro['password']);
 
         return $membro;
-    }
-
-    public function verifyPassword(string $id, string $password): bool
-    {
-        if ($id === '' || $password === '') return false;
-
-        $hash = $this->db->runSQL(
-            'SELECT password FROM membros WHERE id = :id LIMIT 1',
-            ['id' => $id]
-        )->fetchColumn();
-
-        return is_string($hash) && password_verify($password, $hash);
     }
 
     public function delete(string $id): bool
@@ -346,249 +281,98 @@ class Member
 
         if ($id === '') return false;
 
-        $mutex = new MemberMutex($this->db);
-
-        if (!$mutex->acquire($id, 10)) {
-            throw new \RuntimeException('A conta está a terminar outra alteração. Tenta novamente.');
-        }
-
         $fotos = [];
         $ficheirosMensagens = [];
+        $membroApagado = false;
 
         try {
-            try {
-                $this->db->beginTransaction();
+            $this->db->beginTransaction();
 
-                $membroExiste = $this->db->runSQL(
-                    'SELECT id FROM membros WHERE id = :id LIMIT 1 FOR UPDATE',
-                    ['id' => $id]
-                )->fetchColumn();
+            $fotos = $this->db->runSQL(
+                'SELECT nome_arquivo FROM fotos_perfil WHERE membro_id = :id',
+                ['id' => $id]
+            )->fetchAll(\PDO::FETCH_COLUMN);
 
-                if (!$membroExiste) {
-                    $this->db->rollBack();
-
-                    return false;
-                }
-
-                $fotos = $this->db->runSQL(
-                    'SELECT nome_arquivo FROM fotos_perfil WHERE membro_id = :id',
-                    ['id' => $id]
-                )->fetchAll(\PDO::FETCH_COLUMN);
-
-                $ficheirosMensagens = $this->db->runSQL(
-                    'SELECT ficheiro_nome FROM mensagens_chat WHERE (emissor_id = :id1 OR destinatario_id = :id2) AND ficheiro_nome IS NOT NULL',
-                    ['id1' => $id, 'id2' => $id]
-                )->fetchAll(\PDO::FETCH_COLUMN);
-
-                $this->enfileirarFicheiros($fotos, 'perfil', ['default.webp']);
-                $this->enfileirarFicheiros($ficheirosMensagens, 'mensagem');
-
-                $this->db->runSQL(
-                    'DELETE FROM mensagens_chat WHERE emissor_id = :id1 OR destinatario_id = :id2',
-                    ['id1' => $id, 'id2' => $id]
-                );
-
-                $this->db->runSQL(
-                    'DELETE FROM notificacao WHERE emissor_id = :id1 OR destinatario_id = :id2',
-                    ['id1' => $id, 'id2' => $id]
-                );
-
-                $this->db->runSQL(
-                    'DELETE FROM bloqueados WHERE pessoa_bloqueou_id = :id1 OR pessoa_bloqueada_id = :id2',
-                    ['id1' => $id, 'id2' => $id]
-                );
-
-                $pseudonimo = hash_hmac('sha256', $id, APP_KEY);
-
-                $this->db->runSQL(
-                    'UPDATE denuncias
-                     SET denunciante_pseudonimo = COALESCE(denunciante_pseudonimo, :pseudonimo),
-                         membro_denuncia = NULL
-                     WHERE membro_denuncia = :id',
-                    ['pseudonimo' => $pseudonimo, 'id' => $id]
-                );
-
-                $this->db->runSQL(
-                    "UPDATE denuncias
-                     SET denunciado_pseudonimo = COALESCE(denunciado_pseudonimo, :pseudonimo),
-                         membro_denunciado = NULL,
-                         evidencia_json = JSON_SET(
-                             JSON_REMOVE(
-                                 COALESCE(evidencia_json, JSON_OBJECT()),
-                                 '$.perfil.nome',
-                                 '$.perfil.objetivo',
-                                 '$.perfil.bio'
-                             ),
-                             '$.perfil_redigido',
-                             TRUE
-                         )
-                     WHERE membro_denunciado = :id",
-                    ['pseudonimo' => $pseudonimo, 'id' => $id]
-                );
-
-                $this->db->runSQL(
-                    'UPDATE moderacao_acoes
-                     SET moderador_pseudonimo = COALESCE(moderador_pseudonimo, :pseudonimo),
-                         moderador_id = NULL
-                     WHERE moderador_id = :id',
-                    ['pseudonimo' => $pseudonimo, 'id' => $id]
-                );
-
-                $this->db->runSQL('DELETE FROM token WHERE membro_id = :id', ['id' => $id]);
-                $this->db->runSQL('DELETE FROM websocket_tickets WHERE membro_id = :id', ['id' => $id]);
-                $this->db->runSQL('DELETE FROM preferencias_privacidade_eventos WHERE membro_id = :id', ['id' => $id]);
-                $this->db->runSQL('DELETE FROM preferencias_privacidade WHERE membro_id = :id', ['id' => $id]);
-                $this->db->runSQL('DELETE FROM aceitacoes_legais WHERE membro_id = :id', ['id' => $id]);
-                $this->db->runSQL('DELETE FROM membros_gostos WHERE membro_id = :id', ['id' => $id]);
-                $this->db->runSQL('DELETE FROM fotos_perfil WHERE membro_id = :id', ['id' => $id]);
-
-                $membroApagado = $this->db->runSQL(
-                    'DELETE FROM membros WHERE id = :id',
-                    ['id' => $id]
-                )->rowCount() === 1;
-
-                if (!$membroApagado) {
-                    $this->db->rollBack();
-
-                    return false;
-                }
-
-                $this->db->commit();
-            } catch (\Throwable $erro) {
-                if ($this->db->inTransaction()) $this->db->rollBack();
-
-                throw $erro;
-            }
-
-            try {
-                $this->apagarFicheiros($fotos, [
-                    PROFILE_PHOTO_THUMB_DIR . '/',
-                    PROFILE_PHOTO_ORIGINAL_DIR . '/',
-                    PROFILE_PHOTO_TEMP_DIR . '/',
-                    APP_ROOT . '/public/imagens/fotos-perfil/',
-                    APP_ROOT . '/public/imagens/fotos-perfil-originais/',
-                    APP_ROOT . '/public/imagens/fotos-perfil-temp/'
-                ], 'perfil', ['default.webp']);
-
-                $this->apagarFicheiros($ficheirosMensagens, [
-                    MESSAGE_MEDIA_DIR . '/',
-                    APP_ROOT . '/public/media/mensagens/'
-                ], 'mensagem');
-            } catch (\Throwable $erro) {
-                error_log('[member-delete] A conta foi apagada; a limpeza física seguirá pela fila.');
-            }
-
-            return true;
-        } finally {
-            $mutex->release($id);
-        }
-    }
-
-    private function enfileirarFicheiros(
-        array $nomes,
-        string $tipo,
-        array $protegidos = []
-    ): void {
-        foreach ($this->normalizarNomesFicheiro($nomes, $tipo) as $nome) {
-            $nome = basename(trim((string) $nome));
-
-            if ($nome === '' || in_array($nome, $protegidos, true)) continue;
+            $ficheirosMensagens = $this->db->runSQL(
+                'SELECT ficheiro_nome FROM mensagens_chat WHERE (emissor_id = :id1 OR destinatario_id = :id2) AND ficheiro_nome IS NOT NULL',
+                ['id1' => $id, 'id2' => $id]
+            )->fetchAll(\PDO::FETCH_COLUMN);
 
             $this->db->runSQL(
-                'INSERT INTO ficheiros_a_apagar (tipo, nome_arquivo)
-                 VALUES (:tipo, :nome)
-                 ON DUPLICATE KEY UPDATE nome_arquivo = VALUES(nome_arquivo)',
-                ['tipo' => $tipo, 'nome' => $nome]
+                'DELETE FROM mensagens_chat WHERE emissor_id = :id1 OR destinatario_id = :id2',
+                ['id1' => $id, 'id2' => $id]
             );
+
+            $this->db->runSQL(
+                'DELETE FROM notificacao WHERE emissor_id = :id1 OR destinatario_id = :id2',
+                ['id1' => $id, 'id2' => $id]
+            );
+
+            $this->db->runSQL(
+                'DELETE FROM bloqueados WHERE pessoa_bloqueou_id = :id1 OR pessoa_bloqueada_id = :id2',
+                ['id1' => $id, 'id2' => $id]
+            );
+
+            $this->db->runSQL(
+                'DELETE FROM denuncias WHERE membro_denuncia = :id1 OR membro_denunciado = :id2',
+                ['id1' => $id, 'id2' => $id]
+            );
+
+            $this->db->runSQL('DELETE FROM token WHERE membro_id = :id', ['id' => $id]);
+            $this->db->runSQL('DELETE FROM localizacoes WHERE membro_id = :id', ['id' => $id]);
+            $this->db->runSQL('DELETE FROM membros_gostos WHERE membro_id = :id', ['id' => $id]);
+            $this->db->runSQL('DELETE FROM fotos_perfil WHERE membro_id = :id', ['id' => $id]);
+
+            $membroApagado = $this->db->runSQL(
+                'DELETE FROM membros WHERE id = :id',
+                ['id' => $id]
+            )->rowCount() === 1;
+
+            $this->db->commit();
+        } catch (\Throwable $erro) {
+            if ($this->db->inTransaction()) $this->db->rollBack();
+
+            throw $erro;
         }
+
+        if (!$membroApagado) return false;
+
+        $this->apagarFicheiros($fotos, [
+            APP_ROOT . '/public/imagens/fotos-perfil/',
+            APP_ROOT . '/public/imagens/fotos-perfil-originais/',
+            APP_ROOT . '/public/imagens/fotos-perfil-temp/'
+        ], ['default.webp']);
+
+        $this->apagarFicheiros($ficheirosMensagens, [
+            APP_ROOT . '/public/media/mensagens/'
+        ]);
+
+        return true;
     }
 
-    private function apagarFicheiros(
-        array $nomes,
-        array $pastas,
-        string $tipo,
-        array $protegidos = []
-    ): void
+    private function apagarFicheiros(array $nomes, array $pastas, array $protegidos = []): void
     {
-        foreach ($this->normalizarNomesFicheiro($nomes, $tipo) as $nome) {
+        foreach (array_unique($nomes) as $nome) {
             $nome = basename(trim((string) $nome));
 
             if ($nome === '' || in_array($nome, $protegidos, true)) continue;
 
-            $falhou = false;
-
             foreach ($pastas as $pasta) {
                 $caminho = rtrim($pasta, '/') . '/' . $nome;
 
                 try {
-                    if (
-                        (is_file($caminho) || is_link($caminho)) &&
-                        !unlink($caminho)
-                    ) {
-                        $falhou = true;
+                    if (is_file($caminho) && !unlink($caminho)) {
+                        error_log('Não foi possível apagar o ficheiro: ' . $caminho);
                     }
                 } catch (\Throwable $erro) {
-                    $falhou = true;
-                }
-            }
-
-            foreach ($pastas as $pasta) {
-                $caminho = rtrim($pasta, '/') . '/' . $nome;
-                if (is_file($caminho) || is_link($caminho)) $falhou = true;
-            }
-
-            if (!$falhou) {
-                try {
-                    $this->db->runSQL(
-                        'DELETE FROM ficheiros_a_apagar
-                         WHERE tipo = :tipo AND nome_arquivo = :nome',
-                        ['tipo' => $tipo, 'nome' => $nome]
+                    error_log(
+                        'Não foi possível apagar o ficheiro ' .
+                        $caminho .
+                        ': ' .
+                        $erro->getMessage()
                     );
-                } catch (\Throwable) {
-                    error_log('[member-delete] A fila de eliminação será reconciliada pelo cron.');
                 }
-
-                continue;
-            }
-
-            try {
-                $this->db->runSQL(
-                    'UPDATE ficheiros_a_apagar
-                     SET tentativas = tentativas + 1,
-                         ultima_tentativa_em = UTC_TIMESTAMP(6),
-                         ultimo_erro = :erro
-                     WHERE tipo = :tipo AND nome_arquivo = :nome',
-                    [
-                        'erro' => 'Falha ao apagar um ou mais ficheiros.',
-                        'tipo' => $tipo,
-                        'nome' => $nome
-                    ]
-                );
-            } catch (\Throwable) {
-                // A operação lógica já terminou; nunca reverte a eliminação da conta.
-            }
-
-            error_log('[member-delete] Ficou media pendente na fila de eliminação.');
-        }
-    }
-
-    private function normalizarNomesFicheiro(array $nomes, string $tipo): array
-    {
-        $resultado = [];
-
-        foreach ($nomes as $nome) {
-            $nome = basename(trim((string) $nome));
-
-            if ($nome === '' || $nome === '.' || $nome === '..') continue;
-
-            $resultado[$nome] = true;
-
-            if ($tipo === 'perfil') {
-                $webp = pathinfo($nome, PATHINFO_FILENAME) . '.webp';
-                $resultado[$webp] = true;
             }
         }
-
-        return array_keys($resultado);
     }
 }

@@ -8,17 +8,18 @@
     var connectionTimeout = null;
     var pingTimer = null;
     var reconnectAttempts = 0;
-    var ticketRequestInFlight = false;
-    var authenticated = false;
     var locationWatchId = null;
     var lastLocationSentAt = 0;
+    var lastSentLatitude = null;
+    var lastSentLongitude = null;
 
     var RECONNECT_MIN_DELAY = 1000;
     var RECONNECT_MAX_DELAY = 30000;
     var CONNECTION_TIMEOUT = 12000;
     var PING_INTERVAL = 20000;
-    var LOCATION_MIN_INTERVAL = 10000;
-    var LOCATION_MAX_AGE = 5000;
+    var LOCATION_MIN_INTERVAL = 15000;
+    var LOCATION_MIN_DISTANCE = 5;
+    var LOCATION_MAX_AGE = 10000;
     
     function aplicarPreferenciasGuardadas() {
         if (window.MargotPreferencias) {
@@ -26,22 +27,24 @@
             return;
         }
 
-        /*
-         * Sem o módulo de preferências autenticado, a presença falha fechada.
-         * Nunca se reutiliza uma chave local genérica que possa pertencer a
-         * outra conta.
-         */
-        window.disableLocationTracking = true;
-        window.disableNotifications = true;
-        window.margotInvisible = false;
-        window.disableMapPresence = true;
+        try {
+            var preferencias = JSON.parse(window.localStorage.getItem('margot-preferencias-v1') || '{}');
+            window.disableLocationTracking = preferencias.localizacao === false;
+            window.disableNotifications = preferencias.notificacoes === false;
+            window.margotInvisible = preferencias.invisivel === true;
+            window.disableMapPresence = window.disableLocationTracking || window.margotInvisible;
+        } catch (erro) {
+            window.disableLocationTracking = false;
+            window.disableNotifications = false;
+            window.margotInvisible = false;
+            window.disableMapPresence = false;
+        }
     }
 
     aplicarPreferenciasGuardadas();
 
     function localizacaoEstaAtiva() {
-        return window.forceDisableLocationTracking !== true &&
-            window.disableLocationTracking !== true;
+        return window.disableLocationTracking !== true;
     }
 
     function modoInvisivelEstaAtivo() {
@@ -67,85 +70,19 @@
         return protocol + '//' + window.location.hostname + ':8080';
     }
 
-    function getWebSocketTicketUrl() {
-        return String(window.webSocketTicketUrl || '/websocket-ticket');
-    }
-
-    function requestWebSocketTicket() {
-        var headers = {
-            Accept: 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-        };
-
-        if (window.csrfToken) {
-            headers['X-CSRF-Token'] = String(window.csrfToken);
-        }
-
-        var controller = typeof AbortController === 'function'
-            ? new AbortController()
-            : null;
-        var timeout = window.setTimeout(function () {
-            if (controller) controller.abort();
-        }, CONNECTION_TIMEOUT);
-
-        return window.fetch(getWebSocketTicketUrl(), {
-            method: 'POST',
-            credentials: 'same-origin',
-            cache: 'no-store',
-            headers: headers,
-            signal: controller ? controller.signal : undefined
-        }).then(function (response) {
-            return response.json().catch(function () {
-                return {};
-            }).then(function (data) {
-                var ticket = String(data.ticket || '').trim();
-
-                if (!response.ok || !/^[a-f0-9]{64}$/i.test(ticket)) {
-                    throw new Error(data.message || 'Não foi possível preparar a ligação segura.');
-                }
-
-                return ticket;
-            });
-        }).finally(function () {
-            window.clearTimeout(timeout);
-        });
-    }
-
     function connect() {
         if (!navigator.onLine) {
             setStatus('offline');
             return;
         }
 
-        if (ticketRequestInFlight) return;
         if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) return;
 
         clearReconnectTimer();
         clearConnectionTimeout();
         clearPingTimer();
-        authenticated = false;
         setStatus('connecting');
 
-        ticketRequestInFlight = true;
-
-        requestWebSocketTicket().then(function (ticket) {
-            ticketRequestInFlight = false;
-
-            if (!navigator.onLine) {
-                setStatus('offline');
-                return;
-            }
-
-            openSocket(ticket);
-        }).catch(function (erro) {
-            ticketRequestInFlight = false;
-            console.error('Erro ao obter bilhete WebSocket:', erro);
-            setStatus(navigator.onLine ? 'disconnected' : 'offline');
-            scheduleReconnect();
-        });
-    }
-
-    function openSocket(ticket) {
         try {
             socket = new WebSocket(getWebSocketUrl());
         } catch (erro) {
@@ -160,14 +97,19 @@
         var currentSocket = socket;
 
         connectionTimeout = window.setTimeout(function () {
-            if (currentSocket === socket && !authenticated) currentSocket.close();
+            if (currentSocket.readyState === WebSocket.CONNECTING) currentSocket.close();
         }, CONNECTION_TIMEOUT);
 
         currentSocket.onopen = function () {
             if (currentSocket !== socket) return;
 
-            setStatus('authenticating');
-            authenticate(ticket);
+            clearConnectionTimeout();
+            reconnectAttempts = 0;
+            setStatus('connected');
+            authenticate();
+            startPing();
+
+            if (!window.disableLocationTracking) startLocationTracking();
         };
 
         currentSocket.onmessage = function (evento) {
@@ -184,28 +126,33 @@
             clearConnectionTimeout();
             clearPingTimer();
 
-            authenticated = false;
             socket = null;
             window.ws = null;
-            limparMapaLocal();
 
             setStatus(navigator.onLine ? 'disconnected' : 'offline');
             scheduleReconnect();
         };
     }
 
-    function authenticate(ticket) {
+    function authenticate() {
+        var membroId = String(window.membroId || '').trim();
+
+        if (!membroId) {
+            console.error('window.membroId não está definido.');
+            return;
+        }
+
         var estadoPresenca = obterEstadoPresenca();
 
-        sendRaw({
+        send({
             type: 'auth',
-            ticket: ticket,
+            membro_id: membroId,
             location_enabled: estadoPresenca.location_enabled,
             map_presence: estadoPresenca.map_presence
         });
     }
 
-    function sendRaw(data) {
+    function send(data) {
         if (!socket || socket.readyState !== WebSocket.OPEN) return false;
 
         try {
@@ -215,11 +162,6 @@
             console.error('Erro ao enviar mensagem:', erro);
             return false;
         }
-    }
-
-    function send(data) {
-        if (!authenticated) return false;
-        return sendRaw(data);
     }
 
     function sendPresenceState() {
@@ -244,7 +186,7 @@
     }
 
     function startLocationTracking() {
-        if (!localizacaoEstaAtiva()) return;
+        if (window.disableLocationTracking) return;
         
         if (locationWatchId !== null) return;
 
@@ -272,32 +214,12 @@
 
         locationWatchId = null;
         lastLocationSentAt = 0;
-    }
-
-    function refreshLocationNow() {
-        if (
-            !authenticated ||
-            !localizacaoEstaAtiva() ||
-            !window.isSecureContext ||
-            !('geolocation' in navigator)
-        ) {
-            return;
-        }
-
-        lastLocationSentAt = 0;
-        navigator.geolocation.getCurrentPosition(
-            handleLocationSuccess,
-            handleLocationError,
-            {
-                enableHighAccuracy: true,
-                maximumAge: 0,
-                timeout: 15000
-            }
-        );
+        lastSentLatitude = null;
+        lastSentLongitude = null;
     }
 
     function handleLocationSuccess(position) {
-        if (!localizacaoEstaAtiva()) return;
+        if (window.disableLocationTracking) return;
 
         var latitude = Number(position.coords.latitude);
         var longitude = Number(position.coords.longitude);
@@ -306,9 +228,14 @@
         if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
 
         var agora = Date.now();
+
+        var distancia = lastSentLatitude === null
+            ? Infinity
+            : calculateDistanceMeters(lastSentLatitude, lastSentLongitude, latitude, longitude);
+
         var passouTempo = agora - lastLocationSentAt >= LOCATION_MIN_INTERVAL;
 
-        if (lastLocationSentAt > 0 && !passouTempo) return;
+        if (lastSentLatitude !== null && !passouTempo && distancia < LOCATION_MIN_DISTANCE) return;
 
         if (!send({
             type: 'location',
@@ -319,6 +246,8 @@
         })) return;
 
         lastLocationSentAt = agora;
+        lastSentLatitude = latitude;
+        lastSentLongitude = longitude;
     }
 
     function handleLocationError(error) {
@@ -334,19 +263,26 @@
 
         console.warn(mensagem, error);
         mostrarMensagemTemporaria(mensagem, 'erro');
+    }
 
-        if (
-            error.code === error.PERMISSION_DENIED ||
-            error.code === error.POSITION_UNAVAILABLE
-        ) {
-            stopLocationTracking();
-            limparMapaLocal();
-            send({
-                type: 'presence_update',
-                location_enabled: false,
-                map_presence: false
-            });
-        }
+    function calculateDistanceMeters(lat1, lng1, lat2, lng2) {
+        var raio = 6371000;
+        var latitude1 = toRadians(lat1);
+        var latitude2 = toRadians(lat2);
+        var diferencaLatitude = toRadians(lat2 - lat1);
+        var diferencaLongitude = toRadians(lng2 - lng1);
+
+        var a =
+            Math.sin(diferencaLatitude / 2) ** 2 +
+            Math.cos(latitude1) *
+            Math.cos(latitude2) *
+            Math.sin(diferencaLongitude / 2) ** 2;
+
+        return raio * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function toRadians(valor) {
+        return valor * Math.PI / 180;
     }
 
     function scheduleReconnect() {
@@ -385,52 +321,22 @@
 
             case 'authenticated':
                 console.log('WebSocket autenticado:', data.membro_id);
-                authenticated = true;
-                clearConnectionTimeout();
-                reconnectAttempts = 0;
-                setStatus('connected');
-                startPing();
 
                 if (data.location_enabled === false) {
-                    stopLocationTracking();
                     limparMapaLocal();
-                } else {
-                    if (localizacaoEstaAtiva()) startLocationTracking();
-
-                    if (data.map_presence === false) {
-                        removerPropriaFotoDoMapa();
-                    }
+                } else if (data.map_presence === false) {
+                    removerPropriaFotoDoMapa();
                 }
                 break;
 
             case 'location_received':
                 break;
 
-            case 'location_refresh_required':
-                refreshLocationNow();
-                break;
-
-            case 'location_ignored':
-                break;
-
-            case 'location_rejected':
-                limparMapaLocal();
-                mostrarMensagemTemporaria(
-                    data.message || 'A localização atual não permite usar a descoberta.',
-                    'erro'
-                );
-                break;
-
             case 'presence_updated':
                 if (data.location_enabled === false) {
-                    stopLocationTracking();
                     limparMapaLocal();
-                } else {
-                    if (localizacaoEstaAtiva()) startLocationTracking();
-
-                    if (data.map_presence === false) {
-                        removerPropriaFotoDoMapa();
-                    }
+                } else if (data.map_presence === false) {
+                    removerPropriaFotoDoMapa();
                 }
 
                 window.dispatchEvent(new CustomEvent('app:map-presence-updated', {
@@ -441,7 +347,7 @@
             case 'state':
                 if (document.getElementById('gridCanvas')) {
                     atualizarPessoasNoMapa(
-                        !localizacaoEstaAtiva()
+                        window.disableLocationTracking
                             ? []
                             : (Array.isArray(data.people) ? data.people : [])
                     );
@@ -464,10 +370,6 @@
                 window.dispatchEvent(new CustomEvent('app:hey-erro', {
                     detail: data
                 }));
-                mostrarMensagemTemporaria(
-                    data.message || 'Não foi possível enviar o Hey.',
-                    'erro'
-                );
                 break;
 
             case 'chat_message':
@@ -597,7 +499,7 @@
                     'data-left': Number(pessoa.left) || 0,
                     'data-membro-id': pessoa.membro_id || '',
                     'data-nome': pessoa.nome || '',
-                    'data-proximity-token': pessoa.proximity_token || '',
+                    'data-distancia': Number(pessoa.distance_m) || 0,
                     src: src,
                     alt: pessoa.nome || 'Foto de perfil'
                 }).css('opacity', '1');
@@ -619,7 +521,7 @@
                 'data-left': Number(pessoa.left) || 0,
                 'data-membro-id': pessoa.membro_id || '',
                 'data-nome': pessoa.nome || '',
-                'data-proximity-token': pessoa.proximity_token || ''
+                'data-distancia': Number(pessoa.distance_m) || 0
             });
 
             $imagem.css({
@@ -772,9 +674,9 @@
         if (!window.isSecureContext || !('Notification' in window) || Notification.permission !== 'granted') return;
 
         try {
-            var notificacao = new Notification('Margot', {
-                body: 'Recebeste uma nova mensagem.',
-                icon: '/imagens/fotos-perfil/default.webp',
+            var notificacao = new Notification('Nova mensagem de ' + nome, {
+                body: resumo,
+                icon: mensagem.emissor_foto_url || '/imagens/fotos-perfil/default.webp',
                 tag: 'chat-' + String(mensagem.emissor_id || 'desconhecido')
             });
 
@@ -823,11 +725,7 @@
         isInvisible: modoInvisivelEstaAtivo,
 
         isConnected: function () {
-            return Boolean(
-                authenticated &&
-                socket &&
-                socket.readyState === WebSocket.OPEN
-            );
+            return Boolean(socket && socket.readyState === WebSocket.OPEN);
         }
     };
 
@@ -839,7 +737,6 @@
     });
 
     window.addEventListener('offline', function () {
-        limparMapaLocal();
         setStatus('offline');
     });
 
@@ -858,17 +755,15 @@
     function aplicarPreferenciasEmTempoReal() {
         aplicarPreferenciasGuardadas();
 
-        if (!localizacaoEstaAtiva()) {
+        if (window.disableLocationTracking) {
             stopLocationTracking();
             limparMapaLocal();
         } else {
             if (window.margotInvisible) removerPropriaFotoDoMapa();
-            if (authenticated && socket && socket.readyState === WebSocket.OPEN) {
-                startLocationTracking();
-            }
+            if (socket && socket.readyState === WebSocket.OPEN) startLocationTracking();
         }
 
-        if (authenticated && socket && socket.readyState === WebSocket.OPEN) {
+        if (socket && socket.readyState === WebSocket.OPEN) {
             sendPresenceState();
             return;
         }
@@ -878,8 +773,15 @@
 
     window.addEventListener('margot:preferencias-alteradas', aplicarPreferenciasEmTempoReal);
 
+    window.addEventListener('storage', function (evento) {
+        if (evento.key !== 'margot-preferencias-v1' || window.MargotPreferencias) return;
+
+        aplicarPreferenciasGuardadas();
+        aplicarPreferenciasEmTempoReal();
+    });
+
     $(function () {
-        if (!localizacaoEstaAtiva()) {
+        if (window.disableLocationTracking) {
             limparMapaLocal();
         } else if (window.margotInvisible) {
             removerPropriaFotoDoMapa();

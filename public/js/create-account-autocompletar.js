@@ -72,10 +72,6 @@ $(function () {
                 function (hobbies) {
                     $lista.empty();
 
-                    if (!Array.isArray(hobbies)) {
-                        hobbies = [];
-                    }
-
                     hobbies.forEach(function (hobbie) {
                         var nome = String(hobbie.nome || '').trim();
 
@@ -116,12 +112,9 @@ $(function () {
         if (!gosto) return;
 
         if (!existeCorrespondenciaExata) {
-            $('#recomendacoes')
-                .show()
-                .find('#lista')
-                .empty()
-                .append($('<li>').text('Escolhe um gosto existente da lista.'));
-            return;
+            $.post('/create-account-autocompletar', {
+                gosto: gosto
+            });
         }
 
         adicionarGosto(gosto);

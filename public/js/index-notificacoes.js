@@ -254,8 +254,8 @@
         }
 
         var opcoes = {
-            body: 'Recebeste uma nova atividade.',
-            icon: urlFoto('/imagens/fotos-perfil/default.webp'),
+            body: mensagem,
+            icon: urlFoto(foto),
             badge: urlFoto('/imagens/fotos-perfil/default.webp'),
             tag: 'hey-recebido-' + Date.now(),
             renotify: true,
@@ -267,11 +267,11 @@
         try {
             if ('serviceWorker' in navigator) {
                 var registo = await navigator.serviceWorker.ready;
-                await registo.showNotification('Margot', opcoes);
+                await registo.showNotification(titulo, opcoes);
                 return;
             }
 
-            var notificacao = new Notification('Margot', opcoes);
+            var notificacao = new Notification(titulo, opcoes);
 
             notificacao.onclick = function () {
                 window.focus();
@@ -420,7 +420,6 @@
     async function enviarAcao(acao, valores) {
         var corpo = new URLSearchParams();
         corpo.set('action', acao);
-        corpo.set('_csrf', String(window.csrfToken || ''));
 
         Object.entries(valores || {}).forEach(function (entrada) {
             corpo.set(entrada[0], String(entrada[1]));
@@ -432,8 +431,7 @@
             cache: 'no-store',
             headers: {
                 Accept: 'application/json',
-                'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-                'X-CSRF-Token': String(window.csrfToken || '')
+                'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
             },
             body: corpo.toString()
         });
@@ -525,7 +523,6 @@
         try {
             var corpo = new URLSearchParams();
             corpo.set('action', 'mark_all_read');
-            corpo.set('_csrf', String(window.csrfToken || ''));
 
             var resposta = await fetch(endpoint, {
                 method: 'POST',
@@ -533,8 +530,7 @@
                 cache: 'no-store',
                 headers: {
                     Accept: 'application/json',
-                    'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-                    'X-CSRF-Token': String(window.csrfToken || '')
+                    'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
                 },
                 body: corpo.toString()
             });
