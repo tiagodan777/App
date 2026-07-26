@@ -45,6 +45,10 @@
         return texto($miniMenu.attr('data-destinatario-id'));
     }
 
+    function proximityTokenSelecionado() {
+        return texto($miniMenu.attr('data-proximity-token'));
+    }
+
     function nomeSelecionado() {
         return texto($miniMenu.find('header h1').text()) || 'esta pessoa';
     }
@@ -92,8 +96,18 @@
 
         fecharAcoes();
 
-        $miniMenu.attr('data-destinatario-id', id).toggleClass('perfil-proprio', souEu);
-        $miniMenu.find('.mini-menu-perfil').attr('href', baseUrl(window.profileUrl, '/profile') + '/' + encodeURIComponent(id));
+        var proximityToken = texto(elemento.getAttribute('data-proximity-token'));
+        var profileHref = baseUrl(window.profileUrl, '/profile') + '/' + encodeURIComponent(id);
+
+        if (proximityToken && !souEu) {
+            profileHref += '?proximity_token=' + encodeURIComponent(proximityToken);
+        }
+
+        $miniMenu
+            .attr('data-destinatario-id', id)
+            .attr('data-proximity-token', proximityToken)
+            .toggleClass('perfil-proprio', souEu);
+        $miniMenu.find('.mini-menu-perfil').attr('href', profileHref);
         $miniMenu.find('header h1').text(membroNome);
         $miniMenu.find('.mini-menu-mensagem').attr('action', baseUrl(window.messagesUrl, '/messages') + '/' + encodeURIComponent(id));
 
@@ -126,6 +140,7 @@
 
         dados.set('action', acao);
         dados.set('target_id', idSelecionado());
+        dados.set('proximity_token', proximityTokenSelecionado());
 
         Object.keys(campos || {}).forEach(function (chave) {
             dados.set(chave, campos[chave]);
@@ -137,7 +152,8 @@
             credentials: 'same-origin',
             headers: {
                 'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-Token': String(window.csrfToken || '')
             }
         });
 
@@ -231,6 +247,8 @@
         if (!texto(dados.get('mensagem')) && !(ficheiro instanceof File && ficheiro.size)) return;
 
         dados.set('action', 'send');
+        dados.set('_csrf', String(window.csrfToken || ''));
+        dados.set('proximity_token', proximityTokenSelecionado());
 
         aEnviarMensagem = true;
         $botao.prop('disabled', true).val('A enviar…');
@@ -249,7 +267,7 @@
             }
 
             this.reset();
-            $anexo.removeClass('selecionado').text('+').attr('aria-label', 'Adicionar fotografia ou vídeo');
+            $anexo.removeClass('selecionado').text('+').attr('aria-label', 'Adicionar fotografia');
             aviso('Mensagem enviada.', 'sucesso');
 
             if (window.AppWebSocket && window.AppWebSocket.isConnected()) {
@@ -272,7 +290,7 @@
         $anexo
             .toggleClass('selecionado', Boolean(ficheiro))
             .text(ficheiro ? '✓' : '+')
-            .attr('aria-label', ficheiro ? ficheiro.name : 'Adicionar fotografia ou vídeo');
+            .attr('aria-label', ficheiro ? ficheiro.name : 'Adicionar fotografia');
     });
 
     $maisOpcoes.on('pointerdown pointerup', function (evento) {
@@ -352,14 +370,19 @@
         definirSegurancaOcupada(true);
 
         try {
-            await pedidoSeguranca('report', {
+            var resultado = await pedidoSeguranca('report', {
                 motivo: motivo,
                 mensagem: mensagem
             });
 
             this.reset();
             fecharAcoes();
-            aviso('Denúncia enviada. Obrigado por nos avisares.', 'sucesso');
+            aviso(
+                'Denúncia enviada. Referência: ' +
+                    texto(resultado.reference || 'indisponível') +
+                    '.',
+                'sucesso'
+            );
         } catch (erro) {
             aviso(erro.message, 'erro');
         } finally {

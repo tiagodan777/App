@@ -1,35 +1,61 @@
 <?php
+
+declare(strict_types=1);
+
+use App\Security\RateLimiter;
+
 require_login($session);
 
-$id = $session->id;
-if (!$id) {
-    redirect(DOC_ROOT . 'index/', ['failure' => 'Membro não encontrado']);
+$memberId = (string) $session->id;
+$member = $cms->getMember()->get($memberId);
+$error = '';
+
+if (!$member) {
+    $cms->getCookie()->delete();
+    $cms->getSession()->delete();
+    redirect(DOC_ROOT . 'login/');
 }
 
-$membro = $cms->getMember()->getFull($id);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
 
-if ($_SERVER['REQUEST_METHOD']  == 'POST') {
-    $email = $membro['email'];
-
-    $token = $cms->getToken()->create($id, 'delete_account');
-    $subject = 'Apagaste definitivamente a sua conta na Margot';
-    $body = 'É uma pena ver-te a deixar a nossa plataforma. Obrigado pelo tempo que aqui passas-te';
-    $mail = new \TiagoDaniel\Email\Email($email_config);
-    $mail->sendEmail($email_config['admin_email'], $email, $subject, $body);
-
-    $delete = $cms->getMember()->delete($membro['id']);
-
-
-    if ($delete) {
-        $cms->getSession()->delete();
-        $cms->getCookie()->delete();
-        redirect(DOC_ROOT . 'index');
+    if (!RateLimiter::allow(
+        'delete-account',
+        privacy_hash('member:' . $memberId),
+        5,
+        3600
+    )) {
+        http_response_code(429);
+        $error = 'Foram feitas demasiadas tentativas. Tenta novamente mais tarde.';
     } else {
-        redirect(DOC_ROOT . 'profile/', ['message' => 'Não foi possível apagar a tua conta. Tenta mais tarde']);
+        $password = (string) ($_POST['password_atual'] ?? '');
+        $confirmation = trim((string) ($_POST['confirmacao'] ?? ''));
+
+        if (!$cms->getMember()->verifyPassword($memberId, $password)) {
+            $error = 'A palavra-passe não está correta.';
+        } elseif ($confirmation !== 'APAGAR') {
+            $error = 'Escreve APAGAR para confirmar.';
+        } elseif ($cms->getMember()->delete($memberId)) {
+            try {
+                $cms->getCookie()->delete();
+            } catch (Throwable) {
+                /*
+                 * A conta e os tokens já foram eliminados em cascata. Uma
+                 * falha de limpeza local não pode transformar o resultado em
+                 * “conta não apagada”.
+                 */
+                error_log('[delete-account] A conta foi apagada; falhou a limpeza adicional do cookie.');
+            }
+
+            $cms->getSession()->delete();
+            redirect(DOC_ROOT . 'login/', ['sucesso' => 'conta_eliminada'], 303);
+        } else {
+            $error = 'Não foi possível apagar a conta. Tenta novamente.';
+        }
     }
 }
 
-$data['membro'] = $membro;
-
-echo $twig->render('delete-account.html', $data);
-?>
+echo $twig->render('delete-account.html', [
+    'membro' => $member,
+    'error' => $error
+]);

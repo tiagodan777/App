@@ -1,0 +1,19 @@
+.legal-page {
+    width: min(760px, calc(100% - 32px));
+    margin: 0 auto;
+    padding: 32px 0 120px;
+    line-height: 1.6;
+}
+
+.legal-page h1,
+.legal-page h2 {
+    line-height: 1.2;
+}
+
+.legal-page h2 {
+    margin-top: 2rem;
+}
+
+.legal-page li + li {
+    margin-top: 0.5rem;
+}

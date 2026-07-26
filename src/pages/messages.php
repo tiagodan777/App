@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
+use App\Security\InteractionPolicy;
+use App\Security\RateLimiter;
+
 const MENSAGEM_TEXTO_MAXIMO = 2000;
-const MENSAGEM_IMAGEM_MAXIMA = 15 * 1024 * 1024;
-const MENSAGEM_VIDEO_MAXIMO = 100 * 1024 * 1024;
 
 function responderMensagensJson(array $dados, int $status = 200): never
 {
@@ -18,23 +19,26 @@ function responderMensagensJson(array $dados, int $status = 200): never
 function obterMembroChat($db, string $membroId): array|false
 {
     $sql = "SELECT m.id, CONCAT(m.primeiro_nome, ' ', m.ultimo_nome) AS nome,
-            COALESCE((SELECT fp.nome_arquivo FROM fotos_perfil fp
+            (SELECT fp.id FROM fotos_perfil fp
                 WHERE fp.membro_id COLLATE utf8mb4_unicode_ci = m.id COLLATE utf8mb4_unicode_ci
-                AND (fp.status = 'completo' OR fp.status IS NULL)
-                ORDER BY fp.ordem IS NULL ASC, fp.ordem ASC, fp.id ASC LIMIT 1), 'default.webp') AS foto
+                AND fp.status = 'completo'
+                ORDER BY fp.ordem IS NULL ASC, fp.ordem ASC, fp.id ASC LIMIT 1) AS foto_id
             FROM membros m
             WHERE m.id COLLATE utf8mb4_unicode_ci = :id COLLATE utf8mb4_unicode_ci
+            AND m.estado = 'ativo'
             LIMIT 1";
 
     $membro = $db->runSQL($sql, ['id' => $membroId])->fetch();
 
     if (!$membro) return false;
 
-    $foto = basename(trim((string) $membro['foto'])) ?: 'default.webp';
-    $membro['foto_url'] = DOC_ROOT . 'imagens/fotos-perfil/' . rawurlencode($foto);
+    $photoId = trim((string) ($membro['foto_id'] ?? ''));
+    $membro['foto_url'] = $photoId === ''
+        ? DOC_ROOT . 'imagens/fotos-perfil/default.webp'
+        : DOC_ROOT . 'profile-photo/' . rawurlencode($photoId) . '?size=thumb';
     $membro['perfil_url'] = DOC_ROOT . 'profile/' . rawurlencode((string) $membro['id']);
 
-    unset($membro['foto']);
+    unset($membro['foto_id']);
 
     return $membro;
 }
@@ -45,10 +49,10 @@ function sqlMensagemBase(): string
             msg.ficheiro_nome, msg.ficheiro_mime, msg.ficheiro_tamanho,
             msg.lida, msg.criada_em, msg.lida_em,
             CONCAT(em.primeiro_nome, ' ', em.ultimo_nome) AS emissor_nome,
-            COALESCE((SELECT fp.nome_arquivo FROM fotos_perfil fp
+            (SELECT fp.id FROM fotos_perfil fp
                 WHERE fp.membro_id COLLATE utf8mb4_unicode_ci = em.id COLLATE utf8mb4_unicode_ci
-                AND (fp.status = 'completo' OR fp.status IS NULL)
-                ORDER BY fp.ordem IS NULL ASC, fp.ordem ASC, fp.id ASC LIMIT 1), 'default.webp') AS emissor_foto
+                AND fp.status = 'completo'
+                ORDER BY fp.ordem IS NULL ASC, fp.ordem ASC, fp.id ASC LIMIT 1) AS emissor_foto_id
             FROM mensagens_chat msg
             INNER JOIN membros em
                 ON em.id COLLATE utf8mb4_unicode_ci = msg.emissor_id COLLATE utf8mb4_unicode_ci";
@@ -57,17 +61,21 @@ function sqlMensagemBase(): string
 function prepararMensagem(array $mensagem, string $membroId): array
 {
     $ficheiro = basename(trim((string) ($mensagem['ficheiro_nome'] ?? '')));
-    $foto = basename(trim((string) ($mensagem['emissor_foto'] ?? 'default.webp'))) ?: 'default.webp';
+    $photoId = trim((string) ($mensagem['emissor_foto_id'] ?? ''));
 
     $mensagem['id'] = (int) $mensagem['id'];
     $mensagem['lida'] = (bool) $mensagem['lida'];
     $mensagem['minha'] = (string) $mensagem['emissor_id'] === $membroId;
     $mensagem['texto'] = (string) ($mensagem['texto'] ?? '');
-    $mensagem['media_url'] = $ficheiro === '' ? null : DOC_ROOT . 'media/mensagens/' . rawurlencode($ficheiro);
-    $mensagem['emissor_foto_url'] = DOC_ROOT . 'imagens/fotos-perfil/' . rawurlencode($foto);
+    $mensagem['media_url'] = $ficheiro === ''
+        ? null
+        : DOC_ROOT . 'message-media/' . rawurlencode((string) $mensagem['id']);
+    $mensagem['emissor_foto_url'] = $photoId === ''
+        ? DOC_ROOT . 'imagens/fotos-perfil/default.webp'
+        : DOC_ROOT . 'profile-photo/' . rawurlencode($photoId) . '?size=thumb';
     $mensagem['emissor_perfil_url'] = DOC_ROOT . 'profile/' . rawurlencode((string) $mensagem['emissor_id']);
 
-    unset($mensagem['ficheiro_nome'], $mensagem['emissor_foto']);
+    unset($mensagem['ficheiro_nome'], $mensagem['emissor_foto_id']);
 
     return $mensagem;
 }
@@ -132,10 +140,10 @@ function obterConversas($db, string $membroId): array
             ultima.texto, ultima.tipo, ultima.criada_em,
             conversa.outro_id,
             CONCAT(p.primeiro_nome, ' ', p.ultimo_nome) AS outro_nome,
-            COALESCE((SELECT fp.nome_arquivo FROM fotos_perfil fp
+            (SELECT fp.id FROM fotos_perfil fp
                 WHERE fp.membro_id COLLATE utf8mb4_unicode_ci = p.id COLLATE utf8mb4_unicode_ci
-                AND (fp.status = 'completo' OR fp.status IS NULL)
-                ORDER BY fp.ordem IS NULL ASC, fp.ordem ASC, fp.id ASC LIMIT 1), 'default.webp') AS outro_foto,
+                AND fp.status = 'completo'
+                ORDER BY fp.ordem IS NULL ASC, fp.ordem ASC, fp.id ASC LIMIT 1) AS outro_foto_id,
             (SELECT COUNT(*) FROM mensagens_chat nao_lida
                 WHERE nao_lida.emissor_id = conversa.outro_id
                 AND nao_lida.destinatario_id = :eu4
@@ -158,17 +166,31 @@ function obterConversas($db, string $membroId): array
             INNER JOIN mensagens_chat ultima ON ultima.id = conversa.ultima_id
             INNER JOIN membros p
                 ON p.id COLLATE utf8mb4_unicode_ci = conversa.outro_id COLLATE utf8mb4_unicode_ci
+            WHERE p.estado = 'ativo'
+            AND NOT EXISTS (
+                SELECT 1
+                FROM bloqueados b
+                WHERE (
+                    b.pessoa_bloqueou_id = :eu_bloqueio1
+                    AND b.pessoa_bloqueada_id = conversa.outro_id
+                ) OR (
+                    b.pessoa_bloqueou_id = conversa.outro_id
+                    AND b.pessoa_bloqueada_id = :eu_bloqueio2
+                )
+            )
             ORDER BY ultima.id DESC
             LIMIT 100";
 
     $linhas = $db->runSQL($sql, [
         'eu1' => $membroId,
         'eu2' => $membroId,
-        'eu4' => $membroId
+        'eu4' => $membroId,
+        'eu_bloqueio1' => $membroId,
+        'eu_bloqueio2' => $membroId
     ])->fetchAll();
 
     return array_map(static function (array $linha) use ($membroId): array {
-        $foto = basename(trim((string) $linha['outro_foto'])) ?: 'default.webp';
+        $photoId = trim((string) ($linha['outro_foto_id'] ?? ''));
         $texto = trim((string) ($linha['texto'] ?? ''));
 
         if ($texto === '') {
@@ -185,7 +207,9 @@ function obterConversas($db, string $membroId): array
             'id' => (int) $linha['id'],
             'outro_id' => (string) $linha['outro_id'],
             'outro_nome' => (string) $linha['outro_nome'],
-            'outro_foto_url' => DOC_ROOT . 'imagens/fotos-perfil/' . rawurlencode($foto),
+            'outro_foto_url' => $photoId === ''
+                ? DOC_ROOT . 'imagens/fotos-perfil/default.webp'
+                : DOC_ROOT . 'profile-photo/' . rawurlencode($photoId) . '?size=thumb',
             'chat_url' => DOC_ROOT . 'messages/' . rawurlencode((string) $linha['outro_id']),
             'perfil_url' => DOC_ROOT . 'profile/' . rawurlencode((string) $linha['outro_id']),
             'resumo' => $texto,
@@ -198,33 +222,100 @@ function obterConversas($db, string $membroId): array
 function contarMensagensNaoLidas($db, string $membroId): int
 {
     return (int) $db->runSQL(
-        'SELECT COUNT(*) FROM mensagens_chat WHERE destinatario_id = :id AND lida = 0',
-        ['id' => $membroId]
+        'SELECT COUNT(*)
+         FROM mensagens_chat msg
+         WHERE msg.destinatario_id = :id
+         AND msg.lida = 0
+         AND NOT EXISTS (
+             SELECT 1
+             FROM bloqueados b
+             WHERE (
+                 b.pessoa_bloqueou_id = :id_bloqueio1
+                 AND b.pessoa_bloqueada_id = msg.emissor_id
+             ) OR (
+                 b.pessoa_bloqueou_id = msg.emissor_id
+                 AND b.pessoa_bloqueada_id = :id_bloqueio2
+             )
+         )',
+        [
+            'id' => $membroId,
+            'id_bloqueio1' => $membroId,
+            'id_bloqueio2' => $membroId
+        ]
     )->fetchColumn();
 }
 
-function converterImagemIphoneParaWebp(string $origem, string $destino): void
+function normalizarImagemMensagem(string $origem, string $destino): void
 {
     if (!class_exists(Imagick::class)) {
-        throw new RuntimeException('O servidor não consegue converter fotografias HEIC/HEIF.');
+        throw new RuntimeException('O servidor não consegue processar fotografias em segurança.');
+    }
+
+    $limits = [
+        'RESOURCETYPE_MEMORY' => 128 * 1024 * 1024,
+        'RESOURCETYPE_MAP' => 256 * 1024 * 1024,
+        'RESOURCETYPE_DISK' => 512 * 1024 * 1024,
+        'RESOURCETYPE_AREA' => 128 * 1024 * 1024,
+        'RESOURCETYPE_THREAD' => 1,
+        'RESOURCETYPE_TIME' => 30
+    ];
+
+    foreach ($limits as $constantName => $limit) {
+        $constant = Imagick::class . '::' . $constantName;
+
+        if (
+            defined($constant) &&
+            !Imagick::setResourceLimit((int) constant($constant), $limit)
+        ) {
+            throw new RuntimeException('O servidor não conseguiu limitar o processamento da fotografia.');
+        }
     }
 
     $imagem = null;
+    $probe = null;
 
     try {
+        $probe = new Imagick();
+        if (!$probe->pingImage($origem)) {
+            throw new RuntimeException('Não foi possível validar a fotografia.');
+        }
+
+        if ($probe->getNumberImages() !== 1) {
+            throw new RuntimeException('Fotografias animadas ou com várias páginas não são permitidas.');
+        }
+
+        $width = $probe->getImageWidth();
+        $height = $probe->getImageHeight();
+
+        if (
+            $width < 1 ||
+            $height < 1 ||
+            $width > 12_000 ||
+            $height > 12_000 ||
+            ($width * $height) > 40_000_000
+        ) {
+            throw new RuntimeException('A fotografia tem dimensões demasiado grandes.');
+        }
+
+        $probe->clear();
+        $probe->destroy();
+        $probe = null;
+
         $imagem = new Imagick($origem);
 
-        if ($imagem->getNumberImages() > 1) $imagem->setIteratorIndex(0);
+        if ($imagem->getNumberImages() !== 1) {
+            throw new RuntimeException('Fotografias animadas ou com várias páginas não são permitidas.');
+        }
 
         $imagem->autoOrient();
         $imagem->transformImageColorspace(Imagick::COLORSPACE_SRGB);
 
-        if ($imagem->getImageWidth() > 2400 || $imagem->getImageHeight() > 2400) {
-            $imagem->thumbnailImage(2400, 2400, true, true);
+        if ($imagem->getImageWidth() > 1600 || $imagem->getImageHeight() > 1600) {
+            $imagem->thumbnailImage(1600, 1600, true, true);
         }
 
         $imagem->setImageFormat('webp');
-        $imagem->setImageCompressionQuality(86);
+        $imagem->setImageCompressionQuality(84);
         $imagem->stripImage();
 
         if (!$imagem->writeImage($destino)) {
@@ -234,11 +325,16 @@ function converterImagemIphoneParaWebp(string $origem, string $destino): void
         if (is_file($destino)) @unlink($destino);
 
         throw new RuntimeException(
-            'Não foi possível converter a fotografia HEIC/HEIF.',
+            'Não foi possível processar a fotografia.',
             0,
             $erro
         );
     } finally {
+        if ($probe instanceof Imagick) {
+            $probe->clear();
+            $probe->destroy();
+        }
+
         if ($imagem instanceof Imagick) {
             $imagem->clear();
             $imagem->destroy();
@@ -265,65 +361,47 @@ function guardarMediaMensagem(array $ficheiro): array
 
     $mime = (new finfo(FILEINFO_MIME_TYPE))->file($temporario);
 
-    $tipos = [
-        'image/jpeg' => ['imagem', 'jpg'],
-        'image/png' => ['imagem', 'png'],
-        'image/webp' => ['imagem', 'webp'],
-        'image/gif' => ['imagem', 'gif'],
-        'image/avif' => ['imagem', 'avif'],
-        'image/heic' => ['imagem', 'heic'],
-        'image/heif' => ['imagem', 'heif'],
-        'video/mp4' => ['video', 'mp4'],
-        'video/webm' => ['video', 'webm'],
-        'video/quicktime' => ['video', 'mov'],
-        'video/x-m4v' => ['video', 'm4v']
+    $tiposPermitidos = [
+        'image/jpeg',
+        'image/png',
+        'image/webp',
+        'image/heic',
+        'image/heif'
     ];
 
-    if (!is_string($mime) || !isset($tipos[$mime])) {
-        throw new RuntimeException('Só podes enviar fotografias ou vídeos.');
+    if (!is_string($mime) || !in_array($mime, $tiposPermitidos, true)) {
+        throw new RuntimeException('Nesta beta, só podes enviar fotografias JPEG, PNG, WebP ou HEIC.');
     }
 
-    [$tipo, $extensao] = $tipos[$mime];
-
-    $limite = $tipo === 'imagem'
-        ? MENSAGEM_IMAGEM_MAXIMA
-        : MENSAGEM_VIDEO_MAXIMO;
-
-    if ($tamanho <= 0 || $tamanho > $limite) {
-        throw new RuntimeException(
-            $tipo === 'imagem'
-                ? 'A fotografia pode ter no máximo 15 MB.'
-                : 'O vídeo pode ter no máximo 100 MB.'
-        );
+    if ($tamanho <= 0 || $tamanho > MESSAGE_IMAGE_MAX_SIZE) {
+        throw new RuntimeException('A fotografia pode ter no máximo 10 MB.');
     }
 
-    $pasta = APP_ROOT . '/public/media/mensagens/';
+    $pasta = rtrim(MESSAGE_MEDIA_DIR, '/') . '/';
 
-    if (!is_dir($pasta) && !mkdir($pasta, 0775, true) && !is_dir($pasta)) {
+    if (!is_dir($pasta) && !mkdir($pasta, 0750, true) && !is_dir($pasta)) {
         throw new RuntimeException('Não foi possível preparar a pasta das mensagens.');
     }
 
-    $imagemIphone = $mime === 'image/heic' || $mime === 'image/heif';
+    @chmod($pasta, 0750);
+    clearstatcache(true, $pasta);
+    $mode = fileperms($pasta);
 
-    if ($imagemIphone) {
-        $extensao = 'webp';
-        $mime = 'image/webp';
+    if ($mode === false || ($mode & 0027) !== 0) {
+        throw new RuntimeException('A pasta das mensagens não tem permissões privadas.');
     }
 
-    $nome = bin2hex(random_bytes(20)) . '.' . $extensao;
+    $nome = bin2hex(random_bytes(20)) . '.webp';
     $destino = $pasta . $nome;
 
-    if ($imagemIphone) {
-        converterImagemIphoneParaWebp($temporario, $destino);
-        $tamanho = (int) filesize($destino);
-    } elseif (!move_uploaded_file($temporario, $destino)) {
-        throw new RuntimeException('Não foi possível guardar o ficheiro.');
-    }
+    normalizarImagemMensagem($temporario, $destino);
+    $tamanho = (int) filesize($destino);
+    $mime = 'image/webp';
 
-    @chmod($destino, 0664);
+    @chmod($destino, 0640);
 
     return [
-        'tipo' => $tipo,
+        'tipo' => 'imagem',
         'nome' => $nome,
         'mime' => $mime,
         'tamanho' => $tamanho,
@@ -334,6 +412,12 @@ function guardarMediaMensagem(array $ficheiro): array
 $membroId = trim((string) ($session->id ?? ''));
 $outroId = trim((string) ($id ?? ''));
 $api = trim((string) ($_GET['api'] ?? ''));
+$proximityToken = trim((string) (
+    $_POST['proximity_token'] ??
+    $_GET['proximity_token'] ??
+    ''
+));
+$policy = new InteractionPolicy($db, APP_KEY);
 
 if ($membroId === '') {
     if ($api !== '' || $_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -349,6 +433,8 @@ if ($membroId === '') {
 
 try {
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        require_csrf();
+
         if ($outroId === '' || $outroId === $membroId || !obterMembroChat($db, $outroId)) {
             responderMensagensJson([
                 'success' => false,
@@ -358,7 +444,25 @@ try {
 
         $acao = trim((string) ($_POST['action'] ?? 'send'));
 
+        if (!$policy->canInteract($membroId, $outroId, $proximityToken)) {
+            responderMensagensJson([
+                'success' => false,
+                'message' => 'Esta conversa não está disponível.'
+            ], 403);
+        }
+
+        $rateMemberKey = privacy_hash('member:' . $membroId);
+        $ratePairKey = privacy_hash('pair:' . $membroId . ':' . $outroId);
+
         if ($acao === 'mark_read') {
+            if (!RateLimiter::allow('message-read', $rateMemberKey, 60, 60)) {
+                header('Retry-After: 60');
+                responderMensagensJson([
+                    'success' => false,
+                    'message' => 'Estás a atualizar a conversa demasiado depressa.'
+                ], 429);
+            }
+
             $db->runSQL(
                 'UPDATE mensagens_chat
                  SET lida = 1, lida_em = COALESCE(lida_em, NOW(6))
@@ -384,6 +488,17 @@ try {
             ], 422);
         }
 
+        if (
+            !RateLimiter::allow('message-member', $rateMemberKey, 30, 60) ||
+            !RateLimiter::allow('message-pair', $ratePairKey, 10, 60)
+        ) {
+            header('Retry-After: 60');
+            responderMensagensJson([
+                'success' => false,
+                'message' => 'Estás a enviar mensagens demasiado depressa.'
+            ], 429);
+        }
+
         $texto = trim((string) ($_POST['mensagem'] ?? $_POST['texto'] ?? ''));
 
         if (mb_strlen($texto) > MENSAGEM_TEXTO_MAXIMO) {
@@ -391,6 +506,19 @@ try {
                 'success' => false,
                 'message' => 'A mensagem pode ter no máximo 2000 caracteres.'
             ], 422);
+        }
+
+        $hasUpload = (int) ($_FILES['media']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
+
+        if (
+            $hasUpload &&
+            !RateLimiter::allow('message-upload', $rateMemberKey, 10, 3600)
+        ) {
+            header('Retry-After: 3600');
+            responderMensagensJson([
+                'success' => false,
+                'message' => 'Atingiste o limite de fotografias por hora.'
+            ], 429);
         }
 
         $media = guardarMediaMensagem($_FILES['media'] ?? []);
@@ -477,7 +605,11 @@ try {
     }
 
     if ($api === 'history') {
-        if ($outroId === '' || !obterMembroChat($db, $outroId)) {
+        if (
+            $outroId === '' ||
+            !obterMembroChat($db, $outroId) ||
+            !$policy->canInteract($membroId, $outroId, $proximityToken)
+        ) {
             responderMensagensJson([
                 'success' => false,
                 'message' => 'Conversa inválida.'
@@ -509,7 +641,11 @@ try {
 
     $outro = obterMembroChat($db, $outroId);
 
-    if (!$outro || $outroId === $membroId) {
+    if (
+        !$outro ||
+        $outroId === $membroId ||
+        !$policy->canInteract($membroId, $outroId, $proximityToken)
+    ) {
         http_response_code(404);
 
         echo $twig->render('error-page.html', [
@@ -518,18 +654,6 @@ try {
 
         exit;
     }
-
-    $db->runSQL(
-        'UPDATE mensagens_chat
-         SET lida = 1, lida_em = COALESCE(lida_em, NOW(6))
-         WHERE emissor_id = :outro
-         AND destinatario_id = :eu
-         AND lida = 0',
-        [
-            'outro' => $outroId,
-            'eu' => $membroId
-        ]
-    );
 
     echo $twig->render('chat.html', [
         'membro_id' => $membroId,

@@ -1,0 +1,37 @@
+{% extends 'legal/base.html' %}
+
+{% block legal_content %}
+<article>
+    <h1>Regras da Comunidade e Segurança</h1>
+    <p><strong>Versão {{ community_version }} · Apenas 18+</strong></p>
+
+    <h2>Respeita a escolha da outra pessoa</h2>
+    <ul>
+        <li>Um Hey ou mensagem não cria obrigação de responder.</li>
+        <li>Não insistas, persigas, intimides, ameaçes ou contornes um bloqueio.</li>
+        <li>Não uses a proximidade para tentar determinar a posição exata de alguém.</li>
+        <li>Não partilhes conteúdo íntimo de terceiros nem conteúdo sexual sem consentimento.</li>
+    </ul>
+
+    <h2>Sê autêntico e cuidadoso</h2>
+    <ul>
+        <li>Não te faças passar por outra pessoa, não cries burlas e não envies spam.</li>
+        <li>Não publiques dados pessoais alheios, malware, violência extrema ou conteúdo ilegal.</li>
+        <li>Encontros presenciais são uma decisão tua: escolhe um local público e informa alguém.</li>
+    </ul>
+
+    <h2>Bloquear e denunciar</h2>
+    <p>
+        Bloquear corta perfil, mensagens, media, Heys e descoberta nos dois sentidos. A denúncia é
+        privada e recebe uma referência para acompanhamento. Em perigo imediato, contacta os
+        serviços de emergência; a Margot não é um serviço de emergência.
+    </p>
+
+    <h2>Aplicação das regras</h2>
+    <p>
+        Podemos advertir, limitar, suspender ou banir contas e preservar provas pelo período
+        estritamente necessário. Para apoio ou recurso:
+        <a href="mailto:{{ legal_contact_email }}">{{ legal_contact_email }}</a>.
+    </p>
+</article>
+{% endblock %}

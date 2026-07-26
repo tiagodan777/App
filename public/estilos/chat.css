@@ -63,12 +63,34 @@ body {
 }
 
 .chat-pessoa {
+    flex: 1 1 auto;
     min-width: 0;
     color: #18181c;
     text-decoration: none;
     display: flex;
     align-items: center;
     gap: 10px;
+}
+
+.chat-seguranca-acoes {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 4px;
+}
+
+.chat-seguranca-acoes button {
+    padding: 7px 8px;
+    border: 0;
+    border-radius: 12px;
+    background: #f0eff5;
+    color: #55515f;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.chat-seguranca-acoes button:last-child {
+    color: #9d2731;
 }
 
 .chat-pessoa > img {
@@ -200,6 +222,17 @@ body {
     color: rgba(255, 255, 255, 0.76);
 }
 
+.chat-denunciar-mensagem {
+    margin-left: 3px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
 .chat-lida {
     font-size: 11px;
     letter-spacing: -2px;
@@ -317,6 +350,82 @@ body {
     color: white;
     font-size: 18px;
     line-height: 28px;
+}
+
+.chat-denuncia-dialog {
+    width: min(calc(100% - 28px), 460px);
+    padding: 0;
+    border: 0;
+    border-radius: 22px;
+    box-shadow: 0 22px 70px rgba(22, 16, 45, 0.28);
+}
+
+.chat-denuncia-dialog::backdrop {
+    background: rgba(20, 18, 28, 0.52);
+    -webkit-backdrop-filter: blur(3px);
+    backdrop-filter: blur(3px);
+}
+
+.chat-denuncia-dialog form {
+    padding: 22px;
+    display: grid;
+    gap: 10px;
+}
+
+.chat-denuncia-dialog h2,
+.chat-denuncia-dialog p {
+    margin: 0;
+}
+
+.chat-denuncia-dialog label {
+    margin-top: 4px;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.chat-denuncia-dialog select,
+.chat-denuncia-dialog textarea {
+    width: 100%;
+    padding: 11px;
+    border: 1px solid #dcd9e5;
+    border-radius: 12px;
+    background: #fff;
+    color: #18181c;
+    font: inherit;
+}
+
+.chat-denuncia-botoes {
+    margin-top: 6px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.chat-denuncia-botoes button {
+    min-height: 40px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: 14px;
+    background: #eceaf2;
+    color: #302d39;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.chat-denuncia-botoes button[type="submit"] {
+    background: var(--margot-roxo);
+    color: #fff;
+}
+
+@media (max-width: 520px) {
+    .chat-seguranca-acoes {
+        flex-direction: column;
+    }
+
+    .chat-seguranca-acoes button {
+        padding: 4px 6px;
+        font-size: 9px;
+    }
 }
 
 .chat-erro {

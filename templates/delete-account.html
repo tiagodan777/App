@@ -1,21 +1,49 @@
 {% extends 'layout.html' %}
-{% block title %} {{ membro.nome }} {% endblock %}
+
+{% block title %}Apagar conta · Margot{% endblock %}
+
 {% block content %}
 <main id="profile-delete">
-    <section id="apagar">
-        <input type="file" name="message" id="message" value="{{ message }}">
-        <h2>Apagar Perfil</h2>
-        <section class="dados" id="dados-apagar">
-            <p>Confirma para apagares o teu perfil</p>
-            <img src="{{ doc_root }}imagens/fotos-perfil/{{ membro.picture }}" alt="Foto de perfil de {{ membro.forename }}" id="foto-perfil">
-        </section>
-        <section class="opcoes" id="opcoes-apagar">
-            <form action="{{ doc_root }}delete-account" method="post">
-                <a href="{{ doc_root }}edit-profile">Cancelar</a>
-                <input type="hidden" name="delete" value="1">
-                <input type="submit" value="Confirmar">
-            </form>
-        </section>
-    </section>
+    <h1>Apagar definitivamente a conta</h1>
+
+    <p>
+        Esta ação remove o perfil, contactos, fotos, mensagens, Heys, preferências e tokens.
+        Denúncias e provas estritamente necessárias para segurança ou defesa de direitos podem ser
+        conservadas de forma limitada e pseudonimizada pelo prazo indicado na Política de Privacidade.
+    </p>
+
+    {% if error %}
+        <p role="alert">{{ error }}</p>
+    {% endif %}
+
+    <form action="{{ doc_root }}delete-account" method="post">
+        <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+
+        <p>
+            <label for="delete-password">Palavra-passe atual</label>
+            <input
+                type="password"
+                name="password_atual"
+                id="delete-password"
+                autocomplete="current-password"
+                required
+            >
+        </p>
+
+        <p>
+            <label for="delete-confirmation">Escreve APAGAR</label>
+            <input
+                type="text"
+                name="confirmacao"
+                id="delete-confirmation"
+                autocomplete="off"
+                pattern="APAGAR"
+                required
+            >
+        </p>
+
+        <a href="{{ doc_root }}settings">Cancelar</a>
+        <button type="submit">Apagar a minha conta</button>
+    </form>
 </main>
 {% endblock %}

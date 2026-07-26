@@ -23,24 +23,39 @@ function obterHeys($db, string $membroId, string $direcao): array
             '{$direcao}' AS direcao,
             m.id AS outro_membro_id,
             COALESCE(NULLIF(TRIM(CONCAT(COALESCE(m.primeiro_nome, ''), ' ', COALESCE(m.ultimo_nome, ''))), ''), 'Utilizador') AS outro_nome,
-            COALESCE((
-                SELECT fp.nome_arquivo
+            (
+                SELECT fp.id
                 FROM fotos_perfil AS fp
                 WHERE fp.membro_id COLLATE utf8mb4_unicode_ci = m.id COLLATE utf8mb4_unicode_ci
-                AND (fp.status = 'completo' OR fp.status IS NULL)
+                AND fp.status = 'completo'
                 ORDER BY fp.ordem IS NULL ASC, fp.ordem ASC
                 LIMIT 1
-            ), 'default.webp') AS outro_foto
+            ) AS outro_foto_id
         FROM notificacao AS n
         LEFT JOIN membros AS m ON m.id COLLATE utf8mb4_unicode_ci = n.{$campoDoOutro} COLLATE utf8mb4_unicode_ci
         WHERE n.{$campoDoMembro} = :membro_id
         AND n.tipo = 'hey'
         AND n.{$campoOculto} IS NULL
+        AND NOT EXISTS (
+            SELECT 1
+            FROM bloqueados b
+            WHERE (
+                b.pessoa_bloqueou_id = :bloqueio_membro1
+                AND b.pessoa_bloqueada_id = n.{$campoDoOutro}
+            ) OR (
+                b.pessoa_bloqueou_id = n.{$campoDoOutro}
+                AND b.pessoa_bloqueada_id = :bloqueio_membro2
+            )
+        )
         ORDER BY n.criada_em DESC, n.id DESC
         LIMIT 100
     ";
 
-    return $db->runSQL($sql, ['membro_id' => $membroId])->fetchAll();
+    return $db->runSQL($sql, [
+        'membro_id' => $membroId,
+        'bloqueio_membro1' => $membroId,
+        'bloqueio_membro2' => $membroId
+    ])->fetchAll();
 }
 
 function prepararHeys(array $heys): array
@@ -51,12 +66,14 @@ function prepararHeys(array $heys): array
     });
 
     foreach ($heys as &$hey) {
-        $foto = basename(trim((string) ($hey['outro_foto'] ?? 'default.webp'))) ?: 'default.webp';
+        $photoId = trim((string) ($hey['outro_foto_id'] ?? ''));
         $hey['id'] = (int) ($hey['id'] ?? 0);
         $hey['lida'] = (bool) ($hey['lida'] ?? false);
         $hey['direcao'] = ($hey['direcao'] ?? '') === 'enviado' ? 'enviado' : 'recebido';
-        $hey['outro_foto_url'] = DOC_ROOT . 'imagens/fotos-perfil/' . rawurlencode($foto);
-        unset($hey['outro_foto']);
+        $hey['outro_foto_url'] = $photoId === ''
+            ? DOC_ROOT . 'imagens/fotos-perfil/default.webp'
+            : DOC_ROOT . 'profile-photo/' . rawurlencode($photoId) . '?size=thumb';
+        unset($hey['outro_foto_id']);
     }
 
     unset($hey);
@@ -72,9 +89,24 @@ function contarHeysNaoLidos($db, string $membroId): int
         AND tipo = 'hey'
         AND lida = 0
         AND ocultada_para_destinatario_em IS NULL
+        AND NOT EXISTS (
+            SELECT 1
+            FROM bloqueados b
+            WHERE (
+                b.pessoa_bloqueou_id = :bloqueio_membro1
+                AND b.pessoa_bloqueada_id = notificacao.emissor_id
+            ) OR (
+                b.pessoa_bloqueou_id = notificacao.emissor_id
+                AND b.pessoa_bloqueada_id = :bloqueio_membro2
+            )
+        )
     ";
 
-    return (int) $db->runSQL($sql, ['membro_id' => $membroId])->fetchColumn();
+    return (int) $db->runSQL($sql, [
+        'membro_id' => $membroId,
+        'bloqueio_membro1' => $membroId,
+        'bloqueio_membro2' => $membroId
+    ])->fetchColumn();
 }
 
 $membroId = trim((string) ($session->id ?? ''));
@@ -87,6 +119,8 @@ try {
     $metodo = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
     if ($metodo === 'POST') {
+        require_csrf();
+
         $acao = trim((string) ($_POST['action'] ?? ''));
 
         if ($acao === 'mark_all_read') {

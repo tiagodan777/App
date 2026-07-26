@@ -3,8 +3,10 @@
 declare(strict_types=1);
 
 use App\Validate\Validate;
+use App\Security\RateLimiter;
+use App\Security\MemberMutex;
 
-$pathImagensTemporarias = APP_ROOT . '/public/imagens/fotos-perfil-temp/';
+$pathImagensTemporarias = rtrim(PROFILE_PHOTO_TEMP_DIR, '/') . '/';
 
 function urlCreateAccount(string $caminho): string
 {
@@ -32,21 +34,81 @@ function apagarImagensTemporariasCreateAccount(array $imagens, string $pasta): v
     }
 }
 
-function apagarFicheirosDePerfil(array $nomes): void
+function nomesDerivadosPerfilCreateAccount(array $nomes): array
+{
+    $resultado = [];
+
+    foreach ($nomes as $nome) {
+        $nome = basename(trim((string) $nome));
+
+        if ($nome === '' || $nome === '.' || $nome === '..' || $nome === 'default.webp') {
+            continue;
+        }
+
+        $resultado[$nome] = true;
+        $resultado[pathinfo($nome, PATHINFO_FILENAME) . '.webp'] = true;
+    }
+
+    return array_keys($resultado);
+}
+
+function apagarFicheirosDePerfil($db, array $nomes): void
 {
     $pastas = [
+        PROFILE_PHOTO_TEMP_DIR . '/',
+        PROFILE_PHOTO_THUMB_DIR . '/',
+        PROFILE_PHOTO_ORIGINAL_DIR . '/',
         APP_ROOT . '/public/imagens/fotos-perfil-temp/',
         APP_ROOT . '/public/imagens/fotos-perfil/',
         APP_ROOT . '/public/imagens/fotos-perfil-originais/'
     ];
 
-    foreach ($nomes as $nome) {
-        $nome = basename((string) $nome);
-
-        if ($nome === '') continue;
+    foreach (nomesDerivadosPerfilCreateAccount($nomes) as $nome) {
+        $falhou = false;
 
         foreach ($pastas as $pasta) {
-            if (is_file($pasta . $nome)) @unlink($pasta . $nome);
+            $caminho = rtrim($pasta, '/') . '/' . $nome;
+
+            try {
+                if (
+                    (is_file($caminho) || is_link($caminho)) &&
+                    !unlink($caminho)
+                ) {
+                    $falhou = true;
+                }
+            } catch (\Throwable) {
+                $falhou = true;
+            }
+        }
+
+        foreach ($pastas as $pasta) {
+            $caminho = rtrim($pasta, '/') . '/' . $nome;
+            if (is_file($caminho) || is_link($caminho)) $falhou = true;
+        }
+
+        try {
+            if ($falhou) {
+                $db->runSQL(
+                    'UPDATE ficheiros_a_apagar
+                     SET tentativas = tentativas + 1,
+                         ultima_tentativa_em = UTC_TIMESTAMP(6),
+                         ultimo_erro = :erro
+                     WHERE tipo = :tipo AND nome_arquivo = :nome',
+                    [
+                        'erro' => 'Falha ao apagar uma fotografia removida.',
+                        'tipo' => 'perfil',
+                        'nome' => $nome
+                    ]
+                );
+            } else {
+                $db->runSQL(
+                    'DELETE FROM ficheiros_a_apagar
+                     WHERE tipo = :tipo AND nome_arquivo = :nome',
+                    ['tipo' => 'perfil', 'nome' => $nome]
+                );
+            }
+        } catch (\Throwable) {
+            error_log('[profile-update] A fila de eliminação será reconciliada pelo cron.');
         }
     }
 }
@@ -149,6 +211,22 @@ function sincronizarFotosCreateAccount(
 
             $nomesApagar[] = $existentes[$id]['nome_arquivo'];
 
+            foreach (
+                nomesDerivadosPerfilCreateAccount([
+                    $existentes[$id]['nome_arquivo']
+                ]) as $nomeEnfileirado
+            ) {
+                $db->runSQL(
+                    'INSERT INTO ficheiros_a_apagar (tipo, nome_arquivo)
+                     VALUES (:tipo, :nome)
+                     ON DUPLICATE KEY UPDATE nome_arquivo = VALUES(nome_arquivo)',
+                    [
+                        'tipo' => 'perfil',
+                        'nome' => $nomeEnfileirado
+                    ]
+                );
+            }
+
             $db->runSQL(
                 'DELETE FROM fotos_perfil WHERE id = :id AND membro_id = :membro_id',
                 ['id' => $id, 'membro_id' => $membroId]
@@ -196,25 +274,52 @@ function sincronizarFotosCreateAccount(
     }
 }
 
-function iniciarWorkerFotosCreateAccount(string $membroId): void
+function iniciarWorkerFotosCreateAccount(string $membroId): bool
 {
     $worker = APP_ROOT . '/src/pages/profile-image-worker.php';
     $log = APP_ROOT . '/var/log/profile-image-worker.log';
+    $phpCli = trim((string) (
+        defined('PHP_CLI_BINARY') ? PHP_CLI_BINARY : ''
+    ));
 
     if (!is_file($worker)) {
-        error_log('Worker de imagens não encontrado: ' . $worker);
-        return;
+        error_log('[profile-worker] O worker de fotografias não está disponível.');
+        return false;
+    }
+
+    if (
+        $phpCli === '' ||
+        $phpCli[0] !== '/' ||
+        !is_file($phpCli) ||
+        !is_executable($phpCli)
+    ) {
+        error_log('[profile-worker] PHP_CLI_BINARY não está configurado corretamente.');
+        return false;
+    }
+
+    if (!function_exists('exec')) {
+        error_log('[profile-worker] A função exec não está disponível.');
+        return false;
     }
 
     $comando = sprintf(
         'nohup %s %s %s >> %s 2>&1 &',
-        escapeshellarg('/usr/bin/php'),
+        escapeshellarg($phpCli),
         escapeshellarg($worker),
         escapeshellarg($membroId),
         escapeshellarg($log)
     );
 
-    exec($comando);
+    $saida = [];
+    $codigo = -1;
+    exec($comando, $saida, $codigo);
+
+    if ($codigo !== 0) {
+        error_log('[profile-worker] Não foi possível iniciar o processamento assíncrono.');
+        return false;
+    }
+
+    return true;
 }
 
 $metodo = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
@@ -270,17 +375,16 @@ if ($metodo !== 'POST') {
             }
 
             $nome = basename((string) $foto['nome_arquivo']);
+            $fotoId = rawurlencode((string) $foto['id']);
 
             $fotosExistentes[] = [
                 'id' => (string) $foto['id'],
                 'nome' => $nome,
                 'url' => urlCreateAccount(
-                    'imagens/fotos-perfil-originais/' .
-                    rawurlencode($nome)
+                    'profile-photo/' . $fotoId . '?size=original'
                 ),
                 'fallback' => urlCreateAccount(
-                    'imagens/fotos-perfil/' .
-                    rawurlencode($nome)
+                    'profile-photo/' . $fotoId . '?size=thumb'
                 )
             ];
         }
@@ -310,6 +414,59 @@ if ($modoEdicao && $membroIdSessao === '') {
     ], 401);
 }
 
+require_csrf();
+
+$rateKey = $modoEdicao
+    ? privacy_hash('member:' . $membroIdSessao)
+    : privacy_hash('ip:' . request_ip());
+
+if (!RateLimiter::allow(
+    $modoEdicao ? 'profile-update' : 'account-create',
+    $rateKey,
+    $modoEdicao ? 20 : 5,
+    3600
+)) {
+    header('Retry-After: 3600');
+    responderJsonCreateAccount([
+        'success' => false,
+        'message' => 'Foram feitos demasiados pedidos. Tenta novamente mais tarde.'
+    ], 429);
+}
+
+if (!$modoEdicao && REGISTRATION_MODE === 'closed') {
+    $codigoRecebido = trim((string) ($_POST['beta_invite_code'] ?? ''));
+    $codigoRecebidoHash = hash('sha256', $codigoRecebido);
+    $conviteValido = false;
+
+    foreach (BETA_INVITE_CODES as $codigoConfigurado) {
+        if (
+            $codigoRecebido !== '' &&
+            hash_equals(hash('sha256', (string) $codigoConfigurado), $codigoRecebidoHash)
+        ) {
+            $conviteValido = true;
+            break;
+        }
+    }
+
+    unset($codigoRecebido, $codigoRecebidoHash, $codigoConfigurado);
+
+    if (BETA_INVITE_CODES === []) {
+        responderJsonCreateAccount([
+            'success' => false,
+            'message' => 'Os registos estão temporariamente fechados.'
+        ], 503);
+    }
+
+    if (!$conviteValido) {
+        responderJsonCreateAccount([
+            'success' => false,
+            'erros' => [
+                'beta_invite_code' => 'O código de convite não é válido.'
+            ]
+        ], 403);
+    }
+}
+
 ignore_user_abort(true);
 set_time_limit(0);
 
@@ -319,7 +476,7 @@ $imagens = [];
 
 if (
     !is_dir($pathImagensTemporarias) &&
-    !mkdir($pathImagensTemporarias, 0775, true) &&
+    !mkdir($pathImagensTemporarias, 0750, true) &&
     !is_dir($pathImagensTemporarias)
 ) {
     responderJsonCreateAccount([
@@ -407,6 +564,13 @@ if (isset($_FILES['imagens']['tmp_name']) && is_array($_FILES['imagens']['tmp_na
             continue;
         }
 
+        try {
+            $cms->getImage()->validateProfileImageFile($temp);
+        } catch (\Throwable $erro) {
+            $erros['imagens'] = $erro->getMessage();
+            continue;
+        }
+
         $filename = basename((string) create_filename($nomeOriginal));
 
         if ($filename === '') {
@@ -419,6 +583,7 @@ if (isset($_FILES['imagens']['tmp_name']) && is_array($_FILES['imagens']['tmp_na
             continue;
         }
 
+        @chmod($pathImagensTemporarias . $filename, 0640);
         $imagens[] = $filename;
     }
 }
@@ -435,6 +600,7 @@ $membro['sobre_ti'] = trim((string) ($_POST['sobre_ti'] ?? ''));
 $membro['telefone'] = trim((string) ($_POST['telefone'] ?? ''));
 $membro['email'] = trim((string) ($_POST['email'] ?? ''));
 $membro['password'] = (string) ($_POST['password'] ?? '');
+$passwordAtual = (string) ($_POST['password_atual'] ?? '');
 
 $confirmaPassword = (string) ($_POST['confirma_password'] ?? '');
 
@@ -461,13 +627,30 @@ $dataNascimentoValida =
     $ano <= (int) date('Y') &&
     checkdate($mes, $dia, $ano);
 
+if ($dataNascimentoValida) {
+    $nascimento = DateTimeImmutable::createFromFormat(
+        '!Y-m-d',
+        sprintf('%04d-%02d-%02d', $ano, $mes, $dia),
+        new DateTimeZone('UTC')
+    );
+    $limiteIdade = new DateTimeImmutable('today', new DateTimeZone('UTC'));
+    $limiteIdade = $limiteIdade->modify('-18 years');
+    $dataNascimentoValida = $nascimento instanceof DateTimeImmutable &&
+        $nascimento <= $limiteIdade;
+}
+
 $erros['nascimento'] = $dataNascimentoValida
     ? ''
-    : 'Escolhe uma data de nascimento válida.';
+    : 'Tens de ter pelo menos 18 anos para usar a Margot.';
 
-$erros['genero'] = Validate::isGenero($membro['genero'])
+$erros['genero'] = $membro['genero'] === '' ||
+    Validate::isGenero($membro['genero'])
     ? ''
-    : 'Escolhe um género válido.';
+    : 'O género indicado não é válido.';
+
+if ($membro['genero'] === '') {
+    $membro['genero'] = null;
+}
 
 $objetivosPermitidos = [
     'amizade',
@@ -512,12 +695,20 @@ if ($alterarPassword) {
         : 'As palavras-passe não são idênticas.';
 }
 
-/*
- * Em edição, não enviar uma password vazia para Member::update().
- * Assim, guardar outra área do perfil nunca altera a password atual.
- */
-if ($modoEdicao && !$alterarPassword) {
-    unset($membro['password']);
+if ($modoEdicao && !$cms->getMember()->verifyPassword($membroIdSessao, $passwordAtual)) {
+    $erros['password_atual'] = 'A palavra-passe atual não está correta.';
+}
+
+if (!$modoEdicao) {
+    $erros['confirmar_18'] = ($_POST['confirmar_18'] ?? '') === '1'
+        ? ''
+        : 'Tens de confirmar que tens pelo menos 18 anos.';
+    $erros['aceitar_termos'] = ($_POST['aceitar_termos'] ?? '') === '1'
+        ? ''
+        : 'Tens de aceitar os Termos para criar a conta.';
+    $erros['reconhecer_privacidade'] = ($_POST['reconhecer_privacidade'] ?? '') === '1'
+        ? ''
+        : 'Tens de confirmar que leste a Política de Privacidade.';
 }
 
 $erros = array_filter(
@@ -547,7 +738,26 @@ $membro['nascimento'] = sprintf(
 unset($membro['dia'], $membro['mes'], $membro['ano']);
 
 $transacaoEscrita = false;
+$commitConcluido = false;
 $nomesFotosApagar = [];
+$memberMutex = new MemberMutex($db);
+$perfilBloqueado = false;
+
+if ($modoEdicao) {
+    $perfilBloqueado = $memberMutex->acquire($membroIdSessao, 10);
+
+    if (!$perfilBloqueado) {
+        apagarImagensTemporariasCreateAccount(
+            $imagens,
+            $pathImagensTemporarias
+        );
+
+        responderJsonCreateAccount([
+            'success' => false,
+            'message' => 'O perfil está a terminar outra alteração. Tenta novamente.'
+        ], 409);
+    }
+}
 
 try {
     $db->beginTransaction();
@@ -555,6 +765,20 @@ try {
 
     if ($modoEdicao) {
         $membroId = $membroIdSessao;
+        $membroAtivo = $db->runSQL(
+            "SELECT id
+             FROM membros
+             WHERE id = :id
+             AND estado = 'ativo'
+             LIMIT 1
+             FOR UPDATE",
+            ['id' => $membroId]
+        )->fetchColumn();
+
+        if (!$membroAtivo) {
+            throw new \RuntimeException('A conta deixou de estar disponível.');
+        }
+
         $atualizado = $cms->getMember()->update($membroId, $membro);
 
         if (!$atualizado) {
@@ -566,6 +790,9 @@ try {
                 $imagens,
                 $pathImagensTemporarias
             );
+
+            $memberMutex->release($membroIdSessao);
+            $perfilBloqueado = false;
 
             responderJsonCreateAccount([
                 'success' => false,
@@ -596,6 +823,101 @@ try {
         }
 
         $membroId = (string) $membroId;
+
+        $aceitacoes = [
+            'termos' => TERMS_VERSION,
+            'privacidade' => PRIVACY_VERSION,
+            'maior_18' => AGE_DECLARATION_VERSION
+        ];
+
+        foreach ($aceitacoes as $documento => $versao) {
+            $db->runSQL(
+                'INSERT INTO aceitacoes_legais (
+                    membro_id,
+                    documento,
+                    versao,
+                    documento_hash,
+                    aceite_em,
+                    origem
+                 ) VALUES (
+                    :membro_id,
+                    :documento,
+                    :versao,
+                    :documento_hash,
+                    UTC_TIMESTAMP(6),
+                    :origem
+                 )',
+                [
+                    'membro_id' => $membroId,
+                    'documento' => $documento,
+                    'versao' => $versao,
+                    'documento_hash' => legal_document_hash($documento),
+                    'origem' => 'registo'
+                ]
+            );
+        }
+    }
+
+    $db->runSQL(
+        'INSERT INTO preferencias_privacidade (
+            membro_id,
+            localizacao_ativa,
+            notificacoes_ativas,
+            atualizada_em
+         ) VALUES (
+            :membro_id,
+            :localizacao,
+            :notificacoes,
+            UTC_TIMESTAMP(6)
+         )
+         ON DUPLICATE KEY UPDATE
+            localizacao_ativa = VALUES(localizacao_ativa),
+            notificacoes_ativas = VALUES(notificacoes_ativas),
+            atualizada_em = VALUES(atualizada_em)',
+        [
+            'membro_id' => $membroId,
+            'localizacao' => ($_POST['preferencia_localizacao'] ?? '') === '1' ? 1 : 0,
+            'notificacoes' => ($_POST['preferencia_notificacoes'] ?? '') === '1' ? 1 : 0
+        ]
+    );
+
+    if (!$modoEdicao) {
+        foreach ([
+            'localizacao' => ($_POST['preferencia_localizacao'] ?? '') === '1',
+            'notificacoes' => ($_POST['preferencia_notificacoes'] ?? '') === '1'
+        ] as $tipoPreferencia => $valorPreferencia) {
+            $db->runSQL(
+                'INSERT INTO preferencias_privacidade_eventos (
+                    membro_id,
+                    tipo,
+                    valor,
+                    estado_json,
+                    origem,
+                    versao_aviso,
+                    criado_em
+                 ) VALUES (
+                    :membro_id,
+                    :tipo,
+                    :valor,
+                    :estado_json,
+                    :origem,
+                    :versao_aviso,
+                    UTC_TIMESTAMP(6)
+                 )',
+                [
+                    'membro_id' => $membroId,
+                    'tipo' => $tipoPreferencia,
+                    'valor' => $valorPreferencia ? 1 : 0,
+                    'estado_json' => json_encode([
+                        'localizacao' => ($_POST['preferencia_localizacao'] ?? '') === '1',
+                        'notificacoes' => ($_POST['preferencia_notificacoes'] ?? '') === '1',
+                        'invisivel' => false
+                    ], JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR),
+                    'origem' => 'registo',
+                    'versao_aviso' => PRIVACY_VERSION
+                ]
+            );
+        }
     }
 
     $ordemFotos = normalizarListaCreateAccount(
@@ -621,13 +943,31 @@ try {
         );
     }
 
+    if ($modoEdicao && $alterarPassword) {
+        /*
+         * A nova palavra-passe e a revogação de tokens persistentes são uma só
+         * alteração: ou ambas ficam gravadas, ou ambas fazem rollback.
+         */
+        $cms->getToken()->deleteForMember($membroId);
+        $db->runSQL(
+            'DELETE FROM websocket_tickets WHERE membro_id = :membro_id',
+            ['membro_id' => $membroId]
+        );
+    }
+
     if ($transacaoEscrita) {
         $db->commit();
         $transacaoEscrita = false;
+        $commitConcluido = true;
     }
 
     if ($nomesFotosApagar) {
-        apagarFicheirosDePerfil($nomesFotosApagar);
+        apagarFicheirosDePerfil($db, $nomesFotosApagar);
+    }
+
+    if ($perfilBloqueado) {
+        $memberMutex->release($membroIdSessao);
+        $perfilBloqueado = false;
     }
 
     if ($imagens) {
@@ -635,6 +975,11 @@ try {
     }
 
     if ($modoEdicao) {
+        if ($alterarPassword) {
+            $cms->getCookie()->delete();
+            $cms->getSession()->create(membro_id: $membroId);
+        }
+
         responderJsonCreateAccount([
             'success' => true,
             'redirect' => urlCreateAccount(
@@ -644,29 +989,46 @@ try {
         ]);
     }
 
-    $cms->getSession()->create(membro_id: $membroId);
-
-    $tokenLogin = $cms->getToken()->create(
-        $membroId,
-        'login'
-    );
+    if (!$cms->getSession()->create(membro_id: $membroId)) {
+        throw new \RuntimeException(
+            'A conta foi criada, mas não foi possível iniciar a sessão.'
+        );
+    }
 
     responderJsonCreateAccount([
         'success' => true,
-        'redirect' => urlCreateAccount(
-            'index/?loginToken=' .
-            urlencode((string) $tokenLogin)
-        )
+        'redirect' => urlCreateAccount('index/')
     ]);
 } catch (\LengthException $erro) {
     if ($transacaoEscrita && $db->inTransaction()) {
         $db->rollBack();
     }
 
-    apagarImagensTemporariasCreateAccount(
-        $imagens,
-        $pathImagensTemporarias
-    );
+    if (!$commitConcluido) {
+        apagarImagensTemporariasCreateAccount(
+            $imagens,
+            $pathImagensTemporarias
+        );
+    }
+
+    if ($perfilBloqueado) {
+        $memberMutex->release($membroIdSessao);
+        $perfilBloqueado = false;
+    }
+
+    if ($commitConcluido) {
+        error_log('[profile-save] Falha pós-commit: ' . $erro->getMessage());
+
+        responderJsonCreateAccount([
+            'success' => true,
+            'redirect' => $modoEdicao
+                ? urlCreateAccount('profile/' . rawurlencode($membroId))
+                : urlCreateAccount('login'),
+            'message' => $modoEdicao
+                ? 'As alterações foram guardadas. Atualiza a sessão se necessário.'
+                : 'A conta foi criada. Inicia sessão para continuar.'
+        ]);
+    }
 
     responderJsonCreateAccount([
         'success' => false,
@@ -679,10 +1041,17 @@ try {
         $db->rollBack();
     }
 
-    apagarImagensTemporariasCreateAccount(
-        $imagens,
-        $pathImagensTemporarias
-    );
+    if (!$commitConcluido) {
+        apagarImagensTemporariasCreateAccount(
+            $imagens,
+            $pathImagensTemporarias
+        );
+    }
+
+    if ($perfilBloqueado) {
+        $memberMutex->release($membroIdSessao);
+        $perfilBloqueado = false;
+    }
 
     error_log(
         ($modoEdicao
@@ -691,6 +1060,18 @@ try {
         ) .
         $erro->getMessage()
     );
+
+    if ($commitConcluido) {
+        responderJsonCreateAccount([
+            'success' => true,
+            'redirect' => $modoEdicao
+                ? urlCreateAccount('profile/' . rawurlencode($membroId))
+                : urlCreateAccount('login'),
+            'message' => $modoEdicao
+                ? 'As alterações foram guardadas. Atualiza a sessão se necessário.'
+                : 'A conta foi criada. Inicia sessão para continuar.'
+        ]);
+    }
 
     responderJsonCreateAccount([
         'success' => false,

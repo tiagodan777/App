@@ -13,14 +13,19 @@
 <body>
     <main>
         <form action="{{ doc_root }}login" method="post">
+            <input type="hidden" name="_csrf" value="{{ csrf_token }}">
             <h1>Entrar</h1>
+            <p>A Margot é apenas para pessoas com 18 anos ou mais.</p>
+            {% if mensagem_erro %}
+                <p role="alert">{{ mensagem_erro }}</p>
+            {% endif %}
             <p>
                 <label for="utilizador">Email ou Nº de telefone</label>
-                <input type="text" name="utilizador" id="utilizador">
+                <input type="text" name="utilizador" id="utilizador" value="{{ utilizador }}" autocomplete="username" required>
             </p>
             <p>
                 <label for="palavra-passe">Palavra-Passe</label>
-                <input type="password" name="palavra_passe" id="palavra-passe">
+                <input type="password" name="palavra_passe" id="palavra-passe" autocomplete="current-password" required>
             </p>
             <p class="em-linha">
                 <input type="checkbox" name="ver_password" id="ver-password">
@@ -34,8 +39,14 @@
         </form>
     </main>
     <aside>
-        <a href="{{ doc_root }}password-lost" id="esqueci-palavra-passe">Esqueceste-te da password?</a>
+        <a href="{{ doc_root }}support" id="esqueci-palavra-passe">Problemas para entrar? Contacta o suporte</a>
         <a href="{{ doc_root }}create-account" id="registar">Ainda não te registas-te? <span>Cria um conta</span></a>
+        <p>
+            <a href="{{ doc_root }}terms">Termos</a>
+            · <a href="{{ doc_root }}privacy">Privacidade</a>
+            · <a href="{{ doc_root }}community-guidelines">Regras</a>
+            · <a href="{{ doc_root }}support">Suporte</a>
+        </p>
     </aside>
     <script src="{{ doc_root }}js/jquery-4.0.0.js"></script>
     <script src="{{ doc_root }}js/login.js"></script>

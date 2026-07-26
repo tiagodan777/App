@@ -12,7 +12,9 @@
 
     <link rel="manifest" href="{{ doc_root }}js/manifest.json">
 
-    <title>App</title>
+    <meta name="csrf-token" content="{{ csrf_token }}">
+
+    <title>{% block title %}Margot{% endblock %}</title>
 
     <link rel="stylesheet" href="{{ doc_root }}estilos/style.css?v=11">
     <link rel="stylesheet" href="{{ doc_root }}estilos/create-account.css?v=7">
@@ -26,9 +28,18 @@
 
 <body>
     <script src="{{ doc_root }}js/jquery-4.0.0.js"></script>
+    <script src="{{ doc_root }}js/image-fallback.js?v=1"></script>
 
     {% if session.id %}
-        <script src="{{ doc_root }}js/preferencias.js?v=2"></script>
+        <script nonce="{{ csp_nonce }}">
+            window.margotPreferencesConfig = {
+                url: {{ (doc_root ~ 'preferences')|json_encode(json_script_flags)|raw }},
+                csrfToken: {{ csrf_token|json_encode(json_script_flags)|raw }},
+                memberId: {{ session.id|json_encode(json_script_flags)|raw }},
+                initial: {{ stored_preferences|json_encode(json_script_flags)|raw }}
+            };
+        </script>
+        <script src="{{ doc_root }}js/preferencias.js?v=4"></script>
     {% endif %}
 
     {% block content %}{% endblock %}
@@ -89,6 +100,21 @@
                     </li>
                 {% endif %}
             </ul>
+        </nav>
+
+        <nav class="legal-links" aria-label="Informação legal">
+            <a href="{{ doc_root }}terms">Termos</a>
+            <a href="{{ doc_root }}privacy">Privacidade</a>
+            <a href="{{ doc_root }}community-guidelines">Regras</a>
+            <a href="{{ doc_root }}safety-standards">Proteção de menores</a>
+            <a href="{{ doc_root }}support">Suporte</a>
+
+            {% if session.id %}
+                <form action="{{ doc_root }}logout" method="post">
+                    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                    <button type="submit">Terminar sessão</button>
+                </form>
+            {% endif %}
         </nav>
     </footer>
 
@@ -189,20 +215,22 @@
 
         <div id="heys-avisos" class="heys-avisos" aria-live="polite" aria-atomic="true"></div>
 
-        <script>
-            window.membroId = {{ session.id|json_encode|raw }};
-            window.messagesUrl = {{ (doc_root ~ 'messages')|json_encode|raw }};
-            window.profileUrl = {{ (doc_root ~ 'profile/')|json_encode|raw }};
-            window.heysUrl = {{ (doc_root ~ 'notifications')|json_encode|raw }};
+        <script nonce="{{ csp_nonce }}">
+            window.membroId = {{ session.id|json_encode(json_script_flags)|raw }};
+            window.csrfToken = {{ csrf_token|json_encode(json_script_flags)|raw }};
+            window.messagesUrl = {{ (doc_root ~ 'messages')|json_encode(json_script_flags)|raw }};
+            window.profileUrl = {{ (doc_root ~ 'profile/')|json_encode(json_script_flags)|raw }};
+            window.heysUrl = {{ (doc_root ~ 'notifications')|json_encode(json_script_flags)|raw }};
+            window.webSocketTicketUrl = {{ (doc_root ~ 'websocket-ticket')|json_encode(json_script_flags)|raw }};
 
             window.webSocketUrl = window.location.protocol === 'https:'
                 ? 'wss://' + window.location.host + '/ws/'
                 : 'ws://' + window.location.hostname + ':8080';
         </script>
 
-        <script src="{{ doc_root }}js/index-notificacoes.js?v=7"></script>
-        <script src="{{ doc_root }}js/websocket.js?v=11"></script>
-        <script src="{{ doc_root }}js/menu-invisivel.js?v=2"></script>
+        <script src="{{ doc_root }}js/index-notificacoes.js?v=8"></script>
+        <script src="{{ doc_root }}js/websocket.js?v=14"></script>
+        <script src="{{ doc_root }}js/menu-invisivel.js?v=3"></script>
     {% endif %}
 </body>
 </html>

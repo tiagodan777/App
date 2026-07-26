@@ -1,0 +1,40 @@
+{% extends 'legal/base.html' %}
+
+{% block legal_content %}
+<section>
+    <h1>Atualização necessária</h1>
+    <p>Antes de continuares, confirma as regras atuais da Margot. A localização e as notificações continuam opcionais.</p>
+
+    {% if error %}
+        <p role="alert">{{ error }}</p>
+    {% endif %}
+
+    <form action="{{ doc_root }}legal-acceptance" method="post">
+        <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+
+        <p>
+            <input type="checkbox" name="confirmar_18" id="legal-confirmar-18" value="1" required>
+            <label for="legal-confirmar-18">Confirmo que tenho pelo menos 18 anos.</label>
+        </p>
+        <p>
+            <input type="checkbox" name="aceitar_termos" id="legal-aceitar-termos" value="1" required>
+            <label for="legal-aceitar-termos">
+                Li e aceito os <a href="{{ doc_root }}terms" target="_blank" rel="noopener">Termos</a>.
+            </label>
+        </p>
+        <p>
+            <input type="checkbox" name="reconhecer_privacidade" id="legal-reconhecer-privacidade" value="1" required>
+            <label for="legal-reconhecer-privacidade">
+                Li e tomei conhecimento da
+                <a href="{{ doc_root }}privacy" target="_blank" rel="noopener">Política de Privacidade</a>.
+            </label>
+        </p>
+
+        <button type="submit">Aceitar e continuar</button>
+    </form>
+
+    <p>
+        Se não concordares, podes <a href="{{ doc_root }}delete-account">apagar a conta</a>.
+    </p>
+</section>
+{% endblock %}

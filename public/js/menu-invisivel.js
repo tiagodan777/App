@@ -119,39 +119,56 @@
                     return;
                 }
 
-                /*
-                 * Atualiza imediatamente:
-                 * - data-invisivel;
-                 * - aria-label;
-                 * - eye.png / eye-block.png,
-                 *   através do CSS.
-                 */
-                renderizar();
+                botao.disabled = true;
 
-                if (novoEstado) {
-                    mostrarMensagem(
-                        'Modo invisível ativado. Já não apareces no mapa.'
-                    );
-
-                    return;
+                if (estado) {
+                    estado.textContent =
+                        'A guardar a preferência de visibilidade';
                 }
 
-                if (
-                    preferencias.obter(
-                        'localizacao'
-                    ) === false
-                ) {
+                var confirmacao =
+                    typeof preferencias.quandoConfirmada === 'function'
+                        ? preferencias.quandoConfirmada('invisivel')
+                        : Promise.resolve(true);
+
+                confirmacao.then(function (confirmada) {
+                    botao.disabled = false;
+                    renderizar();
+
+                    if (!confirmada) {
+                        mostrarMensagem(
+                            'Não foi possível alterar o modo invisível.',
+                            'erro'
+                        );
+
+                        return;
+                    }
+
+                    if (novoEstado) {
+                        mostrarMensagem(
+                            'Modo invisível ativado. Já não apareces no mapa.'
+                        );
+
+                        return;
+                    }
+
+                    if (
+                        preferencias.obter(
+                            'localizacao'
+                        ) === false
+                    ) {
+                        mostrarMensagem(
+                            'O modo invisível foi desativado, mas a localização continua desativada nas preferências.',
+                            'erro'
+                        );
+
+                        return;
+                    }
+
                     mostrarMensagem(
-                        'O modo invisível foi desativado, mas a localização continua desativada nas preferências.',
-                        'erro'
+                        'Modo invisível desativado. Voltaste a aparecer no mapa.'
                     );
-
-                    return;
-                }
-
-                mostrarMensagem(
-                    'Modo invisível desativado. Voltaste a aparecer no mapa.'
-                );
+                });
             }
         );
 

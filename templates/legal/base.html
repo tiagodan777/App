@@ -1,0 +1,11 @@
+{% extends 'layout.html' %}
+
+{% block styles %}
+    <link rel="stylesheet" href="{{ doc_root }}estilos/legal.css?v=1">
+{% endblock %}
+
+{% block content %}
+<main class="legal-page">
+    {% block legal_content %}{% endblock %}
+</main>
+{% endblock %}

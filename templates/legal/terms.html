@@ -1,0 +1,72 @@
+{% extends 'legal/base.html' %}
+
+{% block legal_content %}
+<article>
+    <h1>Termos da Margot</h1>
+    <p><strong>Versão {{ terms_version }} · Beta 18+</strong></p>
+
+    <h2>1. Quem presta o serviço</h2>
+    <p>
+        A Margot é disponibilizada por {{ legal_operator_name }}.
+        Contacto: <a href="mailto:{{ legal_contact_email }}">{{ legal_contact_email }}</a>.
+        {% if legal_address %}Morada: {{ legal_address }}.{% endif %}
+    </p>
+
+    <h2>2. Beta e elegibilidade</h2>
+    <p>
+        Tens de ter pelo menos 18 anos e fornecer informação verdadeira. Esta é uma versão beta:
+        podem existir interrupções, alterações e funcionalidades incompletas. Não cries uma conta
+        se não aceitares estes Termos.
+    </p>
+
+    <h2>3. Como deves usar a Margot</h2>
+    <p>
+        A Margot ajuda a iniciar conversas; nunca substitui consentimento, respeito ou prudência.
+        Não podes assediar, perseguir, ameaçar, enganar, fazer spam, tentar localizar alguém com
+        precisão, contornar bloqueios, aceder a contas alheias ou publicar conteúdo ilegal.
+        Cumpre também as <a href="{{ doc_root }}community-guidelines">Regras da Comunidade</a>.
+    </p>
+
+    <h2>4. Conta e conteúdo</h2>
+    <p>
+        És responsável por proteger a palavra-passe e pelo conteúdo que envias. Manténs os direitos
+        sobre esse conteúdo e dás à Margot a autorização técnica, limitada ao funcionamento e
+        segurança do serviço, para o armazenar, processar e mostrar às pessoas autorizadas.
+    </p>
+
+    <h2>5. Localização e segurança</h2>
+    <p>
+        A indicação de proximidade é aproximada e pode falhar. Não a uses para confirmar a posição
+        exata de alguém. Podes desligar a localização ou ficar invisível. Em perigo imediato,
+        contacta os serviços de emergência; a Margot não é um serviço de emergência.
+    </p>
+
+    <h2>6. Moderação</h2>
+    <p>
+        Podemos remover conteúdo, limitar, suspender ou terminar contas para proteger pessoas,
+        investigar denúncias, cumprir a lei ou fazer cumprir estes Termos. Podes contestar uma
+        decisão através de <a href="mailto:{{ legal_contact_email }}">{{ legal_contact_email }}</a>.
+    </p>
+
+    <h2>7. Disponibilidade e responsabilidade</h2>
+    <p>
+        Procuramos prestar o serviço com cuidado razoável, mas não garantimos disponibilidade
+        permanente, compatibilidade com todos os dispositivos nem o comportamento de outros
+        utilizadores. Nada nestes Termos exclui direitos ou responsabilidades que a lei não permita
+        excluir.
+    </p>
+
+    <h2>8. Alterações e fim da conta</h2>
+    <p>
+        Avisaremos quando uma alteração material exigir nova aceitação. Podes apagar a conta nas
+        definições. As regras de eliminação e retenção constam da
+        <a href="{{ doc_root }}privacy">Política de Privacidade</a>.
+    </p>
+
+    <h2>9. Lei aplicável</h2>
+    <p>
+        Aplicam-se as leis de Portugal, sem prejudicar normas obrigatórias de proteção do consumidor
+        ou outro foro que a lei te garanta.
+    </p>
+</article>
+{% endblock %}

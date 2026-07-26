@@ -13,17 +13,29 @@ class Token
 
     public function create(
         string $id,
-        string $proposito
+        string $proposito,
+        int $validadeSegundos = 1200
     ): string {
+        $plainToken = bin2hex(random_bytes(32));
         $arguments = [
-            'token' => bin2hex(random_bytes(64)),
-            'validade' => date(
+            'token' => hash('sha256', $plainToken),
+            'validade' => gmdate(
                 'Y-m-d H:i:s',
-                strtotime('+20 minutes')
+                time() + max(60, min($validadeSegundos, 86400 * 30))
             ),
             'membro_id' => $id,
             'proposito' => $proposito
         ];
+
+        $this->db->runSQL(
+            'DELETE FROM token
+             WHERE membro_id = :membro_id
+             AND proposito = :proposito',
+            [
+                'membro_id' => $id,
+                'proposito' => $proposito
+            ]
+        );
 
         $sql = "
             INSERT INTO token (
@@ -42,7 +54,7 @@ class Token
 
         $this->db->runSQL($sql, $arguments);
 
-        return $arguments['token'];
+        return $plainToken;
     }
 
     public function getMemberId(
@@ -50,7 +62,7 @@ class Token
         string $proposito
     ): string|false {
         $arguments = [
-            'token' => $token,
+            'token' => hash('sha256', $token),
             'proposito' => $proposito
         ];
 
@@ -59,7 +71,7 @@ class Token
             FROM token
             WHERE token = :token
             AND proposito = :proposito
-            AND validade > NOW()
+            AND validade > UTC_TIMESTAMP()
             LIMIT 1
         ";
 
@@ -77,7 +89,20 @@ class Token
         ";
 
         $this->db->runSQL($sql, [
-            'token' => $token
+            'token' => hash('sha256', $token)
         ]);
+    }
+
+    public function deleteForMember(string $memberId, ?string $purpose = null): void
+    {
+        $sql = 'DELETE FROM token WHERE membro_id = :membro_id';
+        $arguments = ['membro_id' => $memberId];
+
+        if ($purpose !== null) {
+            $sql .= ' AND proposito = :proposito';
+            $arguments['proposito'] = $purpose;
+        }
+
+        $this->db->runSQL($sql, $arguments);
     }
 }
