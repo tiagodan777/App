@@ -823,21 +823,19 @@
         var mensagem = nome + ' enviou-te um Hey.';
         var perfil = urlPerfil(dados.from_member_id);
 
-        if (!window.disableNotifications) {
-            mostrarAviso({
-                titulo: 'Recebeste um Hey!',
-                mensagem: mensagem,
-                foto: texto(dados.from_photo),
-                url: perfil
-            });
+        mostrarAviso({
+            titulo: 'Recebeste um Hey!',
+            mensagem: mensagem,
+            foto: texto(dados.from_photo),
+            url: perfil
+        });
 
-            mostrarNotificacaoSistema(
-                'Recebeste um Hey!',
-                mensagem,
-                texto(dados.from_photo),
-                perfil
-            );
-        }
+        mostrarNotificacaoSistema(
+            'Recebeste um Hey!',
+            mensagem,
+            texto(dados.from_photo),
+            perfil
+        );
         definirContador(numero(contador.textContent) + 1);
 
         window.setTimeout(function () {
