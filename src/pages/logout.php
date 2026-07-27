@@ -1,4 +1,8 @@
 <?php
-$cms->getSession()->delete();
-$cms->getCookie()->delete();
-redirect('index');
+
+declare(strict_types=1);
+
+$cookie->delete();
+$session->delete();
+
+redirect(DOC_ROOT . 'login/');

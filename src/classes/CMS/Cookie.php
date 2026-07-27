@@ -1,39 +1,73 @@
 <?php
+
+declare(strict_types=1);
+
 namespace App\CMS;
 
-class Cookie {
-    private $db;
-    public $token;
+use RuntimeException;
 
-    public function __construct($db)
-    {   
-        $this->db = $db;
-        $this->token = $_COOKIE['token'] ?? '';
+class Cookie
+{
+    private const NOME = 'token';
+    private const DURACAO = 1209600;
+
+    private Token $tokens;
+    public string $token;
+
+    public function __construct(Database $db)
+    {
+        $this->tokens = new Token($db);
+        $this->token = trim((string) ($_COOKIE[self::NOME] ?? ''));
     }
 
-    public function create($member) {
-        $arguments['token'] = bin2hex(random_bytes(64));
-        $arguments['validade'] = date('Y-m-d H:i:s', strtotime('+14 days'));
-        $arguments['membro_id'] = $member['id'];
-        $arguments['proposito'] = 'stay_logged_id';
+    public function create(array $member): string
+    {
+        $membroId = trim((string) ($member['id'] ?? ''));
 
-        $sql = "INSERT INTO token (token, validade, membro_id, proposito)
-                VALUES (:token, :validade, :membro_id, :proposito);";
-        $this->db->runSQL($sql, $arguments);
+        if ($membroId === '') {
+            throw new RuntimeException('Não foi possível criar o cookie de sessão.');
+        }
 
-        setcookie('token', $arguments['token'], time() + 60 * 60 * 24 * 7 * 2, '/', '', false, true);
+        if ($this->token !== '') {
+            $this->tokens->delete($this->token);
+        }
 
-        return $arguments['token'];
+        $token = $this->tokens->create($membroId, 'stay_logged_id', self::DURACAO);
+
+        if (!$this->guardar($token, time() + self::DURACAO)) {
+            $this->tokens->delete($token);
+            throw new RuntimeException('Não foi possível guardar o cookie de sessão.');
+        }
+
+        $this->token = $token;
+
+        return $token;
     }
 
-    public function updade($member) {
-        $this->create($member);
+    public function updade(array $member): string
+    {
+        return $this->create($member);
     }
 
-    public function delete() {
-        $sql = "DELETE FROM token
-                WHERE token = :token;";
-        // $this->db->runSQL($sql, [$_COOKIE['token']]);
-        setcookie('token', '', time() - 3600, '/', '', false, true);
+    public function delete(): void
+    {
+        if ($this->token !== '') {
+            $this->tokens->delete($this->token);
+        }
+
+        $this->guardar('', time() - 3600);
+        $this->token = '';
+        unset($_COOKIE[self::NOME]);
+    }
+
+    private function guardar(string $valor, int $validade): bool
+    {
+        return setcookie(self::NOME, $valor, [
+            'expires' => $validade,
+            'path' => '/',
+            'secure' => true,
+            'httponly' => true,
+            'samesite' => 'Lax'
+        ]);
     }
 }

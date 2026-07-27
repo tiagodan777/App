@@ -1,100 +1,120 @@
 <?php
+
+declare(strict_types=1);
+
 namespace App\CMS;
 
-class Session {
-    private $db;
-    public $id, $primeiro_nome, $foto_perfil, $seo_name, $token;
+class Session
+{
+    private Database $db;
 
-    public function __construct($db)
-    {   
-        if (php_sapi_name() !== 'cli') {
-            session_start();
-        }
+    public string $id = '';
+    public string $primeiro_nome = '';
+    public string $foto_perfil = '';
+    public string $seo_name = '';
+    public string $token = '';
+
+    public function __construct(Database $db)
+    {
         $this->db = $db;
-        $token = $_COOKIE['token'] ?? '';
-        if ($token) {
-            /*echo "<pre>";
-            var_dump($_COOKIE);*/
-            $this->create($token, 'stay_logged_id');
-            /*var_dump($_SESSION);
-            echo "</pre>";*/
+
+        if (PHP_SAPI !== 'cli') {
+            $this->iniciar();
+            $this->carregar();
         }
-        $this->id = $_SESSION['id'] ?? 0;
-        $this->primeiro_nome = $_SESSION['primeiro_nome'] ?? '';
-        $this->foto_perfil = $_SESSION['foto_perfil'] ?? '';
-        // $this->role = $_SESSION['role'] ?? 'member';
-        $this->seo_name = $_SESSION['nome_seo'] ?? '';
-        $this->token = $_SESSION['token'] ?? '';
     }
 
-    public function create(
-        $token = '',
-        $proposito = 'stay_logged_id',
-        $membro_id = ''
-    ) {
-        session_regenerate_id(true);
+    public function create(string $token = '', string $proposito = 'stay_logged_id', string $membro_id = ''): bool
+    {
+        if ($membro_id === '') {
+            $membro_id = (string) (new Token($this->db))->getMemberId($token, $proposito);
 
-        if (!$membro_id) {
-            $sql = "SELECT membro_id
-                    FROM token
-                    WHERE token = :token
-                    AND proposito = :proposito
-                    AND validade > NOW()
-                    LIMIT 1";
-
-            $membro_id = $this->db->runSQL($sql, [
-                'token' => $token,
-                'proposito' => $proposito
-            ])->fetchColumn();
-
-            if (!$membro_id) {
+            if ($membro_id === '') {
                 return false;
             }
         }
 
-        $sql = "SELECT
-                    m.id,
-                    m.primeiro_nome,
-                    f.nome_arquivo AS foto_perfil,
-                    m.nome_seo
-                FROM membros AS m
-                LEFT JOIN fotos_perfil AS f
-                    ON f.membro_id = m.id
-                    AND f.ordem = 1
-                WHERE m.id = :membro_id
-                LIMIT 1";
+        $membro = $this->db->runSQL(
+            "SELECT m.id, m.primeiro_nome, m.nome_seo, COALESCE((SELECT f.nome_arquivo FROM fotos_perfil AS f WHERE f.membro_id = m.id AND (f.status = 'completo' OR f.status IS NULL) ORDER BY COALESCE(f.ordem, 2147483647), f.id LIMIT 1), 'default.webp') AS foto_perfil FROM membros AS m WHERE m.id = :membro_id LIMIT 1",
+            ['membro_id' => $membro_id]
+        )->fetch();
 
-        $arguments = $this->db->runSQL($sql, [
-            'membro_id' => $membro_id
-        ])->fetch();
-
-        if (!$arguments) {
+        if (!$membro) {
             return false;
         }
 
-        $_SESSION['id'] = $arguments['id'];
-        $_SESSION['primeiro_nome'] = $arguments['primeiro_nome'];
-        $_SESSION['foto_perfil'] = $arguments['foto_perfil'] ?? 'default.webp';
-        $_SESSION['seo_name'] = $arguments['nome_seo'];
-        $_SESSION['token'] = $token;
+        if (PHP_SAPI !== 'cli' && session_status() === PHP_SESSION_ACTIVE) {
+            session_regenerate_id(true);
+        }
 
-        $this->id = $_SESSION['id'];
-        $this->primeiro_nome = $_SESSION['primeiro_nome'];
-        $this->foto_perfil = $_SESSION['foto_perfil'];
-        $this->seo_name = $_SESSION['seo_name'];
-        $this->token = $_SESSION['token'];
+        $_SESSION['id'] = (string) $membro['id'];
+        $_SESSION['primeiro_nome'] = (string) $membro['primeiro_nome'];
+        $_SESSION['foto_perfil'] = (string) $membro['foto_perfil'];
+        $_SESSION['seo_name'] = (string) $membro['nome_seo'];
+
+        $this->token = $token;
+        $this->carregar();
 
         return true;
     }
 
-    public function update($token) {
-        $this->create($token);
+    public function update(string $token): bool
+    {
+        return $this->create($token);
     }
 
-    public function delete() {
+    public function delete(): void
+    {
+        if (PHP_SAPI === 'cli' || session_status() !== PHP_SESSION_ACTIVE) {
+            return;
+        }
+
         $_SESSION = [];
-        $param = session_get_cookie_params();
-        setcookie(session_name(), '', time() - 3600, $param['path'], $param['domain'], $param['secure'], $param['httponly']);
+        $parametros = session_get_cookie_params();
+
+        setcookie(session_name(), '', [
+            'expires' => time() - 3600,
+            'path' => $parametros['path'],
+            'domain' => $parametros['domain'],
+            'secure' => $parametros['secure'],
+            'httponly' => $parametros['httponly'],
+            'samesite' => $parametros['samesite'] ?: 'Lax'
+        ]);
+
         session_destroy();
+
+        $this->id = '';
+        $this->primeiro_nome = '';
+        $this->foto_perfil = '';
+        $this->seo_name = '';
+        $this->token = '';
+    }
+
+    private function iniciar(): void
+    {
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            return;
+        }
+
+        ini_set('session.use_only_cookies', '1');
+        ini_set('session.use_strict_mode', '1');
+
+        session_set_cookie_params([
+            'lifetime' => 0,
+            'path' => '/',
+            'secure' => true,
+            'httponly' => true,
+            'samesite' => 'Lax'
+        ]);
+
+        session_start();
+    }
+
+    private function carregar(): void
+    {
+        $this->id = (string) ($_SESSION['id'] ?? '');
+        $this->primeiro_nome = (string) ($_SESSION['primeiro_nome'] ?? '');
+        $this->foto_perfil = (string) ($_SESSION['foto_perfil'] ?? '');
+        $this->seo_name = (string) ($_SESSION['seo_name'] ?? '');
     }
 }

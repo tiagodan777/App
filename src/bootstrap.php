@@ -1,16 +1,18 @@
 <?php
-use Twig\Extra\Intl\IntlExtension;
+
+declare(strict_types=1);
 
 define('APP_ROOT', dirname(__FILE__, 2));
+
 $configFile = APP_ROOT . '/config/config.local.php';
 
-if (!file_exists($configFile)) {
+if (!is_file($configFile)) {
     $configFile = APP_ROOT . '/config/config.php';
 }
 
 require_once $configFile;
 require_once APP_ROOT . '/src/functions.php';
-require APP_ROOT . '/vendor/autoload.php';
+require_once APP_ROOT . '/vendor/autoload.php';
 
 if (DEV === false) {
     set_exception_handler('handle_exception');
@@ -21,34 +23,24 @@ if (DEV === false) {
 $cms = new App\CMS\CMS($dsn, $username, $password);
 unset($dsn, $username, $password);
 
-/*if (!DEV) {
-    $twig_options['cache'] = APP_ROOT . '/var/cache';
-}*/
 $twig_options['debug'] = DEV;
-
-$loader = new \Twig\Loader\FilesystemLoader([APP_ROOT . '/templates']);
+$loader = new Twig\Loader\FilesystemLoader([APP_ROOT . '/templates']);
 $twig = new Twig\Environment($loader, $twig_options);
 $twig->addGlobal('doc_root', DOC_ROOT);
-/*$twig->addExtension(new IntlExtension());
 
-setlocale(LC_TIME, 'pt_PT.UTF-8', 'pt_PT', 'Portuguese_Portugal');
-date_default_timezone_set('Europe/Lisbon');*/
-
-$cookie = $cms->getCookie();
-$session = $cms->getSession();
 $db = $cms->getDatabase();
-
-$cookie = $cms->getCookie();
 $session = $cms->getSession();
-$db = $cms->getDatabase();
+$cookie = $cms->getCookie();
 
-if ($cookie->token) {
-    $session->create($cookie->token);
+if ($session->id === '' && $cookie->token !== '') {
+    if (!$session->create($cookie->token, 'stay_logged_id')) {
+        $cookie->delete();
+    }
 }
 
 $twig->addGlobal('cookie', $cookie);
 $twig->addGlobal('session', $session);
 
 if (DEV === true) {
-    $twig->addExtension(new \Twig\Extension\DebugExtension);
+    $twig->addExtension(new Twig\Extension\DebugExtension());
 }

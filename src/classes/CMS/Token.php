@@ -1,83 +1,87 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\CMS;
+
+use InvalidArgumentException;
 
 class Token
 {
-    private $db;
+    private Database $db;
 
-    public function __construct($db)
+    private const DURACOES = [
+        'login' => 1200,
+        'delete_account' => 1200,
+        'stay_logged_id' => 1209600,
+        'websocket' => 60
+    ];
+
+    public function __construct(Database $db)
     {
         $this->db = $db;
     }
 
-    public function create(
-        string $id,
-        string $proposito
-    ): string {
-        $arguments = [
-            'token' => bin2hex(random_bytes(64)),
-            'validade' => date(
-                'Y-m-d H:i:s',
-                strtotime('+20 minutes')
-            ),
-            'membro_id' => $id,
-            'proposito' => $proposito
-        ];
-
-        $sql = "
-            INSERT INTO token (
-                token,
-                validade,
-                membro_id,
-                proposito
-            )
-            VALUES (
-                :token,
-                :validade,
-                :membro_id,
-                :proposito
-            )
-        ";
-
-        $this->db->runSQL($sql, $arguments);
-
-        return $arguments['token'];
+    public static function hash(string $token): string
+    {
+        return hash('sha256', $token);
     }
 
-    public function getMemberId(
-        string $token,
-        string $proposito
-    ): string|false {
-        $arguments = [
-            'token' => $token,
-            'proposito' => $proposito
-        ];
+    public function create(string $id, string $proposito, ?int $duracao = null): string
+    {
+        if (!isset(self::DURACOES[$proposito])) {
+            throw new InvalidArgumentException('Propósito de token inválido.');
+        }
 
-        $sql = "
-            SELECT membro_id
-            FROM token
-            WHERE token = :token
-            AND proposito = :proposito
-            AND validade > NOW()
-            LIMIT 1
-        ";
+        $duracao ??= self::DURACOES[$proposito];
 
-        return $this->db
-            ->runSQL($sql, $arguments)
-            ->fetchColumn();
+        if ($duracao < 1) {
+            throw new InvalidArgumentException('Duração de token inválida.');
+        }
+
+        $token = bin2hex(random_bytes(32));
+
+        $this->db->runSQL(
+            'INSERT INTO token (token, validade, membro_id, proposito) VALUES (:token, :validade, :membro_id, :proposito)',
+            [
+                'token' => self::hash($token),
+                'validade' => gmdate('Y-m-d H:i:s', time() + $duracao),
+                'membro_id' => $id,
+                'proposito' => $proposito
+            ]
+        );
+
+        return $token;
     }
 
-    public function delete(
-        string $token
-    ): void {
-        $sql = "
-            DELETE FROM token
-            WHERE token = :token
-        ";
+    public function getMemberId(string $token, string $proposito): string|false
+    {
+        if ($token === '' || !isset(self::DURACOES[$proposito])) {
+            return false;
+        }
 
-        $this->db->runSQL($sql, [
-            'token' => $token
-        ]);
+        return $this->db->runSQL(
+            'SELECT membro_id FROM token WHERE (token = :token_hash OR token = :token_antigo) AND proposito = :proposito AND validade > UTC_TIMESTAMP() LIMIT 1',
+            [
+                'token_hash' => self::hash($token),
+                'token_antigo' => $token,
+                'proposito' => $proposito
+            ]
+        )->fetchColumn();
+    }
+
+    public function delete(string $token): void
+    {
+        if ($token === '') {
+            return;
+        }
+
+        $this->db->runSQL(
+            'DELETE FROM token WHERE token = :token_hash OR token = :token_antigo',
+            [
+                'token_hash' => self::hash($token),
+                'token_antigo' => $token
+            ]
+        );
     }
 }
