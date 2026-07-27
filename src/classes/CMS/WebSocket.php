@@ -42,7 +42,8 @@ class WebSocket implements MessageComponentInterface
             if (count($this->clients) === 0) return;
 
             try {
-                if ($this->carregarBloqueios(true)) $this->enviarEstadosIndividuais();
+                $this->carregarBloqueios(true);
+                $this->enviarEstadosIndividuais();
             } catch (\Throwable $erro) {
                 echo sprintf("[BLOCK CACHE ERROR] %s\n", $erro->getMessage());
             }
@@ -137,6 +138,7 @@ class WebSocket implements MessageComponentInterface
                         'timestamp' => time()
                     ]);
                     break;
+
                 case 'block_refresh':
                     $this->atualizarBloqueios($from, $data);
                     break;
@@ -344,20 +346,14 @@ class WebSocket implements MessageComponentInterface
             'membro_id' => $membroId,
             'nome' => trim((string) ($membro['nome'] ?? '')),
             'src' => '/imagens/fotos-perfil/' . rawurlencode($foto),
-            'top' => isset($pessoaAtual['top'])
-                ? (int) $pessoaAtual['top']
-                : random_int(50, 600),
-            'left' => isset($pessoaAtual['left'])
-                ? (int) $pessoaAtual['left']
-                : random_int(50, 400)
+            'top' => isset($pessoaAtual['top']) ? (int) $pessoaAtual['top'] : random_int(50, 600),
+            'left' => isset($pessoaAtual['left']) ? (int) $pessoaAtual['left'] : random_int(50, 400)
         ];
     }
 
     private function obterPessoaParaInteracao(string $membroId): ?array
     {
-        if (isset($this->pessoas[$membroId])) {
-            return $this->pessoas[$membroId];
-        }
+        if (isset($this->pessoas[$membroId])) return $this->pessoas[$membroId];
 
         $membro = $this->obterMembro($membroId);
 
@@ -506,10 +502,7 @@ class WebSocket implements MessageComponentInterface
                 'notification_id' => $notificacaoId,
                 'notification_type' => 'hey',
                 'title' => 'Recebeste um Hey!',
-                'body' => sprintf(
-                    '%s enviou-te um Hey.',
-                    (string) ($remetente['nome'] ?? 'Alguém')
-                ),
+                'body' => sprintf('%s enviou-te um Hey.', (string) ($remetente['nome'] ?? 'Alguém')),
                 'from_member_id' => $remetenteId,
                 'from_name' => (string) ($remetente['nome'] ?? 'Alguém'),
                 'from_photo' => (string) ($remetente['src'] ?? '/imagens/fotos-perfil/default.webp'),
@@ -565,7 +558,6 @@ class WebSocket implements MessageComponentInterface
         try {
             $database = $this->getDatabase();
             $statement = $database->prepare($sql);
-
             $statement->execute([
                 'emissor_id' => $emissorId,
                 'destinatario_id' => $destinatarioId
@@ -790,74 +782,70 @@ class WebSocket implements MessageComponentInterface
     }
 
     private function enviarEstadosIndividuais(): void
-{
-    try {
-        $this->carregarBloqueios();
-    } catch (\Throwable $erro) {
-        echo sprintf("[BLOCK CACHE ERROR] %s\n", $erro->getMessage());
-    }
-
-    $agora = time();
-
-    foreach ($this->clients as $client) {
-        if (!($this->localizacaoPorLigacao[$client->resourceId] ?? false)) continue;
-
-        $membroId = $this->membroPorLigacao[$client->resourceId] ?? null;
-
-        if ($membroId === null) continue;
-
-        $ligacaoVisivel = $this->visibilidadePorLigacao[$client->resourceId] ?? false;
-        $pessoasVisiveis = [];
-        $minhaLocalizacao = $this->localizacoes[$membroId] ?? null;
-        $minhaLocalizacaoValida = $this->localizacaoEstaValida($minhaLocalizacao, $agora);
-
-        foreach ($this->pessoas as $outroMembroId => $pessoa) {
-            if ($outroMembroId === $membroId) {
-                if (!$ligacaoVisivel) continue;
-
-                $pessoa['distance_m'] = 0;
-                $pessoasVisiveis[] = $pessoa;
-                continue;
-            }
-
-            if ($this->membrosEstaoBloqueadosNoCache($membroId, $outroMembroId)) continue;
-
-            $outraLocalizacao = $this->localizacoes[$outroMembroId] ?? null;
-            $outraLocalizacaoValida = $this->localizacaoEstaValida($outraLocalizacao, $agora);
-
-            if (!$minhaLocalizacaoValida || !$outraLocalizacaoValida) {
-                $pessoa['distance_m'] = null;
-                $pessoasVisiveis[] = $pessoa;
-                continue;
-            }
-
-            $distancia = $this->calcularDistanciaMetros(
-                $minhaLocalizacao['latitude'],
-                $minhaLocalizacao['longitude'],
-                $outraLocalizacao['latitude'],
-                $outraLocalizacao['longitude']
-            );
-
-            if ($distancia > self::RAIO_MAXIMO_METROS) continue;
-
-            $pessoa['distance_m'] = (int) round($distancia);
-            $pessoasVisiveis[] = $pessoa;
+    {
+        try {
+            $this->carregarBloqueios();
+        } catch (\Throwable $erro) {
+            echo sprintf("[BLOCK CACHE ERROR] %s\n", $erro->getMessage());
         }
 
-        $this->enviar($client, [
-            'type' => 'state',
-            'radius_m' => self::RAIO_MAXIMO_METROS,
-            'map_presence' => $ligacaoVisivel,
-            'location_filter_active' => $minhaLocalizacaoValida,
-            'people' => $pessoasVisiveis
-        ]);
-    }
+        $agora = time();
 
-    echo sprintf(
-        "[STATE] Estados individuais enviados para %d ligação(ões)\n",
-        count($this->clients)
-    );
-}
+        foreach ($this->clients as $client) {
+            $membroId = $this->membroPorLigacao[$client->resourceId] ?? null;
+
+            if ($membroId === null) continue;
+
+            $localizacaoAtiva = $this->localizacaoPorLigacao[$client->resourceId] ?? false;
+            $ligacaoVisivel = $this->visibilidadePorLigacao[$client->resourceId] ?? false;
+            $minhaLocalizacao = $this->localizacoes[$membroId] ?? null;
+            $minhaLocalizacaoValida = $localizacaoAtiva && $this->localizacaoEstaValida($minhaLocalizacao, $agora);
+            $pessoasVisiveis = [];
+
+            if ($minhaLocalizacaoValida) {
+                foreach ($this->pessoas as $outroMembroId => $pessoa) {
+                    if ($outroMembroId === $membroId) {
+                        if (!$ligacaoVisivel) continue;
+
+                        $pessoa['distance_m'] = 0;
+                        $pessoasVisiveis[] = $pessoa;
+                        continue;
+                    }
+
+                    if ($this->membrosEstaoBloqueadosNoCache($membroId, $outroMembroId)) continue;
+
+                    $outraLocalizacao = $this->localizacoes[$outroMembroId] ?? null;
+
+                    if (!$this->localizacaoEstaValida($outraLocalizacao, $agora)) continue;
+
+                    $distancia = $this->calcularDistanciaMetros(
+                        $minhaLocalizacao['latitude'],
+                        $minhaLocalizacao['longitude'],
+                        $outraLocalizacao['latitude'],
+                        $outraLocalizacao['longitude']
+                    );
+
+                    if ($distancia > self::RAIO_MAXIMO_METROS) continue;
+
+                    $pessoa['distance_m'] = (int) round($distancia);
+                    $pessoasVisiveis[] = $pessoa;
+                }
+            }
+
+            $this->enviar($client, [
+                'type' => 'state',
+                'radius_m' => self::RAIO_MAXIMO_METROS,
+                'map_presence' => $ligacaoVisivel,
+                'location_filter_active' => $minhaLocalizacaoValida,
+                'people' => $pessoasVisiveis
+            ]);
+        }
+
+        echo sprintf(
+            "[STATE] Estados individuais enviados para %d ligação(ões)\n",
+            count($this->clients)
+        );
+    }
 
     private function estaoDentroDoRaio(string $primeiroMembroId, string $segundoMembroId): bool
     {
@@ -868,12 +856,7 @@ class WebSocket implements MessageComponentInterface
         if (
             !$this->localizacaoEstaValida($primeira, $agora) ||
             !$this->localizacaoEstaValida($segunda, $agora)
-        ) {
-            return isset(
-                $this->pessoas[$primeiroMembroId],
-                $this->pessoas[$segundoMembroId]
-            );
-        }
+        ) return false;
 
         return $this->calcularDistanciaMetros(
             $primeira['latitude'],
@@ -941,9 +924,7 @@ class WebSocket implements MessageComponentInterface
             $this->ligacoesPorMembro[$membroId][$conn->resourceId]
         );
 
-        if (empty($this->ligacoesPorMembro[$membroId])) {
-            unset($this->ligacoesPorMembro[$membroId]);
-        }
+        if (empty($this->ligacoesPorMembro[$membroId])) unset($this->ligacoesPorMembro[$membroId]);
 
         if (
             !$this->membroTemLigacaoVisivel($membroId) ||
@@ -1013,7 +994,6 @@ class WebSocket implements MessageComponentInterface
         if (!$temporizador instanceof TimerInterface) return;
 
         $this->loop->cancelTimer($temporizador);
-
         unset($this->temporizadoresSaida[$membroId]);
     }
 
@@ -1125,9 +1105,7 @@ class WebSocket implements MessageComponentInterface
     {
         $agora = time();
 
-        if (!$forcar && ($agora - $this->bloqueiosCarregadosEm) < self::BLOQUEIOS_CACHE_SEGUNDOS) {
-            return false;
-        }
+        if (!$forcar && ($agora - $this->bloqueiosCarregadosEm) < self::BLOQUEIOS_CACHE_SEGUNDOS) return false;
 
         $database = null;
         $statement = null;
@@ -1154,9 +1132,7 @@ class WebSocket implements MessageComponentInterface
 
             ksort($bloqueios);
 
-            foreach ($bloqueios as &$membrosBloqueados) {
-                ksort($membrosBloqueados);
-            }
+            foreach ($bloqueios as &$membrosBloqueados) ksort($membrosBloqueados);
 
             unset($membrosBloqueados);
 
