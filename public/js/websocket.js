@@ -225,16 +225,16 @@
     }
 
     function sendRaw(data) {
-    if (!socket || socket.readyState !== WebSocket.OPEN) return false;
+        if (!socket || socket.readyState !== WebSocket.OPEN) return false;
 
-    try {
-        socket.send(JSON.stringify(data));
-        return true;
-    } catch (erro) {
-        console.error('Erro ao enviar mensagem:', erro);
-        return false;
+        try {
+            socket.send(JSON.stringify(data));
+            return true;
+        } catch (erro) {
+            console.error('Erro ao enviar mensagem:', erro);
+            return false;
+        }
     }
-}
 
     function send(data) {
         if (!authenticated) return false;
