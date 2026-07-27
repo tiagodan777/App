@@ -1381,20 +1381,8 @@ $cms
         membro_id: $membroId
     );
 
-$tokenLogin = $cms
-    ->getToken()
-    ->create(
-        $membroId,
-        'login'
-    );
-
 responderJsonCreateAccount([
     'success' => true,
     'redirect' =>
-        urlCreateAccount(
-            'index/?loginToken=' .
-            urlencode(
-                (string) $tokenLogin
-            )
-        )
+        urlCreateAccount('index/')
 ]);
