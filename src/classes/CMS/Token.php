@@ -11,7 +11,6 @@ class Token
     private Database $db;
 
     private const DURACOES = [
-        'login' => 1200,
         'delete_account' => 1200,
         'stay_logged_id' => 1209600,
         'websocket' => 60
@@ -61,10 +60,9 @@ class Token
         }
 
         return $this->db->runSQL(
-            'SELECT membro_id FROM token WHERE (token = :token_hash OR token = :token_antigo) AND proposito = :proposito AND validade > UTC_TIMESTAMP() LIMIT 1',
+            'SELECT membro_id FROM token WHERE token = :token_hash AND proposito = :proposito AND validade > UTC_TIMESTAMP() LIMIT 1',
             [
                 'token_hash' => self::hash($token),
-                'token_antigo' => $token,
                 'proposito' => $proposito
             ]
         )->fetchColumn();
@@ -77,11 +75,8 @@ class Token
         }
 
         $this->db->runSQL(
-            'DELETE FROM token WHERE token = :token_hash OR token = :token_antigo',
-            [
-                'token_hash' => self::hash($token),
-                'token_antigo' => $token
-            ]
+            'DELETE FROM token WHERE token = :token_hash',
+            ['token_hash' => self::hash($token)]
         );
     }
 }
