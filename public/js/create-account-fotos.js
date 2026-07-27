@@ -14,69 +14,148 @@
     let capturaEmCurso = false;
     let fotosAlteradas = false;
 
-    function obterElementos() {
+    function elementos() {
         return {
-            etapa: document.getElementById('fotos'),
-            interfaceCamera: document.getElementById('perfil-camera-interface'),
-            conteudo: document.getElementById('perfil-fotos-conteudo'),
-            video: document.getElementById('perfil-camera-video'),
-            canvas: document.getElementById('perfil-camera-canvas'),
-            input: document.getElementById('perfil-input-fotos'),
-            lista: document.getElementById('perfil-lista-fotos'),
-            erro: document.getElementById('perfil-fotos-erro'),
-            capturar: document.getElementById('perfil-capturar-foto')
+            interfaceCamera:
+                document.getElementById(
+                    'perfil-camera-interface'
+                ),
+
+            conteudo:
+                document.getElementById(
+                    'perfil-fotos-conteudo'
+                ),
+
+            video:
+                document.getElementById(
+                    'perfil-camera-video'
+                ),
+
+            canvas:
+                document.getElementById(
+                    'perfil-camera-canvas'
+                ),
+
+            input:
+                document.getElementById(
+                    'perfil-input-fotos'
+                ),
+
+            lista:
+                document.getElementById(
+                    'perfil-lista-fotos'
+                ),
+
+            erro:
+                document.getElementById(
+                    'perfil-fotos-erro'
+                ),
+
+            capturar:
+                document.getElementById(
+                    'perfil-capturar-foto'
+                )
         };
     }
 
     function mostrarErro(mensagem) {
-        const erro = obterElementos().erro;
+        const erro = elementos().erro;
 
-        if (erro) erro.textContent = mensagem || '';
+        if (erro) {
+            erro.textContent =
+                mensagem || '';
+        }
     }
 
-    function gerarIdFoto() {
+    function gerarId() {
         if (
             window.crypto &&
-            typeof window.crypto.randomUUID === 'function'
+            typeof window.crypto.randomUUID ===
+                'function'
         ) {
             return window.crypto.randomUUID();
         }
 
         return (
             Date.now().toString(36) +
-            Math.random().toString(36).substring(2)
+            Math.random()
+                .toString(36)
+                .substring(2)
         );
     }
 
-    function normalizarNomeFicheiro(nome) {
+    function nomeSeguro(nome) {
         return String(nome || 'foto.jpg')
             .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '')
-            .replace(/[^a-zA-Z0-9._-]/g, '-');
+            .replace(
+                /[\u0300-\u036f]/g,
+                ''
+            )
+            .replace(
+                /[^a-zA-Z0-9._-]/g,
+                '-'
+            );
     }
 
-    function inicializarFotosExistentes() {
-        const existentes = Array.isArray(config.fotosExistentes)
-            ? config.fotosExistentes
-            : [];
+    function eImagem(file) {
+        if (!file) return false;
 
-        existentes.slice(0, MAX_FOTOS).forEach(function (foto) {
-            const dbId = String(foto.id || '').trim();
+        if (
+            String(file.type || '')
+                .startsWith('image/')
+        ) {
+            return true;
+        }
 
-            if (!dbId) return;
+        /*
+         * Alguns ficheiros HEIC escolhidos no iPhone
+         * chegam ao JavaScript sem MIME.
+         */
+        return /\.(jpe?g|png|gif|webp|heic|heif)$/i
+            .test(
+                String(file.name || '')
+            );
+    }
 
-            window.fotosPerfil.push({
-                id: 'existente-' + dbId,
-                dbId: dbId,
-                existente: true,
-                file: null,
-                url: String(foto.url || ''),
-                fallback: String(
-                    foto.fallback ||
-                    '/imagens/fotos-perfil/default.webp'
-                )
+    function inicializarExistentes() {
+        const existentes =
+            Array.isArray(
+                config.fotosExistentes
+            )
+                ? config.fotosExistentes
+                : [];
+
+        existentes
+            .slice(0, MAX_FOTOS)
+            .forEach(function (foto) {
+                const dbId =
+                    String(
+                        foto.id || ''
+                    ).trim();
+
+                if (!dbId) return;
+
+                window.fotosPerfil.push({
+                    id:
+                        'existente-' +
+                        dbId,
+
+                    dbId: dbId,
+                    existente: true,
+                    file: null,
+
+                    url:
+                        String(
+                            foto.url || ''
+                        ),
+
+                    fallback:
+                        String(
+                            foto.fallback ||
+                            '/imagens/fotos-perfil/default.webp'
+                        )
+                });
             });
-        });
     }
 
     function libertarUrl(foto) {
@@ -86,38 +165,55 @@
             foto.url &&
             foto.url.startsWith('blob:')
         ) {
-            URL.revokeObjectURL(foto.url);
+            URL.revokeObjectURL(
+                foto.url
+            );
         }
     }
 
     function adicionarFicheiros(files) {
         mostrarErro('');
 
-        const ficheiros = Array.from(files || []);
+        const ficheiros =
+            Array.from(files || []);
 
-        const ultrapassouLimite =
-            ficheiros.length >
-            MAX_FOTOS - window.fotosPerfil.length;
+        const vagas =
+            MAX_FOTOS -
+            window.fotosPerfil.length;
 
         let adicionou = false;
+        let ignorouTipo = false;
 
-        for (const file of ficheiros) {
-            if (window.fotosPerfil.length >= MAX_FOTOS) break;
-            if (!file.type || !file.type.startsWith('image/')) continue;
+        for (
+            const file of ficheiros.slice(
+                0,
+                Math.max(0, vagas)
+            )
+        ) {
+            if (!eImagem(file)) {
+                ignorouTipo = true;
+                continue;
+            }
 
-            const jaExiste = window.fotosPerfil.some(function (foto) {
-                return (
-                    foto.file &&
-                    foto.file.name === file.name &&
-                    foto.file.size === file.size &&
-                    foto.file.lastModified === file.lastModified
+            const repetida =
+                window.fotosPerfil.some(
+                    function (foto) {
+                        return (
+                            foto.file &&
+                            foto.file.name ===
+                                file.name &&
+                            foto.file.size ===
+                                file.size &&
+                            foto.file.lastModified ===
+                                file.lastModified
+                        );
+                    }
                 );
-            });
 
-            if (jaExiste) continue;
+            if (repetida) continue;
 
             window.fotosPerfil.push({
-                id: gerarIdFoto(),
+                id: gerarId(),
                 existente: false,
                 file: file,
                 url: URL.createObjectURL(file),
@@ -127,86 +223,131 @@
             adicionou = true;
         }
 
-        if (adicionou) fotosAlteradas = true;
-
-        if (ultrapassouLimite) {
-            mostrarErro('Podes adicionar no máximo 6 fotografias.');
+        if (adicionou) {
+            fotosAlteradas = true;
         }
 
-        renderizarFotos();
+        if (
+            ficheiros.length >
+            vagas
+        ) {
+            mostrarErro(
+                'Podes adicionar no máximo 6 fotografias.'
+            );
+        } else if (ignorouTipo) {
+            mostrarErro(
+                'Uma das fotografias não tem um formato suportado.'
+            );
+        }
+
+        renderizar();
     }
 
     function removerFoto(id) {
-        const indice = window.fotosPerfil.findIndex(function (foto) {
-            return foto.id === id;
-        });
+        const indice =
+            window.fotosPerfil.findIndex(
+                function (foto) {
+                    return foto.id === id;
+                }
+            );
 
         if (indice === -1) return;
 
-        const foto = window.fotosPerfil[indice];
+        const foto =
+            window.fotosPerfil[indice];
 
         if (foto.existente) {
-            fotosRemovidas.add(foto.dbId);
+            fotosRemovidas.add(
+                foto.dbId
+            );
         }
 
         libertarUrl(foto);
 
-        window.fotosPerfil.splice(indice, 1);
+        window.fotosPerfil.splice(
+            indice,
+            1
+        );
+
         fotosAlteradas = true;
 
         mostrarErro('');
-        renderizarFotos();
+        renderizar();
     }
 
-    function definirComoPrincipal(id) {
-        const indice = window.fotosPerfil.findIndex(function (foto) {
-            return foto.id === id;
-        });
+    function tornarPrincipal(id) {
+        const indice =
+            window.fotosPerfil.findIndex(
+                function (foto) {
+                    return foto.id === id;
+                }
+            );
 
         if (indice <= 0) return;
 
-        const foto = window.fotosPerfil.splice(indice, 1)[0];
-
-        window.fotosPerfil.unshift(foto);
+        window.fotosPerfil.unshift(
+            window.fotosPerfil.splice(
+                indice,
+                1
+            )[0]
+        );
 
         fotosAlteradas = true;
 
-        renderizarFotos();
+        renderizar();
     }
 
     function criarPlaceholder() {
-        const placeholder = document.createElement('button');
+        const botao =
+            document.createElement(
+                'button'
+            );
 
-        placeholder.type = 'button';
-        placeholder.className = 'perfil-foto-placeholder';
+        botao.type = 'button';
+        botao.className =
+            'perfil-foto-placeholder';
 
-        placeholder.innerHTML =
+        botao.innerHTML =
             '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">' +
                 '<line x1="12" y1="5" x2="12" y2="19"></line>' +
                 '<line x1="5" y1="12" x2="19" y2="12"></line>' +
             '</svg>' +
             '<span>Adicionar</span>';
 
-        return placeholder;
+        return botao;
     }
 
-    function criarCartaoFoto(foto, indice) {
-        const cartao = document.createElement('article');
+    function criarCartao(
+        foto,
+        indice
+    ) {
+        const cartao =
+            document.createElement(
+                'article'
+            );
 
-        cartao.className = 'perfil-foto-cartao';
+        cartao.className =
+            'perfil-foto-cartao' +
+            (
+                indice === 0
+                    ? ' principal'
+                    : ''
+            );
+
         cartao.dataset.id = foto.id;
 
-        if (indice === 0) {
-            cartao.classList.add('principal');
-        }
-
-        const imagem = document.createElement('img');
+        const imagem =
+            document.createElement(
+                'img'
+            );
 
         imagem.src = foto.url;
 
-        imagem.alt = indice === 0
-            ? 'Foto principal'
-            : 'Foto de perfil ' + (indice + 1);
+        imagem.alt =
+            indice === 0
+                ? 'Foto principal'
+                : 'Foto de perfil ' +
+                  (indice + 1);
 
         imagem.onerror = function () {
             this.onerror = null;
@@ -216,11 +357,17 @@
                 '/imagens/fotos-perfil/default.webp';
         };
 
-        const remover = document.createElement('button');
+        const remover =
+            document.createElement(
+                'button'
+            );
 
         remover.type = 'button';
-        remover.className = 'perfil-remover-foto';
+        remover.className =
+            'perfil-remover-foto';
+
         remover.dataset.id = foto.id;
+
         remover.setAttribute(
             'aria-label',
             'Remover fotografia'
@@ -232,70 +379,110 @@
                 '<line x1="6" y1="6" x2="18" y2="18"></line>' +
             '</svg>';
 
-        cartao.appendChild(imagem);
-        cartao.appendChild(remover);
+        cartao.append(
+            imagem,
+            remover
+        );
 
         if (indice === 0) {
-            const etiqueta = document.createElement('span');
+            const etiqueta =
+                document.createElement(
+                    'span'
+                );
 
-            etiqueta.className = 'perfil-foto-principal';
-            etiqueta.textContent = 'Principal';
+            etiqueta.className =
+                'perfil-foto-principal';
 
-            cartao.appendChild(etiqueta);
+            etiqueta.textContent =
+                'Principal';
+
+            cartao.appendChild(
+                etiqueta
+            );
         } else {
-            const principal = document.createElement('button');
+            const principal =
+                document.createElement(
+                    'button'
+                );
 
-            principal.type = 'button';
-            principal.className = 'perfil-definir-principal';
-            principal.dataset.id = foto.id;
-            principal.textContent = 'Tornar principal';
+            principal.type =
+                'button';
 
-            cartao.appendChild(principal);
+            principal.className =
+                'perfil-definir-principal';
+
+            principal.dataset.id =
+                foto.id;
+
+            principal.textContent =
+                'Tornar principal';
+
+            cartao.appendChild(
+                principal
+            );
         }
 
         return cartao;
     }
 
-    function renderizarFotos() {
-        const lista = obterElementos().lista;
+    function renderizar() {
+        const lista =
+            elementos().lista;
 
         if (!lista) return;
 
         lista.innerHTML = '';
 
-        window.fotosPerfil.forEach(function (foto, indice) {
-            lista.appendChild(
-                criarCartaoFoto(foto, indice)
-            );
-        });
+        window.fotosPerfil.forEach(
+            function (
+                foto,
+                indice
+            ) {
+                lista.appendChild(
+                    criarCartao(
+                        foto,
+                        indice
+                    )
+                );
+            }
+        );
 
         for (
-            let indice = window.fotosPerfil.length;
+            let indice =
+                window.fotosPerfil.length;
+
             indice < MAX_FOTOS;
+
             indice++
         ) {
-            lista.appendChild(criarPlaceholder());
+            lista.appendChild(
+                criarPlaceholder()
+            );
         }
     }
 
-    function aplicarEspelhoCamera(video) {
+    function aplicarEspelho(video) {
         const transformacao =
             cameraPerfil === 'user'
                 ? 'scaleX(-1)'
                 : 'none';
 
-        video.style.transform = transformacao;
-        video.style.webkitTransform = transformacao;
+        video.style.transform =
+            transformacao;
+
+        video.style.webkitTransform =
+            transformacao;
     }
 
     async function iniciarCamera() {
-        const ui = obterElementos();
+        const ui = elementos();
 
         if (
             !ui.interfaceCamera ||
             !ui.video ||
             !navigator.mediaDevices ||
-            !navigator.mediaDevices.getUserMedia
+            !navigator.mediaDevices
+                .getUserMedia
         ) {
             mostrarErro(
                 'A câmara não está disponível neste dispositivo.'
@@ -307,32 +494,47 @@
         pararCamera();
 
         try {
-            streamPerfil = await navigator.mediaDevices.getUserMedia({
-                video: {
-                    facingMode: {
-                        ideal: cameraPerfil
-                    },
-                    width: {
-                        ideal: 1920
-                    },
-                    height: {
-                        ideal: 1440
-                    },
-                    aspectRatio: {
-                        ideal: 4 / 3
-                    }
-                },
-                audio: false
-            });
+            streamPerfil =
+                await navigator
+                    .mediaDevices
+                    .getUserMedia({
+                        video: {
+                            facingMode: {
+                                ideal:
+                                    cameraPerfil
+                            },
 
-            ui.video.srcObject = streamPerfil;
+                            width: {
+                                ideal: 1920
+                            },
 
-            aplicarEspelhoCamera(ui.video);
+                            height: {
+                                ideal: 1440
+                            },
 
-            ui.interfaceCamera.style.display = 'flex';
+                            aspectRatio: {
+                                ideal: 4 / 3
+                            }
+                        },
+
+                        audio: false
+                    });
+
+            ui.video.srcObject =
+                streamPerfil;
+
+            aplicarEspelho(
+                ui.video
+            );
+
+            ui.interfaceCamera
+                .style
+                .display = 'flex';
 
             if (ui.conteudo) {
-                ui.conteudo.style.display = 'none';
+                ui.conteudo
+                    .style
+                    .display = 'none';
             }
 
             document.body.classList.add(
@@ -353,31 +555,40 @@
 
     function pararCamera() {
         if (streamPerfil) {
-            streamPerfil.getTracks().forEach(function (track) {
-                track.stop();
-            });
+            streamPerfil
+                .getTracks()
+                .forEach(function (track) {
+                    track.stop();
+                });
         }
 
         streamPerfil = null;
 
-        const video = document.getElementById(
-            'perfil-camera-video'
-        );
+        const video =
+            document.getElementById(
+                'perfil-camera-video'
+            );
 
-        if (video) video.srcObject = null;
+        if (video) {
+            video.srcObject = null;
+        }
     }
 
     function fecharCamera() {
-        const ui = obterElementos();
+        const ui = elementos();
 
         pararCamera();
 
         if (ui.interfaceCamera) {
-            ui.interfaceCamera.style.display = 'none';
+            ui.interfaceCamera
+                .style
+                .display = 'none';
         }
 
         if (ui.conteudo) {
-            ui.conteudo.style.display = 'flex';
+            ui.conteudo
+                .style
+                .display = 'flex';
         }
 
         document.body.classList.remove(
@@ -385,30 +596,46 @@
         );
     }
 
-    function criarCanvasProporcional(video, canvas) {
-        const larguraOrigem = video.videoWidth;
-        const alturaOrigem = video.videoHeight;
+    function desenharCaptura(
+        video,
+        canvas
+    ) {
+        const larguraOrigem =
+            video.videoWidth;
+
+        const alturaOrigem =
+            video.videoHeight;
 
         const escala = Math.min(
             1,
             LADO_MAXIMO /
-            Math.max(larguraOrigem, alturaOrigem)
+            Math.max(
+                larguraOrigem,
+                alturaOrigem
+            )
         );
 
-        const larguraSaida = Math.max(
+        const largura = Math.max(
             1,
-            Math.round(larguraOrigem * escala)
+            Math.round(
+                larguraOrigem *
+                escala
+            )
         );
 
-        const alturaSaida = Math.max(
+        const altura = Math.max(
             1,
-            Math.round(alturaOrigem * escala)
+            Math.round(
+                alturaOrigem *
+                escala
+            )
         );
 
-        canvas.width = larguraSaida;
-        canvas.height = alturaSaida;
+        canvas.width = largura;
+        canvas.height = altura;
 
-        const contexto = canvas.getContext('2d');
+        const contexto =
+            canvas.getContext('2d');
 
         if (!contexto) {
             throw new Error(
@@ -419,8 +646,15 @@
         contexto.save();
 
         if (cameraPerfil === 'user') {
-            contexto.translate(larguraSaida, 0);
-            contexto.scale(-1, 1);
+            contexto.translate(
+                largura,
+                0
+            );
+
+            contexto.scale(
+                -1,
+                1
+            );
         }
 
         contexto.drawImage(
@@ -431,8 +665,8 @@
             alturaOrigem,
             0,
             0,
-            larguraSaida,
-            alturaSaida
+            largura,
+            altura
         );
 
         contexto.restore();
@@ -441,23 +675,32 @@
     }
 
     function canvasParaBlob(canvas) {
-        return new Promise(function (resolve, reject) {
-            canvas.toBlob(function (blob) {
-                if (blob) {
-                    resolve(blob);
-                } else {
-                    reject(
-                        new Error(
-                            'Não foi possível gerar a fotografia.'
-                        )
-                    );
-                }
-            }, 'image/jpeg', 0.92);
-        });
+        return new Promise(
+            function (
+                resolve,
+                reject
+            ) {
+                canvas.toBlob(
+                    function (blob) {
+                        if (blob) {
+                            resolve(blob);
+                        } else {
+                            reject(
+                                new Error(
+                                    'Não foi possível gerar a fotografia.'
+                                )
+                            );
+                        }
+                    },
+                    'image/jpeg',
+                    0.92
+                );
+            }
+        );
     }
 
     async function capturarFoto() {
-        const ui = obterElementos();
+        const ui = elementos();
 
         if (
             capturaEmCurso ||
@@ -470,8 +713,8 @@
 
         if (
             ui.video.readyState < 2 ||
-            ui.video.videoWidth === 0 ||
-            ui.video.videoHeight === 0
+            !ui.video.videoWidth ||
+            !ui.video.videoHeight
         ) {
             mostrarErro(
                 'A câmara ainda está a iniciar.'
@@ -480,7 +723,10 @@
             return;
         }
 
-        if (window.fotosPerfil.length >= MAX_FOTOS) {
+        if (
+            window.fotosPerfil.length >=
+            MAX_FOTOS
+        ) {
             mostrarErro(
                 'Já adicionaste o máximo de 6 fotografias.'
             );
@@ -492,22 +738,27 @@
 
         capturaEmCurso = true;
 
-        ui.capturar.classList.add('a-capturar');
+        ui.capturar.classList.add(
+            'a-capturar'
+        );
 
         try {
-            const blob = await canvasParaBlob(
-                criarCanvasProporcional(
-                    ui.video,
-                    ui.canvas
-                )
-            );
+            const blob =
+                await canvasParaBlob(
+                    desenharCaptura(
+                        ui.video,
+                        ui.canvas
+                    )
+                );
 
             const agora = Date.now();
 
             adicionarFicheiros([
                 new File(
                     [blob],
-                    'foto-perfil-' + agora + '.jpg',
+                    'foto-perfil-' +
+                    agora +
+                    '.jpg',
                     {
                         type: 'image/jpeg',
                         lastModified: agora
@@ -531,69 +782,88 @@
         }
     }
 
-    function abrirSeletorFotos() {
-        const input = obterElementos().input;
+    function abrirGaleria() {
+        const input =
+            elementos().input;
 
         if (input) input.click();
     }
 
-    window.inicializarEtapaFotos = renderizarFotos;
-    window.pararCameraPerfil = fecharCamera;
+    window.inicializarEtapaFotos =
+        renderizar;
 
-    window.validarFotosPerfil = function () {
-        mostrarErro('');
+    window.pararCameraPerfil =
+        fecharCamera;
 
-        return true;
-    };
+    window.validarFotosPerfil =
+        function () {
+            mostrarErro('');
 
-    window.adicionarFotosPerfilAoFormData = function (formData) {
-        let indiceNova = 0;
+            return true;
+        };
 
-        formData.append(
-            'fotos_alteradas',
-            fotosAlteradas ? '1' : '0'
-        );
-
-        window.fotosPerfil.forEach(function (foto, indice) {
-            if (foto.existente) {
-                formData.append(
-                    'ordem_fotos[]',
-                    'existente:' + foto.dbId
-                );
-
-                return;
-            }
-
-            const nome = normalizarNomeFicheiro(
-                foto.file.name ||
-                'foto-perfil-' +
-                (indice + 1) +
-                '.jpg'
-            );
+    window.adicionarFotosPerfilAoFormData =
+        function (formData) {
+            let indiceNova = 0;
 
             formData.append(
-                'imagens[]',
-                foto.file,
-                nome
+                'fotos_alteradas',
+                fotosAlteradas
+                    ? '1'
+                    : '0'
             );
 
-            formData.append(
-                'ordem_fotos[]',
-                'nova:' + indiceNova
+            window.fotosPerfil.forEach(
+                function (
+                    foto,
+                    indice
+                ) {
+                    if (foto.existente) {
+                        formData.append(
+                            'ordem_fotos[]',
+                            'existente:' +
+                            foto.dbId
+                        );
+
+                        return;
+                    }
+
+                    if (!foto.file) return;
+
+                    formData.append(
+                        'imagens[]',
+                        foto.file,
+                        nomeSeguro(
+                            foto.file.name ||
+                            (
+                                'foto-perfil-' +
+                                (indice + 1) +
+                                '.jpg'
+                            )
+                        )
+                    );
+
+                    formData.append(
+                        'ordem_fotos[]',
+                        'nova:' +
+                        indiceNova
+                    );
+
+                    indiceNova++;
+                }
             );
 
-            indiceNova++;
-        });
-
-        fotosRemovidas.forEach(function (id) {
-            formData.append(
-                'fotos_remover[]',
-                id
+            fotosRemovidas.forEach(
+                function (id) {
+                    formData.append(
+                        'fotos_remover[]',
+                        id
+                    );
+                }
             );
-        });
-    };
+        };
 
-    inicializarFotosExistentes();
+    inicializarExistentes();
 
     $(document).on(
         'click',
@@ -604,16 +874,23 @@
     $(document).on(
         'click',
         '#perfil-escolher-fotos, #perfil-abrir-galeria-camera, .perfil-foto-placeholder',
-        abrirSeletorFotos
+        abrirGaleria
     );
 
     $(document).on(
         'change',
         '#perfil-input-fotos',
         function () {
-            if (!this.files || !this.files.length) return;
+            if (
+                !this.files ||
+                !this.files.length
+            ) {
+                return;
+            }
 
-            adicionarFicheiros(this.files);
+            adicionarFicheiros(
+                this.files
+            );
 
             this.value = '';
 
@@ -628,7 +905,9 @@
             evento.stopPropagation();
 
             removerFoto(
-                String($(this).data('id'))
+                String(
+                    $(this).data('id')
+                )
             );
         }
     );
@@ -639,8 +918,10 @@
         function (evento) {
             evento.stopPropagation();
 
-            definirComoPrincipal(
-                String($(this).data('id'))
+            tornarPrincipal(
+                String(
+                    $(this).data('id')
+                )
             );
         }
     );
@@ -672,6 +953,12 @@
 
     window.addEventListener(
         'pagehide',
-        pararCamera
+        function () {
+            pararCamera();
+
+            window.fotosPerfil.forEach(
+                libertarUrl
+            );
+        }
     );
 })(window, document, jQuery);

@@ -5,6 +5,9 @@ declare(strict_types=1);
 use App\Validate\Validate;
 
 $pathImagensTemporarias = APP_ROOT . '/public/imagens/fotos-perfil-temp/';
+$metodo = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+
+if ($metodo === 'POST') ob_start();
 
 function urlCreateAccount(string $caminho): string
 {
@@ -13,11 +16,17 @@ function urlCreateAccount(string $caminho): string
 
 function responderJsonCreateAccount(array $resposta, int $status = 200): never
 {
+    if (ob_get_level() > 0) ob_clean();
+
     http_response_code($status);
     header('Content-Type: application/json; charset=UTF-8');
-    header('Cache-Control: no-store');
+    header('Cache-Control: no-store, no-cache, must-revalidate');
 
-    echo json_encode($resposta, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    echo json_encode(
+        $resposta,
+        JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
+    );
+
     exit;
 }
 
@@ -26,8 +35,19 @@ function apagarImagensTemporariasCreateAccount(array $imagens, string $pasta): v
     foreach ($imagens as $imagem) {
         $nome = basename((string) $imagem);
 
-        if ($nome !== '' && is_file($pasta . $nome)) {
-            @unlink($pasta . $nome);
+        if ($nome === '') continue;
+
+        $caminho = $pasta . $nome;
+
+        try {
+            if (is_file($caminho)) unlink($caminho);
+        } catch (\Throwable $erro) {
+            error_log(
+                'Não foi possível apagar a imagem temporária ' .
+                $caminho .
+                ': ' .
+                $erro->getMessage()
+            );
         }
     }
 }
@@ -43,10 +63,21 @@ function apagarFicheirosDePerfil(array $nomes): void
     foreach ($nomes as $nome) {
         $nome = basename((string) $nome);
 
-        if ($nome === '') continue;
+        if ($nome === '' || $nome === 'default.webp') continue;
 
         foreach ($pastas as $pasta) {
-            if (is_file($pasta . $nome)) @unlink($pasta . $nome);
+            $caminho = $pasta . $nome;
+
+            try {
+                if (is_file($caminho)) unlink($caminho);
+            } catch (\Throwable $erro) {
+                error_log(
+                    'Não foi possível apagar a fotografia ' .
+                    $caminho .
+                    ': ' .
+                    $erro->getMessage()
+                );
+            }
         }
     }
 }
@@ -55,10 +86,241 @@ function normalizarListaCreateAccount($valores): array
 {
     if (!is_array($valores)) return [];
 
-    return array_values(array_unique(array_filter(
-        array_map(static fn($valor): string => trim((string) $valor), $valores),
-        static fn(string $valor): bool => $valor !== ''
-    )));
+    $resultado = [];
+    $vistos = [];
+
+    foreach ($valores as $valor) {
+        $valor = trim((string) $valor);
+
+        if ($valor === '') continue;
+
+        $chave = function_exists('mb_strtolower')
+            ? mb_strtolower($valor, 'UTF-8')
+            : strtolower($valor);
+
+        if (isset($vistos[$chave])) continue;
+
+        $vistos[$chave] = true;
+        $resultado[] = $valor;
+    }
+
+    return $resultado;
+}
+
+function prepararPastaFotosCreateAccount(string $pasta): void
+{
+    try {
+        if (
+            !is_dir($pasta) &&
+            !mkdir($pasta, 0775, true) &&
+            !is_dir($pasta)
+        ) {
+            throw new \RuntimeException(
+                'Não foi possível criar a pasta.'
+            );
+        }
+    } catch (\Throwable $erro) {
+        error_log(
+            'Erro ao preparar a pasta de fotografias: ' .
+            $erro->getMessage()
+        );
+
+        responderJsonCreateAccount([
+            'success' => false,
+            'message' => 'Não foi possível preparar a pasta das fotografias.'
+        ], 500);
+    }
+
+    if (!is_writable($pasta)) {
+        error_log(
+            'A pasta de fotografias não permite escrita: ' .
+            $pasta
+        );
+
+        responderJsonCreateAccount([
+            'success' => false,
+            'message' => 'A pasta das fotografias não permite escrita.'
+        ], 500);
+    }
+}
+
+function receberImagensCreateAccount(
+    string $pasta,
+    array &$erros
+): array {
+    $imagens = [];
+    $ficheiros = $_FILES['imagens'] ?? null;
+
+    if (
+        !is_array($ficheiros) ||
+        !isset($ficheiros['tmp_name']) ||
+        !is_array($ficheiros['tmp_name'])
+    ) {
+        return [];
+    }
+
+    if (count($ficheiros['tmp_name']) > 6) {
+        $erros['imagens'] =
+            'Podes adicionar no máximo 6 fotografias.';
+    }
+
+    $extensoesPorMime = [
+        'image/jpeg' => 'jpg',
+        'image/png' => 'png',
+        'image/gif' => 'gif',
+        'image/webp' => 'webp',
+        'image/heic' => 'heic',
+        'image/heif' => 'heif',
+        'image/heic-sequence' => 'heic',
+        'image/heif-sequence' => 'heif'
+    ];
+
+    $limite = defined('MAX_SIZE')
+        ? (int) MAX_SIZE
+        : 25 * 1024 * 1024;
+
+    foreach ($ficheiros['tmp_name'] as $indice => $temp) {
+        if ($indice >= 6) break;
+
+        $erroUpload = (int) (
+            $ficheiros['error'][$indice]
+            ?? UPLOAD_ERR_NO_FILE
+        );
+
+        $tamanho = (int) (
+            $ficheiros['size'][$indice]
+            ?? 0
+        );
+
+        $nomeOriginal = trim(
+            (string) (
+                $ficheiros['name'][$indice]
+                ?? 'foto'
+            )
+        );
+
+        if ($erroUpload === UPLOAD_ERR_NO_FILE) continue;
+
+        if ($erroUpload !== UPLOAD_ERR_OK) {
+            $erros['imagens'] = match ($erroUpload) {
+                UPLOAD_ERR_INI_SIZE,
+                UPLOAD_ERR_FORM_SIZE =>
+                    'Uma das fotografias é demasiado grande.',
+
+                UPLOAD_ERR_PARTIAL =>
+                    'Uma das fotografias não foi enviada completamente.',
+
+                UPLOAD_ERR_NO_TMP_DIR =>
+                    'O servidor não tem uma pasta temporária disponível.',
+
+                UPLOAD_ERR_CANT_WRITE =>
+                    'Não foi possível guardar a fotografia no servidor.',
+
+                UPLOAD_ERR_EXTENSION =>
+                    'O envio da fotografia foi interrompido pelo servidor.',
+
+                default =>
+                    'Ocorreu um erro ao enviar uma das fotografias.'
+            };
+
+            continue;
+        }
+
+        if (
+            !is_string($temp) ||
+            $temp === '' ||
+            !is_uploaded_file($temp)
+        ) {
+            $erros['imagens'] =
+                'Uma das fotografias recebidas não é válida.';
+
+            continue;
+        }
+
+        if ($tamanho <= 0 || $tamanho > $limite) {
+            $erros['imagens'] =
+                'Uma das fotografias é demasiado grande ou está vazia.';
+
+            continue;
+        }
+
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+
+        if ($finfo === false) {
+            $erros['imagens'] =
+                'Não foi possível verificar uma das fotografias.';
+
+            continue;
+        }
+
+        $mime = finfo_file($finfo, $temp);
+
+        finfo_close($finfo);
+
+        if (
+            !is_string($mime) ||
+            !isset($extensoesPorMime[$mime])
+        ) {
+            $erros['imagens'] =
+                'Tipo de imagem não suportado. Usa JPEG, PNG, GIF, WebP ou HEIC.';
+
+            continue;
+        }
+
+        /*
+         * O Safari pode converter HEIC para JPEG sem alterar
+         * corretamente o nome do ficheiro. Por isso, usamos
+         * a extensão correspondente ao MIME real.
+         */
+        $nomeBase = pathinfo(
+            $nomeOriginal,
+            PATHINFO_FILENAME
+        );
+
+        $nomeSeguro =
+            ($nomeBase !== '' ? $nomeBase : 'foto') .
+            '.' .
+            $extensoesPorMime[$mime];
+
+        $filename = basename(
+            (string) create_filename($nomeSeguro)
+        );
+
+        if ($filename === '') {
+            $erros['imagens'] =
+                'Não foi possível criar o nome de uma das fotografias.';
+
+            continue;
+        }
+
+        try {
+            if (
+                !move_uploaded_file(
+                    $temp,
+                    $pasta . $filename
+                )
+            ) {
+                $erros['imagens'] =
+                    'Não foi possível guardar uma das fotografias.';
+
+                continue;
+            }
+        } catch (\Throwable $erro) {
+            error_log(
+                'Erro ao mover fotografia para a pasta temporária: ' .
+                $erro->getMessage()
+            );
+
+            $erros['imagens'] =
+                'Não foi possível guardar uma das fotografias.';
+
+            continue;
+        }
+
+        $imagens[] = $filename;
+    }
+
+    return $imagens;
 }
 
 function sincronizarFotosCreateAccount(
@@ -75,12 +337,18 @@ function sincronizarFotosCreateAccount(
         if ($gerirTransacao) $db->beginTransaction();
 
         $registos = $db->runSQL(
-            'SELECT id, nome_arquivo, status FROM fotos_perfil WHERE membro_id = :membro_id FOR UPDATE',
+            'SELECT id, nome_arquivo, status
+             FROM fotos_perfil
+             WHERE membro_id = :membro_id
+             FOR UPDATE',
             ['membro_id' => $membroId]
         )->fetchAll();
 
         $existentes = [];
-        $remover = array_fill_keys($idsRemover, true);
+        $remover = array_fill_keys(
+            $idsRemover,
+            true
+        );
 
         foreach ($registos as $registo) {
             $id = (string) $registo['id'];
@@ -96,7 +364,13 @@ function sincronizarFotosCreateAccount(
         $novasUsadas = [];
 
         foreach ($ordemPedida as $token) {
-            if (preg_match('/^existente:(.+)$/', $token, $partes)) {
+            if (
+                preg_match(
+                    '/^existente:(.+)$/',
+                    $token,
+                    $partes
+                )
+            ) {
                 $id = trim($partes[1]);
 
                 if (
@@ -108,19 +382,33 @@ function sincronizarFotosCreateAccount(
                 }
 
                 $existentesUsados[$id] = true;
-                $itens[] = ['tipo' => 'existente', 'id' => $id];
+
+                $itens[] = [
+                    'tipo' => 'existente',
+                    'id' => $id
+                ];
 
                 continue;
             }
 
-            if (preg_match('/^nova:(\d+)$/', $token, $partes)) {
+            if (
+                preg_match(
+                    '/^nova:(\d+)$/',
+                    $token,
+                    $partes
+                )
+            ) {
                 $indice = (int) $partes[1];
 
-                if (!isset($imagensNovas[$indice]) || isset($novasUsadas[$indice])) {
+                if (
+                    !isset($imagensNovas[$indice]) ||
+                    isset($novasUsadas[$indice])
+                ) {
                     continue;
                 }
 
                 $novasUsadas[$indice] = true;
+
                 $itens[] = [
                     'tipo' => 'nova',
                     'nome' => $imagensNovas[$indice]
@@ -129,41 +417,69 @@ function sincronizarFotosCreateAccount(
         }
 
         foreach ($existentes as $id => $registo) {
-            if (isset($remover[$id]) || isset($existentesUsados[$id])) continue;
+            if (
+                isset($remover[$id]) ||
+                isset($existentesUsados[$id])
+            ) {
+                continue;
+            }
 
-            $itens[] = ['tipo' => 'existente', 'id' => $id];
+            $itens[] = [
+                'tipo' => 'existente',
+                'id' => $id
+            ];
         }
 
         foreach ($imagensNovas as $indice => $nome) {
             if (!isset($novasUsadas[$indice])) {
-                $itens[] = ['tipo' => 'nova', 'nome' => $nome];
+                $itens[] = [
+                    'tipo' => 'nova',
+                    'nome' => $nome
+                ];
             }
         }
 
         if (count($itens) > 6) {
-            throw new \LengthException('Podes manter no máximo 6 fotografias.');
+            throw new \LengthException(
+                'Podes manter no máximo 6 fotografias.'
+            );
         }
 
         foreach ($remover as $id => $_) {
             if (!isset($existentes[$id])) continue;
 
-            $nomesApagar[] = $existentes[$id]['nome_arquivo'];
+            $nomesApagar[] =
+                (string) $existentes[$id]['nome_arquivo'];
 
             $db->runSQL(
-                'DELETE FROM fotos_perfil WHERE id = :id AND membro_id = :membro_id',
-                ['id' => $id, 'membro_id' => $membroId]
+                'DELETE FROM fotos_perfil
+                 WHERE id = :id
+                 AND membro_id = :membro_id',
+                [
+                    'id' => $id,
+                    'membro_id' => $membroId
+                ]
             );
         }
 
+        /*
+         * Evita colisões caso exista um índice único
+         * em (membro_id, ordem).
+         */
         $db->runSQL(
-            'UPDATE fotos_perfil SET ordem = COALESCE(ordem, 0) + 1000 WHERE membro_id = :membro_id',
+            'UPDATE fotos_perfil
+             SET ordem = COALESCE(ordem, 0) + 1000
+             WHERE membro_id = :membro_id',
             ['membro_id' => $membroId]
         );
 
         foreach ($itens as $ordem => $item) {
             if ($item['tipo'] === 'existente') {
                 $db->runSQL(
-                    'UPDATE fotos_perfil SET ordem = :ordem WHERE id = :id AND membro_id = :membro_id',
+                    'UPDATE fotos_perfil
+                     SET ordem = :ordem
+                     WHERE id = :id
+                     AND membro_id = :membro_id',
                     [
                         'ordem' => $ordem,
                         'id' => $item['id'],
@@ -175,8 +491,10 @@ function sincronizarFotosCreateAccount(
             }
 
             $db->runSQL(
-                'INSERT INTO fotos_perfil (nome_arquivo, membro_id, ordem, status)
-                 VALUES (:nome_arquivo, :membro_id, :ordem, :status)',
+                'INSERT INTO fotos_perfil
+                    (nome_arquivo, membro_id, ordem, status)
+                 VALUES
+                    (:nome_arquivo, :membro_id, :ordem, :status)',
                 [
                     'nome_arquivo' => $item['nome'],
                     'membro_id' => $membroId,
@@ -190,120 +508,271 @@ function sincronizarFotosCreateAccount(
 
         return $nomesApagar;
     } catch (\Throwable $erro) {
-        if ($gerirTransacao && $db->inTransaction()) $db->rollBack();
+        if (
+            $gerirTransacao &&
+            $db->inTransaction()
+        ) {
+            $db->rollBack();
+        }
 
         throw $erro;
     }
 }
 
-function iniciarWorkerFotosCreateAccount(string $membroId): void
-{
-    $worker = APP_ROOT . '/src/pages/profile-image-worker.php';
-    $log = APP_ROOT . '/var/log/profile-image-worker.log';
+function iniciarWorkerFotosCreateAccount(
+    string $membroId
+): void {
+    $worker =
+        APP_ROOT .
+        '/src/pages/profile-image-worker.php';
+
+    $log =
+        APP_ROOT .
+        '/var/log/profile-image-worker.log';
 
     if (!is_file($worker)) {
-        error_log('Worker de imagens não encontrado: ' . $worker);
+        error_log(
+            'Worker de imagens não encontrado: ' .
+            $worker
+        );
+
         return;
     }
 
     $comando = sprintf(
-        'nohup %s %s %s >> %s 2>&1 &',
+        'nohup %s %s %s >> %s 2>&1 < /dev/null &',
         escapeshellarg('/usr/bin/php'),
         escapeshellarg($worker),
         escapeshellarg($membroId),
         escapeshellarg($log)
     );
 
-    exec($comando);
-}
+    try {
+        $saida = [];
+        $codigo = 0;
 
-$metodo = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+        exec(
+            $comando,
+            $saida,
+            $codigo
+        );
+
+        if ($codigo !== 0) {
+            error_log(
+                'Não foi possível iniciar o worker das fotografias. Código: ' .
+                $codigo
+            );
+        }
+    } catch (\Throwable $erro) {
+        /*
+         * O perfil já foi guardado. Uma falha no arranque
+         * do worker não deve devolver um falso erro ao browser.
+         */
+        error_log(
+            'Erro ao iniciar o worker das fotografias: ' .
+            $erro->getMessage()
+        );
+    }
+}
 
 $modoEdicao = $metodo === 'POST'
     ? (($_POST['modo'] ?? '') === 'editar')
     : (($_GET['editar'] ?? '') === '1');
 
-$membroIdSessao = trim((string) ($session->id ?? ''));
+$membroIdSessao = trim(
+    (string) ($session->id ?? '')
+);
 
 if ($metodo !== 'POST') {
-    $dadosIniciais = ['gostos' => []];
+    $dadosIniciais = [
+        'gostos' => []
+    ];
+
     $fotosExistentes = [];
 
     if ($modoEdicao) {
         if ($membroIdSessao === '') {
-            header('Location: ' . urlCreateAccount('login'));
+            header(
+                'Location: ' .
+                urlCreateAccount('login')
+            );
+
             exit;
         }
 
-        $membroAtual = $cms->getMember()->get($membroIdSessao);
+        $membroAtual = $cms
+            ->getMember()
+            ->get($membroIdSessao);
 
         if (!$membroAtual) {
             http_response_code(404);
             exit('Membro não encontrado.');
         }
 
-        $nascimento = \DateTimeImmutable::createFromFormat(
-            '!Y-m-d',
-            (string) $membroAtual['nascimento']
-        );
+        $nascimento =
+            \DateTimeImmutable::createFromFormat(
+                '!Y-m-d',
+                (string) (
+                    $membroAtual['nascimento']
+                    ?? ''
+                )
+            );
 
         $dadosIniciais = [
-            'primeiro_nome' => (string) $membroAtual['primeiro_nome'],
-            'ultimo_nome' => (string) $membroAtual['ultimo_nome'],
-            'dia' => $nascimento ? $nascimento->format('d') : '',
-            'mes' => $nascimento ? $nascimento->format('m') : '01',
-            'ano' => $nascimento ? $nascimento->format('Y') : '',
-            'genero' => (string) $membroAtual['genero'],
-            'gostos' => array_values(array_map(
-                static fn(array $gosto): string => (string) $gosto['nome'],
-                $membroAtual['gostos'] ?? []
-            )),
-            'objetivo' => (string) $membroAtual['objetivo'],
-            'sobre_ti' => (string) ($membroAtual['bio'] ?? ''),
-            'telefone' => (string) ($membroAtual['telefone'] ?? ''),
-            'email' => (string) ($membroAtual['email'] ?? '')
+            'primeiro_nome' =>
+                (string) (
+                    $membroAtual['primeiro_nome']
+                    ?? ''
+                ),
+
+            'ultimo_nome' =>
+                (string) (
+                    $membroAtual['ultimo_nome']
+                    ?? ''
+                ),
+
+            'dia' =>
+                $nascimento
+                    ? $nascimento->format('d')
+                    : '',
+
+            'mes' =>
+                $nascimento
+                    ? $nascimento->format('m')
+                    : '01',
+
+            'ano' =>
+                $nascimento
+                    ? $nascimento->format('Y')
+                    : '',
+
+            'genero' =>
+                (string) (
+                    $membroAtual['genero']
+                    ?? ''
+                ),
+
+            'gostos' => array_values(
+                array_map(
+                    static fn(array $gosto): string =>
+                        (string) (
+                            $gosto['nome']
+                            ?? ''
+                        ),
+                    $membroAtual['gostos']
+                    ?? []
+                )
+            ),
+
+            'objetivo' =>
+                (string) (
+                    $membroAtual['objetivo']
+                    ?? ''
+                ),
+
+            'sobre_ti' =>
+                (string) (
+                    $membroAtual['bio']
+                    ?? ''
+                ),
+
+            'telefone' =>
+                (string) (
+                    $membroAtual['telefone']
+                    ?? ''
+                ),
+
+            'email' =>
+                (string) (
+                    $membroAtual['email']
+                    ?? ''
+                )
         ];
 
-        foreach ($membroAtual['fotos'] ?? [] as $foto) {
-            if (empty($foto['id']) || ($foto['nome_arquivo'] ?? '') === 'default.webp') {
+        foreach (
+            $membroAtual['fotos'] ?? []
+            as $foto
+        ) {
+            if (
+                empty($foto['id']) ||
+                ($foto['nome_arquivo'] ?? '') ===
+                    'default.webp'
+            ) {
                 continue;
             }
 
-            $nome = basename((string) $foto['nome_arquivo']);
+            $nome = basename(
+                (string) $foto['nome_arquivo']
+            );
 
             $fotosExistentes[] = [
-                'id' => (string) $foto['id'],
-                'nome' => $nome,
-                'url' => urlCreateAccount(
-                    'imagens/fotos-perfil-originais/' .
-                    rawurlencode($nome)
-                ),
-                'fallback' => urlCreateAccount(
-                    'imagens/fotos-perfil/' .
-                    rawurlencode($nome)
-                )
+                'id' =>
+                    (string) $foto['id'],
+
+                'nome' =>
+                    $nome,
+
+                'url' =>
+                    urlCreateAccount(
+                        'imagens/fotos-perfil-originais/' .
+                        rawurlencode($nome)
+                    ),
+
+                'fallback' =>
+                    urlCreateAccount(
+                        'imagens/fotos-perfil/' .
+                        rawurlencode($nome)
+                    )
             ];
         }
     }
 
-    echo $twig->render('create-account.html', [
-        'modo_edicao' => $modoEdicao,
-        'membro_id_edicao' => $modoEdicao ? $membroIdSessao : '',
-        'dados_iniciais' => $dadosIniciais,
-        'fotos_existentes' => $fotosExistentes,
-        'campos_url' => urlCreateAccount(
-            'create-account-campos' .
-            ($modoEdicao ? '?editar=1' : '')
-        ),
-        'perfil_url' => $modoEdicao
-            ? urlCreateAccount('profile/' . rawurlencode($membroIdSessao))
-            : ''
-    ]);
+    echo $twig->render(
+        'create-account.html',
+        [
+            'modo_edicao' =>
+                $modoEdicao,
+
+            'membro_id_edicao' =>
+                $modoEdicao
+                    ? $membroIdSessao
+                    : '',
+
+            'dados_iniciais' =>
+                $dadosIniciais,
+
+            'fotos_existentes' =>
+                $fotosExistentes,
+
+            'campos_url' =>
+                urlCreateAccount(
+                    'create-account-campos' .
+                    (
+                        $modoEdicao
+                            ? '?editar=1'
+                            : ''
+                    )
+                ),
+
+            'perfil_url' =>
+                $modoEdicao
+                    ? urlCreateAccount(
+                        'profile/' .
+                        rawurlencode(
+                            $membroIdSessao
+                        )
+                    )
+                    : ''
+        ]
+    );
 
     exit;
 }
 
-if ($modoEdicao && $membroIdSessao === '') {
+if (
+    $modoEdicao &&
+    $membroIdSessao === ''
+) {
     responderJsonCreateAccount([
         'success' => false,
         'message' => 'A sessão terminou.'
@@ -313,161 +782,246 @@ if ($modoEdicao && $membroIdSessao === '') {
 ignore_user_abort(true);
 set_time_limit(0);
 
-$membro = [];
-$erros = [];
-$imagens = [];
+$secoesPermitidas = [
+    'nome',
+    'nascimento',
+    'sexo',
+    'gostos',
+    'objetivo',
+    'contactos',
+    'descricao',
+    'fotos',
+    'permissoes',
+    'palavra-passe',
+    'tudo'
+];
+
+$secao = $modoEdicao
+    ? trim(
+        (string) (
+            $_POST['secao']
+            ?? 'tudo'
+        )
+    )
+    : 'tudo';
 
 if (
-    !is_dir($pathImagensTemporarias) &&
-    !mkdir($pathImagensTemporarias, 0775, true) &&
-    !is_dir($pathImagensTemporarias)
+    $modoEdicao &&
+    !in_array(
+        $secao,
+        $secoesPermitidas,
+        true
+    )
 ) {
     responderJsonCreateAccount([
         'success' => false,
-        'message' => 'Não foi possível preparar a pasta das fotografias.'
-    ], 500);
+        'message' => 'A área de edição não é válida.'
+    ], 422);
 }
 
-if (isset($_FILES['imagens']['tmp_name']) && is_array($_FILES['imagens']['tmp_name'])) {
-    if (count($_FILES['imagens']['tmp_name']) > 6) {
-        $erros['imagens'] = 'Podes adicionar no máximo 6 fotografias.';
-    }
+$editar = static function (
+    string $nome
+) use (
+    $modoEdicao,
+    $secao
+): bool {
+    return
+        !$modoEdicao ||
+        $secao === 'tudo' ||
+        $secao === $nome;
+};
 
-    foreach ($_FILES['imagens']['tmp_name'] as $indice => $temp) {
-        if ($indice >= 6) break;
+$erros = [];
+$imagens = [];
+$editaFotos = $editar('fotos');
 
-        $erroUpload = $_FILES['imagens']['error'][$indice] ?? UPLOAD_ERR_NO_FILE;
-        $tamanho = (int) ($_FILES['imagens']['size'][$indice] ?? 0);
-        $nomeOriginal = trim((string) ($_FILES['imagens']['name'][$indice] ?? ''));
+if ($editaFotos) {
+    prepararPastaFotosCreateAccount(
+        $pathImagensTemporarias
+    );
 
-        if ($erroUpload === UPLOAD_ERR_NO_FILE) continue;
-
-        if ($erroUpload !== UPLOAD_ERR_OK) {
-            $erros['imagens'] = match ($erroUpload) {
-                UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => 'Uma das fotografias é demasiado grande.',
-                UPLOAD_ERR_PARTIAL => 'Uma das fotografias não foi enviada completamente.',
-                UPLOAD_ERR_NO_TMP_DIR => 'O servidor não tem uma pasta temporária disponível.',
-                UPLOAD_ERR_CANT_WRITE => 'Não foi possível guardar a fotografia no servidor.',
-                UPLOAD_ERR_EXTENSION => 'O envio da fotografia foi interrompido pelo servidor.',
-                default => 'Ocorreu um erro ao enviar uma das fotografias.'
-            };
-
-            continue;
-        }
-
-        if ($temp === '' || !is_uploaded_file($temp)) {
-            $erros['imagens'] = 'Uma das fotografias recebidas não é válida.';
-            continue;
-        }
-
-        if ($tamanho <= 0 || $tamanho > MAX_SIZE) {
-            $erros['imagens'] = 'Uma das fotografias é demasiado grande ou está vazia.';
-            continue;
-        }
-
-        $finfo = finfo_open(FILEINFO_MIME_TYPE);
-
-        if ($finfo === false) {
-            $erros['imagens'] = 'Não foi possível verificar uma das fotografias.';
-            continue;
-        }
-
-        $mime = finfo_file($finfo, $temp);
-
-        finfo_close($finfo);
-
-        $mimesPermitidos = [
-            'image/jpeg',
-            'image/png',
-            'image/gif',
-            'image/webp',
-            'image/heic',
-            'image/heif'
-        ];
-
-        $extensao = strtolower(pathinfo($nomeOriginal, PATHINFO_EXTENSION));
-
-        $extensoesPermitidas = [
-            'jpg',
-            'jpeg',
-            'png',
-            'gif',
-            'webp',
-            'heic',
-            'heif'
-        ];
-
-        if (!is_string($mime) || !in_array($mime, $mimesPermitidos, true)) {
-            $erros['imagens'] = 'Tipo de imagem não suportado. Usa JPEG, PNG, GIF, WebP ou HEIC.';
-            continue;
-        }
-
-        if (!in_array($extensao, $extensoesPermitidas, true)) {
-            $erros['imagens'] = 'A extensão de uma das fotografias não é suportada.';
-            continue;
-        }
-
-        $filename = basename((string) create_filename($nomeOriginal));
-
-        if ($filename === '') {
-            $erros['imagens'] = 'Não foi possível criar o nome de uma das fotografias.';
-            continue;
-        }
-
-        if (!move_uploaded_file($temp, $pathImagensTemporarias . $filename)) {
-            $erros['imagens'] = 'Não foi possível guardar uma das fotografias.';
-            continue;
-        }
-
-        $imagens[] = $filename;
-    }
+    $imagens =
+        receberImagensCreateAccount(
+            $pathImagensTemporarias,
+            $erros
+        );
 }
 
-$membro['primeiro_nome'] = trim((string) ($_POST['primeiro_nome'] ?? ''));
-$membro['ultimo_nome'] = trim((string) ($_POST['ultimo_nome'] ?? ''));
-$membro['dia'] = $_POST['dia'] ?? '';
-$membro['mes'] = $_POST['mes'] ?? '';
-$membro['ano'] = $_POST['ano'] ?? '';
-$membro['genero'] = trim((string) ($_POST['genero'] ?? ''));
-$membro['gostos'] = normalizarListaCreateAccount($_POST['gostos'] ?? []);
-$membro['objetivo'] = trim((string) ($_POST['objetivo'] ?? ''));
-$membro['sobre_ti'] = trim((string) ($_POST['sobre_ti'] ?? ''));
-$membro['telefone'] = trim((string) ($_POST['telefone'] ?? ''));
-$membro['email'] = trim((string) ($_POST['email'] ?? ''));
-$membro['password'] = (string) ($_POST['password'] ?? '');
+$membro = [
+    'primeiro_nome' =>
+        trim(
+            (string) (
+                $_POST['primeiro_nome']
+                ?? ''
+            )
+        ),
 
-$confirmaPassword = (string) ($_POST['confirma_password'] ?? '');
+    'ultimo_nome' =>
+        trim(
+            (string) (
+                $_POST['ultimo_nome']
+                ?? ''
+            )
+        ),
 
-$membro['nome_seo'] = create_seo_name(
-    trim($membro['primeiro_nome'] . ' ' . $membro['ultimo_nome'])
-);
+    'dia' =>
+        (string) (
+            $_POST['dia']
+            ?? ''
+        ),
 
-$erros['primeiro_nome'] = Validate::isText($membro['primeiro_nome'], 1, 60)
-    ? ''
-    : 'O primeiro nome deve ter entre 1 e 60 caracteres.';
+    'mes' =>
+        (string) (
+            $_POST['mes']
+            ?? ''
+        ),
 
-$erros['ultimo_nome'] = Validate::isText($membro['ultimo_nome'], 1, 60)
-    ? ''
-    : 'O último nome deve ter entre 1 e 60 caracteres.';
+    'ano' =>
+        (string) (
+            $_POST['ano']
+            ?? ''
+        ),
+
+    'genero' =>
+        trim(
+            (string) (
+                $_POST['genero']
+                ?? ''
+            )
+        ),
+
+    'gostos' =>
+        normalizarListaCreateAccount(
+            $_POST['gostos']
+            ?? []
+        ),
+
+    'objetivo' =>
+        trim(
+            (string) (
+                $_POST['objetivo']
+                ?? ''
+            )
+        ),
+
+    'sobre_ti' =>
+        trim(
+            (string) (
+                $_POST['sobre_ti']
+                ?? ''
+            )
+        ),
+
+    'telefone' =>
+        trim(
+            (string) (
+                $_POST['telefone']
+                ?? ''
+            )
+        ),
+
+    'email' =>
+        trim(
+            (string) (
+                $_POST['email']
+                ?? ''
+            )
+        ),
+
+    'password' =>
+        (string) (
+            $_POST['password']
+            ?? ''
+        )
+];
+
+$confirmaPassword =
+    (string) (
+        $_POST['confirma_password']
+        ?? ''
+    );
 
 $dia = (int) $membro['dia'];
 $mes = (int) $membro['mes'];
 $ano = (int) $membro['ano'];
 
-$dataNascimentoValida =
+$nascimentoValido =
     $dia >= 1 &&
     $mes >= 1 &&
     $ano >= 1900 &&
     $ano <= (int) date('Y') &&
-    checkdate($mes, $dia, $ano);
+    checkdate(
+        $mes,
+        $dia,
+        $ano
+    );
 
-$erros['nascimento'] = $dataNascimentoValida
-    ? ''
-    : 'Escolhe uma data de nascimento válida.';
+if ($editar('nome')) {
+    if (
+        !Validate::isText(
+            $membro['primeiro_nome'],
+            1,
+            60
+        )
+    ) {
+        $erros['primeiro_nome'] =
+            'O primeiro nome deve ter entre 1 e 60 caracteres.';
+    }
 
-$erros['genero'] = Validate::isGenero($membro['genero'])
-    ? ''
-    : 'Escolhe um género válido.';
+    if (
+        !Validate::isText(
+            $membro['ultimo_nome'],
+            1,
+            60
+        )
+    ) {
+        $erros['ultimo_nome'] =
+            'O último nome deve ter entre 1 e 60 caracteres.';
+    }
+}
+
+if (
+    $editar('nascimento') &&
+    !$nascimentoValido
+) {
+    $erros['nascimento'] =
+        'Escolhe uma data de nascimento válida.';
+}
+
+if (
+    $editar('sexo') &&
+    !Validate::isGenero(
+        $membro['genero']
+    )
+) {
+    $erros['genero'] =
+        'Escolhe um género válido.';
+}
+
+if ($editar('gostos')) {
+    if (count($membro['gostos']) > 30) {
+        $erros['gostos'] =
+            'Podes adicionar no máximo 30 gostos.';
+    } else {
+        foreach (
+            $membro['gostos']
+            as $gosto
+        ) {
+            if (
+                !Validate::isText(
+                    $gosto,
+                    1,
+                    80
+                )
+            ) {
+                $erros['gostos'] =
+                    'Cada gosto deve ter entre 1 e 80 caracteres.';
+
+                break;
+            }
+        }
+    }
+}
 
 $objetivosPermitidos = [
     'amizade',
@@ -478,52 +1032,90 @@ $objetivosPermitidos = [
     'ainda_nao_sei'
 ];
 
-$erros['objetivo'] = in_array($membro['objetivo'], $objetivosPermitidos, true)
-    ? ''
-    : 'Escolhe o que procuras na Margot.';
+if (
+    $editar('objetivo') &&
+    !in_array(
+        $membro['objetivo'],
+        $objetivosPermitidos,
+        true
+    )
+) {
+    $erros['objetivo'] =
+        'Escolhe o que procuras na Margot.';
+}
 
-$erros['telefone'] = $membro['telefone'] === '' || Validate::isPhone($membro['telefone'])
-    ? ''
-    : 'Introduz um número de telefone válido.';
+if ($editar('contactos')) {
+    if (
+        $membro['telefone'] !== '' &&
+        !Validate::isPhone(
+            $membro['telefone']
+        )
+    ) {
+        $erros['telefone'] =
+            'Introduz um número de telefone válido.';
+    }
 
-$erros['email'] = Validate::isEmail($membro['email'])
-    ? ''
-    : 'Introduz um email válido.';
+    if (
+        !Validate::isEmail(
+            $membro['email']
+        )
+    ) {
+        $erros['email'] =
+            'Introduz um email válido.';
+    }
+}
 
-$erros['sobre_ti'] = Validate::isText($membro['sobre_ti'], 0, 1000)
-    ? ''
-    : 'A descrição pode ter no máximo 1000 caracteres.';
+if (
+    $editar('descricao') &&
+    !Validate::isText(
+        $membro['sobre_ti'],
+        0,
+        1000
+    )
+) {
+    $erros['sobre_ti'] =
+        'A descrição pode ter no máximo 1000 caracteres.';
+}
 
 $alterarPassword =
     !$modoEdicao ||
-    $membro['password'] !== '' ||
-    $confirmaPassword !== '';
+    $secao === 'palavra-passe' ||
+    (
+        $secao === 'tudo' &&
+        (
+            $membro['password'] !== '' ||
+            $confirmaPassword !== ''
+        )
+    );
 
 if ($alterarPassword) {
-    $erros['password'] = Validate::isPassword($membro['password'])
-        ? ''
-        : 'A palavra-passe deve ter pelo menos 8 caracteres, uma minúscula, uma maiúscula e um número.';
+    if (
+        $modoEdicao &&
+        $membro['password'] === '' &&
+        $confirmaPassword === ''
+    ) {
+        $erros['password'] =
+            'Escreve a nova palavra-passe.';
+    } elseif (
+        !Validate::isPassword(
+            $membro['password']
+        )
+    ) {
+        $erros['password'] =
+            'A palavra-passe deve ter pelo menos 8 caracteres, uma minúscula, uma maiúscula e um número.';
+    }
 
-    $erros['confirma_password'] = hash_equals(
-        $membro['password'],
-        $confirmaPassword
-    )
-        ? ''
-        : 'As palavras-passe não são idênticas.';
+    if (
+        !isset($erros['password']) &&
+        !hash_equals(
+            $membro['password'],
+            $confirmaPassword
+        )
+    ) {
+        $erros['confirma_password'] =
+            'As palavras-passe não são idênticas.';
+    }
 }
-
-/*
- * Em edição, não enviar uma password vazia para Member::update().
- * Assim, guardar outra área do perfil nunca altera a password atual.
- */
-if ($modoEdicao && !$alterarPassword) {
-    unset($membro['password']);
-}
-
-$erros = array_filter(
-    $erros,
-    static fn($erro): bool => $erro !== ''
-);
 
 if ($erros) {
     apagarImagensTemporariasCreateAccount(
@@ -537,129 +1129,148 @@ if ($erros) {
     ], 422);
 }
 
-$membro['nascimento'] = sprintf(
-    '%04d-%02d-%02d',
-    $ano,
-    $mes,
-    $dia
-);
+$alteracoes = [];
 
-unset($membro['dia'], $membro['mes'], $membro['ano']);
+if ($editar('nome')) {
+    $alteracoes['primeiro_nome'] =
+        $membro['primeiro_nome'];
 
-$transacaoEscrita = false;
+    $alteracoes['ultimo_nome'] =
+        $membro['ultimo_nome'];
+
+    $alteracoes['nome_seo'] =
+        create_seo_name(
+            trim(
+                $membro['primeiro_nome'] .
+                ' ' .
+                $membro['ultimo_nome']
+            )
+        );
+}
+
+if ($editar('nascimento')) {
+    $alteracoes['nascimento'] =
+        sprintf(
+            '%04d-%02d-%02d',
+            $ano,
+            $mes,
+            $dia
+        );
+}
+
+if ($editar('sexo')) {
+    $alteracoes['genero'] =
+        $membro['genero'];
+}
+
+if ($editar('gostos')) {
+    $alteracoes['gostos'] =
+        $membro['gostos'];
+}
+
+if ($editar('objetivo')) {
+    $alteracoes['objetivo'] =
+        $membro['objetivo'];
+}
+
+if ($editar('contactos')) {
+    $alteracoes['telefone'] =
+        $membro['telefone'];
+
+    $alteracoes['email'] =
+        $membro['email'];
+}
+
+if ($editar('descricao')) {
+    $alteracoes['sobre_ti'] =
+        $membro['sobre_ti'];
+}
+
+if ($alterarPassword) {
+    $alteracoes['password'] =
+        $membro['password'];
+}
+
+$ordemFotos = $editaFotos
+    ? normalizarListaCreateAccount(
+        $_POST['ordem_fotos']
+        ?? []
+    )
+    : [];
+
+$fotosRemover = $editaFotos
+    ? normalizarListaCreateAccount(
+        $_POST['fotos_remover']
+        ?? []
+    )
+    : [];
+
+$fotosAlteradas =
+    $editaFotos &&
+    (
+        $imagens !== [] ||
+        $fotosRemover !== [] ||
+        (
+            ($_POST['fotos_alteradas'] ?? '')
+            === '1'
+        )
+    );
+
+$transacaoAberta = false;
 $nomesFotosApagar = [];
 
 try {
     $db->beginTransaction();
-    $transacaoEscrita = true;
+    $transacaoAberta = true;
 
     if ($modoEdicao) {
         $membroId = $membroIdSessao;
-        $atualizado = $cms->getMember()->update($membroId, $membro);
 
-        if (!$atualizado) {
-            if ($db->inTransaction()) $db->rollBack();
-
-            $transacaoEscrita = false;
-
-            apagarImagensTemporariasCreateAccount(
-                $imagens,
-                $pathImagensTemporarias
+        if (
+            $alteracoes &&
+            !$cms
+                ->getMember()
+                ->update(
+                    $membroId,
+                    $alteracoes
+                )
+        ) {
+            throw new \DomainException(
+                'DUPLICADO'
             );
-
-            responderJsonCreateAccount([
-                'success' => false,
-                'erros' => [
-                    'email' => 'O email ou o número de telefone já está a ser usado.'
-                ]
-            ], 409);
         }
     } else {
-        $membroId = $cms->getMember()->create($membro);
+        $membroId = $cms
+            ->getMember()
+            ->create($alteracoes);
 
         if ($membroId === false) {
-            if ($db->inTransaction()) $db->rollBack();
-
-            $transacaoEscrita = false;
-
-            apagarImagensTemporariasCreateAccount(
-                $imagens,
-                $pathImagensTemporarias
+            throw new \DomainException(
+                'DUPLICADO'
             );
-
-            responderJsonCreateAccount([
-                'success' => false,
-                'erros' => [
-                    'email' => 'O email ou o número de telefone já está a ser usado.'
-                ]
-            ], 409);
         }
 
         $membroId = (string) $membroId;
     }
 
-    $ordemFotos = normalizarListaCreateAccount(
-        $_POST['ordem_fotos'] ?? []
-    );
-
-    $fotosRemover = normalizarListaCreateAccount(
-        $_POST['fotos_remover'] ?? []
-    );
-
-    $fotosAlteradas =
-        $imagens !== [] ||
-        $fotosRemover !== [] ||
-        (($_POST['fotos_alteradas'] ?? '') === '1');
-
     if ($fotosAlteradas) {
-        $nomesFotosApagar = sincronizarFotosCreateAccount(
-            $db,
-            $membroId,
-            $imagens,
-            $ordemFotos,
-            $fotosRemover
-        );
+        $nomesFotosApagar =
+            sincronizarFotosCreateAccount(
+                $db,
+                $membroId,
+                $imagens,
+                $ordemFotos,
+                $fotosRemover
+            );
     }
 
-    if ($transacaoEscrita) {
-        $db->commit();
-        $transacaoEscrita = false;
-    }
-
-    if ($nomesFotosApagar) {
-        apagarFicheirosDePerfil($nomesFotosApagar);
-    }
-
-    if ($imagens) {
-        iniciarWorkerFotosCreateAccount($membroId);
-    }
-
-    if ($modoEdicao) {
-        responderJsonCreateAccount([
-            'success' => true,
-            'redirect' => urlCreateAccount(
-                'profile/' .
-                rawurlencode($membroId)
-            )
-        ]);
-    }
-
-    $cms->getSession()->create(membro_id: $membroId);
-
-    $tokenLogin = $cms->getToken()->create(
-        $membroId,
-        'login'
-    );
-
-    responderJsonCreateAccount([
-        'success' => true,
-        'redirect' => urlCreateAccount(
-            'index/?loginToken=' .
-            urlencode((string) $tokenLogin)
-        )
-    ]);
-} catch (\LengthException $erro) {
-    if ($transacaoEscrita && $db->inTransaction()) {
+    $db->commit();
+    $transacaoAberta = false;
+} catch (\DomainException $erro) {
+    if (
+        $transacaoAberta &&
+        $db->inTransaction()
+    ) {
         $db->rollBack();
     }
 
@@ -671,11 +1282,15 @@ try {
     responderJsonCreateAccount([
         'success' => false,
         'erros' => [
-            'imagens' => $erro->getMessage()
+            'email' =>
+                'O email ou o número de telefone já está a ser usado.'
         ]
-    ], 422);
-} catch (\Throwable $erro) {
-    if ($transacaoEscrita && $db->inTransaction()) {
+    ], 409);
+} catch (\LengthException $erro) {
+    if (
+        $transacaoAberta &&
+        $db->inTransaction()
+    ) {
         $db->rollBack();
     }
 
@@ -684,18 +1299,102 @@ try {
         $pathImagensTemporarias
     );
 
+    responderJsonCreateAccount([
+        'success' => false,
+        'erros' => [
+            'imagens' =>
+                $erro->getMessage()
+        ]
+    ], 422);
+} catch (\Throwable $erro) {
+    if (
+        $transacaoAberta &&
+        $db->inTransaction()
+    ) {
+        $db->rollBack();
+    }
+
+    apagarImagensTemporariasCreateAccount(
+        $imagens,
+        $pathImagensTemporarias
+    );
+
+    $referencia =
+        bin2hex(
+            random_bytes(4)
+        );
+
     error_log(
-        ($modoEdicao
-            ? 'Erro ao atualizar perfil: '
-            : 'Erro ao criar conta: '
-        ) .
-        $erro->getMessage()
+        sprintf(
+            '[create-account:%s] %s: %s em %s:%d%s%s',
+            $referencia,
+            $modoEdicao
+                ? 'Erro ao atualizar perfil'
+                : 'Erro ao criar conta',
+            $erro->getMessage(),
+            $erro->getFile(),
+            $erro->getLine(),
+            PHP_EOL,
+            $erro->getTraceAsString()
+        )
     );
 
     responderJsonCreateAccount([
         'success' => false,
-        'message' => $modoEdicao
-            ? 'Ocorreu um erro ao guardar as alterações.'
-            : 'Ocorreu um erro ao criar a conta.'
+        'message' =>
+            (
+                $modoEdicao
+                    ? 'Ocorreu um erro ao guardar as alterações.'
+                    : 'Ocorreu um erro ao criar a conta.'
+            ) .
+            ' Referência: ' .
+            $referencia
     ], 500);
 }
+
+if ($nomesFotosApagar) {
+    apagarFicheirosDePerfil(
+        $nomesFotosApagar
+    );
+}
+
+if ($imagens) {
+    iniciarWorkerFotosCreateAccount(
+        $membroId
+    );
+}
+
+if ($modoEdicao) {
+    responderJsonCreateAccount([
+        'success' => true,
+        'redirect' =>
+            urlCreateAccount(
+                'profile/' .
+                rawurlencode($membroId)
+            )
+    ]);
+}
+
+$cms
+    ->getSession()
+    ->create(
+        membro_id: $membroId
+    );
+
+$tokenLogin = $cms
+    ->getToken()
+    ->create(
+        $membroId,
+        'login'
+    );
+
+responderJsonCreateAccount([
+    'success' => true,
+    'redirect' =>
+        urlCreateAccount(
+            'index/?loginToken=' .
+            urlencode(
+                (string) $tokenLogin
+            )
+        )
+]);

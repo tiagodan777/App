@@ -4,164 +4,129 @@
     var $form = $('#create-account-form');
     var config = window.createAccountConfig || {};
     var modoEdicao = config.modoEdicao === true;
+    var STORAGE_KEY = modoEdicao ? 'editar-perfil-' + String(config.membroId || '') : 'create-account-dados';
+    var ETAPA_INICIAL = modoEdicao ? '#editar-perfil' : '#introducao';
 
-    var STORAGE_KEY = modoEdicao
-        ? 'editar-perfil-' + String(config.membroId || '')
-        : 'create-account-dados';
+    var ETAPAS = [
+        '#introducao',
+        '#editar-perfil',
+        '#nome',
+        '#nascimento',
+        '#sexo',
+        '#gostos',
+        '#objetivo',
+        '#contactos',
+        '#descricao',
+        '#fotos',
+        '#permissoes',
+        '#palavra-passe'
+    ];
 
-    var ETAPA_INICIAL = modoEdicao
-        ? '#editar-perfil'
-        : '#introducao';
-
-    var ETAPAS = modoEdicao
-        ? [
-            '#editar-perfil',
-            '#nome',
-            '#nascimento',
-            '#sexo',
-            '#gostos',
-            '#objetivo',
-            '#contactos',
-            '#descricao',
-            '#fotos',
-            '#permissoes',
-            '#palavra-passe'
-        ]
-        : [
-            '#introducao',
-            '#nome',
-            '#nascimento',
-            '#sexo',
-            '#gostos',
-            '#objetivo',
-            '#contactos',
-            '#descricao',
-            '#fotos',
-            '#permissoes',
-            '#palavra-passe'
-        ];
-
-    var dados = Object.assign(
-        {
-            gostos: []
-        },
-        config.dadosIniciais || {}
-    );
-
+    var dados = Object.assign({gostos: []}, config.dadosIniciais || {});
     var etapaAtual = null;
     var pedidoAtual = null;
-    var estaAProcessarPopState = false;
+    var aEnviar = false;
 
-    if (!Array.isArray(dados.gostos)) {
-        dados.gostos = [];
-    }
+    if (!Array.isArray(dados.gostos)) dados.gostos = [];
 
-    function etapaExiste(etapa) {
-        return ETAPAS.includes(etapa);
+    function etapaPermitida(etapa) {
+        if (!ETAPAS.includes(etapa)) return false;
+        if (modoEdicao && etapa === '#introducao') return false;
+        if (!modoEdicao && etapa === '#editar-perfil') return false;
+
+        return true;
     }
 
     function normalizarEtapa(etapa) {
         etapa = String(etapa || '').trim();
 
-        if (!etapa.startsWith('#')) {
-            etapa = '#' + etapa;
-        }
+        if (!etapa.startsWith('#')) etapa = '#' + etapa;
 
-        return etapaExiste(etapa)
+        return etapaPermitida(etapa)
             ? etapa
             : ETAPA_INICIAL;
     }
 
-    function obterEtapaDoEstado(estado) {
-        return (
-            estado &&
-            estado.createAccount === true &&
-            estado.etapa
-        )
-            ? normalizarEtapa(estado.etapa)
-            : ETAPA_INICIAL;
-    }
-
-    function obterNomeEtapa(etapa) {
+    function nomeEtapa(etapa) {
         return normalizarEtapa(etapa).replace(/^#/, '');
     }
 
-    function criarUrlEtapa(etapa) {
-        var url = new URL(window.location.href);
+    function etapaVisivel() {
+        var id = $form.children('div').first().attr('id');
 
-        url.searchParams.set(
-            'etapa',
-            obterNomeEtapa(etapa)
-        );
-
-        url.hash = '';
-
-        return url.pathname + url.search;
+        return id
+            ? normalizarEtapa('#' + id)
+            : etapaAtual || ETAPA_INICIAL;
     }
 
-    function obterEtapaDaUrl() {
-        var etapa = new URL(
-            window.location.href
-        ).searchParams.get('etapa');
+    function etapaDaUrl() {
+        var etapa = new URL(window.location.href).searchParams.get('etapa');
 
         return etapa
             ? normalizarEtapa(etapa)
             : ETAPA_INICIAL;
     }
 
-    function obterEtapaVisivel() {
-        var id = $form
-            .children('div')
-            .first()
-            .attr('id');
+    function urlDaEtapa(etapa) {
+        var url = new URL(window.location.href);
 
-        return id
-            ? normalizarEtapa('#' + id)
-            : etapaAtual;
+        url.searchParams.set('etapa', nomeEtapa(etapa));
+        url.hash = '';
+
+        return url.pathname + url.search;
     }
 
-    function guardarDadosNaSessao() {
-        if (modoEdicao) {
-            return;
-        }
+    function atualizarHistorico(etapa, substituir) {
+        var estado = {
+            createAccount: true,
+            etapa: etapa
+        };
 
-        var dadosSeguros = {};
+        var metodo = substituir
+            ? 'replaceState'
+            : 'pushState';
+
+        window.history[metodo](
+            estado,
+            '',
+            urlDaEtapa(etapa)
+        );
+    }
+
+    function guardarNaSessao() {
+        if (modoEdicao) return;
+
+        var seguros = {};
 
         Object.keys(dados).forEach(function (chave) {
             if (
                 chave !== 'password' &&
                 chave !== 'confirma_password'
             ) {
-                dadosSeguros[chave] = dados[chave];
+                seguros[chave] = dados[chave];
             }
         });
 
         try {
-            window.sessionStorage.setItem(
+            sessionStorage.setItem(
                 STORAGE_KEY,
-                JSON.stringify(dadosSeguros)
+                JSON.stringify(seguros)
             );
         } catch (erro) {
             console.warn(
-                'Não foi possível guardar temporariamente os dados do formulário.',
+                'Não foi possível guardar temporariamente o formulário.',
                 erro
             );
         }
     }
 
-    function restaurarDadosDaSessao() {
-        if (modoEdicao) {
-            return;
-        }
+    function restaurarDaSessao() {
+        if (modoEdicao) return;
 
         try {
-            var guardado = window.sessionStorage.getItem(
-                STORAGE_KEY
-            );
+            var guardado = sessionStorage.getItem(STORAGE_KEY);
 
-            if (!guardado) {
-                return;
-            }
+            if (!guardado) return;
 
             var resultado = JSON.parse(guardado);
 
@@ -173,9 +138,7 @@
             }
 
             dados = Object.assign(
-                {
-                    gostos: []
-                },
+                {gostos: []},
                 dados,
                 resultado
             );
@@ -185,17 +148,15 @@
             }
         } catch (erro) {
             console.warn(
-                'Não foi possível restaurar os dados temporários do formulário.',
+                'Não foi possível restaurar o formulário.',
                 erro
             );
         }
     }
 
-    function limparDadosTemporarios() {
+    function limparSessao() {
         try {
-            window.sessionStorage.removeItem(
-                STORAGE_KEY
-            );
+            sessionStorage.removeItem(STORAGE_KEY);
         } catch (erro) {
             console.warn(
                 'Não foi possível limpar os dados temporários.',
@@ -241,26 +202,17 @@
             dados.gostos = [];
         }
 
-        guardarDadosNaSessao();
-    }
-
-    function limparPasswordDoRascunho() {
-        dados.password = '';
-        dados.confirma_password = '';
-    }
-
-    function obterCamposPorNome(nome) {
-        return $form.find('[name]').filter(function () {
-            return this.name === nome;
-        });
+        guardarNaSessao();
     }
 
     function restaurarCampo(nome, valor) {
-        var $campos = obterCamposPorNome(nome);
+        var $campos = $form
+            .find('[name]')
+            .filter(function () {
+                return this.name === nome;
+            });
 
-        if (!$campos.length) {
-            return;
-        }
+        if (!$campos.length) return;
 
         if ($campos.is(':radio')) {
             $campos
@@ -285,7 +237,7 @@
         $campos.val(valor);
     }
 
-    function restaurarGostosDaEtapa() {
+    function restaurarGostos() {
         if (
             !$('#gostos').length ||
             !Array.isArray(dados.gostos)
@@ -324,30 +276,28 @@
         }[valor] || 'Editar o teu objetivo';
     }
 
-    function resumir(texto, limite) {
-        texto = String(texto || '')
+    function resumir(valor, limite) {
+        var texto = String(valor || '')
             .trim()
             .replace(/\s+/g, ' ');
 
-        if (!texto) {
-            return '';
-        }
-
-        if (texto.length <= limite) {
+        if (
+            !texto ||
+            texto.length <= limite
+        ) {
             return texto;
         }
 
-        return (
-            texto
-                .substring(0, limite - 1)
-                .trimEnd() +
-            '…'
-        );
+        return texto
+            .substring(0, limite - 1)
+            .trimEnd() + '…';
     }
 
-    function definirResumo(nome, texto) {
+    function definirResumo(campo, texto) {
         var $resumo = $(
-            '[data-resumo-campo="' + nome + '"]'
+            '[data-resumo-campo="' +
+            campo +
+            '"]'
         );
 
         if ($resumo.length && texto) {
@@ -362,8 +312,11 @@
             return 'Localização e notificações';
         }
 
-        var localizacao = API.obter('localizacao');
-        var notificacoes = API.obter('notificacoes');
+        var localizacao =
+            API.obter('localizacao');
+
+        var notificacoes =
+            API.obter('notificacoes');
 
         if (
             localizacao === true &&
@@ -390,17 +343,22 @@
         return 'Escolher localização e notificações';
     }
 
-    function atualizarResumosMenu() {
+    function atualizarResumos() {
         if (
-            !document.getElementById('editar-perfil')
+            !document.getElementById(
+                'editar-perfil'
+            )
         ) {
             return;
         }
 
         var nome = [
-            String(dados.primeiro_nome || '').trim(),
-            String(dados.ultimo_nome || '').trim()
+            dados.primeiro_nome,
+            dados.ultimo_nome
         ]
+            .map(function (valor) {
+                return String(valor || '').trim();
+            })
             .filter(Boolean)
             .join(' ');
 
@@ -436,11 +394,10 @@
             String(dados.email || '').trim() ||
             String(dados.telefone || '').trim();
 
-        var numeroFotos = Array.isArray(
-            window.fotosPerfil
-        )
-            ? window.fotosPerfil.length
-            : 0;
+        var numeroFotos =
+            Array.isArray(window.fotosPerfil)
+                ? window.fotosPerfil.length
+                : 0;
 
         definirResumo(
             'nome',
@@ -471,14 +428,17 @@
 
         definirResumo(
             'sobre_ti',
-            resumir(dados.sobre_ti, 62) ||
-                'Ainda não escreveste uma descrição'
+            resumir(
+                dados.sobre_ti,
+                62
+            ) ||
+            'Ainda não escreveste uma descrição'
         );
 
         definirResumo(
             'contactos',
             contacto ||
-                'Email e telefone privados'
+            'Email e telefone privados'
         );
 
         definirResumo(
@@ -494,12 +454,14 @@
         );
     }
 
-    function restaurarCamposDaEtapa() {
+    function restaurarEtapa() {
         Object.keys(dados).forEach(function (nome) {
             if (
-                nome !== 'gostos' &&
-                nome !== 'password' &&
-                nome !== 'confirma_password'
+                ![
+                    'gostos',
+                    'password',
+                    'confirma_password'
+                ].includes(nome)
             ) {
                 restaurarCampo(
                     nome,
@@ -508,7 +470,7 @@
             }
         });
 
-        restaurarGostosDaEtapa();
+        restaurarGostos();
 
         if (
             typeof window.inicializarEtapaFotos ===
@@ -524,10 +486,10 @@
             window.inicializarEtapaPermissoes();
         }
 
-        atualizarResumosMenu();
+        atualizarResumos();
     }
 
-    function pararRecursosDaEtapa() {
+    function pararRecursos() {
         if (
             typeof window.pararCameraPerfil ===
             'function'
@@ -536,57 +498,7 @@
         }
     }
 
-    function cancelarPedidoAtual() {
-        if (
-            pedidoAtual &&
-            pedidoAtual.readyState !== 4
-        ) {
-            pedidoAtual.abort();
-        }
-
-        pedidoAtual = null;
-    }
-
-    function animarEtapa() {
-        var $etapa = $form.children('div');
-
-        $etapa
-            .css({
-                marginLeft: '200%'
-            })
-            .stop(true, true)
-            .animate(
-                {
-                    marginLeft: '0%'
-                },
-                420
-            );
-    }
-
-    function atualizarHistorico(etapa, modo) {
-        var estado = {
-            createAccount: true,
-            etapa: etapa
-        };
-
-        var url = criarUrlEtapa(etapa);
-
-        if (modo === 'replace') {
-            window.history.replaceState(
-                estado,
-                '',
-                url
-            );
-        } else {
-            window.history.pushState(
-                estado,
-                '',
-                url
-            );
-        }
-    }
-
-    function carregarEtapa(seletor, opcoes) {
+    function carregarEtapa(destino, opcoes) {
         opcoes = Object.assign(
             {
                 historico: 'nenhum',
@@ -595,15 +507,22 @@
             opcoes || {}
         );
 
-        var etapa = normalizarEtapa(seletor);
+        var etapa = normalizarEtapa(destino);
 
-        pararRecursosDaEtapa();
-        cancelarPedidoAtual();
+        pararRecursos();
+
+        if (
+            pedidoAtual &&
+            pedidoAtual.readyState !== 4
+        ) {
+            pedidoAtual.abort();
+        }
 
         var pedido = $.ajax({
             url:
                 config.camposUrl ||
                 '/create-account-campos',
+
             method: 'GET',
             dataType: 'html',
             cache: false
@@ -631,26 +550,35 @@
                 );
 
                 alert(
-                    'Não foi possível carregar esta etapa.'
+                    'Não foi possível carregar esta área.'
                 );
 
                 return;
             }
 
-            $form
-                .empty()
-                .append($etapa);
-
+            $form.empty().append($etapa);
             etapaAtual = etapa;
 
-            restaurarCamposDaEtapa();
+            restaurarEtapa();
 
             if (opcoes.animar) {
-                animarEtapa();
+                $etapa
+                    .css(
+                        'margin-left',
+                        '200%'
+                    )
+                    .stop(true, true)
+                    .animate(
+                        {
+                            marginLeft: '0%'
+                        },
+                        420
+                    );
             } else {
-                $form
-                    .children('div')
-                    .css('margin-left', '0');
+                $etapa.css(
+                    'margin-left',
+                    '0'
+                );
             }
 
             if (
@@ -658,31 +586,31 @@
             ) {
                 atualizarHistorico(
                     etapa,
-                    'push'
+                    false
                 );
-            } else if (
+            }
+
+            if (
                 opcoes.historico === 'replace'
             ) {
                 atualizarHistorico(
                     etapa,
-                    'replace'
+                    true
                 );
             }
         });
 
         pedido.fail(function (xhr, estado) {
-            if (estado === 'abort') {
-                return;
-            }
+            if (estado === 'abort') return;
 
             console.error(
-                'Erro ao carregar etapa:',
+                'Erro ao carregar a área:',
                 xhr.status,
-                xhr.statusText
+                xhr.responseText
             );
 
             alert(
-                'Não foi possível carregar esta etapa.'
+                'Não foi possível carregar esta área.'
             );
         });
 
@@ -693,7 +621,7 @@
         });
     }
 
-    function validarEtapaAtual() {
+    function validarEtapa() {
         var formulario = $form.get(0);
 
         if (
@@ -701,11 +629,12 @@
             !formulario.checkValidity()
         ) {
             formulario.reportValidity();
+
             return false;
         }
 
         if (
-            obterEtapaVisivel() === '#fotos' &&
+            etapaVisivel() === '#fotos' &&
             typeof window.validarFotosPerfil ===
                 'function'
         ) {
@@ -713,8 +642,7 @@
         }
 
         if (
-            obterEtapaVisivel() ===
-                '#permissoes' &&
+            etapaVisivel() === '#permissoes' &&
             typeof window.validarEtapaPermissoes ===
                 'function'
         ) {
@@ -724,10 +652,7 @@
         return true;
     }
 
-    function navegarParaEtapa(
-        destino,
-        opcoes
-    ) {
+    function navegar(destino, opcoes) {
         opcoes = Object.assign(
             {
                 validar: true,
@@ -736,9 +661,7 @@
             opcoes || {}
         );
 
-        var origem = obterEtapaVisivel();
-        var etapaDestino =
-            normalizarEtapa(destino);
+        var origem = etapaVisivel();
 
         if (opcoes.guardar) {
             guardarCamposAtuais();
@@ -746,20 +669,18 @@
 
         if (
             opcoes.validar &&
-            !validarEtapaAtual()
+            !validarEtapa()
         ) {
             return;
         }
 
-        if (
-            origem === '#palavra-passe' &&
-            etapaDestino !== '#palavra-passe'
-        ) {
-            limparPasswordDoRascunho();
+        if (origem === '#palavra-passe') {
+            dados.password = '';
+            dados.confirma_password = '';
         }
 
         carregarEtapa(
-            etapaDestino,
+            destino,
             {
                 historico: 'push',
                 animar: true
@@ -797,6 +718,17 @@
                 : 'criar'
         );
 
+        /*
+         * Esta é a parte essencial da edição parcial.
+         * O PHP passa a saber exatamente qual área deve atualizar.
+         */
+        formData.append(
+            'secao',
+            nomeEtapa(
+                etapaVisivel()
+            )
+        );
+
         if (
             typeof window.adicionarFotosPerfilAoFormData ===
             'function'
@@ -809,12 +741,13 @@
         return formData;
     }
 
-    function mostrarErroEnvio(mensagem) {
+    function mostrarErro(mensagem) {
         var $erro = $('#create-account-erro');
 
         if (!$erro.length) {
             $erro = $('<p>', {
                 id: 'create-account-erro',
+                role: 'alert',
                 'aria-live': 'polite'
             }).prependTo($form);
         }
@@ -822,43 +755,49 @@
         $erro.text(mensagem || '');
     }
 
-    function obterTextoBotao($botao) {
-        return $botao.is('input')
-            ? $botao.val()
-            : $botao.text();
-    }
-
-    function definirTextoBotao(
-        $botao,
-        texto
+    function mensagemDaResposta(
+        resposta,
+        alternativa
     ) {
-        if ($botao.is('input')) {
-            $botao.val(texto);
-        } else {
-            $botao.text(texto);
+        if (
+            resposta &&
+            resposta.erros
+        ) {
+            var erros = Object
+                .values(resposta.erros)
+                .filter(Boolean);
+
+            if (erros.length) {
+                return erros.join(' ');
+            }
         }
+
+        return resposta &&
+            resposta.message
+                ? resposta.message
+                : alternativa;
     }
 
-    function inicializarHistorico() {
-        var etapaInicial =
-            obterEtapaDaUrl();
+    function inicializar() {
+        var inicial = etapaDaUrl();
 
         if (
-            window.history.state &&
-            window.history.state.createAccount
+            history.state &&
+            history.state.createAccount &&
+            history.state.etapa
         ) {
-            etapaInicial = obterEtapaDoEstado(
-                window.history.state
+            inicial = normalizarEtapa(
+                history.state.etapa
             );
         }
 
         atualizarHistorico(
-            etapaInicial,
-            'replace'
+            inicial,
+            true
         );
 
         carregarEtapa(
-            etapaInicial,
+            inicial,
             {
                 historico: 'nenhum',
                 animar: false
@@ -866,16 +805,17 @@
         );
     }
 
-    restaurarDadosDaSessao();
+    restaurarDaSessao();
 
     window.createAccountDados = dados;
     window.guardarCamposCreateAccount =
         guardarCamposAtuais;
+
     window.carregarEtapaCreateAccount =
-        navegarParaEtapa;
+        navegar;
 
     $(function () {
-        inicializarHistorico();
+        inicializar();
 
         $(document).on(
             'click',
@@ -883,21 +823,19 @@
             function (evento) {
                 evento.preventDefault();
 
-                var destino = $(this).data(
-                    'etapa'
-                );
+                var destino =
+                    $(this).data('etapa');
 
-                if (!destino) {
-                    return;
-                }
+                if (!destino) return;
 
-                navegarParaEtapa(
+                navegar(
                     destino,
                     {
                         validar:
                             $(this).data(
                                 'sem-validar'
                             ) !== true,
+
                         guardar: true
                     }
                 );
@@ -908,7 +846,7 @@
             'click',
             '.editar-area',
             function () {
-                navegarParaEtapa(
+                navegar(
                     $(this).data('etapa'),
                     {
                         validar: false,
@@ -929,47 +867,27 @@
                     return;
                 }
 
-                window.history.back();
+                history.back();
             }
         );
 
         window.addEventListener(
             'popstate',
             function (evento) {
-                if (
-                    estaAProcessarPopState
-                ) {
-                    return;
-                }
-
-                estaAProcessarPopState =
-                    true;
-
                 guardarCamposAtuais();
 
-                if (
-                    obterEtapaVisivel() ===
-                    '#palavra-passe'
-                ) {
-                    limparPasswordDoRascunho();
-                }
+                var destino =
+                    evento.state &&
+                    evento.state.createAccount
+                        ? evento.state.etapa
+                        : ETAPA_INICIAL;
 
                 carregarEtapa(
-                    obterEtapaDoEstado(
-                        evento.state
-                    ),
+                    destino,
                     {
                         historico: 'nenhum',
                         animar: true
                     }
-                );
-
-                window.setTimeout(
-                    function () {
-                        estaAProcessarPopState =
-                            false;
-                    },
-                    0
                 );
             }
         );
@@ -979,67 +897,55 @@
             function (evento) {
                 evento.preventDefault();
 
+                if (aEnviar) return;
+
                 guardarCamposAtuais({
                     incluirPassword: true
                 });
 
-                if (!validarEtapaAtual()) {
-                    return;
-                }
+                if (!validarEtapa()) return;
 
-                if (
-                    typeof window.validarFotosPerfil ===
-                        'function' &&
-                    !window.validarFotosPerfil()
-                ) {
-                    carregarEtapa(
-                        '#fotos',
-                        {
-                            historico: 'push',
-                            animar: true
-                        }
-                    );
+                aEnviar = true;
 
-                    return;
-                }
-
-                var $botao = $form.find(
-                    'input[type="submit"], button[type="submit"]'
-                );
+                var $botao =
+                    $(document.activeElement)
+                        .is('[type="submit"]')
+                        ? $(document.activeElement)
+                        : $form
+                            .find('[type="submit"]')
+                            .first();
 
                 var textoOriginal =
-                    obterTextoBotao($botao);
+                    $botao.text();
 
-                $botao.prop(
-                    'disabled',
-                    true
-                );
+                $botao
+                    .prop('disabled', true)
+                    .text(
+                        modoEdicao
+                            ? 'A guardar…'
+                            : 'A criar conta…'
+                    );
 
-                definirTextoBotao(
-                    $botao,
-                    modoEdicao
-                        ? 'A guardar…'
-                        : 'A criar conta…'
-                );
-
-                mostrarErroEnvio('');
+                mostrarErro('');
 
                 $.ajax({
                     url:
                         $form.attr('action') ||
                         '/create-account',
+
                     method: 'POST',
                     data: criarFormData(),
                     processData: false,
                     contentType: false,
                     dataType: 'json',
-
-                    success: function (resposta) {
+                    cache: false
+                })
+                    .done(function (resposta) {
                         if (
                             resposta.success &&
                             resposta.redirect
                         ) {
-                            limparDadosTemporarios();
+                            limparSessao();
 
                             window.location.href =
                                 resposta.redirect;
@@ -1047,89 +953,65 @@
                             return;
                         }
 
-                        var mensagem =
-                            resposta.erros
-                                ? Object.values(
-                                    resposta.erros
-                                )
-                                    .filter(Boolean)
-                                    .join(' ')
-                                : resposta.message;
-
-                        mostrarErroEnvio(
-                            mensagem ||
-                            (
+                        mostrarErro(
+                            mensagemDaResposta(
+                                resposta,
                                 modoEdicao
                                     ? 'Não foi possível guardar as alterações.'
                                     : 'Não foi possível criar a conta.'
                             )
                         );
-                    },
-
-                    error: function (xhr) {
+                    })
+                    .fail(function (xhr) {
                         console.error(
+                            'Erro ao guardar:',
+                            xhr.status,
                             xhr.responseText
                         );
 
-                        var mensagem =
-                            modoEdicao
-                                ? 'Ocorreu um erro ao guardar as alterações.'
-                                : 'Ocorreu um erro ao criar a conta.';
+                        var resposta =
+                            xhr.responseJSON;
 
-                        try {
-                            var resposta =
-                                JSON.parse(
-                                    xhr.responseText
-                                );
-
-                            if (
-                                resposta.message
-                            ) {
-                                mensagem =
-                                    resposta.message;
+                        if (
+                            !resposta &&
+                            xhr.responseText
+                        ) {
+                            try {
+                                resposta =
+                                    JSON.parse(
+                                        xhr.responseText
+                                    );
+                            } catch (erro) {
+                                resposta = null;
                             }
-
-                            if (
-                                resposta.erros
-                            ) {
-                                mensagem =
-                                    Object.values(
-                                        resposta.erros
-                                    )
-                                        .filter(
-                                            Boolean
-                                        )
-                                        .join(' ');
-                            }
-                        } catch (erro) {
-                            console.error(
-                                'A resposta não era JSON.',
-                                erro
-                            );
                         }
 
-                        mostrarErroEnvio(
-                            mensagem
-                        );
-                    },
-
-                    complete: function () {
-                        $botao.prop(
-                            'disabled',
-                            false
-                        );
-
-                        definirTextoBotao(
-                            $botao,
-                            textoOriginal ||
-                            (
+                        mostrarErro(
+                            mensagemDaResposta(
+                                resposta,
                                 modoEdicao
-                                    ? 'Guardar e sair'
-                                    : 'Criar conta'
+                                    ? 'Ocorreu um erro ao guardar as alterações.'
+                                    : 'Ocorreu um erro ao criar a conta.'
                             )
                         );
-                    }
-                });
+                    })
+                    .always(function () {
+                        aEnviar = false;
+
+                        $botao
+                            .prop(
+                                'disabled',
+                                false
+                            )
+                            .text(
+                                textoOriginal ||
+                                (
+                                    modoEdicao
+                                        ? 'Guardar e sair'
+                                        : 'Criar conta'
+                                )
+                            );
+                    });
             }
         );
 
@@ -1137,20 +1019,15 @@
             'change',
             '#ver-password',
             function () {
-                var tipo = $(this).is(
-                    ':checked'
-                )
-                    ? 'text'
-                    : 'password';
-
                 $(
                     '#password, #confirma-password'
-                ).attr('type', tipo);
+                ).attr(
+                    'type',
+                    this.checked
+                        ? 'text'
+                        : 'password'
+                );
             }
         );
     });
-})(
-    window,
-    document,
-    jQuery
-);
+})(window, document, jQuery);
