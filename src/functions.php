@@ -14,6 +14,7 @@ function create_filename($original)
 {
     $ext = strtolower(pathinfo($original, PATHINFO_EXTENSION));
     $unique = bin2hex(random_bytes(16));
+
     return $unique . '.' . $ext;
 }
 
@@ -32,9 +33,9 @@ function create_seo_name($string)
     return $text;
 }
 
-function require_login($session)
+function require_login($session): void
 {
-    if ($session->id == 0) {
+    if (trim((string) ($session->id ?? '')) === '') {
         redirect(DOC_ROOT . 'login/');
     }
 }
@@ -42,6 +43,7 @@ function require_login($session)
 function calcularIdade(string $dataNascimento): int
 {
     $nascimento = new DateTimeImmutable($dataNascimento);
+
     return $nascimento->diff(new DateTimeImmutable('today'))->y;
 }
 
@@ -53,6 +55,7 @@ function handle_error(int $type, string $message, string $file, int $line): bool
 
     if ($type === E_DEPRECATED || $type === E_USER_DEPRECATED) {
         error_log(sprintf('[deprecated] %s em %s:%d', $message, $file, $line));
+
         return true;
     }
 
@@ -80,6 +83,7 @@ function handle_exception(Throwable $erro): void
 
     if (PHP_SAPI === 'cli') {
         fwrite(STDERR, "Erro interno da aplicação.\n");
+
         return;
     }
 
@@ -132,6 +136,7 @@ function handle_exception(Throwable $erro): void
 function handle_shutdown(): void
 {
     $erro = error_get_last();
+
     $tiposFatais = [
         E_ERROR,
         E_PARSE,
