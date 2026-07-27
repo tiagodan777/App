@@ -1,12 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 $utilizador = '';
 $mensagemErro = '';
-$sucesso = $_GET['sucesso'] ?? '';
-$logged_in = $_SESSION['id'] ?? 0;
+$sucesso = (string) ($_GET['sucesso'] ?? '');
 
-if ($logged_in != 0) {
-    redirect(DOC_ROOT . 'index');
+if ($session->id !== '') {
+    redirect(DOC_ROOT . 'index/');
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -19,32 +20,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $membro = $cms->getMember()->login($utilizador, $password);
 
-        if ($membro) {
+        if ($membro && $session->create(membro_id: (string) $membro['id'])) {
             if ($lembrar) {
-                $token = $cms->getCookie()->create($membro);
-                $cms->getSession()->create($token);
+                $cookie->create($membro);
             } else {
-                $cms->getSession()->create(membro_id: $membro['id']);
+                $cookie->delete();
             }
 
-            $tokenLogin = $cms->getToken()->create(
-                $membro['id'],
-                'login'
-            );
-
-            redirect(
-                DOC_ROOT .
-                'index/?loginToken=' .
-                urlencode((string) $tokenLogin)
-            );
-        } else {
-            $mensagemErro = 'O email, número de telefone ou palavra-passe não está correto.';
+            redirect(DOC_ROOT . 'index/');
         }
+
+        $mensagemErro = 'O email, número de telefone ou palavra-passe não está correto.';
     }
 }
 
-$data['utilizador'] = $utilizador;
-$data['mensagem_erro'] = $mensagemErro;
-$data['sucesso'] = $sucesso;
-
-echo $twig->render('login.html', $data);
+echo $twig->render('login.html', [
+    'utilizador' => $utilizador,
+    'mensagem_erro' => $mensagemErro,
+    'sucesso' => $sucesso
+]);
