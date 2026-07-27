@@ -32,12 +32,25 @@ $pdoFactory = static function () use ($dsn, $username, $password): PDO {
 
 $webSocket = new WebSocket($pdoFactory, $loop);
 $wsServer = new WsServer($webSocket);
+
 $wsServer->enableKeepAlive($loop, 30);
 
-$socket = new SocketServer('0.0.0.0:8080', [], $loop);
+/*
+ * O Ratchet só aceita ligações locais.
+ * As ligações externas passam obrigatoriamente pelo Apache, através de:
+ * wss://margot-app.com/ws/
+ */
+$socket = new SocketServer('127.0.0.1:8080', [], $loop);
 
-new IoServer(new HttpServer($wsServer), $socket, $loop);
+new IoServer(
+    new HttpServer($wsServer),
+    $socket,
+    $loop
+);
 
-echo sprintf("[%s] WebSocket ligado em 0.0.0.0:8080\n", date('Y-m-d H:i:s'));
+echo sprintf(
+    "[%s] WebSocket ligado em 127.0.0.1:8080\n",
+    date('Y-m-d H:i:s')
+);
 
 $loop->run();
