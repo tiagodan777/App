@@ -1218,7 +1218,7 @@ $fotosAlteradas =
         )
     );
 
-$$transacaoAberta = false;
+$transacaoAberta = false;
 $nomesFotosApagar = [];
 $tokenLogin = '';
 
