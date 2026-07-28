@@ -11,6 +11,7 @@ class Token
     private Database $db;
 
     private const DURACOES = [
+        'login' => 1200,
         'delete_account' => 1200,
         'stay_logged_id' => 1209600,
         'websocket' => 60
