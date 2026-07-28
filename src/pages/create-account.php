@@ -121,7 +121,9 @@ function prepararPastaFotosCreateAccount(string $pasta): void
         }
     } catch (\Throwable $erro) {
         error_log(
-            'Erro ao preparar a pasta de fotografias: ' .
+            'Erro ao preparar a pasta de fotografias "' .
+            $pasta .
+            '": ' .
             $erro->getMessage()
         );
 
@@ -133,7 +135,7 @@ function prepararPastaFotosCreateAccount(string $pasta): void
 
     if (!is_writable($pasta)) {
         error_log(
-            'A pasta de fotografias não permite escrita: ' .
+            'A pasta de fotografias não permite escrita para o processo PHP: ' .
             $pasta
         );
 
@@ -1381,8 +1383,20 @@ $cms
         membro_id: $membroId
     );
 
+$tokenLogin = $cms
+    ->getToken()
+    ->create(
+        $membroId,
+        'login'
+    );
+
 responderJsonCreateAccount([
     'success' => true,
     'redirect' =>
-        urlCreateAccount('index/')
+        urlCreateAccount(
+            'index/?loginToken=' .
+            urlencode(
+                (string) $tokenLogin
+            )
+        )
 ]);
