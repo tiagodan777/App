@@ -15,6 +15,271 @@ function responderMensagensJson(array $dados, int $status = 200): never
     exit;
 }
 
+function responderConversaIndisponivel(
+    $twig,
+    bool $respostaJson = false
+): never {
+    if ($respostaJson) {
+        responderMensagensJson([
+            'success' => false,
+            'message' => 'Esta conversa não está disponível.'
+        ], 404);
+    }
+
+    http_response_code(404);
+    header('Cache-Control: no-store, no-cache, must-revalidate');
+    header('X-Robots-Tag: noindex, nofollow');
+    header('Referrer-Policy: no-referrer');
+
+    echo $twig->render('error-page.html', [
+        'message' => 'Esta conversa não está disponível.'
+    ]);
+
+    exit;
+}
+
+function idMembroMensagensValido(string $membroId): bool
+{
+    return (bool) preg_match(
+        '/^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i',
+        $membroId
+    );
+}
+
+function obterFaixaEtariaMensagens(string $nascimento): ?string
+{
+    $nascimento = trim($nascimento);
+
+    if ($nascimento === '') return null;
+
+    $dataNascimento = DateTimeImmutable::createFromFormat(
+        '!Y-m-d',
+        $nascimento,
+        new DateTimeZone('UTC')
+    );
+
+    $erros = DateTimeImmutable::getLastErrors();
+
+    if (
+        !$dataNascimento ||
+        ($erros !== false && (
+            ($erros['warning_count'] ?? 0) > 0 ||
+            ($erros['error_count'] ?? 0) > 0
+        )) ||
+        $dataNascimento->format('Y-m-d') !== $nascimento
+    ) {
+        return null;
+    }
+
+    $hoje = new DateTimeImmutable(
+        'today',
+        new DateTimeZone('UTC')
+    );
+
+    if ($dataNascimento > $hoje) return null;
+
+    $idade = $dataNascimento->diff($hoje)->y;
+
+    if ($idade < 13) return null;
+
+    return $idade <= 17 ? '13-17' : '18+';
+}
+
+function obterMembroBaseMensagens($db, string $membroId): array|false
+{
+    if (!idMembroMensagensValido($membroId)) return false;
+
+    return $db->runSQL(
+        'SELECT id, nascimento
+         FROM membros
+         WHERE id = :id
+         LIMIT 1',
+        ['id' => $membroId]
+    )->fetch();
+}
+
+function existeBloqueioEntreMensagens(
+    $db,
+    string $primeiroMembroId,
+    string $segundoMembroId
+): bool {
+    return (bool) $db->runSQL(
+        'SELECT 1
+         FROM bloqueados
+         WHERE (
+             pessoa_bloqueou_id = :primeiro1
+             AND pessoa_bloqueada_id = :segundo1
+         )
+         OR (
+             pessoa_bloqueou_id = :segundo2
+             AND pessoa_bloqueada_id = :primeiro2
+         )
+         LIMIT 1',
+        [
+            'primeiro1' => $primeiroMembroId,
+            'segundo1' => $segundoMembroId,
+            'segundo2' => $segundoMembroId,
+            'primeiro2' => $primeiroMembroId
+        ]
+    )->fetchColumn();
+}
+
+function existeConversaMensagens(
+    $db,
+    string $primeiroMembroId,
+    string $segundoMembroId
+): bool {
+    return (bool) $db->runSQL(
+        'SELECT 1
+         FROM mensagens_chat
+         WHERE (
+             emissor_id = :primeiro1
+             AND destinatario_id = :segundo1
+         )
+         OR (
+             emissor_id = :segundo2
+             AND destinatario_id = :primeiro2
+         )
+         LIMIT 1',
+        [
+            'primeiro1' => $primeiroMembroId,
+            'segundo1' => $segundoMembroId,
+            'segundo2' => $segundoMembroId,
+            'primeiro2' => $primeiroMembroId
+        ]
+    )->fetchColumn();
+}
+
+function propositoAcessoMensagens(string $visualizadorId): string
+{
+    /*
+     * É o mesmo passe temporário criado pelo mapa para abrir o perfil.
+     * O token está ligado ao par visualizador/destinatário e expira
+     * rapidamente; não é um UUID aceite diretamente pelo endpoint.
+     */
+    return 'profile:' . substr(
+        hash('sha256', $visualizadorId),
+        0,
+        24
+    );
+}
+
+function validarTokenProximidadeMensagens(
+    $db,
+    string $visualizadorId,
+    string $destinatarioId,
+    string $token
+): bool {
+    $token = strtolower(trim($token));
+
+    if (!preg_match('/^[a-f0-9]{64}$/', $token)) {
+        return false;
+    }
+
+    return (bool) $db->runSQL(
+        'SELECT 1
+         FROM token
+         WHERE token = :token
+         AND membro_id = :destinatario
+         AND proposito = :proposito
+         AND validade > UTC_TIMESTAMP()
+         LIMIT 1',
+        [
+            'token' => hash('sha256', $token),
+            'destinatario' => $destinatarioId,
+            'proposito' => propositoAcessoMensagens(
+                $visualizadorId
+            )
+        ]
+    )->fetchColumn();
+}
+
+function obterContextoConversaMensagens(
+    $db,
+    string $membroId,
+    string $outroId
+): array|false {
+    if (
+        !idMembroMensagensValido($membroId) ||
+        !idMembroMensagensValido($outroId) ||
+        hash_equals($membroId, $outroId)
+    ) {
+        return false;
+    }
+
+    $membro = obterMembroBaseMensagens($db, $membroId);
+    $outro = obterMembroBaseMensagens($db, $outroId);
+
+    if (!$membro || !$outro) return false;
+
+    $membroId = (string) $membro['id'];
+    $outroId = (string) $outro['id'];
+
+    $faixaMembro = obterFaixaEtariaMensagens(
+        (string) ($membro['nascimento'] ?? '')
+    );
+
+    $faixaOutro = obterFaixaEtariaMensagens(
+        (string) ($outro['nascimento'] ?? '')
+    );
+
+    /*
+     * Contas abaixo dos 13 anos, com data inválida ou pertencentes
+     * a faixas diferentes nunca podem trocar mensagens.
+     */
+    if (
+        $faixaMembro === null ||
+        $faixaOutro === null ||
+        $faixaMembro !== $faixaOutro
+    ) {
+        return false;
+    }
+
+    /*
+     * Um bloqueio em qualquer direção prevalece sobre conversa
+     * anterior, proximidade e qualquer passe temporário ainda válido.
+     */
+    if (
+        existeBloqueioEntreMensagens(
+            $db,
+            $membroId,
+            $outroId
+        )
+    ) {
+        return false;
+    }
+
+    return [
+        'membro_id' => $membroId,
+        'outro_id' => $outroId,
+        'faixa_etaria' => $faixaMembro,
+        'conversa_existente' => existeConversaMensagens(
+            $db,
+            $membroId,
+            $outroId
+        )
+    ];
+}
+
+function condicaoSqlFaixaEtariaMensagens(
+    string $faixaEtaria,
+    string $alias
+): string {
+    if ($faixaEtaria === '13-17') {
+        return "(
+            {$alias}.nascimento <=
+                DATE_SUB(UTC_DATE(), INTERVAL 13 YEAR)
+            AND {$alias}.nascimento >
+                DATE_SUB(UTC_DATE(), INTERVAL 18 YEAR)
+        )";
+    }
+
+    return "(
+        {$alias}.nascimento <=
+            DATE_SUB(UTC_DATE(), INTERVAL 18 YEAR)
+    )";
+}
+
 function obterMembroChat($db, string $membroId): array|false
 {
     $sql = "SELECT m.id, CONCAT(m.primeiro_nome, ' ', m.ultimo_nome) AS nome,
@@ -128,6 +393,21 @@ function obterHistorico($db, string $membroId, string $outroId, int $depoisDe = 
 
 function obterConversas($db, string $membroId): array
 {
+    $membro = obterMembroBaseMensagens($db, $membroId);
+
+    if (!$membro) return [];
+
+    $faixaEtaria = obterFaixaEtariaMensagens(
+        (string) ($membro['nascimento'] ?? '')
+    );
+
+    if ($faixaEtaria === null) return [];
+
+    $condicaoFaixaEtaria = condicaoSqlFaixaEtariaMensagens(
+        $faixaEtaria,
+        'p'
+    );
+
     $sql = "SELECT ultima.id, ultima.emissor_id, ultima.destinatario_id,
             ultima.texto, ultima.tipo, ultima.criada_em,
             conversa.outro_id,
@@ -158,13 +438,30 @@ function obterConversas($db, string $membroId): array
             INNER JOIN mensagens_chat ultima ON ultima.id = conversa.ultima_id
             INNER JOIN membros p
                 ON p.id COLLATE utf8mb4_unicode_ci = conversa.outro_id COLLATE utf8mb4_unicode_ci
+            WHERE {$condicaoFaixaEtaria}
+            AND NOT EXISTS (
+                SELECT 1
+                FROM bloqueados b
+                WHERE (
+                    b.pessoa_bloqueou_id = :eu5
+                    AND b.pessoa_bloqueada_id COLLATE utf8mb4_unicode_ci =
+                        conversa.outro_id COLLATE utf8mb4_unicode_ci
+                )
+                OR (
+                    b.pessoa_bloqueou_id COLLATE utf8mb4_unicode_ci =
+                        conversa.outro_id COLLATE utf8mb4_unicode_ci
+                    AND b.pessoa_bloqueada_id = :eu6
+                )
+            )
             ORDER BY ultima.id DESC
             LIMIT 100";
 
     $linhas = $db->runSQL($sql, [
         'eu1' => $membroId,
         'eu2' => $membroId,
-        'eu4' => $membroId
+        'eu4' => $membroId,
+        'eu5' => $membroId,
+        'eu6' => $membroId
     ])->fetchAll();
 
     return array_map(static function (array $linha) use ($membroId): array {
@@ -197,9 +494,49 @@ function obterConversas($db, string $membroId): array
 
 function contarMensagensNaoLidas($db, string $membroId): int
 {
+    $membro = obterMembroBaseMensagens($db, $membroId);
+
+    if (!$membro) return 0;
+
+    $faixaEtaria = obterFaixaEtariaMensagens(
+        (string) ($membro['nascimento'] ?? '')
+    );
+
+    if ($faixaEtaria === null) return 0;
+
+    $condicaoFaixaEtaria = condicaoSqlFaixaEtariaMensagens(
+        $faixaEtaria,
+        'em'
+    );
+
     return (int) $db->runSQL(
-        'SELECT COUNT(*) FROM mensagens_chat WHERE destinatario_id = :id AND lida = 0',
-        ['id' => $membroId]
+        "SELECT COUNT(*)
+         FROM mensagens_chat msg
+         INNER JOIN membros em
+             ON em.id COLLATE utf8mb4_unicode_ci =
+                msg.emissor_id COLLATE utf8mb4_unicode_ci
+         WHERE msg.destinatario_id = :id
+         AND msg.lida = 0
+         AND {$condicaoFaixaEtaria}
+         AND NOT EXISTS (
+             SELECT 1
+             FROM bloqueados b
+             WHERE (
+                 b.pessoa_bloqueou_id = :eu1
+                 AND b.pessoa_bloqueada_id COLLATE utf8mb4_unicode_ci =
+                     msg.emissor_id COLLATE utf8mb4_unicode_ci
+             )
+             OR (
+                 b.pessoa_bloqueou_id COLLATE utf8mb4_unicode_ci =
+                     msg.emissor_id COLLATE utf8mb4_unicode_ci
+                 AND b.pessoa_bloqueada_id = :eu2
+             )
+         )",
+        [
+            'id' => $membroId,
+            'eu1' => $membroId,
+            'eu2' => $membroId
+        ]
     )->fetchColumn();
 }
 
@@ -334,9 +671,12 @@ function guardarMediaMensagem(array $ficheiro): array
 $membroId = trim((string) ($session->id ?? ''));
 $outroId = trim((string) ($id ?? ''));
 $api = trim((string) ($_GET['api'] ?? ''));
+$metodo = strtoupper(
+    (string) ($_SERVER['REQUEST_METHOD'] ?? 'GET')
+);
 
 if ($membroId === '') {
-    if ($api !== '' || $_SERVER['REQUEST_METHOD'] === 'POST') {
+    if ($api !== '' || $metodo === 'POST') {
         responderMensagensJson([
             'success' => false,
             'message' => 'A sessão terminou.'
@@ -348,17 +688,27 @@ if ($membroId === '') {
 }
 
 try {
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        if ($outroId === '' || $outroId === $membroId || !obterMembroChat($db, $outroId)) {
-            responderMensagensJson([
-                'success' => false,
-                'message' => 'O destinatário não é válido.'
-            ], 422);
+    if ($metodo === 'POST') {
+        $acao = trim((string) ($_POST['action'] ?? 'send'));
+        $contexto = obterContextoConversaMensagens(
+            $db,
+            $membroId,
+            $outroId
+        );
+
+        if (!$contexto) {
+            responderConversaIndisponivel($twig, true);
         }
 
-        $acao = trim((string) ($_POST['action'] ?? 'send'));
+        $membroId = (string) $contexto['membro_id'];
+        $outroId = (string) $contexto['outro_id'];
+        $conversaExistente = (bool) $contexto['conversa_existente'];
 
         if ($acao === 'mark_read') {
+            if (!$conversaExistente) {
+                responderConversaIndisponivel($twig, true);
+            }
+
             $db->runSQL(
                 'UPDATE mensagens_chat
                  SET lida = 1, lida_em = COALESCE(lida_em, NOW(6))
@@ -382,6 +732,26 @@ try {
                 'success' => false,
                 'message' => 'Ação inválida.'
             ], 422);
+        }
+
+        /*
+         * Uma conversa já iniciada continua disponível fora dos 100 m.
+         * Para criar a primeira mensagem, é obrigatório apresentar o
+         * passe temporário que o WebSocket só entrega a pessoas próximas.
+         */
+        if (
+            !$conversaExistente &&
+            !validarTokenProximidadeMensagens(
+                $db,
+                $membroId,
+                $outroId,
+                (string) (
+                    $_POST['profile_access_token']
+                    ?? ''
+                )
+            )
+        ) {
+            responderConversaIndisponivel($twig, true);
         }
 
         $texto = trim((string) ($_POST['mensagem'] ?? $_POST['texto'] ?? ''));
@@ -459,7 +829,7 @@ try {
         ], 201);
     }
 
-    if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+    if ($metodo !== 'GET') {
         header('Allow: GET, POST');
 
         responderMensagensJson([
@@ -477,13 +847,21 @@ try {
     }
 
     if ($api === 'history') {
-        if ($outroId === '' || !obterMembroChat($db, $outroId)) {
-            responderMensagensJson([
-                'success' => false,
-                'message' => 'Conversa inválida.'
-            ], 404);
+        $contexto = obterContextoConversaMensagens(
+            $db,
+            $membroId,
+            $outroId
+        );
+
+        if (
+            !$contexto ||
+            !(bool) $contexto['conversa_existente']
+        ) {
+            responderConversaIndisponivel($twig, true);
         }
 
+        $membroId = (string) $contexto['membro_id'];
+        $outroId = (string) $contexto['outro_id'];
         $depoisDe = max(0, (int) ($_GET['after_id'] ?? 0));
 
         responderMensagensJson([
@@ -507,16 +885,25 @@ try {
         exit;
     }
 
+    $contexto = obterContextoConversaMensagens(
+        $db,
+        $membroId,
+        $outroId
+    );
+
+    if (
+        !$contexto ||
+        !(bool) $contexto['conversa_existente']
+    ) {
+        responderConversaIndisponivel($twig);
+    }
+
+    $membroId = (string) $contexto['membro_id'];
+    $outroId = (string) $contexto['outro_id'];
     $outro = obterMembroChat($db, $outroId);
 
-    if (!$outro || $outroId === $membroId) {
-        http_response_code(404);
-
-        echo $twig->render('error-page.html', [
-            'message' => 'Esta conversa não existe.'
-        ]);
-
-        exit;
+    if (!$outro) {
+        responderConversaIndisponivel($twig);
     }
 
     $db->runSQL(
@@ -540,7 +927,7 @@ try {
 } catch (Throwable $erro) {
     error_log('[messages] ' . $erro->getMessage());
 
-    if ($api !== '' || $_SERVER['REQUEST_METHOD'] === 'POST') {
+    if ($api !== '' || $metodo === 'POST') {
         responderMensagensJson([
             'success' => false,
             'message' => 'Não foi possível processar as mensagens.'

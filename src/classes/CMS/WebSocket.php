@@ -724,6 +724,29 @@ class WebSocket implements MessageComponentInterface
             return;
         }
 
+        $destinatarioId = trim(
+            (string) ($mensagem['destinatario_id'] ?? '')
+        );
+
+        /*
+         * A gravação HTTP já faz esta validação. Repeti-la aqui impede
+         * que uma mensagem seja entregue em tempo real caso exista uma
+         * tentativa de contornar o endpoint, um bloqueio tenha ocorrido
+         * entretanto ou as contas pertençam a faixas etárias diferentes.
+         */
+        if (
+            !$this->interacaoMensagensPermitida(
+                $membroId,
+                $destinatarioId
+            )
+        ) {
+            $this->enviar($from, [
+                'type' => 'chat_error',
+                'message' => 'Esta conversa não está disponível.'
+            ]);
+            return;
+        }
+
         $ficheiro = basename(trim((string) ($mensagem['ficheiro_nome'] ?? '')));
         $foto = basename(trim((string) ($mensagem['emissor_foto'] ?? 'default.webp')));
 
@@ -772,6 +795,23 @@ class WebSocket implements MessageComponentInterface
             $this->enviar($from, [
                 'type' => 'chat_error',
                 'message' => 'A conversa não é válida.'
+            ]);
+            return;
+        }
+
+        if (
+            !$this->interacaoMensagensPermitida(
+                $leitorId,
+                $outroId
+            ) ||
+            !$this->existeConversaMensagens(
+                $leitorId,
+                $outroId
+            )
+        ) {
+            $this->enviar($from, [
+                'type' => 'chat_error',
+                'message' => 'Esta conversa não está disponível.'
             ]);
             return;
         }
@@ -829,6 +869,28 @@ class WebSocket implements MessageComponentInterface
 
     private function contarMensagensNaoLidas(string $membroId): int
     {
+        $membro = $this->obterMembro($membroId);
+
+        if (!$membro) return 0;
+
+        $faixaEtaria = $this->obterFaixaEtaria(
+            (string) ($membro['nascimento'] ?? '')
+        );
+
+        if ($faixaEtaria === null) return 0;
+
+        $condicaoFaixaEtaria = $faixaEtaria === '13-17'
+            ? "(
+                em.nascimento <=
+                    DATE_SUB(UTC_DATE(), INTERVAL 13 YEAR)
+                AND em.nascimento >
+                    DATE_SUB(UTC_DATE(), INTERVAL 18 YEAR)
+            )"
+            : "(
+                em.nascimento <=
+                    DATE_SUB(UTC_DATE(), INTERVAL 18 YEAR)
+            )";
+
         $database = null;
         $statement = null;
 
@@ -837,12 +899,34 @@ class WebSocket implements MessageComponentInterface
 
             $statement = $database->prepare("
                 SELECT COUNT(*)
-                FROM mensagens_chat
-                WHERE destinatario_id = :id
-                AND lida = 0
+                FROM mensagens_chat msg
+                INNER JOIN membros em
+                    ON em.id COLLATE utf8mb4_unicode_ci =
+                       msg.emissor_id COLLATE utf8mb4_unicode_ci
+                WHERE msg.destinatario_id = :id
+                AND msg.lida = 0
+                AND {$condicaoFaixaEtaria}
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM bloqueados b
+                    WHERE (
+                        b.pessoa_bloqueou_id = :eu1
+                        AND b.pessoa_bloqueada_id COLLATE utf8mb4_unicode_ci =
+                            msg.emissor_id COLLATE utf8mb4_unicode_ci
+                    )
+                    OR (
+                        b.pessoa_bloqueou_id COLLATE utf8mb4_unicode_ci =
+                            msg.emissor_id COLLATE utf8mb4_unicode_ci
+                        AND b.pessoa_bloqueada_id = :eu2
+                    )
+                )
             ");
 
-            $statement->execute(['id' => $membroId]);
+            $statement->execute([
+                'id' => $membroId,
+                'eu1' => $membroId,
+                'eu2' => $membroId
+            ]);
 
             return (int) $statement->fetchColumn();
         } finally {
@@ -1035,6 +1119,142 @@ class WebSocket implements MessageComponentInterface
         }
 
         return $primeiraFaixa === $segundaFaixa;
+    }
+
+    private function interacaoMensagensPermitida(
+        string $primeiroMembroId,
+        string $segundoMembroId
+    ): bool {
+        $primeiroMembroId = trim($primeiroMembroId);
+        $segundoMembroId = trim($segundoMembroId);
+
+        if (
+            $primeiroMembroId === '' ||
+            $segundoMembroId === '' ||
+            hash_equals($primeiroMembroId, $segundoMembroId)
+        ) {
+            return false;
+        }
+
+        $database = null;
+        $statement = null;
+
+        try {
+            $database = $this->getDatabase();
+            $statement = $database->prepare("
+                SELECT id, nascimento
+                FROM membros
+                WHERE id = :primeiro
+                OR id = :segundo
+            ");
+
+            $statement->execute([
+                'primeiro' => $primeiroMembroId,
+                'segundo' => $segundoMembroId
+            ]);
+
+            $membros = [];
+
+            foreach ($statement->fetchAll(PDO::FETCH_ASSOC) as $membro) {
+                $id = trim((string) ($membro['id'] ?? ''));
+
+                if ($id !== '') $membros[$id] = $membro;
+            }
+
+            if (
+                !isset(
+                    $membros[$primeiroMembroId],
+                    $membros[$segundoMembroId]
+                )
+            ) {
+                return false;
+            }
+
+            $primeiraFaixa = $this->obterFaixaEtaria(
+                (string) (
+                    $membros[$primeiroMembroId]['nascimento']
+                    ?? ''
+                )
+            );
+
+            $segundaFaixa = $this->obterFaixaEtaria(
+                (string) (
+                    $membros[$segundoMembroId]['nascimento']
+                    ?? ''
+                )
+            );
+
+            if (
+                $primeiraFaixa === null ||
+                $segundaFaixa === null ||
+                $primeiraFaixa !== $segundaFaixa
+            ) {
+                return false;
+            }
+
+            $statement = $database->prepare("
+                SELECT 1
+                FROM bloqueados
+                WHERE (
+                    pessoa_bloqueou_id = :primeiro1
+                    AND pessoa_bloqueada_id = :segundo1
+                )
+                OR (
+                    pessoa_bloqueou_id = :segundo2
+                    AND pessoa_bloqueada_id = :primeiro2
+                )
+                LIMIT 1
+            ");
+
+            $statement->execute([
+                'primeiro1' => $primeiroMembroId,
+                'segundo1' => $segundoMembroId,
+                'segundo2' => $segundoMembroId,
+                'primeiro2' => $primeiroMembroId
+            ]);
+
+            return !$statement->fetchColumn();
+        } finally {
+            $statement = null;
+            $database = null;
+        }
+    }
+
+    private function existeConversaMensagens(
+        string $primeiroMembroId,
+        string $segundoMembroId
+    ): bool {
+        $database = null;
+        $statement = null;
+
+        try {
+            $database = $this->getDatabase();
+            $statement = $database->prepare("
+                SELECT 1
+                FROM mensagens_chat
+                WHERE (
+                    emissor_id = :primeiro1
+                    AND destinatario_id = :segundo1
+                )
+                OR (
+                    emissor_id = :segundo2
+                    AND destinatario_id = :primeiro2
+                )
+                LIMIT 1
+            ");
+
+            $statement->execute([
+                'primeiro1' => $primeiroMembroId,
+                'segundo1' => $segundoMembroId,
+                'segundo2' => $segundoMembroId,
+                'primeiro2' => $primeiroMembroId
+            ]);
+
+            return (bool) $statement->fetchColumn();
+        } finally {
+            $statement = null;
+            $database = null;
+        }
     }
 
     private function propositoAcessoPerfil(string $membroId): string

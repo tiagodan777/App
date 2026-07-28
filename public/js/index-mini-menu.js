@@ -275,6 +275,20 @@
 
         dados.set('action', 'send');
 
+        /*
+         * Numa conversa nova, o servidor exige o passe temporário que
+         * veio com esta pessoa no estado do mapa. Numa conversa já
+         * existente o passe deixa de ser necessário.
+         */
+        var tokenProximidade = tokenAcessoPerfilSelecionado();
+
+        if (tokenProximidade) {
+            dados.set(
+                'profile_access_token',
+                tokenProximidade
+            );
+        }
+
         aEnviarMensagem = true;
         $botao.prop('disabled', true).val('A enviar…');
 
@@ -282,10 +296,23 @@
             var resposta = await fetch(baseUrl(window.messagesUrl, '/messages') + '/' + encodeURIComponent(id), {
                 method: 'POST',
                 body: dados,
-                credentials: 'same-origin'
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
             });
 
-            var resultado = await resposta.json();
+            var conteudo = await resposta.text();
+            var resultado;
+
+            try {
+                resultado = JSON.parse(conteudo);
+            } catch (erro) {
+                throw new Error(
+                    'O servidor devolveu uma resposta inválida.'
+                );
+            }
 
             if (!resposta.ok || !resultado.success) {
                 throw new Error(resultado.message || 'Não foi possível enviar a mensagem.');
