@@ -599,6 +599,7 @@
                     'data-membro-id': pessoa.membro_id || '',
                     'data-nome': pessoa.nome || '',
                     'data-distancia': Number(pessoa.distance_m) || 0,
+                    'data-profile-access-token': pessoa.profile_access_token || '',
                     src: src,
                     alt: pessoa.nome || 'Foto de perfil'
                 }).css('opacity', '1');
@@ -620,7 +621,8 @@
                 'data-left': Number(pessoa.left) || 0,
                 'data-membro-id': pessoa.membro_id || '',
                 'data-nome': pessoa.nome || '',
-                'data-distancia': Number(pessoa.distance_m) || 0
+                'data-distancia': Number(pessoa.distance_m) || 0,
+                'data-profile-access-token': pessoa.profile_access_token || ''
             });
 
             $imagem.css({

@@ -12,10 +12,13 @@ use React\EventLoop\TimerInterface;
 
 class WebSocket implements MessageComponentInterface
 {
-    private const RAIO_MAXIMO_METROS = 150;
+    private const RAIO_MAXIMO_METROS = 100;
     private const LOCALIZACAO_MAXIMA_IDADE_SEGUNDOS = 90;
     private const TOLERANCIA_NAVEGACAO_SEGUNDOS = 8.0;
     private const BLOQUEIOS_CACHE_SEGUNDOS = 10;
+    private const ACESSO_PERFIL_VALIDADE_SEGUNDOS = 120;
+    private const ACESSO_PERFIL_RENOVAR_ANTES_SEGUNDOS = 30;
+    private const ACESSO_PERFIL_LIMPEZA_SEGUNDOS = 60;
 
     private \SplObjectStorage $clients;
     private $pdoFactory;
@@ -29,7 +32,10 @@ class WebSocket implements MessageComponentInterface
     private array $localizacoes = [];
     private array $temporizadoresSaida = [];
     private array $bloqueiosEntreMembros = [];
+    private array $faixaEtariaPorMembro = [];
+    private array $acessosPerfil = [];
     private int $bloqueiosCarregadosEm = 0;
+    private int $acessosPerfilLimposEm = 0;
     private string $assinaturaBloqueios = '';
 
     public function __construct(callable $pdoFactory, LoopInterface $loop)
@@ -179,6 +185,18 @@ class WebSocket implements MessageComponentInterface
             return;
         }
 
+        $faixaEtaria = $this->obterFaixaEtaria(
+            (string) ($membro['nascimento'] ?? '')
+        );
+
+        if ($faixaEtaria === null) {
+            $this->enviarErro($conn, 'A conta não tem uma idade válida para utilizar o mapa.');
+            $conn->close();
+            return;
+        }
+
+        $this->faixaEtariaPorMembro[$membroId] = $faixaEtaria;
+
         $localizacaoAtiva = $this->lerBooleano(
             $data,
             'location_enabled',
@@ -228,6 +246,7 @@ class WebSocket implements MessageComponentInterface
             SELECT
                 m.id AS membro_id,
                 CONCAT(m.primeiro_nome, ' ', m.ultimo_nome) AS nome,
+                m.nascimento,
                 COALESCE(
                     (
                         SELECT fp.nome_arquivo
@@ -316,6 +335,32 @@ class WebSocket implements MessageComponentInterface
 
     private function sincronizarVisibilidadeMembro(string $membroId, ?array $membro = null): void
     {
+        if ($membro === null) {
+            $membro = $this->obterMembro($membroId);
+        }
+
+        if (!$membro) {
+            unset(
+                $this->pessoas[$membroId],
+                $this->faixaEtariaPorMembro[$membroId]
+            );
+            return;
+        }
+
+        $faixaEtaria = $this->obterFaixaEtaria(
+            (string) ($membro['nascimento'] ?? '')
+        );
+
+        if ($faixaEtaria === null) {
+            unset(
+                $this->pessoas[$membroId],
+                $this->faixaEtariaPorMembro[$membroId]
+            );
+            return;
+        }
+
+        $this->faixaEtariaPorMembro[$membroId] = $faixaEtaria;
+
         if ($this->membroTemLigacaoVisivel($membroId)) {
             $this->garantirPessoaVisivel($membroId, $membro);
             return;
@@ -331,9 +376,26 @@ class WebSocket implements MessageComponentInterface
         }
 
         if (!$membro) {
-            unset($this->pessoas[$membroId]);
+            unset(
+                $this->pessoas[$membroId],
+                $this->faixaEtariaPorMembro[$membroId]
+            );
             return;
         }
+
+        $faixaEtaria = $this->obterFaixaEtaria(
+            (string) ($membro['nascimento'] ?? '')
+        );
+
+        if ($faixaEtaria === null) {
+            unset(
+                $this->pessoas[$membroId],
+                $this->faixaEtariaPorMembro[$membroId]
+            );
+            return;
+        }
+
+        $this->faixaEtariaPorMembro[$membroId] = $faixaEtaria;
 
         $foto = basename(trim((string) ($membro['foto_perfil'] ?? 'default.webp')));
 
@@ -346,6 +408,7 @@ class WebSocket implements MessageComponentInterface
             'membro_id' => $membroId,
             'nome' => trim((string) ($membro['nome'] ?? '')),
             'src' => '/imagens/fotos-perfil/' . rawurlencode($foto),
+            'faixa_etaria' => $faixaEtaria,
             'top' => isset($pessoaAtual['top']) ? (int) $pessoaAtual['top'] : random_int(50, 600),
             'left' => isset($pessoaAtual['left']) ? (int) $pessoaAtual['left'] : random_int(50, 400)
         ];
@@ -359,6 +422,14 @@ class WebSocket implements MessageComponentInterface
 
         if (!$membro) return null;
 
+        $faixaEtaria = $this->obterFaixaEtaria(
+            (string) ($membro['nascimento'] ?? '')
+        );
+
+        if ($faixaEtaria === null) return null;
+
+        $this->faixaEtariaPorMembro[$membroId] = $faixaEtaria;
+
         $foto = basename(trim((string) ($membro['foto_perfil'] ?? 'default.webp')));
 
         if ($foto === '') $foto = 'default.webp';
@@ -367,7 +438,8 @@ class WebSocket implements MessageComponentInterface
             'id' => $membroId,
             'membro_id' => $membroId,
             'nome' => trim((string) ($membro['nome'] ?? '')),
-            'src' => '/imagens/fotos-perfil/' . rawurlencode($foto)
+            'src' => '/imagens/fotos-perfil/' . rawurlencode($foto),
+            'faixa_etaria' => $faixaEtaria
         ];
     }
 
@@ -470,8 +542,14 @@ class WebSocket implements MessageComponentInterface
             return;
         }
 
+        if (!$this->membrosNaMesmaFaixaEtaria($remetenteId, $destinatarioId)) {
+            $this->enviarErro($from, 'Já não podes interagir com esta pessoa.');
+            $this->enviarEstadosIndividuais();
+            return;
+        }
+
         if (!$this->estaoDentroDoRaio($remetenteId, $destinatarioId)) {
-            $this->enviarErro($from, 'Esta pessoa já não está num raio de 150 metros.');
+            $this->enviarErro($from, 'Esta pessoa já não está num raio de 100 metros.');
             $this->enviarEstadosIndividuais();
             return;
         }
@@ -800,19 +878,22 @@ class WebSocket implements MessageComponentInterface
             $ligacaoVisivel = $this->visibilidadePorLigacao[$client->resourceId] ?? false;
             $minhaLocalizacao = $this->localizacoes[$membroId] ?? null;
             $minhaLocalizacaoValida = $localizacaoAtiva && $this->localizacaoEstaValida($minhaLocalizacao, $agora);
+            $minhaFaixaEtaria = $this->faixaEtariaPorMembro[$membroId] ?? null;
             $pessoasVisiveis = [];
 
-            if ($minhaLocalizacaoValida) {
+            if ($minhaLocalizacaoValida && $minhaFaixaEtaria !== null) {
                 foreach ($this->pessoas as $outroMembroId => $pessoa) {
                     if ($outroMembroId === $membroId) {
                         if (!$ligacaoVisivel) continue;
 
+                        unset($pessoa['faixa_etaria']);
                         $pessoa['distance_m'] = 0;
                         $pessoasVisiveis[] = $pessoa;
                         continue;
                     }
 
                     if ($this->membrosEstaoBloqueadosNoCache($membroId, $outroMembroId)) continue;
+                    if (($pessoa['faixa_etaria'] ?? null) !== $minhaFaixaEtaria) continue;
 
                     $outraLocalizacao = $this->localizacoes[$outroMembroId] ?? null;
 
@@ -827,7 +908,16 @@ class WebSocket implements MessageComponentInterface
 
                     if ($distancia > self::RAIO_MAXIMO_METROS) continue;
 
+                    $tokenAcessoPerfil = $this->obterTokenAcessoPerfil(
+                        $membroId,
+                        $outroMembroId
+                    );
+
+                    if ($tokenAcessoPerfil === null) continue;
+
+                    unset($pessoa['faixa_etaria']);
                     $pessoa['distance_m'] = (int) round($distancia);
+                    $pessoa['profile_access_token'] = $tokenAcessoPerfil;
                     $pessoasVisiveis[] = $pessoa;
                 }
             }
@@ -871,6 +961,211 @@ class WebSocket implements MessageComponentInterface
         if ($localizacao === null) return false;
 
         return ($agora - (int) ($localizacao['updated_at'] ?? 0)) <= self::LOCALIZACAO_MAXIMA_IDADE_SEGUNDOS;
+    }
+
+    private function obterFaixaEtaria(string $nascimento): ?string
+    {
+        $nascimento = trim($nascimento);
+
+        if ($nascimento === '') return null;
+
+        $dataNascimento = \DateTimeImmutable::createFromFormat(
+            '!Y-m-d',
+            $nascimento,
+            new \DateTimeZone('UTC')
+        );
+
+        $erros = \DateTimeImmutable::getLastErrors();
+
+        if (
+            !$dataNascimento ||
+            ($erros !== false && (
+                ($erros['warning_count'] ?? 0) > 0 ||
+                ($erros['error_count'] ?? 0) > 0
+            )) ||
+            $dataNascimento->format('Y-m-d') !== $nascimento
+        ) {
+            return null;
+        }
+
+        $hoje = new \DateTimeImmutable('today', new \DateTimeZone('UTC'));
+
+        if ($dataNascimento > $hoje) return null;
+
+        $idade = $dataNascimento->diff($hoje)->y;
+
+        if ($idade < 13) return null;
+
+        return $idade <= 17 ? '13-17' : '18+';
+    }
+
+    private function membrosNaMesmaFaixaEtaria(
+        string $primeiroMembroId,
+        string $segundoMembroId
+    ): bool {
+        $primeiraFaixa = $this->faixaEtariaPorMembro[$primeiroMembroId] ?? null;
+        $segundaFaixa = $this->faixaEtariaPorMembro[$segundoMembroId] ?? null;
+
+        if ($primeiraFaixa === null) {
+            $primeiroMembro = $this->obterMembro($primeiroMembroId);
+
+            if (!$primeiroMembro) return false;
+
+            $primeiraFaixa = $this->obterFaixaEtaria(
+                (string) ($primeiroMembro['nascimento'] ?? '')
+            );
+
+            if ($primeiraFaixa === null) return false;
+
+            $this->faixaEtariaPorMembro[$primeiroMembroId] = $primeiraFaixa;
+        }
+
+        if ($segundaFaixa === null) {
+            $segundoMembro = $this->obterMembro($segundoMembroId);
+
+            if (!$segundoMembro) return false;
+
+            $segundaFaixa = $this->obterFaixaEtaria(
+                (string) ($segundoMembro['nascimento'] ?? '')
+            );
+
+            if ($segundaFaixa === null) return false;
+
+            $this->faixaEtariaPorMembro[$segundoMembroId] = $segundaFaixa;
+        }
+
+        return $primeiraFaixa === $segundaFaixa;
+    }
+
+    private function propositoAcessoPerfil(string $membroId): string
+    {
+        return 'profile:' . substr(hash('sha256', $membroId), 0, 24);
+    }
+
+    private function limparAcessosPerfilExpirados(PDO $database, int $agora): void
+    {
+        if (
+            ($agora - $this->acessosPerfilLimposEm) <
+            self::ACESSO_PERFIL_LIMPEZA_SEGUNDOS
+        ) {
+            return;
+        }
+
+        $statement = $database->prepare("
+            DELETE FROM token
+            WHERE proposito LIKE 'profile:%'
+            AND validade <= UTC_TIMESTAMP()
+        ");
+
+        $statement->execute();
+        $this->acessosPerfilLimposEm = $agora;
+
+        foreach ($this->acessosPerfil as $chave => $acesso) {
+            if ((int) ($acesso['expira_em'] ?? 0) <= $agora) {
+                unset($this->acessosPerfil[$chave]);
+            }
+        }
+    }
+
+    private function obterTokenAcessoPerfil(
+        string $visualizadorId,
+        string $perfilId
+    ): ?string {
+        if (
+            $visualizadorId === $perfilId ||
+            $this->membrosEstaoBloqueadosNoCache($visualizadorId, $perfilId) ||
+            !$this->membrosNaMesmaFaixaEtaria($visualizadorId, $perfilId)
+        ) {
+            return null;
+        }
+
+        $agora = time();
+        $chave = $visualizadorId . '>' . $perfilId;
+        $acessoAtual = $this->acessosPerfil[$chave] ?? null;
+
+        if (
+            is_array($acessoAtual) &&
+            (int) ($acessoAtual['expira_em'] ?? 0) >
+                $agora + self::ACESSO_PERFIL_RENOVAR_ANTES_SEGUNDOS &&
+            preg_match('/^[a-f0-9]{64}$/', (string) ($acessoAtual['token'] ?? ''))
+        ) {
+            return (string) $acessoAtual['token'];
+        }
+
+        $database = null;
+        $delete = null;
+        $insert = null;
+
+        try {
+            $database = $this->getDatabase();
+            $this->limparAcessosPerfilExpirados($database, $agora);
+
+            $token = bin2hex(random_bytes(32));
+            $tokenHash = hash('sha256', $token);
+            $proposito = $this->propositoAcessoPerfil($visualizadorId);
+            $expiraEm = $agora + self::ACESSO_PERFIL_VALIDADE_SEGUNDOS;
+
+            $database->beginTransaction();
+
+            $delete = $database->prepare("
+                DELETE FROM token
+                WHERE membro_id = :perfil_id
+                AND proposito = :proposito
+            ");
+
+            $delete->execute([
+                'perfil_id' => $perfilId,
+                'proposito' => $proposito
+            ]);
+
+            $insert = $database->prepare("
+                INSERT INTO token (
+                    token,
+                    membro_id,
+                    validade,
+                    proposito
+                )
+                VALUES (
+                    :token,
+                    :perfil_id,
+                    :validade,
+                    :proposito
+                )
+            ");
+
+            $insert->execute([
+                'token' => $tokenHash,
+                'perfil_id' => $perfilId,
+                'validade' => gmdate('Y-m-d H:i:s', $expiraEm),
+                'proposito' => $proposito
+            ]);
+
+            $database->commit();
+
+            $this->acessosPerfil[$chave] = [
+                'token' => $token,
+                'expira_em' => $expiraEm
+            ];
+
+            return $token;
+        } catch (\Throwable $erro) {
+            if ($database instanceof PDO && $database->inTransaction()) {
+                $database->rollBack();
+            }
+
+            echo sprintf(
+                "[PROFILE ACCESS ERROR] %s -> %s: %s\n",
+                $visualizadorId,
+                $perfilId,
+                $erro->getMessage()
+            );
+
+            return null;
+        } finally {
+            $delete = null;
+            $insert = null;
+            $database = null;
+        }
     }
 
     private function calcularDistanciaMetros(

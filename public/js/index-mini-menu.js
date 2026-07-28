@@ -45,6 +45,10 @@
         return texto($miniMenu.attr('data-destinatario-id'));
     }
 
+    function tokenAcessoPerfilSelecionado() {
+        return texto($miniMenu.attr('data-profile-access-token'));
+    }
+
     function nomeSelecionado() {
         return texto($miniMenu.find('header h1').text()) || 'esta pessoa';
     }
@@ -88,11 +92,15 @@
 
         var membroNome = nome(elemento);
         var souEu = id === texto(window.membroId);
+        var tokenAcessoPerfil = texto(elemento.getAttribute('data-profile-access-token'));
         var imagem = $miniMenu.find('header img').get(0);
 
         fecharAcoes();
 
-        $miniMenu.attr('data-destinatario-id', id).toggleClass('perfil-proprio', souEu);
+        $miniMenu
+            .attr('data-destinatario-id', id)
+            .attr('data-profile-access-token', tokenAcessoPerfil)
+            .toggleClass('perfil-proprio', souEu);
         $miniMenu.find('.mini-menu-perfil').attr('href', baseUrl(window.profileUrl, '/profile') + '/' + encodeURIComponent(id));
         $miniMenu.find('header h1').text(membroNome);
         $miniMenu.find('.mini-menu-mensagem').attr('action', baseUrl(window.messagesUrl, '/messages') + '/' + encodeURIComponent(id));
@@ -172,6 +180,41 @@
 
     $(document).on('pointerdown click', '.foto', function () {
         prepararMiniMenu(this);
+    });
+
+    $(document).on('click', '.mini-menu-perfil', function (evento) {
+        var token = tokenAcessoPerfilSelecionado();
+        var id = idSelecionado();
+        var souEu = id !== '' && id === texto(window.membroId);
+        var destino = texto($(this).attr('href'));
+
+        /*
+         * Sem passe temporário, deixa o navegador fazer o GET normal.
+         * Esse caminho continua a funcionar para o próprio perfil e para
+         * pessoas que já trocaram mensagens nos dois sentidos.
+         */
+        if (!token || !destino || souEu) return;
+
+        evento.preventDefault();
+
+        /*
+         * O passe segue no corpo do POST, nunca no URL, histórico,
+         * Referer ou logs normais do servidor.
+         */
+        var formulario = document.createElement('form');
+        var campo = document.createElement('input');
+
+        formulario.method = 'post';
+        formulario.action = destino;
+        formulario.hidden = true;
+
+        campo.type = 'hidden';
+        campo.name = 'profile_access_token';
+        campo.value = token;
+
+        formulario.appendChild(campo);
+        document.body.appendChild(formulario);
+        formulario.submit();
     });
 
     $(document).on('click', '#enviar-hey', function (evento) {
