@@ -56,3 +56,14 @@ class Validate {
     }
 }
 
+public static function isPhone($phone): bool
+{
+    $phone = trim((string) $phone);
+
+    if (!preg_match('/^\+?[0-9\s().-]+$/', $phone)) return false;
+
+    $digits = preg_replace('/\D+/', '', $phone);
+    $length = strlen($digits);
+
+    return $length >= 7 && $length <= 15;
+}
