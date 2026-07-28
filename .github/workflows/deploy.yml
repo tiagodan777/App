@@ -12,18 +12,15 @@ jobs:
     steps:
       - name: Deploy to VM
         uses: appleboy/ssh-action@v1.2.2
-
         with:
           host: ${{ secrets.VM_HOST }}
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.VM_SSH_KEY }}
-
           script: |
+            set -e
             cd /var/www/app
-
-            git fetch origin
+            git fetch --prune origin main
             git reset --hard origin/main
-
-            composer install \
-              --no-dev \
-              --optimize-autoloader
+            composer install --no-dev --optimize-autoloader
+            test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
+            echo "Deploy concluído no commit $(git rev-parse --short HEAD)"
