@@ -163,16 +163,20 @@
     }
 
     function mostrarPreview(ficheiro) {
-        limparMedia();
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+
+        previewUrl = null;
+        $preview.empty().prop('hidden', true);
+        $erro.prop('hidden', true).text('');
 
         if (!ficheiro) return;
 
         var eVideo = ficheiro.type.startsWith('video/');
-        var limite = eVideo
-            ? 100 * 1024 * 1024
-            : 15 * 1024 * 1024;
+        var limite = eVideo ? 100 * 1024 * 1024 : 15 * 1024 * 1024;
 
         if (ficheiro.size > limite) {
+            $media.val('');
+
             $erro.text(
                 eVideo
                     ? 'O vídeo pode ter no máximo 100 MB.'
@@ -204,8 +208,6 @@
                 'aria-label': 'Remover ficheiro'
             }).text('×')
         ).prop('hidden', false);
-
-        $erro.prop('hidden', true).text('');
     }
 
     function publicarMensagem(mensagemId) {
