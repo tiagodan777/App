@@ -54,16 +54,16 @@ class Validate {
         }
         return false;                                      // Invalid password
     }
-}
 
-public static function isPhone($phone): bool
-{
-    $phone = trim((string) $phone);
+    public static function isPhone($phone): bool
+    {
+        $phone = trim((string) $phone);
 
-    if (!preg_match('/^\+?[0-9\s().-]+$/', $phone)) return false;
+        if (!preg_match('/^\+?[0-9\s().-]+$/', $phone)) return false;
 
-    $digits = preg_replace('/\D+/', '', $phone);
-    $length = strlen($digits);
+        $digits = preg_replace('/\D+/', '', $phone);
+        $length = strlen($digits);
 
-    return $length >= 7 && $length <= 15;
+        return $length >= 7 && $length <= 15;
+    }
 }
