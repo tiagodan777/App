@@ -176,29 +176,15 @@
 
         if (ficheiro.size > limite) {
             $media.val('');
-
-            $erro.text(
-                eVideo
-                    ? 'O vídeo pode ter no máximo 100 MB.'
-                    : 'A fotografia pode ter no máximo 15 MB.'
-            ).prop('hidden', false);
-
+            $erro.text(eVideo ? 'O vídeo pode ter no máximo 100 MB.' : 'A fotografia pode ter no máximo 15 MB.').prop('hidden', false);
             return;
         }
 
         previewUrl = URL.createObjectURL(ficheiro);
 
         var $conteudo = eVideo
-            ? $('<video>', {
-                src: previewUrl,
-                muted: true,
-                controls: true,
-                playsinline: true
-            })
-            : $('<img>', {
-                src: previewUrl,
-                alt: 'Pré-visualização'
-            });
+            ? $('<video>', {src: previewUrl, muted: true, controls: true, playsinline: true})
+            : $('<img>', {src: previewUrl, alt: 'Pré-visualização'});
 
         $preview.append(
             $conteudo,
