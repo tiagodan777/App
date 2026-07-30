@@ -94,7 +94,7 @@ function csrf_token_valido(?string $token = null): bool
 
 function rejeitar_csrf(): never
 {
-    http_response_code(419);
+    http_response_code(403);
     header('Cache-Control: no-store, no-cache, must-revalidate');
     header('X-Content-Type-Options: nosniff');
 
