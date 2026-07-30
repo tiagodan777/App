@@ -26,6 +26,7 @@
     var etapaAtual = null;
     var pedidoAtual = null;
     var aEnviar = false;
+    var erroValidacaoPendente = null;
 
     if (!Array.isArray(dados.gostos)) dados.gostos = [];
 
@@ -561,6 +562,15 @@
 
             restaurarEtapa();
 
+            if (
+                erroValidacaoPendente &&
+                erroValidacaoPendente.etapa === etapa
+            ) {
+                apresentarErroValidacao(
+                    erroValidacaoPendente
+                );
+            }
+
             if (opcoes.animar) {
                 $etapa
                     .css(
@@ -652,19 +662,381 @@
         return true;
     }
 
+    function textoGuardado(nome) {
+        return String(
+            dados[nome] == null
+                ? ''
+                : dados[nome]
+        ).trim();
+    }
+
+    function comprimentoTexto(valor) {
+        return Array.from(
+            String(valor || '')
+        ).length;
+    }
+
+    function emailValido(email) {
+        var campo = document.createElement(
+            'input'
+        );
+
+        campo.type = 'email';
+        campo.required = true;
+        campo.value = email;
+
+        return campo.checkValidity();
+    }
+
+    function telefoneValido(telefone) {
+        if (telefone === '') return true;
+
+        if (
+            !/^\+?[0-9\s().-]+$/.test(
+                telefone
+            )
+        ) {
+            return false;
+        }
+
+        var totalDigitos =
+            telefone
+                .replace(/\D+/g, '')
+                .length;
+
+        return (
+            totalDigitos >= 7 &&
+            totalDigitos <= 15
+        );
+    }
+
+    function nascimentoValido() {
+        var dia = Number(
+            textoGuardado('dia')
+        );
+
+        var mes = Number(
+            textoGuardado('mes')
+        );
+
+        var ano = Number(
+            textoGuardado('ano')
+        );
+
+        var anoAtual =
+            new Date().getFullYear();
+
+        if (
+            !Number.isInteger(dia) ||
+            !Number.isInteger(mes) ||
+            !Number.isInteger(ano) ||
+            ano < 1900 ||
+            ano > anoAtual
+        ) {
+            return false;
+        }
+
+        var data = new Date(
+            Date.UTC(
+                ano,
+                mes - 1,
+                dia
+            )
+        );
+
+        return (
+            data.getUTCFullYear() === ano &&
+            data.getUTCMonth() === mes - 1 &&
+            data.getUTCDate() === dia
+        );
+    }
+
+    function primeiroErroCriacao() {
+        var primeiroNome =
+            textoGuardado(
+                'primeiro_nome'
+            );
+
+        if (
+            comprimentoTexto(primeiroNome) < 1 ||
+            comprimentoTexto(primeiroNome) > 60
+        ) {
+            return {
+                etapa: '#nome',
+                campo: 'primeiro_nome',
+                mensagem:
+                    'Escreve um primeiro nome válido.'
+            };
+        }
+
+        var ultimoNome =
+            textoGuardado(
+                'ultimo_nome'
+            );
+
+        if (
+            comprimentoTexto(ultimoNome) < 1 ||
+            comprimentoTexto(ultimoNome) > 60
+        ) {
+            return {
+                etapa: '#nome',
+                campo: 'ultimo_nome',
+                mensagem:
+                    'Escreve um último nome válido.'
+            };
+        }
+
+        if (!nascimentoValido()) {
+            return {
+                etapa: '#nascimento',
+                campo: 'dia',
+                mensagem:
+                    'Escolhe uma data de nascimento válida.'
+            };
+        }
+
+        if (
+            ![
+                'M',
+                'F',
+                'D'
+            ].includes(
+                textoGuardado('genero')
+            )
+        ) {
+            return {
+                etapa: '#sexo',
+                campo: 'genero',
+                mensagem:
+                    'Escolhe um género válido.'
+            };
+        }
+
+        var gostos =
+            Array.isArray(dados.gostos)
+                ? dados.gostos
+                : [];
+
+        if (
+            gostos.length > 30 ||
+            gostos.some(function (gosto) {
+                var comprimento =
+                    comprimentoTexto(
+                        String(gosto).trim()
+                    );
+
+                return (
+                    comprimento < 1 ||
+                    comprimento > 80
+                );
+            })
+        ) {
+            return {
+                etapa: '#gostos',
+                campo: 'hobbie',
+                mensagem:
+                    'Revê os teus gostos. Podes adicionar até 30 e cada um pode ter no máximo 80 caracteres.'
+            };
+        }
+
+        if (
+            ![
+                'amizade',
+                'conhecer_pessoas',
+                'relacao_seria',
+                'algo_casual',
+                'conversar',
+                'ainda_nao_sei'
+            ].includes(
+                textoGuardado('objetivo')
+            )
+        ) {
+            return {
+                etapa: '#objetivo',
+                campo: 'objetivo',
+                mensagem:
+                    'Escolhe o que procuras na Margot.'
+            };
+        }
+
+        var telefone =
+            textoGuardado('telefone');
+
+        if (!telefoneValido(telefone)) {
+            return {
+                etapa: '#contactos',
+                campo: 'telefone',
+                mensagem:
+                    'Introduz um número de telefone válido.'
+            };
+        }
+
+        var email =
+            textoGuardado('email');
+
+        if (!emailValido(email)) {
+            return {
+                etapa: '#contactos',
+                campo: 'email',
+                mensagem:
+                    'Introduz um email válido.'
+            };
+        }
+
+        if (
+            comprimentoTexto(
+                textoGuardado('sobre_ti')
+            ) > 1000
+        ) {
+            return {
+                etapa: '#descricao',
+                campo: 'sobre_ti',
+                mensagem:
+                    'A descrição pode ter no máximo 1000 caracteres.'
+            };
+        }
+
+        var preferencias =
+            window.MargotPreferencias;
+
+        if (
+            !preferencias ||
+            !preferencias.foiEscolhida(
+                'localizacao'
+            ) ||
+            !preferencias.foiEscolhida(
+                'notificacoes'
+            )
+        ) {
+            return {
+                etapa: '#permissoes',
+                campo: '',
+                mensagem:
+                    'Escolhe se queres ativar ou desativar a localização e as notificações.'
+            };
+        }
+
+        var password =
+            String(
+                dados.password || ''
+            );
+
+        if (
+            comprimentoTexto(password) < 8 ||
+            !/[A-Z]/.test(password) ||
+            !/[a-z]/.test(password) ||
+            !/[0-9]/.test(password)
+        ) {
+            return {
+                etapa: '#palavra-passe',
+                campo: 'password',
+                mensagem:
+                    'A palavra-passe deve ter pelo menos 8 caracteres, uma minúscula, uma maiúscula e um número.'
+            };
+        }
+
+        if (
+            password !==
+            String(
+                dados.confirma_password || ''
+            )
+        ) {
+            return {
+                etapa: '#palavra-passe',
+                campo: 'confirma_password',
+                mensagem:
+                    'As palavras-passe não são idênticas.'
+            };
+        }
+
+        return null;
+    }
+
+    function apresentarErroValidacao(erro) {
+        erroValidacaoPendente = null;
+
+        if (
+            erro.etapa === '#permissoes' &&
+            typeof window.validarEtapaPermissoes ===
+                'function'
+        ) {
+            window.validarEtapaPermissoes();
+        }
+
+        mostrarErro(erro.mensagem);
+
+        var $campo = $form
+            .find('[name]')
+            .filter(function () {
+                return (
+                    this.name === erro.campo
+                );
+            })
+            .first();
+
+        if ($campo.length) {
+            $campo.attr(
+                'aria-invalid',
+                'true'
+            );
+
+            window.setTimeout(
+                function () {
+                    $campo.trigger('focus');
+                },
+                0
+            );
+        }
+
+        var elementoErro =
+            document.getElementById(
+                'create-account-erro'
+            );
+
+        if (
+            elementoErro &&
+            typeof elementoErro.scrollIntoView ===
+                'function'
+        ) {
+            elementoErro.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+        }
+    }
+
+    function mostrarPrimeiroErro(erro) {
+        if (
+            etapaVisivel() === erro.etapa
+        ) {
+            apresentarErroValidacao(erro);
+            return;
+        }
+
+        erroValidacaoPendente = erro;
+
+        carregarEtapa(
+            erro.etapa,
+            {
+                historico: 'push',
+                animar: true
+            }
+        );
+    }
+
     function navegar(destino, opcoes) {
         opcoes = Object.assign(
             {
-                validar: true,
+                validar: false,
                 guardar: true
             },
             opcoes || {}
         );
 
-        var origem = etapaVisivel();
-
         if (opcoes.guardar) {
-            guardarCamposAtuais();
+            guardarCamposAtuais({
+                incluirPassword: true
+            });
         }
 
         if (
@@ -672,11 +1044,6 @@
             !validarEtapa()
         ) {
             return;
-        }
-
-        if (origem === '#palavra-passe') {
-            dados.password = '';
-            dados.confirma_password = '';
         }
 
         carregarEtapa(
@@ -718,10 +1085,6 @@
                 : 'criar'
         );
 
-        /*
-         * Esta é a parte essencial da edição parcial.
-         * O PHP passa a saber exatamente qual área deve atualizar.
-         */
         formData.append(
             'secao',
             nomeEtapa(
@@ -831,11 +1194,7 @@
                 navegar(
                     destino,
                     {
-                        validar:
-                            $(this).data(
-                                'sem-validar'
-                            ) !== true,
-
+                        validar: false,
                         guardar: true
                     }
                 );
@@ -874,7 +1233,9 @@
         window.addEventListener(
             'popstate',
             function (evento) {
-                guardarCamposAtuais();
+                guardarCamposAtuais({
+                    incluirPassword: true
+                });
 
                 var destino =
                     evento.state &&
@@ -903,7 +1264,22 @@
                     incluirPassword: true
                 });
 
-                if (!validarEtapa()) return;
+                if (modoEdicao) {
+                    if (!validarEtapa()) {
+                        return;
+                    }
+                } else {
+                    var erroValidacao =
+                        primeiroErroCriacao();
+
+                    if (erroValidacao) {
+                        mostrarPrimeiroErro(
+                            erroValidacao
+                        );
+
+                        return;
+                    }
+                }
 
                 aEnviar = true;
 
@@ -1012,6 +1388,18 @@
                                 )
                             );
                     });
+            }
+        );
+
+        $(document).on(
+            'input change',
+            '#create-account-form [name]',
+            function () {
+                $(this).removeAttr(
+                    'aria-invalid'
+                );
+
+                mostrarErro('');
             }
         );
 
