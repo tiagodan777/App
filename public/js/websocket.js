@@ -13,6 +13,7 @@
     var locationRefreshTimer = null;
     var reconnectAttempts = 0;
     var locationWatchId = null;
+    var locationRequestPending = false;
     var lastLocationSentAt = 0;
     var lastSentLatitude = null;
     var lastSentLongitude = null;
@@ -35,24 +36,12 @@
         }
 
         try {
-            var preferencias = JSON.parse(
-                window.localStorage.getItem(
-                    'margot-preferencias-v1'
-                ) || '{}'
-            );
+            var preferencias = JSON.parse(window.localStorage.getItem('margot-preferencias-v1') || '{}');
 
-            window.disableLocationTracking =
-                preferencias.localizacao === false;
-
-            window.disableNotifications =
-                preferencias.notificacoes === false;
-
-            window.margotInvisible =
-                preferencias.invisivel === true;
-
-            window.disableMapPresence =
-                window.disableLocationTracking ||
-                window.margotInvisible;
+            window.disableLocationTracking = preferencias.localizacao === false;
+            window.disableNotifications = preferencias.notificacoes === false;
+            window.margotInvisible = preferencias.invisivel === true;
+            window.disableMapPresence = window.disableLocationTracking || window.margotInvisible;
         } catch (erro) {
             window.disableLocationTracking = false;
             window.disableNotifications = false;
@@ -72,10 +61,7 @@
     }
 
     function deveAparecerNoMapa() {
-        return (
-            localizacaoEstaAtiva() &&
-            !modoInvisivelEstaAtivo()
-        );
+        return localizacaoEstaAtiva() && !modoInvisivelEstaAtivo();
     }
 
     function obterEstadoPresenca() {
@@ -86,88 +72,50 @@
     }
 
     function getWebSocketUrl() {
-        if (window.webSocketUrl) {
-            return window.webSocketUrl;
-        }
+        if (window.webSocketUrl) return window.webSocketUrl;
 
-        var protocol =
-            window.location.protocol === 'https:'
-                ? 'wss:'
-                : 'ws:';
+        var protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 
-        return (
-            protocol +
-            '//' +
-            window.location.hostname +
-            ':8080'
-        );
+        return protocol + '//' + window.location.hostname + ':8080';
     }
 
     function getWebSocketTokenUrl() {
-        return String(
-            window.webSocketTokenUrl ||
-            '/websocket-token'
-        );
+        return String(window.webSocketTokenUrl || '/websocket-token');
     }
 
     function requestWebSocketToken() {
-        return window.fetch(
-            getWebSocketTokenUrl(),
-            {
-                method: 'POST',
-                credentials: 'same-origin',
-                cache: 'no-store',
-                headers: {
-                    Accept: 'application/json',
-                    'X-Requested-With':
-                        'XMLHttpRequest'
-                }
+        return window.fetch(getWebSocketTokenUrl(), {
+            method: 'POST',
+            credentials: 'same-origin',
+            cache: 'no-store',
+            headers: {
+                Accept: 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
             }
-        ).then(function (response) {
-            return response
-                .json()
-                .catch(function () {
-                    return {};
-                })
-                .then(function (data) {
-                    if (response.status === 401) {
-                        var sessionError =
-                            new Error(
-                                'A sessão terminou.'
-                            );
+        }).then(function (response) {
+            return response.json().catch(function () {
+                return {};
+            }).then(function (data) {
+                if (response.status === 401) {
+                    var sessionError = new Error('A sessão terminou.');
 
-                        sessionError.sessionEnded =
-                            true;
+                    sessionError.sessionEnded = true;
 
-                        throw sessionError;
-                    }
+                    throw sessionError;
+                }
 
-                    if (
-                        !response.ok ||
-                        data.success !== true
-                    ) {
-                        throw new Error(
-                            data.message ||
-                            'Não foi possível preparar a ligação.'
-                        );
-                    }
+                if (!response.ok || data.success !== true) {
+                    throw new Error(data.message || 'Não foi possível preparar a ligação.');
+                }
 
-                    var token = String(
-                        data.token || ''
-                    ).trim();
+                var token = String(data.token || '').trim();
 
-                    if (
-                        !/^[a-f0-9]{64}$/i.test(
-                            token
-                        )
-                    ) {
-                        throw new Error(
-                            'O servidor devolveu um token de ligação inválido.'
-                        );
-                    }
+                if (!/^[a-f0-9]{64}$/i.test(token)) {
+                    throw new Error('O servidor devolveu um token de ligação inválido.');
+                }
 
-                    return token;
-                });
+                return token;
+            });
         });
     }
 
@@ -184,14 +132,10 @@
         if (
             socket &&
             (
-                socket.readyState ===
-                    WebSocket.OPEN ||
-                socket.readyState ===
-                    WebSocket.CONNECTING
+                socket.readyState === WebSocket.OPEN ||
+                socket.readyState === WebSocket.CONNECTING
             )
-        ) {
-            return;
-        }
+        ) return;
 
         clearReconnectTimer();
         clearConnectionTimeout();
@@ -201,64 +145,48 @@
 
         setStatus('connecting');
 
-        tokenRequest =
-            requestWebSocketToken();
+        tokenRequest = requestWebSocketToken();
 
-        tokenRequest
-            .then(function (token) {
-                tokenRequest = null;
+        tokenRequest.then(function (token) {
+            tokenRequest = null;
 
-                if (
-                    sessionEnded ||
-                    !navigator.onLine
-                ) {
-                    return;
-                }
+            if (sessionEnded || !navigator.onLine) return;
 
-                openSocket(token);
-            })
-            .catch(function (erro) {
-                tokenRequest = null;
+            openSocket(token);
+        }).catch(function (erro) {
+            tokenRequest = null;
 
-                if (erro.sessionEnded) {
-                    sessionEnded = true;
+            if (erro.sessionEnded) {
+                sessionEnded = true;
 
-                    setStatus(
-                        'unauthenticated'
-                    );
+                setStatus('unauthenticated');
+                stopLocationTracking();
 
-                    stopLocationTracking();
-
-                    window.location.assign(
-                        String(
-                            window.loginUrl ||
-                            '/login/'
-                        )
-                    );
-
-                    return;
-                }
-
-                console.error(
-                    'Erro ao obter token WebSocket:',
-                    erro
+                window.location.assign(
+                    String(window.loginUrl || '/login/')
                 );
 
-                setStatus(
-                    navigator.onLine
-                        ? 'disconnected'
-                        : 'offline'
-                );
+                return;
+            }
 
-                scheduleReconnect();
-            });
+            console.error(
+                'Erro ao obter token WebSocket:',
+                erro
+            );
+
+            setStatus(
+                navigator.onLine
+                    ? 'disconnected'
+                    : 'offline'
+            );
+
+            scheduleReconnect();
+        });
     }
 
     function openSocket(token) {
         try {
-            socket = new WebSocket(
-                getWebSocketUrl()
-            );
+            socket = new WebSocket(getWebSocketUrl());
         } catch (erro) {
             console.error(
                 'Erro ao criar WebSocket:',
@@ -266,7 +194,6 @@
             );
 
             socket = null;
-
             scheduleReconnect();
 
             return;
@@ -276,109 +203,81 @@
 
         var currentSocket = socket;
 
-        connectionTimeout =
-            window.setTimeout(
-                function () {
-                    if (
-                        currentSocket === socket &&
-                        !authenticated
-                    ) {
-                        currentSocket.close();
-                    }
-                },
-                CONNECTION_TIMEOUT
+        connectionTimeout = window.setTimeout(
+            function () {
+                if (
+                    currentSocket === socket &&
+                    !authenticated
+                ) {
+                    currentSocket.close();
+                }
+            },
+            CONNECTION_TIMEOUT
+        );
+
+        currentSocket.onopen = function () {
+            if (currentSocket !== socket) return;
+
+            authenticate(token);
+        };
+
+        currentSocket.onmessage = function (evento) {
+            if (currentSocket === socket) {
+                handleMessage(evento);
+            }
+        };
+
+        currentSocket.onerror = function (evento) {
+            if (currentSocket === socket) {
+                console.error(
+                    'Erro no WebSocket:',
+                    evento
+                );
+            }
+        };
+
+        currentSocket.onclose = function () {
+            if (currentSocket !== socket) return;
+
+            clearConnectionTimeout();
+            clearPingTimer();
+            clearLocationRefreshTimer();
+
+            authenticated = false;
+            socket = null;
+            window.ws = null;
+
+            setStatus(
+                navigator.onLine
+                    ? 'disconnected'
+                    : 'offline'
             );
 
-        currentSocket.onopen =
-            function () {
-                if (
-                    currentSocket !== socket
-                ) {
-                    return;
-                }
-
-                authenticate(token);
-            };
-
-        currentSocket.onmessage =
-            function (evento) {
-                if (
-                    currentSocket === socket
-                ) {
-                    handleMessage(evento);
-                }
-            };
-
-        currentSocket.onerror =
-            function (evento) {
-                if (
-                    currentSocket === socket
-                ) {
-                    console.error(
-                        'Erro no WebSocket:',
-                        evento
-                    );
-                }
-            };
-
-        currentSocket.onclose =
-            function () {
-                if (
-                    currentSocket !== socket
-                ) {
-                    return;
-                }
-
-                clearConnectionTimeout();
-                clearPingTimer();
-                clearLocationRefreshTimer();
-
-                authenticated = false;
-                socket = null;
-                window.ws = null;
-
-                setStatus(
-                    navigator.onLine
-                        ? 'disconnected'
-                        : 'offline'
-                );
-
-                scheduleReconnect();
-            };
+            scheduleReconnect();
+        };
     }
 
     function authenticate(token) {
-        var estadoPresenca =
-            obterEstadoPresenca();
+        var estadoPresenca = obterEstadoPresenca();
 
         sendRaw({
             type: 'auth',
             token: token,
-
-            location_enabled:
-                estadoPresenca
-                    .location_enabled,
-
-            map_presence:
-                estadoPresenca
-                    .map_presence
+            location_enabled: estadoPresenca.location_enabled,
+            map_presence: estadoPresenca.map_presence
         });
     }
 
     function sendRaw(data) {
         if (
             !socket ||
-            socket.readyState !==
-                WebSocket.OPEN
+            socket.readyState !== WebSocket.OPEN
         ) {
             return false;
         }
 
         try {
-            socket.send(
-                JSON.stringify(data)
-            );
-
+            socket.send(JSON.stringify(data));
             return true;
         } catch (erro) {
             console.error(
@@ -391,56 +290,38 @@
     }
 
     function send(data) {
-        if (!authenticated) {
-            return false;
-        }
+        if (!authenticated) return false;
 
         return sendRaw(data);
     }
 
     function sendPresenceState() {
-        var estadoPresenca =
-            obterEstadoPresenca();
+        var estadoPresenca = obterEstadoPresenca();
 
         return send({
             type: 'presence_update',
-
-            location_enabled:
-                estadoPresenca
-                    .location_enabled,
-
-            map_presence:
-                estadoPresenca
-                    .map_presence
+            location_enabled: estadoPresenca.location_enabled,
+            map_presence: estadoPresenca.map_presence
         });
     }
 
     function startPing() {
         clearPingTimer();
 
-        pingTimer =
-            window.setInterval(
-                function () {
-                    send({
-                        type: 'ping',
-                        timestamp:
-                            Date.now()
-                    });
-                },
-                PING_INTERVAL
-            );
+        pingTimer = window.setInterval(
+            function () {
+                send({
+                    type: 'ping',
+                    timestamp: Date.now()
+                });
+            },
+            PING_INTERVAL
+        );
     }
 
     function startLocationTracking() {
-        if (
-            window.disableLocationTracking
-        ) {
-            return;
-        }
-
-        if (locationWatchId !== null) {
-            return;
-        }
+        if (window.disableLocationTracking) return;
+        if (locationWatchId !== null) return;
 
         if (!window.isSecureContext) {
             mostrarMensagemTemporaria(
@@ -451,12 +332,7 @@
             return;
         }
 
-        if (
-            !(
-                'geolocation'
-                in navigator
-            )
-        ) {
+        if (!('geolocation' in navigator)) {
             mostrarMensagemTemporaria(
                 'Este dispositivo não suporta localização.',
                 'erro'
@@ -466,71 +342,62 @@
         }
 
         locationWatchId =
-            navigator.geolocation
-                .watchPosition(
-                    handleLocationSuccess,
-                    handleLocationError,
-                    {
-                        enableHighAccuracy:
-                            true,
-
-                        maximumAge:
-                            LOCATION_MAX_AGE,
-
-                        timeout: 15000
-                    }
-                );
+            navigator.geolocation.watchPosition(
+                handleLocationSuccess,
+                handleLocationError,
+                {
+                    enableHighAccuracy: true,
+                    maximumAge: LOCATION_MAX_AGE,
+                    timeout: 15000
+                }
+            );
     }
 
     function requestCurrentLocation() {
         if (
             window.disableLocationTracking ||
             !window.isSecureContext ||
-            !(
-                'geolocation'
-                in navigator
-            )
+            !('geolocation' in navigator) ||
+            locationRequestPending
         ) {
             return;
         }
 
-        navigator.geolocation
-            .getCurrentPosition(
-                handleLocationSuccess,
-                handleLocationError,
-                {
-                    enableHighAccuracy:
-                        true,
+        locationRequestPending = true;
 
-                    maximumAge:
-                        LOCATION_MAX_AGE,
-
-                    timeout: 15000
-                }
-            );
+        navigator.geolocation.getCurrentPosition(
+            function (position) {
+                locationRequestPending = false;
+                handleLocationSuccess(position);
+            },
+            function (error) {
+                locationRequestPending = false;
+                handleLocationError(error);
+            },
+            {
+                enableHighAccuracy: true,
+                maximumAge: LOCATION_MAX_AGE,
+                timeout: 15000
+            }
+        );
     }
 
     function startLocationRefresh() {
         clearLocationRefreshTimer();
 
-        locationRefreshTimer =
-            window.setInterval(
-                function () {
-                    if (
-                        document
-                            .visibilityState !==
-                            'visible' ||
+        locationRefreshTimer = window.setInterval(
+            function () {
+                if (
+                    document.visibilityState !== 'visible' ||
+                    window.disableLocationTracking
+                ) {
+                    return;
+                }
 
-                        window
-                            .disableLocationTracking
-                    ) {
-                        return;
-                    }
-
-                    sendLastKnownLocation();
-                },
-                LOCATION_REFRESH_INTERVAL
-            );
+                sendLastKnownLocation();
+            },
+            LOCATION_REFRESH_INTERVAL
+        );
     }
 
     function stopLocationTracking() {
@@ -538,29 +405,23 @@
             locationWatchId !== null &&
             navigator.geolocation
         ) {
-            navigator.geolocation
-                .clearWatch(
-                    locationWatchId
-                );
+            navigator.geolocation.clearWatch(
+                locationWatchId
+            );
         }
 
         clearLocationRefreshTimer();
 
         locationWatchId = null;
+        locationRequestPending = false;
         lastLocationSentAt = 0;
         lastSentLatitude = null;
         lastSentLongitude = null;
         lastKnownLocation = null;
     }
 
-    function handleLocationSuccess(
-        position
-    ) {
-        if (
-            window.disableLocationTracking
-        ) {
-            return;
-        }
+    function handleLocationSuccess(position) {
+        if (window.disableLocationTracking) return;
 
         var latitude = Number(
             position.coords.latitude
@@ -571,9 +432,7 @@
         );
 
         var accuracy =
-            Number(
-                position.coords.accuracy
-            ) || 0;
+            Number(position.coords.accuracy) || 0;
 
         if (
             !Number.isFinite(latitude) ||
@@ -586,11 +445,8 @@
             latitude: latitude,
             longitude: longitude,
             accuracy: accuracy,
-
             timestamp:
-                Number(
-                    position.timestamp
-                ) ||
+                Number(position.timestamp) ||
                 Date.now()
         };
 
@@ -607,15 +463,13 @@
                 );
 
         var passouTempo =
-            agora -
-            lastLocationSentAt >=
+            agora - lastLocationSentAt >=
             LOCATION_MIN_INTERVAL;
 
         if (
             lastSentLatitude !== null &&
             !passouTempo &&
-            distancia <
-                LOCATION_MIN_DISTANCE
+            distancia < LOCATION_MIN_DISTANCE
         ) {
             return;
         }
@@ -631,72 +485,54 @@
             return false;
         }
 
-        if (
-            !send({
-                type: 'location',
-
-                latitude:
-                    lastKnownLocation
-                        .latitude,
-
-                longitude:
-                    lastKnownLocation
-                        .longitude,
-
-                accuracy:
-                    lastKnownLocation
-                        .accuracy,
-
-                timestamp:
-                    lastKnownLocation
-                        .timestamp
-            })
-        ) {
+        if (!send({
+            type: 'location',
+            latitude: lastKnownLocation.latitude,
+            longitude: lastKnownLocation.longitude,
+            accuracy: lastKnownLocation.accuracy,
+            timestamp: lastKnownLocation.timestamp
+        })) {
             return false;
         }
 
-        lastLocationSentAt =
-            Date.now();
-
+        lastLocationSentAt = Date.now();
         lastSentLatitude =
             lastKnownLocation.latitude;
-
         lastSentLongitude =
             lastKnownLocation.longitude;
 
         return true;
     }
 
-    function handleLocationError(
-        error
-    ) {
+    function handleLocationError(error) {
+        if (window.disableLocationTracking) return;
+
         var mensagem =
             'Não foi possível obter a localização.';
 
-        if (
-            error.code ===
-            error.PERMISSION_DENIED
-        ) {
+        if (error.code === error.PERMISSION_DENIED) {
             mensagem =
                 'A localização não foi autorizada.';
         } else if (
-            error.code ===
-            error.POSITION_UNAVAILABLE
+            error.code === error.POSITION_UNAVAILABLE
         ) {
             mensagem =
                 'A localização não está disponível.';
-        } else if (
-            error.code ===
-            error.TIMEOUT
-        ) {
+        } else if (error.code === error.TIMEOUT) {
             mensagem =
                 'A localização demorou demasiado tempo.';
+
+            if (lastKnownLocation) {
+                console.warn(
+                    'A atualização pontual da localização expirou; foi mantida a última posição válida.',
+                    error
+                );
+
+                return;
+            }
         }
 
-        console.warn(
-            mensagem,
-            error
-        );
+        console.warn(mensagem, error);
 
         mostrarMensagemTemporaria(
             mensagem,
@@ -711,22 +547,12 @@
         lng2
     ) {
         var raio = 6371000;
-
-        var latitude1 =
-            toRadians(lat1);
-
-        var latitude2 =
-            toRadians(lat2);
-
+        var latitude1 = toRadians(lat1);
+        var latitude2 = toRadians(lat2);
         var diferencaLatitude =
-            toRadians(
-                lat2 - lat1
-            );
-
+            toRadians(lat2 - lat1);
         var diferencaLongitude =
-            toRadians(
-                lng2 - lng1
-            );
+            toRadians(lng2 - lng1);
 
         var a =
             Math.sin(
@@ -738,22 +564,16 @@
                 diferencaLongitude / 2
             ) ** 2;
 
-        return (
-            raio *
+        return raio *
             2 *
             Math.atan2(
                 Math.sqrt(a),
                 Math.sqrt(1 - a)
-            )
-        );
+            );
     }
 
     function toRadians(valor) {
-        return (
-            valor *
-            Math.PI /
-            180
-        );
+        return valor * Math.PI / 180;
     }
 
     function scheduleReconnect() {
@@ -767,42 +587,33 @@
 
         reconnectAttempts++;
 
-        var atraso =
-            Math.min(
-                RECONNECT_MIN_DELAY *
+        var atraso = Math.min(
+            RECONNECT_MIN_DELAY *
                 Math.pow(
                     2,
                     reconnectAttempts - 1
                 ),
+            RECONNECT_MAX_DELAY
+        );
 
-                RECONNECT_MAX_DELAY
-            );
+        atraso += Math.floor(
+            Math.random() * 1000
+        );
 
-        atraso +=
-            Math.floor(
-                Math.random() *
-                1000
-            );
-
-        reconnectTimer =
-            window.setTimeout(
-                function () {
-                    reconnectTimer =
-                        null;
-
-                    connect();
-                },
-                atraso
-            );
+        reconnectTimer = window.setTimeout(
+            function () {
+                reconnectTimer = null;
+                connect();
+            },
+            atraso
+        );
     }
 
     function handleMessage(evento) {
         var data;
 
         try {
-            data = JSON.parse(
-                evento.data
-            );
+            data = JSON.parse(evento.data);
         } catch (erro) {
             console.error(
                 'JSON inválido recebido:',
@@ -833,10 +644,7 @@
                 setStatus('connected');
                 startPing();
 
-                if (
-                    !window
-                        .disableLocationTracking
-                ) {
+                if (!window.disableLocationTracking) {
                     startLocationTracking();
                     startLocationRefresh();
                     requestCurrentLocation();
@@ -847,14 +655,10 @@
                     data.membro_id
                 );
 
-                if (
-                    data.location_enabled ===
-                    false
-                ) {
+                if (data.location_enabled === false) {
                     limparMapaLocal();
                 } else if (
-                    data.map_presence ===
-                    false
+                    data.map_presence === false
                 ) {
                     removerPropriaFotoDoMapa();
                 }
@@ -866,13 +670,11 @@
 
             case 'presence_updated':
                 if (
-                    data.location_enabled ===
-                    false
+                    data.location_enabled === false
                 ) {
                     limparMapaLocal();
                 } else if (
-                    data.map_presence ===
-                    false
+                    data.map_presence === false
                 ) {
                     removerPropriaFotoDoMapa();
                 }
@@ -895,8 +697,7 @@
                     )
                 ) {
                     atualizarPessoasNoMapa(
-                        window
-                            .disableLocationTracking
+                        window.disableLocationTracking
                             ? []
                             : (
                                 Array.isArray(
@@ -957,30 +758,21 @@
                 );
 
                 atualizarBadgeMensagens(
-                    Number(
-                        data.unread_count
-                    ) || 0
+                    Number(data.unread_count) || 0
                 );
 
                 if (
                     data.message &&
-
                     String(
-                        data.message
-                            .destinatario_id
+                        data.message.destinatario_id
                     ) ===
+                        String(window.membroId) &&
                     String(
-                        window.membroId
-                    ) &&
-
-                    String(
-                        window.chatMembroId ||
-                        ''
+                        window.chatMembroId || ''
                     ) !==
-                    String(
-                        data.message
-                            .emissor_id
-                    )
+                        String(
+                            data.message.emissor_id
+                        )
                 ) {
                     mostrarNotificacaoMensagem(
                         data.message
@@ -1003,9 +795,7 @@
 
             case 'chat_unread_count':
                 atualizarBadgeMensagens(
-                    Number(
-                        data.unread_count
-                    ) || 0
+                    Number(data.unread_count) || 0
                 );
 
                 window.dispatchEvent(
@@ -1031,7 +821,7 @@
 
                 mostrarMensagemTemporaria(
                     data.message ||
-                    'Não foi possível atualizar a conversa.',
+                        'Não foi possível atualizar a conversa.',
                     'erro'
                 );
 
@@ -1048,7 +838,7 @@
 
                 mostrarMensagemTemporaria(
                     data.message ||
-                    'Ocorreu um erro.',
+                        'Ocorreu um erro.',
                     'erro'
                 );
 
@@ -1063,23 +853,18 @@
     }
 
     function removerPropriaFotoDoMapa() {
-        var membroId =
-            String(
-                window.membroId || ''
-            ).trim();
+        var membroId = String(
+            window.membroId || ''
+        ).trim();
 
         if (!membroId) return;
 
         var imagem =
-            document.getElementById(
-                membroId
-            );
+            document.getElementById(membroId);
 
         if (
             !imagem ||
-            !imagem.classList.contains(
-                'foto'
-            )
+            !imagem.classList.contains('foto')
         ) {
             return;
         }
@@ -1090,7 +875,6 @@
             .addClass('a-remover')
             .css({
                 opacity: '0',
-
                 transition:
                     'opacity 0.25s ease-out'
             });
@@ -1114,48 +898,32 @@
         atualizarPessoasNoMapa([]);
     }
 
-    function atualizarPessoasNoMapa(
-        pessoas
-    ) {
-        var idsAtuais =
-            pessoas.map(
-                function (pessoa) {
-                    return String(
-                        pessoa.id
-                    );
-                }
-            );
+    function atualizarPessoasNoMapa(pessoas) {
+        var idsAtuais = pessoas.map(
+            function (pessoa) {
+                return String(pessoa.id);
+            }
+        );
 
         $('.foto').each(function () {
             var $foto = $(this);
 
-            var id =
-                String(
-                    $foto.attr('id') ||
-                    ''
-                );
+            var id = String(
+                $foto.attr('id') || ''
+            );
 
-            if (
-                idsAtuais.includes(id)
-            ) {
+            if (idsAtuais.includes(id)) {
                 cancelarRemocaoFoto(id);
 
                 $foto
-                    .removeClass(
-                        'a-remover'
-                    )
-                    .css(
-                        'opacity',
-                        '1'
-                    );
+                    .removeClass('a-remover')
+                    .css('opacity', '1');
 
                 return;
             }
 
             if (
-                $foto.hasClass(
-                    'a-remover'
-                ) &&
+                $foto.hasClass('a-remover') &&
                 photoRemovalTimers[id]
             ) {
                 return;
@@ -1165,7 +933,6 @@
                 .addClass('a-remover')
                 .css({
                     opacity: '0',
-
                     transition:
                         'opacity 0.4s ease-out'
                 });
@@ -1178,192 +945,154 @@
         });
 
         var fragmento =
-            document
-                .createDocumentFragment();
+            document.createDocumentFragment();
 
         var inseriuImagem = false;
 
-        pessoas.forEach(
-            function (pessoa) {
-                if (
-                    !pessoa ||
-                    pessoa.id === undefined
-                ) {
-                    return;
-                }
+        pessoas.forEach(function (pessoa) {
+            if (
+                !pessoa ||
+                pessoa.id === undefined
+            ) {
+                return;
+            }
 
-                var id =
-                    String(pessoa.id);
+            var id = String(pessoa.id);
 
-                var src =
-                    String(
-                        pessoa.src || ''
-                    ).trim();
+            var src = String(
+                pessoa.src || ''
+            ).trim();
 
-                if (!src) {
-                    src =
-                        '/imagens/fotos-perfil/default.webp';
-                }
+            if (!src) {
+                src =
+                    '/imagens/fotos-perfil/default.webp';
+            }
 
-                var imagemExistente =
-                    document
-                        .getElementById(
-                            id
-                        );
+            var imagemExistente =
+                document.getElementById(id);
 
-                if (imagemExistente) {
-                    cancelarRemocaoFoto(
-                        id
-                    );
+            if (imagemExistente) {
+                cancelarRemocaoFoto(id);
 
-                    $(imagemExistente)
-                        .removeClass(
-                            'a-remover'
-                        )
-                        .attr({
-                            'data-top':
-                                Number(
-                                    pessoa.top
-                                ) || 0,
+                $(imagemExistente)
+                    .removeClass('a-remover')
+                    .attr({
+                        'data-top':
+                            Number(pessoa.top) || 0,
 
-                            'data-left':
-                                Number(
-                                    pessoa.left
-                                ) || 0,
+                        'data-left':
+                            Number(pessoa.left) || 0,
 
-                            'data-membro-id':
-                                pessoa
-                                    .membro_id ||
-                                '',
+                        'data-membro-id':
+                            pessoa.membro_id || '',
 
-                            'data-nome':
-                                pessoa.nome ||
-                                '',
+                        'data-nome':
+                            pessoa.nome || '',
 
-                            'data-distancia':
-                                Number(
-                                    pessoa
-                                        .distance_m
-                                ) || 0,
+                        'data-distancia':
+                            Number(
+                                pessoa.distance_m
+                            ) || 0,
 
-                            'data-profile-access-token':
-                                pessoa
-                                    .profile_access_token ||
-                                '',
+                        'data-profile-access-token':
+                            pessoa.profile_access_token ||
+                            '',
 
-                            src: src,
-
-                            alt:
-                                pessoa.nome ||
-                                'Foto de perfil'
-                        })
-                        .css(
-                            'opacity',
-                            '1'
-                        );
-
-                    return;
-                }
-
-                inseriuImagem = true;
-
-                var $imagem =
-                    $('<img>', {
-                        id: id,
-                        class: 'foto',
                         src: src,
 
                         alt:
                             pessoa.nome ||
                             'Foto de perfil'
-                    });
+                    })
+                    .css('opacity', '1');
 
-                $imagem.attr({
-                    'data-top':
-                        Number(
-                            pessoa.top
-                        ) || 0,
+                return;
+            }
 
-                    'data-left':
-                        Number(
-                            pessoa.left
-                        ) || 0,
+            inseriuImagem = true;
 
-                    'data-membro-id':
-                        pessoa.membro_id ||
-                        '',
+            var $imagem = $('<img>', {
+                id: id,
+                class: 'foto',
+                src: src,
+                alt:
+                    pessoa.nome ||
+                    'Foto de perfil'
+            });
 
-                    'data-nome':
-                        pessoa.nome ||
-                        '',
+            $imagem.attr({
+                'data-top':
+                    Number(pessoa.top) || 0,
 
-                    'data-distancia':
-                        Number(
-                            pessoa.distance_m
-                        ) || 0,
+                'data-left':
+                    Number(pessoa.left) || 0,
 
-                    'data-profile-access-token':
-                        pessoa
-                            .profile_access_token ||
-                        ''
-                });
+                'data-membro-id':
+                    pessoa.membro_id || '',
 
-                $imagem.css({
-                    opacity: '0',
+                'data-nome':
+                    pessoa.nome || '',
 
-                    transition:
-                        'opacity 0.4s ease-out'
-                });
+                'data-distancia':
+                    Number(
+                        pessoa.distance_m
+                    ) || 0,
 
-                $imagem[0].decoding =
-                    'async';
+                'data-profile-access-token':
+                    pessoa.profile_access_token ||
+                    ''
+            });
 
-                $imagem.on(
-                    'load',
-                    function () {
+            $imagem.css({
+                opacity: '0',
+                transition:
+                    'opacity 0.4s ease-out'
+            });
+
+            $imagem[0].decoding = 'async';
+
+            $imagem.on(
+                'load',
+                function () {
+                    $(this).css(
+                        'opacity',
+                        '1'
+                    );
+                }
+            );
+
+            $imagem.on(
+                'error',
+                function () {
+                    if (
+                        this.dataset
+                            .fallbackAplicado === '1'
+                    ) {
                         $(this).css(
                             'opacity',
                             '1'
                         );
+
+                        return;
                     }
-                );
 
-                $imagem.on(
-                    'error',
-                    function () {
-                        if (
-                            this.dataset
-                                .fallbackAplicado ===
-                            '1'
-                        ) {
-                            $(this).css(
-                                'opacity',
-                                '1'
-                            );
+                    this.dataset
+                        .fallbackAplicado = '1';
 
-                            return;
-                        }
+                    this.src =
+                        '/imagens/fotos-perfil/default.webp';
+                }
+            );
 
-                        this.dataset
-                            .fallbackAplicado =
-                            '1';
-
-                        this.src =
-                            '/imagens/fotos-perfil/default.webp';
-                    }
-                );
-
-                fragmento.appendChild(
-                    $imagem[0]
-                );
-            }
-        );
+            fragmento.appendChild(
+                $imagem[0]
+            );
+        });
 
         if (inseriuImagem) {
-            document.body
-                .appendChild(
-                    fragmento
-                );
+            document.body.appendChild(
+                fragmento
+            );
         }
 
         reinicializarFotos();
@@ -1386,38 +1115,32 @@
 
         cancelarRemocaoFoto(id);
 
-        var timer =
-            window.setTimeout(
-                function () {
-                    if (
-                        photoRemovalTimers[
-                            id
-                        ] !== timer
-                    ) {
-                        return;
-                    }
+        var timer = window.setTimeout(
+            function () {
+                if (
+                    photoRemovalTimers[id] !==
+                    timer
+                ) {
+                    return;
+                }
 
-                    delete photoRemovalTimers[
-                        id
-                    ];
+                delete photoRemovalTimers[id];
 
-                    if (
-                        !$foto.hasClass(
-                            'a-remover'
-                        )
-                    ) {
-                        return;
-                    }
+                if (
+                    !$foto.hasClass(
+                        'a-remover'
+                    )
+                ) {
+                    return;
+                }
 
-                    $foto.remove();
+                $foto.remove();
+                reinicializarFotos();
+            },
+            atraso
+        );
 
-                    reinicializarFotos();
-                },
-                atraso
-            );
-
-        photoRemovalTimers[id] =
-            timer;
+        photoRemovalTimers[id] = timer;
     }
 
     function cancelarRemocaoFoto(id) {
@@ -1462,19 +1185,17 @@
         mensagem,
         tipo
     ) {
-        $('.mensagem-websocket')
-            .remove();
+        $('.mensagem-websocket').remove();
 
-        var $mensagem =
-            $('<div>', {
-                class:
-                    'mensagem-websocket ' +
-                    (
-                        tipo === 'erro'
-                            ? 'erro'
-                            : 'sucesso'
-                    )
-            }).text(mensagem);
+        var $mensagem = $('<div>', {
+            class:
+                'mensagem-websocket ' +
+                (
+                    tipo === 'erro'
+                        ? 'erro'
+                        : 'sucesso'
+                )
+        }).text(mensagem);
 
         $('body').append($mensagem);
 
@@ -1503,70 +1224,47 @@
         );
     }
 
-    function atualizarBadgeMensagens(
-        total
-    ) {
-        var $link =
-            $(
-                '#menuPrincipal a[href*="messages"]'
-            ).first();
+    function atualizarBadgeMensagens(total) {
+        var $link = $(
+            '#menuPrincipal a[href*="messages"]'
+        ).first();
 
         if (!$link.length) return;
 
-        var $badge =
-            $link.find(
-                '.mensagens-badge'
-            );
+        var $badge = $link.find(
+            '.mensagens-badge'
+        );
 
         if (!$badge.length) {
-            $badge =
-                $('<span>', {
-                    class:
-                        'mensagens-badge'
-                }).appendTo($link);
+            $badge = $('<span>', {
+                class: 'mensagens-badge'
+            }).appendTo($link);
         }
 
         $badge
-            .text(
-                total > 99
-                    ? '99+'
-                    : total
-            )
-            .prop(
-                'hidden',
-                total < 1
-            );
+            .text(total > 99 ? '99+' : total)
+            .prop('hidden', total < 1);
     }
 
-    function mostrarAvisoMensagem(
-        mensagem
-    ) {
-        var nome =
-            String(
-                mensagem.emissor_nome ||
-                'Alguém'
-            ).trim() || 'Alguém';
+    function mostrarAvisoMensagem(mensagem) {
+        var nome = String(
+            mensagem.emissor_nome || 'Alguém'
+        ).trim() || 'Alguém';
 
-        var resumo =
-            String(
-                mensagem.texto || ''
-            ).trim();
+        var resumo = String(
+            mensagem.texto || ''
+        ).trim();
 
-        var foto =
-            String(
-                mensagem
-                    .emissor_foto_url ||
-                '/imagens/fotos-perfil/default.webp'
-            );
+        var foto = String(
+            mensagem.emissor_foto_url ||
+            '/imagens/fotos-perfil/default.webp'
+        );
 
         var conversaUrl =
             String(
                 window.messagesUrl ||
                 '/messages'
-            ).replace(
-                /\/+$/,
-                ''
-            ) +
+            ).replace(/\/+$/, '') +
             '/' +
             encodeURIComponent(
                 mensagem.emissor_id
@@ -1574,8 +1272,7 @@
 
         if (!resumo) {
             resumo =
-                mensagem.tipo ===
-                'imagem'
+                mensagem.tipo === 'imagem'
                     ? 'Enviou-te uma fotografia.'
                     : 'Enviou-te um vídeo.';
         }
@@ -1584,66 +1281,42 @@
             $('#mensagens-avisos');
 
         if (!$avisos.length) {
-            $avisos =
-                $('<div>', {
-                    id:
-                        'mensagens-avisos',
-
-                    class:
-                        'mensagens-avisos',
-
-                    'aria-live':
-                        'polite',
-
-                    'aria-atomic':
-                        'true'
-                }).appendTo('body');
+            $avisos = $('<div>', {
+                id: 'mensagens-avisos',
+                class: 'mensagens-avisos',
+                'aria-live': 'polite',
+                'aria-atomic': 'true'
+            }).appendTo('body');
         }
 
-        var $aviso =
-            $('<a>', {
-                class:
-                    'mensagem-aviso',
+        var $aviso = $('<a>', {
+            class: 'mensagem-aviso',
+            href: conversaUrl,
+            'aria-label':
+                'Abrir conversa com ' + nome
+        });
 
-                href:
-                    conversaUrl,
+        var $imagem = $('<img>', {
+            class: 'mensagem-aviso-foto',
+            src: foto,
+            alt: ''
+        }).on(
+            'error',
+            function () {
+                this.onerror = null;
+                this.src =
+                    '/imagens/fotos-perfil/default.webp';
+            }
+        );
 
-                'aria-label':
-                    'Abrir conversa com ' +
-                    nome
-            });
-
-        var $imagem =
-            $('<img>', {
-                class:
-                    'mensagem-aviso-foto',
-
-                src: foto,
-                alt: ''
-            }).on(
-                'error',
-                function () {
-                    this.onerror = null;
-
-                    this.src =
-                        '/imagens/fotos-perfil/default.webp';
-                }
-            );
-
-        var $corpo =
-            $('<span>', {
-                class:
-                    'mensagem-aviso-corpo'
-            }).append(
-                $('<strong>').text(
-                    'Nova mensagem de ' +
-                    nome
-                ),
-
-                $('<span>').text(
-                    resumo
-                )
-            );
+        var $corpo = $('<span>', {
+            class: 'mensagem-aviso-corpo'
+        }).append(
+            $('<strong>').text(
+                'Nova mensagem de ' + nome
+            ),
+            $('<span>').text(resumo)
+        );
 
         $aviso.append(
             $imagem,
@@ -1654,9 +1327,7 @@
 
         window.requestAnimationFrame(
             function () {
-                $aviso.addClass(
-                    'visivel'
-                );
+                $aviso.addClass('visivel');
             }
         );
 
@@ -1676,9 +1347,7 @@
         );
 
         function removerAviso() {
-            $aviso.removeClass(
-                'visivel'
-            );
+            $aviso.removeClass('visivel');
 
             window.setTimeout(
                 function () {
@@ -1702,31 +1371,27 @@
     function mostrarNotificacaoMensagem(
         mensagem
     ) {
-        if (
-            window.disableNotifications
-        ) {
+        var nome = String(
+            mensagem.emissor_nome ||
+            'Alguém'
+        );
+
+        var resumo =
+            mostrarAvisoMensagem(mensagem);
+
+        /*
+         * O banner interno aparece sempre.
+         * Apenas a notificação do sistema depende
+         * da preferência e da autorização nativa.
+         */
+        if (window.disableNotifications) {
             return;
         }
 
-        var nome =
-            String(
-                mensagem.emissor_nome ||
-                'Alguém'
-            );
-
-        var resumo =
-            mostrarAvisoMensagem(
-                mensagem
-            );
-
         if (
             !window.isSecureContext ||
-            !(
-                'Notification'
-                in window
-            ) ||
-            Notification.permission !==
-                'granted'
+            !('Notification' in window) ||
+            Notification.permission !== 'granted'
         ) {
             return;
         }
@@ -1734,8 +1399,7 @@
         try {
             var notificacao =
                 new Notification(
-                    'Nova mensagem de ' +
-                    nome,
+                    'Nova mensagem de ' + nome,
                     {
                         body: resumo,
 
@@ -1760,8 +1424,7 @@
 
                     window.location.href =
                         String(
-                            window
-                                .messagesUrl ||
+                            window.messagesUrl ||
                             '/messages'
                         ).replace(
                             /\/+$/,
@@ -1819,17 +1482,12 @@
     function clearPingTimer() {
         if (!pingTimer) return;
 
-        window.clearInterval(
-            pingTimer
-        );
-
+        window.clearInterval(pingTimer);
         pingTimer = null;
     }
 
     function clearLocationRefreshTimer() {
-        if (!locationRefreshTimer) {
-            return;
-        }
+        if (!locationRefreshTimer) return;
 
         window.clearInterval(
             locationRefreshTimer
@@ -1841,28 +1499,22 @@
     window.AppWebSocket = {
         connect: connect,
         send: send,
-
-        updatePresence:
-            sendPresenceState,
-
+        updatePresence: sendPresenceState,
         startLocationTracking:
             startLocationTracking,
-
         stopLocationTracking:
             stopLocationTracking,
-
         isInvisible:
             modoInvisivelEstaAtivo,
 
-        isConnected:
-            function () {
-                return Boolean(
-                    authenticated &&
-                    socket &&
-                    socket.readyState ===
-                        WebSocket.OPEN
-                );
-            }
+        isConnected: function () {
+            return Boolean(
+                authenticated &&
+                socket &&
+                socket.readyState ===
+                    WebSocket.OPEN
+            );
+        }
     };
 
     window.mostrarMensagemTemporaria =
@@ -1872,7 +1524,6 @@
         'online',
         function () {
             reconnectAttempts = 0;
-
             connect();
         }
     );
@@ -1888,8 +1539,7 @@
         'focus',
         function () {
             if (
-                !window
-                    .AppWebSocket
+                !window.AppWebSocket
                     .isConnected()
             ) {
                 connect();
@@ -1909,8 +1559,7 @@
         'pageshow',
         function () {
             if (
-                !window
-                    .AppWebSocket
+                !window.AppWebSocket
                     .isConnected()
             ) {
                 connect();
@@ -1930,16 +1579,14 @@
         'visibilitychange',
         function () {
             if (
-                document
-                    .visibilityState !==
+                document.visibilityState !==
                 'visible'
             ) {
                 return;
             }
 
             if (
-                !window
-                    .AppWebSocket
+                !window.AppWebSocket
                     .isConnected()
             ) {
                 connect();
@@ -1958,21 +1605,16 @@
     function aplicarPreferenciasEmTempoReal() {
         aplicarPreferenciasGuardadas();
 
-        if (
-            window.disableLocationTracking
-        ) {
+        if (window.disableLocationTracking) {
             stopLocationTracking();
             limparMapaLocal();
         } else {
-            if (
-                window.margotInvisible
-            ) {
+            if (window.margotInvisible) {
                 removerPropriaFotoDoMapa();
             }
 
             if (
-                window
-                    .AppWebSocket
+                window.AppWebSocket
                     .isConnected()
             ) {
                 startLocationTracking();
@@ -1982,9 +1624,7 @@
         }
 
         if (
-            window
-                .AppWebSocket
-                .isConnected()
+            window.AppWebSocket.isConnected()
         ) {
             sendPresenceState();
             return;
@@ -2021,20 +1661,12 @@
     );
 
     $(function () {
-        if (
-            window.disableLocationTracking
-        ) {
+        if (window.disableLocationTracking) {
             limparMapaLocal();
-        } else if (
-            window.margotInvisible
-        ) {
+        } else if (window.margotInvisible) {
             removerPropriaFotoDoMapa();
         }
 
         connect();
     });
-})(
-    window,
-    document,
-    jQuery
-);
+})(window, document, jQuery);
