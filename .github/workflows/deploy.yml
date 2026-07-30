@@ -18,9 +18,26 @@ jobs:
           key: ${{ secrets.VM_SSH_KEY }}
           script: |
             set -e
-            cd /var/www/app
-            git fetch --prune origin main
-            git reset --hard origin/main
+
+            APP_DIR=/var/www/app
+
+            echo "Utilizador: $(whoami)"
+            echo "Diretório inicial: $(pwd)"
+            ls -ld "$APP_DIR" "$APP_DIR/.git"
+
+            test -d "$APP_DIR/.git" || {
+              echo "ERRO: $APP_DIR não é um repositório Git acessível."
+              exit 1
+            }
+
+            git config --global --add safe.directory "$APP_DIR"
+            git -C "$APP_DIR" fetch --prune origin main
+            git -C "$APP_DIR" reset --hard origin/main
+
+            cd "$APP_DIR"
+
             composer install --no-dev --optimize-autoloader
-            test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
-            echo "Deploy concluído no commit $(git rev-parse --short HEAD)"
+
+            php -l websocket-server.php
+            sudo systemctl restart app-websocket
+            sudo systemctl reload apache2
