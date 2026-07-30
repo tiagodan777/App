@@ -11,6 +11,7 @@
     <meta name="theme-color" content="#ffffff">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
+    <meta name="csrf-token" content="{{ csrf_token }}">
 
     <meta
         name="apple-mobile-web-app-status-bar-style"
@@ -46,6 +47,7 @@
 
 <body>
     <script src="{{ doc_root }}js/jquery-4.0.0.js"></script>
+    <script src="{{ doc_root }}js/csrf.js?v=1"></script>
 
     {% if session.id %}
         <script src="{{ doc_root }}js/preferencias.js?v=2"></script>
@@ -317,7 +319,7 @@
         </script>
 
         <script src="{{ doc_root }}js/index-notificacoes.js?v=7"></script>
-        <script src="{{ doc_root }}js/websocket.js?v=13"></script>
+        <script src="{{ doc_root }}js/websocket.js?v=14"></script>
         <script src="{{ doc_root }}js/menu-invisivel.js?v=2"></script>
     {% endif %}
 </body>

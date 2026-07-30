@@ -1,5 +1,8 @@
 <?php
+
 require_once '../src/bootstrap.php';
+
+require_csrf_token();
 
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $path = mb_strtolower($path);
@@ -15,10 +18,13 @@ if ($parts[0] != 'admin') {
     $page = 'admin/' . ($parts[1] ?? '');
     $id = $parts[2] ?? null;
 }
+
 $id = filter_var($id);
 
 $php_page = APP_ROOT . '/src/pages/' . $page . '.php';
+
 if (!file_exists($php_page)) {
     $php_page = APP_ROOT . '/src/pages/error-page.php';
 }
+
 include $php_page;
