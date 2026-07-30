@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block content %}
-<form action="{{ doc_root }}create-account" method="post" enctype="multipart/form-data" id="create-account-form"></form>
+<form action="{{ doc_root }}create-account" method="post" enctype="multipart/form-data" id="create-account-form" novalidate></form>
 
 <script>
 window.createAccountConfig = {
@@ -22,7 +22,7 @@ window.createAccountConfig = {
 
 <script src="{{ doc_root }}js/preferencias.js?v=1"></script>
 <script src="{{ doc_root }}js/create-account-fotos.js?v=6"></script>
-<script src="{{ doc_root }}js/create-account-permissoes.js?v=2"></script>
-<script src="{{ doc_root }}js/create-account-navegacao.js?v=9"></script>
+<script src="{{ doc_root }}js/create-account-permissoes.js?v=3"></script>
+<script src="{{ doc_root }}js/create-account-navegacao.js?v=10"></script>
 <script src="{{ doc_root }}js/create-account-autocompletar.js?v=3"></script>
 {% endblock %}

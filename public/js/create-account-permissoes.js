@@ -76,8 +76,8 @@
         var resolvido = API.foiEscolhida('localizacao') && API.foiEscolhida('notificacoes');
 
         $('#permissoes-proximo')
-            .toggleClass('desativado', !resolvido)
-            .attr('aria-disabled', String(!resolvido));
+            .removeClass('desativado')
+            .attr('aria-disabled', 'false');
 
         if (resolvido) definirErro('');
     }
