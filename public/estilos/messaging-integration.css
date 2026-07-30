@@ -43,9 +43,9 @@
 .heys-avisos {
     position: fixed;
     z-index: 170;
-    top: calc(env(safe-area-inset-top, 0px) + 14px);
-    right: max(14px, env(safe-area-inset-right, 0px));
-    left: max(14px, env(safe-area-inset-left, 0px));
+    top: calc(env(safe-area-inset-top, 0px) + 10px);
+    right: max(12px, env(safe-area-inset-right, 0px));
+    left: max(12px, env(safe-area-inset-left, 0px));
     width: auto;
     transform: none;
     pointer-events: none;
@@ -57,28 +57,47 @@
 
 .mensagem-aviso,
 .hey-aviso {
-    width: min(100%, 420px);
-    min-height: 72px;
-    padding: 10px 14px 10px 10px;
+    width: min(100%, 368px);
+    min-height: 60px;
+    padding: 8px 12px 8px 8px;
     overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 23px;
-    background: rgba(28, 29, 34, 0.94);
-    color: #fff !important;
-    box-shadow: 0 14px 38px rgba(0, 0, 0, 0.26);
+    border: 1px solid rgba(118, 87, 255, 0.24);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.94);
+    color: #17151d !important;
+    box-shadow:
+        inset 4px 0 0 #7657ff,
+        0 10px 28px rgba(55, 38, 120, 0.18),
+        0 2px 8px rgba(0, 0, 0, 0.08);
     opacity: 0;
-    transform: translateY(-18px) scale(0.96);
+    transform: translateY(-12px) scale(0.98);
     transition:
-        opacity 220ms ease,
-        transform 260ms cubic-bezier(.2, .8, .2, 1);
-    -webkit-backdrop-filter: blur(18px);
-    backdrop-filter: blur(18px);
+        opacity 170ms ease,
+        transform 220ms cubic-bezier(.2, .8, .2, 1);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    backdrop-filter: blur(24px) saturate(160%);
     pointer-events: auto;
     text-decoration: none !important;
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: 11px;
+}
+
+.hey-aviso-sucesso {
+    border-color: rgba(32, 168, 100, 0.28);
+    box-shadow:
+        inset 4px 0 0 #20a864,
+        0 10px 28px rgba(20, 117, 70, 0.16),
+        0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.hey-aviso-erro {
+    border-color: rgba(209, 38, 61, 0.26);
+    box-shadow:
+        inset 4px 0 0 #d1263d,
+        0 10px 28px rgba(154, 27, 45, 0.16),
+        0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .mensagem-aviso.visivel,
@@ -94,35 +113,39 @@
 
 .hey-aviso-link,
 .hey-aviso-link:hover {
-    background: rgba(28, 29, 34, 0.94);
-    color: #fff !important;
+    background: rgba(255, 255, 255, 0.94);
+    color: #17151d !important;
     text-decoration: none !important;
 }
 
 .mensagem-aviso-foto,
 .hey-aviso-foto,
 .hey-aviso-simbolo {
-    flex: 0 0 50px;
-    width: 50px;
-    height: 50px;
-    border-radius: 16px;
+    flex: 0 0 42px;
+    width: 42px;
+    height: 42px;
+    border: 1px solid rgba(118, 87, 255, 0.14);
+    border-radius: 13px;
     object-fit: cover;
-    background: #444;
+    background: #eeebff;
 }
 
 .hey-aviso-simbolo {
-    background: rgba(118, 87, 255, 0.24);
-    color: #c9bcff;
+    background: #eeebff;
+    color: #6849df;
+    font-size: 18px;
 }
 
 .hey-aviso-sucesso .hey-aviso-simbolo {
-    background: rgba(32, 168, 100, 0.24);
-    color: #78e0ac;
+    border-color: rgba(32, 168, 100, 0.18);
+    background: #e7f7ef;
+    color: #168753;
 }
 
 .hey-aviso-erro .hey-aviso-simbolo {
-    background: rgba(209, 38, 61, 0.24);
-    color: #ff8998;
+    border-color: rgba(209, 38, 61, 0.17);
+    background: #fdecef;
+    color: #c92f42;
 }
 
 .mensagem-aviso-corpo,
@@ -137,8 +160,9 @@
     display: block;
     margin: 0 0 3px;
     overflow: hidden;
-    color: #fff !important;
-    font-size: 14px;
+    color: #17151d !important;
+    font-size: 13.5px;
+    font-weight: 800;
     line-height: 1.25;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -149,11 +173,11 @@
     margin: 0;
     display: -webkit-box;
     overflow: hidden;
-    color: rgba(255, 255, 255, 0.8) !important;
-    font-size: 13px;
-    line-height: 1.35;
+    color: #68646f !important;
+    font-size: 12.5px;
+    line-height: 1.3;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 1;
 }
 
 .mini-menu > header {
