@@ -61,14 +61,13 @@
     min-height: 60px;
     padding: 8px 12px 8px 8px;
     overflow: hidden;
-    border: 1px solid rgba(118, 87, 255, 0.24);
+    border: 1px solid rgba(0, 0, 0, 0.08);
     border-radius: 18px;
-    background: rgba(255, 255, 255, 0.94);
+    background: rgba(250, 250, 252, 0.96);
     color: #17151d !important;
     box-shadow:
-        inset 4px 0 0 #7657ff,
-        0 10px 28px rgba(55, 38, 120, 0.18),
-        0 2px 8px rgba(0, 0, 0, 0.08);
+        0 10px 30px rgba(0, 0, 0, 0.14),
+        inset 0 1px 0 rgba(255, 255, 255, 0.95);
     opacity: 0;
     transform: translateY(-12px) scale(0.98);
     transition:
@@ -84,22 +83,6 @@
     gap: 11px;
 }
 
-.hey-aviso-sucesso {
-    border-color: rgba(32, 168, 100, 0.28);
-    box-shadow:
-        inset 4px 0 0 #20a864,
-        0 10px 28px rgba(20, 117, 70, 0.16),
-        0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.hey-aviso-erro {
-    border-color: rgba(209, 38, 61, 0.26);
-    box-shadow:
-        inset 4px 0 0 #d1263d,
-        0 10px 28px rgba(154, 27, 45, 0.16),
-        0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
 .mensagem-aviso.visivel,
 .hey-aviso.visivel {
     opacity: 1;
@@ -113,7 +96,7 @@
 
 .hey-aviso-link,
 .hey-aviso-link:hover {
-    background: rgba(255, 255, 255, 0.94);
+    background: rgba(250, 250, 252, 0.96);
     color: #17151d !important;
     text-decoration: none !important;
 }
@@ -124,7 +107,7 @@
     flex: 0 0 42px;
     width: 42px;
     height: 42px;
-    border: 1px solid rgba(118, 87, 255, 0.14);
+    border: 1px solid rgba(0, 0, 0, 0.06);
     border-radius: 13px;
     object-fit: cover;
     background: #eeebff;
