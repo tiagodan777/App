@@ -662,7 +662,7 @@ if ($metodo !== 'POST') {
                             ?? ''
                         ),
                     $membroAtual['gostos']
-                    ?? []
+                            ?? []
                 )
             ),
 
@@ -1220,7 +1220,6 @@ $fotosAlteradas =
 
 $transacaoAberta = false;
 $nomesFotosApagar = [];
-$tokenLogin = '';
 
 try {
     $db->beginTransaction();
@@ -1229,68 +1228,113 @@ try {
     if ($modoEdicao) {
         $membroId = $membroIdSessao;
 
-        if ($alteracoes && !$cms->getMember()->update($membroId, $alteracoes)) {
-            throw new \DomainException('DUPLICADO');
+        if (
+            $alteracoes &&
+            !$cms
+                ->getMember()
+                ->update(
+                    $membroId,
+                    $alteracoes
+                )
+        ) {
+            throw new \DomainException(
+                'DUPLICADO'
+            );
         }
     } else {
-        $membroId = $cms->getMember()->create($alteracoes);
+        $membroId =
+            $cms
+                ->getMember()
+                ->create(
+                    $alteracoes
+                );
 
         if ($membroId === false) {
-            throw new \DomainException('DUPLICADO');
+            throw new \DomainException(
+                'DUPLICADO'
+            );
         }
 
         $membroId = (string) $membroId;
     }
 
     if ($fotosAlteradas) {
-        $nomesFotosApagar = sincronizarFotosCreateAccount($db, $membroId, $imagens, $ordemFotos, $fotosRemover);
-    }
-
-    if (!$modoEdicao) {
-        $tokenLogin = $cms->getToken()->create($membroId, 'login');
+        $nomesFotosApagar =
+            sincronizarFotosCreateAccount(
+                $db,
+                $membroId,
+                $imagens,
+                $ordemFotos,
+                $fotosRemover
+            );
     }
 
     $db->commit();
     $transacaoAberta = false;
 } catch (\DomainException $erro) {
-    if ($transacaoAberta && $db->inTransaction()) {
+    if (
+        $transacaoAberta &&
+        $db->inTransaction()
+    ) {
         $db->rollBack();
     }
 
-    apagarImagensTemporariasCreateAccount($imagens, $pathImagensTemporarias);
+    apagarImagensTemporariasCreateAccount(
+        $imagens,
+        $pathImagensTemporarias
+    );
 
     responderJsonCreateAccount([
         'success' => false,
         'erros' => [
-            'email' => 'O email ou o número de telefone já está a ser usado.'
+            'email' =>
+                'O email ou o número de telefone já está a ser usado.'
         ]
     ], 409);
 } catch (\LengthException $erro) {
-    if ($transacaoAberta && $db->inTransaction()) {
+    if (
+        $transacaoAberta &&
+        $db->inTransaction()
+    ) {
         $db->rollBack();
     }
 
-    apagarImagensTemporariasCreateAccount($imagens, $pathImagensTemporarias);
+    apagarImagensTemporariasCreateAccount(
+        $imagens,
+        $pathImagensTemporarias
+    );
 
     responderJsonCreateAccount([
         'success' => false,
         'erros' => [
-            'imagens' => $erro->getMessage()
+            'imagens' =>
+                $erro->getMessage()
         ]
     ], 422);
 } catch (\Throwable $erro) {
-    if ($transacaoAberta && $db->inTransaction()) {
+    if (
+        $transacaoAberta &&
+        $db->inTransaction()
+    ) {
         $db->rollBack();
     }
 
-    apagarImagensTemporariasCreateAccount($imagens, $pathImagensTemporarias);
+    apagarImagensTemporariasCreateAccount(
+        $imagens,
+        $pathImagensTemporarias
+    );
 
-    $referencia = bin2hex(random_bytes(4));
+    $referencia =
+        bin2hex(
+            random_bytes(4)
+        );
 
     error_log(sprintf(
         '[create-account:%s] %s: %s em %s:%d%s%s',
         $referencia,
-        $modoEdicao ? 'Erro ao atualizar perfil' : 'Erro ao criar conta',
+        $modoEdicao
+            ? 'Erro ao atualizar perfil'
+            : 'Erro ao criar conta',
         $erro->getMessage(),
         $erro->getFile(),
         $erro->getLine(),
@@ -1300,50 +1344,83 @@ try {
 
     responderJsonCreateAccount([
         'success' => false,
-        'message' => ($modoEdicao ? 'Ocorreu um erro ao guardar as alterações.' : 'Ocorreu um erro ao criar a conta.') . ' Referência: ' . $referencia
+        'message' =>
+            (
+                $modoEdicao
+                    ? 'Ocorreu um erro ao guardar as alterações.'
+                    : 'Ocorreu um erro ao criar a conta.'
+            ) .
+            ' Referência: ' .
+            $referencia
     ], 500);
 }
 
 if ($nomesFotosApagar) {
     try {
-        apagarFicheirosDePerfil($nomesFotosApagar);
+        apagarFicheirosDePerfil(
+            $nomesFotosApagar
+        );
     } catch (\Throwable $erro) {
-        error_log('[create-account] Não foi possível apagar ficheiros antigos: ' . $erro->getMessage());
+        error_log(
+            '[create-account] Não foi possível apagar ficheiros antigos: ' .
+            $erro->getMessage()
+        );
     }
 }
 
 if ($imagens) {
     try {
-        iniciarWorkerFotosCreateAccount($membroId);
+        iniciarWorkerFotosCreateAccount(
+            $membroId
+        );
     } catch (\Throwable $erro) {
-        error_log('[create-account] Não foi possível iniciar o worker das fotografias: ' . $erro->getMessage());
+        error_log(
+            '[create-account] Não foi possível iniciar o worker das fotografias: ' .
+            $erro->getMessage()
+        );
     }
 }
 
 if ($modoEdicao) {
     responderJsonCreateAccount([
         'success' => true,
-        'redirect' => urlCreateAccount('profile/' . rawurlencode($membroId))
+        'redirect' =>
+            urlCreateAccount(
+                'profile/' .
+                rawurlencode($membroId)
+            )
     ]);
 }
 
 $sessaoCriada = false;
 
 try {
-    $sessaoCriada = $cms->getSession()->create(membro_id: $membroId);
+    $sessaoCriada =
+        $cms
+            ->getSession()
+            ->create(
+                membro_id: $membroId
+            );
 } catch (\Throwable $erro) {
-    error_log('[create-account] Conta criada, mas não foi possível iniciar a sessão: ' . $erro->getMessage());
+    error_log(
+        '[create-account] Conta criada, mas não foi possível iniciar a sessão: ' .
+        $erro->getMessage()
+    );
 }
 
 if (!$sessaoCriada) {
     responderJsonCreateAccount([
         'success' => true,
-        'redirect' => urlCreateAccount('login?sucesso=conta-criada'),
-        'message' => 'A conta foi criada. Inicia sessão para continuar.'
+        'redirect' =>
+            urlCreateAccount(
+                'login?sucesso=conta-criada'
+            ),
+        'message' =>
+            'A conta foi criada. Inicia sessão para continuar.'
     ]);
 }
 
 responderJsonCreateAccount([
     'success' => true,
-    'redirect' => urlCreateAccount('index/?loginToken=' . urlencode($tokenLogin))
+    'redirect' => urlCreateAccount('index/')
 ]);
