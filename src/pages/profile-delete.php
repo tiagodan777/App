@@ -57,8 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 '<p>Recebemos um pedido para eliminar definitivamente a tua conta Margot.</p>' .
                 '<p><a href="' . $linkSeguro . '">Confirmar eliminação da conta</a></p>' .
                 '<p>Esta ligação é válida durante 20 minutos e só pode ser utilizada uma vez.</p>' .
-                '<p>Se não fizeste este pedido, ignora este email. A tua conta não será eliminada.</p>' .
-                '<p>Ligação: ' . $linkSeguro . '</p>';
+                '<p>Se não fizeste este pedido, ignora este email. A tua conta não será eliminada.</p>'
             $mail = new Email($email_config);
             $enviado = $mail->sendEmail(
                 (string) $email_config['admin_email'],
