@@ -1,28 +1,53 @@
 {% extends 'layout.html' %}
-{% block title %} {{ membro.nome }} {% endblock %}
+
+{% block title %}Eliminar conta | Margot{% endblock %}
+
 {% block styles %}
-    <link rel="stylesheet" href="{{ doc_root }}estilos/profile-delete.css">
+<link rel="stylesheet" href="{{ doc_root }}estilos/profile-delete.css?v=2">
 {% endblock %}
+
 {% block content %}
 <main id="profile-delete">
     <section id="apagar">
-        {% if sent == false %}
-            <!--<input type="file" name="message" id="message" value="{{ message }}">-->
-            <h1>Apagar Perfil</h1>
+        {% if sent %}
+            <h1>Confirma no teu email</h1>
             <section class="dados" id="dados-apagar">
-                <p>Confirma para apagares o teu perfil</p>
-                <img src="{{ doc_root }}imagens/fotos-perfil/{{ membro.fotos[0]['nome_arquivo'] }}" alt="Foto de perfil de {{ membro.primeiro_nome }}" id="foto-perfil">
+                <p role="status" aria-live="polite">
+                    Enviámos uma ligação para {{ membro.email|e }}. A ligação é válida durante 20 minutos.
+                </p>
+                <p>A tua conta continua ativa até confirmares através dessa ligação.</p>
+                <p>Se não encontrares o email, verifica a pasta de spam.</p>
             </section>
             <section class="opcoes" id="opcoes-apagar">
-                <form action="{{ doc_root }}profile-delete/{{ membro.id }}" method="post">
-                    <a href="{{ doc_root }}edit-profile/{{ membro.id }}">Cancelar</a>
-                    <input type="hidden" name="delete" value="1">
-                    <input type="submit" value="Confirmar">
+                <a href="{{ doc_root }}settings">Voltar às definições</a>
+            </section>
+        {% else %}
+            <h1>Eliminar conta</h1>
+            <section class="dados" id="dados-apagar">
+                <img src="{{ doc_root }}imagens/fotos-perfil/{{ membro.fotos[0].nome_arquivo|e('html_attr') }}" alt="Foto de perfil de {{ membro.primeiro_nome|e('html_attr') }}" id="foto-perfil">
+                <p>Esta ação elimina definitivamente:</p>
+                <ul>
+                    <li>o teu perfil e informações pessoais;</li>
+                    <li>as tuas fotografias;</li>
+                    <li>as tuas mensagens e ficheiros enviados;</li>
+                    <li>a tua localização e preferências;</li>
+                    <li>os teus tokens e acessos à conta.</li>
+                </ul>
+                <p>Depois da confirmação, não será possível recuperar a conta.</p>
+                {% if mensagem_erro %}
+                    <p id="delete-account-erro" role="alert" aria-live="assertive">
+                        {{ mensagem_erro|e }}
+                    </p>
+                {% endif %}
+            </section>
+            <section class="opcoes" id="opcoes-apagar">
+                <form action="{{ doc_root }}profile-delete" method="post">
+                    <input type="hidden" name="_csrf" value="{{ csrf_token|e('html_attr') }}">
+                    <a href="{{ doc_root }}settings">Cancelar</a>
+                    <input type="submit" value="Enviar confirmação por email">
                 </form>
             </section>
-            {% else %}
-                <p>Foi-te enviado um email para confirmares que desejas apagar a tua conta</p>
-            {% endif %}
+        {% endif %}
     </section>
 </main>
 {% endblock %}
