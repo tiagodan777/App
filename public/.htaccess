@@ -10,19 +10,19 @@ RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^ index.php [L]
 
-# Impede listagem do conteúdo das pastas
+# Impede a listagem do conteúdo das pastas
 Options -Indexes
 
-# Rejeita o pedido antes de chegar ao PHP se exceder 110 MB
+# Rejeita pedidos superiores a 110 MB antes de chegarem ao PHP
 LimitRequestBody 115343360
 
 # Obriga o navegador a utilizar HTTPS
 Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
 
-# Impede a Margot de ser aberta dentro de frames de outros sites
+# Impede a Margot de ser aberta dentro de frames
 Header always set X-Frame-Options "DENY"
 
-# Impede o navegador de tentar adivinhar tipos de ficheiro
+# Impede o navegador de adivinhar tipos de ficheiro
 Header always set X-Content-Type-Options "nosniff"
 
 # Não envia o URL da Margot para outros sites
@@ -38,5 +38,5 @@ Header always set Cross-Origin-Resource-Policy "same-origin"
 # Bloqueia políticas antigas do Flash/Adobe
 Header always set X-Permitted-Cross-Domain-Policies "none"
 
-# Apenas permite código, imagens, ligações e recursos necessários à Margot
-Header always set Content-Security-Policy "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self' data:; connect-src 'self' wss://margot-app.com; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests"
+# Permite apenas os recursos necessários à Margot e a fonte Alfa Slab One
+Header always set Content-Security-Policy "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' wss://margot-app.com; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests"
