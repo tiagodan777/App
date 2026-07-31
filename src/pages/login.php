@@ -1,9 +1,9 @@
 <?php
-
 declare(strict_types=1);
 
 $utilizador = '';
 $mensagemErro = '';
+$emailPendente = false;
 $sucesso = (string) ($_GET['sucesso'] ?? '');
 
 if ($session->id !== '') {
@@ -18,21 +18,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($utilizador === '' || $password === '') {
         $mensagemErro = 'Preenche o email ou telefone e a palavra-passe.';
     } else {
-        /*
-         * O limite por IP é relativamente alto porque várias pessoas podem
-         * estar na mesma rede Wi-Fi durante um evento.
-         */
         $limiteIp = consumirLimiteRequisicoes(
             'login-ip',
             chaveLimiteRequisicoes(enderecoCliente()),
-            100,
+            30,
             15 * 60
         );
 
-        /*
-         * O limite por conta impede tentativas repetidas contra o mesmo
-         * email ou telefone, mesmo quando vêm de endereços IP diferentes.
-         */
         $limiteConta = consumirLimiteRequisicoes(
             'login-conta',
             chaveLimiteRequisicoes($utilizador),
@@ -55,19 +47,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ? 'Fizeste demasiadas tentativas. Tenta novamente dentro de 1 minuto.'
                 : 'Fizeste demasiadas tentativas. Tenta novamente dentro de ' . $minutos . ' minutos.';
         } else {
-            $membro = $cms->getMember()->login($utilizador, $password);
+            $membro = $cms->getMember()->login(
+                $utilizador,
+                $password
+            );
 
-            if ($membro && $session->create(membro_id: (string) $membro['id'])) {
-                if ($lembrar) {
-                    $cookie->create($membro);
+            if ($membro) {
+                $estadoVerificacao = $db->runSQL(
+                    'SELECT email_verificado_em
+                     FROM membros
+                     WHERE id = :id
+                     LIMIT 1',
+                    ['id' => (string) $membro['id']]
+                )->fetch();
+
+                if (
+                    !$estadoVerificacao ||
+                    empty($estadoVerificacao['email_verificado_em'])
+                ) {
+                    http_response_code(403);
+                    $emailPendente = true;
+                    $mensagemErro = 'Confirma o teu email antes de entrares.';
+                } elseif (
+                    $session->create(
+                        membro_id: (string) $membro['id']
+                    )
+                ) {
+                    if ($lembrar) {
+                        $cookie->create($membro);
+                    } else {
+                        $cookie->delete();
+                    }
+
+                    redirect(DOC_ROOT . 'index/');
                 } else {
-                    $cookie->delete();
+                    $mensagemErro = 'Não foi possível iniciar a sessão. Tenta novamente.';
                 }
-
-                redirect(DOC_ROOT . 'index/');
+            } else {
+                $mensagemErro = 'O email, número de telefone ou palavra-passe não está correto.';
             }
-
-            $mensagemErro = 'O email, número de telefone ou palavra-passe não está correto.';
         }
     }
 }
@@ -75,5 +93,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 echo $twig->render('login.html', [
     'utilizador' => $utilizador,
     'mensagem_erro' => $mensagemErro,
+    'email_pendente' => $emailPendente,
     'sucesso' => $sucesso
 ]);
