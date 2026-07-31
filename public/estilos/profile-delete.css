@@ -1,94 +1,146 @@
 @charset "UTF-8";
 
 main#profile-delete {
-    width: 100vw;
-
+    width: 100%;
+    min-height: 100dvh;
+    padding: calc(28px + env(safe-area-inset-top, 0px)) 18px calc(120px + env(safe-area-inset-bottom, 0px));
     display: flex;
-    flex-flow: column nowrap;
-    justify-content: space-evenly;
-    align-items: center;
-}   
-
-main#profile-delete > section#apagar {
-    width: 500px;
-    height: 600px;
-
-    display: flex;
-    flex-flow: column nowrap;
-    justify-content: space-evenly;
-    align-items: center;
+    justify-content: center;
+    align-items: flex-start;
+    box-sizing: border-box;
 }
 
-main#profile-delete > section#apagar > h1 {
+#profile-delete #apagar {
+    width: min(100%, 520px);
+    padding: 28px 22px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 24px;
+    background: #fff;
+    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.08);
+    box-sizing: border-box;
+}
+
+#profile-delete h1 {
+    margin: 0 0 24px;
+    color: #17171a;
+    font-size: clamp(28px, 8vw, 40px);
+    line-height: 1.05;
     text-align: center;
-    font-size: 2.5em;
-    font-weight: bold;
-    font-family: 'Alfa Slab One';
-} 
-
-main#profile-delete > section#apagar > section.dados > p {
-    font-weight: bold;
-    color: var(--cor4);
-    margin-top: 25px;
-    margin-bottom: 20px;
-    margin-left: 0px;
 }
 
-main#profile-delete > section#apagar > section#dados-apagar {
+#dados-apagar {
     display: flex;
-    flex-flow: column nowrap;
-    justify-items: center;
+    flex-direction: column;
     align-items: center;
 }
 
-main#profile-delete > section#apagar > section.dados > img {
-    width: 150px;
-    height: 150px;
-    margin-top: 20px;
+#dados-apagar #foto-perfil {
+    width: 112px;
+    height: 112px;
+    margin: 0 0 20px;
     border-radius: 50%;
-    align-self: center;
+    background: #ececf0;
+    object-fit: cover;
 }
 
-main#profile-delete > section#apagar > section.opcoes > form {
-    width: 500px;
-    height: 100px;
+#dados-apagar p {
+    width: 100%;
+    margin: 10px 0;
+    color: #3f3f46;
+    font-size: 15px;
+    line-height: 1.5;
+}
 
+#dados-apagar ul {
+    width: 100%;
+    margin: 4px 0 10px;
+    padding-left: 22px;
+    color: #3f3f46;
+    font-size: 15px;
+    line-height: 1.55;
+    box-sizing: border-box;
+}
+
+#dados-apagar [role="alert"] {
+    padding: 12px 14px;
+    border: 1px solid rgba(207, 38, 75, 0.24);
+    border-radius: 14px;
+    background: rgba(207, 38, 75, 0.08);
+    color: #a81535;
+}
+
+#dados-apagar [role="status"] {
+    padding: 14px;
+    border: 1px solid rgba(40, 163, 95, 0.22);
+    border-radius: 14px;
+    background: rgba(40, 163, 95, 0.08);
+    color: #176c3d;
+}
+
+#opcoes-apagar,
+#opcoes-apagar form {
+    width: 100%;
+    margin-top: 20px;
     display: flex;
-    flex-flow: row nowrap;
-    justify-content: space-around;
+    gap: 12px;
+    justify-content: space-between;
     align-items: center;
 }
 
-main#profile-delete > section#apagar > section.opcoes > form > a {
+#opcoes-apagar a,
+#opcoes-apagar input[type="submit"] {
+    min-height: 46px;
+    padding: 11px 16px;
+    border: 0;
+    border-radius: 14px;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: center;
     text-decoration: none;
-    color: var(--cor5);
-    background-color: var(--cor2);
-    border-radius: 5px;
-    border: 1px solid transparent;
-    padding: 10px;
-    text-transform: uppercase;
-    font-weight: bold;
-    color: #28a35f;
-}
-
-main#profile-delete > section#apagar > section.opcoes > form > a:hover {
-    background-color: #28a35f;
     cursor: pointer;
+    box-sizing: border-box;
 }
 
-main#profile-delete > section#apagar > section.opcoes > form > input[type="submit"] {
-    text-decoration: none;
-    color: var(--cor5);
-    background-color: var(--cor3);
-    border-radius: 5px;
-    border: 1px solid transparent;
-    padding: 10px;
-    text-transform: uppercase;
-    font-weight: bold;
-    cursor: pointer;
-    color: #cf264b;
+#opcoes-apagar a {
+    background: #f0f0f3;
+    color: #242428;
 }
 
-main#profile-delete > section#apagar > section.opcoes > form > input[type="submit"]:hover {
-    background-color: #cf264b;
+#opcoes-apagar input[type="submit"] {
+    flex: 1;
+    background: #cf264b;
+    color: #fff;
+}
+
+#opcoes-apagar a:focus-visible,
+#opcoes-apagar input[type="submit"]:focus-visible {
+    outline: 3px solid rgba(32, 123, 255, 0.35);
+    outline-offset: 2px;
+}
+
+#opcoes-apagar input[type="submit"]:active,
+#opcoes-apagar a:active {
+    transform: scale(0.98);
+}
+
+@media (max-width: 480px) {
+    main#profile-delete {
+        padding-right: 12px;
+        padding-left: 12px;
+    }
+
+    #profile-delete #apagar {
+        padding: 24px 18px;
+        border-radius: 20px;
+    }
+
+    #opcoes-apagar form {
+        flex-direction: column-reverse;
+    }
+
+    #opcoes-apagar a,
+    #opcoes-apagar input[type="submit"] {
+        width: 100%;
+    }
 }
