@@ -12,6 +12,7 @@ if (!is_file($configFile)) {
 
 require_once $configFile;
 require_once APP_ROOT . '/src/functions.php';
+require_once APP_ROOT . '/src/rate-limit.php';
 require_once APP_ROOT . '/vendor/autoload.php';
 
 if (DEV === false) {
