@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\CMS;
 
+use RuntimeException;
 use Throwable;
 
 final class EmailVerification
@@ -16,27 +17,7 @@ final class EmailVerification
         $this->tokens = new Token($db);
     }
 
-    public function createRequestForMember(string $membroId): array|false
-    {
-        $membroId = trim($membroId);
-
-        if ($membroId === '') {
-            return false;
-        }
-
-        $membro = $this->db->runSQL(
-            'SELECT id, primeiro_nome, email
-             FROM membros
-             WHERE id = :id
-             AND email_verificado_em IS NULL
-             LIMIT 1',
-            ['id' => $membroId]
-        )->fetch();
-
-        return $this->createRequest($membro);
-    }
-
-    public function createRequestForEmail(string $email): array|false
+    public function createRequest(string $email): array|false
     {
         $email = $this->normalizarEmail($email);
 
@@ -45,15 +26,36 @@ final class EmailVerification
         }
 
         $membro = $this->db->runSQL(
-            'SELECT id, primeiro_nome, email
+            'SELECT id, primeiro_nome, email, email_verificado_em
              FROM membros
              WHERE LOWER(TRIM(email)) = :email
-             AND email_verificado_em IS NULL
              LIMIT 1',
             ['email' => $email]
         )->fetch();
 
-        return $this->createRequest($membro);
+        if (
+            !$membro ||
+            !empty($membro['email_verificado_em'])
+        ) {
+            return false;
+        }
+
+        $token = $this->tokens->create(
+            (string) $membro['id'],
+            'email_verification'
+        );
+
+        return [
+            'membro_id' => (string) $membro['id'],
+            'primeiro_nome' => trim((string) $membro['primeiro_nome']),
+            'email' => $this->normalizarEmail((string) $membro['email']),
+            'token' => $token
+        ];
+    }
+
+    public function cancelRequest(string $token): void
+    {
+        $this->tokens->delete($token);
     }
 
     public function verify(string $token): bool
@@ -84,15 +86,19 @@ final class EmailVerification
                 return false;
             }
 
-            $this->db->runSQL(
+            $atualizados = $this->db->runSQL(
                 'UPDATE membros
-                 SET email_verificado_em = COALESCE(
-                    email_verificado_em,
-                    UTC_TIMESTAMP()
-                 )
-                 WHERE id = :id',
+                 SET email_verificado_em = UTC_TIMESTAMP()
+                 WHERE id = :id
+                 AND email_verificado_em IS NULL',
                 ['id' => $membroId]
-            );
+            )->rowCount();
+
+            if ($atualizados !== 1) {
+                throw new RuntimeException(
+                    'Não foi possível confirmar o email.'
+                );
+            }
 
             $this->tokens->deleteForMemberAndPurpose(
                 $membroId,
@@ -105,53 +111,15 @@ final class EmailVerification
 
             return true;
         } catch (Throwable $erro) {
-            if ($gerirTransacao && $this->db->inTransaction()) {
+            if (
+                $gerirTransacao &&
+                $this->db->inTransaction()
+            ) {
                 $this->db->rollBack();
             }
 
             throw $erro;
         }
-    }
-
-    public function isVerified(string $membroId): bool
-    {
-        $membroId = trim($membroId);
-
-        if ($membroId === '') {
-            return false;
-        }
-
-        return $this->db->runSQL(
-            'SELECT email_verificado_em
-             FROM membros
-             WHERE id = :id
-             LIMIT 1',
-            ['id' => $membroId]
-        )->fetchColumn() !== false;
-    }
-
-    public function cancelRequest(string $token): void
-    {
-        $this->tokens->delete($token);
-    }
-
-    private function createRequest(array|false $membro): array|false
-    {
-        if (!$membro) {
-            return false;
-        }
-
-        $token = $this->tokens->create(
-            (string) $membro['id'],
-            'email_verification'
-        );
-
-        return [
-            'membro_id' => (string) $membro['id'],
-            'primeiro_nome' => trim((string) $membro['primeiro_nome']),
-            'email' => $this->normalizarEmail((string) $membro['email']),
-            'token' => $token
-        ];
     }
 
     private function normalizarEmail(string $email): string
