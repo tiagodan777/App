@@ -30,7 +30,10 @@
         href="{{ doc_root }}estilos/style.css?v=11"
     >
 
-    
+    <link
+        rel="stylesheet"
+        href="{{ doc_root }}estilos/create-account.css?v=7"
+    >
 
     {% if session.id %}
         <link
@@ -40,7 +43,7 @@
 
         <link
             rel="stylesheet"
-            href="{{ doc_root }}estilos/messaging-integration.css?v=7"
+            href="{{ doc_root }}estilos/messaging-integration.css?v=8"
         >
     {% endif %}
 
@@ -320,6 +323,7 @@
                 : 'ws://' + window.location.hostname + ':8080';
         </script>
 
+        <script src="{{ doc_root }}js/hey-vibracao.js?v=1"></script>
         <script src="{{ doc_root }}js/index-notificacoes.js?v=7"></script>
         <script src="{{ doc_root }}js/websocket.js?v=15"></script>
         <script src="{{ doc_root }}js/menu-invisivel.js?v=2"></script>
