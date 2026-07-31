@@ -1,7 +1,8 @@
 <?php
+
 define('DEV', false);
-define("ROOT_FOLTER", 'public');
-define("DOC_ROOT", '/');
+define('ROOT_FOLTER', 'public');
+define('DOC_ROOT', '/');
 define('DOMAIN', 'https://margot-app.com/');
 
 $type = 'mysql';
@@ -15,15 +16,30 @@ $password = '';
 $dsn = "$type:host=$server;dbname=$db;port=$port;charset=$charset";
 
 $email_config = [
-    'server'   => 'smtp.sendgrid.net',
-    'port'     => 587,
-    'username' => 'apikey', // literal
-    'password' => '', // a tua nova API key
+    'server' => 'smtp.sendgrid.net',
+    'port' => 587,
+    'username' => 'apikey',
+    'password' => '',
     'security' => 'tls',
     'admin_email' => '',
-    'debug' => (DEV) ? 2 : 0,
+    'debug' => DEV ? 2 : 0,
 ];
 
-define('MEDIA_TYPES', ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic']);
-define('FILE_EXTENSIONS', ['jpeg', 'jpg', 'png', 'gif', 'webp', 'heic']);
-define('MAX_SIZE', '512000000');
+define('MEDIA_TYPES', [
+    'image/jpeg',
+    'image/png',
+    'image/gif',
+    'image/webp',
+    'image/heic'
+]);
+
+define('FILE_EXTENSIONS', [
+    'jpeg',
+    'jpg',
+    'png',
+    'gif',
+    'webp',
+    'heic'
+]);
+
+define('MAX_SIZE', 15 * 1024 * 1024);
