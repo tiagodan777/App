@@ -511,8 +511,7 @@ final class AuthenticatedWebSocket implements MessageComponentInterface
                 'type' => 'notification_not_delivered',
                 'destinatario_id' => $destinatarioId,
                 'message' =>
-                    'Já enviaste um Hey a esta pessoa. ' .
-                    'Podes enviar outro dentro de ' .
+                    'Podes enviar outro Hey dentro de ' .
                     $espera .
                     '.'
             ], JSON_UNESCAPED_UNICODE |
