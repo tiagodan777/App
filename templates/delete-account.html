@@ -1,21 +1,77 @@
-{% extends 'layout.html' %}
-{% block title %} {{ membro.nome }} {% endblock %}
-{% block content %}
-<main id="profile-delete">
-    <section id="apagar">
-        <input type="file" name="message" id="message" value="{{ message }}">
-        <h2>Apagar Perfil</h2>
-        <section class="dados" id="dados-apagar">
-            <p>Confirma para apagares o teu perfil</p>
-            <img src="{{ doc_root }}imagens/fotos-perfil/{{ membro.picture }}" alt="Foto de perfil de {{ membro.forename }}" id="foto-perfil">
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#f7f7f8">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <meta name="robots" content="noindex,nofollow">
+    <meta name="referrer" content="no-referrer">
+    <title>Eliminar conta | Margot</title>
+    <link rel="stylesheet" href="{{ doc_root }}estilos/style.css?v=11">
+    <link rel="stylesheet" href="{{ doc_root }}estilos/profile-delete.css?v=2">
+</head>
+<body>
+    <main id="profile-delete">
+        <section id="apagar">
+            {% if eliminado %}
+                <h1>Conta eliminada</h1>
+                <section class="dados" id="dados-apagar">
+                    <p role="status" aria-live="polite">
+                        A tua conta Margot e os dados associados foram eliminados definitivamente.
+                    </p>
+                    <p>Foi enviado um email a confirmar a eliminação.</p>
+                </section>
+                <section class="opcoes" id="opcoes-apagar">
+                    <a href="{{ doc_root }}create-account">Criar uma nova conta</a>
+                    <a href="{{ doc_root }}login">Voltar ao início</a>
+                </section>
+            {% elseif token_valido and membro %}
+                <h1>Confirma a eliminação</h1>
+                <section class="dados" id="dados-apagar">
+                    <img src="{{ doc_root }}imagens/fotos-perfil/{{ membro.fotos[0].nome_arquivo|e('html_attr') }}" alt="Foto de perfil de {{ membro.primeiro_nome|e('html_attr') }}" id="foto-perfil">
+                    <p>Estás prestes a eliminar definitivamente a conta de <strong>{{ membro.primeiro_nome|e }}</strong>.</p>
+                    <p>O perfil, fotografias, mensagens, ficheiros, localização, preferências e acessos serão eliminados.</p>
+                    <p><strong>Esta ação não pode ser anulada.</strong></p>
+                    {% if mensagem_erro %}
+                        <p id="delete-account-erro" role="alert" aria-live="assertive">
+                            {{ mensagem_erro|e }}
+                        </p>
+                    {% endif %}
+                </section>
+                <section class="opcoes" id="opcoes-apagar">
+                    <form action="{{ doc_root }}delete-account" method="post">
+                        <input type="hidden" name="_csrf" value="{{ csrf_token|e('html_attr') }}">
+                        <input type="hidden" name="token" value="{{ token|e('html_attr') }}">
+                        <label>
+                            <input type="checkbox" name="confirmar_eliminacao" value="1" required>
+                            Compreendo que a eliminação é definitiva
+                        </label>
+                        {% if session.id %}
+                            <a href="{{ doc_root }}settings">Cancelar</a>
+                        {% else %}
+                            <a href="{{ doc_root }}login">Cancelar</a>
+                        {% endif %}
+                        <input type="submit" value="Eliminar definitivamente">
+                    </form>
+                </section>
+            {% else %}
+                <h1>Ligação inválida</h1>
+                <section class="dados" id="dados-apagar">
+                    <p class="mensagem-erro" role="alert">
+                        Esta ligação expirou, já foi utilizada ou não é válida.
+                    </p>
+                    <p>A tua conta não foi eliminada.</p>
+                </section>
+                <section class="opcoes" id="opcoes-apagar">
+                    {% if session.id %}
+                        <a href="{{ doc_root }}profile-delete">Pedir uma nova ligação</a>
+                    {% else %}
+                        <a href="{{ doc_root }}login">Entrar na Margot</a>
+                    {% endif %}
+                </section>
+            {% endif %}
         </section>
-        <section class="opcoes" id="opcoes-apagar">
-            <form action="{{ doc_root }}delete-account" method="post">
-                <a href="{{ doc_root }}edit-profile">Cancelar</a>
-                <input type="hidden" name="delete" value="1">
-                <input type="submit" value="Confirmar">
-            </form>
-        </section>
-    </section>
-</main>
-{% endblock %}
+    </main>
+</body>
+</html>
