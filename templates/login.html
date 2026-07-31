@@ -2,141 +2,65 @@
 <html lang="pt-PT">
 <head>
     <meta charset="UTF-8">
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1, viewport-fit=cover"
-    >
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#f7f7f8">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta
-        name="apple-mobile-web-app-status-bar-style"
-        content="black-translucent"
-    >
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="csrf-token" content="{{ csrf_token }}">
-
-    <link
-        rel="stylesheet"
-        href="{{ doc_root }}estilos/style.css"
-    >
-    <link
-        rel="stylesheet"
-        href="{{ doc_root }}estilos/login.css"
-    >
+    <title>Entrar | Margot</title>
+    <link rel="stylesheet" href="{{ doc_root }}estilos/style.css">
+    <link rel="stylesheet" href="{{ doc_root }}estilos/login.css">
 </head>
-
 <body>
     <main>
         <form action="{{ doc_root }}login" method="post">
-            <input
-                type="hidden"
-                name="_csrf"
-                value="{{ csrf_token|e('html_attr') }}"
-            >
-
+            <input type="hidden" name="_csrf" value="{{ csrf_token|e('html_attr') }}">
             <h1>Entrar</h1>
-
-            {% if sucesso == 'conta-criada' %}
-                <p
-                    class="login-mensagem login-mensagem-sucesso"
-                    role="status"
-                >
+            {% if sucesso == 'confirma-email' %}
+                <p class="login-mensagem login-mensagem-sucesso" role="status" aria-live="polite">
+                    A tua conta foi criada. Enviámos-te uma ligação para confirmares o email.
+                </p>
+            {% elseif sucesso == 'conta-criada' %}
+                <p class="login-mensagem login-mensagem-sucesso" role="status" aria-live="polite">
                     A tua conta foi criada. Já podes iniciar sessão.
                 </p>
             {% endif %}
-
             {% if mensagem_erro %}
-                <p
-                    id="login-erro"
-                    class="login-mensagem login-mensagem-erro"
-                    role="alert"
-                    aria-live="assertive"
-                >
+                <p id="login-erro" class="login-mensagem login-mensagem-erro" role="alert" aria-live="assertive">
                     {{ mensagem_erro|e }}
                 </p>
             {% endif %}
-
+            {% if email_pendente %}
+                <p>
+                    <a href="{{ doc_root }}email-verification-resend">Enviar uma nova ligação de confirmação</a>
+                </p>
+            {% endif %}
             <p>
-                <label for="utilizador">
-                    Email ou Nº de telefone
-                </label>
-
-                <input
-                    type="text"
-                    name="utilizador"
-                    id="utilizador"
-                    value="{{ utilizador|e('html_attr') }}"
-                    autocomplete="username"
-                    {% if mensagem_erro %}
-                        aria-describedby="login-erro"
-                        aria-invalid="true"
-                    {% endif %}
-                    required
-                >
+                <label for="utilizador">Email ou Nº de telefone</label>
+                <input type="text" name="utilizador" id="utilizador" value="{{ utilizador|e('html_attr') }}" autocomplete="username" {% if mensagem_erro %}aria-describedby="login-erro" aria-invalid="true"{% endif %} required>
             </p>
-
             <p>
-                <label for="palavra-passe">
-                    Palavra-passe
-                </label>
-
-                <input
-                    type="password"
-                    name="palavra_passe"
-                    id="palavra-passe"
-                    autocomplete="current-password"
-                    {% if mensagem_erro %}
-                        aria-describedby="login-erro"
-                        aria-invalid="true"
-                    {% endif %}
-                    required
-                >
+                <label for="palavra-passe">Palavra-passe</label>
+                <input type="password" name="palavra_passe" id="palavra-passe" autocomplete="current-password" {% if mensagem_erro %}aria-describedby="login-erro" aria-invalid="true"{% endif %} required>
             </p>
-
             <p class="em-linha">
-                <input
-                    type="checkbox"
-                    name="ver_password"
-                    id="ver-password"
-                >
-
-                <label for="ver-password">
-                    Mostrar palavra-passe
-                </label>
+                <input type="checkbox" name="ver_password" id="ver-password">
+                <label for="ver-password">Mostrar palavra-passe</label>
             </p>
-
             <p class="em-linha">
-                <input
-                    type="checkbox"
-                    name="manter_sessao"
-                    id="manter-sessao"
-                >
-
-                <label for="manter-sessao">
-                    Manter sessão iniciada
-                </label>
+                <input type="checkbox" name="manter_sessao" id="manter-sessao">
+                <label for="manter-sessao">Manter sessão iniciada</label>
             </p>
-
             <input type="submit" value="Entrar">
         </form>
     </main>
-
     <aside>
-        <a
-            href="{{ doc_root }}password-lost"
-            id="esqueci-palavra-passe"
-        >
-            Esqueceste-te da password?
-        </a>
-
-        <a
-            href="{{ doc_root }}create-account"
-            id="registar"
-        >
-            Ainda não te registaste?
-            <span>Cria uma conta</span>
-        </a>
+        <a href="{{ doc_root }}password-lost" id="esqueci-palavra-passe">Esqueceste-te da password?</a>
+        {% if sucesso == 'confirma-email' %}
+            <a href="{{ doc_root }}email-verification-resend">Não recebeste o email?</a>
+        {% endif %}
+        <a href="{{ doc_root }}create-account" id="registar">Ainda não te registaste? <span>Cria uma conta</span></a>
     </aside>
-
     <script src="{{ doc_root }}js/jquery-4.0.0.js"></script>
     <script src="{{ doc_root }}js/csrf.js?v=1"></script>
     <script src="{{ doc_root }}js/login.js"></script>
