@@ -1,7 +1,8 @@
 <?php
-
 declare(strict_types=1);
 
+use App\CMS\EmailVerification;
+use App\Email\Email;
 use App\Validate\Validate;
 
 $pathImagensTemporarias = APP_ROOT . '/public/imagens/fotos-perfil-temp/';
@@ -115,9 +116,7 @@ function prepararPastaFotosCreateAccount(string $pasta): void
             !mkdir($pasta, 0775, true) &&
             !is_dir($pasta)
         ) {
-            throw new \RuntimeException(
-                'Não foi possível criar a pasta.'
-            );
+            throw new \RuntimeException('Não foi possível criar a pasta.');
         }
     } catch (\Throwable $erro) {
         error_log(
@@ -146,10 +145,8 @@ function prepararPastaFotosCreateAccount(string $pasta): void
     }
 }
 
-function receberImagensCreateAccount(
-    string $pasta,
-    array &$erros
-): array {
+function receberImagensCreateAccount(string $pasta, array &$erros): array
+{
     $imagens = [];
     $ficheiros = $_FILES['imagens'] ?? null;
 
@@ -162,8 +159,7 @@ function receberImagensCreateAccount(
     }
 
     if (count($ficheiros['tmp_name']) > 6) {
-        $erros['imagens'] =
-            'Podes adicionar no máximo 6 fotografias.';
+        $erros['imagens'] = 'Podes adicionar no máximo 6 fotografias.';
     }
 
     $extensoesPorMime = [
@@ -208,19 +204,14 @@ function receberImagensCreateAccount(
                 UPLOAD_ERR_INI_SIZE,
                 UPLOAD_ERR_FORM_SIZE =>
                     'Uma das fotografias é demasiado grande.',
-
                 UPLOAD_ERR_PARTIAL =>
                     'Uma das fotografias não foi enviada completamente.',
-
                 UPLOAD_ERR_NO_TMP_DIR =>
                     'O servidor não tem uma pasta temporária disponível.',
-
                 UPLOAD_ERR_CANT_WRITE =>
                     'Não foi possível guardar a fotografia no servidor.',
-
                 UPLOAD_ERR_EXTENSION =>
                     'O envio da fotografia foi interrompido pelo servidor.',
-
                 default =>
                     'Ocorreu um erro ao enviar uma das fotografias.'
             };
@@ -233,25 +224,19 @@ function receberImagensCreateAccount(
             $temp === '' ||
             !is_uploaded_file($temp)
         ) {
-            $erros['imagens'] =
-                'Uma das fotografias recebidas não é válida.';
-
+            $erros['imagens'] = 'Uma das fotografias recebidas não é válida.';
             continue;
         }
 
         if ($tamanho <= 0 || $tamanho > $limite) {
-            $erros['imagens'] =
-                'Uma das fotografias é demasiado grande ou está vazia.';
-
+            $erros['imagens'] = 'Uma das fotografias é demasiado grande ou está vazia.';
             continue;
         }
 
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
 
         if ($finfo === false) {
-            $erros['imagens'] =
-                'Não foi possível verificar uma das fotografias.';
-
+            $erros['imagens'] = 'Não foi possível verificar uma das fotografias.';
             continue;
         }
 
@@ -269,11 +254,6 @@ function receberImagensCreateAccount(
             continue;
         }
 
-        /*
-         * O Safari pode converter HEIC para JPEG sem alterar
-         * corretamente o nome do ficheiro. Por isso, usamos
-         * a extensão correspondente ao MIME real.
-         */
         $nomeBase = pathinfo(
             $nomeOriginal,
             PATHINFO_FILENAME
@@ -464,10 +444,6 @@ function sincronizarFotosCreateAccount(
             );
         }
 
-        /*
-         * Evita colisões caso exista um índice único
-         * em (membro_id, ordem).
-         */
         $db->runSQL(
             'UPDATE fotos_perfil
              SET ordem = COALESCE(ordem, 0) + 1000
@@ -521,9 +497,8 @@ function sincronizarFotosCreateAccount(
     }
 }
 
-function iniciarWorkerFotosCreateAccount(
-    string $membroId
-): void {
+function iniciarWorkerFotosCreateAccount(string $membroId): void
+{
     $worker =
         APP_ROOT .
         '/src/pages/profile-image-worker.php';
@@ -566,10 +541,6 @@ function iniciarWorkerFotosCreateAccount(
             );
         }
     } catch (\Throwable $erro) {
-        /*
-         * O perfil já foi guardado. Uma falha no arranque
-         * do worker não deve devolver um falso erro ao browser.
-         */
         error_log(
             'Erro ao iniciar o worker das fotografias: ' .
             $erro->getMessage()
@@ -626,34 +597,28 @@ if ($metodo !== 'POST') {
                     $membroAtual['primeiro_nome']
                     ?? ''
                 ),
-
             'ultimo_nome' =>
                 (string) (
                     $membroAtual['ultimo_nome']
                     ?? ''
                 ),
-
             'dia' =>
                 $nascimento
                     ? $nascimento->format('d')
                     : '',
-
             'mes' =>
                 $nascimento
                     ? $nascimento->format('m')
                     : '01',
-
             'ano' =>
                 $nascimento
                     ? $nascimento->format('Y')
                     : '',
-
             'genero' =>
                 (string) (
                     $membroAtual['genero']
                     ?? ''
                 ),
-
             'gostos' => array_values(
                 array_map(
                     static fn(array $gosto): string =>
@@ -662,28 +627,24 @@ if ($metodo !== 'POST') {
                             ?? ''
                         ),
                     $membroAtual['gostos']
-                            ?? []
+                    ?? []
                 )
             ),
-
             'objetivo' =>
                 (string) (
                     $membroAtual['objetivo']
                     ?? ''
                 ),
-
             'sobre_ti' =>
                 (string) (
                     $membroAtual['bio']
                     ?? ''
                 ),
-
             'telefone' =>
                 (string) (
                     $membroAtual['telefone']
                     ?? ''
                 ),
-
             'email' =>
                 (string) (
                     $membroAtual['email']
@@ -710,16 +671,13 @@ if ($metodo !== 'POST') {
             $fotosExistentes[] = [
                 'id' =>
                     (string) $foto['id'],
-
                 'nome' =>
                     $nome,
-
                 'url' =>
                     urlCreateAccount(
                         'imagens/fotos-perfil-originais/' .
                         rawurlencode($nome)
                     ),
-
                 'fallback' =>
                     urlCreateAccount(
                         'imagens/fotos-perfil/' .
@@ -734,18 +692,14 @@ if ($metodo !== 'POST') {
         [
             'modo_edicao' =>
                 $modoEdicao,
-
             'membro_id_edicao' =>
                 $modoEdicao
                     ? $membroIdSessao
                     : '',
-
             'dados_iniciais' =>
                 $dadosIniciais,
-
             'fotos_existentes' =>
                 $fotosExistentes,
-
             'campos_url' =>
                 urlCreateAccount(
                     'create-account-campos' .
@@ -755,7 +709,6 @@ if ($metodo !== 'POST') {
                             : ''
                     )
                 ),
-
             'perfil_url' =>
                 $modoEdicao
                     ? urlCreateAccount(
@@ -857,7 +810,6 @@ $membro = [
                 ?? ''
             )
         ),
-
     'ultimo_nome' =>
         trim(
             (string) (
@@ -865,25 +817,21 @@ $membro = [
                 ?? ''
             )
         ),
-
     'dia' =>
         (string) (
             $_POST['dia']
             ?? ''
         ),
-
     'mes' =>
         (string) (
             $_POST['mes']
             ?? ''
         ),
-
     'ano' =>
         (string) (
             $_POST['ano']
             ?? ''
         ),
-
     'genero' =>
         trim(
             (string) (
@@ -891,13 +839,11 @@ $membro = [
                 ?? ''
             )
         ),
-
     'gostos' =>
         normalizarListaCreateAccount(
             $_POST['gostos']
             ?? []
         ),
-
     'objetivo' =>
         trim(
             (string) (
@@ -905,7 +851,6 @@ $membro = [
                 ?? ''
             )
         ),
-
     'sobre_ti' =>
         trim(
             (string) (
@@ -913,7 +858,6 @@ $membro = [
                 ?? ''
             )
         ),
-
     'telefone' =>
         trim(
             (string) (
@@ -921,7 +865,6 @@ $membro = [
                 ?? ''
             )
         ),
-
     'email' =>
         trim(
             (string) (
@@ -929,7 +872,6 @@ $membro = [
                 ?? ''
             )
         ),
-
     'password' =>
         (string) (
             $_POST['password']
@@ -1228,54 +1170,33 @@ try {
     if ($modoEdicao) {
         $membroId = $membroIdSessao;
 
-        if (
-            $alteracoes &&
-            !$cms
-                ->getMember()
-                ->update(
-                    $membroId,
-                    $alteracoes
-                )
-        ) {
-            throw new \DomainException(
-                'DUPLICADO'
-            );
+        if ($alteracoes && !$cms->getMember()->update($membroId, $alteracoes)) {
+            throw new \DomainException('DUPLICADO');
         }
     } else {
-        $membroId =
-            $cms
-                ->getMember()
-                ->create(
-                    $alteracoes
-                );
+        $membroId = $cms->getMember()->create($alteracoes);
 
         if ($membroId === false) {
-            throw new \DomainException(
-                'DUPLICADO'
-            );
+            throw new \DomainException('DUPLICADO');
         }
 
         $membroId = (string) $membroId;
     }
 
     if ($fotosAlteradas) {
-        $nomesFotosApagar =
-            sincronizarFotosCreateAccount(
-                $db,
-                $membroId,
-                $imagens,
-                $ordemFotos,
-                $fotosRemover
-            );
+        $nomesFotosApagar = sincronizarFotosCreateAccount(
+            $db,
+            $membroId,
+            $imagens,
+            $ordemFotos,
+            $fotosRemover
+        );
     }
 
     $db->commit();
     $transacaoAberta = false;
 } catch (\DomainException $erro) {
-    if (
-        $transacaoAberta &&
-        $db->inTransaction()
-    ) {
+    if ($transacaoAberta && $db->inTransaction()) {
         $db->rollBack();
     }
 
@@ -1287,15 +1208,11 @@ try {
     responderJsonCreateAccount([
         'success' => false,
         'erros' => [
-            'email' =>
-                'O email ou o número de telefone já está a ser usado.'
+            'email' => 'O email ou o número de telefone já está a ser usado.'
         ]
     ], 409);
 } catch (\LengthException $erro) {
-    if (
-        $transacaoAberta &&
-        $db->inTransaction()
-    ) {
+    if ($transacaoAberta && $db->inTransaction()) {
         $db->rollBack();
     }
 
@@ -1307,15 +1224,11 @@ try {
     responderJsonCreateAccount([
         'success' => false,
         'erros' => [
-            'imagens' =>
-                $erro->getMessage()
+            'imagens' => $erro->getMessage()
         ]
     ], 422);
 } catch (\Throwable $erro) {
-    if (
-        $transacaoAberta &&
-        $db->inTransaction()
-    ) {
+    if ($transacaoAberta && $db->inTransaction()) {
         $db->rollBack();
     }
 
@@ -1324,17 +1237,12 @@ try {
         $pathImagensTemporarias
     );
 
-    $referencia =
-        bin2hex(
-            random_bytes(4)
-        );
+    $referencia = bin2hex(random_bytes(4));
 
     error_log(sprintf(
         '[create-account:%s] %s: %s em %s:%d%s%s',
         $referencia,
-        $modoEdicao
-            ? 'Erro ao atualizar perfil'
-            : 'Erro ao criar conta',
+        $modoEdicao ? 'Erro ao atualizar perfil' : 'Erro ao criar conta',
         $erro->getMessage(),
         $erro->getFile(),
         $erro->getLine(),
@@ -1384,43 +1292,82 @@ if ($imagens) {
 if ($modoEdicao) {
     responderJsonCreateAccount([
         'success' => true,
-        'redirect' =>
-            urlCreateAccount(
-                'profile/' .
-                rawurlencode($membroId)
-            )
+        'redirect' => urlCreateAccount(
+            'profile/' .
+            rawurlencode($membroId)
+        )
     ]);
 }
 
-$sessaoCriada = false;
+$verification = new EmailVerification($db);
 
 try {
-    $sessaoCriada =
-        $cms
-            ->getSession()
-            ->create(
-                membro_id: $membroId
+    $pedido = $verification->createRequest(
+        (string) $membro['email']
+    );
+
+    if ($pedido !== false) {
+        $link =
+            rtrim((string) DOMAIN, '/') .
+            '/verify-email/?token=' .
+            rawurlencode(
+                (string) $pedido['token']
             );
+
+        $nome = htmlspecialchars(
+            (string) $pedido['primeiro_nome'],
+            ENT_QUOTES | ENT_SUBSTITUTE,
+            'UTF-8'
+        );
+
+        $linkSeguro = htmlspecialchars(
+            $link,
+            ENT_QUOTES | ENT_SUBSTITUTE,
+            'UTF-8'
+        );
+
+        $corpo =
+            '<p>Olá ' . $nome . ',</p>' .
+            '<p>Confirma o teu endereço de email para começares a utilizar a Margot.</p>' .
+            '<p><a href="' . $linkSeguro . '">Confirmar o meu email</a></p>' .
+            '<p>Esta ligação é válida durante 24 horas e só pode ser utilizada uma vez.</p>' .
+            '<p>Se não criaste uma conta na Margot, ignora este email.</p>' .
+            '<p>Ligação: ' . $linkSeguro . '</p>';
+
+        try {
+            $mail = new Email(
+                $email_config
+            );
+
+            $mail->sendEmail(
+                (string) $email_config['admin_email'],
+                (string) $pedido['email'],
+                'Confirma o teu email na Margot',
+                $corpo
+            );
+        } catch (\Throwable $erroEmail) {
+            $verification->cancelRequest(
+                (string) $pedido['token']
+            );
+
+            error_log(
+                '[create-account] Conta criada, mas o email de confirmação falhou: ' .
+                $erroEmail->getMessage()
+            );
+        }
+    }
 } catch (\Throwable $erro) {
     error_log(
-        '[create-account] Conta criada, mas não foi possível iniciar a sessão: ' .
+        '[create-account] Conta criada, mas não foi possível preparar a confirmação: ' .
         $erro->getMessage()
     );
 }
 
-if (!$sessaoCriada) {
-    responderJsonCreateAccount([
-        'success' => true,
-        'redirect' =>
-            urlCreateAccount(
-                'login?sucesso=conta-criada'
-            ),
-        'message' =>
-            'A conta foi criada. Inicia sessão para continuar.'
-    ]);
-}
-
 responderJsonCreateAccount([
     'success' => true,
-    'redirect' => urlCreateAccount('index/')
+    'redirect' => urlCreateAccount(
+        'login?sucesso=confirma-email'
+    ),
+    'message' =>
+        'A conta foi criada. Confirma o teu email antes de entrares.'
 ]);
