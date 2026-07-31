@@ -475,3 +475,7 @@
         animation: none;
     }
 }
+
+#menuPrincipal {
+    display: none;
+}
