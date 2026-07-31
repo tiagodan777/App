@@ -8,6 +8,10 @@ use Throwable;
 
 class Image
 {
+    private const LARGURA_MAXIMA_ENTRADA = 12000;
+    private const ALTURA_MAXIMA_ENTRADA = 12000;
+    private const PIXEIS_MAXIMOS_ENTRADA = 64_000_000;
+
     private $db;
 
     public function __construct($db)
@@ -19,8 +23,18 @@ class Image
     {
         foreach ($imagens as $ordem => $imagem) {
             $sql = "
-                INSERT INTO fotos_perfil (nome_arquivo, membro_id, ordem, status)
-                VALUES (:nome_arquivo, :membro_id, :ordem, :status)
+                INSERT INTO fotos_perfil (
+                    nome_arquivo,
+                    membro_id,
+                    ordem,
+                    status
+                )
+                VALUES (
+                    :nome_arquivo,
+                    :membro_id,
+                    :ordem,
+                    :status
+                )
             ";
 
             $this->db->runSQL($sql, [
@@ -35,11 +49,21 @@ class Image
     public function getUploadTemp(string $membroId): array
     {
         $sql = "
-            SELECT id, nome_arquivo, membro_id, ordem, status
+            SELECT
+                id,
+                nome_arquivo,
+                membro_id,
+                ordem,
+                status
             FROM fotos_perfil
             WHERE membro_id = :membro_id
-            AND (status = 'pendente' OR status IS NULL)
-            ORDER BY ordem IS NULL, ordem ASC
+            AND (
+                status = 'pendente'
+                OR status IS NULL
+            )
+            ORDER BY
+                ordem IS NULL,
+                ordem ASC
         ";
 
         return $this->db->runSQL($sql, [
@@ -49,7 +73,11 @@ class Image
 
     public function updateUploadTemp(string $nomeArquivo): void
     {
-        $sql = "UPDATE fotos_perfil SET status = 'completo' WHERE nome_arquivo = :nome_arquivo";
+        $sql = "
+            UPDATE fotos_perfil
+            SET status = 'completo'
+            WHERE nome_arquivo = :nome_arquivo
+        ";
 
         $this->db->runSQL($sql, [
             'nome_arquivo' => $nomeArquivo
@@ -58,107 +86,265 @@ class Image
 
     public function deleteUploadTemp(string $id): void
     {
-        $sql = "SELECT nome_arquivo FROM fotos_perfil WHERE id = :id";
-        $nomeArquivo = $this->db->runSQL($sql, ['id' => $id])->fetchColumn();
+        $sql = "
+            SELECT nome_arquivo
+            FROM fotos_perfil
+            WHERE id = :id
+        ";
 
-        if (!$nomeArquivo) return;
+        $nomeArquivo = $this->db
+            ->runSQL($sql, ['id' => $id])
+            ->fetchColumn();
 
-        $temporario = APP_ROOT . '/public/imagens/fotos-perfil-temp/' . $nomeArquivo;
-        $final = APP_ROOT . '/public/imagens/fotos-perfil/' . $nomeArquivo;
-        $original = APP_ROOT . '/public/imagens/fotos-perfil-originais/' . $nomeArquivo;
+        if (!$nomeArquivo) {
+            return;
+        }
 
-        if (is_file($temporario)) unlink($temporario);
-        if (is_file($final)) unlink($final);
-        if (is_file($original)) unlink($original);
+        $temporario =
+            APP_ROOT .
+            '/public/imagens/fotos-perfil-temp/' .
+            $nomeArquivo;
 
-        $sql = "DELETE FROM fotos_perfil WHERE id = :id";
-        $this->db->runSQL($sql, ['id' => $id]);
+        $final =
+            APP_ROOT .
+            '/public/imagens/fotos-perfil/' .
+            $nomeArquivo;
+
+        $original =
+            APP_ROOT .
+            '/public/imagens/fotos-perfil-originais/' .
+            $nomeArquivo;
+
+        if (is_file($temporario)) {
+            unlink($temporario);
+        }
+
+        if (is_file($final)) {
+            unlink($final);
+        }
+
+        if (is_file($original)) {
+            unlink($original);
+        }
+
+        $sql = "
+            DELETE FROM fotos_perfil
+            WHERE id = :id
+        ";
+
+        $this->db->runSQL($sql, [
+            'id' => $id
+        ]);
     }
 
-    public function createImage(string $membroId, string $nomeArquivo, string $temp, string $type): void
-    {
+    public function createImage(
+        string $membroId,
+        string $nomeArquivo,
+        string $temp,
+        string $type
+    ): void {
         $converted = $temp;
         $ficheirosCriados = [];
 
         try {
             if (!is_file($temp)) {
-                throw new RuntimeException('A imagem temporária não foi encontrada.');
+                throw new RuntimeException(
+                    'A imagem temporária não foi encontrada.'
+                );
             }
 
             $finfo = finfo_open(FILEINFO_MIME_TYPE);
+
+            if ($finfo === false) {
+                throw new RuntimeException(
+                    'Não foi possível verificar a fotografia.'
+                );
+            }
+
             $mime = finfo_file($finfo, $temp);
             finfo_close($finfo);
 
-            if (in_array($mime, ['image/heic', 'image/heif'], true)) {
-                $converted = sys_get_temp_dir() . '/' . uniqid('perfil_', true) . '.jpg';
+            if (
+                in_array(
+                    $mime,
+                    ['image/heic', 'image/heif'],
+                    true
+                )
+            ) {
+                $converted =
+                    sys_get_temp_dir() .
+                    '/' .
+                    uniqid('perfil_', true) .
+                    '.jpg';
+
                 $returnVar = -1;
                 $output = [];
-                $bin = trim((string) shell_exec('command -v magick 2>/dev/null'));
+
+                $bin = trim(
+                    (string) shell_exec(
+                        'command -v magick 2>/dev/null'
+                    )
+                );
 
                 if (!$bin) {
-                    $bin = trim((string) shell_exec('command -v convert 2>/dev/null'));
+                    $bin = trim(
+                        (string) shell_exec(
+                            'command -v convert 2>/dev/null'
+                        )
+                    );
                 }
 
                 if ($bin) {
-                    $cmd = escapeshellcmd($bin) . ' ' . escapeshellarg($temp . '[0]') . ' -auto-orient ' . escapeshellarg($converted) . ' 2>&1';
+                    $cmd =
+                        escapeshellcmd($bin) .
+                        ' ' .
+                        escapeshellarg($temp . '[0]') .
+                        ' -auto-orient ' .
+                        escapeshellarg($converted) .
+                        ' 2>&1';
+
                     exec($cmd, $output, $returnVar);
                 }
 
-                if ($returnVar !== 0 || !is_file($converted)) {
+                if (
+                    $returnVar !== 0 ||
+                    !is_file($converted)
+                ) {
                     $output = [];
-                    $cmd = '/usr/bin/heif-convert -q 100 ' . escapeshellarg($temp) . ' ' . escapeshellarg($converted) . ' 2>&1';
+
+                    $cmd =
+                        '/usr/bin/heif-convert -q 100 ' .
+                        escapeshellarg($temp) .
+                        ' ' .
+                        escapeshellarg($converted) .
+                        ' 2>&1';
+
                     exec($cmd, $output, $returnVar);
                 }
 
-                if ($returnVar !== 0 || !is_file($converted)) {
+                if (
+                    $returnVar !== 0 ||
+                    !is_file($converted)
+                ) {
                     $output = [];
-                    $cmd = 'ffmpeg -y -i ' . escapeshellarg($temp) . ' -vframes 1 -q:v 2 ' . escapeshellarg($converted) . ' 2>&1';
+
+                    $cmd =
+                        'ffmpeg -y -i ' .
+                        escapeshellarg($temp) .
+                        ' -vframes 1 -q:v 2 ' .
+                        escapeshellarg($converted) .
+                        ' 2>&1';
+
                     exec($cmd, $output, $returnVar);
                 }
 
-                if ($returnVar !== 0 || !is_file($converted)) {
-                    throw new RuntimeException('Falha ao converter a imagem HEIC ou HEIF.');
+                if (
+                    $returnVar !== 0 ||
+                    !is_file($converted)
+                ) {
+                    throw new RuntimeException(
+                        'Falha ao converter a imagem HEIC ou HEIF.'
+                    );
                 }
             }
 
-            $basename = pathinfo($nomeArquivo, PATHINFO_FILENAME) . '.webp';
+            $this->validarImagemEntrada($converted);
+
+            $basename =
+                pathinfo(
+                    $nomeArquivo,
+                    PATHINFO_FILENAME
+                ) .
+                '.webp';
 
             switch ($type) {
                 case 'perfil':
-                    $destino = APP_ROOT . '/public/imagens/fotos-perfil/' . $basename;
-                    $destinoOriginal = APP_ROOT . '/public/imagens/fotos-perfil-originais/' . $basename;
+                    $destino =
+                        APP_ROOT .
+                        '/public/imagens/fotos-perfil/' .
+                        $basename;
 
-                    $this->garantirPasta(dirname($destino));
-                    $this->garantirPasta(dirname($destinoOriginal));
+                    $destinoOriginal =
+                        APP_ROOT .
+                        '/public/imagens/fotos-perfil-originais/' .
+                        $basename;
+
+                    $this->garantirPasta(
+                        dirname($destino)
+                    );
+
+                    $this->garantirPasta(
+                        dirname($destinoOriginal)
+                    );
 
                     $ficheirosCriados[] = $destino;
                     $ficheirosCriados[] = $destinoOriginal;
 
-                    $this->processProfileImage($converted, 1200, $destino);
-                    $this->processOriginalProfileImage($converted, 2400, $destinoOriginal);
+                    $this->processProfileImage(
+                        $converted,
+                        1200,
+                        $destino
+                    );
+
+                    $this->processOriginalProfileImage(
+                        $converted,
+                        2400,
+                        $destinoOriginal
+                    );
+
                     break;
 
                 case 'receita':
-                    $destino = APP_ROOT . '/public/imagens/comida/' . $basename;
-                    $this->garantirPasta(dirname($destino));
+                    $destino =
+                        APP_ROOT .
+                        '/public/imagens/comida/' .
+                        $basename;
+
+                    $this->garantirPasta(
+                        dirname($destino)
+                    );
+
                     $ficheirosCriados[] = $destino;
-                    $this->processImage($converted, 1440, $destino);
+
+                    $this->processImage(
+                        $converted,
+                        1440,
+                        $destino
+                    );
+
                     break;
 
                 case 'publicacao':
-                    $destino = APP_ROOT . '/public/posts/' . $basename;
-                    $this->garantirPasta(dirname($destino));
+                    $destino =
+                        APP_ROOT .
+                        '/public/posts/' .
+                        $basename;
+
+                    $this->garantirPasta(
+                        dirname($destino)
+                    );
+
                     $ficheirosCriados[] = $destino;
-                    $this->processImage($converted, 1440, $destino);
+
+                    $this->processImage(
+                        $converted,
+                        1440,
+                        $destino
+                    );
+
                     break;
 
                 default:
-                    throw new InvalidArgumentException('Tipo de imagem inválido.');
+                    throw new InvalidArgumentException(
+                        'Tipo de imagem inválido.'
+                    );
             }
 
             $sql = "
                 UPDATE fotos_perfil
-                SET nome_arquivo = :nome_arquivo, status = 'completo'
+                SET
+                    nome_arquivo = :nome_arquivo,
+                    status = 'completo'
                 WHERE membro_id = :membro_id
                 AND nome_arquivo = :nome_antigo
             ";
@@ -169,15 +355,36 @@ class Image
                 'nome_antigo' => $nomeArquivo
             ]);
 
-            if ($converted !== $temp && is_file($converted)) unlink($converted);
-            if (is_file($temp)) unlink($temp);
-        } catch (Throwable $erro) {
-            foreach ($ficheirosCriados as $ficheiro) {
-                if (is_file($ficheiro)) unlink($ficheiro);
+            if (
+                $converted !== $temp &&
+                is_file($converted)
+            ) {
+                unlink($converted);
             }
 
-            if ($converted !== $temp && is_file($converted)) unlink($converted);
-            if (is_file($temp)) unlink($temp);
+            if (is_file($temp)) {
+                unlink($temp);
+            }
+        } catch (Throwable $erro) {
+            foreach (
+                $ficheirosCriados
+                as $ficheiro
+            ) {
+                if (is_file($ficheiro)) {
+                    unlink($ficheiro);
+                }
+            }
+
+            if (
+                $converted !== $temp &&
+                is_file($converted)
+            ) {
+                unlink($converted);
+            }
+
+            if (is_file($temp)) {
+                unlink($temp);
+            }
 
             $sql = "
                 UPDATE fotos_perfil
@@ -195,35 +402,139 @@ class Image
         }
     }
 
-    private function garantirPasta(string $pasta): void
-    {
-        if (is_dir($pasta)) return;
+    private function garantirPasta(
+        string $pasta
+    ): void {
+        if (is_dir($pasta)) {
+            return;
+        }
 
-        if (!mkdir($pasta, 0775, true) && !is_dir($pasta)) {
-            throw new RuntimeException('Não foi possível criar a pasta das imagens.');
+        if (
+            !mkdir($pasta, 0775, true) &&
+            !is_dir($pasta)
+        ) {
+            throw new RuntimeException(
+                'Não foi possível criar a pasta das imagens.'
+            );
         }
     }
 
-    private function processProfileImage(string $sourcePath, int $size, string $destination): void
+    private function aplicarLimitesImagick(): void
     {
-        $inicio = microtime(true);
-        $imagick = new \Imagick($sourcePath);
+        \Imagick::setResourceLimit(
+            \Imagick::RESOURCETYPE_MEMORY,
+            256 * 1024 * 1024
+        );
 
-        if ($imagick->getNumberImages() > 1) {
-            $imagick->setIteratorIndex(0);
+        \Imagick::setResourceLimit(
+            \Imagick::RESOURCETYPE_MAP,
+            512 * 1024 * 1024
+        );
+
+        \Imagick::setResourceLimit(
+            \Imagick::RESOURCETYPE_DISK,
+            1024 * 1024 * 1024
+        );
+
+        \Imagick::setResourceLimit(
+            \Imagick::RESOURCETYPE_AREA,
+            self::PIXEIS_MAXIMOS_ENTRADA
+        );
+
+        \Imagick::setResourceLimit(
+            \Imagick::RESOURCETYPE_THREAD,
+            1
+        );
+    }
+
+    private function validarImagemEntrada(
+        string $sourcePath
+    ): void {
+        $this->aplicarLimitesImagick();
+
+        $imagem = new \Imagick();
+
+        try {
+            $imagem->pingImage(
+                $sourcePath . '[0]'
+            );
+
+            $largura = $imagem->getImageWidth();
+            $altura = $imagem->getImageHeight();
+            $pixeis = $largura * $altura;
+
+            if (
+                $largura < 1 ||
+                $altura < 1 ||
+                $largura >
+                    self::LARGURA_MAXIMA_ENTRADA ||
+                $altura >
+                    self::ALTURA_MAXIMA_ENTRADA ||
+                $pixeis >
+                    self::PIXEIS_MAXIMOS_ENTRADA
+            ) {
+                throw new RuntimeException(
+                    'A fotografia tem dimensões demasiado grandes.'
+                );
+            }
+        } catch (RuntimeException $erro) {
+            throw $erro;
+        } catch (Throwable $erro) {
+            throw new RuntimeException(
+                'A fotografia recebida não é válida.',
+                0,
+                $erro
+            );
+        } finally {
+            $imagem->clear();
+            $imagem->destroy();
         }
+    }
+
+    private function processProfileImage(
+        string $sourcePath,
+        int $size,
+        string $destination
+    ): void {
+        $inicio = microtime(true);
+
+        $this->aplicarLimitesImagick();
+
+        $imagick = new \Imagick(
+            $sourcePath . '[0]'
+        );
 
         $imagick->autoOrient();
-        $imagick->transformImageColorspace(\Imagick::COLORSPACE_SRGB);
-        $imagick->cropThumbnailImage($size, $size);
-        $imagick->unsharpMaskImage(0, 0.65, 1.0, 0.03);
+
+        $imagick->transformImageColorspace(
+            \Imagick::COLORSPACE_SRGB
+        );
+
+        $imagick->cropThumbnailImage(
+            $size,
+            $size
+        );
+
+        $imagick->unsharpMaskImage(
+            0,
+            0.65,
+            1.0,
+            0.03
+        );
+
         $imagick->setImageFormat('webp');
         $imagick->setImageCompressionQuality(84);
         $imagick->setOption('webp:method', '6');
         $imagick->stripImage();
 
-        if (!$imagick->writeImage($destination)) {
-            throw new RuntimeException('Não foi possível escrever a imagem WebP.');
+        if (
+            !$imagick->writeImage(
+                $destination
+            )
+        ) {
+            throw new RuntimeException(
+                'Não foi possível escrever a imagem WebP.'
+            );
         }
 
         $imagick->clear();
@@ -233,29 +544,52 @@ class Image
             'Foto de perfil ' .
             basename($destination) .
             ' processada em ' .
-            round(microtime(true) - $inicio, 3) .
+            round(
+                microtime(true) - $inicio,
+                3
+            ) .
             ' segundos.'
         );
     }
 
-    private function processOriginalProfileImage(string $sourcePath, int $maxSize, string $destination): void
-    {
+    private function processOriginalProfileImage(
+        string $sourcePath,
+        int $maxSize,
+        string $destination
+    ): void {
         $inicio = microtime(true);
-        $imagick = new \Imagick($sourcePath);
 
-        if ($imagick->getNumberImages() > 1) {
-            $imagick->setIteratorIndex(0);
-        }
+        $this->aplicarLimitesImagick();
+
+        $imagick = new \Imagick(
+            $sourcePath . '[0]'
+        );
 
         $imagick->autoOrient();
-        $imagick->transformImageColorspace(\Imagick::COLORSPACE_SRGB);
+
+        $imagick->transformImageColorspace(
+            \Imagick::COLORSPACE_SRGB
+        );
 
         $largura = $imagick->getImageWidth();
         $altura = $imagick->getImageHeight();
 
-        if ($largura > $maxSize || $altura > $maxSize) {
-            $imagick->thumbnailImage($maxSize, $maxSize, true);
-            $imagick->unsharpMaskImage(0, 0.55, 0.9, 0.02);
+        if (
+            $largura > $maxSize ||
+            $altura > $maxSize
+        ) {
+            $imagick->thumbnailImage(
+                $maxSize,
+                $maxSize,
+                true
+            );
+
+            $imagick->unsharpMaskImage(
+                0,
+                0.55,
+                0.9,
+                0.02
+            );
         }
 
         $imagick->setImageFormat('webp');
@@ -263,8 +597,14 @@ class Image
         $imagick->setOption('webp:method', '6');
         $imagick->stripImage();
 
-        if (!$imagick->writeImage($destination)) {
-            throw new RuntimeException('Não foi possível escrever a fotografia proporcional.');
+        if (
+            !$imagick->writeImage(
+                $destination
+            )
+        ) {
+            throw new RuntimeException(
+                'Não foi possível escrever a fotografia proporcional.'
+            );
         }
 
         $imagick->clear();
@@ -274,38 +614,72 @@ class Image
             'Foto de perfil proporcional ' .
             basename($destination) .
             ' processada em ' .
-            round(microtime(true) - $inicio, 3) .
+            round(
+                microtime(true) - $inicio,
+                3
+            ) .
             ' segundos.'
         );
     }
 
-    private function processImage(string $sourcePath, int $maxSize, string $destination): void
-    {
-        $imagick = new \Imagick($sourcePath);
+    private function processImage(
+        string $sourcePath,
+        int $maxSize,
+        string $destination
+    ): void {
+        $this->aplicarLimitesImagick();
 
-        if ($imagick->getNumberImages() > 1) {
-            $imagick->setIteratorIndex(0);
-        }
+        $imagick = new \Imagick(
+            $sourcePath . '[0]'
+        );
 
         $imagick->autoOrient();
-        $imagick->transformImageColorspace(\Imagick::COLORSPACE_SRGB);
+
+        $imagick->transformImageColorspace(
+            \Imagick::COLORSPACE_SRGB
+        );
 
         $largura = $imagick->getImageWidth();
         $altura = $imagick->getImageHeight();
 
-        if ($largura > $maxSize || $altura > $maxSize) {
-            $imagick->thumbnailImage($maxSize, $maxSize, true, true);
+        if (
+            $largura > $maxSize ||
+            $altura > $maxSize
+        ) {
+            $imagick->thumbnailImage(
+                $maxSize,
+                $maxSize,
+                true,
+                true
+            );
         }
 
-        $imagick->unsharpMaskImage(0, 0.7, 1.1, 0.03);
-        $imagick->modulateImage(100, 105, 100);
+        $imagick->unsharpMaskImage(
+            0,
+            0.7,
+            1.1,
+            0.03
+        );
+
+        $imagick->modulateImage(
+            100,
+            105,
+            100
+        );
+
         $imagick->setImageFormat('webp');
         $imagick->setImageCompressionQuality(82);
         $imagick->setOption('webp:method', '6');
         $imagick->stripImage();
 
-        if (!$imagick->writeImage($destination)) {
-            throw new RuntimeException('Não foi possível escrever a imagem.');
+        if (
+            !$imagick->writeImage(
+                $destination
+            )
+        ) {
+            throw new RuntimeException(
+                'Não foi possível escrever a imagem.'
+            );
         }
 
         $imagick->clear();
