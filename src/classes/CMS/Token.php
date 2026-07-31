@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace App\CMS;
@@ -15,8 +14,15 @@ final class Token
         'login' => 1200,
         'password_reset' => 1200,
         'delete_account' => 1200,
+        'email_verification' => 86400,
         'stay_logged_id' => 1209600,
         'websocket' => 60
+    ];
+
+    private const PROPOSITOS_TOKEN_UNICO = [
+        'password_reset',
+        'delete_account',
+        'email_verification'
     ];
 
     public function __construct(Database $db)
@@ -24,9 +30,8 @@ final class Token
         $this->db = $db;
     }
 
-    public static function hash(
-        string $token
-    ): string {
+    public static function hash(string $token): string
+    {
         return hash('sha256', $token);
     }
 
@@ -36,52 +41,34 @@ final class Token
         ?int $duracao = null
     ): string {
         $membroId = trim($membroId);
-
-        $this->validarProposito(
-            $proposito
-        );
+        $this->validarProposito($proposito);
 
         if ($membroId === '') {
-            throw new InvalidArgumentException(
-                'O membro do token não é válido.'
-            );
+            throw new InvalidArgumentException('O membro do token não é válido.');
         }
 
-        $duracao ??=
-            self::DURACOES[$proposito];
+        $duracao ??= self::DURACOES[$proposito];
 
         if ($duracao < 1) {
-            throw new InvalidArgumentException(
-                'Duração de token inválida.'
-            );
+            throw new InvalidArgumentException('Duração de token inválida.');
         }
 
-        $token = bin2hex(
-            random_bytes(32)
-        );
-
-        $gerirTransacao =
-            !$this->db->inTransaction();
+        $token = bin2hex(random_bytes(32));
+        $gerirTransacao = !$this->db->inTransaction();
 
         try {
             if ($gerirTransacao) {
                 $this->db->beginTransaction();
             }
 
-            if (
-                $proposito ===
-                'password_reset'
-            ) {
+            if (in_array($proposito, self::PROPOSITOS_TOKEN_UNICO, true)) {
                 $this->db->runSQL(
                     'DELETE FROM token
                      WHERE membro_id = :membro_id
                      AND proposito = :proposito',
                     [
-                        'membro_id' =>
-                            $membroId,
-
-                        'proposito' =>
-                            $proposito
+                        'membro_id' => $membroId,
+                        'proposito' => $proposito
                     ]
                 );
             }
@@ -99,20 +86,10 @@ final class Token
                     :proposito
                  )',
                 [
-                    'token' =>
-                        self::hash($token),
-
-                    'validade' =>
-                        gmdate(
-                            'Y-m-d H:i:s',
-                            time() + $duracao
-                        ),
-
-                    'membro_id' =>
-                        $membroId,
-
-                    'proposito' =>
-                        $proposito
+                    'token' => self::hash($token),
+                    'validade' => gmdate('Y-m-d H:i:s', time() + $duracao),
+                    'membro_id' => $membroId,
+                    'proposito' => $proposito
                 ]
             );
 
@@ -120,10 +97,7 @@ final class Token
                 $this->db->commit();
             }
         } catch (Throwable $erro) {
-            if (
-                $gerirTransacao &&
-                $this->db->inTransaction()
-            ) {
+            if ($gerirTransacao && $this->db->inTransaction()) {
                 $this->db->rollBack();
             }
 
@@ -139,32 +113,22 @@ final class Token
     ): string|false {
         $token = trim($token);
 
-        if (
-            $token === '' ||
-            !isset(
-                self::DURACOES[$proposito]
-            )
-        ) {
+        if ($token === '' || !isset(self::DURACOES[$proposito])) {
             return false;
         }
 
-        return $this->db
-            ->runSQL(
-                'SELECT membro_id
-                 FROM token
-                 WHERE token = :token_hash
-                 AND proposito = :proposito
-                 AND validade > UTC_TIMESTAMP()
-                 LIMIT 1',
-                [
-                    'token_hash' =>
-                        self::hash($token),
-
-                    'proposito' =>
-                        $proposito
-                ]
-            )
-            ->fetchColumn();
+        return $this->db->runSQL(
+            'SELECT membro_id
+             FROM token
+             WHERE token = :token_hash
+             AND proposito = :proposito
+             AND validade > UTC_TIMESTAMP()
+             LIMIT 1',
+            [
+                'token_hash' => self::hash($token),
+                'proposito' => $proposito
+            ]
+        )->fetchColumn();
     }
 
     public function consume(
@@ -173,46 +137,31 @@ final class Token
     ): string|false {
         $token = trim($token);
 
-        if (
-            $token === '' ||
-            !isset(
-                self::DURACOES[$proposito]
-            )
-        ) {
+        if ($token === '' || !isset(self::DURACOES[$proposito])) {
             return false;
         }
 
-        $tokenHash =
-            self::hash($token);
-
-        $gerirTransacao =
-            !$this->db->inTransaction();
+        $tokenHash = self::hash($token);
+        $gerirTransacao = !$this->db->inTransaction();
 
         try {
             if ($gerirTransacao) {
                 $this->db->beginTransaction();
             }
 
-            $registo = $this->db
-                ->runSQL(
-                    'SELECT
-                        id,
-                        membro_id
-                     FROM token
-                     WHERE token = :token_hash
-                     AND proposito = :proposito
-                     AND validade > UTC_TIMESTAMP()
-                     LIMIT 1
-                     FOR UPDATE',
-                    [
-                        'token_hash' =>
-                            $tokenHash,
-
-                        'proposito' =>
-                            $proposito
-                    ]
-                )
-                ->fetch();
+            $registo = $this->db->runSQL(
+                'SELECT id, membro_id
+                 FROM token
+                 WHERE token = :token_hash
+                 AND proposito = :proposito
+                 AND validade > UTC_TIMESTAMP()
+                 LIMIT 1
+                 FOR UPDATE',
+                [
+                    'token_hash' => $tokenHash,
+                    'proposito' => $proposito
+                ]
+            )->fetch();
 
             if (!$registo) {
                 if ($gerirTransacao) {
@@ -227,11 +176,8 @@ final class Token
                  WHERE id = :id
                  AND token = :token_hash',
                 [
-                    'id' =>
-                        $registo['id'],
-
-                    'token_hash' =>
-                        $tokenHash
+                    'id' => $registo['id'],
+                    'token_hash' => $tokenHash
                 ]
             );
 
@@ -239,13 +185,9 @@ final class Token
                 $this->db->commit();
             }
 
-            return (string)
-                $registo['membro_id'];
+            return (string) $registo['membro_id'];
         } catch (Throwable $erro) {
-            if (
-                $gerirTransacao &&
-                $this->db->inTransaction()
-            ) {
+            if ($gerirTransacao && $this->db->inTransaction()) {
                 $this->db->rollBack();
             }
 
@@ -253,9 +195,8 @@ final class Token
         }
     }
 
-    public function delete(
-        string $token
-    ): void {
+    public function delete(string $token): void
+    {
         $token = trim($token);
 
         if ($token === '') {
@@ -265,10 +206,7 @@ final class Token
         $this->db->runSQL(
             'DELETE FROM token
              WHERE token = :token_hash',
-            [
-                'token_hash' =>
-                    self::hash($token)
-            ]
+            ['token_hash' => self::hash($token)]
         );
     }
 
@@ -277,10 +215,7 @@ final class Token
         string $proposito
     ): void {
         $membroId = trim($membroId);
-
-        $this->validarProposito(
-            $proposito
-        );
+        $this->validarProposito($proposito);
 
         if ($membroId === '') {
             return;
@@ -291,18 +226,14 @@ final class Token
              WHERE membro_id = :membro_id
              AND proposito = :proposito',
             [
-                'membro_id' =>
-                    $membroId,
-
-                'proposito' =>
-                    $proposito
+                'membro_id' => $membroId,
+                'proposito' => $proposito
             ]
         );
     }
 
-    public function deleteForMember(
-        string $membroId
-    ): void {
+    public function deleteForMember(string $membroId): void
+    {
         $membroId = trim($membroId);
 
         if ($membroId === '') {
@@ -312,24 +243,14 @@ final class Token
         $this->db->runSQL(
             'DELETE FROM token
              WHERE membro_id = :membro_id',
-            [
-                'membro_id' =>
-                    $membroId
-            ]
+            ['membro_id' => $membroId]
         );
     }
 
-    private function validarProposito(
-        string $proposito
-    ): void {
-        if (
-            !isset(
-                self::DURACOES[$proposito]
-            )
-        ) {
-            throw new InvalidArgumentException(
-                'Propósito de token inválido.'
-            );
+    private function validarProposito(string $proposito): void
+    {
+        if (!isset(self::DURACOES[$proposito])) {
+            throw new InvalidArgumentException('Propósito de token inválido.');
         }
     }
 }
