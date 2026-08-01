@@ -2,63 +2,53 @@
 <html lang="pt-PT">
 <head>
     <meta charset="UTF-8">
-
     <meta
         name="viewport"
         content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
     >
-
     <meta name="theme-color" content="#ffffff">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="csrf-token" content="{{ csrf_token }}">
-
     <meta
         name="apple-mobile-web-app-status-bar-style"
         content="black-translucent"
     >
-
     <link
         rel="manifest"
         href="{{ doc_root }}js/manifest.json"
     >
-
     <title>App</title>
-
     <link
         rel="stylesheet"
-        href="{{ doc_root }}estilos/style.css?v=11"
+        href="{{ doc_root }}estilos/style.css?v=12"
     >
-
     <link
         rel="stylesheet"
         href="{{ doc_root }}estilos/create-account.css?v=7"
     >
-
     {% if session.id %}
         <link
             rel="stylesheet"
             href="{{ doc_root }}estilos/index-notificacoes.css?v=5"
         >
-
         <link
             rel="stylesheet"
             href="{{ doc_root }}estilos/messaging-integration.css?v=8"
         >
     {% endif %}
-
     {% block styles %}{% endblock %}
 </head>
-
 <body>
     <script src="{{ doc_root }}js/jquery-4.0.0.js"></script>
     <script src="{{ doc_root }}js/csrf.js?v=1"></script>
-
     {% if session.id %}
         <script src="{{ doc_root }}js/preferencias.js?v=2"></script>
     {% endif %}
 
-    {% block content %}{% endblock %}
+    <div id="conteudoPagina">
+        {% block content %}{% endblock %}
+    </div>
 
     <footer id="menuPrincipal">
         <nav aria-label="Menu principal">
@@ -76,7 +66,6 @@
                         >
                     </a>
                 </li>
-
                 <li>
                     <a
                         href="{{ doc_root }}messages"
@@ -90,7 +79,6 @@
                         >
                     </a>
                 </li>
-
                 <li>
                     <a
                         href="{{ doc_root }}profile/{{ session.id }}"
@@ -104,7 +92,6 @@
                         >
                     </a>
                 </li>
-
                 {% if session.id %}
                     <li class="menu-item-invisivel">
                         <button
@@ -124,7 +111,6 @@
                                 aria-hidden="true"
                                 draggable="false"
                             >
-
                             <img
                                 class="menu-invisivel-imagem menu-invisivel-imagem-invisivel"
                                 src="{{ doc_root }}imagens/icones-menu/eye-block.png?v=1"
@@ -132,7 +118,6 @@
                                 aria-hidden="true"
                                 draggable="false"
                             >
-
                             <span
                                 id="alternar-invisivel-estado"
                                 class="texto-apenas-leitor"
@@ -178,7 +163,6 @@
                     d="M6.4 10.7V6.2a1.35 1.35 0 0 1 2.7 0v3.2-5a1.35 1.35 0 0 1 2.7 0v5-3.8a1.35 1.35 0 0 1 2.7 0v4.1-2.5a1.35 1.35 0 0 1 2.7 0v6.1c0 4-2.7 7.2-6.7 7.2h-.4c-2.5 0-4.5-1.1-5.8-3L1.8 14a1.45 1.45 0 0 1 2.3-1.7l2.3 2.6"
                 ></path>
             </svg>
-
             <span
                 id="heys-contador"
                 class="heys-contador"
@@ -215,7 +199,6 @@
                         <p>Atividade</p>
                         <h1 id="heys-titulo">Heys</h1>
                     </div>
-
                     <button
                         type="button"
                         id="fechar-heys"
@@ -226,9 +209,7 @@
                             viewBox="0 0 24 24"
                             aria-hidden="true"
                         >
-                            <path
-                                d="M6 6l12 12M18 6 6 18"
-                            ></path>
+                            <path d="M6 6l12 12M18 6 6 18"></path>
                         </svg>
                     </button>
                 </header>
@@ -248,7 +229,6 @@
                     >
                         Recebidos
                     </button>
-
                     <button
                         type="button"
                         id="heys-tab-enviados"
@@ -317,7 +297,6 @@
             window.heysUrl = {{ (doc_root ~ 'notifications')|json_encode|raw }};
             window.webSocketTokenUrl = {{ (doc_root ~ 'websocket-token')|json_encode|raw }};
             window.loginUrl = {{ (doc_root ~ 'login/')|json_encode|raw }};
-
             window.webSocketUrl = window.location.protocol === 'https:'
                 ? 'wss://' + window.location.host + '/ws/'
                 : 'ws://' + window.location.hostname + ':8080';
@@ -328,5 +307,7 @@
         <script src="{{ doc_root }}js/websocket.js?v=15"></script>
         <script src="{{ doc_root }}js/menu-invisivel.js?v=2"></script>
     {% endif %}
+
+    <script src="{{ doc_root }}js/javascript-geral.js?v=2"></script>
 </body>
 </html>
