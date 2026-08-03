@@ -16,43 +16,17 @@ body {
     background-color: #ffffff;
 }
 
-#conteudoPagina {
+html.margot-transicao-ativa,
+html.margot-transicao-ativa body {
+    overflow: hidden !important;
+}
+
+#conteudoPagina,
+[data-conteudo-pagina] {
     position: relative;
     width: 100%;
+    height: 100%;
     min-height: 100%;
-    opacity: 1;
-    transform: translate3d(0, 0, 0);
-    transform-origin: center;
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-}
-
-body.margot-entrada #conteudoPagina {
-    transition: none;
-}
-
-body.margot-entrada-direita #conteudoPagina {
-    opacity: 0.96;
-    transform: translate3d(100vw, 0, 0);
-}
-
-body.margot-entrada-esquerda #conteudoPagina {
-    opacity: 0.96;
-    transform: translate3d(-100vw, 0, 0);
-}
-
-body.margot-entrada.margot-entrada-pronta #conteudoPagina {
-    opacity: 1;
-    transform: translate3d(0, 0, 0);
-    transition:
-        transform 260ms cubic-bezier(0.32, 0.72, 0, 1),
-        opacity 260ms ease;
-}
-
-html[aria-busy="true"] #conteudoPagina,
-html[aria-busy="true"] #menuPrincipal a,
-html[aria-busy="true"] #menuPrincipal button {
-    pointer-events: none;
 }
 
 #gridCanvas {
@@ -75,18 +49,23 @@ img {
     position: absolute !important;
     top: 0 !important;
     left: 0 !important;
-    z-index: 10;
+    z-index: 10 !important;
     transform: translate(-50%, -50%);
-    transform-origin: center center;
+    transform-origin: center;
     cursor: pointer;
     touch-action: manipulation;
     will-change: transform, opacity;
 }
 
+body:has(.mini-menu[aria-hidden="false"]) .foto {
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
 .back-drop {
     position: relative;
     bottom: -100%;
-    z-index: 25;
+    z-index: 50;
     width: 100vw;
     height: 100vh;
     background-color: rgba(0, 0, 0, 0.4);
@@ -97,11 +76,14 @@ img {
 }
 
 .mini-menu {
-    position: fixed;
-    bottom: 0;
-    z-index: 40;
+    position: fixed !important;
+    right: auto !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    z-index: 1000 !important;
     width: 100vw;
     height: 75vh;
+    margin: 0;
     border-radius: 75px 75px 0 0;
     background-color: #ffffff;
     box-shadow:
@@ -113,6 +95,7 @@ img {
         calc(100% + 96px + env(safe-area-inset-bottom, 0px)),
         0
     );
+    isolation: isolate;
     touch-action: none;
     display: flex;
     flex-flow: column nowrap;
@@ -240,21 +223,25 @@ img {
     font-weight: bold;
 }
 
-/* Menu principal */
-
 #menuPrincipal {
     position: fixed !important;
-    left: 50%;
-    bottom: max(18px, env(safe-area-inset-bottom, 18px));
-    z-index: 100;
-    width: 90%;
-    height: 56px;
-    transform: translateX(-50%);
+    top: auto !important;
+    right: auto !important;
+    bottom: max(18px, env(safe-area-inset-bottom, 18px)) !important;
+    left: 50% !important;
+    z-index: 1100 !important;
+    width: 90% !important;
+    height: 56px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: translate3d(-50%, 0, 0) !important;
 }
 
 #menuPrincipal > nav {
     width: 100%;
     height: 100%;
+    margin: 0;
+    padding: 0;
     display: flex;
     flex-flow: row nowrap;
     justify-content: center;
@@ -330,8 +317,6 @@ img {
     object-fit: contain;
 }
 
-/* Botão de modo invisível */
-
 #alternar-invisivel {
     transition:
         background-color 160ms ease,
@@ -402,13 +387,6 @@ html[data-margot-invisivel="true"] #alternar-invisivel .menu-invisivel-imagem {
     white-space: nowrap !important;
 }
 
-body.perfil-camera-aberta #conteudoPagina > header,
-body.perfil-camera-aberta #conteudoPagina > footer {
-    display: none !important;
-}
-
-/* Correção para o viewport reduzido das PWA instaladas no iOS. */
-
 @media all and (display-mode: standalone) {
     html:has(#gridCanvas) {
         width: 100%;
@@ -434,17 +412,11 @@ body.perfil-camera-aberta #conteudoPagina > footer {
     }
 
     body:has(#gridCanvas) .mini-menu {
-        position: absolute;
+        position: absolute !important;
     }
-}
 
-@media (prefers-reduced-motion: reduce) {
-    body.margot-entrada #conteudoPagina,
-    body.margot-entrada-direita #conteudoPagina,
-    body.margot-entrada-esquerda #conteudoPagina,
-    body.margot-entrada.margot-entrada-pronta #conteudoPagina {
-        opacity: 1 !important;
-        transform: none !important;
-        transition: none !important;
+    #menuPrincipal {
+        position: fixed !important;
+        bottom: max(18px, env(safe-area-inset-bottom, 18px)) !important;
     }
 }
