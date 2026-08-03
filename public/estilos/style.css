@@ -1,5 +1,10 @@
 @charset "UTF-8";
 
+:root {
+    --menu-principal-bottom: max(18px, env(safe-area-inset-bottom, 0px));
+    --menu-principal-height: 56px;
+}
+
 * {
     box-sizing: border-box;
     font-family: Helvetica, Arial, sans-serif;
@@ -14,19 +19,6 @@ body {
     padding: 0;
     overflow: hidden;
     background-color: #ffffff;
-}
-
-html.margot-transicao-ativa,
-html.margot-transicao-ativa body {
-    overflow: hidden !important;
-}
-
-#conteudoPagina,
-[data-conteudo-pagina] {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    min-height: 100%;
 }
 
 #gridCanvas {
@@ -49,23 +41,18 @@ img {
     position: absolute !important;
     top: 0 !important;
     left: 0 !important;
-    z-index: 10 !important;
+    z-index: 10;
     transform: translate(-50%, -50%);
-    transform-origin: center;
+    transform-origin: center center;
     cursor: pointer;
     touch-action: manipulation;
     will-change: transform, opacity;
 }
 
-body:has(.mini-menu[aria-hidden="false"]) .foto {
-    opacity: 0 !important;
-    pointer-events: none !important;
-}
-
 .back-drop {
     position: relative;
     bottom: -100%;
-    z-index: 50;
+    z-index: 900;
     width: 100vw;
     height: 100vh;
     background-color: rgba(0, 0, 0, 0.4);
@@ -76,14 +63,11 @@ body:has(.mini-menu[aria-hidden="false"]) .foto {
 }
 
 .mini-menu {
-    position: fixed !important;
-    right: auto !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    z-index: 1000 !important;
+    position: fixed;
+    bottom: 0;
+    z-index: 1000;
     width: 100vw;
     height: 75vh;
-    margin: 0;
     border-radius: 75px 75px 0 0;
     background-color: #ffffff;
     box-shadow:
@@ -95,7 +79,6 @@ body:has(.mini-menu[aria-hidden="false"]) .foto {
         calc(100% + 96px + env(safe-area-inset-bottom, 0px)),
         0
     );
-    isolation: isolate;
     touch-action: none;
     display: flex;
     flex-flow: column nowrap;
@@ -225,23 +208,20 @@ body:has(.mini-menu[aria-hidden="false"]) .foto {
 
 #menuPrincipal {
     position: fixed !important;
-    top: auto !important;
-    right: auto !important;
-    bottom: max(18px, env(safe-area-inset-bottom, 18px)) !important;
-    left: 50% !important;
-    z-index: 1100 !important;
-    width: 90% !important;
-    height: 56px !important;
+    left: 50%;
+    bottom: var(--menu-principal-bottom) !important;
+    z-index: 1100;
+    width: 90%;
+    height: var(--menu-principal-height);
     margin: 0 !important;
-    padding: 0 !important;
-    transform: translate3d(-50%, 0, 0) !important;
+    transform: translate3d(-50%, 0, 0);
+    -webkit-transform: translate3d(-50%, 0, 0);
+    will-change: transform;
 }
 
 #menuPrincipal > nav {
     width: 100%;
     height: 100%;
-    margin: 0;
-    padding: 0;
     display: flex;
     flex-flow: row nowrap;
     justify-content: center;
@@ -388,35 +368,28 @@ html[data-margot-invisivel="true"] #alternar-invisivel .menu-invisivel-imagem {
 }
 
 @media all and (display-mode: standalone) {
-    html:has(#gridCanvas) {
-        width: 100%;
-        height: calc(100% + env(safe-area-inset-top, 0px));
-        min-height: calc(100% + env(safe-area-inset-top, 0px));
-        overflow: hidden !important;
-    }
-
+    html:has(#gridCanvas),
     body:has(#gridCanvas) {
-        position: relative;
         width: 100%;
         height: 100%;
         min-height: 100%;
         overflow: hidden !important;
     }
 
+    body:has(#gridCanvas) {
+        position: fixed;
+        inset: 0;
+    }
+
     body:has(#gridCanvas) #gridCanvas {
-        position: absolute !important;
-        top: 0;
-        left: 0;
+        position: fixed !important;
+        inset: 0;
         width: 100vw !important;
-        height: 100% !important;
+        height: 100vh !important;
+        height: 100dvh !important;
     }
 
     body:has(#gridCanvas) .mini-menu {
-        position: absolute !important;
-    }
-
-    #menuPrincipal {
-        position: fixed !important;
-        bottom: max(18px, env(safe-area-inset-bottom, 18px)) !important;
+        position: fixed;
     }
 }
