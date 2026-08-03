@@ -1,180 +1,67 @@
-(function () {
+(function (window, document) {
     'use strict';
 
-    var CHAVE_TRANSICAO = 'margot:navegacao-pendente';
-    var DURACAO_ENTRADA = 300;
-    var DURACAO_SAIDA = 170;
+    var DURACAO_TRANSICAO = 280;
     var navegacaoEmCurso = false;
 
-    function caminhoNormalizado(valor) {
-        try {
-            var caminho = new URL(valor, window.location.href).pathname;
-            caminho = caminho.replace(/\/index\.php$/i, '/index');
-            caminho = caminho.replace(/\/+$/, '');
-            return caminho || '/';
-        } catch (erro) {
+    function normalizarCaminho(caminho) {
+        var resultado = String(caminho || '/').replace(/\/+$/, '');
+
+        if (resultado === '' || resultado === '/index' || resultado === '/index.php') {
             return '/';
         }
+
+        return resultado;
     }
 
-    function indiceDaPagina(valor) {
-        var caminho = caminhoNormalizado(valor);
+    function indicePeloCaminho(caminho) {
+        var normalizado = normalizarCaminho(caminho);
 
-        if (/\/messages(?:\/|$)/i.test(caminho)) return 1;
-        if (/\/profile(?:\/|$)/i.test(caminho)) return 2;
-        if (caminho === '/' || /\/index$/i.test(caminho)) return 0;
-
-        return null;
-    }
-
-    function conteudoDaPagina() {
-        return document.getElementById('conteudoPagina') ||
-            document.querySelector('[data-conteudo-pagina]') ||
-            document.querySelector('body > main');
-    }
-
-    function movimentoReduzido() {
-        return window.matchMedia &&
-            window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    }
-
-    function limparAnimacao(elemento) {
-        if (!elemento) return;
-
-        elemento.getAnimations().forEach(function (animacao) {
-            animacao.cancel();
-        });
-
-        elemento.style.removeProperty('transform');
-        elemento.style.removeProperty('opacity');
-        elemento.style.removeProperty('will-change');
-        elemento.style.removeProperty('pointer-events');
-        document.documentElement.classList.remove('margot-transicao-ativa');
-    }
-
-    function guardarTransicao(direcao) {
-        try {
-            sessionStorage.setItem(CHAVE_TRANSICAO, JSON.stringify({
-                direcao: direcao,
-                instante: Date.now()
-            }));
-        } catch (erro) {
-            /* A navegação continua mesmo sem sessionStorage. */
-        }
-    }
-
-    function obterTransicao() {
-        try {
-            var valor = sessionStorage.getItem(CHAVE_TRANSICAO);
-            sessionStorage.removeItem(CHAVE_TRANSICAO);
-
-            if (!valor) return null;
-
-            var transicao = JSON.parse(valor);
-
-            if (
-                !transicao ||
-                Date.now() - Number(transicao.instante) > 10000
-            ) {
-                return null;
-            }
-
-            return transicao;
-        } catch (erro) {
-            return null;
-        }
-    }
-
-    function animarEntrada() {
-        var transicao = obterTransicao();
-        var conteudo = conteudoDaPagina();
-
-        if (!transicao || !conteudo || movimentoReduzido()) return;
-
-        var origem = transicao.direcao === 'direita'
-            ? '-100vw'
-            : '100vw';
-
-        document.documentElement.classList.add('margot-transicao-ativa');
-        conteudo.style.willChange = 'transform, opacity';
-
-        var animacao = conteudo.animate([
-            {
-                transform: 'translate3d(' + origem + ', 0, 0)',
-                opacity: 0.92
-            },
-            {
-                transform: 'translate3d(0, 0, 0)',
-                opacity: 1
-            }
-        ], {
-            duration: DURACAO_ENTRADA,
-            easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
-            fill: 'both'
-        });
-
-        animacao.addEventListener('finish', function () {
-            limparAnimacao(conteudo);
-        }, { once: true });
-    }
-
-    function navegar(url, direcao) {
-        if (navegacaoEmCurso) return;
-
-        navegacaoEmCurso = true;
-        guardarTransicao(direcao);
-
-        var conteudo = conteudoDaPagina();
-
-        if (!conteudo || movimentoReduzido()) {
-            window.location.assign(url);
-            return;
+        if (
+            normalizado === '/messages' ||
+            normalizado.indexOf('/messages/') === 0 ||
+            normalizado === '/chat' ||
+            normalizado.indexOf('/chat/') === 0
+        ) {
+            return 1;
         }
 
-        var destino = direcao === 'direita' ? '32vw' : '-32vw';
-
-        document.documentElement.classList.add('margot-transicao-ativa');
-        conteudo.style.pointerEvents = 'none';
-        conteudo.style.willChange = 'transform, opacity';
-
-        var animacao = conteudo.animate([
-            {
-                transform: 'translate3d(0, 0, 0)',
-                opacity: 1
-            },
-            {
-                transform: 'translate3d(' + destino + ', 0, 0)',
-                opacity: 0.86
-            }
-        ], {
-            duration: DURACAO_SAIDA,
-            easing: 'cubic-bezier(0.4, 0, 1, 1)',
-            fill: 'forwards'
-        });
-
-        var concluida = false;
-
-        function concluir() {
-            if (concluida) return;
-
-            concluida = true;
-            window.location.assign(url);
+        if (
+            normalizado === '/profile' ||
+            normalizado.indexOf('/profile/') === 0 ||
+            normalizado === '/settings' ||
+            normalizado.indexOf('/settings/') === 0
+        ) {
+            return 2;
         }
 
-        animacao.addEventListener('finish', concluir, { once: true });
-        window.setTimeout(concluir, DURACAO_SAIDA + 80);
+        return 0;
     }
 
-    function atualizarPaginaAtiva() {
-        var indiceAtual = indiceDaPagina(window.location.href);
-        var links = document.querySelectorAll(
-            '#menuPrincipal > nav > ul > li > a'
+    function obterLinks() {
+        return Array.prototype.slice.call(
+            document.querySelectorAll(
+                '#menuPrincipal > nav > ul > li > a[href]'
+            )
         );
+    }
 
+    function indiceAtual(links) {
+        var ativo = links.findIndex(function (link) {
+            return (
+                link.classList.contains('active') ||
+                link.getAttribute('aria-current') === 'page'
+            );
+        });
+
+        return ativo >= 0
+            ? ativo
+            : indicePeloCaminho(window.location.pathname);
+    }
+
+    function atualizarLinkAtivo(links, linkAtivo) {
         links.forEach(function (link) {
-            var ativo =
-                indiceAtual !== null &&
-                indiceDaPagina(link.href) === indiceAtual;
+            var ativo = link === linkAtivo;
 
             link.classList.toggle('active', ativo);
 
@@ -186,21 +73,25 @@
         });
     }
 
-    function tratarClique(evento) {
-        var alvo = evento.target;
+    function mesmoDestino(destino) {
+        var atual = new URL(window.location.href);
+        var atualCaminho = normalizarCaminho(atual.pathname);
+        var destinoCaminho = normalizarCaminho(destino.pathname);
 
-        if (!(alvo instanceof Element)) return;
-
-        var link = alvo.closest(
-            '#menuPrincipal > nav > ul > li > a'
+        return (
+            atualCaminho === destinoCaminho &&
+            atual.search === destino.search
         );
+    }
 
+    function linkElegivel(evento, link) {
         if (
             !link ||
+            navegacaoEmCurso ||
             evento.defaultPrevented ||
             evento.button !== 0
         ) {
-            return;
+            return false;
         }
 
         if (
@@ -209,42 +100,161 @@
             evento.shiftKey ||
             evento.altKey
         ) {
+            return false;
+        }
+
+        if (
+            link.hasAttribute('download') ||
+            link.hasAttribute('data-sem-transicao')
+        ) {
+            return false;
+        }
+
+        if (link.target && link.target !== '_self') {
+            return false;
+        }
+
+        try {
+            return (
+                new URL(link.href, window.location.href).origin ===
+                window.location.origin
+            );
+        } catch (erro) {
+            return false;
+        }
+    }
+
+    function removerCortina() {
+        var cortina = document.getElementById(
+            'margot-transicao-cortina'
+        );
+
+        if (cortina) {
+            cortina.remove();
+        }
+
+        document.documentElement.classList.remove(
+            'margot-transicao-ativa'
+        );
+        document.documentElement.removeAttribute('aria-busy');
+        navegacaoEmCurso = false;
+    }
+
+    function criarCortina(direcao) {
+        removerCortina();
+
+        var cortina = document.createElement('div');
+        var inicio = direcao === 'esquerda' ? '-100%' : '100%';
+
+        cortina.id = 'margot-transicao-cortina';
+        cortina.setAttribute('aria-hidden', 'true');
+        cortina.style.position = 'fixed';
+        cortina.style.inset = '0';
+        cortina.style.zIndex = '1090';
+        cortina.style.background = '#ffffff';
+        cortina.style.pointerEvents = 'auto';
+        cortina.style.transform =
+            'translate3d(' + inicio + ', 0, 0)';
+        cortina.style.willChange = 'transform';
+        cortina.style.backfaceVisibility = 'hidden';
+        cortina.style.webkitBackfaceVisibility = 'hidden';
+        cortina.style.boxShadow =
+            direcao === 'esquerda'
+                ? '12px 0 28px rgba(0, 0, 0, 0.06)'
+                : '-12px 0 28px rgba(0, 0, 0, 0.06)';
+
+        document.body.appendChild(cortina);
+
+        return cortina;
+    }
+
+    function navegar(destino, direcao) {
+        if (
+            window.matchMedia(
+                '(prefers-reduced-motion: reduce)'
+            ).matches
+        ) {
+            navegacaoEmCurso = true;
+            window.location.assign(destino.href);
             return;
         }
 
-        if (link.target && link.target !== '_self') return;
+        var cortina = criarCortina(direcao);
+        var terminou = false;
 
-        var url = new URL(link.href, window.location.href);
+        navegacaoEmCurso = true;
+        document.documentElement.classList.add(
+            'margot-transicao-ativa'
+        );
+        document.documentElement.setAttribute('aria-busy', 'true');
 
-        if (url.origin !== window.location.origin) return;
+        function concluir() {
+            if (terminou) {
+                return;
+            }
 
-        var atual = indiceDaPagina(window.location.href);
-        var destino = indiceDaPagina(url.href);
-
-        if (atual === null || destino === null) return;
-
-        evento.preventDefault();
-
-        if (atual === destino) {
-            atualizarPaginaAtiva();
-            return;
+            terminou = true;
+            window.location.assign(destino.href);
         }
 
-        navegar(
-            url.href,
-            destino > atual ? 'esquerda' : 'direita'
+        cortina.getBoundingClientRect();
+
+        window.requestAnimationFrame(function () {
+            cortina.style.transition =
+                'transform ' +
+                DURACAO_TRANSICAO +
+                'ms cubic-bezier(.32,.72,0,1)';
+            cortina.style.transform = 'translate3d(0, 0, 0)';
+        });
+
+        cortina.addEventListener('transitionend', concluir, {
+            once: true
+        });
+
+        window.setTimeout(
+            concluir,
+            DURACAO_TRANSICAO + 120
         );
     }
 
-    document.addEventListener('click', tratarClique);
+    function aoClicar(evento) {
+        var link = evento.currentTarget;
+
+        if (!linkElegivel(evento, link)) {
+            return;
+        }
+
+        var destino = new URL(
+            link.href,
+            window.location.href
+        );
+
+        if (mesmoDestino(destino)) {
+            evento.preventDefault();
+            return;
+        }
+
+        evento.preventDefault();
+
+        var links = obterLinks();
+        var origem = indiceAtual(links);
+        var chegada = links.indexOf(link);
+        var direcao =
+            chegada < origem ? 'esquerda' : 'direita';
+
+        atualizarLinkAtivo(links, link);
+        navegar(destino, direcao);
+    }
 
     function iniciar() {
-        atualizarPaginaAtiva();
+        removerCortina();
 
-        window.requestAnimationFrame(function () {
-            window.requestAnimationFrame(animarEntrada);
+        obterLinks().forEach(function (link) {
+            link.addEventListener('click', aoClicar);
         });
     }
+
+    window.addEventListener('pageshow', removerCortina);
 
     if (document.readyState === 'loading') {
         document.addEventListener(
@@ -255,13 +265,4 @@
     } else {
         iniciar();
     }
-
-    window.addEventListener('pageshow', function (evento) {
-        navegacaoEmCurso = false;
-        atualizarPaginaAtiva();
-
-        if (evento.persisted) {
-            limparAnimacao(conteudoDaPagina());
-        }
-    });
-}());
+})(window, document);
