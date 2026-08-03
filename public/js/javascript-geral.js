@@ -1,74 +1,180 @@
-(function (window, document) {
+(function () {
     'use strict';
 
-    var DURACAO_TRANSICAO = 260;
-    var LIMITE_GESTO = 28;
+    var CHAVE_TRANSICAO = 'margot:navegacao-pendente';
+    var DURACAO_ENTRADA = 300;
+    var DURACAO_SAIDA = 170;
     var navegacaoEmCurso = false;
 
-    var gesto = {
-        ativo: false,
-        horizontal: false,
-        inicioX: 0,
-        inicioY: 0,
-        atualX: 0,
-        inicioTempo: 0
-    };
-
-    function normalizarCaminho(caminho) {
-        var resultado = String(caminho || '/').replace(/\/+$/, '');
-
-        if (
-            resultado === '' ||
-            resultado === '/index' ||
-            resultado === '/index.php'
-        ) {
+    function caminhoNormalizado(valor) {
+        try {
+            var caminho = new URL(valor, window.location.href).pathname;
+            caminho = caminho.replace(/\/index\.php$/i, '/index');
+            caminho = caminho.replace(/\/+$/, '');
+            return caminho || '/';
+        } catch (erro) {
             return '/';
         }
-
-        return resultado;
     }
 
-    function paginaAtual() {
-        return document.getElementById('conteudoPagina');
+    function indiceDaPagina(valor) {
+        var caminho = caminhoNormalizado(valor);
+
+        if (/\/messages(?:\/|$)/i.test(caminho)) return 1;
+        if (/\/profile(?:\/|$)/i.test(caminho)) return 2;
+        if (caminho === '/' || /\/index$/i.test(caminho)) return 0;
+
+        return null;
     }
 
-    function limparAnimacao() {
-        var pagina = paginaAtual();
+    function conteudoDaPagina() {
+        return document.getElementById('conteudoPagina') ||
+            document.querySelector('[data-conteudo-pagina]') ||
+            document.querySelector('body > main');
+    }
 
-        if (!pagina) {
+    function movimentoReduzido() {
+        return window.matchMedia &&
+            window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    }
+
+    function limparAnimacao(elemento) {
+        if (!elemento) return;
+
+        elemento.getAnimations().forEach(function (animacao) {
+            animacao.cancel();
+        });
+
+        elemento.style.removeProperty('transform');
+        elemento.style.removeProperty('opacity');
+        elemento.style.removeProperty('will-change');
+        elemento.style.removeProperty('pointer-events');
+        document.documentElement.classList.remove('margot-transicao-ativa');
+    }
+
+    function guardarTransicao(direcao) {
+        try {
+            sessionStorage.setItem(CHAVE_TRANSICAO, JSON.stringify({
+                direcao: direcao,
+                instante: Date.now()
+            }));
+        } catch (erro) {
+            /* A navegação continua mesmo sem sessionStorage. */
+        }
+    }
+
+    function obterTransicao() {
+        try {
+            var valor = sessionStorage.getItem(CHAVE_TRANSICAO);
+            sessionStorage.removeItem(CHAVE_TRANSICAO);
+
+            if (!valor) return null;
+
+            var transicao = JSON.parse(valor);
+
+            if (
+                !transicao ||
+                Date.now() - Number(transicao.instante) > 10000
+            ) {
+                return null;
+            }
+
+            return transicao;
+        } catch (erro) {
+            return null;
+        }
+    }
+
+    function animarEntrada() {
+        var transicao = obterTransicao();
+        var conteudo = conteudoDaPagina();
+
+        if (!transicao || !conteudo || movimentoReduzido()) return;
+
+        var origem = transicao.direcao === 'direita'
+            ? '-100vw'
+            : '100vw';
+
+        document.documentElement.classList.add('margot-transicao-ativa');
+        conteudo.style.willChange = 'transform, opacity';
+
+        var animacao = conteudo.animate([
+            {
+                transform: 'translate3d(' + origem + ', 0, 0)',
+                opacity: 0.92
+            },
+            {
+                transform: 'translate3d(0, 0, 0)',
+                opacity: 1
+            }
+        ], {
+            duration: DURACAO_ENTRADA,
+            easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+            fill: 'both'
+        });
+
+        animacao.addEventListener('finish', function () {
+            limparAnimacao(conteudo);
+        }, { once: true });
+    }
+
+    function navegar(url, direcao) {
+        if (navegacaoEmCurso) return;
+
+        navegacaoEmCurso = true;
+        guardarTransicao(direcao);
+
+        var conteudo = conteudoDaPagina();
+
+        if (!conteudo || movimentoReduzido()) {
+            window.location.assign(url);
             return;
         }
 
-        pagina.style.pointerEvents = '';
-        pagina.style.transition = '';
-        pagina.style.transform = '';
-        pagina.style.opacity = '';
+        var destino = direcao === 'direita' ? '32vw' : '-32vw';
 
-        document.body.classList.remove(
-            'margot-entrada',
-            'margot-entrada-esquerda',
-            'margot-entrada-direita',
-            'margot-entrada-pronta'
-        );
+        document.documentElement.classList.add('margot-transicao-ativa');
+        conteudo.style.pointerEvents = 'none';
+        conteudo.style.willChange = 'transform, opacity';
+
+        var animacao = conteudo.animate([
+            {
+                transform: 'translate3d(0, 0, 0)',
+                opacity: 1
+            },
+            {
+                transform: 'translate3d(' + destino + ', 0, 0)',
+                opacity: 0.86
+            }
+        ], {
+            duration: DURACAO_SAIDA,
+            easing: 'cubic-bezier(0.4, 0, 1, 1)',
+            fill: 'forwards'
+        });
+
+        var concluida = false;
+
+        function concluir() {
+            if (concluida) return;
+
+            concluida = true;
+            window.location.assign(url);
+        }
+
+        animacao.addEventListener('finish', concluir, { once: true });
+        window.setTimeout(concluir, DURACAO_SAIDA + 80);
     }
 
-    function atualizarMenu() {
-        var atual = normalizarCaminho(window.location.pathname);
+    function atualizarPaginaAtiva() {
+        var indiceAtual = indiceDaPagina(window.location.href);
         var links = document.querySelectorAll(
-            '#menuPrincipal > nav > ul > li > a[href]'
+            '#menuPrincipal > nav > ul > li > a'
         );
 
         links.forEach(function (link) {
-            var destino = normalizarCaminho(
-                new URL(link.href, window.location.href).pathname
-            );
-
             var ativo =
-                atual === destino ||
-                (
-                    destino !== '/' &&
-                    atual.indexOf(destino + '/') === 0
-                );
+                indiceAtual !== null &&
+                indiceDaPagina(link.href) === indiceAtual;
 
             link.classList.toggle('active', ativo);
 
@@ -80,137 +186,21 @@
         });
     }
 
-    function prepararHistorico() {
-        var pendente = Number(
-            window.sessionStorage.getItem('margot-indice-pendente')
+    function tratarClique(evento) {
+        var alvo = evento.target;
+
+        if (!(alvo instanceof Element)) return;
+
+        var link = alvo.closest(
+            '#menuPrincipal > nav > ul > li > a'
         );
 
-        var contador = Number(
-            window.sessionStorage.getItem('margot-contador-historico')
-        ) || 0;
-
-        if (
-            !window.history.state ||
-            typeof window.history.state.margotIndice !== 'number'
-        ) {
-            var indice =
-                Number.isFinite(pendente) && pendente > 0
-                    ? pendente
-                    : contador + 1;
-
-            window.history.replaceState(
-                { margotIndice: indice },
-                '',
-                window.location.href
-            );
-
-            contador = Math.max(contador, indice);
-
-            window.sessionStorage.setItem(
-                'margot-contador-historico',
-                String(contador)
-            );
-        }
-
-        window.sessionStorage.removeItem('margot-indice-pendente');
-    }
-
-    function direcaoEntrada() {
-        var explicita = window.sessionStorage.getItem(
-            'margot-direcao-entrada'
-        );
-
-        window.sessionStorage.removeItem('margot-direcao-entrada');
-
-        if (
-            explicita === 'frente' ||
-            explicita === 'voltar'
-        ) {
-            return explicita;
-        }
-
-        var anterior = Number(
-            window.sessionStorage.getItem('margot-indice-saida')
-        );
-
-        var atual = Number(
-            window.history.state &&
-            window.history.state.margotIndice
-        );
-
-        if (
-            !Number.isFinite(anterior) ||
-            !Number.isFinite(atual) ||
-            anterior === atual
-        ) {
-            return '';
-        }
-
-        return atual < anterior
-            ? 'voltar'
-            : 'frente';
-    }
-
-    function animarEntrada() {
-        var direcao = direcaoEntrada();
-        var pagina = paginaAtual();
-
-        if (
-            !pagina ||
-            !direcao ||
-            window.matchMedia(
-                '(prefers-reduced-motion: reduce)'
-            ).matches
-        ) {
-            return;
-        }
-
-        document.body.classList.add(
-            'margot-entrada',
-            direcao === 'voltar'
-                ? 'margot-entrada-esquerda'
-                : 'margot-entrada-direita'
-        );
-
-        pagina.getBoundingClientRect();
-
-        window.requestAnimationFrame(function () {
-            document.body.classList.add(
-                'margot-entrada-pronta'
-            );
-
-            window.setTimeout(
-                limparAnimacao,
-                DURACAO_TRANSICAO + 60
-            );
-        });
-    }
-
-    function urlsIguais(urlA, urlB) {
-        var a = new URL(urlA, window.location.href);
-        var b = new URL(urlB, window.location.href);
-
-        return (
-            normalizarCaminho(a.pathname) ===
-                normalizarCaminho(b.pathname) &&
-            a.search === b.search
-        );
-    }
-
-    function linkElegivel(link, evento) {
         if (
             !link ||
-            navegacaoEmCurso ||
-            evento.defaultPrevented
-        ) {
-            return false;
-        }
-
-        if (
-            typeof evento.button === 'number' &&
+            evento.defaultPrevented ||
             evento.button !== 0
         ) {
-            return false;
+            return;
         }
 
         if (
@@ -219,363 +209,59 @@
             evento.shiftKey ||
             evento.altKey
         ) {
-            return false;
-        }
-
-        if (
-            link.hasAttribute('download') ||
-            link.hasAttribute('data-sem-transicao') ||
-            link.hasAttribute('data-sem-ajax')
-        ) {
-            return false;
-        }
-
-        if (
-            link.target &&
-            link.target !== '_self'
-        ) {
-            return false;
-        }
-
-        var destino;
-
-        try {
-            destino = new URL(
-                link.href,
-                window.location.href
-            );
-        } catch (erro) {
-            return false;
-        }
-
-        if (
-            destino.origin !== window.location.origin ||
-            !/^https?:$/.test(destino.protocol)
-        ) {
-            return false;
-        }
-
-        if (
-            destino.hash &&
-            urlsIguais(
-                destino.href,
-                window.location.href
-            )
-        ) {
-            return false;
-        }
-
-        return true;
-    }
-
-    function guardarSaida() {
-        var indice = Number(
-            window.history.state &&
-            window.history.state.margotIndice
-        );
-
-        if (Number.isFinite(indice)) {
-            window.sessionStorage.setItem(
-                'margot-indice-saida',
-                String(indice)
-            );
-        }
-    }
-
-    function navegar(url, direcao) {
-        if (navegacaoEmCurso) {
             return;
         }
 
-        navegacaoEmCurso = true;
-        guardarSaida();
+        if (link.target && link.target !== '_self') return;
 
-        window.sessionStorage.setItem(
-            'margot-direcao-entrada',
-            direcao
-        );
+        var url = new URL(link.href, window.location.href);
 
-        if (direcao === 'frente') {
-            var atual = Number(
-                window.history.state &&
-                window.history.state.margotIndice
-            ) || 0;
+        if (url.origin !== window.location.origin) return;
 
-            window.sessionStorage.setItem(
-                'margot-indice-pendente',
-                String(atual + 1)
-            );
-        }
+        var atual = indiceDaPagina(window.location.href);
+        var destino = indiceDaPagina(url.href);
 
-        var pagina = paginaAtual();
-
-        function concluir() {
-            window.location.assign(url);
-        }
-
-        if (
-            !pagina ||
-            window.matchMedia(
-                '(prefers-reduced-motion: reduce)'
-            ).matches
-        ) {
-            concluir();
-            return;
-        }
-
-        pagina.style.pointerEvents = 'none';
-
-        pagina.style.transition =
-            'transform ' +
-            DURACAO_TRANSICAO +
-            'ms cubic-bezier(.32,.72,0,1), opacity ' +
-            DURACAO_TRANSICAO +
-            'ms ease';
-
-        pagina.style.transform =
-            direcao === 'voltar'
-                ? 'translate3d(100vw,0,0)'
-                : 'translate3d(-100vw,0,0)';
-
-        pagina.style.opacity = '0.96';
-
-        window.setTimeout(
-            concluir,
-            DURACAO_TRANSICAO
-        );
-    }
-
-    function aoClicar(evento) {
-        var origem = evento.target;
-
-        var link =
-            origem && origem.closest
-                ? origem.closest('a[href]')
-                : null;
-
-        if (!linkElegivel(link, evento)) {
-            return;
-        }
-
-        var destino = new URL(
-            link.href,
-            window.location.href
-        );
-
-        if (
-            urlsIguais(
-                destino.href,
-                window.location.href
-            ) &&
-            !destino.hash
-        ) {
-            evento.preventDefault();
-            atualizarMenu();
-            return;
-        }
-
-        evento.preventDefault();
-        navegar(link.href, 'frente');
-    }
-
-    function alvoImpedeGesto(alvo) {
-        return Boolean(
-            alvo &&
-            alvo.closest &&
-            alvo.closest(
-                'input, textarea, select, video, ' +
-                '[contenteditable="true"], ' +
-                '.mini-menu, .heys-area, ' +
-                '[data-sem-gesto]'
-            )
-        );
-    }
-
-    function podeVoltar() {
-        return window.history.length > 1;
-    }
-
-    function iniciarGesto(evento) {
-        if (
-            navegacaoEmCurso ||
-            !podeVoltar() ||
-            evento.touches.length !== 1 ||
-            alvoImpedeGesto(evento.target)
-        ) {
-            return;
-        }
-
-        var toque = evento.touches[0];
-
-        if (toque.clientX > LIMITE_GESTO) {
-            return;
-        }
-
-        gesto.ativo = true;
-        gesto.horizontal = false;
-        gesto.inicioX = toque.clientX;
-        gesto.inicioY = toque.clientY;
-        gesto.atualX = toque.clientX;
-        gesto.inicioTempo = Date.now();
-    }
-
-    function moverGesto(evento) {
-        if (
-            !gesto.ativo ||
-            evento.touches.length !== 1
-        ) {
-            return;
-        }
-
-        var toque = evento.touches[0];
-        var distanciaX = Math.max(
-            0,
-            toque.clientX - gesto.inicioX
-        );
-
-        var distanciaY = Math.abs(
-            toque.clientY - gesto.inicioY
-        );
-
-        gesto.atualX = toque.clientX;
-
-        if (!gesto.horizontal) {
-            if (distanciaX < 8) {
-                return;
-            }
-
-            if (distanciaY > distanciaX) {
-                gesto.ativo = false;
-                return;
-            }
-
-            gesto.horizontal = true;
-        }
+        if (atual === null || destino === null) return;
 
         evento.preventDefault();
 
-        var pagina = paginaAtual();
-
-        if (!pagina) {
+        if (atual === destino) {
+            atualizarPaginaAtiva();
             return;
         }
 
-        pagina.style.transition = 'none';
-
-        pagina.style.transform =
-            'translate3d(' +
-            distanciaX +
-            'px,0,0)';
+        navegar(
+            url.href,
+            destino > atual ? 'esquerda' : 'direita'
+        );
     }
 
-    function terminarGesto() {
-        if (!gesto.ativo) {
-            return;
-        }
+    document.addEventListener('click', tratarClique);
 
-        var pagina = paginaAtual();
+    function iniciar() {
+        atualizarPaginaAtiva();
 
-        var distancia = Math.max(
-            0,
-            gesto.atualX - gesto.inicioX
-        );
-
-        var duracao = Math.max(
-            1,
-            Date.now() - gesto.inicioTempo
-        );
-
-        var velocidade = distancia / duracao;
-
-        var concluir =
-            gesto.horizontal &&
-            (
-                distancia > window.innerWidth * 0.28 ||
-                velocidade > 0.55
-            );
-
-        gesto.ativo = false;
-        gesto.horizontal = false;
-
-        if (concluir) {
-            navegacaoEmCurso = true;
-            guardarSaida();
-
-            window.sessionStorage.setItem(
-                'margot-direcao-entrada',
-                'voltar'
-            );
-
-            if (pagina) {
-                pagina.style.transition =
-                    'transform 180ms ' +
-                    'cubic-bezier(.32,.72,0,1)';
-
-                pagina.style.transform =
-                    'translate3d(100vw,0,0)';
-            }
-
-            window.setTimeout(function () {
-                window.history.back();
-            }, 170);
-
-            return;
-        }
-
-        if (pagina) {
-            pagina.style.transition =
-                'transform 220ms ' +
-                'cubic-bezier(.32,.72,0,1)';
-
-            pagina.style.transform =
-                'translate3d(0,0,0)';
-        }
+        window.requestAnimationFrame(function () {
+            window.requestAnimationFrame(animarEntrada);
+        });
     }
 
-    prepararHistorico();
-    atualizarMenu();
-    animarEntrada();
+    if (document.readyState === 'loading') {
+        document.addEventListener(
+            'DOMContentLoaded',
+            iniciar,
+            { once: true }
+        );
+    } else {
+        iniciar();
+    }
 
-    document.addEventListener(
-        'click',
-        aoClicar
-    );
+    window.addEventListener('pageshow', function (evento) {
+        navegacaoEmCurso = false;
+        atualizarPaginaAtiva();
 
-    document.addEventListener(
-        'touchstart',
-        iniciarGesto,
-        { passive: true }
-    );
-
-    document.addEventListener(
-        'touchmove',
-        moverGesto,
-        { passive: false }
-    );
-
-    document.addEventListener(
-        'touchend',
-        terminarGesto,
-        { passive: true }
-    );
-
-    document.addEventListener(
-        'touchcancel',
-        terminarGesto,
-        { passive: true }
-    );
-
-    window.addEventListener(
-        'pagehide',
-        guardarSaida
-    );
-
-    window.addEventListener(
-        'pageshow',
-        function () {
-            navegacaoEmCurso = false;
-            limparAnimacao();
-            atualizarMenu();
+        if (evento.persisted) {
+            limparAnimacao(conteudoDaPagina());
         }
-    );
-}(window, document));
+    });
+}());
