@@ -384,6 +384,13 @@ html[data-margot-invisivel="true"] #alternar-invisivel .menu-invisivel-imagem {
 /* Correção do viewport reduzido nas PWA instaladas no iOS. */
 
 @media all and (display-mode: standalone) {
+    body:not(:has(#gridCanvas)) #menuPrincipal {
+        bottom: calc(
+            var(--menu-principal-bottom) -
+            env(safe-area-inset-top, 0px)
+        ) !important;
+    }
+
     html:has(#gridCanvas) {
         width: 100%;
         height: calc(100% + env(safe-area-inset-top, 0px));
