@@ -4,6 +4,8 @@
     var $miniMenu = $('.mini-menu');
     if (!$miniMenu.length) return;
 
+    $(document).off('.margotMiniMenu');
+
     var $anexo = $miniMenu.find('.mini-menu-anexo');
     var $maisOpcoes = $('#abrir-acoes-perfil');
     var $acoes = $('#acoes-perfil');
@@ -101,9 +103,18 @@
             .attr('data-destinatario-id', id)
             .attr('data-profile-access-token', tokenAcessoPerfil)
             .toggleClass('perfil-proprio', souEu);
-        $miniMenu.find('.mini-menu-perfil').attr('href', baseUrl(window.profileUrl, '/profile') + '/' + encodeURIComponent(id));
+
+        $miniMenu.find('.mini-menu-perfil').attr(
+            'href',
+            baseUrl(window.profileUrl, '/profile') + '/' + encodeURIComponent(id)
+        );
+
         $miniMenu.find('header h1').text(membroNome);
-        $miniMenu.find('.mini-menu-mensagem').attr('action', baseUrl(window.messagesUrl, '/messages') + '/' + encodeURIComponent(id));
+
+        $miniMenu.find('.mini-menu-mensagem').attr(
+            'action',
+            baseUrl(window.messagesUrl, '/messages') + '/' + encodeURIComponent(id)
+        );
 
         if (imagem) {
             imagem.onerror = function () {
@@ -178,29 +189,20 @@
 
     window.prepararMiniMenuDaFoto = prepararMiniMenu;
 
-    $(document).on('pointerdown click', '.foto', function () {
+    $(document).on('pointerdown.margotMiniMenu click.margotMiniMenu', '.foto', function () {
         prepararMiniMenu(this);
     });
 
-    $(document).on('click', '.mini-menu-perfil', function (evento) {
+    $(document).on('click.margotMiniMenu', '.mini-menu-perfil', function (evento) {
         var token = tokenAcessoPerfilSelecionado();
         var id = idSelecionado();
         var souEu = id !== '' && id === texto(window.membroId);
         var destino = texto($(this).attr('href'));
 
-        /*
-         * Sem passe temporário, deixa o navegador fazer o GET normal.
-         * Esse caminho continua a funcionar para o próprio perfil e para
-         * pessoas que já trocaram mensagens nos dois sentidos.
-         */
         if (!token || !destino || souEu) return;
 
         evento.preventDefault();
 
-        /*
-         * O passe segue no corpo do POST, nunca no URL, histórico,
-         * Referer ou logs normais do servidor.
-         */
         var formulario = document.createElement('form');
         var campo = document.createElement('input');
 
@@ -217,7 +219,7 @@
         formulario.submit();
     });
 
-    $(document).on('click', '#enviar-hey', function (evento) {
+    $(document).on('click.margotMiniMenu', '#enviar-hey', function (evento) {
         evento.preventDefault();
         evento.stopPropagation();
 
@@ -233,7 +235,9 @@
         if (!window.AppWebSocket || !window.AppWebSocket.isConnected()) {
             aviso('A ligação está a ser restabelecida.', 'erro');
 
-            if (window.AppWebSocket) window.AppWebSocket.connect();
+            if (window.AppWebSocket) {
+                window.AppWebSocket.connect();
+            }
 
             return;
         }
@@ -255,7 +259,7 @@
         window.setTimeout(libertarHey, 1200);
     });
 
-    $(document).on('submit', '.mini-menu-mensagem', async function (evento) {
+    $(document).on('submit.margotMiniMenu', '.mini-menu-mensagem', async function (evento) {
         evento.preventDefault();
 
         if (aEnviarMensagem) return;
@@ -271,37 +275,37 @@
             return;
         }
 
-        if (!texto(dados.get('mensagem')) && !(ficheiro instanceof File && ficheiro.size)) return;
+        if (
+            !texto(dados.get('mensagem')) &&
+            !(ficheiro instanceof File && ficheiro.size)
+        ) {
+            return;
+        }
 
         dados.set('action', 'send');
 
-        /*
-         * Numa conversa nova, o servidor exige o passe temporário que
-         * veio com esta pessoa no estado do mapa. Numa conversa já
-         * existente o passe deixa de ser necessário.
-         */
         var tokenProximidade = tokenAcessoPerfilSelecionado();
 
         if (tokenProximidade) {
-            dados.set(
-                'profile_access_token',
-                tokenProximidade
-            );
+            dados.set('profile_access_token', tokenProximidade);
         }
 
         aEnviarMensagem = true;
         $botao.prop('disabled', true).val('A enviar…');
 
         try {
-            var resposta = await fetch(baseUrl(window.messagesUrl, '/messages') + '/' + encodeURIComponent(id), {
-                method: 'POST',
-                body: dados,
-                credentials: 'same-origin',
-                headers: {
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
+            var resposta = await fetch(
+                baseUrl(window.messagesUrl, '/messages') + '/' + encodeURIComponent(id),
+                {
+                    method: 'POST',
+                    body: dados,
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
                 }
-            });
+            );
 
             var conteudo = await resposta.text();
             var resultado;
@@ -309,17 +313,23 @@
             try {
                 resultado = JSON.parse(conteudo);
             } catch (erro) {
-                throw new Error(
-                    'O servidor devolveu uma resposta inválida.'
-                );
+                throw new Error('O servidor devolveu uma resposta inválida.');
             }
 
             if (!resposta.ok || !resultado.success) {
-                throw new Error(resultado.message || 'Não foi possível enviar a mensagem.');
+                throw new Error(
+                    resultado.message ||
+                    'Não foi possível enviar a mensagem.'
+                );
             }
 
             this.reset();
-            $anexo.removeClass('selecionado').text('+').attr('aria-label', 'Adicionar fotografia ou vídeo');
+
+            $anexo
+                .removeClass('selecionado')
+                .text('+')
+                .attr('aria-label', 'Adicionar fotografia ou vídeo');
+
             aviso('Mensagem enviada.', 'sucesso');
 
             if (window.AppWebSocket && window.AppWebSocket.isConnected()) {
@@ -336,13 +346,16 @@
         }
     });
 
-    $(document).on('change', '#mini-menu-media', function () {
+    $(document).on('change.margotMiniMenu', '#mini-menu-media', function () {
         var ficheiro = this.files && this.files[0];
 
         $anexo
             .toggleClass('selecionado', Boolean(ficheiro))
             .text(ficheiro ? '✓' : '+')
-            .attr('aria-label', ficheiro ? ficheiro.name : 'Adicionar fotografia ou vídeo');
+            .attr(
+                'aria-label',
+                ficheiro ? ficheiro.name : 'Adicionar fotografia ou vídeo'
+            );
     });
 
     $maisOpcoes.on('pointerdown pointerup', function (evento) {
@@ -355,9 +368,12 @@
         abrirAcoes();
     });
 
-    $acoes.on('pointerdown pointermove pointerup pointercancel', function (evento) {
-        evento.stopPropagation();
-    });
+    $acoes.on(
+        'pointerdown pointermove pointerup pointercancel',
+        function (evento) {
+            evento.stopPropagation();
+        }
+    );
 
     $acoes.on('click', '[data-fechar-acoes]', function (evento) {
         evento.preventDefault();
@@ -377,7 +393,16 @@
         var id = idSelecionado();
         var membroNome = nomeSelecionado();
 
-        if (!id || !window.confirm('Bloquear ' + membroNome + '? Deixam imediatamente de se ver no mapa.')) return;
+        if (
+            !id ||
+            !window.confirm(
+                'Bloquear ' +
+                membroNome +
+                '? Deixam imediatamente de se ver no mapa.'
+            )
+        ) {
+            return;
+        }
 
         definirSegurancaOcupada(true);
 
@@ -437,7 +462,7 @@
         }
     });
 
-    $(document).on('keydown', function (evento) {
+    $(document).on('keydown.margotMiniMenu', function (evento) {
         if (evento.key === 'Escape' && !$acoes.prop('hidden')) {
             fecharAcoes();
         }
@@ -445,4 +470,32 @@
 
     window.addEventListener('app:hey-enviado', libertarHey);
     window.addEventListener('app:hey-erro', libertarHey);
+
+    function desativarPagina() {
+        $(document).off('.margotMiniMenu');
+
+        window.removeEventListener(
+            'app:hey-enviado',
+            libertarHey
+        );
+
+        window.removeEventListener(
+            'app:hey-erro',
+            libertarHey
+        );
+
+        document.removeEventListener(
+            'margot:page-leave',
+            desativarPagina
+        );
+
+        if (window.prepararMiniMenuDaFoto === prepararMiniMenu) {
+            delete window.prepararMiniMenuDaFoto;
+        }
+    }
+
+    document.addEventListener(
+        'margot:page-leave',
+        desativarPagina
+    );
 })(window, document, jQuery);
