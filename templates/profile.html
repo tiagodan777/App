@@ -1,7 +1,7 @@
 {% extends 'layout.html' %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ doc_root }}estilos/profile.css?v=3">
+<link rel="stylesheet" href="{{ doc_root }}estilos/profile.css?v=3" data-margot-page-style>
 {% endblock %}
 
 {% block content %}
@@ -19,26 +19,11 @@
 } %}
 
 <main id="perfil">
-    <section
-        id="perfil-galeria"
-        class="perfil-galeria"
-        aria-label="Fotografias de {{ membro.nome }}"
-        tabindex="0"
-    >
+    <section id="perfil-galeria" class="perfil-galeria" aria-label="Fotografias de {{ membro.nome }}" tabindex="0">
         {% if total_slides > 1 %}
-            <div
-                id="perfil-indicadores"
-                class="perfil-indicadores"
-                aria-label="Escolher fotografia"
-            >
+            <div id="perfil-indicadores" class="perfil-indicadores" aria-label="Escolher fotografia">
                 {% for indice in 0..(total_slides - 1) %}
-                    <button
-                        type="button"
-                        class="{{ loop.first ? 'ativo' : '' }}"
-                        data-indice="{{ indice }}"
-                        aria-label="Ver fotografia {{ indice + 1 }} de {{ total_slides }}"
-                        aria-current="{{ loop.first ? 'true' : 'false' }}"
-                    >
+                    <button type="button" class="{{ loop.first ? 'ativo' : '' }}" data-indice="{{ indice }}" aria-label="Ver fotografia {{ indice + 1 }} de {{ total_slides }}" aria-current="{{ loop.first ? 'true' : 'false' }}">
                         <span></span>
                     </button>
                 {% endfor %}
@@ -48,60 +33,25 @@
         <div id="perfil-fotos" class="perfil-fotos">
             {% if total_fotos > 0 %}
                 {% for foto in fotos %}
-                    <figure
-                        id="perfil-foto-{{ loop.index0 }}"
-                        class="perfil-slide"
-                        data-indice="{{ loop.index0 }}"
-                        aria-hidden="{{ loop.first ? 'false' : 'true' }}"
-                    >
-                        <img
-                            src="{{ doc_root }}imagens/fotos-perfil-originais/{{ foto.nome_arquivo }}"
-                            data-fallback="{{ doc_root }}imagens/fotos-perfil/{{ foto.nome_arquivo }}"
-                            data-default="{{ doc_root }}imagens/fotos-perfil/default.webp"
-                            alt="Fotografia {{ loop.index }} de {{ membro.nome }}"
-                            loading="{{ loop.first ? 'eager' : 'lazy' }}"
-                            fetchpriority="{{ loop.first ? 'high' : 'auto' }}"
-                            draggable="false"
-                        >
+                    <figure id="perfil-foto-{{ loop.index0 }}" class="perfil-slide" data-indice="{{ loop.index0 }}" aria-hidden="{{ loop.first ? 'false' : 'true' }}">
+                        <img src="{{ doc_root }}imagens/fotos-perfil-originais/{{ foto.nome_arquivo }}" data-fallback="{{ doc_root }}imagens/fotos-perfil/{{ foto.nome_arquivo }}" data-default="{{ doc_root }}imagens/fotos-perfil/default.webp" alt="Fotografia {{ loop.index }} de {{ membro.nome }}" loading="{{ loop.first ? 'eager' : 'lazy' }}" fetchpriority="{{ loop.first ? 'high' : 'auto' }}" draggable="false">
                     </figure>
                 {% endfor %}
             {% else %}
-                <figure
-                    id="perfil-foto-0"
-                    class="perfil-slide"
-                    data-indice="0"
-                    aria-hidden="false"
-                >
-                    <img
-                        src="{{ doc_root }}imagens/fotos-perfil/default.webp"
-                        data-default="{{ doc_root }}imagens/fotos-perfil/default.webp"
-                        alt="{{ membro.nome }} ainda não adicionou fotografias"
-                        loading="eager"
-                        fetchpriority="high"
-                        draggable="false"
-                    >
+                <figure id="perfil-foto-0" class="perfil-slide" data-indice="0" aria-hidden="false">
+                    <img src="{{ doc_root }}imagens/fotos-perfil/default.webp" data-default="{{ doc_root }}imagens/fotos-perfil/default.webp" alt="{{ membro.nome }} ainda não adicionou fotografias" loading="eager" fetchpriority="high" draggable="false">
                 </figure>
             {% endif %}
         </div>
 
         {% if total_slides > 1 %}
-            <button
-                type="button"
-                id="perfil-anterior"
-                class="perfil-navegacao perfil-anterior"
-                aria-label="Fotografia anterior"
-            >
+            <button type="button" id="perfil-anterior" class="perfil-navegacao perfil-anterior" aria-label="Fotografia anterior">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M15 5l-7 7 7 7"></path>
                 </svg>
             </button>
 
-            <button
-                type="button"
-                id="perfil-seguinte"
-                class="perfil-navegacao perfil-seguinte"
-                aria-label="Fotografia seguinte"
-            >
+            <button type="button" id="perfil-seguinte" class="perfil-navegacao perfil-seguinte" aria-label="Fotografia seguinte">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M9 5l7 7-7 7"></path>
                 </svg>
@@ -115,12 +65,7 @@
             <p>{{ idade }}</p>
 
             {% if membro.id == session.id %}
-                <a
-                    href="{{ doc_root }}settings"
-                    class="editar-perfil"
-                >
-                    Definições
-                </a>
+                <a href="{{ doc_root }}settings" class="editar-perfil">Definições</a>
             {% endif %}
         </header>
 
@@ -144,10 +89,7 @@
         {% endif %}
 
         {% if primerio_gosto %}
-            <section
-                id="adicional"
-                class="perfil-bloco perfil-gostos"
-            >
+            <section id="adicional" class="perfil-bloco perfil-gostos">
                 <h2>Gostos</h2>
 
                 <ul>
@@ -159,25 +101,15 @@
         {% endif %}
 
         {% if membro.id != session.id %}
-            <button
-                type="button"
-                class="ola"
-                id="enviar-hey-perfil"
-                data-destinatario-id="{{ membro.id }}"
-            >
-                Hey
-            </button>
+            <button type="button" class="ola" id="enviar-hey-perfil" data-destinatario-id="{{ membro.id }}">Hey</button>
         {% endif %}
     </section>
 </main>
 
 <script>
-    window.membroId = {{ session.id|json_encode|raw }};
-
-    window.webSocketUrl = window.location.protocol === 'https:'
-        ? 'wss://' + window.location.host + '/ws/'
-        : 'ws://' + window.location.hostname + ':8080';
+window.membroId = {{ session.id|json_encode|raw }};
+window.webSocketUrl = window.location.protocol === 'https:' ? 'wss://' + window.location.host + '/ws/' : 'ws://' + window.location.hostname + ':8080';
 </script>
 
-<script src="{{ doc_root }}js/profile.js?v=2"></script>
+<script src="{{ doc_root }}js/profile.js?v=3"></script>
 {% endblock %}
