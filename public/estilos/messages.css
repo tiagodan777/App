@@ -180,19 +180,6 @@ body {
     text-align: center;
 }
 
-body:has(.mensagens-pagina) #menuPrincipal {
-    position: fixed !important;
-    top: auto !important;
-    right: auto !important;
-    bottom: max(18px, env(safe-area-inset-bottom, 0px)) !important;
-    left: 50% !important;
-    width: 90% !important;
-    height: 56px !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    transform: translate3d(-50%, 0, 0) !important;
-}
-
 @media (min-width: 700px) {
     .mensagens-pagina {
         padding-top: calc(env(safe-area-inset-top, 0px) + 58px);

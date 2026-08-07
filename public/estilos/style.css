@@ -210,15 +210,11 @@ img {
 
 #menuPrincipal {
     position: fixed !important;
-    top: auto !important;
     right: auto !important;
     bottom: var(--menu-principal-bottom) !important;
     left: 50% !important;
     z-index: 1100 !important;
     width: 90% !important;
-    height: var(--menu-principal-height) !important;
-    min-height: var(--menu-principal-height) !important;
-    max-height: var(--menu-principal-height) !important;
     margin: 0 !important;
     padding: 0 !important;
     transform: translate3d(-50%, 0, 0) !important;
@@ -387,27 +383,5 @@ html[data-margot-invisivel="true"] #alternar-invisivel .menu-invisivel-imagem {
     body {
         width: 100%;
         height: 100%;
-    }
-
-    html:has(#gridCanvas),
-    body:has(#gridCanvas) {
-        overflow: hidden !important;
-    }
-
-    body:has(#gridCanvas) {
-        position: relative;
-        min-height: 100%;
-    }
-
-    body:has(#gridCanvas) #gridCanvas {
-        position: absolute !important;
-        top: 0;
-        left: 0;
-        width: 100vw !important;
-        height: 100% !important;
-    }
-
-    body:has(#gridCanvas) .mini-menu {
-        position: absolute !important;
     }
 }
