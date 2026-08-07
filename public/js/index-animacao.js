@@ -14,6 +14,9 @@
     let time = 0;
     let lastFrame = 0;
     let resizeFrame = null;
+    let animationFrame = null;
+    let resizeObserver = null;
+    let ativo = true;
 
     const FPS = 45;
     const FRAME_TIME = 1000 / FPS;
@@ -24,13 +27,9 @@
     const colorPurple = [138, 43, 226];
 
     function resize() {
+        if (!ativo) return;
         resizeFrame = null;
 
-        /*
-         * O CSS define o tamanho visível do canvas.
-         * Não usamos visualViewport.height porque, numa PWA
-         * instalada no iOS, esse valor pode excluir a safe area.
-         */
         const rect = canvas.getBoundingClientRect();
 
         const nextWidth = Math.max(
@@ -60,10 +59,6 @@
         height = nextHeight;
         dpr = nextDpr;
 
-        /*
-         * Alteramos apenas a resolução interna.
-         * Nunca definimos canvas.style.height em JavaScript.
-         */
         canvas.width = Math.ceil(width * dpr);
         canvas.height = Math.ceil(height * dpr);
 
@@ -80,48 +75,28 @@
     }
 
     function scheduleResize() {
+        if (!ativo) return;
+
         if (resizeFrame !== null) {
-            cancelAnimationFrame(
-                resizeFrame
-            );
+            cancelAnimationFrame(resizeFrame);
         }
 
-        resizeFrame =
-            requestAnimationFrame(
-                resize
-            );
+        resizeFrame = requestAnimationFrame(resize);
     }
 
     function createGrid() {
         points = [];
 
-        const cols =
-            Math.ceil(width / spacing) + 6;
-
-        const rows =
-            Math.ceil(height / spacing) + 6;
-
+        const cols = Math.ceil(width / spacing) + 6;
+        const rows = Math.ceil(height / spacing) + 6;
         const startX = -spacing * 3;
         const startY = -spacing * 3;
 
-        for (
-            let row = 0;
-            row < rows;
-            row++
-        ) {
-            for (
-                let col = 0;
-                col < cols;
-                col++
-            ) {
+        for (let row = 0; row < rows; row++) {
+            for (let col = 0; col < cols; col++) {
                 points.push({
-                    baseX:
-                        startX +
-                        col * spacing,
-
-                    baseY:
-                        startY +
-                        row * spacing
+                    baseX: startX + col * spacing,
+                    baseY: startY + row * spacing
                 });
             }
         }
@@ -186,11 +161,13 @@
     }
 
     function draw(now) {
+        if (!ativo) return;
+
         if (
             now - lastFrame <
             FRAME_TIME
         ) {
-            requestAnimationFrame(draw);
+            animationFrame = requestAnimationFrame(draw);
             return;
         }
 
@@ -228,26 +205,14 @@
             ) * (cy * 0.3);
 
         const holeRadius = 160;
+        const holeRadiusSq = holeRadius * holeRadius;
+        const edgeSoftnessInv = 1 / 60;
 
-        const holeRadiusSq =
-            holeRadius *
-            holeRadius;
-
-        const edgeSoftnessInv =
-            1 / 60;
-
-        for (
-            let i = 0;
-            i < points.length;
-            i++
-        ) {
+        for (let i = 0; i < points.length; i++) {
             const p = points[i];
 
-            const nx =
-                p.baseX * 0.003;
-
-            const ny =
-                p.baseY * 0.003;
+            const nx = p.baseX * 0.003;
+            const ny = p.baseY * 0.003;
 
             const waveX =
                 Math.sin(
@@ -269,11 +234,8 @@
                     time
                 ) * 12;
 
-            const finalX =
-                p.baseX + waveX;
-
-            const finalY =
-                p.baseY + waveY;
+            const finalX = p.baseX + waveX;
+            const finalY = p.baseY + waveY;
 
             const waveValue =
                 (
@@ -288,28 +250,16 @@
                     2
                 ) * 0.25;
 
-            const dx =
-                finalX - holeX;
-
-            const dy =
-                finalY - holeY;
-
-            const distSq =
-                dx * dx +
-                dy * dy;
+            const dx = finalX - holeX;
+            const dy = finalY - holeY;
+            const distSq = dx * dx + dy * dy;
 
             let alpha;
 
-            if (
-                distSq <
-                holeRadiusSq
-            ) {
+            if (distSq < holeRadiusSq) {
                 alpha = 0;
             } else {
-                const distance =
-                    Math.sqrt(
-                        distSq
-                    );
+                const distance = Math.sqrt(distSq);
 
                 alpha = clamp(
                     (
@@ -342,16 +292,11 @@
                     waveValue * 0.2
                 );
 
-            if (
-                finalAlpha < 0.05
-            ) {
+            if (finalAlpha < 0.05) {
                 continue;
             }
 
-            const rgb =
-                getGradientColorRGB(
-                    waveValue
-                );
+            const rgb = getGradientColorRGB(waveValue);
 
             const roundedAlpha =
                 Math.round(
@@ -369,7 +314,7 @@
             );
         }
 
-        requestAnimationFrame(draw);
+        animationFrame = requestAnimationFrame(draw);
     }
 
     window.addEventListener(
@@ -388,22 +333,33 @@
         }
     );
 
-    if (
-        'ResizeObserver' in window
-    ) {
-        const resizeObserver =
-            new ResizeObserver(
-                scheduleResize
-            );
-
-        resizeObserver.observe(
-            canvas
-        );
+    if ('ResizeObserver' in window) {
+        resizeObserver = new ResizeObserver(scheduleResize);
+        resizeObserver.observe(canvas);
     }
 
     resize();
+    animationFrame = requestAnimationFrame(draw);
 
-    requestAnimationFrame(
-        draw
-    );
+    function desativarPagina() {
+        ativo = false;
+
+        if (animationFrame !== null) {
+            cancelAnimationFrame(animationFrame);
+        }
+
+        if (resizeFrame !== null) {
+            cancelAnimationFrame(resizeFrame);
+        }
+
+        if (resizeObserver) {
+            resizeObserver.disconnect();
+        }
+
+        window.removeEventListener('resize', scheduleResize);
+        window.removeEventListener('orientationchange', scheduleResize);
+        document.removeEventListener('margot:page-leave', desativarPagina);
+    }
+
+    document.addEventListener('margot:page-leave', desativarPagina);
 })();
