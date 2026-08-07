@@ -19,6 +19,7 @@
     var lastSentLongitude = null;
     var lastKnownLocation = null;
     var photoRemovalTimers = Object.create(null);
+    var latestPeople = [];
 
     var RECONNECT_MIN_DELAY = 1000;
     var RECONNECT_MAX_DELAY = 30000;
@@ -36,12 +37,15 @@
         }
 
         try {
-            var preferencias = JSON.parse(window.localStorage.getItem('margot-preferencias-v1') || '{}');
+            var preferencias = JSON.parse(
+                window.localStorage.getItem('margot-preferencias-v1') || '{}'
+            );
 
             window.disableLocationTracking = preferencias.localizacao === false;
             window.disableNotifications = preferencias.notificacoes === false;
             window.margotInvisible = preferencias.invisivel === true;
-            window.disableMapPresence = window.disableLocationTracking || window.margotInvisible;
+            window.disableMapPresence =
+                window.disableLocationTracking || window.margotInvisible;
         } catch (erro) {
             window.disableLocationTracking = false;
             window.disableNotifications = false;
@@ -74,7 +78,8 @@
     function getWebSocketUrl() {
         if (window.webSocketUrl) return window.webSocketUrl;
 
-        var protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        var protocol =
+            window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 
         return protocol + '//' + window.location.hostname + ':8080';
     }
@@ -105,13 +110,18 @@
                 }
 
                 if (!response.ok || data.success !== true) {
-                    throw new Error(data.message || 'Não foi possível preparar a ligação.');
+                    throw new Error(
+                        data.message ||
+                        'Não foi possível preparar a ligação.'
+                    );
                 }
 
                 var token = String(data.token || '').trim();
 
                 if (!/^[a-f0-9]{64}$/i.test(token)) {
-                    throw new Error('O servidor devolveu um token de ligação inválido.');
+                    throw new Error(
+                        'O servidor devolveu um token de ligação inválido.'
+                    );
                 }
 
                 return token;
@@ -135,7 +145,9 @@
                 socket.readyState === WebSocket.OPEN ||
                 socket.readyState === WebSocket.CONNECTING
             )
-        ) return;
+        ) {
+            return;
+        }
 
         clearReconnectTimer();
         clearConnectionTimeout();
@@ -169,15 +181,10 @@
                 return;
             }
 
-            console.error(
-                'Erro ao obter token WebSocket:',
-                erro
-            );
+            console.error('Erro ao obter token WebSocket:', erro);
 
             setStatus(
-                navigator.onLine
-                    ? 'disconnected'
-                    : 'offline'
+                navigator.onLine ? 'disconnected' : 'offline'
             );
 
             scheduleReconnect();
@@ -188,12 +195,10 @@
         try {
             socket = new WebSocket(getWebSocketUrl());
         } catch (erro) {
-            console.error(
-                'Erro ao criar WebSocket:',
-                erro
-            );
+            console.error('Erro ao criar WebSocket:', erro);
 
             socket = null;
+
             scheduleReconnect();
 
             return;
@@ -203,17 +208,11 @@
 
         var currentSocket = socket;
 
-        connectionTimeout = window.setTimeout(
-            function () {
-                if (
-                    currentSocket === socket &&
-                    !authenticated
-                ) {
-                    currentSocket.close();
-                }
-            },
-            CONNECTION_TIMEOUT
-        );
+        connectionTimeout = window.setTimeout(function () {
+            if (currentSocket === socket && !authenticated) {
+                currentSocket.close();
+            }
+        }, CONNECTION_TIMEOUT);
 
         currentSocket.onopen = function () {
             if (currentSocket !== socket) return;
@@ -222,17 +221,12 @@
         };
 
         currentSocket.onmessage = function (evento) {
-            if (currentSocket === socket) {
-                handleMessage(evento);
-            }
+            if (currentSocket === socket) handleMessage(evento);
         };
 
         currentSocket.onerror = function (evento) {
             if (currentSocket === socket) {
-                console.error(
-                    'Erro no WebSocket:',
-                    evento
-                );
+                console.error('Erro no WebSocket:', evento);
             }
         };
 
@@ -248,9 +242,7 @@
             window.ws = null;
 
             setStatus(
-                navigator.onLine
-                    ? 'disconnected'
-                    : 'offline'
+                navigator.onLine ? 'disconnected' : 'offline'
             );
 
             scheduleReconnect();
@@ -280,11 +272,7 @@
             socket.send(JSON.stringify(data));
             return true;
         } catch (erro) {
-            console.error(
-                'Erro ao enviar mensagem:',
-                erro
-            );
-
+            console.error('Erro ao enviar mensagem:', erro);
             return false;
         }
     }
@@ -308,15 +296,12 @@
     function startPing() {
         clearPingTimer();
 
-        pingTimer = window.setInterval(
-            function () {
-                send({
-                    type: 'ping',
-                    timestamp: Date.now()
-                });
-            },
-            PING_INTERVAL
-        );
+        pingTimer = window.setInterval(function () {
+            send({
+                type: 'ping',
+                timestamp: Date.now()
+            });
+        }, PING_INTERVAL);
     }
 
     function startLocationTracking() {
@@ -341,16 +326,15 @@
             return;
         }
 
-        locationWatchId =
-            navigator.geolocation.watchPosition(
-                handleLocationSuccess,
-                handleLocationError,
-                {
-                    enableHighAccuracy: true,
-                    maximumAge: LOCATION_MAX_AGE,
-                    timeout: 15000
-                }
-            );
+        locationWatchId = navigator.geolocation.watchPosition(
+            handleLocationSuccess,
+            handleLocationError,
+            {
+                enableHighAccuracy: true,
+                maximumAge: LOCATION_MAX_AGE,
+                timeout: 15000
+            }
+        );
     }
 
     function requestCurrentLocation() {
@@ -385,19 +369,16 @@
     function startLocationRefresh() {
         clearLocationRefreshTimer();
 
-        locationRefreshTimer = window.setInterval(
-            function () {
-                if (
-                    document.visibilityState !== 'visible' ||
-                    window.disableLocationTracking
-                ) {
-                    return;
-                }
+        locationRefreshTimer = window.setInterval(function () {
+            if (
+                document.visibilityState !== 'visible' ||
+                window.disableLocationTracking
+            ) {
+                return;
+            }
 
-                sendLastKnownLocation();
-            },
-            LOCATION_REFRESH_INTERVAL
-        );
+            sendLastKnownLocation();
+        }, LOCATION_REFRESH_INTERVAL);
     }
 
     function stopLocationTracking() {
@@ -405,9 +386,7 @@
             locationWatchId !== null &&
             navigator.geolocation
         ) {
-            navigator.geolocation.clearWatch(
-                locationWatchId
-            );
+            navigator.geolocation.clearWatch(locationWatchId);
         }
 
         clearLocationRefreshTimer();
@@ -423,16 +402,9 @@
     function handleLocationSuccess(position) {
         if (window.disableLocationTracking) return;
 
-        var latitude = Number(
-            position.coords.latitude
-        );
-
-        var longitude = Number(
-            position.coords.longitude
-        );
-
-        var accuracy =
-            Number(position.coords.accuracy) || 0;
+        var latitude = Number(position.coords.latitude);
+        var longitude = Number(position.coords.longitude);
+        var accuracy = Number(position.coords.accuracy) || 0;
 
         if (
             !Number.isFinite(latitude) ||
@@ -445,9 +417,7 @@
             latitude: latitude,
             longitude: longitude,
             accuracy: accuracy,
-            timestamp:
-                Number(position.timestamp) ||
-                Date.now()
+            timestamp: Number(position.timestamp) || Date.now()
         };
 
         var agora = Date.now();
@@ -463,8 +433,7 @@
                 );
 
         var passouTempo =
-            agora - lastLocationSentAt >=
-            LOCATION_MIN_INTERVAL;
+            agora - lastLocationSentAt >= LOCATION_MIN_INTERVAL;
 
         if (
             lastSentLatitude !== null &&
@@ -496,10 +465,8 @@
         }
 
         lastLocationSentAt = Date.now();
-        lastSentLatitude =
-            lastKnownLocation.latitude;
-        lastSentLongitude =
-            lastKnownLocation.longitude;
+        lastSentLatitude = lastKnownLocation.latitude;
+        lastSentLongitude = lastKnownLocation.longitude;
 
         return true;
     }
@@ -507,20 +474,14 @@
     function handleLocationError(error) {
         if (window.disableLocationTracking) return;
 
-        var mensagem =
-            'Não foi possível obter a localização.';
+        var mensagem = 'Não foi possível obter a localização.';
 
         if (error.code === error.PERMISSION_DENIED) {
-            mensagem =
-                'A localização não foi autorizada.';
-        } else if (
-            error.code === error.POSITION_UNAVAILABLE
-        ) {
-            mensagem =
-                'A localização não está disponível.';
+            mensagem = 'A localização não foi autorizada.';
+        } else if (error.code === error.POSITION_UNAVAILABLE) {
+            mensagem = 'A localização não está disponível.';
         } else if (error.code === error.TIMEOUT) {
-            mensagem =
-                'A localização demorou demasiado tempo.';
+            mensagem = 'A localização demorou demasiado tempo.';
 
             if (lastKnownLocation) {
                 console.warn(
@@ -533,11 +494,7 @@
         }
 
         console.warn(mensagem, error);
-
-        mostrarMensagemTemporaria(
-            mensagem,
-            'erro'
-        );
+        mostrarMensagemTemporaria(mensagem, 'erro');
     }
 
     function calculateDistanceMeters(
@@ -549,20 +506,14 @@
         var raio = 6371000;
         var latitude1 = toRadians(lat1);
         var latitude2 = toRadians(lat2);
-        var diferencaLatitude =
-            toRadians(lat2 - lat1);
-        var diferencaLongitude =
-            toRadians(lng2 - lng1);
+        var diferencaLatitude = toRadians(lat2 - lat1);
+        var diferencaLongitude = toRadians(lng2 - lng1);
 
         var a =
-            Math.sin(
-                diferencaLatitude / 2
-            ) ** 2 +
+            Math.sin(diferencaLatitude / 2) ** 2 +
             Math.cos(latitude1) *
             Math.cos(latitude2) *
-            Math.sin(
-                diferencaLongitude / 2
-            ) ** 2;
+            Math.sin(diferencaLongitude / 2) ** 2;
 
         return raio *
             2 *
@@ -589,24 +540,16 @@
 
         var atraso = Math.min(
             RECONNECT_MIN_DELAY *
-                Math.pow(
-                    2,
-                    reconnectAttempts - 1
-                ),
+            Math.pow(2, reconnectAttempts - 1),
             RECONNECT_MAX_DELAY
         );
 
-        atraso += Math.floor(
-            Math.random() * 1000
-        );
+        atraso += Math.floor(Math.random() * 1000);
 
-        reconnectTimer = window.setTimeout(
-            function () {
-                reconnectTimer = null;
-                connect();
-            },
-            atraso
-        );
+        reconnectTimer = window.setTimeout(function () {
+            reconnectTimer = null;
+            connect();
+        }, atraso);
     }
 
     function handleMessage(evento) {
@@ -623,12 +566,7 @@
             return;
         }
 
-        if (
-            !data ||
-            typeof data !== 'object'
-        ) {
-            return;
-        }
+        if (!data || typeof data !== 'object') return;
 
         switch (data.type) {
             case 'connected':
@@ -657,9 +595,7 @@
 
                 if (data.location_enabled === false) {
                     limparMapaLocal();
-                } else if (
-                    data.map_presence === false
-                ) {
+                } else if (data.map_presence === false) {
                     removerPropriaFotoDoMapa();
                 }
 
@@ -669,13 +605,9 @@
                 break;
 
             case 'presence_updated':
-                if (
-                    data.location_enabled === false
-                ) {
+                if (data.location_enabled === false) {
                     limparMapaLocal();
-                } else if (
-                    data.map_presence === false
-                ) {
+                } else if (data.map_presence === false) {
                     removerPropriaFotoDoMapa();
                 }
 
@@ -691,18 +623,12 @@
                 break;
 
             case 'state':
-                if (
-                    document.getElementById(
-                        'gridCanvas'
-                    )
-                ) {
+                if (document.getElementById('gridCanvas')) {
                     atualizarPessoasNoMapa(
                         window.disableLocationTracking
                             ? []
                             : (
-                                Array.isArray(
-                                    data.people
-                                )
+                                Array.isArray(data.people)
                                     ? data.people
                                     : []
                             )
@@ -713,48 +639,36 @@
 
             case 'notification':
                 window.dispatchEvent(
-                    new CustomEvent(
-                        'app:hey-recebido',
-                        {
-                            detail: data
-                        }
-                    )
+                    new CustomEvent('app:hey-recebido', {
+                        detail: data
+                    })
                 );
 
                 break;
 
             case 'notification_sent':
                 window.dispatchEvent(
-                    new CustomEvent(
-                        'app:hey-enviado',
-                        {
-                            detail: data
-                        }
-                    )
+                    new CustomEvent('app:hey-enviado', {
+                        detail: data
+                    })
                 );
 
                 break;
 
             case 'notification_not_delivered':
                 window.dispatchEvent(
-                    new CustomEvent(
-                        'app:hey-erro',
-                        {
-                            detail: data
-                        }
-                    )
+                    new CustomEvent('app:hey-erro', {
+                        detail: data
+                    })
                 );
 
                 break;
 
             case 'chat_message':
                 window.dispatchEvent(
-                    new CustomEvent(
-                        'app:chat-message',
-                        {
-                            detail: data
-                        }
-                    )
+                    new CustomEvent('app:chat-message', {
+                        detail: data
+                    })
                 );
 
                 atualizarBadgeMensagens(
@@ -763,20 +677,12 @@
 
                 if (
                     data.message &&
-                    String(
-                        data.message.destinatario_id
-                    ) ===
+                    String(data.message.destinatario_id) ===
                         String(window.membroId) &&
-                    String(
-                        window.chatMembroId || ''
-                    ) !==
-                        String(
-                            data.message.emissor_id
-                        )
+                    String(window.chatMembroId || '') !==
+                        String(data.message.emissor_id)
                 ) {
-                    mostrarNotificacaoMensagem(
-                        data.message
-                    );
+                    mostrarNotificacaoMensagem(data.message);
                 }
 
                 break;
@@ -811,17 +717,14 @@
 
             case 'chat_error':
                 window.dispatchEvent(
-                    new CustomEvent(
-                        'app:chat-error',
-                        {
-                            detail: data
-                        }
-                    )
+                    new CustomEvent('app:chat-error', {
+                        detail: data
+                    })
                 );
 
                 mostrarMensagemTemporaria(
                     data.message ||
-                        'Não foi possível atualizar a conversa.',
+                    'Não foi possível atualizar a conversa.',
                     'erro'
                 );
 
@@ -837,8 +740,7 @@
                 );
 
                 mostrarMensagemTemporaria(
-                    data.message ||
-                        'Ocorreu um erro.',
+                    data.message || 'Ocorreu um erro.',
                     'erro'
                 );
 
@@ -853,14 +755,11 @@
     }
 
     function removerPropriaFotoDoMapa() {
-        var membroId = String(
-            window.membroId || ''
-        ).trim();
+        var membroId = String(window.membroId || '').trim();
 
         if (!membroId) return;
 
-        var imagem =
-            document.getElementById(membroId);
+        var imagem = document.getElementById(membroId);
 
         if (
             !imagem ||
@@ -871,13 +770,10 @@
 
         var $imagem = $(imagem);
 
-        $imagem
-            .addClass('a-remover')
-            .css({
-                opacity: '0',
-                transition:
-                    'opacity 0.25s ease-out'
-            });
+        $imagem.addClass('a-remover').css({
+            opacity: '0',
+            transition: 'opacity 0.25s ease-out'
+        });
 
         agendarRemocaoFoto(
             membroId,
@@ -887,30 +783,26 @@
     }
 
     function limparMapaLocal() {
-        if (
-            !document.getElementById(
-                'gridCanvas'
-            )
-        ) {
-            return;
-        }
+        if (!document.getElementById('gridCanvas')) return;
 
         atualizarPessoasNoMapa([]);
     }
 
     function atualizarPessoasNoMapa(pessoas) {
-        var idsAtuais = pessoas.map(
-            function (pessoa) {
-                return String(pessoa.id);
-            }
-        );
+        latestPeople =
+            Array.isArray(pessoas)
+                ? pessoas.slice()
+                : [];
+
+        pessoas = latestPeople;
+
+        var idsAtuais = pessoas.map(function (pessoa) {
+            return String(pessoa.id);
+        });
 
         $('.foto').each(function () {
             var $foto = $(this);
-
-            var id = String(
-                $foto.attr('id') || ''
-            );
+            var id = String($foto.attr('id') || '');
 
             if (idsAtuais.includes(id)) {
                 cancelarRemocaoFoto(id);
@@ -929,13 +821,10 @@
                 return;
             }
 
-            $foto
-                .addClass('a-remover')
-                .css({
-                    opacity: '0',
-                    transition:
-                        'opacity 0.4s ease-out'
-                });
+            $foto.addClass('a-remover').css({
+                opacity: '0',
+                transition: 'opacity 0.4s ease-out'
+            });
 
             agendarRemocaoFoto(
                 id,
@@ -944,9 +833,7 @@
             );
         });
 
-        var fragmento =
-            document.createDocumentFragment();
-
+        var fragmento = document.createDocumentFragment();
         var inseriuImagem = false;
 
         pessoas.forEach(function (pessoa) {
@@ -958,10 +845,7 @@
             }
 
             var id = String(pessoa.id);
-
-            var src = String(
-                pessoa.src || ''
-            ).trim();
+            var src = String(pessoa.src || '').trim();
 
             if (!src) {
                 src =
@@ -979,27 +863,17 @@
                     .attr({
                         'data-top':
                             Number(pessoa.top) || 0,
-
                         'data-left':
                             Number(pessoa.left) || 0,
-
                         'data-membro-id':
                             pessoa.membro_id || '',
-
                         'data-nome':
                             pessoa.nome || '',
-
                         'data-distancia':
-                            Number(
-                                pessoa.distance_m
-                            ) || 0,
-
+                            Number(pessoa.distance_m) || 0,
                         'data-profile-access-token':
-                            pessoa.profile_access_token ||
-                            '',
-
+                            pessoa.profile_access_token || '',
                         src: src,
-
                         alt:
                             pessoa.nome ||
                             'Foto de perfil'
@@ -1023,76 +897,47 @@
             $imagem.attr({
                 'data-top':
                     Number(pessoa.top) || 0,
-
                 'data-left':
                     Number(pessoa.left) || 0,
-
                 'data-membro-id':
                     pessoa.membro_id || '',
-
                 'data-nome':
                     pessoa.nome || '',
-
                 'data-distancia':
-                    Number(
-                        pessoa.distance_m
-                    ) || 0,
-
+                    Number(pessoa.distance_m) || 0,
                 'data-profile-access-token':
-                    pessoa.profile_access_token ||
-                    ''
+                    pessoa.profile_access_token || ''
             });
 
             $imagem.css({
                 opacity: '0',
-                transition:
-                    'opacity 0.4s ease-out'
+                transition: 'opacity 0.4s ease-out'
             });
 
             $imagem[0].decoding = 'async';
 
-            $imagem.on(
-                'load',
-                function () {
-                    $(this).css(
-                        'opacity',
-                        '1'
-                    );
+            $imagem.on('load', function () {
+                $(this).css('opacity', '1');
+            });
+
+            $imagem.on('error', function () {
+                if (
+                    this.dataset.fallbackAplicado === '1'
+                ) {
+                    $(this).css('opacity', '1');
+                    return;
                 }
-            );
 
-            $imagem.on(
-                'error',
-                function () {
-                    if (
-                        this.dataset
-                            .fallbackAplicado === '1'
-                    ) {
-                        $(this).css(
-                            'opacity',
-                            '1'
-                        );
+                this.dataset.fallbackAplicado = '1';
+                this.src =
+                    '/imagens/fotos-perfil/default.webp';
+            });
 
-                        return;
-                    }
-
-                    this.dataset
-                        .fallbackAplicado = '1';
-
-                    this.src =
-                        '/imagens/fotos-perfil/default.webp';
-                }
-            );
-
-            fragmento.appendChild(
-                $imagem[0]
-            );
+            fragmento.appendChild($imagem[0]);
         });
 
         if (inseriuImagem) {
-            document.body.appendChild(
-                fragmento
-            );
+            document.body.appendChild(fragmento);
         }
 
         reinicializarFotos();
@@ -1115,30 +960,16 @@
 
         cancelarRemocaoFoto(id);
 
-        var timer = window.setTimeout(
-            function () {
-                if (
-                    photoRemovalTimers[id] !==
-                    timer
-                ) {
-                    return;
-                }
+        var timer = window.setTimeout(function () {
+            if (photoRemovalTimers[id] !== timer) return;
 
-                delete photoRemovalTimers[id];
+            delete photoRemovalTimers[id];
 
-                if (
-                    !$foto.hasClass(
-                        'a-remover'
-                    )
-                ) {
-                    return;
-                }
+            if (!$foto.hasClass('a-remover')) return;
 
-                $foto.remove();
-                reinicializarFotos();
-            },
-            atraso
-        );
+            $foto.remove();
+            reinicializarFotos();
+        }, atraso);
 
         photoRemovalTimers[id] = timer;
     }
@@ -1146,39 +977,22 @@
     function cancelarRemocaoFoto(id) {
         id = String(id || '');
 
-        if (
-            !id ||
-            !photoRemovalTimers[id]
-        ) {
-            return;
-        }
+        if (!id || !photoRemovalTimers[id]) return;
 
-        window.clearTimeout(
-            photoRemovalTimers[id]
-        );
-
+        window.clearTimeout(photoRemovalTimers[id]);
         delete photoRemovalTimers[id];
     }
 
     function reinicializarFotos() {
-        window.clearTimeout(
-            window.mapInitTimeout
-        );
+        window.clearTimeout(window.mapInitTimeout);
 
-        window.mapInitTimeout =
-            window.setTimeout(
-                function () {
-                    if (
-                        typeof window
-                            .inicializarFotos ===
-                        'function'
-                    ) {
-                        window
-                            .inicializarFotos();
-                    }
-                },
-                50
-            );
+        window.mapInitTimeout = window.setTimeout(function () {
+            if (
+                typeof window.inicializarFotos === 'function'
+            ) {
+                window.inicializarFotos();
+            }
+        }, 50);
     }
 
     function mostrarMensagemTemporaria(
@@ -1190,50 +1004,32 @@
         var $mensagem = $('<div>', {
             class:
                 'mensagem-websocket ' +
-                (
-                    tipo === 'erro'
-                        ? 'erro'
-                        : 'sucesso'
-                )
+                (tipo === 'erro' ? 'erro' : 'sucesso')
         }).text(mensagem);
 
         $('body').append($mensagem);
 
-        window.requestAnimationFrame(
-            function () {
-                $mensagem.addClass(
-                    'visivel'
-                );
-            }
-        );
+        window.requestAnimationFrame(function () {
+            $mensagem.addClass('visivel');
+        });
 
-        window.setTimeout(
-            function () {
-                $mensagem.removeClass(
-                    'visivel'
-                );
+        window.setTimeout(function () {
+            $mensagem.removeClass('visivel');
 
-                window.setTimeout(
-                    function () {
-                        $mensagem.remove();
-                    },
-                    300
-                );
-            },
-            3000
-        );
+            window.setTimeout(function () {
+                $mensagem.remove();
+            }, 300);
+        }, 3000);
     }
 
     function atualizarBadgeMensagens(total) {
-        var $link = $(
-            '#menuPrincipal a[href*="messages"]'
-        ).first();
+        var $link =
+            $('#menuPrincipal a[href*="messages"]').first();
 
         if (!$link.length) return;
 
-        var $badge = $link.find(
-            '.mensagens-badge'
-        );
+        var $badge =
+            $link.find('.mensagens-badge');
 
         if (!$badge.length) {
             $badge = $('<span>', {
@@ -1247,13 +1043,13 @@
     }
 
     function mostrarAvisoMensagem(mensagem) {
-        var nome = String(
-            mensagem.emissor_nome || 'Alguém'
-        ).trim() || 'Alguém';
+        var nome =
+            String(
+                mensagem.emissor_nome || 'Alguém'
+            ).trim() || 'Alguém';
 
-        var resumo = String(
-            mensagem.texto || ''
-        ).trim();
+        var resumo =
+            String(mensagem.texto || '').trim();
 
         var foto = String(
             mensagem.emissor_foto_url ||
@@ -1262,13 +1058,10 @@
 
         var conversaUrl =
             String(
-                window.messagesUrl ||
-                '/messages'
+                window.messagesUrl || '/messages'
             ).replace(/\/+$/, '') +
             '/' +
-            encodeURIComponent(
-                mensagem.emissor_id
-            );
+            encodeURIComponent(mensagem.emissor_id);
 
         if (!resumo) {
             resumo =
@@ -1277,8 +1070,7 @@
                     : 'Enviou-te um vídeo.';
         }
 
-        var $avisos =
-            $('#mensagens-avisos');
+        var $avisos = $('#mensagens-avisos');
 
         if (!$avisos.length) {
             $avisos = $('<div>', {
@@ -1300,14 +1092,11 @@
             class: 'mensagem-aviso-foto',
             src: foto,
             alt: ''
-        }).on(
-            'error',
-            function () {
-                this.onerror = null;
-                this.src =
-                    '/imagens/fotos-perfil/default.webp';
-            }
-        );
+        }).on('error', function () {
+            this.onerror = null;
+            this.src =
+                '/imagens/fotos-perfil/default.webp';
+        });
 
         var $corpo = $('<span>', {
             class: 'mensagem-aviso-corpo'
@@ -1318,75 +1107,43 @@
             $('<span>').text(resumo)
         );
 
-        $aviso.append(
-            $imagem,
-            $corpo
-        );
-
+        $aviso.append($imagem, $corpo);
         $avisos.append($aviso);
 
-        window.requestAnimationFrame(
-            function () {
-                $aviso.addClass('visivel');
-            }
-        );
+        window.requestAnimationFrame(function () {
+            $aviso.addClass('visivel');
+        });
 
         var removerTimer =
-            window.setTimeout(
-                removerAviso,
-                5200
-            );
+            window.setTimeout(removerAviso, 5200);
 
-        $aviso.on(
-            'click',
-            function () {
-                window.clearTimeout(
-                    removerTimer
-                );
-            }
-        );
+        $aviso.on('click', function () {
+            window.clearTimeout(removerTimer);
+        });
 
         function removerAviso() {
             $aviso.removeClass('visivel');
 
-            window.setTimeout(
-                function () {
-                    $aviso.remove();
+            window.setTimeout(function () {
+                $aviso.remove();
 
-                    if (
-                        !$avisos
-                            .children()
-                            .length
-                    ) {
-                        $avisos.remove();
-                    }
-                },
-                260
-            );
+                if (!$avisos.children().length) {
+                    $avisos.remove();
+                }
+            }, 260);
         }
 
         return resumo;
     }
 
-    function mostrarNotificacaoMensagem(
-        mensagem
-    ) {
+    function mostrarNotificacaoMensagem(mensagem) {
         var nome = String(
-            mensagem.emissor_nome ||
-            'Alguém'
+            mensagem.emissor_nome || 'Alguém'
         );
 
-        var resumo =
-            mostrarAvisoMensagem(mensagem);
+        var resumo = mostrarAvisoMensagem(mensagem);
 
-        /*
-         * O banner interno aparece sempre.
-         * Apenas a notificação do sistema depende
-         * da preferência e da autorização nativa.
-         */
-        if (window.disableNotifications) {
-            return;
-        }
+        if (window.disableNotifications) return;
 
         if (
             !window.isSecureContext ||
@@ -1397,47 +1154,36 @@
         }
 
         try {
-            var notificacao =
-                new Notification(
-                    'Nova mensagem de ' + nome,
-                    {
-                        body: resumo,
-
-                        icon:
-                            mensagem
-                                .emissor_foto_url ||
-                            '/imagens/fotos-perfil/default.webp',
-
-                        tag:
-                            'chat-' +
-                            String(
-                                mensagem
-                                    .emissor_id ||
-                                'desconhecido'
-                            )
-                    }
-                );
-
-            notificacao.onclick =
-                function () {
-                    window.focus();
-
-                    window.location.href =
+            var notificacao = new Notification(
+                'Nova mensagem de ' + nome,
+                {
+                    body: resumo,
+                    icon:
+                        mensagem.emissor_foto_url ||
+                        '/imagens/fotos-perfil/default.webp',
+                    tag:
+                        'chat-' +
                         String(
-                            window.messagesUrl ||
-                            '/messages'
-                        ).replace(
-                            /\/+$/,
-                            ''
-                        ) +
-                        '/' +
-                        encodeURIComponent(
-                            mensagem
-                                .emissor_id
-                        );
+                            mensagem.emissor_id ||
+                            'desconhecido'
+                        )
+                }
+            );
 
-                    notificacao.close();
-                };
+            notificacao.onclick = function () {
+                window.focus();
+
+                window.location.href =
+                    String(
+                        window.messagesUrl || '/messages'
+                    ).replace(/\/+$/, '') +
+                    '/' +
+                    encodeURIComponent(
+                        mensagem.emissor_id
+                    );
+
+                notificacao.close();
+            };
         } catch (erro) {
             console.error(
                 'Erro ao mostrar notificação de mensagem:',
@@ -1447,11 +1193,10 @@
     }
 
     function setStatus(status) {
-        document.documentElement
-            .setAttribute(
-                'data-websocket-status',
-                status
-            );
+        document.documentElement.setAttribute(
+            'data-websocket-status',
+            status
+        );
 
         $(document).trigger(
             'websocket:status',
@@ -1462,20 +1207,14 @@
     function clearReconnectTimer() {
         if (!reconnectTimer) return;
 
-        window.clearTimeout(
-            reconnectTimer
-        );
-
+        window.clearTimeout(reconnectTimer);
         reconnectTimer = null;
     }
 
     function clearConnectionTimeout() {
         if (!connectionTimeout) return;
 
-        window.clearTimeout(
-            connectionTimeout
-        );
-
+        window.clearTimeout(connectionTimeout);
         connectionTimeout = null;
     }
 
@@ -1489,10 +1228,7 @@
     function clearLocationRefreshTimer() {
         if (!locationRefreshTimer) return;
 
-        window.clearInterval(
-            locationRefreshTimer
-        );
-
+        window.clearInterval(locationRefreshTimer);
         locationRefreshTimer = null;
     }
 
@@ -1500,19 +1236,19 @@
         connect: connect,
         send: send,
         updatePresence: sendPresenceState,
-        startLocationTracking:
-            startLocationTracking,
-        stopLocationTracking:
-            stopLocationTracking,
-        isInvisible:
-            modoInvisivelEstaAtivo,
-
+        startLocationTracking: startLocationTracking,
+        stopLocationTracking: stopLocationTracking,
+        isInvisible: modoInvisivelEstaAtivo,
+        refreshMap: function () {
+            if (document.getElementById('gridCanvas')) {
+                atualizarPessoasNoMapa(latestPeople);
+            }
+        },
         isConnected: function () {
             return Boolean(
                 authenticated &&
                 socket &&
-                socket.readyState ===
-                    WebSocket.OPEN
+                socket.readyState === WebSocket.OPEN
             );
         }
     };
@@ -1520,83 +1256,52 @@
     window.mostrarMensagemTemporaria =
         mostrarMensagemTemporaria;
 
-    window.addEventListener(
-        'online',
-        function () {
-            reconnectAttempts = 0;
+    window.addEventListener('online', function () {
+        reconnectAttempts = 0;
+        connect();
+    });
+
+    window.addEventListener('offline', function () {
+        setStatus('offline');
+    });
+
+    window.addEventListener('focus', function () {
+        if (!window.AppWebSocket.isConnected()) {
             connect();
+            return;
         }
-    );
 
-    window.addEventListener(
-        'offline',
-        function () {
-            setStatus('offline');
+        if (!window.disableLocationTracking) {
+            requestCurrentLocation();
         }
-    );
+    });
 
-    window.addEventListener(
-        'focus',
-        function () {
-            if (
-                !window.AppWebSocket
-                    .isConnected()
-            ) {
-                connect();
-                return;
-            }
-
-            if (
-                !window
-                    .disableLocationTracking
-            ) {
-                requestCurrentLocation();
-            }
+    window.addEventListener('pageshow', function () {
+        if (!window.AppWebSocket.isConnected()) {
+            connect();
+            return;
         }
-    );
 
-    window.addEventListener(
-        'pageshow',
-        function () {
-            if (
-                !window.AppWebSocket
-                    .isConnected()
-            ) {
-                connect();
-                return;
-            }
-
-            if (
-                !window
-                    .disableLocationTracking
-            ) {
-                requestCurrentLocation();
-            }
+        if (!window.disableLocationTracking) {
+            requestCurrentLocation();
         }
-    );
+    });
 
     document.addEventListener(
         'visibilitychange',
         function () {
             if (
-                document.visibilityState !==
-                'visible'
+                document.visibilityState !== 'visible'
             ) {
                 return;
             }
 
-            if (
-                !window.AppWebSocket
-                    .isConnected()
-            ) {
+            if (!window.AppWebSocket.isConnected()) {
                 connect();
                 return;
             }
 
-            if (
-                !window
-                    .disableLocationTracking
-            ) {
+            if (!window.disableLocationTracking) {
                 requestCurrentLocation();
             }
         }
@@ -1613,27 +1318,21 @@
                 removerPropriaFotoDoMapa();
             }
 
-            if (
-                window.AppWebSocket
-                    .isConnected()
-            ) {
+            if (window.AppWebSocket.isConnected()) {
                 startLocationTracking();
                 startLocationRefresh();
                 requestCurrentLocation();
             }
         }
 
-        if (
-            window.AppWebSocket.isConnected()
-        ) {
+        if (window.AppWebSocket.isConnected()) {
             sendPresenceState();
             return;
         }
 
         if (
             !socket ||
-            socket.readyState ===
-                WebSocket.CLOSED
+            socket.readyState === WebSocket.CLOSED
         ) {
             connect();
         }
@@ -1644,21 +1343,17 @@
         aplicarPreferenciasEmTempoReal
     );
 
-    window.addEventListener(
-        'storage',
-        function (evento) {
-            if (
-                evento.key !==
-                    'margot-preferencias-v1' ||
-                window.MargotPreferencias
-            ) {
-                return;
-            }
-
-            aplicarPreferenciasGuardadas();
-            aplicarPreferenciasEmTempoReal();
+    window.addEventListener('storage', function (evento) {
+        if (
+            evento.key !== 'margot-preferencias-v1' ||
+            window.MargotPreferencias
+        ) {
+            return;
         }
-    );
+
+        aplicarPreferenciasGuardadas();
+        aplicarPreferenciasEmTempoReal();
+    });
 
     $(function () {
         if (window.disableLocationTracking) {

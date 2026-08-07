@@ -1,42 +1,21 @@
 (function (window, document) {
     'use strict';
 
-    var galeria =
-        document.getElementById(
-            'perfil-galeria'
-        );
-
-    var faixa =
-        document.getElementById(
-            'perfil-fotos'
-        );
+    var galeria = document.getElementById('perfil-galeria');
+    var faixa = document.getElementById('perfil-fotos');
 
     if (!galeria || !faixa) return;
 
-    var slides =
-        Array.prototype.slice.call(
-            faixa.querySelectorAll(
-                '.perfil-slide'
-            )
-        );
+    var slides = Array.prototype.slice.call(
+        faixa.querySelectorAll('.perfil-slide')
+    );
 
-    var indicadores =
-        Array.prototype.slice.call(
-            document.querySelectorAll(
-                '#perfil-indicadores button'
-            )
-        );
+    var indicadores = Array.prototype.slice.call(
+        document.querySelectorAll('#perfil-indicadores button')
+    );
 
-    var anterior =
-        document.getElementById(
-            'perfil-anterior'
-        );
-
-    var seguinte =
-        document.getElementById(
-            'perfil-seguinte'
-        );
-
+    var anterior = document.getElementById('perfil-anterior');
+    var seguinte = document.getElementById('perfil-seguinte');
     var indiceAtual = 0;
     var frameScroll = null;
     var ratoAtivo = false;
@@ -49,161 +28,107 @@
     function limitarIndice(indice) {
         return Math.max(
             0,
-            Math.min(
-                indice,
-                slides.length - 1
-            )
+            Math.min(indice, slides.length - 1)
         );
     }
 
     function indiceMaisProximo() {
-        var centro =
-            faixa.scrollLeft +
-            faixa.clientWidth / 2;
-
+        var centro = faixa.scrollLeft + faixa.clientWidth / 2;
         var melhorIndice = 0;
         var menorDistancia = Infinity;
 
-        slides.forEach(
-            function (slide, indice) {
-                var centroSlide =
-                    slide.offsetLeft +
-                    slide.offsetWidth / 2;
+        slides.forEach(function (slide, indice) {
+            var centroSlide =
+                slide.offsetLeft +
+                slide.offsetWidth / 2;
 
-                var distancia =
-                    Math.abs(
-                        centroSlide -
-                        centro
-                    );
+            var distancia = Math.abs(
+                centroSlide - centro
+            );
 
-                if (
-                    distancia <
-                    menorDistancia
-                ) {
-                    menorDistancia =
-                        distancia;
-
-                    melhorIndice =
-                        indice;
-                }
+            if (distancia < menorDistancia) {
+                menorDistancia = distancia;
+                melhorIndice = indice;
             }
-        );
+        });
 
         return melhorIndice;
     }
 
     function atualizarInterface(indice) {
-        indiceAtual =
-            limitarIndice(indice);
+        indiceAtual = limitarIndice(indice);
 
-        slides.forEach(
-            function (slide, posicao) {
-                slide.setAttribute(
-                    'aria-hidden',
-                    posicao === indiceAtual
-                        ? 'false'
-                        : 'true'
-                );
-            }
-        );
+        slides.forEach(function (slide, posicao) {
+            slide.setAttribute(
+                'aria-hidden',
+                posicao === indiceAtual
+                    ? 'false'
+                    : 'true'
+            );
+        });
 
-        indicadores.forEach(
-            function (
-                indicador,
-                posicao
-            ) {
-                var ativo =
-                    posicao ===
-                    indiceAtual;
+        indicadores.forEach(function (indicador, posicao) {
+            var ativo = posicao === indiceAtual;
 
-                indicador.classList.toggle(
-                    'ativo',
-                    ativo
-                );
+            indicador.classList.toggle(
+                'ativo',
+                ativo
+            );
 
-                indicador.setAttribute(
-                    'aria-current',
-                    ativo
-                        ? 'true'
-                        : 'false'
-                );
-            }
-        );
+            indicador.setAttribute(
+                'aria-current',
+                ativo ? 'true' : 'false'
+            );
+        });
 
         if (anterior) {
-            anterior.disabled =
-                indiceAtual === 0;
+            anterior.disabled = indiceAtual === 0;
         }
 
         if (seguinte) {
             seguinte.disabled =
-                indiceAtual ===
-                slides.length - 1;
+                indiceAtual === slides.length - 1;
         }
     }
 
-    function mostrarFoto(
-        indice,
-        suave
-    ) {
-        indice =
-            limitarIndice(indice);
+    function mostrarFoto(indice, suave) {
+        indice = limitarIndice(indice);
 
         faixa.scrollTo({
-            left:
-                slides[indice]
-                    .offsetLeft,
-
+            left: slides[indice].offsetLeft,
             behavior:
                 suave === false
                     ? 'auto'
                     : 'smooth'
         });
 
-        atualizarInterface(
-            indice
-        );
+        atualizarInterface(indice);
     }
 
     function corrigirFoto(imagem) {
         var tentativa = 0;
 
-        imagem.addEventListener(
-            'error',
-            function () {
-                tentativa += 1;
+        imagem.addEventListener('error', function () {
+            tentativa += 1;
 
-                var fallback =
-                    imagem.dataset
-                        .fallback;
+            var fallback = imagem.dataset.fallback;
+            var padrao = imagem.dataset.default;
 
-                var padrao =
-                    imagem.dataset
-                        .default;
-
-                if (
-                    tentativa === 1 &&
-                    fallback
-                ) {
-                    imagem.src =
-                        fallback;
-
-                    return;
-                }
-
-                if (
-                    padrao &&
-                    imagem.src !==
-                    new URL(
-                        padrao,
-                        window.location.href
-                    ).href
-                ) {
-                    imagem.src =
-                        padrao;
-                }
+            if (tentativa === 1 && fallback) {
+                imagem.src = fallback;
+                return;
             }
-        );
+
+            if (
+                padrao &&
+                imagem.src !== new URL(
+                    padrao,
+                    window.location.href
+                ).href
+            ) {
+                imagem.src = padrao;
+            }
+        });
     }
 
     faixa
@@ -213,51 +138,41 @@
     faixa.addEventListener(
         'scroll',
         function () {
-            if (
-                frameScroll !== null
-            ) {
-                return;
-            }
+            if (frameScroll !== null) return;
 
-            frameScroll =
-                window.requestAnimationFrame(
-                    function () {
-                        frameScroll = null;
+            frameScroll = window.requestAnimationFrame(
+                function () {
+                    frameScroll = null;
 
-                        atualizarInterface(
-                            indiceMaisProximo()
-                        );
-                    }
-                );
+                    atualizarInterface(
+                        indiceMaisProximo()
+                    );
+                }
+            );
         },
         {
             passive: true
         }
     );
 
-    indicadores.forEach(
-        function (indicador) {
-            indicador.addEventListener(
-                'click',
-                function () {
-                    mostrarFoto(
-                        Number(
-                            indicador.dataset
-                                .indice
-                        )
-                    );
-                }
-            );
-        }
-    );
+    indicadores.forEach(function (indicador) {
+        indicador.addEventListener(
+            'click',
+            function () {
+                mostrarFoto(
+                    Number(
+                        indicador.dataset.indice
+                    )
+                );
+            }
+        );
+    });
 
     if (anterior) {
         anterior.addEventListener(
             'click',
             function () {
-                mostrarFoto(
-                    indiceAtual - 1
-                );
+                mostrarFoto(indiceAtual - 1);
             }
         );
     }
@@ -266,23 +181,16 @@
         seguinte.addEventListener(
             'click',
             function () {
-                mostrarFoto(
-                    indiceAtual + 1
-                );
+                mostrarFoto(indiceAtual + 1);
             }
         );
     }
 
-    /*
-     * Arrasto com rato no computador.
-     * No telefone é utilizado o scroll nativo.
-     */
     faixa.addEventListener(
         'pointerdown',
         function (evento) {
             if (
-                evento.pointerType !==
-                'mouse' ||
+                evento.pointerType !== 'mouse' ||
                 evento.button !== 0
             ) {
                 return;
@@ -290,19 +198,11 @@
 
             ratoAtivo = true;
             ratoMoveu = false;
-            ratoInicioX =
-                evento.clientX;
+            ratoInicioX = evento.clientX;
+            scrollInicio = faixa.scrollLeft;
 
-            scrollInicio =
-                faixa.scrollLeft;
-
-            faixa.classList.add(
-                'a-arrastar'
-            );
-
-            faixa.setPointerCapture(
-                evento.pointerId
-            );
+            faixa.classList.add('a-arrastar');
+            faixa.setPointerCapture(evento.pointerId);
         }
     );
 
@@ -312,19 +212,14 @@
             if (!ratoAtivo) return;
 
             var distancia =
-                evento.clientX -
-                ratoInicioX;
+                evento.clientX - ratoInicioX;
 
-            if (
-                Math.abs(distancia) >
-                4
-            ) {
+            if (Math.abs(distancia) > 4) {
                 ratoMoveu = true;
             }
 
             faixa.scrollLeft =
-                scrollInicio -
-                distancia;
+                scrollInicio - distancia;
 
             evento.preventDefault();
         }
@@ -334,10 +229,7 @@
         if (!ratoAtivo) return;
 
         ratoAtivo = false;
-
-        faixa.classList.remove(
-            'a-arrastar'
-        );
+        faixa.classList.remove('a-arrastar');
 
         if (
             faixa.hasPointerCapture(
@@ -349,16 +241,11 @@
             );
         }
 
-        mostrarFoto(
-            indiceMaisProximo()
-        );
+        mostrarFoto(indiceMaisProximo());
 
-        window.setTimeout(
-            function () {
-                ratoMoveu = false;
-            },
-            0
-        );
+        window.setTimeout(function () {
+            ratoMoveu = false;
+        }, 0);
     }
 
     faixa.addEventListener(
@@ -384,69 +271,126 @@
     galeria.addEventListener(
         'keydown',
         function (evento) {
-            if (
-                evento.key ===
-                'ArrowLeft'
-            ) {
+            if (evento.key === 'ArrowLeft') {
                 evento.preventDefault();
-
-                mostrarFoto(
-                    indiceAtual - 1
-                );
+                mostrarFoto(indiceAtual - 1);
             }
 
-            if (
-                evento.key ===
-                'ArrowRight'
-            ) {
+            if (evento.key === 'ArrowRight') {
                 evento.preventDefault();
-
-                mostrarFoto(
-                    indiceAtual + 1
-                );
+                mostrarFoto(indiceAtual + 1);
             }
         }
     );
 
+    function aoRedimensionar() {
+        mostrarFoto(indiceAtual, false);
+    }
+
+    function desativarPagina() {
+        if (frameScroll !== null) {
+            window.cancelAnimationFrame(
+                frameScroll
+            );
+
+            frameScroll = null;
+        }
+
+        window.removeEventListener(
+            'resize',
+            aoRedimensionar
+        );
+
+        document.removeEventListener(
+            'margot:page-leave',
+            desativarPagina
+        );
+    }
+
     window.addEventListener(
         'resize',
-        function () {
-            mostrarFoto(
-                indiceAtual,
-                false
-            );
-        },
+        aoRedimensionar,
         {
             passive: true
         }
     );
 
+    document.addEventListener(
+        'margot:page-leave',
+        desativarPagina
+    );
+
     atualizarInterface(0);
-})(
-    window,
-    document
-);
+})(window, document);
 
-document.getElementById('enviar-hey-perfil')?.addEventListener('click', function () {
-    var botao = this;
-    var destinatarioId = botao.dataset.destinatarioId;
+(function (window, document) {
+    'use strict';
 
-    if (!window.AppWebSocket || !window.AppWebSocket.isConnected()) {
-        if (window.AppWebSocket) window.AppWebSocket.connect();
-        return;
+    var botao = document.getElementById(
+        'enviar-hey-perfil'
+    );
+
+    var temporizador = null;
+
+    if (!botao) return;
+
+    function enviarHey() {
+        var destinatarioId =
+            botao.dataset.destinatarioId;
+
+        if (
+            !window.AppWebSocket ||
+            !window.AppWebSocket.isConnected()
+        ) {
+            if (window.AppWebSocket) {
+                window.AppWebSocket.connect();
+            }
+
+            return;
+        }
+
+        botao.disabled = true;
+
+        window.AppWebSocket.send({
+            type: 'notify',
+            destinatario_id: destinatarioId
+        });
+
+        botao.textContent = 'Hey enviado';
+
+        temporizador = window.setTimeout(
+            function () {
+                botao.disabled = false;
+                botao.textContent = 'Hey';
+            },
+            1200
+        );
     }
 
-    botao.disabled = true;
+    function desativarPagina() {
+        if (temporizador !== null) {
+            window.clearTimeout(temporizador);
+            temporizador = null;
+        }
 
-    window.AppWebSocket.send({
-        type: 'notify',
-        destinatario_id: destinatarioId
-    });
+        botao.removeEventListener(
+            'click',
+            enviarHey
+        );
 
-    botao.textContent = 'Hey enviado';
+        document.removeEventListener(
+            'margot:page-leave',
+            desativarPagina
+        );
+    }
 
-    setTimeout(function () {
-        botao.disabled = false;
-        botao.textContent = 'Hey';
-    }, 1200);
-});
+    botao.addEventListener(
+        'click',
+        enviarHey
+    );
+
+    document.addEventListener(
+        'margot:page-leave',
+        desativarPagina
+    );
+})(window, document);

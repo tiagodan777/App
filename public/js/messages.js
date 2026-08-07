@@ -5,6 +5,8 @@
     var $erro = $('#conversas-erro');
     var temporizador = null;
 
+    if (!$lista.length) return;
+
     function baseUrl() {
         return String(window.messagesUrl || '/messages').replace(/\/+$/, '');
     }
@@ -13,7 +15,10 @@
         if (!valor) return '';
 
         var texto = String(valor);
-        var data = new Date(texto.replace(' ', 'T') + (texto.includes('Z') ? '' : 'Z'));
+        var data = new Date(
+            texto.replace(' ', 'T') +
+            (texto.includes('Z') ? '' : 'Z')
+        );
 
         if (Number.isNaN(data.getTime())) return '';
 
@@ -86,7 +91,9 @@
                 }).append(
                     $('<span>').text('💬'),
                     $('<h2>').text('Ainda não há conversas'),
-                    $('<p>').text('Abre uma pessoa no mapa e envia a primeira mensagem.')
+                    $('<p>').text(
+                        'Abre uma pessoa no mapa e envia a primeira mensagem.'
+                    )
                 )
             );
 
@@ -119,10 +126,13 @@
 
     async function carregarConversas() {
         try {
-            var resposta = await fetch(baseUrl() + '?api=conversations', {
-                credentials: 'same-origin',
-                cache: 'no-store'
-            });
+            var resposta = await fetch(
+                baseUrl() + '?api=conversations',
+                {
+                    credentials: 'same-origin',
+                    cache: 'no-store'
+                }
+            );
 
             var dados = await resposta.json();
 
@@ -140,37 +150,100 @@
             );
 
             atualizarBadge(Number(dados.unread_count) || 0);
-
             $erro.prop('hidden', true).text('');
         } catch (erro) {
-            $erro.text(erro.message).prop('hidden', false);
+            $erro
+                .text(erro.message)
+                .prop('hidden', false);
         }
     }
 
     function ativarMenu() {
         $('#menuPrincipal a').removeClass('active');
-        $('#menuPrincipal a[href*="messages"]').first().addClass('active');
+        $('#menuPrincipal a[href*="messages"]')
+            .first()
+            .addClass('active');
+    }
+
+    function aoReceberContagem(evento) {
+        atualizarBadge(
+            Number(evento.detail.unread_count) || 0
+        );
+    }
+
+    function aoMudarVisibilidade() {
+        if (document.visibilityState === 'visible') {
+            carregarConversas();
+        }
+    }
+
+    function desativarPagina() {
+        if (temporizador !== null) {
+            window.clearInterval(temporizador);
+            temporizador = null;
+        }
+
+        window.removeEventListener(
+            'app:chat-message',
+            carregarConversas
+        );
+
+        window.removeEventListener(
+            'app:chat-unread-count',
+            aoReceberContagem
+        );
+
+        window.removeEventListener(
+            'pagehide',
+            desativarPagina
+        );
+
+        document.removeEventListener(
+            'visibilitychange',
+            aoMudarVisibilidade
+        );
+
+        document.removeEventListener(
+            'margot:page-leave',
+            desativarPagina
+        );
     }
 
     $('time[data-data-mensagem]').each(function () {
-        $(this).text(dataLocal($(this).attr('datetime')));
+        $(this).text(
+            dataLocal($(this).attr('datetime'))
+        );
     });
 
-    window.addEventListener('app:chat-message', carregarConversas);
+    window.addEventListener(
+        'app:chat-message',
+        carregarConversas
+    );
 
-    window.addEventListener('app:chat-unread-count', function (evento) {
-        atualizarBadge(Number(evento.detail.unread_count) || 0);
-    });
+    window.addEventListener(
+        'app:chat-unread-count',
+        aoReceberContagem
+    );
 
-    document.addEventListener('visibilitychange', function () {
-        if (document.visibilityState === 'visible') carregarConversas();
-    });
+    window.addEventListener(
+        'pagehide',
+        desativarPagina
+    );
+
+    document.addEventListener(
+        'visibilitychange',
+        aoMudarVisibilidade
+    );
+
+    document.addEventListener(
+        'margot:page-leave',
+        desativarPagina
+    );
 
     ativarMenu();
 
-    temporizador = window.setInterval(carregarConversas, 10000);
-
-    window.addEventListener('pagehide', function () {
-        window.clearInterval(temporizador);
-    });
+    temporizador = window.setInterval(
+        carregarConversas,
+        10000
+    );
 })(window, document, jQuery);
