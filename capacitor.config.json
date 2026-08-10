@@ -1,0 +1,9 @@
+{
+  "appId": "com.margot.app",
+  "appName": "Margot",
+  "webDir": "www",
+  "server": {
+    "url": "https://margot-app.com",
+    "cleartext": false
+  }
+}
