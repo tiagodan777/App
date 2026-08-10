@@ -1,10 +1,9 @@
 @charset "UTF-8";
-@import url('https://fonts.googleapis.com/css2?family=Alfa+Slab+One&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Alfa+Slab+One&display=swap");
 
 main {
     width: 100vw;
     height: 50vh;
-
     display: flex;
     flex-flow: column nowrap;
     justify-content: center;
@@ -13,9 +12,9 @@ main {
 
 main > form {
     width: 85%;
+    max-width: 520px;
     height: 50%;
     margin-top: -15%;
-
     display: flex;
     flex-flow: column nowrap;
     justify-content: flex-start;
@@ -23,15 +22,15 @@ main > form {
 }
 
 main > form > h1 {
+    margin: 0 0 28px;
     text-align: center;
+    font-family: "Alfa Slab One", Georgia, serif;
     font-size: 2.5em;
-    font-weight: bold;
-    font-family: 'Alfa Slab One';
+    font-weight: 400;
 }
 
 main > form > p {
     width: 100%;
-
     display: flex;
     flex-flow: column nowrap;
     justify-content: space-evenly;
@@ -39,6 +38,7 @@ main > form > p {
 }
 
 main > form > p.em-linha {
+    margin: 5px 0;
     display: flex;
     flex-flow: row nowrap;
     justify-content: flex-start;
@@ -47,68 +47,130 @@ main > form > p.em-linha {
 
 main > form > p > label {
     width: 100%;
-    font-weight: bold;
     font-size: 0.8em;
+    font-weight: bold;
 }
 
 main > form > p > input {
     width: 100%;
-    font-size: 1.2em;
     padding: 12px;
     border: none;
-    outline: none;
     border-bottom: 1px solid #888888;
-}
-
-main > form > p.em-linha {
-    margin: 5px 0px;
-}
-
-main > form > p.em-linha > input {
-    width: 15px;
-    height: 15px;
-}
-
-main > form > p.em-linha > label {
-    width: 50%;
+    border-radius: 0;
+    outline: none;
+    background: transparent;
+    font-size: 1.2em;
 }
 
 main > form > p > input:focus {
-    border: none;
-    outline: none;
-    border-bottom: 1px solid #888888;
+    border-bottom-color: #111111;
+}
+
+main > form > p.em-linha > input {
+    flex: 0 0 auto;
+    width: 26px;
+    height: 26px;
+    margin: 0 8px 0 0;
+    accent-color: #ed1f35;
+}
+
+main > form > p.em-linha > label {
+    width: auto;
+    font-size: 0.9em;
 }
 
 main > form > input[type="submit"] {
-    padding: 10px 20px;
-    border-radius: 15px;
-    background-color: red;
-    color: white;
     align-self: flex-end;
+    margin-top: 10px;
+    padding: 12px 26px;
     border: none;
+    border-radius: 18px;
+    background-color: #ed1f35;
+    color: #ffffff;
+    font-size: 1em;
+    cursor: pointer;
+    transition: transform 120ms ease, background-color 160ms ease;
+}
+
+main > form > input[type="submit"]:active {
+    transform: scale(0.97);
+    background-color: #d8182d;
 }
 
 aside {
-    width: 100vw;
-    height: 20vh;
-    margin-top: 15vh;
-
+    width: min(calc(100vw - 40px), 430px);
+    height: auto;
+    margin: 15vh auto 0;
+    padding: 10px;
+    border: 1px solid #ececf0;
+    border-radius: 24px;
+    background: rgba(247, 247, 249, 0.92);
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.07);
     display: flex;
     flex-flow: column nowrap;
-    justify-content: space-evenly;
-    align-items: center;
+    gap: 6px;
 }
 
 aside > a {
-    color: black;
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 16px;
+    border-radius: 16px;
+    color: #202024;
+    text-align: center;
     text-decoration: none;
     cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 160ms ease, transform 120ms ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+aside > a:active {
+    transform: scale(0.98);
 }
 
 aside > a#esqueci-palavra-passe {
-    color: rgb(106, 210, 255);
+    color: #62626b;
+    font-size: 0.95rem;
+    font-weight: 650;
+}
+
+aside > a#esqueci-palavra-passe:hover,
+aside > a#esqueci-palavra-passe:focus-visible {
+    background-color: #ffffff;
+}
+
+aside > a#registar {
+    gap: 5px;
+    background-color: #ffffff;
+    color: #62626b;
+    font-size: 0.95rem;
 }
 
 aside > a#registar > span {
-    color: rgb(181, 181, 28);
+    color: #ed1f35;
+    font-weight: 750;
+}
+
+aside > a#registar:hover,
+aside > a#registar:focus-visible {
+    background-color: #fff1f3;
+}
+
+aside > a:focus-visible,
+main > form > input[type="submit"]:focus-visible {
+    outline: 2px solid #ed1f35;
+    outline-offset: 2px;
+}
+
+@media (max-height: 740px) {
+    main > form {
+        margin-top: -8%;
+    }
+
+    aside {
+        margin-top: 12vh;
+    }
 }
