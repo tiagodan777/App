@@ -11,8 +11,6 @@
     width: 85%;
     position: absolute;
     margin: auto;
-    left: 50%;
-    transform: translateY(-50%);
     min-height: 54px;
     margin: 0;
     padding: 13px 14px;
