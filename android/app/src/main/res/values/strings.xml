@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Margot</string>
+    <string name="title_activity_main">Margot</string>
+    <string name="package_name">com.margot.app</string>
+    <string name="custom_url_scheme">com.margot.app</string>
+</resources>
