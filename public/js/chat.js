@@ -19,6 +19,77 @@
     var ultimoId = 0;
     var previewUrl = null;
     var aEnviar = false;
+    var ativo = true;
+    var aFixarNoFim = true;
+    var temporizadoresScroll = [];
+
+    if (!$pagina.length || !$mensagens.length || !$form.length) return;
+
+    if (typeof window.desativarChatMargot === 'function') {
+        window.desativarChatMargot();
+    }
+
+    function deslocarParaFim(forcar) {
+        if (
+            !ativo ||
+            !$mensagens[0] ||
+            (!forcar && !aFixarNoFim)
+        ) {
+            return;
+        }
+
+        window.requestAnimationFrame(function () {
+            if (!ativo || !$mensagens[0]) return;
+
+            $mensagens[0].scrollTop = $mensagens[0].scrollHeight;
+        });
+    }
+
+    function acompanharMedia($contexto, forcar) {
+        $contexto.find('img').each(function () {
+            var imagem = this;
+
+            if (imagem.complete) {
+                deslocarParaFim(forcar);
+                return;
+            }
+
+            $(imagem).one(
+                'load.margotChatScroll error.margotChatScroll',
+                function () {
+                    deslocarParaFim(forcar);
+                }
+            );
+        });
+
+        $contexto.find('video').each(function () {
+            var video = this;
+
+            if (video.readyState >= 1) {
+                deslocarParaFim(forcar);
+                return;
+            }
+
+            $(video).one(
+                'loadedmetadata.margotChatScroll error.margotChatScroll',
+                function () {
+                    deslocarParaFim(forcar);
+                }
+            );
+        });
+    }
+
+    function prepararScrollInicial() {
+        acompanharMedia($mensagens, false);
+
+        [0, 60, 180, 420, 900, 1600].forEach(function (atraso) {
+            temporizadoresScroll.push(
+                window.setTimeout(function () {
+                    deslocarParaFim(false);
+                }, atraso)
+            );
+        });
+    }
 
     function baseUrl() {
         return String(window.messagesUrl || '/messages').replace(/\/+$/, '');
@@ -141,14 +212,15 @@
             return false;
         }
 
-        $mensagens.append(criarMensagem(mensagem));
+        var $novaMensagem = criarMensagem(mensagem);
+
+        $mensagens.append($novaMensagem);
 
         ultimoId = Math.max(ultimoId, id);
 
         if (deslocar !== false) {
-            $mensagens.scrollTop(
-                $mensagens[0].scrollHeight
-            );
+            acompanharMedia($novaMensagem, true);
+            deslocarParaFim(true);
         }
 
         return true;
@@ -348,8 +420,13 @@
         );
     });
 
-    $mensagens.scrollTop(
-        $mensagens[0].scrollHeight
+    prepararScrollInicial();
+
+    $mensagens.on(
+        'pointerdown.margotChatScroll touchstart.margotChatScroll wheel.margotChatScroll',
+        function () {
+            aFixarNoFim = false;
+        }
     );
 
     $form.on('submit', enviarMensagem);
@@ -376,7 +453,7 @@
         }
     });
 
-    window.addEventListener('app:chat-message', function (evento) {
+    function aoReceberMensagem(evento) {
         var mensagem = evento.detail.message;
 
         if (!mensagem) return;
@@ -398,21 +475,25 @@
         ) {
             marcarComoLidas();
         }
-    });
+    }
 
-    window.addEventListener('app:chat-messages-read', function (evento) {
+    function aoLerMensagens(evento) {
         atualizarConfirmacoes(
             evento.detail.reader_id,
             evento.detail.last_message_id
         );
-    });
+    }
 
-    document.addEventListener('visibilitychange', function () {
+    function aoAlterarVisibilidade() {
         if (document.visibilityState === 'visible') {
             procurarNovasMensagens();
             marcarComoLidas();
         }
-    });
+    }
+
+    window.addEventListener('app:chat-message', aoReceberMensagem);
+    window.addEventListener('app:chat-messages-read', aoLerMensagens);
+    document.addEventListener('visibilitychange', aoAlterarVisibilidade);
 
     $('#menuPrincipal a').removeClass('active');
     $('#menuPrincipal a[href*="messages"]').first().addClass('active');
@@ -424,8 +505,36 @@
         5000
     );
 
-    window.addEventListener('pagehide', function () {
+    function desativarChat() {
+        if (!ativo) return;
+
+        ativo = false;
         window.clearInterval(temporizador);
+
+        temporizadoresScroll.forEach(function (temporizadorScroll) {
+            window.clearTimeout(temporizadorScroll);
+        });
+
+        temporizadoresScroll = [];
+
+        $mensagens.off('.margotChatScroll');
+        $mensagens.find('img, video').off('.margotChatScroll');
+
+        window.removeEventListener('app:chat-message', aoReceberMensagem);
+        window.removeEventListener('app:chat-messages-read', aoLerMensagens);
+        document.removeEventListener('visibilitychange', aoAlterarVisibilidade);
+        document.removeEventListener('margot:page-leave', desativarChat);
+        window.removeEventListener('pagehide', desativarChat);
+
         limparMedia();
-    });
+
+        if (window.desativarChatMargot === desativarChat) {
+            delete window.desativarChatMargot;
+        }
+    }
+
+    window.desativarChatMargot = desativarChat;
+
+    document.addEventListener('margot:page-leave', desativarChat);
+    window.addEventListener('pagehide', desativarChat);
 })(window, document, jQuery);
