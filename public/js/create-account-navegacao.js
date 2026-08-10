@@ -6,10 +6,6 @@
     var modoEdicao = config.modoEdicao === true;
     var STORAGE_KEY = modoEdicao ? 'editar-perfil-' + String(config.membroId || '') : 'create-account-dados';
     var ETAPA_INICIAL = modoEdicao ? '#editar-perfil' : '#introducao';
-    var IDADE_MINIMA = 18;
-    var VERSAO_TERMOS = String(config.versaoTermos || '1.0');
-    var VERSAO_PRIVACIDADE = String(config.versaoPrivacidade || '1.0');
-
     var ETAPAS = [
         '#introducao',
         '#editar-perfil',
@@ -24,8 +20,13 @@
         '#permissoes',
         '#palavra-passe'
     ];
-
-    var dados = Object.assign({gostos: []}, config.dadosIniciais || {});
+    var dados = Object.assign({
+        gostos: [],
+        aceitou_termos: '',
+        aceitou_privacidade: '',
+        versao_termos: '1.0',
+        versao_privacidade: '1.0'
+    }, config.dadosIniciais || {});
     var etapaAtual = null;
     var pedidoAtual = null;
     var aEnviar = false;
@@ -68,23 +69,16 @@
     }
 
     function atualizarHistorico(etapa, substituir) {
-        var estado = {
+        window.history[substituir ? 'replaceState' : 'pushState']({
             createAccount: true,
             etapa: etapa
-        };
-
-        window.history[substituir ? 'replaceState' : 'pushState'](
-            estado,
-            '',
-            urlDaEtapa(etapa)
-        );
+        }, '', urlDaEtapa(etapa));
     }
 
     function guardarNaSessao() {
         if (modoEdicao) return;
 
         var seguros = {};
-
         Object.keys(dados).forEach(function (chave) {
             if (chave !== 'password' && chave !== 'confirma_password') {
                 seguros[chave] = dados[chave];
@@ -106,12 +100,18 @@
             if (!guardado) return;
 
             var resultado = JSON.parse(guardado);
-
             if (!resultado || typeof resultado !== 'object') return;
 
-            dados = Object.assign({gostos: []}, dados, resultado);
+            dados = Object.assign({
+                gostos: [],
+                aceitou_termos: '',
+                aceitou_privacidade: '',
+                versao_termos: '1.0',
+                versao_privacidade: '1.0'
+            }, dados, resultado);
 
             if (!Array.isArray(dados.gostos)) dados.gostos = [];
+            window.createAccountDados = dados;
         } catch (erro) {
             console.warn('Não foi possível restaurar o formulário.', erro);
         }
@@ -129,37 +129,33 @@
         opcoes = Object.assign({incluirPassword: false}, opcoes || {});
 
         $form.serializeArray().forEach(function (campo) {
-            if (['imagens[]', 'hobbie', 'ver_password', 'gostos[]'].includes(campo.name)) {
-                return;
-            }
-
-            if (
-                !opcoes.incluirPassword &&
-                ['password', 'confirma_password'].includes(campo.name)
-            ) {
-                return;
-            }
-
+            if (['imagens[]', 'hobbie', 'ver_password', 'gostos[]'].includes(campo.name)) return;
+            if (!opcoes.incluirPassword && ['password', 'confirma_password'].includes(campo.name)) return;
             dados[campo.name] = campo.value;
         });
 
-        var $termos = $form.find('[name="aceitou_termos"]');
+        var $aceitouTermos = $form.find('[name="aceitou_termos"]');
+        var $aceitouPrivacidade = $form.find('[name="aceitou_privacidade"]');
+        var $versaoTermos = $form.find('[name="versao_termos"]');
+        var $versaoPrivacidade = $form.find('[name="versao_privacidade"]');
 
-        if ($termos.length) {
-            dados.aceitou_termos = $termos.is(':checked') ? '1' : '0';
+        if ($aceitouTermos.length) {
+            dados.aceitou_termos = $aceitouTermos.prop('checked') ? '1' : '';
         }
 
-        var $privacidade = $form.find('[name="aceitou_privacidade"]');
-
-        if ($privacidade.length) {
-            dados.aceitou_privacidade = $privacidade.is(':checked') ? '1' : '0';
+        if ($aceitouPrivacidade.length) {
+            dados.aceitou_privacidade = $aceitouPrivacidade.prop('checked') ? '1' : '';
         }
 
-        dados.versao_termos = VERSAO_TERMOS;
-        dados.versao_privacidade = VERSAO_PRIVACIDADE;
+        if ($versaoTermos.length) {
+            dados.versao_termos = String($versaoTermos.val() || '1.0');
+        }
+
+        if ($versaoPrivacidade.length) {
+            dados.versao_privacidade = String($versaoPrivacidade.val() || '1.0');
+        }
 
         if (!Array.isArray(dados.gostos)) dados.gostos = [];
-
         guardarNaSessao();
     }
 
@@ -171,12 +167,9 @@
         if (!$campos.length) return;
 
         if ($campos.is(':radio')) {
-            $campos
-                .prop('checked', false)
-                .filter(function () {
-                    return String(this.value) === String(valor);
-                })
-                .prop('checked', true);
+            $campos.prop('checked', false).filter(function () {
+                return String(this.value) === String(valor);
+            }).prop('checked', true);
             return;
         }
 
@@ -194,7 +187,6 @@
         if (!$('#gostos').length || !Array.isArray(dados.gostos)) return;
 
         var $lista = $('#meus-gostos').empty();
-
         dados.gostos.forEach(function (gosto) {
             $lista.append($('<p>', {
                 class: 'meu-hobbie',
@@ -224,21 +216,17 @@
 
     function resumir(valor, limite) {
         var texto = String(valor || '').trim().replace(/\s+/g, ' ');
-
         if (!texto || texto.length <= limite) return texto;
-
         return texto.substring(0, limite - 1).trimEnd() + '…';
     }
 
     function definirResumo(campo, texto) {
         var $resumo = $('[data-resumo-campo="' + campo + '"]');
-
         if ($resumo.length && texto) $resumo.text(texto);
     }
 
     function resumoPermissoes() {
         var API = window.MargotPreferencias;
-
         if (!API) return 'Localização e notificações';
 
         var localizacao = API.obter('localizacao');
@@ -280,37 +268,21 @@
         ].filter(Boolean).join('/');
 
         var gostos = Array.isArray(dados.gostos) ? dados.gostos : [];
-
         var resumoGostos = gostos.length
-            ? resumir(gostos.slice(0, 3).join(', '), 58) +
-                (gostos.length > 3 ? ' +' + (gostos.length - 3) : '')
+            ? resumir(gostos.slice(0, 3).join(', '), 58) + (gostos.length > 3 ? ' +' + (gostos.length - 3) : '')
             : 'Ainda não adicionaste gostos';
 
-        var contacto =
-            String(dados.email || '').trim() ||
-            String(dados.telefone || '').trim();
-
-        var numeroFotos = Array.isArray(window.fotosPerfil)
-            ? window.fotosPerfil.length
-            : 0;
+        var contacto = String(dados.email || '').trim() || String(dados.telefone || '').trim();
+        var numeroFotos = Array.isArray(window.fotosPerfil) ? window.fotosPerfil.length : 0;
 
         definirResumo('nome', nome || 'Editar o teu nome');
-        definirResumo(
-            'nascimento',
-            nascimento.length >= 8 ? nascimento : 'Editar a data de nascimento'
-        );
+        definirResumo('nascimento', nascimento.length >= 8 ? nascimento : 'Editar a data de nascimento');
         definirResumo('genero', textoGenero(dados.genero));
         definirResumo('gostos', resumoGostos);
         definirResumo('objetivo', textoObjetivo(dados.objetivo));
-        definirResumo(
-            'sobre_ti',
-            resumir(dados.sobre_ti, 62) || 'Ainda não escreveste uma descrição'
-        );
+        definirResumo('sobre_ti', resumir(dados.sobre_ti, 62) || 'Ainda não escreveste uma descrição');
         definirResumo('contactos', contacto || 'Email e telefone privados');
-        definirResumo(
-            'fotos',
-            numeroFotos === 1 ? '1 fotografia' : numeroFotos + ' fotografias'
-        );
+        definirResumo('fotos', numeroFotos === 1 ? '1 fotografia' : numeroFotos + ' fotografias');
         definirResumo('permissoes', resumoPermissoes());
     }
 
@@ -347,7 +319,6 @@
         }, opcoes || {});
 
         var etapa = normalizarEtapa(destino);
-
         pararRecursos();
 
         if (pedidoAtual && pedidoAtual.readyState !== 4) {
@@ -364,10 +335,7 @@
         pedidoAtual = pedido;
 
         pedido.done(function (resposta) {
-            var $resposta = $('<div>').append(
-                $.parseHTML(resposta, document, false)
-            );
-
+            var $resposta = $('<div>').append($.parseHTML(resposta, document, false));
             var $etapa = $resposta.find(etapa).first();
 
             if (!$etapa.length) {
@@ -378,21 +346,16 @@
 
             $form.empty().append($etapa);
             etapaAtual = etapa;
-
             restaurarEtapa();
 
-            if (
-                erroValidacaoPendente &&
-                erroValidacaoPendente.etapa === etapa
-            ) {
+            if (erroValidacaoPendente && erroValidacaoPendente.etapa === etapa) {
                 apresentarErroValidacao(erroValidacaoPendente);
             }
 
             if (opcoes.animar) {
-                $etapa
-                    .css('margin-left', '200%')
-                    .stop(true, true)
-                    .animate({marginLeft: '0%'}, 420);
+                $etapa.css('margin-left', '200%').stop(true, true).animate({
+                    marginLeft: '0%'
+                }, 420);
             } else {
                 $etapa.css('margin-left', '0');
             }
@@ -409,12 +372,7 @@
         pedido.fail(function (xhr, estado) {
             if (estado === 'abort') return;
 
-            console.error(
-                'Erro ao carregar a área:',
-                xhr.status,
-                xhr.responseText
-            );
-
+            console.error('Erro ao carregar a área:', xhr.status, xhr.responseText);
             alert('Não foi possível carregar esta área.');
         });
 
@@ -497,33 +455,10 @@
         );
     }
 
-    function temIdadeMinima() {
-        if (!nascimentoValido()) return false;
-
-        var dia = Number(textoGuardado('dia'));
-        var mes = Number(textoGuardado('mes'));
-        var ano = Number(textoGuardado('ano'));
-        var hoje = new Date();
-        var idade = hoje.getFullYear() - ano;
-        var mesAtual = hoje.getMonth() + 1;
-
-        if (
-            mesAtual < mes ||
-            (mesAtual === mes && hoje.getDate() < dia)
-        ) {
-            idade--;
-        }
-
-        return idade >= IDADE_MINIMA;
-    }
-
     function primeiroErroCriacao() {
         var primeiroNome = textoGuardado('primeiro_nome');
 
-        if (
-            comprimentoTexto(primeiroNome) < 1 ||
-            comprimentoTexto(primeiroNome) > 60
-        ) {
+        if (comprimentoTexto(primeiroNome) < 1 || comprimentoTexto(primeiroNome) > 60) {
             return {
                 etapa: '#nome',
                 campo: 'primeiro_nome',
@@ -533,10 +468,7 @@
 
         var ultimoNome = textoGuardado('ultimo_nome');
 
-        if (
-            comprimentoTexto(ultimoNome) < 1 ||
-            comprimentoTexto(ultimoNome) > 60
-        ) {
+        if (comprimentoTexto(ultimoNome) < 1 || comprimentoTexto(ultimoNome) > 60) {
             return {
                 etapa: '#nome',
                 campo: 'ultimo_nome',
@@ -549,14 +481,6 @@
                 etapa: '#nascimento',
                 campo: 'dia',
                 mensagem: 'Escolhe uma data de nascimento válida.'
-            };
-        }
-
-        if (!temIdadeMinima()) {
-            return {
-                etapa: '#nascimento',
-                campo: 'dia',
-                mensagem: 'Tens de ter pelo menos 18 anos para criar uma conta na Margot.'
             };
         }
 
@@ -584,16 +508,14 @@
             };
         }
 
-        if (
-            ![
-                'amizade',
-                'conhecer_pessoas',
-                'relacao_seria',
-                'algo_casual',
-                'conversar',
-                'ainda_nao_sei'
-            ].includes(textoGuardado('objetivo'))
-        ) {
+        if (![
+            'amizade',
+            'conhecer_pessoas',
+            'relacao_seria',
+            'algo_casual',
+            'conversar',
+            'ainda_nao_sei'
+        ].includes(textoGuardado('objetivo'))) {
             return {
                 etapa: '#objetivo',
                 campo: 'objetivo',
@@ -643,22 +565,6 @@
             };
         }
 
-        if (textoGuardado('aceitou_termos') !== '1') {
-            return {
-                etapa: '#palavra-passe',
-                campo: 'aceitou_termos',
-                mensagem: 'Tens de aceitar os Termos de Utilização para criar uma conta.'
-            };
-        }
-
-        if (textoGuardado('aceitou_privacidade') !== '1') {
-            return {
-                etapa: '#palavra-passe',
-                campo: 'aceitou_privacidade',
-                mensagem: 'Tens de confirmar que leste a Política de Privacidade para criar uma conta.'
-            };
-        }
-
         var password = String(dados.password || '');
 
         if (
@@ -679,6 +585,22 @@
                 etapa: '#palavra-passe',
                 campo: 'confirma_password',
                 mensagem: 'As palavras-passe não são idênticas.'
+            };
+        }
+
+        if (textoGuardado('aceitou_termos') !== '1') {
+            return {
+                etapa: '#palavra-passe',
+                campo: 'aceitou_termos',
+                mensagem: 'Tens de aceitar os Termos de Utilização para criar uma conta.'
+            };
+        }
+
+        if (textoGuardado('aceitou_privacidade') !== '1') {
+            return {
+                etapa: '#palavra-passe',
+                campo: 'aceitou_privacidade',
+                mensagem: 'Tens de confirmar que leste a Política de Privacidade para criar uma conta.'
             };
         }
 
@@ -711,10 +633,7 @@
 
         var elementoErro = document.getElementById('create-account-erro');
 
-        if (
-            elementoErro &&
-            typeof elementoErro.scrollIntoView === 'function'
-        ) {
+        if (elementoErro && typeof elementoErro.scrollIntoView === 'function') {
             elementoErro.scrollIntoView({
                 behavior: 'smooth',
                 block: 'center'
@@ -765,24 +684,15 @@
                 return;
             }
 
-            formData.append(
-                chave,
-                dados[chave] == null ? '' : dados[chave]
-            );
+            formData.append(chave, dados[chave] == null ? '' : dados[chave]);
         });
 
-        formData.set(
-            'aceitou_termos',
-            textoGuardado('aceitou_termos') === '1' ? '1' : '0'
-        );
-        formData.set(
-            'aceitou_privacidade',
-            textoGuardado('aceitou_privacidade') === '1' ? '1' : '0'
-        );
-        formData.set('versao_termos', VERSAO_TERMOS);
-        formData.set('versao_privacidade', VERSAO_PRIVACIDADE);
-        formData.set('modo', modoEdicao ? 'editar' : 'criar');
-        formData.set('secao', nomeEtapa(etapaVisivel()));
+        formData.set('aceitou_termos', textoGuardado('aceitou_termos'));
+        formData.set('aceitou_privacidade', textoGuardado('aceitou_privacidade'));
+        formData.set('versao_termos', textoGuardado('versao_termos') || '1.0');
+        formData.set('versao_privacidade', textoGuardado('versao_privacidade') || '1.0');
+        formData.append('modo', modoEdicao ? 'editar' : 'criar');
+        formData.append('secao', nomeEtapa(etapaVisivel()));
 
         if (typeof window.adicionarFotosPerfilAoFormData === 'function') {
             window.adicionarFotosPerfilAoFormData(formData);
@@ -811,9 +721,7 @@
             if (erros.length) return erros.join(' ');
         }
 
-        return resposta && resposta.message
-            ? resposta.message
-            : alternativa;
+        return resposta && resposta.message ? resposta.message : alternativa;
     }
 
     function inicializar() {
@@ -836,25 +744,6 @@
     }
 
     restaurarDaSessao();
-
-    if (String(dados.versao_termos || '') !== VERSAO_TERMOS) {
-        dados.aceitou_termos = '0';
-    }
-
-    if (String(dados.versao_privacidade || '') !== VERSAO_PRIVACIDADE) {
-        dados.aceitou_privacidade = '0';
-    }
-
-    dados.versao_termos = VERSAO_TERMOS;
-    dados.versao_privacidade = VERSAO_PRIVACIDADE;
-
-    if (!['0', '1'].includes(String(dados.aceitou_termos))) {
-        dados.aceitou_termos = '0';
-    }
-
-    if (!['0', '1'].includes(String(dados.aceitou_privacidade))) {
-        dados.aceitou_privacidade = '0';
-    }
 
     window.createAccountDados = dados;
     window.guardarCamposCreateAccount = guardarCamposAtuais;
@@ -894,10 +783,9 @@
         window.addEventListener('popstate', function (evento) {
             guardarCamposAtuais({incluirPassword: true});
 
-            var destino =
-                evento.state && evento.state.createAccount
-                    ? evento.state.etapa
-                    : ETAPA_INICIAL;
+            var destino = evento.state && evento.state.createAccount
+                ? evento.state.etapa
+                : ETAPA_INICIAL;
 
             carregarEtapa(destino, {
                 historico: 'nenhum',
@@ -907,7 +795,6 @@
 
         $form.on('submit', function (evento) {
             evento.preventDefault();
-
             if (aEnviar) return;
 
             guardarCamposAtuais({incluirPassword: true});
@@ -961,11 +848,7 @@
                     ));
                 })
                 .fail(function (xhr) {
-                    console.error(
-                        'Erro ao guardar:',
-                        xhr.status,
-                        xhr.responseText
-                    );
+                    console.error('Erro ao guardar:', xhr.status, xhr.responseText);
 
                     var resposta = xhr.responseJSON;
 
@@ -989,21 +872,14 @@
 
                     $botao
                         .prop('disabled', false)
-                        .text(
-                            textoOriginal ||
-                            (modoEdicao ? 'Guardar e sair' : 'Criar conta')
-                        );
+                        .text(textoOriginal || (modoEdicao ? 'Guardar e sair' : 'Criar conta'));
                 });
         });
 
-        $(document).on(
-            'input change',
-            '#create-account-form [name]',
-            function () {
-                $(this).removeAttr('aria-invalid');
-                mostrarErro('');
-            }
-        );
+        $(document).on('input change', '#create-account-form [name]', function () {
+            $(this).removeAttr('aria-invalid');
+            mostrarErro('');
+        });
 
         $(document).on('change', '#ver-password', function () {
             $('#password, #confirma-password').attr(
