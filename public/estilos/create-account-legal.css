@@ -9,6 +9,8 @@
 
 #palavra-passe .aceitacao-legal-opcao {
     width: 85%;
+    position: absolute;
+    margin: auto;
     min-height: 54px;
     margin: 0;
     padding: 13px 14px;
