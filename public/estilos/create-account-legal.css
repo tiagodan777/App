@@ -1,0 +1,102 @@
+@charset "UTF-8";
+
+#palavra-passe .aceitacao-legal {
+    width: 100%;
+    margin: 18px 0 4px;
+    display: grid;
+    gap: 10px;
+}
+
+#palavra-passe .aceitacao-legal-opcao {
+    width: 100%;
+    min-height: 54px;
+    margin: 0;
+    padding: 13px 14px;
+    border: 1px solid #e2e2e6;
+    border-radius: 16px;
+    background: #f7f7f8;
+    color: #18181b;
+    cursor: pointer;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    transition:
+        border-color 160ms ease,
+        background-color 160ms ease,
+        box-shadow 160ms ease,
+        transform 120ms ease;
+}
+
+#palavra-passe .aceitacao-legal-opcao:active {
+    transform: scale(0.99);
+}
+
+#palavra-passe .aceitacao-legal-opcao:has(input:checked) {
+    border-color: rgba(237, 35, 58, 0.42);
+    background: rgba(237, 35, 58, 0.06);
+    box-shadow: 0 0 0 3px rgba(237, 35, 58, 0.06);
+}
+
+#palavra-passe .aceitacao-legal-opcao > input[type="checkbox"] {
+    flex: 0 0 22px;
+    width: 22px !important;
+    height: 22px !important;
+    min-width: 22px;
+    margin: 1px 0 0;
+    padding: 0;
+    accent-color: #ed233a;
+    cursor: pointer;
+}
+
+#palavra-passe .aceitacao-legal-opcao > span {
+    min-width: 0;
+    margin: 0;
+    color: #27272a;
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 15px;
+    font-weight: 650;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
+
+#palavra-passe .aceitacao-legal-opcao a {
+    color: #d91f37;
+    font: inherit;
+    font-weight: 750;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(217, 31, 55, 0.3);
+}
+
+#palavra-passe .aceitacao-legal-opcao a:hover {
+    border-bottom-color: #d91f37;
+}
+
+#palavra-passe .aceitacao-legal-opcao input:focus-visible,
+#palavra-passe .aceitacao-legal-opcao a:focus-visible {
+    outline: 2px solid #ed233a;
+    outline-offset: 3px;
+}
+
+@media (max-width: 480px) {
+    #palavra-passe .aceitacao-legal {
+        margin-top: 16px;
+        gap: 8px;
+    }
+
+    #palavra-passe . .aceitacao-legal-opcao {
+        min-height: 50px;
+        padding: 12px;
+        border-radius: 14px;
+        gap: 10px;
+    }
+
+    #palavra-passe .aceitacao-legal-opcao > span {
+        font-size: 14px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #palavra-passe .aceitacao-legal-opcao {
+        transition: none;
+    }
+}
