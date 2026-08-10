@@ -1,13 +1,13 @@
 {% extends 'layout.html' %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ doc_root }}estilos/chat.css?v=2" data-margot-page-style>
+<link rel="stylesheet" href="{{ doc_root }}estilos/chat.css?v=3" data-margot-page-style>
 {% endblock %}
 
 {% block content %}
 <main id="chat-pagina" class="chat-pagina" data-outro-id="{{ outro.id }}">
     <header class="chat-cabecalho">
-        <a href="{{ doc_root }}messages" class="chat-voltar" aria-label="Voltar às mensagens">
+        <a href="{{ doc_root }}messages" class="chat-voltar" data-margot-voltar aria-label="Voltar às mensagens">
             <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M15 5l-7 7 7 7"></path>
             </svg>
@@ -33,15 +33,21 @@
                         <video controls playsinline preload="metadata">
                             <source src="{{ mensagem.media_url }}" type="{{ mensagem.ficheiro_mime }}">
                         </video>
-                        <a href="{{ mensagem.media_url }}" target="_blank" rel="noopener" class="chat-video-abrir">Abrir vídeo</a>
+                        <a href="{{ mensagem.media_url }}" target="_blank" rel="noopener" class="chat-video-abrir">
+                            Abrir vídeo
+                        </a>
                     {% endif %}
+
                     {% if mensagem.texto %}
                         <p>{{ mensagem.texto }}</p>
                     {% endif %}
+
                     <footer>
                         <time datetime="{{ mensagem.criada_em }}" data-data-mensagem="{{ mensagem.criada_em }}"></time>
                         {% if mensagem.minha %}
-                            <span class="chat-lida" aria-label="{{ mensagem.lida ? 'Lida' : 'Enviada' }}">{{ mensagem.lida ? '✓✓' : '✓' }}</span>
+                            <span class="chat-lida" aria-label="{{ mensagem.lida ? 'Lida' : 'Enviada' }}">
+                                {{ mensagem.lida ? '✓✓' : '✓' }}
+                            </span>
                         {% endif %}
                     </footer>
                 </div>

@@ -31,7 +31,7 @@
             estilo.id = estiloFotosId;
             estilo.textContent = [
                 '.foto {',
-                '    transition: opacity 220ms ease !important;',
+                '    transition: opacity 560ms cubic-bezier(.22, 1, .36, 1) !important;',
                 '}',
                 'body.margot-mini-menu-aberto .foto {',
                 '    display: block !important;',

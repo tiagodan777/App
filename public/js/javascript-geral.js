@@ -20,27 +20,19 @@
 
     function indiceMenu(url) {
         var caminho = caminhoNormalizado(url);
-
         if (caminho === '/') return 0;
         if (caminho === '/messages') return 1;
         if (caminho.indexOf('/profile/') === 0) return 2;
-
         return null;
     }
 
     function atualizarMenu(url) {
         var caminho = caminhoNormalizado(url);
-
         document.querySelectorAll('#menuPrincipal a[href]').forEach(function (link) {
             var ativo = caminhoNormalizado(link.href) === caminho;
-
             link.classList.toggle('active', ativo);
-
-            if (ativo) {
-                link.setAttribute('aria-current', 'page');
-            } else {
-                link.removeAttribute('aria-current');
-            }
+            if (ativo) link.setAttribute('aria-current', 'page');
+            else link.removeAttribute('aria-current');
         });
     }
 
@@ -58,34 +50,21 @@
     }
 
     async function sincronizarEstilos(documentoNovo) {
-        var atuais = Array.from(
-            document.head.querySelectorAll('link[data-margot-page-style]')
-        );
-
-        var novos = Array.from(
-            documentoNovo.head.querySelectorAll('link[data-margot-page-style]')
-        );
-
+        var atuais = Array.from(document.head.querySelectorAll('link[data-margot-page-style]'));
+        var novos = Array.from(documentoNovo.head.querySelectorAll('link[data-margot-page-style]'));
         var hrefsNovos = novos.map(function (link) {
-            return new URL(
-                link.getAttribute('href'),
-                window.location.href
-            ).href;
+            return new URL(link.getAttribute('href'), window.location.href).href;
         });
-
         var promessas = [];
 
         novos.forEach(function (origem) {
-            var href = new URL(
-                origem.getAttribute('href'),
-                window.location.href
-            ).href;
+            var href = new URL(origem.getAttribute('href'), window.location.href).href;
 
-            var jaExiste = atuais.some(function (link) {
+            if (atuais.some(function (link) {
                 return link.href === href;
-            });
-
-            if (jaExiste) return;
+            })) {
+                return;
+            }
 
             var link = document.createElement('link');
 
@@ -101,9 +80,7 @@
         await Promise.all(promessas);
 
         atuais.forEach(function (link) {
-            if (!hrefsNovos.includes(link.href)) {
-                link.remove();
-            }
+            if (!hrefsNovos.includes(link.href)) link.remove();
         });
     }
 
@@ -128,10 +105,7 @@
             script.async = false;
 
             if (origem.src) {
-                script.src = new URL(
-                    origem.getAttribute('src'),
-                    window.location.href
-                ).href;
+                script.src = new URL(origem.getAttribute('src'), window.location.href).href;
 
                 script.addEventListener('load', function () {
                     script.remove();
@@ -140,9 +114,7 @@
 
                 script.addEventListener('error', function () {
                     script.remove();
-                    rejeitar(
-                        new Error('Não foi possível carregar ' + script.src)
-                    );
+                    rejeitar(new Error('Não foi possível carregar ' + script.src));
                 }, { once: true });
             } else {
                 script.textContent = origem.textContent;
@@ -165,20 +137,22 @@
 
     function animar(pagina, quadros, duracao) {
         if (!pagina.animate || duracao === 0) {
-            pagina.style.transform =
-                quadros[quadros.length - 1].transform;
-
-            pagina.style.opacity =
-                quadros[quadros.length - 1].opacity;
-
-            return Promise.resolve();
+            pagina.style.transform = quadros[quadros.length - 1].transform;
+            pagina.style.opacity = quadros[quadros.length - 1].opacity;
+            return Promise.resolve(null);
         }
 
-        return pagina.animate(quadros, {
+        var animacao = pagina.animate(quadros, {
             duration: duracao,
             easing: 'cubic-bezier(.22,.8,.28,1)',
             fill: 'forwards'
-        }).finished.catch(function () {});
+        });
+
+        return animacao.finished
+            .catch(function () {})
+            .then(function () {
+                return animacao;
+            });
     }
 
     async function trocarPagina(url, opcoes) {
@@ -204,25 +178,14 @@
                 throw new Error('HTTP ' + resposta.status);
             }
 
-            if (
-                new URL(resposta.url).origin !==
-                window.location.origin
-            ) {
+            if (new URL(resposta.url).origin !== window.location.origin) {
                 throw new Error('Destino externo');
             }
 
             var html = await resposta.text();
-
-            var documentoNovo = new DOMParser().parseFromString(
-                html,
-                'text/html'
-            );
-
-            var paginaNova =
-                documentoNovo.querySelector(seletorPagina);
-
-            var paginaAtual =
-                document.querySelector(seletorPagina);
+            var documentoNovo = new DOMParser().parseFromString(html, 'text/html');
+            var paginaNova = documentoNovo.querySelector(seletorPagina);
+            var paginaAtual = document.querySelector(seletorPagina);
 
             if (!paginaNova || !paginaAtual) {
                 throw new Error('Página incompatível');
@@ -236,105 +199,80 @@
             var scripts = retirarScripts(paginaNova);
 
             await sincronizarEstilos(documentoNovo);
-
-            document.dispatchEvent(
-                new CustomEvent('margot:page-leave')
-            );
+            document.dispatchEvent(new CustomEvent('margot:page-leave'));
 
             var direcao = opcoes.direcao;
 
             if (!direcao) {
-                var atual = indiceMenu(urlRenderizada);
+                var atual = indiceMenu(window.location.href);
                 var seguinte = indiceMenu(resposta.url);
 
-                direcao =
-                    atual !== null &&
-                    seguinte !== null &&
-                    seguinte < atual
-                        ? -1
-                        : 1;
+                direcao = atual !== null && seguinte !== null && seguinte < atual
+                    ? -1
+                    : 1;
             }
 
-            paginaNova.style.transform =
-                direcao > 0
-                    ? 'translate3d(100%,0,0)'
-                    : 'translate3d(-28%,0,0)';
+            paginaNova.style.transform = direcao > 0
+                ? 'translate3d(100%,0,0)'
+                : 'translate3d(-28%,0,0)';
 
-            paginaNova.style.opacity =
-                direcao > 0 ? '1' : '.94';
-
-            paginaAtual.insertAdjacentElement(
-                'afterend',
-                paginaNova
-            );
-
+            paginaNova.style.opacity = direcao > 0 ? '1' : '.94';
+            paginaAtual.insertAdjacentElement('afterend', paginaNova);
             document.body.classList.add('margot-a-navegar');
 
-            var reduzido = window.matchMedia(
-                '(prefers-reduced-motion: reduce)'
-            ).matches;
-
+            var reduzido = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
             var duracao = reduzido ? 0 : 300;
 
-            await Promise.all([
-                animar(
-                    paginaAtual,
-                    [
-                        {
-                            transform: 'translate3d(0,0,0)',
-                            opacity: '1'
-                        },
-                        {
-                            transform:
-                                direcao > 0
-                                    ? 'translate3d(-28%,0,0)'
-                                    : 'translate3d(100%,0,0)',
-                            opacity: direcao > 0 ? '.94' : '1'
-                        }
-                    ],
-                    duracao
-                ),
-                animar(
-                    paginaNova,
-                    [
-                        {
-                            transform:
-                                direcao > 0
-                                    ? 'translate3d(100%,0,0)'
-                                    : 'translate3d(-28%,0,0)',
-                            opacity: direcao > 0 ? '1' : '.94'
-                        },
-                        {
-                            transform: 'translate3d(0,0,0)',
-                            opacity: '1'
-                        }
-                    ],
-                    duracao
-                )
+            var animacoes = await Promise.all([
+                animar(paginaAtual, [
+                    {
+                        transform: 'translate3d(0,0,0)',
+                        opacity: '1'
+                    },
+                    {
+                        transform: direcao > 0
+                            ? 'translate3d(-28%,0,0)'
+                            : 'translate3d(100%,0,0)',
+                        opacity: direcao > 0 ? '.94' : '1'
+                    }
+                ], duracao),
+                animar(paginaNova, [
+                    {
+                        transform: direcao > 0
+                            ? 'translate3d(100%,0,0)'
+                            : 'translate3d(-28%,0,0)',
+                        opacity: direcao > 0 ? '1' : '.94'
+                    },
+                    {
+                        transform: 'translate3d(0,0,0)',
+                        opacity: '1'
+                    }
+                ], duracao)
             ]);
+
+            animacoes.forEach(function (animacao) {
+                if (animacao) animacao.cancel();
+            });
 
             paginaAtual.remove();
             paginaNova.removeAttribute('style');
             document.body.classList.remove('margot-a-navegar');
-
-            document.title =
-                documentoNovo.title || document.title;
+            document.title = documentoNovo.title || document.title;
 
             if (opcoes.historico === 'push') {
                 posicaoHistorico += 1;
 
-                history.pushState(
-                    {
-                        margotPosition: posicaoHistorico
-                    },
-                    '',
-                    resposta.url
-                );
+                history.pushState({
+                    margotPosition: posicaoHistorico
+                }, '', resposta.url);
+            } else if (opcoes.historico === 'replace') {
+                history.replaceState({
+                    margotPosition: posicaoHistorico
+                }, '', resposta.url);
             }
 
             urlRenderizada = resposta.url;
             atualizarMenu(resposta.url);
-
             await executarScripts(scripts);
 
             if (
@@ -345,10 +283,7 @@
             }
 
             window.scrollTo(0, 0);
-
-            document.dispatchEvent(
-                new CustomEvent('margot:page-ready')
-            );
+            document.dispatchEvent(new CustomEvent('margot:page-ready'));
         } catch (erro) {
             document.body.classList.remove('margot-a-navegar');
 
@@ -362,10 +297,42 @@
         }
     }
 
+    function voltarPagina(urlAlternativo) {
+        if (aNavegar) return;
+
+        if (posicaoHistorico > 0) {
+            history.back();
+            return;
+        }
+
+        trocarPagina(urlAlternativo, {
+            historico: 'replace',
+            direcao: -1
+        });
+    }
+
     document.addEventListener('click', function (evento) {
-        var link = evento.target.closest(
-            '#menuPrincipal a[href]'
-        );
+        var linkVoltar = evento.target.closest('[data-margot-voltar][href]');
+
+        if (
+            linkVoltar &&
+            !evento.defaultPrevented &&
+            evento.button === 0 &&
+            !evento.metaKey &&
+            !evento.ctrlKey &&
+            !evento.shiftKey &&
+            !evento.altKey
+        ) {
+            var urlVoltar = new URL(linkVoltar.href, window.location.href);
+
+            if (urlVoltar.origin === window.location.origin) {
+                evento.preventDefault();
+                voltarPagina(urlVoltar.href);
+                return;
+            }
+        }
+
+        var link = evento.target.closest('#menuPrincipal a[href]');
 
         if (
             !link ||
@@ -381,9 +348,7 @@
 
         var url = new URL(link.href, window.location.href);
 
-        if (url.origin !== window.location.origin) {
-            return;
-        }
+        if (url.origin !== window.location.origin) return;
 
         evento.preventDefault();
 
@@ -411,12 +376,8 @@
             indiceAtual !== null &&
             indiceSeguinte !== null &&
             indiceAtual !== indiceSeguinte
-                ? indiceSeguinte < indiceAtual
-                    ? -1
-                    : 1
-                : proximaPosicao < posicaoHistorico
-                    ? -1
-                    : 1;
+                ? (indiceSeguinte < indiceAtual ? -1 : 1)
+                : (proximaPosicao < posicaoHistorico ? -1 : 1);
 
         posicaoHistorico = proximaPosicao;
 
@@ -426,17 +387,14 @@
         });
     });
 
-    history.replaceState(
-        {
-            margotPosition: posicaoHistorico
-        },
-        '',
-        window.location.href
-    );
+    history.replaceState({
+        margotPosition: posicaoHistorico
+    }, '', window.location.href);
 
     atualizarMenu(window.location.href);
 
     window.MargotNavigation = {
-        navigate: trocarPagina
+        navigate: trocarPagina,
+        back: voltarPagina
     };
 })(window, document);
