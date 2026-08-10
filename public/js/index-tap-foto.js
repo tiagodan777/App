@@ -1,22 +1,11 @@
 (function (window, document, $) {
     'use strict';
 
-    function garantirEstiloDoMiniMenu() {
-        if (document.getElementById('margot-mini-menu-fotos-estilo')) return;
-
-        var estilo = document.createElement('style');
-
-        estilo.id = 'margot-mini-menu-fotos-estilo';
-        estilo.textContent = 'body.margot-mini-menu-aberto .foto{visibility:hidden!important;pointer-events:none!important;}';
-        document.head.appendChild(estilo);
-    }
-
     $(function () {
         var $menu = $('.mini-menu');
 
         if ($menu.length === 0) return;
 
-        garantirEstiloDoMiniMenu();
         $(document).off('.margotTapFoto');
 
         var aberto = false;
@@ -30,6 +19,32 @@
         var menuInicioTempo = 0;
         var ponteiroMenu = null;
         var acoesAbertas = false;
+        var estiloFotosId = 'margot-mini-menu-fotos-estilo';
+
+        function prepararTransicaoFotos() {
+            var estiloAnterior = document.getElementById(estiloFotosId);
+
+            if (estiloAnterior) estiloAnterior.remove();
+
+            var estilo = document.createElement('style');
+
+            estilo.id = estiloFotosId;
+            estilo.textContent = [
+                '.foto {',
+                '    transition: opacity 220ms ease !important;',
+                '}',
+                'body.margot-mini-menu-aberto .foto {',
+                '    display: block !important;',
+                '    visibility: visible !important;',
+                '    opacity: 0 !important;',
+                '    pointer-events: none !important;',
+                '}'
+            ].join('\n');
+
+            document.head.appendChild(estilo);
+        }
+
+        prepararTransicaoFotos();
 
         function posicaoBaseMenu() {
             return acoesAbertas ? '0%' : '15%';
@@ -66,6 +81,7 @@
 
             aberto = true;
             acoesAbertas = false;
+
             document.body.classList.add('margot-mini-menu-aberto');
 
             $menu
@@ -83,6 +99,7 @@
             acoesAbertas = false;
             aArrastarMenu = false;
             ponteiroMenu = null;
+
             document.body.classList.remove('margot-mini-menu-aberto');
 
             $menu
@@ -212,9 +229,13 @@
         window.definirMiniMenuAcoes = definirMiniMenuAcoes;
 
         function desativarPagina() {
-            document.body.classList.remove('margot-mini-menu-aberto');
             $(document).off('.margotTapFoto');
             document.removeEventListener('margot:page-leave', desativarPagina);
+            document.body.classList.remove('margot-mini-menu-aberto');
+
+            var estilo = document.getElementById(estiloFotosId);
+
+            if (estilo) estilo.remove();
 
             if (window.fecharMiniMenu === fecharMenu) {
                 delete window.fecharMiniMenu;
