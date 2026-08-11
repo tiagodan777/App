@@ -20,6 +20,7 @@
   "homepage": "https://github.com/tiagodan777/App#readme",
   "dependencies": {
     "@capacitor/android": "^8.5.0",
+    "@capacitor/camera": "^8.2.2",
     "@capacitor/core": "^8.5.0",
     "@capacitor/ios": "^8.5.0"
   },
