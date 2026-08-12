@@ -13,7 +13,12 @@
     var locationRefreshTimer = null;
     var reconnectAttempts = 0;
     var locationWatchId = null;
+    var locationWatchProvider = null;
+    var locationWatchStarting = false;
+    var locationWatchGeneration = 0;
     var locationRequestPending = false;
+    var locationTrackingStartedAt = 0;
+    var lastLocationErrorAt = 0;
     var lastLocationSentAt = 0;
     var lastSentLatitude = null;
     var lastSentLongitude = null;
@@ -29,6 +34,9 @@
     var LOCATION_REFRESH_INTERVAL = 45000;
     var LOCATION_MIN_DISTANCE = 5;
     var LOCATION_MAX_AGE = 10000;
+    var LOCATION_TIMEOUT = 30000;
+    var LOCATION_ERROR_COOLDOWN = 30000;
+    var LOCATION_STARTUP_GRACE = 60000;
 
     function aplicarPreferenciasGuardadas() {
         if (window.MargotPreferencias) {
@@ -306,7 +314,73 @@
 
     function startLocationTracking() {
         if (window.disableLocationTracking) return;
-        if (locationWatchId !== null) return;
+        if (locationWatchId !== null || locationWatchStarting) return;
+
+        var nativeGeolocation = getNativeGeolocation();
+
+        if (isNativeApp()) {
+            if (!nativeGeolocation) {
+                mostrarMensagemTemporaria(
+                    'A localização nativa não está disponível.',
+                    'erro'
+                );
+
+                return;
+            }
+
+            locationWatchStarting = true;
+            locationTrackingStartedAt = Date.now();
+
+            var generation = ++locationWatchGeneration;
+
+            nativeGeolocation.watchPosition(
+                getLocationOptions(),
+                function (position, error) {
+                    if (
+                        generation !== locationWatchGeneration ||
+                        window.disableLocationTracking
+                    ) {
+                        return;
+                    }
+
+                    if (error) {
+                        handleLocationError(error);
+                        return;
+                    }
+
+                    if (position) {
+                        handleLocationSuccess(position);
+                    }
+                }
+            ).then(function (watchId) {
+                if (
+                    generation !== locationWatchGeneration ||
+                    window.disableLocationTracking
+                ) {
+                    return nativeGeolocation.clearWatch({
+                        id: String(watchId)
+                    }).catch(function (error) {
+                        console.warn(
+                            'Não foi possível terminar a localização nativa.',
+                            error
+                        );
+                    });
+                }
+
+                locationWatchId = String(watchId);
+                locationWatchProvider = 'native';
+                locationWatchStarting = false;
+            }).catch(function (error) {
+                if (generation !== locationWatchGeneration) return;
+
+                locationWatchId = null;
+                locationWatchProvider = null;
+                locationWatchStarting = false;
+                handleLocationError(error);
+            });
+
+            return;
+        }
 
         if (!window.isSecureContext) {
             mostrarMensagemTemporaria(
@@ -326,23 +400,53 @@
             return;
         }
 
+        locationTrackingStartedAt = Date.now();
+        locationWatchProvider = 'web';
         locationWatchId = navigator.geolocation.watchPosition(
             handleLocationSuccess,
             handleLocationError,
-            {
-                enableHighAccuracy: true,
-                maximumAge: LOCATION_MAX_AGE,
-                timeout: 15000
-            }
+            getLocationOptions()
         );
     }
 
     function requestCurrentLocation() {
         if (
             window.disableLocationTracking ||
-            !window.isSecureContext ||
-            !('geolocation' in navigator) ||
             locationRequestPending
+        ) {
+            return;
+        }
+
+        var nativeGeolocation = getNativeGeolocation();
+
+        if (isNativeApp()) {
+            if (!nativeGeolocation) {
+                mostrarMensagemTemporaria(
+                    'A localização nativa não está disponível.',
+                    'erro'
+                );
+
+                return;
+            }
+
+            locationRequestPending = true;
+
+            nativeGeolocation.getCurrentPosition(
+                getLocationOptions()
+            ).then(function (position) {
+                locationRequestPending = false;
+                handleLocationSuccess(position);
+            }).catch(function (error) {
+                locationRequestPending = false;
+                handleLocationError(error);
+            });
+
+            return;
+        }
+
+        if (
+            !window.isSecureContext ||
+            !('geolocation' in navigator)
         ) {
             return;
         }
@@ -358,12 +462,32 @@
                 locationRequestPending = false;
                 handleLocationError(error);
             },
-            {
-                enableHighAccuracy: true,
-                maximumAge: LOCATION_MAX_AGE,
-                timeout: 15000
-            }
+            getLocationOptions()
         );
+    }
+
+    function isNativeApp() {
+        return Boolean(
+            window.Capacitor &&
+            typeof window.Capacitor.isNativePlatform === 'function' &&
+            window.Capacitor.isNativePlatform()
+        );
+    }
+
+    function getNativeGeolocation() {
+        if (!isNativeApp()) return null;
+
+        var plugins = window.Capacitor.Plugins || {};
+
+        return plugins.Geolocation || null;
+    }
+
+    function getLocationOptions() {
+        return {
+            enableHighAccuracy: true,
+            maximumAge: LOCATION_MAX_AGE,
+            timeout: LOCATION_TIMEOUT
+        };
     }
 
     function startLocationRefresh() {
@@ -382,17 +506,41 @@
     }
 
     function stopLocationTracking() {
+        var watchId = locationWatchId;
+        var watchProvider = locationWatchProvider;
+        var nativeGeolocation = getNativeGeolocation();
+
+        locationWatchGeneration += 1;
+        locationWatchId = null;
+        locationWatchProvider = null;
+        locationWatchStarting = false;
+
         if (
-            locationWatchId !== null &&
+            watchId !== null &&
+            watchProvider === 'native' &&
+            nativeGeolocation
+        ) {
+            nativeGeolocation.clearWatch({
+                id: String(watchId)
+            }).catch(function (error) {
+                console.warn(
+                    'Não foi possível terminar a localização nativa.',
+                    error
+                );
+            });
+        } else if (
+            watchId !== null &&
+            watchProvider === 'web' &&
             navigator.geolocation
         ) {
-            navigator.geolocation.clearWatch(locationWatchId);
+            navigator.geolocation.clearWatch(watchId);
         }
 
         clearLocationRefreshTimer();
 
-        locationWatchId = null;
         locationRequestPending = false;
+        locationTrackingStartedAt = 0;
+        lastLocationErrorAt = 0;
         lastLocationSentAt = 0;
         lastSentLatitude = null;
         lastSentLongitude = null;
@@ -401,6 +549,7 @@
 
     function handleLocationSuccess(position) {
         if (window.disableLocationTracking) return;
+        if (!position || !position.coords) return;
 
         var latitude = Number(position.coords.latitude);
         var longitude = Number(position.coords.longitude);
@@ -419,6 +568,8 @@
             accuracy: accuracy,
             timestamp: Number(position.timestamp) || Date.now()
         };
+
+        lastLocationErrorAt = 0;
 
         var agora = Date.now();
 
@@ -474,16 +625,44 @@
     function handleLocationError(error) {
         if (window.disableLocationTracking) return;
 
+        var code = error && error.code;
+        var errorMessage = String(
+            error && error.message ? error.message : ''
+        ).toLowerCase();
         var mensagem = 'Não foi possível obter a localização.';
+        var permissionDenied =
+            code === 1 ||
+            code === 'OS-PLUG-GLOC-0003' ||
+            code === 'OS-PLUG-GLOC-0004' ||
+            errorMessage.includes('permission denied') ||
+            errorMessage.includes('not authorized');
+        var positionUnavailable =
+            code === 2 ||
+            code === 'OS-PLUG-GLOC-0002' ||
+            code === 'OS-PLUG-GLOC-0007' ||
+            code === 'OS-PLUG-GLOC-0008' ||
+            code === 'OS-PLUG-GLOC-0017';
+        var timedOut =
+            code === 3 ||
+            code === 'OS-PLUG-GLOC-0010' ||
+            errorMessage.includes('timeout') ||
+            errorMessage.includes('timed out');
 
-        if (error.code === error.PERMISSION_DENIED) {
+        if (permissionDenied) {
             mensagem = 'A localização não foi autorizada.';
-        } else if (error.code === error.POSITION_UNAVAILABLE) {
+        } else if (positionUnavailable) {
             mensagem = 'A localização não está disponível.';
-        } else if (error.code === error.TIMEOUT) {
+        } else if (timedOut) {
             mensagem = 'A localização demorou demasiado tempo.';
 
-            if (lastKnownLocation) {
+            if (
+                lastKnownLocation ||
+                (
+                    locationTrackingStartedAt > 0 &&
+                    Date.now() - locationTrackingStartedAt <
+                        LOCATION_STARTUP_GRACE
+                )
+            ) {
                 console.warn(
                     'A atualização pontual da localização expirou; foi mantida a última posição válida.',
                     error
@@ -494,6 +673,16 @@
         }
 
         console.warn(mensagem, error);
+
+        if (
+            lastLocationErrorAt > 0 &&
+            Date.now() - lastLocationErrorAt <
+                LOCATION_ERROR_COOLDOWN
+        ) {
+            return;
+        }
+
+        lastLocationErrorAt = Date.now();
         mostrarMensagemTemporaria(mensagem, 'erro');
     }
 
