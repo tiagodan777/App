@@ -40,9 +40,7 @@
     async function estadoLocalizacao() {
         var geolocalizacao = geolocalizacaoNativa();
 
-        if (aplicacaoNativa()) {
-            if (!geolocalizacao) return 'unsupported';
-
+        if (aplicacaoNativa() && geolocalizacao) {
             try {
                 var permissoes = await geolocalizacao.checkPermissions();
                 return permissoes.location || permissoes.coarseLocation || 'prompt';
@@ -97,7 +95,7 @@
             ? await estadoLocalizacao()
             : estadoNotificacoes();
         var ativa = preferencia === true && (
-            aplicacaoNativa()
+            geolocalizacaoNativa()
                 ? estadoConcedido(estado)
                 : estado !== 'denied' && estado !== 'unsupported'
         );
@@ -208,17 +206,9 @@
         definirErro('');
         renderizar();
 
-        if (aplicacaoNativa()) {
-            var geolocalizacao = geolocalizacaoNativa();
+        var geolocalizacao = geolocalizacaoNativa();
 
-            if (!geolocalizacao) {
-                aPedir.localizacao = false;
-                API.definir('localizacao', false);
-                definirErro('A localização nativa não está disponível nesta versão da app.');
-                renderizar();
-                return;
-            }
-
+        if (geolocalizacao) {
             ativarLocalizacaoNativa(geolocalizacao);
             return;
         }
