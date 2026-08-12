@@ -326,7 +326,7 @@
             return;
         }
 
-        locationWatchId = navigator.geolocation.watchPosition(
+        /*locationWatchId = navigator.geolocation.watchPosition(
             handleLocationSuccess,
             handleLocationError,
             {
@@ -334,7 +334,7 @@
                 maximumAge: LOCATION_MAX_AGE,
                 timeout: 15000
             }
-        );
+        );*/
     }
 
     function requestCurrentLocation() {
@@ -349,7 +349,7 @@
 
         locationRequestPending = true;
 
-        navigator.geolocation.getCurrentPosition(
+        /*navigator.geolocation.getCurrentPosition(
             function (position) {
                 locationRequestPending = false;
                 handleLocationSuccess(position);
@@ -363,7 +363,7 @@
                 maximumAge: LOCATION_MAX_AGE,
                 timeout: 15000
             }
-        );
+        );*/
     }
 
     function startLocationRefresh() {
