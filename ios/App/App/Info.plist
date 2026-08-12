@@ -5,7 +5,7 @@
     <key>CAPACITOR_DEBUG</key>
     <string>$(CAPACITOR_DEBUG)</string>
     <key>CFBundleDevelopmentRegion</key>
-    <string>en</string>
+    <string>pt-PT</string>
     <key>CFBundleDisplayName</key>
     <string>Margot</string>
     <key>CFBundleExecutable</key>
@@ -30,6 +30,10 @@
     <string>A Margot precisa de acesso às tuas fotografias para escolheres imagens para o teu perfil e para as enviares em mensagens.</string>
     <key>NSPhotoLibraryAddUsageDescription</key>
     <string>A Margot precisa de permissão para guardar fotografias na tua biblioteca quando escolheres essa opção.</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>A Margot precisa da tua localização para te mostrar e mostrar pessoas próximas no mapa.</string>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>A Margot precisa da tua localização para manter a tua presença no mapa quando autorizares essa opção.</string>
     <key>UIApplicationSceneManifest</key>
     <dict>
         <key>UIApplicationSupportsMultipleScenes</key>
