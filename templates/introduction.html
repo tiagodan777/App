@@ -1,10 +1,7 @@
 {% extends 'layout.html' %}
 
 {% block styles %}
-    <link rel="stylesheet" href="{{ doc_root }}estilos/create-account.css?v=10">
-    <link rel="stylesheet" href="{{ doc_root }}estilos/create-account-permissoes.css?v=1">
-    <link rel="stylesheet" href="{{ doc_root }}estilos/create-account-editor.css?v=1">
-    <link rel="stylesheet" href="{{ doc_root }}estilos/create-account-legal.css?v=1">
+    <link rel="stylesheet" href="{{ doc_root }}estilos/create-account-editor.css?v=10">
 {% endblock %}
 
 {% block content %}
@@ -38,21 +35,4 @@
             <a href="{{ doc_root }}create-account" id="registar">Ainda não te registaste? <span>Cria uma conta</span></a>
         </nav>
     </div>
-
-    <script>
-        window.createAccountConfig = {
-            modoEdicao: {{ modo_edicao|json_encode|raw }},
-            membroId: {{ membro_id_edicao|json_encode|raw }},
-            dadosIniciais: {{ dados_iniciais|json_encode|raw }},
-            fotosExistentes: {{ fotos_existentes|json_encode|raw }},
-            camposUrl: {{ campos_url|json_encode|raw }},
-            perfilUrl: {{ perfil_url|json_encode|raw }}
-        };
-        </script>
-
-        <script src="{{ doc_root }}js/preferencias.js?v=1"></script>
-        <script src="{{ doc_root }}js/create-account-fotos.js?v=6"></script>
-        <script src="{{ doc_root }}js/create-account-permissoes.js?v=3"></script>
-        <script src="{{ doc_root }}js/create-account-navegacao.js?v=10"></script>
-        <script src="{{ doc_root }}js/create-account-autocompletar.js?v=3"></script>
 {% endblock %}
