@@ -821,6 +821,17 @@ try {
             throw $erro;
         }
 
+        try {
+            $cms->getPushNotification()->enqueueMessage(
+                $membroId,
+                $outroId,
+                $mensagemId
+            );
+        } catch (Throwable $erroPush) {
+            /* Uma falha do push nunca deve impedir o envio da mensagem. */
+            error_log('[messages-push] ' . $erroPush->getMessage());
+        }
+
         $mensagem = obterMensagem($db, $mensagemId, $membroId);
 
         responderMensagensJson([
