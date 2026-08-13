@@ -16,7 +16,7 @@ main#main {
     align-items: center;
 }
 
-main#min> div {
+main#main> div {
     width: 100%;
     min-height: 52vh;
     margin: -8vh 0 0;
@@ -27,7 +27,7 @@ main#min> div {
     align-items: center;
 }
 
-main#min > div > h1 {
+main#main > div > h1 {
     margin: 0 20px 18px;
     text-align: center;
     font-family: 'Alfa Slab One', Helvetica, sans-serif;
@@ -35,7 +35,7 @@ main#min > div > h1 {
     line-height: 1.08;
 }
 
-main#min > div > p {
+main#main > div > p {
     width: min(80%, 560px);
     margin: 9px 0;
     display: flex;
@@ -43,7 +43,7 @@ main#min > div > p {
     align-items: flex-start;
 }
 
-main#min label {
+main#main label {
     font-weight: 700;
 }
 
