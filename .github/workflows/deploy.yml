@@ -39,5 +39,13 @@ jobs:
             composer install --no-dev --optimize-autoloader
 
             php -l websocket-server.php
+            php -l push-worker.php
+
+            sudo install -m 0644 \
+              deploy/app-push.service \
+              /etc/systemd/system/app-push.service
+            sudo systemctl daemon-reload
+            sudo systemctl enable app-push
             sudo systemctl restart app-websocket
+            sudo systemctl restart app-push
             sudo systemctl reload apache2
