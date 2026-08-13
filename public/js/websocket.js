@@ -25,6 +25,8 @@
     var lastKnownLocation = null;
     var photoRemovalTimers = Object.create(null);
     var latestPeople = [];
+    var notifiedMessageIds = new Set();
+    var notifiedMessageOrder = [];
 
     var RECONNECT_MIN_DELAY = 1000;
     var RECONNECT_MAX_DELAY = 30000;
@@ -37,6 +39,28 @@
     var LOCATION_TIMEOUT = 30000;
     var LOCATION_ERROR_COOLDOWN = 30000;
     var LOCATION_STARTUP_GRACE = 60000;
+    var MAX_NOTIFIED_MESSAGE_IDS = 200;
+
+    function rememberNotifiedMessage(messageId) {
+        messageId = Number(messageId) || 0;
+
+        if (messageId < 1) {
+            return true;
+        }
+
+        if (notifiedMessageIds.has(messageId)) {
+            return false;
+        }
+
+        notifiedMessageIds.add(messageId);
+        notifiedMessageOrder.push(messageId);
+
+        while (notifiedMessageOrder.length > MAX_NOTIFIED_MESSAGE_IDS) {
+            notifiedMessageIds.delete(notifiedMessageOrder.shift());
+        }
+
+        return true;
+    }
 
     function aplicarPreferenciasGuardadas() {
         if (window.MargotPreferencias) {
@@ -317,7 +341,6 @@
             window.disableLocationTracking ||
             document.visibilityState !== 'visible'
         ) return;
-
         if (locationWatchId !== null || locationWatchStarting) return;
 
         var nativeGeolocation = getNativeGeolocation();
@@ -406,7 +429,6 @@
 
         locationTrackingStartedAt = Date.now();
         locationWatchProvider = 'web';
-
         locationWatchId = navigator.geolocation.watchPosition(
             handleLocationSuccess,
             handleLocationError,
@@ -635,23 +657,19 @@
         var errorMessage = String(
             error && error.message ? error.message : ''
         ).toLowerCase();
-
         var mensagem = 'Não foi possível obter a localização.';
-
         var permissionDenied =
             code === 1 ||
             code === 'OS-PLUG-GLOC-0003' ||
             code === 'OS-PLUG-GLOC-0004' ||
             errorMessage.includes('permission denied') ||
             errorMessage.includes('not authorized');
-
         var positionUnavailable =
             code === 2 ||
             code === 'OS-PLUG-GLOC-0002' ||
             code === 'OS-PLUG-GLOC-0007' ||
             code === 'OS-PLUG-GLOC-0008' ||
             code === 'OS-PLUG-GLOC-0017';
-
         var timedOut =
             code === 3 ||
             code === 'OS-PLUG-GLOC-0010' ||
@@ -884,7 +902,11 @@
                     String(window.chatMembroId || '') !==
                         String(data.message.emissor_id)
                 ) {
-                    mostrarNotificacaoMensagem(data.message);
+                    var receivedMessageId = Number(data.message.id) || 0;
+
+                    if (rememberNotifiedMessage(receivedMessageId)) {
+                        mostrarNotificacaoMensagem(data.message);
+                    }
                 }
 
                 break;
@@ -1050,7 +1072,8 @@
             var src = String(pessoa.src || '').trim();
 
             if (!src) {
-                src = '/imagens/fotos-perfil/default.webp';
+                src =
+                    '/imagens/fotos-perfil/default.webp';
             }
 
             var imagemExistente =
@@ -1392,6 +1415,36 @@
             );
         }
     }
+
+    function aoReceberPushDeMensagem(evento) {
+        var dados = evento.detail || {};
+        var mensagemId = Number(dados.message_id) || 0;
+
+        if (!rememberNotifiedMessage(mensagemId)) return;
+
+        if (
+            String(window.chatMembroId || '') ===
+            String(dados.from_member_id || '')
+        ) {
+            return;
+        }
+
+        mostrarAvisoMensagem({
+            emissor_id: String(dados.from_member_id || ''),
+            emissor_nome: String(dados.from_name || 'Alguém'),
+            emissor_foto_url: String(
+                dados.from_photo ||
+                '/imagens/fotos-perfil/default.webp'
+            ),
+            texto: 'Enviou-te uma mensagem.',
+            tipo: 'texto'
+        });
+    }
+
+    window.addEventListener(
+        'app:chat-push-recebido',
+        aoReceberPushDeMensagem
+    );
 
     function setStatus(status) {
         document.documentElement.setAttribute(
