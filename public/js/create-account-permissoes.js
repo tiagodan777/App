@@ -25,6 +25,14 @@
             : null;
     }
 
+    function notificacoesNativas() {
+        var push = window.MargotPushNotifications;
+
+        return aplicacaoNativa() && push && push.isAvailable()
+            ? push
+            : null;
+    }
+
     function estadoConcedido(estado) {
         return estado === 'granted' || estado === 'limited';
     }
@@ -59,7 +67,13 @@
         }
     }
 
-    function estadoNotificacoes() {
+    async function estadoNotificacoes() {
+        var push = notificacoesNativas();
+
+        if (push) {
+            return push.permissionState();
+        }
+
         if (!window.isSecureContext || !('Notification' in window)) return 'unsupported';
         return Notification.permission;
     }
@@ -93,12 +107,15 @@
         var preferencia = API.obter(tipo);
         var estado = tipo === 'localizacao'
             ? await estadoLocalizacao()
-            : estadoNotificacoes();
-        var ativa = preferencia === true && (
-            geolocalizacaoNativa()
-                ? estadoConcedido(estado)
-                : estado !== 'denied' && estado !== 'unsupported'
-        );
+            : await estadoNotificacoes();
+        var sistemaPermite = tipo === 'localizacao'
+            ? (
+                geolocalizacaoNativa()
+                    ? estadoConcedido(estado)
+                    : estado !== 'denied' && estado !== 'unsupported'
+            )
+            : estadoConcedido(estado);
+        var ativa = preferencia === true && sistemaPermite;
 
         $cartao.attr('data-ativa', ativa ? 'true' : 'false');
         $cartao.find('.permissao-estado').text(textoEstado(tipo, preferencia, estado));
@@ -123,7 +140,7 @@
 
     async function sincronizarComSistema() {
         var localizacao = await estadoLocalizacao();
-        var notificacoes = estadoNotificacoes();
+        var notificacoes = await estadoNotificacoes();
 
         if (localizacao === 'unsupported' || localizacao === 'denied') {
             API.definir('localizacao', false);
@@ -219,6 +236,33 @@
     async function ativarNotificacoes() {
         if (aPedir.notificacoes) return;
 
+        var push = notificacoesNativas();
+
+        if (push) {
+            aPedir.notificacoes = true;
+            definirErro('');
+            await renderizar();
+
+            try {
+                var estadoNativo = await push.requestPermission();
+                var concedida = estadoConcedido(estadoNativo);
+
+                API.definir('notificacoes', concedida);
+
+                if (!concedida) {
+                    definirErro('As notificações estão bloqueadas. Podes permiti-las nas definições da app.');
+                }
+            } catch (erro) {
+                API.definir('notificacoes', false);
+                definirErro('Não foi possível pedir a permissão para notificações.');
+            } finally {
+                aPedir.notificacoes = false;
+                await renderizar();
+            }
+
+            return;
+        }
+
         if (!window.isSecureContext || !('Notification' in window)) {
             API.definir('notificacoes', false);
             definirErro('As notificações não estão disponíveis aqui. No iPhone, instala a Margot no ecrã principal.');
@@ -267,7 +311,11 @@
                     : 'A Margot deixou de usar a tua localização. Podes remover também a autorização nas definições deste site.'
             );
         } else {
-            definirErro('A Margot deixou de criar notificações. Podes remover também a autorização nas definições deste site.');
+            definirErro(
+                aplicacaoNativa()
+                    ? 'A Margot deixou de enviar notificações neste dispositivo. Podes remover também a autorização nas definições da app.'
+                    : 'A Margot deixou de criar notificações. Podes remover também a autorização nas definições deste site.'
+            );
         }
 
         renderizar();
