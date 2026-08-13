@@ -1,0 +1,86 @@
+{% extends 'layout.html' %}
+
+{% block title %}
+    Utilizadores bloqueados | Margot
+{% endblock %}
+
+{% block styles %}
+    <link
+        rel="stylesheet"
+        href="{{ doc_root }}estilos/blocked-users.css?v=1"
+        data-margot-page-style
+    >
+{% endblock %}
+
+{% block content %}
+    <main class="bloqueados-pagina">
+        <header class="bloqueados-topo">
+            <a
+                href="{{ doc_root }}settings"
+                aria-label="Voltar às definições"
+            >
+                ‹
+            </a>
+
+            <h1>Utilizadores bloqueados</h1>
+        </header>
+
+        {% if desbloqueado %}
+            <p
+                class="bloqueados-aviso"
+                role="status"
+            >
+                O utilizador foi desbloqueado.
+            </p>
+        {% endif %}
+
+        {% if bloqueados %}
+            <ul class="bloqueados-lista">
+                {% for bloqueado in bloqueados %}
+                    <li class="bloqueados-item">
+                        <img
+                            src="{{ bloqueado.foto_url|e('html_attr') }}"
+                            alt="Fotografia de {{ bloqueado.nome|e('html_attr') }}"
+                            onerror="this.onerror=null;this.src='{{ doc_root }}imagens/fotos-perfil/default.webp';"
+                        >
+
+                        <strong>
+                            {{ bloqueado.nome }}
+                        </strong>
+
+                        <form
+                            action="{{ doc_root }}blocked-users"
+                            method="post"
+                        >
+                            <input
+                                type="hidden"
+                                name="_csrf"
+                                value="{{ csrf_token|e('html_attr') }}"
+                            >
+
+                            <input
+                                type="hidden"
+                                name="action"
+                                value="unblock"
+                            >
+
+                            <input
+                                type="hidden"
+                                name="target_id"
+                                value="{{ bloqueado.id|e('html_attr') }}"
+                            >
+
+                            <button type="submit">
+                                Desbloquear
+                            </button>
+                        </form>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="bloqueados-vazio">
+                Não tens utilizadores bloqueados.
+            </p>
+        {% endif %}
+    </main>
+{% endblock %}
