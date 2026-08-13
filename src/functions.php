@@ -36,7 +36,7 @@ function create_seo_name($string)
 function require_login($session): void
 {
     if (trim((string) ($session->id ?? '')) === '') {
-        redirect(DOC_ROOT . 'introduction/');
+        redirect(DOC_ROOT . 'create-account/');
     }
 }
 
