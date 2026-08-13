@@ -930,11 +930,23 @@ class Member
                 ['id' => $id]
             );
 
-            $this->db->runSQL(
-                'DELETE FROM localizacoes
-                 WHERE membro_id = :id',
-                ['id' => $id]
-            );
+            $temTabelaLocalizacao = (bool) $this->db
+                ->runSQL(
+                    "SELECT 1
+                    FROM information_schema.tables
+                    WHERE table_schema = DATABASE()
+                    AND table_name = 'localizacao_membro'
+                    LIMIT 1"
+                )
+                ->fetchColumn();
+
+            if ($temTabelaLocalizacao) {
+                $this->db->runSQL(
+                    'DELETE FROM localizacao_membro
+                    WHERE membro_id = :id',
+                    ['id' => $id]
+                );
+            }
 
             $this->db->runSQL(
                 'DELETE FROM membros_gostos

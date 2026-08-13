@@ -24,7 +24,6 @@
     var lastSentLongitude = null;
     var lastKnownLocation = null;
     var photoRemovalTimers = Object.create(null);
-    var photoPositions = Object.create(null);
     var latestPeople = [];
 
     var RECONNECT_MIN_DELAY = 1000;
@@ -244,7 +243,7 @@
 
             clearConnectionTimeout();
             clearPingTimer();
-            clearLocationRefreshTimer();
+            stopLocationTracking();
 
             authenticated = false;
             socket = null;
@@ -314,7 +313,11 @@
     }
 
     function startLocationTracking() {
-        if (window.disableLocationTracking) return;
+        if (
+            window.disableLocationTracking ||
+            document.visibilityState !== 'visible'
+        ) return;
+
         if (locationWatchId !== null || locationWatchStarting) return;
 
         var nativeGeolocation = getNativeGeolocation();
@@ -403,6 +406,7 @@
 
         locationTrackingStartedAt = Date.now();
         locationWatchProvider = 'web';
+
         locationWatchId = navigator.geolocation.watchPosition(
             handleLocationSuccess,
             handleLocationError,
@@ -413,6 +417,7 @@
     function requestCurrentLocation() {
         if (
             window.disableLocationTracking ||
+            document.visibilityState !== 'visible' ||
             locationRequestPending
         ) {
             return;
@@ -630,19 +635,23 @@
         var errorMessage = String(
             error && error.message ? error.message : ''
         ).toLowerCase();
+
         var mensagem = 'Não foi possível obter a localização.';
+
         var permissionDenied =
             code === 1 ||
             code === 'OS-PLUG-GLOC-0003' ||
             code === 'OS-PLUG-GLOC-0004' ||
             errorMessage.includes('permission denied') ||
             errorMessage.includes('not authorized');
+
         var positionUnavailable =
             code === 2 ||
             code === 'OS-PLUG-GLOC-0002' ||
             code === 'OS-PLUG-GLOC-0007' ||
             code === 'OS-PLUG-GLOC-0008' ||
             code === 'OS-PLUG-GLOC-0017';
+
         var timedOut =
             code === 3 ||
             code === 'OS-PLUG-GLOC-0010' ||
@@ -772,7 +781,10 @@
                 setStatus('connected');
                 startPing();
 
-                if (!window.disableLocationTracking) {
+                if (
+                    !window.disableLocationTracking &&
+                    document.visibilityState === 'visible'
+                ) {
                     startLocationTracking();
                     startLocationRefresh();
                     requestCurrentLocation();
@@ -813,16 +825,16 @@
                 break;
 
             case 'state':
-                latestPeople = window.disableLocationTracking
-                    ? []
-                    : (
-                        Array.isArray(data.people)
-                            ? data.people.slice()
-                            : []
-                    );
-
                 if (document.getElementById('gridCanvas')) {
-                    atualizarPessoasNoMapa(latestPeople);
+                    atualizarPessoasNoMapa(
+                        window.disableLocationTracking
+                            ? []
+                            : (
+                                Array.isArray(data.people)
+                                    ? data.people
+                                    : []
+                            )
+                    );
                 }
 
                 break;
@@ -1038,8 +1050,7 @@
             var src = String(pessoa.src || '').trim();
 
             if (!src) {
-                src =
-                    '/imagens/fotos-perfil/default.webp';
+                src = '/imagens/fotos-perfil/default.webp';
             }
 
             var imagemExistente =
@@ -1048,24 +1059,13 @@
             if (imagemExistente) {
                 cancelarRemocaoFoto(id);
 
-                if (!photoPositions[id]) {
-                    photoPositions[id] = {
-                        top: numeroPosicao(
-                            imagemExistente.getAttribute('data-top'),
-                            pessoa.top
-                        ),
-                        left: numeroPosicao(
-                            imagemExistente.getAttribute('data-left'),
-                            pessoa.left
-                        )
-                    };
-                }
-
                 $(imagemExistente)
                     .removeClass('a-remover')
                     .attr({
-                        'data-top': photoPositions[id].top,
-                        'data-left': photoPositions[id].left,
+                        'data-top':
+                            Number(pessoa.top) || 0,
+                        'data-left':
+                            Number(pessoa.left) || 0,
                         'data-membro-id':
                             pessoa.membro_id || '',
                         'data-nome':
@@ -1086,13 +1086,6 @@
 
             inseriuImagem = true;
 
-            var posicao = photoPositions[id] || {
-                top: numeroPosicao(pessoa.top, 0),
-                left: numeroPosicao(pessoa.left, 0)
-            };
-
-            photoPositions[id] = posicao;
-
             var $imagem = $('<img>', {
                 id: id,
                 class: 'foto',
@@ -1103,8 +1096,10 @@
             });
 
             $imagem.attr({
-                'data-top': posicao.top,
-                'data-left': posicao.left,
+                'data-top':
+                    Number(pessoa.top) || 0,
+                'data-left':
+                    Number(pessoa.left) || 0,
                 'data-membro-id':
                     pessoa.membro_id || '',
                 'data-nome':
@@ -1144,18 +1139,9 @@
 
         if (inseriuImagem) {
             document.body.appendChild(fragmento);
-            reinicializarFotos();
         }
-    }
 
-    function numeroPosicao(valor, padrao) {
-        var numero = Number(valor);
-
-        if (Number.isFinite(numero)) return numero;
-
-        numero = Number(padrao);
-
-        return Number.isFinite(numero) ? numero : 0;
+        reinicializarFotos();
     }
 
     function agendarRemocaoFoto(
@@ -1478,6 +1464,7 @@
 
     window.addEventListener('offline', function () {
         setStatus('offline');
+        stopLocationTracking();
     });
 
     window.addEventListener('focus', function () {
@@ -1487,6 +1474,8 @@
         }
 
         if (!window.disableLocationTracking) {
+            startLocationTracking();
+            startLocationRefresh();
             requestCurrentLocation();
         }
     });
@@ -1498,6 +1487,8 @@
         }
 
         if (!window.disableLocationTracking) {
+            startLocationTracking();
+            startLocationRefresh();
             requestCurrentLocation();
         }
     });
@@ -1505,9 +1496,13 @@
     document.addEventListener(
         'visibilitychange',
         function () {
-            if (
-                document.visibilityState !== 'visible'
-            ) {
+            if (document.visibilityState !== 'visible') {
+                /*
+                 * O watch de alta precisão serve apenas o mapa em primeiro
+                 * plano. Em segundo plano fica ativo somente o plugin Swift
+                 * adaptativo, evitando dois rastreios concorrentes no iPhone.
+                 */
+                stopLocationTracking();
                 return;
             }
 
@@ -1517,6 +1512,8 @@
             }
 
             if (!window.disableLocationTracking) {
+                startLocationTracking();
+                startLocationRefresh();
                 requestCurrentLocation();
             }
         }
@@ -1533,7 +1530,10 @@
                 removerPropriaFotoDoMapa();
             }
 
-            if (window.AppWebSocket.isConnected()) {
+            if (
+                window.AppWebSocket.isConnected() &&
+                document.visibilityState === 'visible'
+            ) {
                 startLocationTracking();
                 startLocationRefresh();
                 requestCurrentLocation();
@@ -1556,23 +1556,6 @@
     window.addEventListener(
         'margot:preferencias-alteradas',
         aplicarPreferenciasEmTempoReal
-    );
-
-    window.addEventListener(
-        'margot:photo-position-changed',
-        function (evento) {
-            var detalhe = evento && evento.detail
-                ? evento.detail
-                : {};
-            var id = String(detalhe.id || '').trim();
-
-            if (!id) return;
-
-            photoPositions[id] = {
-                top: numeroPosicao(detalhe.top, 0),
-                left: numeroPosicao(detalhe.left, 0)
-            };
-        }
     );
 
     window.addEventListener('storage', function (evento) {

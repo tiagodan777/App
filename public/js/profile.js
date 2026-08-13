@@ -1,8 +1,13 @@
 (function (window, document) {
     'use strict';
 
-    var galeria = document.getElementById('perfil-galeria');
-    var faixa = document.getElementById('perfil-fotos');
+    var galeria = document.getElementById(
+        'perfil-galeria'
+    );
+
+    var faixa = document.getElementById(
+        'perfil-fotos'
+    );
 
     if (!galeria || !faixa) return;
 
@@ -11,11 +16,19 @@
     );
 
     var indicadores = Array.prototype.slice.call(
-        document.querySelectorAll('#perfil-indicadores button')
+        document.querySelectorAll(
+            '#perfil-indicadores button'
+        )
     );
 
-    var anterior = document.getElementById('perfil-anterior');
-    var seguinte = document.getElementById('perfil-seguinte');
+    var anterior = document.getElementById(
+        'perfil-anterior'
+    );
+
+    var seguinte = document.getElementById(
+        'perfil-seguinte'
+    );
+
     var indiceAtual = 0;
     var frameScroll = null;
     var ratoAtivo = false;
@@ -28,74 +41,104 @@
     function limitarIndice(indice) {
         return Math.max(
             0,
-            Math.min(indice, slides.length - 1)
+            Math.min(
+                indice,
+                slides.length - 1
+            )
         );
     }
 
     function indiceMaisProximo() {
-        var centro = faixa.scrollLeft + faixa.clientWidth / 2;
+        var centro =
+            faixa.scrollLeft +
+            faixa.clientWidth / 2;
+
         var melhorIndice = 0;
         var menorDistancia = Infinity;
 
-        slides.forEach(function (slide, indice) {
-            var centroSlide =
-                slide.offsetLeft +
-                slide.offsetWidth / 2;
+        slides.forEach(
+            function (slide, indice) {
+                var centroSlide =
+                    slide.offsetLeft +
+                    slide.offsetWidth / 2;
 
-            var distancia = Math.abs(
-                centroSlide - centro
-            );
+                var distancia = Math.abs(
+                    centroSlide - centro
+                );
 
-            if (distancia < menorDistancia) {
-                menorDistancia = distancia;
-                melhorIndice = indice;
+                if (
+                    distancia <
+                    menorDistancia
+                ) {
+                    menorDistancia =
+                        distancia;
+
+                    melhorIndice = indice;
+                }
             }
-        });
+        );
 
         return melhorIndice;
     }
 
     function atualizarInterface(indice) {
-        indiceAtual = limitarIndice(indice);
+        indiceAtual =
+            limitarIndice(indice);
 
-        slides.forEach(function (slide, posicao) {
-            slide.setAttribute(
-                'aria-hidden',
-                posicao === indiceAtual
-                    ? 'false'
-                    : 'true'
-            );
-        });
+        slides.forEach(
+            function (slide, posicao) {
+                slide.setAttribute(
+                    'aria-hidden',
+                    posicao === indiceAtual
+                        ? 'false'
+                        : 'true'
+                );
+            }
+        );
 
-        indicadores.forEach(function (indicador, posicao) {
-            var ativo = posicao === indiceAtual;
+        indicadores.forEach(
+            function (
+                indicador,
+                posicao
+            ) {
+                var ativo =
+                    posicao === indiceAtual;
 
-            indicador.classList.toggle(
-                'ativo',
-                ativo
-            );
+                indicador.classList.toggle(
+                    'ativo',
+                    ativo
+                );
 
-            indicador.setAttribute(
-                'aria-current',
-                ativo ? 'true' : 'false'
-            );
-        });
+                indicador.setAttribute(
+                    'aria-current',
+                    ativo
+                        ? 'true'
+                        : 'false'
+                );
+            }
+        );
 
         if (anterior) {
-            anterior.disabled = indiceAtual === 0;
+            anterior.disabled =
+                indiceAtual === 0;
         }
 
         if (seguinte) {
             seguinte.disabled =
-                indiceAtual === slides.length - 1;
+                indiceAtual ===
+                slides.length - 1;
         }
     }
 
-    function mostrarFoto(indice, suave) {
+    function mostrarFoto(
+        indice,
+        suave
+    ) {
         indice = limitarIndice(indice);
 
         faixa.scrollTo({
-            left: slides[indice].offsetLeft,
+            left:
+                slides[indice].offsetLeft,
             behavior:
                 suave === false
                     ? 'auto'
@@ -108,27 +151,37 @@
     function corrigirFoto(imagem) {
         var tentativa = 0;
 
-        imagem.addEventListener('error', function () {
-            tentativa += 1;
+        imagem.addEventListener(
+            'error',
+            function () {
+                tentativa += 1;
 
-            var fallback = imagem.dataset.fallback;
-            var padrao = imagem.dataset.default;
+                var fallback =
+                    imagem.dataset.fallback;
 
-            if (tentativa === 1 && fallback) {
-                imagem.src = fallback;
-                return;
+                var padrao =
+                    imagem.dataset.default;
+
+                if (
+                    tentativa === 1 &&
+                    fallback
+                ) {
+                    imagem.src = fallback;
+                    return;
+                }
+
+                if (
+                    padrao &&
+                    imagem.src !==
+                        new URL(
+                            padrao,
+                            window.location.href
+                        ).href
+                ) {
+                    imagem.src = padrao;
+                }
             }
-
-            if (
-                padrao &&
-                imagem.src !== new URL(
-                    padrao,
-                    window.location.href
-                ).href
-            ) {
-                imagem.src = padrao;
-            }
-        });
+        );
     }
 
     faixa
@@ -138,41 +191,50 @@
     faixa.addEventListener(
         'scroll',
         function () {
-            if (frameScroll !== null) return;
+            if (
+                frameScroll !== null
+            ) {
+                return;
+            }
 
-            frameScroll = window.requestAnimationFrame(
-                function () {
-                    frameScroll = null;
+            frameScroll =
+                window.requestAnimationFrame(
+                    function () {
+                        frameScroll = null;
 
-                    atualizarInterface(
-                        indiceMaisProximo()
-                    );
-                }
-            );
+                        atualizarInterface(
+                            indiceMaisProximo()
+                        );
+                    }
+                );
         },
         {
             passive: true
         }
     );
 
-    indicadores.forEach(function (indicador) {
-        indicador.addEventListener(
-            'click',
-            function () {
-                mostrarFoto(
-                    Number(
-                        indicador.dataset.indice
-                    )
-                );
-            }
-        );
-    });
+    indicadores.forEach(
+        function (indicador) {
+            indicador.addEventListener(
+                'click',
+                function () {
+                    mostrarFoto(
+                        Number(
+                            indicador.dataset.indice
+                        )
+                    );
+                }
+            );
+        }
+    );
 
     if (anterior) {
         anterior.addEventListener(
             'click',
             function () {
-                mostrarFoto(indiceAtual - 1);
+                mostrarFoto(
+                    indiceAtual - 1
+                );
             }
         );
     }
@@ -181,7 +243,9 @@
         seguinte.addEventListener(
             'click',
             function () {
-                mostrarFoto(indiceAtual + 1);
+                mostrarFoto(
+                    indiceAtual + 1
+                );
             }
         );
     }
@@ -190,7 +254,8 @@
         'pointerdown',
         function (evento) {
             if (
-                evento.pointerType !== 'mouse' ||
+                evento.pointerType !==
+                    'mouse' ||
                 evento.button !== 0
             ) {
                 return;
@@ -201,8 +266,13 @@
             ratoInicioX = evento.clientX;
             scrollInicio = faixa.scrollLeft;
 
-            faixa.classList.add('a-arrastar');
-            faixa.setPointerCapture(evento.pointerId);
+            faixa.classList.add(
+                'a-arrastar'
+            );
+
+            faixa.setPointerCapture(
+                evento.pointerId
+            );
         }
     );
 
@@ -212,9 +282,12 @@
             if (!ratoAtivo) return;
 
             var distancia =
-                evento.clientX - ratoInicioX;
+                evento.clientX -
+                ratoInicioX;
 
-            if (Math.abs(distancia) > 4) {
+            if (
+                Math.abs(distancia) > 4
+            ) {
                 ratoMoveu = true;
             }
 
@@ -229,7 +302,10 @@
         if (!ratoAtivo) return;
 
         ratoAtivo = false;
-        faixa.classList.remove('a-arrastar');
+
+        faixa.classList.remove(
+            'a-arrastar'
+        );
 
         if (
             faixa.hasPointerCapture(
@@ -241,11 +317,16 @@
             );
         }
 
-        mostrarFoto(indiceMaisProximo());
+        mostrarFoto(
+            indiceMaisProximo()
+        );
 
-        window.setTimeout(function () {
-            ratoMoveu = false;
-        }, 0);
+        window.setTimeout(
+            function () {
+                ratoMoveu = false;
+            },
+            0
+        );
     }
 
     faixa.addEventListener(
@@ -271,20 +352,35 @@
     galeria.addEventListener(
         'keydown',
         function (evento) {
-            if (evento.key === 'ArrowLeft') {
+            if (
+                evento.key ===
+                'ArrowLeft'
+            ) {
                 evento.preventDefault();
-                mostrarFoto(indiceAtual - 1);
+
+                mostrarFoto(
+                    indiceAtual - 1
+                );
             }
 
-            if (evento.key === 'ArrowRight') {
+            if (
+                evento.key ===
+                'ArrowRight'
+            ) {
                 evento.preventDefault();
-                mostrarFoto(indiceAtual + 1);
+
+                mostrarFoto(
+                    indiceAtual + 1
+                );
             }
         }
     );
 
     function aoRedimensionar() {
-        mostrarFoto(indiceAtual, false);
+        mostrarFoto(
+            indiceAtual,
+            false
+        );
     }
 
     function desativarPagina() {
@@ -331,12 +427,21 @@
     );
 
     var temporizador = null;
+    var temporizadorConfirmacao = null;
+    var aEnviar = false;
 
     if (!botao) return;
 
     function enviarHey() {
         var destinatarioId =
             botao.dataset.destinatarioId;
+
+        if (
+            aEnviar ||
+            !destinatarioId
+        ) {
+            return;
+        }
 
         if (
             !window.AppWebSocket ||
@@ -346,36 +451,149 @@
                 window.AppWebSocket.connect();
             }
 
+            if (
+                typeof window.mostrarMensagemTemporaria ===
+                'function'
+            ) {
+                window.mostrarMensagemTemporaria(
+                    'A ligação está a ser restabelecida.',
+                    'erro'
+                );
+            }
+
             return;
         }
 
+        aEnviar = true;
         botao.disabled = true;
+        botao.textContent = 'A enviar…';
 
-        window.AppWebSocket.send({
-            type: 'notify',
-            destinatario_id: destinatarioId
-        });
+        var enviado =
+            window.AppWebSocket.send({
+                type: 'notify',
+                destinatario_id:
+                    destinatarioId
+            });
 
-        botao.textContent = 'Hey enviado';
+        if (!enviado) {
+            reporBotao();
 
-        temporizador = window.setTimeout(
-            function () {
-                botao.disabled = false;
-                botao.textContent = 'Hey';
-            },
-            1200
-        );
+            if (
+                typeof window.mostrarMensagemTemporaria ===
+                'function'
+            ) {
+                window.mostrarMensagemTemporaria(
+                    'Não foi possível enviar o Hey.',
+                    'erro'
+                );
+            }
+
+            return;
+        }
+
+        temporizadorConfirmacao =
+            window.setTimeout(
+                function () {
+                    temporizadorConfirmacao =
+                        null;
+
+                    reporBotao();
+                },
+                8000
+            );
+    }
+
+    function reporBotao() {
+        if (
+            temporizadorConfirmacao !==
+            null
+        ) {
+            window.clearTimeout(
+                temporizadorConfirmacao
+            );
+
+            temporizadorConfirmacao = null;
+        }
+
+        aEnviar = false;
+        botao.disabled = false;
+        botao.textContent = 'Hey';
+    }
+
+    function aoEnviarHey(evento) {
+        if (
+            String(
+                evento.detail
+                    ?.destinatario_id || ''
+            ) !==
+            String(
+                botao.dataset
+                    .destinatarioId || ''
+            )
+        ) {
+            return;
+        }
+
+        botao.textContent =
+            'Hey enviado';
+
+        temporizador =
+            window.setTimeout(
+                reporBotao,
+                1200
+            );
+    }
+
+    function aoFalharHey(evento) {
+        if (
+            String(
+                evento.detail
+                    ?.destinatario_id || ''
+            ) !==
+            String(
+                botao.dataset
+                    .destinatarioId || ''
+            )
+        ) {
+            return;
+        }
+
+        reporBotao();
     }
 
     function desativarPagina() {
         if (temporizador !== null) {
-            window.clearTimeout(temporizador);
+            window.clearTimeout(
+                temporizador
+            );
+
             temporizador = null;
+        }
+
+        if (
+            temporizadorConfirmacao !==
+            null
+        ) {
+            window.clearTimeout(
+                temporizadorConfirmacao
+            );
+
+            temporizadorConfirmacao = null;
         }
 
         botao.removeEventListener(
             'click',
             enviarHey
+        );
+
+        window.removeEventListener(
+            'app:hey-enviado',
+            aoEnviarHey
+        );
+
+        window.removeEventListener(
+            'app:hey-erro',
+            aoFalharHey
         );
 
         document.removeEventListener(
@@ -387,6 +605,16 @@
     botao.addEventListener(
         'click',
         enviarHey
+    );
+
+    window.addEventListener(
+        'app:hey-enviado',
+        aoEnviarHey
+    );
+
+    window.addEventListener(
+        'app:hey-erro',
+        aoFalharHey
     );
 
     document.addEventListener(

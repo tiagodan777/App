@@ -1,18 +1,23 @@
 <?php
+
 declare(strict_types=1);
 
-function responderJsonBackgroundLocation(array $dados, int $status = 200): never
-{
+function responderJsonBackgroundLocation(
+    array $dados,
+    int $status = 200
+): never {
     http_response_code($status);
     header('Content-Type: application/json; charset=UTF-8');
     header('Cache-Control: no-store, no-cache, must-revalidate');
     header('Pragma: no-cache');
+
     echo json_encode(
         $dados,
         JSON_UNESCAPED_UNICODE |
         JSON_UNESCAPED_SLASHES |
         JSON_THROW_ON_ERROR
     );
+
     exit;
 }
 
@@ -32,7 +37,12 @@ function obterAutorizacaoBackgroundLocation(): string
         $cabecalhos = getallheaders();
 
         foreach ($cabecalhos as $nome => $valor) {
-            if (strcasecmp((string) $nome, 'Authorization') === 0) {
+            if (
+                strcasecmp(
+                    (string) $nome,
+                    'Authorization'
+                ) === 0
+            ) {
                 return trim((string) $valor);
             }
         }
@@ -83,7 +93,13 @@ if (session_status() === PHP_SESSION_ACTIVE) {
 
 $autorizacao = obterAutorizacaoBackgroundLocation();
 
-if (!preg_match('/^Bearer\s+([a-f0-9]{64})$/i', $autorizacao, $resultadoToken)) {
+if (
+    !preg_match(
+        '/^Bearer\s+([a-f0-9]{64})$/i',
+        $autorizacao,
+        $resultadoToken
+    )
+) {
     responderJsonBackgroundLocation([
         'success' => false,
         'message' => 'Autorização inválida.'
@@ -114,15 +130,17 @@ if (!is_array($dados)) {
     ], 400);
 }
 
-$localizacaoAtiva = normalizarBooleanoBackgroundLocation(
-    $dados['active'] ?? true,
-    true
-);
+$localizacaoAtiva =
+    normalizarBooleanoBackgroundLocation(
+        $dados['active'] ?? true,
+        true
+    );
 
-$visivel = normalizarBooleanoBackgroundLocation(
-    $dados['visible'] ?? true,
-    true
-);
+$visivel =
+    normalizarBooleanoBackgroundLocation(
+        $dados['visible'] ?? true,
+        true
+    );
 
 $latitude = null;
 $longitude = null;
@@ -130,7 +148,10 @@ $precisao = null;
 
 if ($localizacaoAtiva && $visivel) {
     if (
-        !isset($dados['latitude'], $dados['longitude']) ||
+        !isset(
+            $dados['latitude'],
+            $dados['longitude']
+        ) ||
         !is_numeric($dados['latitude']) ||
         !is_numeric($dados['longitude'])
     ) {
@@ -161,24 +182,21 @@ if ($localizacaoAtiva && $visivel) {
     ) {
         $precisao = max(
             0,
-            min(10000, (float) $dados['accuracy'])
+            min(
+                10000,
+                (float) $dados['accuracy']
+            )
         );
     }
 }
 
 try {
-    $membroId = $db->runSQL(
-        'SELECT membro_id
-         FROM token
-         WHERE token = :token
-         AND proposito = :proposito
-         AND validade > UTC_TIMESTAMP()
-         LIMIT 1',
-        [
-            'token' => hash('sha256', $token),
-            'proposito' => 'background_location'
-        ]
-    )->fetchColumn();
+    $membroId = $cms
+        ->getToken()
+        ->getMemberId(
+            $token,
+            'background_location'
+        );
 
     if (!$membroId) {
         responderJsonBackgroundLocation([
@@ -187,44 +205,16 @@ try {
         ], 401);
     }
 
-    $db->runSQL(
-        'INSERT INTO localizacao_membro (
-            membro_id,
-            latitude,
-            longitude,
-            precisao_m,
-            localizacao_ativa,
-            visivel,
-            origem,
-            atualizada_em
-         ) VALUES (
-            :membro_id,
-            :latitude,
-            :longitude,
-            :precisao_m,
-            :localizacao_ativa,
-            :visivel,
-            :origem,
-            UTC_TIMESTAMP()
-         )
-         ON DUPLICATE KEY UPDATE
-            latitude = VALUES(latitude),
-            longitude = VALUES(longitude),
-            precisao_m = VALUES(precisao_m),
-            localizacao_ativa = VALUES(localizacao_ativa),
-            visivel = VALUES(visivel),
-            origem = VALUES(origem),
-            atualizada_em = UTC_TIMESTAMP()',
-        [
-            'membro_id' => (string) $membroId,
-            'latitude' => $latitude,
-            'longitude' => $longitude,
-            'precisao_m' => $precisao,
-            'localizacao_ativa' => $localizacaoAtiva ? 1 : 0,
-            'visivel' => $visivel ? 1 : 0,
-            'origem' => 'background'
-        ]
-    );
+    $cms
+        ->getLocation()
+        ->saveBackground(
+            (string) $membroId,
+            $latitude,
+            $longitude,
+            $precisao,
+            $localizacaoAtiva,
+            $visivel
+        );
 
     responderJsonBackgroundLocation([
         'success' => true
@@ -237,6 +227,7 @@ try {
 
     responderJsonBackgroundLocation([
         'success' => false,
-        'message' => 'Não foi possível atualizar a localização.'
+        'message' =>
+            'Não foi possível atualizar a localização.'
     ], 500);
 }

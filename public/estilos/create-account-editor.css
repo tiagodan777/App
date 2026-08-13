@@ -47,7 +47,7 @@
 }
 
 #create-account-form > #introducao > a, #create-account-form > #introducao > nav.anterior-proximo a, #create-account-form > #introducao > nav.anterior-proximo a > span {
-    cur
+    cursor: pointer;
 }
 
 #create-account-form > #introducao > a.entrar {

@@ -13,7 +13,8 @@ use React\EventLoop\TimerInterface;
 class WebSocket implements MessageComponentInterface
 {
     private const RAIO_MAXIMO_METROS = 100;
-    private const LOCALIZACAO_MAXIMA_IDADE_SEGUNDOS = 180;
+    /* O iOS envia eventos de movimento/visita, não pings exatos por minuto. */
+    private const LOCALIZACAO_MAXIMA_IDADE_SEGUNDOS = 900;
     private const LOCALIZACOES_PERSISTIDAS_CACHE_SEGUNDOS = 5;
     private const TOLERANCIA_NAVEGACAO_SEGUNDOS = 8.0;
     private const BLOQUEIOS_CACHE_SEGUNDOS = 10;
@@ -31,11 +32,11 @@ class WebSocket implements MessageComponentInterface
     private array $ligacoesPorMembro = [];
     private array $pessoas = [];
     private array $localizacoes = [];
-    private array $membrosVisiveisPorPersistencia = [];
     private array $temporizadoresSaida = [];
     private array $bloqueiosEntreMembros = [];
     private array $faixaEtariaPorMembro = [];
     private array $acessosPerfil = [];
+    private array $membrosVisiveisPorPersistencia = [];
     private int $bloqueiosCarregadosEm = 0;
     private int $acessosPerfilLimposEm = 0;
     private int $localizacoesPersistidasCarregadasEm = 0;
@@ -47,16 +48,24 @@ class WebSocket implements MessageComponentInterface
         $this->pdoFactory = $pdoFactory;
         $this->loop = $loop;
 
-        $this->loop->addPeriodicTimer(self::BLOQUEIOS_CACHE_SEGUNDOS, function (): void {
-            if (count($this->clients) === 0) return;
+        $this->loop->addPeriodicTimer(
+            self::BLOQUEIOS_CACHE_SEGUNDOS,
+            function (): void {
+                if (count($this->clients) === 0) {
+                    return;
+                }
 
-            try {
-                $this->carregarBloqueios(true);
-                $this->enviarEstadosIndividuais();
-            } catch (\Throwable $erro) {
-                echo sprintf("[BLOCK CACHE ERROR] %s\n", $erro->getMessage());
+                try {
+                    $this->carregarBloqueios(true);
+                    $this->enviarEstadosIndividuais();
+                } catch (\Throwable $erro) {
+                    echo sprintf(
+                        "[BLOCK CACHE ERROR] %s\n",
+                        $erro->getMessage()
+                    );
+                }
             }
-        });
+        );
     }
 
     private function getDatabase(): PDO
@@ -65,11 +74,20 @@ class WebSocket implements MessageComponentInterface
         $database = $factory();
 
         if (!$database instanceof PDO) {
-            throw new \RuntimeException('A fábrica da base de dados não devolveu um PDO.');
+            throw new \RuntimeException(
+                'A fábrica da base de dados não devolveu um PDO.'
+            );
         }
 
-        $database->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        $database->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+        $database->setAttribute(
+            PDO::ATTR_ERRMODE,
+            PDO::ERRMODE_EXCEPTION
+        );
+
+        $database->setAttribute(
+            PDO::ATTR_DEFAULT_FETCH_MODE,
+            PDO::FETCH_ASSOC
+        );
 
         return $database;
     }
@@ -93,21 +111,35 @@ class WebSocket implements MessageComponentInterface
     public function onMessage(ConnectionInterface $from, $msg): void
     {
         try {
-            $data = json_decode((string) $msg, true, 512, JSON_THROW_ON_ERROR);
+            $data = json_decode(
+                (string) $msg,
+                true,
+                512,
+                JSON_THROW_ON_ERROR
+            );
         } catch (\JsonException) {
-            $this->enviarErro($from, 'A mensagem recebida não contém JSON válido.');
+            $this->enviarErro(
+                $from,
+                'A mensagem recebida não contém JSON válido.'
+            );
             return;
         }
 
         if (!is_array($data)) {
-            $this->enviarErro($from, 'A mensagem recebida não é válida.');
+            $this->enviarErro(
+                $from,
+                'A mensagem recebida não é válida.'
+            );
             return;
         }
 
         $type = trim((string) ($data['type'] ?? ''));
 
         if ($type === '') {
-            $this->enviarErro($from, 'A mensagem não contém um tipo.');
+            $this->enviarErro(
+                $from,
+                'A mensagem não contém um tipo.'
+            );
             return;
         }
 
@@ -138,7 +170,10 @@ class WebSocket implements MessageComponentInterface
                     break;
 
                 case 'chat_read':
-                    $this->marcarMensagensChatComoLidas($from, $data);
+                    $this->marcarMensagensChatComoLidas(
+                        $from,
+                        $data
+                    );
                     break;
 
                 case 'ping':
@@ -153,7 +188,10 @@ class WebSocket implements MessageComponentInterface
                     break;
 
                 default:
-                    $this->enviarErro($from, 'Tipo de mensagem desconhecido.');
+                    $this->enviarErro(
+                        $from,
+                        'Tipo de mensagem desconhecido.'
+                    );
             }
         } catch (\Throwable $erro) {
             echo sprintf(
@@ -162,29 +200,49 @@ class WebSocket implements MessageComponentInterface
                 $erro->getMessage()
             );
 
-            $this->enviarErro($from, 'Não foi possível processar o pedido.');
+            $this->enviarErro(
+                $from,
+                'Não foi possível processar o pedido.'
+            );
         }
     }
 
-    private function autenticarPessoa(ConnectionInterface $conn, array $data): void
-    {
-        $membroId = trim((string) ($data['membro_id'] ?? ''));
+    private function autenticarPessoa(
+        ConnectionInterface $conn,
+        array $data
+    ): void {
+        $membroId = trim(
+            (string) ($data['membro_id'] ?? '')
+        );
 
         if ($membroId === '') {
-            $this->enviarErro($conn, 'Não foi recebido um membro válido.');
+            $this->enviarErro(
+                $conn,
+                'Não foi recebido um membro válido.'
+            );
             return;
         }
 
-        $membroAnterior = $this->membroPorLigacao[$conn->resourceId] ?? null;
+        $membroAnterior =
+            $this->membroPorLigacao[$conn->resourceId] ?? null;
 
-        if ($membroAnterior !== null && $membroAnterior !== $membroId) {
-            $this->removerLigacaoDoMembro($conn, $membroAnterior);
+        if (
+            $membroAnterior !== null &&
+            $membroAnterior !== $membroId
+        ) {
+            $this->removerLigacaoDoMembro(
+                $conn,
+                $membroAnterior
+            );
         }
 
         $membro = $this->obterMembro($membroId);
 
         if (!$membro) {
-            $this->enviarErro($conn, 'O membro não foi encontrado.');
+            $this->enviarErro(
+                $conn,
+                'O membro não foi encontrado.'
+            );
             return;
         }
 
@@ -193,35 +251,65 @@ class WebSocket implements MessageComponentInterface
         );
 
         if ($faixaEtaria === null) {
-            $this->enviarErro($conn, 'A conta não tem uma idade válida para utilizar o mapa.');
+            $this->enviarErro(
+                $conn,
+                'A conta não tem uma idade válida para utilizar o mapa.'
+            );
+
             $conn->close();
             return;
         }
 
-        $this->faixaEtariaPorMembro[$membroId] = $faixaEtaria;
+        $this->faixaEtariaPorMembro[$membroId] =
+            $faixaEtaria;
 
         $localizacaoAtiva = $this->lerBooleano(
             $data,
             'location_enabled',
-            $this->lerBooleano($data, 'map_presence', true)
+            $this->lerBooleano(
+                $data,
+                'map_presence',
+                true
+            )
         );
 
-        $visivel = $localizacaoAtiva && $this->lerBooleano($data, 'map_presence', true);
+        $visivel =
+            $localizacaoAtiva &&
+            $this->lerBooleano(
+                $data,
+                'map_presence',
+                true
+            );
 
         $this->cancelarSaidaAgendada($membroId);
 
-        $this->membroPorLigacao[$conn->resourceId] = $membroId;
-        $this->localizacaoPorLigacao[$conn->resourceId] = $localizacaoAtiva;
-        $this->visibilidadePorLigacao[$conn->resourceId] = $visivel;
-        $this->ligacoesPorMembro[$membroId] ??= [];
-        $this->ligacoesPorMembro[$membroId][$conn->resourceId] = $conn;
-        unset($this->membrosVisiveisPorPersistencia[$membroId]);
+        $this->membroPorLigacao[$conn->resourceId] =
+            $membroId;
 
-        if (!$this->membroTemLigacaoComLocalizacaoAtiva($membroId)) {
+        $this->localizacaoPorLigacao[$conn->resourceId] =
+            $localizacaoAtiva;
+
+        $this->visibilidadePorLigacao[$conn->resourceId] =
+            $visivel;
+
+        $this->ligacoesPorMembro[$membroId] ??= [];
+
+        $this->ligacoesPorMembro[$membroId][
+            $conn->resourceId
+        ] = $conn;
+
+        if (
+            !$this->membroTemLigacaoComLocalizacaoAtiva(
+                $membroId
+            )
+        ) {
             unset($this->localizacoes[$membroId]);
         }
 
-        $this->sincronizarVisibilidadeMembro($membroId, $membro);
+        $this->sincronizarVisibilidadeMembro(
+            $membroId,
+            $membro
+        );
 
         echo sprintf(
             "[AUTH] Ligação %d autenticada como %s. Localização: %s. Visível: %s. Pessoas: %d. Ligações deste membro: %d\n",
@@ -240,25 +328,40 @@ class WebSocket implements MessageComponentInterface
             'map_presence' => $visivel
         ]);
 
-        $this->enviarContadorMensagens($conn, $membroId);
+        $this->enviarContadorMensagens(
+            $conn,
+            $membroId
+        );
+
         $this->enviarEstadosIndividuais();
     }
 
-    private function obterMembro(string $membroId): array|false
-    {
+    private function obterMembro(
+        string $membroId
+    ): array|false {
         $sql = "
             SELECT
                 m.id AS membro_id,
-                CONCAT(m.primeiro_nome, ' ', m.ultimo_nome) AS nome,
+                CONCAT(
+                    m.primeiro_nome,
+                    ' ',
+                    m.ultimo_nome
+                ) AS nome,
                 m.nascimento,
                 COALESCE(
                     (
                         SELECT fp.nome_arquivo
                         FROM fotos_perfil AS fp
-                        WHERE fp.membro_id COLLATE utf8mb4_unicode_ci =
-                              m.id COLLATE utf8mb4_unicode_ci
-                        AND (fp.status = 'completo' OR fp.status IS NULL)
-                        ORDER BY fp.ordem IS NULL ASC, fp.ordem ASC
+                        WHERE
+                            fp.membro_id COLLATE utf8mb4_unicode_ci =
+                            m.id COLLATE utf8mb4_unicode_ci
+                        AND (
+                            fp.status = 'completo'
+                            OR fp.status IS NULL
+                        )
+                        ORDER BY
+                            fp.ordem IS NULL ASC,
+                            fp.ordem ASC
                         LIMIT 1
                     ),
                     'default.webp'
@@ -274,21 +377,32 @@ class WebSocket implements MessageComponentInterface
         try {
             $database = $this->getDatabase();
             $statement = $database->prepare($sql);
-            $statement->execute(['membro_id' => $membroId]);
 
-            return $statement->fetch(PDO::FETCH_ASSOC);
+            $statement->execute([
+                'membro_id' => $membroId
+            ]);
+
+            return $statement->fetch(
+                PDO::FETCH_ASSOC
+            );
         } finally {
             $statement = null;
             $database = null;
         }
     }
 
-    private function atualizarPresenca(ConnectionInterface $conn, array $data): void
-    {
-        $membroId = $this->obterMembroDaLigacao($conn);
+    private function atualizarPresenca(
+        ConnectionInterface $conn,
+        array $data
+    ): void {
+        $membroId =
+            $this->obterMembroDaLigacao($conn);
 
         if ($membroId === null) {
-            $this->enviarErro($conn, 'A ligação não está autenticada.');
+            $this->enviarErro(
+                $conn,
+                'A ligação não está autenticada.'
+            );
             return;
         }
 
@@ -297,34 +411,51 @@ class WebSocket implements MessageComponentInterface
         $localizacaoAtiva = $this->lerBooleano(
             $data,
             'location_enabled',
-            $this->localizacaoPorLigacao[$resourceId] ?? true
+            $this->localizacaoPorLigacao[
+                $resourceId
+            ] ?? true
         );
 
         $visivelSolicitado = $this->lerBooleano(
             $data,
             'map_presence',
-            $this->visibilidadePorLigacao[$resourceId] ?? true
+            $this->visibilidadePorLigacao[
+                $resourceId
+            ] ?? true
         );
 
-        $visivel = $localizacaoAtiva && $visivelSolicitado;
+        $visivel =
+            $localizacaoAtiva &&
+            $visivelSolicitado;
 
-        $this->localizacaoPorLigacao[$resourceId] = $localizacaoAtiva;
-        $this->visibilidadePorLigacao[$resourceId] = $visivel;
-        unset($this->membrosVisiveisPorPersistencia[$membroId]);
+        $this->localizacaoPorLigacao[$resourceId] =
+            $localizacaoAtiva;
+
+        $this->visibilidadePorLigacao[$resourceId] =
+            $visivel;
 
         $this->cancelarSaidaAgendada($membroId);
 
-        if (!$this->membroTemLigacaoComLocalizacaoAtiva($membroId)) {
+        if (
+            !$this->membroTemLigacaoComLocalizacaoAtiva(
+                $membroId
+            )
+        ) {
             unset($this->localizacoes[$membroId]);
         }
 
-        $this->sincronizarVisibilidadeMembro($membroId);
+        $this->sincronizarVisibilidadeMembro(
+            $membroId
+        );
 
         $this->enviar($conn, [
             'type' => 'presence_updated',
             'location_enabled' => $localizacaoAtiva,
             'map_presence' => $visivel,
-            'member_visible' => $this->membroTemLigacaoVisivel($membroId)
+            'member_visible' =>
+                $this->membroTemLigacaoVisivel(
+                    $membroId
+                )
         ]);
 
         echo sprintf(
@@ -338,130 +469,225 @@ class WebSocket implements MessageComponentInterface
         $this->enviarEstadosIndividuais();
     }
 
-    private function sincronizarVisibilidadeMembro(string $membroId, ?array $membro = null): void
-    {
+    private function sincronizarVisibilidadeMembro(
+        string $membroId,
+        ?array $membro = null
+    ): void {
         if ($membro === null) {
-            $membro = $this->obterMembro($membroId);
+            $membro = $this->obterMembro(
+                $membroId
+            );
         }
 
         if (!$membro) {
             unset(
                 $this->pessoas[$membroId],
-                $this->faixaEtariaPorMembro[$membroId]
+                $this->faixaEtariaPorMembro[
+                    $membroId
+                ]
             );
             return;
         }
 
         $faixaEtaria = $this->obterFaixaEtaria(
-            (string) ($membro['nascimento'] ?? '')
+            (string) (
+                $membro['nascimento'] ?? ''
+            )
         );
 
         if ($faixaEtaria === null) {
             unset(
                 $this->pessoas[$membroId],
-                $this->faixaEtariaPorMembro[$membroId]
+                $this->faixaEtariaPorMembro[
+                    $membroId
+                ]
             );
             return;
         }
 
-        $this->faixaEtariaPorMembro[$membroId] = $faixaEtaria;
+        $this->faixaEtariaPorMembro[$membroId] =
+            $faixaEtaria;
 
-        if ($this->membroTemLigacaoVisivel($membroId)) {
-            $this->garantirPessoaVisivel($membroId, $membro);
+        if (
+            $this->membroTemLigacaoVisivel(
+                $membroId
+            )
+        ) {
+            $this->garantirPessoaVisivel(
+                $membroId,
+                $membro
+            );
             return;
         }
 
         unset($this->pessoas[$membroId]);
     }
 
-    private function garantirPessoaVisivel(string $membroId, ?array $membro = null): void
-    {
+    private function garantirPessoaVisivel(
+        string $membroId,
+        ?array $membro = null
+    ): void {
         if ($membro === null) {
-            $membro = $this->obterMembro($membroId);
+            $membro = $this->obterMembro(
+                $membroId
+            );
         }
 
         if (!$membro) {
             unset(
                 $this->pessoas[$membroId],
-                $this->faixaEtariaPorMembro[$membroId]
+                $this->faixaEtariaPorMembro[
+                    $membroId
+                ]
             );
             return;
         }
 
         $faixaEtaria = $this->obterFaixaEtaria(
-            (string) ($membro['nascimento'] ?? '')
+            (string) (
+                $membro['nascimento'] ?? ''
+            )
         );
 
         if ($faixaEtaria === null) {
             unset(
                 $this->pessoas[$membroId],
-                $this->faixaEtariaPorMembro[$membroId]
+                $this->faixaEtariaPorMembro[
+                    $membroId
+                ]
             );
             return;
         }
 
-        $this->faixaEtariaPorMembro[$membroId] = $faixaEtaria;
+        $this->faixaEtariaPorMembro[$membroId] =
+            $faixaEtaria;
 
-        $foto = basename(trim((string) ($membro['foto_perfil'] ?? 'default.webp')));
+        $foto = basename(
+            trim(
+                (string) (
+                    $membro['foto_perfil'] ??
+                    'default.webp'
+                )
+            )
+        );
 
-        if ($foto === '') $foto = 'default.webp';
+        if ($foto === '') {
+            $foto = 'default.webp';
+        }
 
-        $pessoaAtual = $this->pessoas[$membroId] ?? [];
+        $pessoaAtual =
+            $this->pessoas[$membroId] ?? [];
 
         $this->pessoas[$membroId] = [
             'id' => $membroId,
             'membro_id' => $membroId,
-            'nome' => trim((string) ($membro['nome'] ?? '')),
-            'src' => '/imagens/fotos-perfil/' . rawurlencode($foto),
+            'nome' => trim(
+                (string) ($membro['nome'] ?? '')
+            ),
+            'src' =>
+                '/imagens/fotos-perfil/' .
+                rawurlencode($foto),
             'faixa_etaria' => $faixaEtaria,
-            'top' => isset($pessoaAtual['top']) ? (int) $pessoaAtual['top'] : random_int(50, 600),
-            'left' => isset($pessoaAtual['left']) ? (int) $pessoaAtual['left'] : random_int(50, 400)
+            'top' => isset($pessoaAtual['top'])
+                ? (int) $pessoaAtual['top']
+                : random_int(50, 600),
+            'left' => isset($pessoaAtual['left'])
+                ? (int) $pessoaAtual['left']
+                : random_int(50, 400)
         ];
     }
 
-    private function obterPessoaParaInteracao(string $membroId): ?array
-    {
-        if (isset($this->pessoas[$membroId])) return $this->pessoas[$membroId];
+    private function obterPessoaParaInteracao(
+        string $membroId
+    ): ?array {
+        if (isset($this->pessoas[$membroId])) {
+            return $this->pessoas[$membroId];
+        }
 
         $membro = $this->obterMembro($membroId);
 
-        if (!$membro) return null;
+        if (!$membro) {
+            return null;
+        }
 
         $faixaEtaria = $this->obterFaixaEtaria(
-            (string) ($membro['nascimento'] ?? '')
+            (string) (
+                $membro['nascimento'] ?? ''
+            )
         );
 
-        if ($faixaEtaria === null) return null;
+        if ($faixaEtaria === null) {
+            return null;
+        }
 
-        $this->faixaEtariaPorMembro[$membroId] = $faixaEtaria;
+        $this->faixaEtariaPorMembro[$membroId] =
+            $faixaEtaria;
 
-        $foto = basename(trim((string) ($membro['foto_perfil'] ?? 'default.webp')));
+        $foto = basename(
+            trim(
+                (string) (
+                    $membro['foto_perfil'] ??
+                    'default.webp'
+                )
+            )
+        );
 
-        if ($foto === '') $foto = 'default.webp';
+        if ($foto === '') {
+            $foto = 'default.webp';
+        }
 
         return [
             'id' => $membroId,
             'membro_id' => $membroId,
-            'nome' => trim((string) ($membro['nome'] ?? '')),
-            'src' => '/imagens/fotos-perfil/' . rawurlencode($foto),
+            'nome' => trim(
+                (string) ($membro['nome'] ?? '')
+            ),
+            'src' =>
+                '/imagens/fotos-perfil/' .
+                rawurlencode($foto),
             'faixa_etaria' => $faixaEtaria
         ];
     }
 
-    private function atualizarLocalizacao(ConnectionInterface $conn, array $data): void
-    {
-        $membroId = $this->obterMembroDaLigacao($conn);
+    private function atualizarLocalizacao(
+        ConnectionInterface $conn,
+        array $data
+    ): void {
+        $membroId =
+            $this->obterMembroDaLigacao($conn);
 
         if ($membroId === null) {
-            $this->enviarErro($conn, 'A ligação não está autenticada.');
+            $this->enviarErro(
+                $conn,
+                'A ligação não está autenticada.'
+            );
             return;
         }
 
-        if (!($this->localizacaoPorLigacao[$conn->resourceId] ?? false)) return;
+        if (
+            !(
+                $this->localizacaoPorLigacao[
+                    $conn->resourceId
+                ] ?? false
+            )
+        ) {
+            return;
+        }
 
-        $latitude = filter_var($data['latitude'] ?? null, FILTER_VALIDATE_FLOAT);
-        $longitude = filter_var($data['longitude'] ?? null, FILTER_VALIDATE_FLOAT);
-        $accuracy = filter_var($data['accuracy'] ?? 0, FILTER_VALIDATE_FLOAT);
+        $latitude = filter_var(
+            $data['latitude'] ?? null,
+            FILTER_VALIDATE_FLOAT
+        );
+
+        $longitude = filter_var(
+            $data['longitude'] ?? null,
+            FILTER_VALIDATE_FLOAT
+        );
+
+        $accuracy = filter_var(
+            $data['accuracy'] ?? 0,
+            FILTER_VALIDATE_FLOAT
+        );
 
         if (
             $latitude === false ||
@@ -471,124 +697,248 @@ class WebSocket implements MessageComponentInterface
             $longitude < -180 ||
             $longitude > 180
         ) {
-            $this->enviarErro($conn, 'As coordenadas recebidas não são válidas.');
+            $this->enviarErro(
+                $conn,
+                'As coordenadas recebidas não são válidas.'
+            );
             return;
         }
 
-        if ($accuracy === false || $accuracy < 0) $accuracy = 0;
+        if (
+            $accuracy === false ||
+            $accuracy < 0
+        ) {
+            $accuracy = 0;
+        }
 
         $this->localizacoes[$membroId] = [
             'latitude' => (float) $latitude,
             'longitude' => (float) $longitude,
-            'accuracy' => min((float) $accuracy, 10000),
-            'updated_at' => time()
+            'accuracy' => min(
+                (float) $accuracy,
+                10000
+            ),
+            'updated_at' => time(),
+            'source' => 'websocket'
         ];
 
         echo sprintf(
             "[LOCATION] %s atualizou localização. Precisão: %.1f m\n",
             $membroId,
-            $this->localizacoes[$membroId]['accuracy']
+            $this->localizacoes[$membroId][
+                'accuracy'
+            ]
         );
 
         $this->enviar($conn, [
             'type' => 'location_received',
-            'updated_at' => $this->localizacoes[$membroId]['updated_at']
+            'updated_at' =>
+                $this->localizacoes[$membroId][
+                    'updated_at'
+                ]
         ]);
 
         $this->enviarEstadosIndividuais();
     }
 
-    private function moverPessoa(ConnectionInterface $conn, array $data): void
-    {
-        $membroId = $this->obterMembroDaLigacao($conn);
+    private function moverPessoa(
+        ConnectionInterface $conn,
+        array $data
+    ): void {
+        $membroId =
+            $this->obterMembroDaLigacao($conn);
 
         if (
             $membroId === null ||
-            !($this->visibilidadePorLigacao[$conn->resourceId] ?? false) ||
+            !(
+                $this->visibilidadePorLigacao[
+                    $conn->resourceId
+                ] ?? false
+            ) ||
             !isset($this->pessoas[$membroId])
-        ) return;
+        ) {
+            return;
+        }
 
-        $top = $this->limitarNumero((int) ($data['top'] ?? 0), -2000, 2000);
-        $left = $this->limitarNumero((int) ($data['left'] ?? 0), -2000, 2000);
+        $top = $this->limitarNumero(
+            (int) ($data['top'] ?? 0),
+            -2000,
+            2000
+        );
 
-        if ($top === 0 && $left === 0) return;
+        $left = $this->limitarNumero(
+            (int) ($data['left'] ?? 0),
+            -2000,
+            2000
+        );
 
-        $this->pessoas[$membroId]['top'] += $top;
-        $this->pessoas[$membroId]['left'] += $left;
+        if ($top === 0 && $left === 0) {
+            return;
+        }
+
+        $this->pessoas[$membroId]['top'] +=
+            $top;
+
+        $this->pessoas[$membroId]['left'] +=
+            $left;
 
         $this->enviarEstadosIndividuais();
     }
 
-    private function notificarPessoa(ConnectionInterface $from, array $data): void
-    {
-        $remetenteId = $this->obterMembroDaLigacao($from);
+    private function notificarPessoa(
+        ConnectionInterface $from,
+        array $data
+    ): void {
+        $remetenteId =
+            $this->obterMembroDaLigacao($from);
 
         if ($remetenteId === null) {
-            $this->enviarErro($from, 'Tens de estar autenticado para enviar um Hey.');
+            $this->enviarErroHey(
+                $from,
+                trim(
+                    (string) (
+                        $data['destinatario_id'] ?? ''
+                    )
+                ),
+                'Tens de estar autenticado para enviar um Hey.'
+            );
             return;
         }
 
-        $remetente = $this->obterPessoaParaInteracao($remetenteId);
-        $destinatarioId = trim((string) ($data['destinatario_id'] ?? ''));
+        $remetente =
+            $this->obterPessoaParaInteracao(
+                $remetenteId
+            );
 
-        if (!$remetente || $destinatarioId === '') {
-            $this->enviarErro($from, 'O destinatário não é válido.');
+        $destinatarioId = trim(
+            (string) (
+                $data['destinatario_id'] ?? ''
+            )
+        );
+
+        if (
+            !$remetente ||
+            $destinatarioId === ''
+        ) {
+            $this->enviarErroHey(
+                $from,
+                $destinatarioId,
+                'O destinatário não é válido.'
+            );
             return;
         }
 
         if ($destinatarioId === $remetenteId) {
-            $this->enviarErro($from, 'Não podes enviar um Hey para ti próprio.');
+            $this->enviarErroHey(
+                $from,
+                $destinatarioId,
+                'Não podes enviar um Hey para ti próprio.'
+            );
             return;
         }
 
-        if ($this->membrosEstaoBloqueados($remetenteId, $destinatarioId)) {
-            $this->enviarErro($from, 'Já não podes interagir com esta pessoa.');
+        if (
+            $this->membrosEstaoBloqueados(
+                $remetenteId,
+                $destinatarioId
+            )
+        ) {
+            $this->enviarErroHey(
+                $from,
+                $destinatarioId,
+                'Já não podes interagir com esta pessoa.'
+            );
+
             $this->enviarEstadosIndividuais();
             return;
         }
 
-        if (!$this->membrosNaMesmaFaixaEtaria($remetenteId, $destinatarioId)) {
-            $this->enviarErro($from, 'Já não podes interagir com esta pessoa.');
+        if (
+            !$this->membrosNaMesmaFaixaEtaria(
+                $remetenteId,
+                $destinatarioId
+            )
+        ) {
+            $this->enviarErroHey(
+                $from,
+                $destinatarioId,
+                'Já não podes interagir com esta pessoa.'
+            );
+
             $this->enviarEstadosIndividuais();
             return;
         }
 
-        if (!$this->estaoDentroDoRaio($remetenteId, $destinatarioId)) {
-            $this->enviarErro($from, 'Esta pessoa já não está num raio de 100 metros.');
+        if (
+            !$this->estaoDentroDoRaio(
+                $remetenteId,
+                $destinatarioId
+            )
+        ) {
+            $this->enviarErroHey(
+                $from,
+                $destinatarioId,
+                'Esta pessoa já não está num raio de 100 metros.'
+            );
+
             $this->enviarEstadosIndividuais();
             return;
         }
 
-        $ligacoesDestinatario = $this->ligacoesPorMembro[$destinatarioId] ?? [];
-        $destinatario = $this->pessoas[$destinatarioId] ?? null;
+        $ligacoesDestinatario =
+            $this->ligacoesPorMembro[
+                $destinatarioId
+            ] ?? [];
 
-        if ($ligacoesDestinatario === []) {
-            $this->enviar($from, [
-                'type' => 'notification_not_delivered',
-                'destinatario_id' => $destinatarioId,
-                'message' => 'O utilizador não está ligado neste momento.'
-            ]);
-            return;
-        }
+        $destinatario =
+            $this->pessoas[$destinatarioId] ??
+            $this->obterPessoaParaInteracao(
+                $destinatarioId
+            );
 
         if (!$destinatario) {
-            $this->enviarErro($from, 'O destinatário já não está disponível.');
+            $this->enviarErroHey(
+                $from,
+                $destinatarioId,
+                'O destinatário já não está disponível.'
+            );
             return;
         }
 
-        $notificacaoId = $this->guardarNotificacao($remetenteId, $destinatarioId);
+        $notificacaoId =
+            $this->guardarNotificacao(
+                $remetenteId,
+                $destinatarioId
+            );
+
         $numeroEntregas = 0;
 
-        foreach ($ligacoesDestinatario as $client) {
+        foreach (
+            $ligacoesDestinatario as $client
+        ) {
             $this->enviar($client, [
                 'type' => 'notification',
-                'notification_id' => $notificacaoId,
+                'notification_id' =>
+                    $notificacaoId,
                 'notification_type' => 'hey',
                 'title' => 'Recebeste um Hey!',
-                'body' => sprintf('%s enviou-te um Hey.', (string) ($remetente['nome'] ?? 'Alguém')),
-                'from_member_id' => $remetenteId,
-                'from_name' => (string) ($remetente['nome'] ?? 'Alguém'),
-                'from_photo' => (string) ($remetente['src'] ?? '/imagens/fotos-perfil/default.webp'),
+                'body' => sprintf(
+                    '%s enviou-te um Hey.',
+                    (string) (
+                        $remetente['nome'] ??
+                        'Alguém'
+                    )
+                ),
+                'from_member_id' =>
+                    $remetenteId,
+                'from_name' => (string) (
+                    $remetente['nome'] ??
+                    'Alguém'
+                ),
+                'from_photo' => (string) (
+                    $remetente['src'] ??
+                    '/imagens/fotos-perfil/default.webp'
+                ),
                 'created_at' => gmdate('c')
             ]);
 
@@ -597,15 +947,34 @@ class WebSocket implements MessageComponentInterface
 
         $this->enviar($from, [
             'type' => 'notification_sent',
-            'notification_id' => $notificacaoId,
-            'destinatario_id' => $destinatarioId,
-            'destinatario_nome' => (string) ($destinatario['nome'] ?? 'A outra pessoa'),
-            'destinatario_foto' => (string) ($destinatario['src'] ?? '/imagens/fotos-perfil/default.webp'),
+            'notification_id' =>
+                $notificacaoId,
+            'destinatario_id' =>
+                $destinatarioId,
+            'destinatario_nome' => (string) (
+                $destinatario['nome'] ??
+                'A outra pessoa'
+            ),
+            'destinatario_foto' => (string) (
+                $destinatario['src'] ??
+                '/imagens/fotos-perfil/default.webp'
+            ),
             'deliveries' => $numeroEntregas,
-            'message' => sprintf(
-                '%s recebeu o teu Hey.',
-                (string) ($destinatario['nome'] ?? 'A outra pessoa')
-            )
+            'message' => $numeroEntregas > 0
+                ? sprintf(
+                    '%s recebeu o teu Hey.',
+                    (string) (
+                        $destinatario['nome'] ??
+                        'A outra pessoa'
+                    )
+                )
+                : sprintf(
+                    'Hey enviado. %s vai vê-lo quando voltar à Margot.',
+                    (string) (
+                        $destinatario['nome'] ??
+                        'A outra pessoa'
+                    )
+                )
         ]);
 
         echo sprintf(
@@ -616,8 +985,10 @@ class WebSocket implements MessageComponentInterface
         );
     }
 
-    private function guardarNotificacao(string $emissorId, string $destinatarioId): int
-    {
+    private function guardarNotificacao(
+        string $emissorId,
+        string $destinatarioId
+    ): int {
         $sql = "
             INSERT INTO notificacao (
                 emissor_id,
@@ -641,35 +1012,50 @@ class WebSocket implements MessageComponentInterface
         try {
             $database = $this->getDatabase();
             $statement = $database->prepare($sql);
+
             $statement->execute([
                 'emissor_id' => $emissorId,
-                'destinatario_id' => $destinatarioId
+                'destinatario_id' =>
+                    $destinatarioId
             ]);
 
-            return (int) $database->lastInsertId();
+            return (int)
+                $database->lastInsertId();
         } finally {
             $statement = null;
             $database = null;
         }
     }
 
-    private function publicarMensagemChat(ConnectionInterface $from, array $data): void
-    {
-        $membroId = $this->obterMembroDaLigacao($from);
-        $mensagemId = filter_var($data['message_id'] ?? null, FILTER_VALIDATE_INT);
+    private function publicarMensagemChat(
+        ConnectionInterface $from,
+        array $data
+    ): void {
+        $membroId =
+            $this->obterMembroDaLigacao($from);
+
+        $mensagemId = filter_var(
+            $data['message_id'] ?? null,
+            FILTER_VALIDATE_INT
+        );
 
         if ($membroId === null) {
             $this->enviar($from, [
                 'type' => 'chat_error',
-                'message' => 'A ligação não está autenticada.'
+                'message' =>
+                    'A ligação não está autenticada.'
             ]);
             return;
         }
 
-        if ($mensagemId === false || $mensagemId < 1) {
+        if (
+            $mensagemId === false ||
+            $mensagemId < 1
+        ) {
             $this->enviar($from, [
                 'type' => 'chat_error',
-                'message' => 'A mensagem não é válida.'
+                'message' =>
+                    'A mensagem não é válida.'
             ]);
             return;
         }
@@ -687,15 +1073,26 @@ class WebSocket implements MessageComponentInterface
                 msg.lida,
                 msg.criada_em,
                 msg.lida_em,
-                CONCAT(m.primeiro_nome, ' ', m.ultimo_nome) AS emissor_nome,
+                CONCAT(
+                    m.primeiro_nome,
+                    ' ',
+                    m.ultimo_nome
+                ) AS emissor_nome,
                 COALESCE(
                     (
                         SELECT fp.nome_arquivo
                         FROM fotos_perfil fp
-                        WHERE fp.membro_id COLLATE utf8mb4_unicode_ci =
-                              m.id COLLATE utf8mb4_unicode_ci
-                        AND (fp.status = 'completo' OR fp.status IS NULL)
-                        ORDER BY fp.ordem IS NULL ASC, fp.ordem ASC, fp.id ASC
+                        WHERE
+                            fp.membro_id COLLATE utf8mb4_unicode_ci =
+                            m.id COLLATE utf8mb4_unicode_ci
+                        AND (
+                            fp.status = 'completo'
+                            OR fp.status IS NULL
+                        )
+                        ORDER BY
+                            fp.ordem IS NULL ASC,
+                            fp.ordem ASC,
+                            fp.id ASC
                         LIMIT 1
                     ),
                     'default.webp'
@@ -714,30 +1111,47 @@ class WebSocket implements MessageComponentInterface
         try {
             $database = $this->getDatabase();
             $statement = $database->prepare($sql);
-            $statement->execute(['id' => $mensagemId]);
-            $mensagem = $statement->fetch(PDO::FETCH_ASSOC);
+
+            $statement->execute([
+                'id' => $mensagemId
+            ]);
+
+            $mensagem = $statement->fetch(
+                PDO::FETCH_ASSOC
+            );
         } finally {
             $statement = null;
             $database = null;
         }
 
-        if (!$mensagem || (string) $mensagem['emissor_id'] !== $membroId) {
+        if (
+            !$mensagem ||
+            (string) $mensagem['emissor_id'] !==
+                $membroId
+        ) {
             $this->enviar($from, [
                 'type' => 'chat_error',
-                'message' => 'Não podes publicar esta mensagem.'
+                'message' =>
+                    'Não podes publicar esta mensagem.'
             ]);
             return;
         }
 
         $destinatarioId = trim(
-            (string) ($mensagem['destinatario_id'] ?? '')
+            (string) (
+                $mensagem['destinatario_id'] ??
+                ''
+            )
         );
 
         /*
-         * A gravação HTTP já faz esta validação. Repeti-la aqui impede
-         * que uma mensagem seja entregue em tempo real caso exista uma
-         * tentativa de contornar o endpoint, um bloqueio tenha ocorrido
-         * entretanto ou as contas pertençam a faixas etárias diferentes.
+         * A gravação HTTP já faz esta validação.
+         * Repeti-la aqui impede que uma mensagem
+         * seja entregue em tempo real caso exista
+         * uma tentativa de contornar o endpoint,
+         * um bloqueio tenha ocorrido entretanto
+         * ou as contas pertençam a faixas etárias
+         * diferentes.
          */
         if (
             !$this->interacaoMensagensPermitida(
@@ -747,34 +1161,82 @@ class WebSocket implements MessageComponentInterface
         ) {
             $this->enviar($from, [
                 'type' => 'chat_error',
-                'message' => 'Esta conversa não está disponível.'
+                'message' =>
+                    'Esta conversa não está disponível.'
             ]);
             return;
         }
 
-        $ficheiro = basename(trim((string) ($mensagem['ficheiro_nome'] ?? '')));
-        $foto = basename(trim((string) ($mensagem['emissor_foto'] ?? 'default.webp')));
+        $ficheiro = basename(
+            trim(
+                (string) (
+                    $mensagem['ficheiro_nome'] ??
+                    ''
+                )
+            )
+        );
 
-        if ($foto === '') $foto = 'default.webp';
+        $foto = basename(
+            trim(
+                (string) (
+                    $mensagem['emissor_foto'] ??
+                    'default.webp'
+                )
+            )
+        );
 
-        $mensagem['id'] = (int) $mensagem['id'];
-        $mensagem['lida'] = (bool) $mensagem['lida'];
-        $mensagem['texto'] = (string) ($mensagem['texto'] ?? '');
-        $mensagem['media_url'] = $ficheiro === '' ? null : '/media/mensagens/' . rawurlencode($ficheiro);
-        $mensagem['emissor_foto_url'] = '/imagens/fotos-perfil/' . rawurlencode($foto);
-        $mensagem['emissor_perfil_url'] = '/profile/' . rawurlencode((string) $mensagem['emissor_id']);
+        if ($foto === '') {
+            $foto = 'default.webp';
+        }
 
-        unset($mensagem['ficheiro_nome'], $mensagem['emissor_foto']);
+        $mensagem['id'] =
+            (int) $mensagem['id'];
+
+        $mensagem['lida'] =
+            (bool) $mensagem['lida'];
+
+        $mensagem['texto'] =
+            (string) ($mensagem['texto'] ?? '');
+
+        $mensagem['media_url'] =
+            $ficheiro === ''
+                ? null
+                : '/media/mensagens/' .
+                    rawurlencode($ficheiro);
+
+        $mensagem['emissor_foto_url'] =
+            '/imagens/fotos-perfil/' .
+            rawurlencode($foto);
+
+        $mensagem['emissor_perfil_url'] =
+            '/profile/' .
+            rawurlencode(
+                (string) $mensagem['emissor_id']
+            );
+
+        unset(
+            $mensagem['ficheiro_nome'],
+            $mensagem['emissor_foto']
+        );
 
         $participantes = array_unique([
             (string) $mensagem['emissor_id'],
             (string) $mensagem['destinatario_id']
         ]);
 
-        foreach ($participantes as $participanteId) {
-            $naoLidas = $this->contarMensagensNaoLidas($participanteId);
+        foreach (
+            $participantes as $participanteId
+        ) {
+            $naoLidas =
+                $this->contarMensagensNaoLidas(
+                    $participanteId
+                );
 
-            foreach ($this->ligacoesPorMembro[$participanteId] ?? [] as $ligacao) {
+            foreach (
+                $this->ligacoesPorMembro[
+                    $participanteId
+                ] ?? [] as $ligacao
+            ) {
                 $this->enviar($ligacao, [
                     'type' => 'chat_message',
                     'message' => $mensagem,
@@ -791,15 +1253,28 @@ class WebSocket implements MessageComponentInterface
         );
     }
 
-    private function marcarMensagensChatComoLidas(ConnectionInterface $from, array $data): void
-    {
-        $leitorId = $this->obterMembroDaLigacao($from);
-        $outroId = trim((string) ($data['with_member_id'] ?? ''));
+    private function marcarMensagensChatComoLidas(
+        ConnectionInterface $from,
+        array $data
+    ): void {
+        $leitorId =
+            $this->obterMembroDaLigacao($from);
 
-        if ($leitorId === null || $outroId === '' || $outroId === $leitorId) {
+        $outroId = trim(
+            (string) (
+                $data['with_member_id'] ?? ''
+            )
+        );
+
+        if (
+            $leitorId === null ||
+            $outroId === '' ||
+            $outroId === $leitorId
+        ) {
             $this->enviar($from, [
                 'type' => 'chat_error',
-                'message' => 'A conversa não é válida.'
+                'message' =>
+                    'A conversa não é válida.'
             ]);
             return;
         }
@@ -816,7 +1291,8 @@ class WebSocket implements MessageComponentInterface
         ) {
             $this->enviar($from, [
                 'type' => 'chat_error',
-                'message' => 'Esta conversa não está disponível.'
+                'message' =>
+                    'Esta conversa não está disponível.'
             ]);
             return;
         }
@@ -829,7 +1305,12 @@ class WebSocket implements MessageComponentInterface
 
             $statement = $database->prepare("
                 UPDATE mensagens_chat
-                SET lida = 1, lida_em = COALESCE(lida_em, NOW(6))
+                SET
+                    lida = 1,
+                    lida_em = COALESCE(
+                        lida_em,
+                        NOW(6)
+                    )
                 WHERE emissor_id = :outro
                 AND destinatario_id = :leitor
                 AND lida = 0
@@ -853,48 +1334,77 @@ class WebSocket implements MessageComponentInterface
                 'leitor' => $leitorId
             ]);
 
-            $ultimaMensagemId = (int) $statement->fetchColumn();
+            $ultimaMensagemId =
+                (int) $statement->fetchColumn();
         } finally {
             $statement = null;
             $database = null;
         }
 
-        foreach ($this->ligacoesPorMembro[$outroId] ?? [] as $ligacao) {
+        foreach (
+            $this->ligacoesPorMembro[$outroId] ??
+            [] as $ligacao
+        ) {
             $this->enviar($ligacao, [
                 'type' => 'chat_messages_read',
                 'reader_id' => $leitorId,
-                'last_message_id' => $ultimaMensagemId
+                'last_message_id' =>
+                    $ultimaMensagemId
             ]);
         }
 
-        foreach ($this->ligacoesPorMembro[$leitorId] ?? [] as $ligacao) {
-            $this->enviarContadorMensagens($ligacao, $leitorId);
+        foreach (
+            $this->ligacoesPorMembro[$leitorId] ??
+            [] as $ligacao
+        ) {
+            $this->enviarContadorMensagens(
+                $ligacao,
+                $leitorId
+            );
         }
     }
 
-    private function contarMensagensNaoLidas(string $membroId): int
-    {
-        $membro = $this->obterMembro($membroId);
+    private function contarMensagensNaoLidas(
+        string $membroId
+    ): int {
+        $membro =
+            $this->obterMembro($membroId);
 
-        if (!$membro) return 0;
+        if (!$membro) {
+            return 0;
+        }
 
         $faixaEtaria = $this->obterFaixaEtaria(
-            (string) ($membro['nascimento'] ?? '')
+            (string) (
+                $membro['nascimento'] ?? ''
+            )
         );
 
-        if ($faixaEtaria === null) return 0;
+        if ($faixaEtaria === null) {
+            return 0;
+        }
 
-        $condicaoFaixaEtaria = $faixaEtaria === '13-17'
-            ? "(
-                em.nascimento <=
-                    DATE_SUB(UTC_DATE(), INTERVAL 13 YEAR)
-                AND em.nascimento >
-                    DATE_SUB(UTC_DATE(), INTERVAL 18 YEAR)
-            )"
-            : "(
-                em.nascimento <=
-                    DATE_SUB(UTC_DATE(), INTERVAL 18 YEAR)
-            )";
+        $condicaoFaixaEtaria =
+            $faixaEtaria === '13-17'
+                ? "(
+                    em.nascimento <=
+                        DATE_SUB(
+                            UTC_DATE(),
+                            INTERVAL 13 YEAR
+                        )
+                    AND em.nascimento >
+                        DATE_SUB(
+                            UTC_DATE(),
+                            INTERVAL 18 YEAR
+                        )
+                )"
+                : "(
+                    em.nascimento <=
+                        DATE_SUB(
+                            UTC_DATE(),
+                            INTERVAL 18 YEAR
+                        )
+                )";
 
         $database = null;
         $statement = null;
@@ -916,13 +1426,15 @@ class WebSocket implements MessageComponentInterface
                     FROM bloqueados b
                     WHERE (
                         b.pessoa_bloqueou_id = :eu1
-                        AND b.pessoa_bloqueada_id COLLATE utf8mb4_unicode_ci =
-                            msg.emissor_id COLLATE utf8mb4_unicode_ci
+                        AND
+                        b.pessoa_bloqueada_id COLLATE utf8mb4_unicode_ci =
+                        msg.emissor_id COLLATE utf8mb4_unicode_ci
                     )
                     OR (
                         b.pessoa_bloqueou_id COLLATE utf8mb4_unicode_ci =
-                            msg.emissor_id COLLATE utf8mb4_unicode_ci
-                        AND b.pessoa_bloqueada_id = :eu2
+                        msg.emissor_id COLLATE utf8mb4_unicode_ci
+                        AND
+                        b.pessoa_bloqueada_id = :eu2
                     )
                 )
             ");
@@ -933,91 +1445,204 @@ class WebSocket implements MessageComponentInterface
                 'eu2' => $membroId
             ]);
 
-            return (int) $statement->fetchColumn();
+            return (int)
+                $statement->fetchColumn();
         } finally {
             $statement = null;
             $database = null;
         }
     }
 
-    private function enviarContadorMensagens(ConnectionInterface $conn, string $membroId): void
-    {
+    private function enviarContadorMensagens(
+        ConnectionInterface $conn,
+        string $membroId
+    ): void {
         $this->enviar($conn, [
             'type' => 'chat_unread_count',
-            'unread_count' => $this->contarMensagensNaoLidas($membroId)
+            'unread_count' =>
+                $this->contarMensagensNaoLidas(
+                    $membroId
+                )
         ]);
     }
 
     private function enviarEstadosIndividuais(): void
     {
-        $this->sincronizarLocalizacoesPersistidas();
-
         try {
             $this->carregarBloqueios();
         } catch (\Throwable $erro) {
-            echo sprintf("[BLOCK CACHE ERROR] %s\n", $erro->getMessage());
+            echo sprintf(
+                "[BLOCK CACHE ERROR] %s\n",
+                $erro->getMessage()
+            );
+        }
+
+        try {
+            $this->sincronizarLocalizacoesPersistidas();
+        } catch (\Throwable $erro) {
+            echo sprintf(
+                "[LOCATION CACHE ERROR] %s\n",
+                $erro->getMessage()
+            );
         }
 
         $agora = time();
 
         foreach ($this->clients as $client) {
-            $membroId = $this->membroPorLigacao[$client->resourceId] ?? null;
+            $membroId =
+                $this->membroPorLigacao[
+                    $client->resourceId
+                ] ?? null;
 
-            if ($membroId === null) continue;
+            if ($membroId === null) {
+                continue;
+            }
 
-            $localizacaoAtiva = $this->localizacaoPorLigacao[$client->resourceId] ?? false;
-            $ligacaoVisivel = $this->visibilidadePorLigacao[$client->resourceId] ?? false;
-            $minhaLocalizacao = $this->localizacoes[$membroId] ?? null;
-            $minhaLocalizacaoValida = $localizacaoAtiva && $this->localizacaoEstaValida($minhaLocalizacao, $agora);
-            $minhaFaixaEtaria = $this->faixaEtariaPorMembro[$membroId] ?? null;
+            $localizacaoAtiva =
+                $this->localizacaoPorLigacao[
+                    $client->resourceId
+                ] ?? false;
+
+            $ligacaoVisivel =
+                $this->visibilidadePorLigacao[
+                    $client->resourceId
+                ] ?? false;
+
+            $minhaLocalizacao =
+                $this->localizacoes[$membroId] ??
+                null;
+
+            $minhaLocalizacaoValida =
+                $localizacaoAtiva &&
+                $this->localizacaoEstaValida(
+                    $minhaLocalizacao,
+                    $agora
+                );
+
+            $minhaFaixaEtaria =
+                $this->faixaEtariaPorMembro[
+                    $membroId
+                ] ?? null;
+
             $pessoasVisiveis = [];
 
-            if ($minhaLocalizacaoValida && $minhaFaixaEtaria !== null) {
-                foreach ($this->pessoas as $outroMembroId => $pessoa) {
-                    if ($outroMembroId === $membroId) {
-                        if (!$ligacaoVisivel) continue;
+            if (
+                $minhaLocalizacaoValida &&
+                $minhaFaixaEtaria !== null
+            ) {
+                foreach (
+                    $this->pessoas
+                    as $outroMembroId => $pessoa
+                ) {
+                    if (
+                        $outroMembroId ===
+                        $membroId
+                    ) {
+                        if (!$ligacaoVisivel) {
+                            continue;
+                        }
 
-                        unset($pessoa['faixa_etaria']);
+                        unset(
+                            $pessoa['faixa_etaria']
+                        );
+
                         $pessoa['distance_m'] = 0;
-                        $pessoasVisiveis[] = $pessoa;
+                        $pessoasVisiveis[] =
+                            $pessoa;
                         continue;
                     }
 
-                    if ($this->membrosEstaoBloqueadosNoCache($membroId, $outroMembroId)) continue;
-                    if (($pessoa['faixa_etaria'] ?? null) !== $minhaFaixaEtaria) continue;
+                    if (
+                        $this->membrosEstaoBloqueadosNoCache(
+                            $membroId,
+                            $outroMembroId
+                        )
+                    ) {
+                        continue;
+                    }
 
-                    $outraLocalizacao = $this->localizacoes[$outroMembroId] ?? null;
+                    if (
+                        (
+                            $pessoa[
+                                'faixa_etaria'
+                            ] ?? null
+                        ) !== $minhaFaixaEtaria
+                    ) {
+                        continue;
+                    }
 
-                    if (!$this->localizacaoEstaValida($outraLocalizacao, $agora)) continue;
+                    $outraLocalizacao =
+                        $this->localizacoes[
+                            $outroMembroId
+                        ] ?? null;
 
-                    $distancia = $this->calcularDistanciaMetros(
-                        $minhaLocalizacao['latitude'],
-                        $minhaLocalizacao['longitude'],
-                        $outraLocalizacao['latitude'],
-                        $outraLocalizacao['longitude']
+                    if (
+                        !$this->localizacaoEstaValida(
+                            $outraLocalizacao,
+                            $agora
+                        )
+                    ) {
+                        continue;
+                    }
+
+                    $distancia =
+                        $this->calcularDistanciaMetros(
+                            $minhaLocalizacao[
+                                'latitude'
+                            ],
+                            $minhaLocalizacao[
+                                'longitude'
+                            ],
+                            $outraLocalizacao[
+                                'latitude'
+                            ],
+                            $outraLocalizacao[
+                                'longitude'
+                            ]
+                        );
+
+                    if (
+                        $distancia >
+                        self::RAIO_MAXIMO_METROS
+                    ) {
+                        continue;
+                    }
+
+                    $tokenAcessoPerfil =
+                        $this->obterTokenAcessoPerfil(
+                            $membroId,
+                            $outroMembroId
+                        );
+
+                    if (
+                        $tokenAcessoPerfil === null
+                    ) {
+                        continue;
+                    }
+
+                    unset(
+                        $pessoa['faixa_etaria']
                     );
 
-                    if ($distancia > self::RAIO_MAXIMO_METROS) continue;
+                    $pessoa['distance_m'] =
+                        (int) round($distancia);
 
-                    $tokenAcessoPerfil = $this->obterTokenAcessoPerfil(
-                        $membroId,
-                        $outroMembroId
-                    );
+                    $pessoa[
+                        'profile_access_token'
+                    ] = $tokenAcessoPerfil;
 
-                    if ($tokenAcessoPerfil === null) continue;
-
-                    unset($pessoa['faixa_etaria']);
-                    $pessoa['distance_m'] = (int) round($distancia);
-                    $pessoa['profile_access_token'] = $tokenAcessoPerfil;
                     $pessoasVisiveis[] = $pessoa;
                 }
             }
 
             $this->enviar($client, [
                 'type' => 'state',
-                'radius_m' => self::RAIO_MAXIMO_METROS,
-                'map_presence' => $ligacaoVisivel,
-                'location_filter_active' => $minhaLocalizacaoValida,
+                'radius_m' =>
+                    self::RAIO_MAXIMO_METROS,
+                'map_presence' =>
+                    $ligacaoVisivel,
+                'location_filter_active' =>
+                    $minhaLocalizacaoValida,
                 'people' => $pessoasVisiveis
             ]);
         }
@@ -1028,39 +1653,17 @@ class WebSocket implements MessageComponentInterface
         );
     }
 
-    private function estaoDentroDoRaio(string $primeiroMembroId, string $segundoMembroId): bool
-    {
-        $agora = time();
-        $primeira = $this->localizacoes[$primeiroMembroId] ?? null;
-        $segunda = $this->localizacoes[$segundoMembroId] ?? null;
-
-        if (
-            !$this->localizacaoEstaValida($primeira, $agora) ||
-            !$this->localizacaoEstaValida($segunda, $agora)
-        ) return false;
-
-        return $this->calcularDistanciaMetros(
-            $primeira['latitude'],
-            $primeira['longitude'],
-            $segunda['latitude'],
-            $segunda['longitude']
-        ) <= self::RAIO_MAXIMO_METROS;
-    }
-
-    private function localizacaoEstaValida(?array $localizacao, int $agora): bool
-    {
-        if ($localizacao === null) return false;
-
-        return ($agora - (int) ($localizacao['updated_at'] ?? 0)) <= self::LOCALIZACAO_MAXIMA_IDADE_SEGUNDOS;
-    }
-
-    private function sincronizarLocalizacoesPersistidas(bool $forcar = false): void
-    {
+    private function sincronizarLocalizacoesPersistidas(
+        bool $forcar = false
+    ): void {
         $agora = time();
 
         if (
             !$forcar &&
-            ($agora - $this->localizacoesPersistidasCarregadasEm) <
+            (
+                $agora -
+                $this->localizacoesPersistidasCarregadasEm
+            ) <
                 self::LOCALIZACOES_PERSISTIDAS_CACHE_SEGUNDOS
         ) {
             return;
@@ -1071,31 +1674,37 @@ class WebSocket implements MessageComponentInterface
 
         try {
             $database = $this->getDatabase();
-            $idadeMaxima = self::LOCALIZACAO_MAXIMA_IDADE_SEGUNDOS;
-            $statement = $database->query("
+
+            $statement = $database->prepare("
                 SELECT
                     lm.membro_id,
                     lm.latitude,
                     lm.longitude,
                     lm.precisao_m,
-                    GREATEST(
-                        0,
-                        TIMESTAMPDIFF(
-                            SECOND,
-                            lm.atualizada_em,
-                            UTC_TIMESTAMP()
-                        )
-                    ) AS idade_segundos,
-                    CONCAT(m.primeiro_nome, ' ', m.ultimo_nome) AS nome,
+                    UNIX_TIMESTAMP(
+                        lm.atualizada_em
+                    ) AS atualizada_em_epoch,
                     m.nascimento,
+                    CONCAT(
+                        m.primeiro_nome,
+                        ' ',
+                        m.ultimo_nome
+                    ) AS nome,
                     COALESCE(
                         (
                             SELECT fp.nome_arquivo
                             FROM fotos_perfil AS fp
-                            WHERE fp.membro_id COLLATE utf8mb4_unicode_ci =
-                                  m.id COLLATE utf8mb4_unicode_ci
-                            AND (fp.status = 'completo' OR fp.status IS NULL)
-                            ORDER BY fp.ordem IS NULL ASC, fp.ordem ASC
+                            WHERE
+                                fp.membro_id COLLATE utf8mb4_unicode_ci =
+                                m.id COLLATE utf8mb4_unicode_ci
+                            AND (
+                                fp.status = 'completo'
+                                OR fp.status IS NULL
+                            )
+                            ORDER BY
+                                fp.ordem IS NULL ASC,
+                                fp.ordem ASC,
+                                fp.id ASC
                             LIMIT 1
                         ),
                         'default.webp'
@@ -1110,24 +1719,51 @@ class WebSocket implements MessageComponentInterface
                 AND lm.longitude IS NOT NULL
                 AND lm.atualizada_em >= DATE_SUB(
                     UTC_TIMESTAMP(),
-                    INTERVAL {$idadeMaxima} SECOND
+                    INTERVAL " .
+                    self::LOCALIZACAO_MAXIMA_IDADE_SEGUNDOS .
+                    " SECOND
                 )
             ");
 
-            $persistidosAtuais = [];
+            $statement->execute();
+            $visiveisAgora = [];
 
-            foreach ($statement->fetchAll(PDO::FETCH_ASSOC) as $linha) {
-                $membroId = trim((string) ($linha['membro_id'] ?? ''));
+            foreach (
+                $statement->fetchAll(
+                    PDO::FETCH_ASSOC
+                ) as $linha
+            ) {
+                $membroId = trim(
+                    (string) (
+                        $linha['membro_id'] ??
+                        ''
+                    )
+                );
+
                 $latitude = filter_var(
                     $linha['latitude'] ?? null,
                     FILTER_VALIDATE_FLOAT
                 );
+
                 $longitude = filter_var(
                     $linha['longitude'] ?? null,
                     FILTER_VALIDATE_FLOAT
                 );
-                $idadeSegundos = (int) ($linha['idade_segundos'] ?? -1);
-                $atualizadaEm = $agora - $idadeSegundos;
+
+                $atualizadaEm = (int) (
+                    $linha[
+                        'atualizada_em_epoch'
+                    ] ?? 0
+                );
+
+                $faixaEtaria =
+                    $this->obterFaixaEtaria(
+                        (string) (
+                            $linha[
+                                'nascimento'
+                            ] ?? ''
+                        )
+                    );
 
                 if (
                     $membroId === '' ||
@@ -1137,147 +1773,378 @@ class WebSocket implements MessageComponentInterface
                     $latitude > 90 ||
                     $longitude < -180 ||
                     $longitude > 180 ||
-                    $idadeSegundos < 0 ||
-                    $idadeSegundos > self::LOCALIZACAO_MAXIMA_IDADE_SEGUNDOS
+                    $atualizadaEm <= 0 ||
+                    $faixaEtaria === null
                 ) {
                     continue;
                 }
 
-                $localizacaoAtual = $this->localizacoes[$membroId] ?? null;
+                $temLigacaoAberta = !empty(
+                    $this->ligacoesPorMembro[
+                        $membroId
+                    ]
+                );
 
+                /*
+                 * O estado em tempo real prevalece
+                 * sobre uma linha de BD que ainda
+                 * não recebeu a atualização de
+                 * invisível/desativado.
+                 */
                 if (
-                    $localizacaoAtual === null ||
-                    $atualizadaEm > (int) ($localizacaoAtual['updated_at'] ?? 0)
+                    $temLigacaoAberta &&
+                    (
+                        !$this->membroTemLigacaoVisivel(
+                            $membroId
+                        ) ||
+                        !$this->membroTemLigacaoComLocalizacaoAtiva(
+                            $membroId
+                        )
+                    )
                 ) {
-                    $precisao = filter_var(
-                        $linha['precisao_m'] ?? 0,
-                        FILTER_VALIDATE_FLOAT
-                    );
+                    continue;
+                }
 
-                    if ($precisao === false || $precisao < 0) {
-                        $precisao = 0;
-                    }
+                $visiveisAgora[$membroId] = true;
 
-                    $this->localizacoes[$membroId] = [
-                        'latitude' => (float) $latitude,
-                        'longitude' => (float) $longitude,
-                        'accuracy' => min((float) $precisao, 10000),
-                        'updated_at' => $atualizadaEm
+                /*
+                 * Uma posição WebSocket mais recente
+                 * prevalece sobre a cópia que chegou
+                 * pelo endpoint nativo de segundo plano.
+                 */
+                if (
+                    !isset(
+                        $this->localizacoes[
+                            $membroId
+                        ]
+                    ) ||
+                    (int) (
+                        $this->localizacoes[
+                            $membroId
+                        ]['updated_at'] ?? 0
+                    ) < $atualizadaEm
+                ) {
+                    $this->localizacoes[
+                        $membroId
+                    ] = [
+                        'latitude' =>
+                            (float) $latitude,
+                        'longitude' =>
+                            (float) $longitude,
+                        'accuracy' => max(
+                            0.0,
+                            min(
+                                10000.0,
+                                (float) (
+                                    $linha[
+                                        'precisao_m'
+                                    ] ?? 0
+                                )
+                            )
+                        ),
+                        'updated_at' =>
+                            $atualizadaEm,
+                        'source' => 'background'
                     ];
                 }
 
-                /*
-                 * Enquanto existe uma ligação WebSocket, as preferências em
-                 * tempo real dessa ligação prevalecem sobre um registo nativo
-                 * que possa ainda estar em trânsito.
-                 */
-                if (!empty($this->ligacoesPorMembro[$membroId])) {
+                $this->faixaEtariaPorMembro[
+                    $membroId
+                ] = $faixaEtaria;
+
+                if (
+                    !$this->membroTemLigacaoVisivel(
+                        $membroId
+                    )
+                ) {
+                    $foto = basename(
+                        trim(
+                            (string) (
+                                $linha[
+                                    'foto_perfil'
+                                ] ?? 'default.webp'
+                            )
+                        )
+                    );
+
+                    if ($foto === '') {
+                        $foto = 'default.webp';
+                    }
+
+                    $pessoaAtual =
+                        $this->pessoas[
+                            $membroId
+                        ] ?? [];
+
+                    $this->pessoas[$membroId] = [
+                        'id' => $membroId,
+                        'membro_id' =>
+                            $membroId,
+                        'nome' => trim(
+                            (string) (
+                                $linha['nome'] ?? ''
+                            )
+                        ),
+                        'src' =>
+                            '/imagens/fotos-perfil/' .
+                            rawurlencode($foto),
+                        'faixa_etaria' =>
+                            $faixaEtaria,
+                        'top' => isset(
+                            $pessoaAtual['top']
+                        )
+                            ? (int)
+                                $pessoaAtual['top']
+                            : random_int(50, 600),
+                        'left' => isset(
+                            $pessoaAtual['left']
+                        )
+                            ? (int)
+                                $pessoaAtual['left']
+                            : random_int(50, 400)
+                    ];
+                }
+            }
+
+            foreach (
+                array_keys(
+                    $this->membrosVisiveisPorPersistencia
+                ) as $membroId
+            ) {
+                if (
+                    isset(
+                        $visiveisAgora[
+                            $membroId
+                        ]
+                    )
+                ) {
                     continue;
                 }
 
-                $this->garantirPessoaVisivel($membroId, $linha);
+                if (
+                    !$this->membroTemLigacaoVisivel(
+                        $membroId
+                    )
+                ) {
+                    unset(
+                        $this->pessoas[
+                            $membroId
+                        ]
+                    );
+                }
 
-                if (isset($this->pessoas[$membroId])) {
-                    $persistidosAtuais[$membroId] = true;
+                if (
+                    (
+                        $this->localizacoes[
+                            $membroId
+                        ]['source'] ?? ''
+                    ) === 'background'
+                ) {
+                    unset(
+                        $this->localizacoes[
+                            $membroId
+                        ]
+                    );
                 }
             }
 
-            foreach ($this->membrosVisiveisPorPersistencia as $membroId => $_) {
-                if (isset($persistidosAtuais[$membroId])) continue;
+            $this->membrosVisiveisPorPersistencia =
+                $visiveisAgora;
 
-                if (!$this->membroTemLigacaoVisivel($membroId)) {
-                    unset($this->pessoas[$membroId]);
-                }
-
-                if (!$this->membroTemLigacaoComLocalizacaoAtiva($membroId)) {
-                    unset($this->localizacoes[$membroId]);
-                }
-            }
-
-            $this->membrosVisiveisPorPersistencia = $persistidosAtuais;
-            $this->localizacoesPersistidasCarregadasEm = $agora;
-        } catch (\Throwable $erro) {
-            $this->localizacoesPersistidasCarregadasEm = $agora;
-
-            echo sprintf(
-                "[BACKGROUND LOCATION ERROR] %s\n",
-                $erro->getMessage()
-            );
+            $this->localizacoesPersistidasCarregadasEm =
+                $agora;
         } finally {
             $statement = null;
             $database = null;
         }
     }
 
-    private function obterFaixaEtaria(string $nascimento): ?string
-    {
+    private function estaoDentroDoRaio(
+        string $primeiroMembroId,
+        string $segundoMembroId
+    ): bool {
+        $agora = time();
+
+        $primeira =
+            $this->localizacoes[
+                $primeiroMembroId
+            ] ?? null;
+
+        $segunda =
+            $this->localizacoes[
+                $segundoMembroId
+            ] ?? null;
+
+        if (
+            !$this->localizacaoEstaValida(
+                $primeira,
+                $agora
+            ) ||
+            !$this->localizacaoEstaValida(
+                $segunda,
+                $agora
+            )
+        ) {
+            return false;
+        }
+
+        return $this->calcularDistanciaMetros(
+            $primeira['latitude'],
+            $primeira['longitude'],
+            $segunda['latitude'],
+            $segunda['longitude']
+        ) <= self::RAIO_MAXIMO_METROS;
+    }
+
+    private function localizacaoEstaValida(
+        ?array $localizacao,
+        int $agora
+    ): bool {
+        if ($localizacao === null) {
+            return false;
+        }
+
+        return (
+            $agora -
+            (int) (
+                $localizacao['updated_at'] ??
+                0
+            )
+        ) <=
+            self::LOCALIZACAO_MAXIMA_IDADE_SEGUNDOS;
+    }
+
+    private function obterFaixaEtaria(
+        string $nascimento
+    ): ?string {
         $nascimento = trim($nascimento);
 
-        if ($nascimento === '') return null;
+        if ($nascimento === '') {
+            return null;
+        }
 
-        $dataNascimento = \DateTimeImmutable::createFromFormat(
-            '!Y-m-d',
-            $nascimento,
-            new \DateTimeZone('UTC')
-        );
+        $dataNascimento =
+            \DateTimeImmutable::createFromFormat(
+                '!Y-m-d',
+                $nascimento,
+                new \DateTimeZone('UTC')
+            );
 
-        $erros = \DateTimeImmutable::getLastErrors();
+        $erros =
+            \DateTimeImmutable::getLastErrors();
 
         if (
             !$dataNascimento ||
-            ($erros !== false && (
-                ($erros['warning_count'] ?? 0) > 0 ||
-                ($erros['error_count'] ?? 0) > 0
-            )) ||
-            $dataNascimento->format('Y-m-d') !== $nascimento
+            (
+                $erros !== false &&
+                (
+                    (
+                        $erros[
+                            'warning_count'
+                        ] ?? 0
+                    ) > 0 ||
+                    (
+                        $erros[
+                            'error_count'
+                        ] ?? 0
+                    ) > 0
+                )
+            ) ||
+            $dataNascimento->format('Y-m-d') !==
+                $nascimento
         ) {
             return null;
         }
 
-        $hoje = new \DateTimeImmutable('today', new \DateTimeZone('UTC'));
+        $hoje = new \DateTimeImmutable(
+            'today',
+            new \DateTimeZone('UTC')
+        );
 
-        if ($dataNascimento > $hoje) return null;
+        if ($dataNascimento > $hoje) {
+            return null;
+        }
 
-        $idade = $dataNascimento->diff($hoje)->y;
+        $idade =
+            $dataNascimento->diff($hoje)->y;
 
-        if ($idade < 13) return null;
+        if ($idade < 13) {
+            return null;
+        }
 
-        return $idade <= 17 ? '13-17' : '18+';
+        return $idade <= 17
+            ? '13-17'
+            : '18+';
     }
 
     private function membrosNaMesmaFaixaEtaria(
         string $primeiroMembroId,
         string $segundoMembroId
     ): bool {
-        $primeiraFaixa = $this->faixaEtariaPorMembro[$primeiroMembroId] ?? null;
-        $segundaFaixa = $this->faixaEtariaPorMembro[$segundoMembroId] ?? null;
+        $primeiraFaixa =
+            $this->faixaEtariaPorMembro[
+                $primeiroMembroId
+            ] ?? null;
+
+        $segundaFaixa =
+            $this->faixaEtariaPorMembro[
+                $segundoMembroId
+            ] ?? null;
 
         if ($primeiraFaixa === null) {
-            $primeiroMembro = $this->obterMembro($primeiroMembroId);
+            $primeiroMembro =
+                $this->obterMembro(
+                    $primeiroMembroId
+                );
 
-            if (!$primeiroMembro) return false;
+            if (!$primeiroMembro) {
+                return false;
+            }
 
-            $primeiraFaixa = $this->obterFaixaEtaria(
-                (string) ($primeiroMembro['nascimento'] ?? '')
-            );
+            $primeiraFaixa =
+                $this->obterFaixaEtaria(
+                    (string) (
+                        $primeiroMembro[
+                            'nascimento'
+                        ] ?? ''
+                    )
+                );
 
-            if ($primeiraFaixa === null) return false;
+            if ($primeiraFaixa === null) {
+                return false;
+            }
 
-            $this->faixaEtariaPorMembro[$primeiroMembroId] = $primeiraFaixa;
+            $this->faixaEtariaPorMembro[
+                $primeiroMembroId
+            ] = $primeiraFaixa;
         }
 
         if ($segundaFaixa === null) {
-            $segundoMembro = $this->obterMembro($segundoMembroId);
+            $segundoMembro =
+                $this->obterMembro(
+                    $segundoMembroId
+                );
 
-            if (!$segundoMembro) return false;
+            if (!$segundoMembro) {
+                return false;
+            }
 
-            $segundaFaixa = $this->obterFaixaEtaria(
-                (string) ($segundoMembro['nascimento'] ?? '')
-            );
+            $segundaFaixa =
+                $this->obterFaixaEtaria(
+                    (string) (
+                        $segundoMembro[
+                            'nascimento'
+                        ] ?? ''
+                    )
+                );
 
-            if ($segundaFaixa === null) return false;
+            if ($segundaFaixa === null) {
+                return false;
+            }
 
-            $this->faixaEtariaPorMembro[$segundoMembroId] = $segundaFaixa;
+            $this->faixaEtariaPorMembro[
+                $segundoMembroId
+            ] = $segundaFaixa;
         }
 
         return $primeiraFaixa === $segundaFaixa;
@@ -1287,13 +2154,19 @@ class WebSocket implements MessageComponentInterface
         string $primeiroMembroId,
         string $segundoMembroId
     ): bool {
-        $primeiroMembroId = trim($primeiroMembroId);
-        $segundoMembroId = trim($segundoMembroId);
+        $primeiroMembroId =
+            trim($primeiroMembroId);
+
+        $segundoMembroId =
+            trim($segundoMembroId);
 
         if (
             $primeiroMembroId === '' ||
             $segundoMembroId === '' ||
-            hash_equals($primeiroMembroId, $segundoMembroId)
+            hash_equals(
+                $primeiroMembroId,
+                $segundoMembroId
+            )
         ) {
             return false;
         }
@@ -1303,6 +2176,7 @@ class WebSocket implements MessageComponentInterface
 
         try {
             $database = $this->getDatabase();
+
             $statement = $database->prepare("
                 SELECT id, nascimento
                 FROM membros
@@ -1311,45 +2185,66 @@ class WebSocket implements MessageComponentInterface
             ");
 
             $statement->execute([
-                'primeiro' => $primeiroMembroId,
-                'segundo' => $segundoMembroId
+                'primeiro' =>
+                    $primeiroMembroId,
+                'segundo' =>
+                    $segundoMembroId
             ]);
 
             $membros = [];
 
-            foreach ($statement->fetchAll(PDO::FETCH_ASSOC) as $membro) {
-                $id = trim((string) ($membro['id'] ?? ''));
+            foreach (
+                $statement->fetchAll(
+                    PDO::FETCH_ASSOC
+                ) as $membro
+            ) {
+                $id = trim(
+                    (string) (
+                        $membro['id'] ?? ''
+                    )
+                );
 
-                if ($id !== '') $membros[$id] = $membro;
+                if ($id !== '') {
+                    $membros[$id] = $membro;
+                }
             }
 
             if (
                 !isset(
-                    $membros[$primeiroMembroId],
-                    $membros[$segundoMembroId]
+                    $membros[
+                        $primeiroMembroId
+                    ],
+                    $membros[
+                        $segundoMembroId
+                    ]
                 )
             ) {
                 return false;
             }
 
-            $primeiraFaixa = $this->obterFaixaEtaria(
-                (string) (
-                    $membros[$primeiroMembroId]['nascimento']
-                    ?? ''
-                )
-            );
+            $primeiraFaixa =
+                $this->obterFaixaEtaria(
+                    (string) (
+                        $membros[
+                            $primeiroMembroId
+                        ]['nascimento'] ?? ''
+                    )
+                );
 
-            $segundaFaixa = $this->obterFaixaEtaria(
-                (string) (
-                    $membros[$segundoMembroId]['nascimento']
-                    ?? ''
-                )
-            );
+            $segundaFaixa =
+                $this->obterFaixaEtaria(
+                    (string) (
+                        $membros[
+                            $segundoMembroId
+                        ]['nascimento'] ?? ''
+                    )
+                );
 
             if (
                 $primeiraFaixa === null ||
                 $segundaFaixa === null ||
-                $primeiraFaixa !== $segundaFaixa
+                $primeiraFaixa !==
+                    $segundaFaixa
             ) {
                 return false;
             }
@@ -1358,21 +2253,29 @@ class WebSocket implements MessageComponentInterface
                 SELECT 1
                 FROM bloqueados
                 WHERE (
-                    pessoa_bloqueou_id = :primeiro1
-                    AND pessoa_bloqueada_id = :segundo1
+                    pessoa_bloqueou_id =
+                        :primeiro1
+                    AND pessoa_bloqueada_id =
+                        :segundo1
                 )
                 OR (
-                    pessoa_bloqueou_id = :segundo2
-                    AND pessoa_bloqueada_id = :primeiro2
+                    pessoa_bloqueou_id =
+                        :segundo2
+                    AND pessoa_bloqueada_id =
+                        :primeiro2
                 )
                 LIMIT 1
             ");
 
             $statement->execute([
-                'primeiro1' => $primeiroMembroId,
-                'segundo1' => $segundoMembroId,
-                'segundo2' => $segundoMembroId,
-                'primeiro2' => $primeiroMembroId
+                'primeiro1' =>
+                    $primeiroMembroId,
+                'segundo1' =>
+                    $segundoMembroId,
+                'segundo2' =>
+                    $segundoMembroId,
+                'primeiro2' =>
+                    $primeiroMembroId
             ]);
 
             return !$statement->fetchColumn();
@@ -1391,6 +2294,7 @@ class WebSocket implements MessageComponentInterface
 
         try {
             $database = $this->getDatabase();
+
             $statement = $database->prepare("
                 SELECT 1
                 FROM mensagens_chat
@@ -1406,28 +2310,45 @@ class WebSocket implements MessageComponentInterface
             ");
 
             $statement->execute([
-                'primeiro1' => $primeiroMembroId,
-                'segundo1' => $segundoMembroId,
-                'segundo2' => $segundoMembroId,
-                'primeiro2' => $primeiroMembroId
+                'primeiro1' =>
+                    $primeiroMembroId,
+                'segundo1' =>
+                    $segundoMembroId,
+                'segundo2' =>
+                    $segundoMembroId,
+                'primeiro2' =>
+                    $primeiroMembroId
             ]);
 
-            return (bool) $statement->fetchColumn();
+            return (bool)
+                $statement->fetchColumn();
         } finally {
             $statement = null;
             $database = null;
         }
     }
 
-    private function propositoAcessoPerfil(string $membroId): string
-    {
-        return 'profile:' . substr(hash('sha256', $membroId), 0, 24);
+    private function propositoAcessoPerfil(
+        string $membroId
+    ): string {
+        return
+            'profile:' .
+            substr(
+                hash('sha256', $membroId),
+                0,
+                24
+            );
     }
 
-    private function limparAcessosPerfilExpirados(PDO $database, int $agora): void
-    {
+    private function limparAcessosPerfilExpirados(
+        PDO $database,
+        int $agora
+    ): void {
         if (
-            ($agora - $this->acessosPerfilLimposEm) <
+            (
+                $agora -
+                $this->acessosPerfilLimposEm
+            ) <
             self::ACESSO_PERFIL_LIMPEZA_SEGUNDOS
         ) {
             return;
@@ -1440,11 +2361,24 @@ class WebSocket implements MessageComponentInterface
         ");
 
         $statement->execute();
-        $this->acessosPerfilLimposEm = $agora;
 
-        foreach ($this->acessosPerfil as $chave => $acesso) {
-            if ((int) ($acesso['expira_em'] ?? 0) <= $agora) {
-                unset($this->acessosPerfil[$chave]);
+        $this->acessosPerfilLimposEm =
+            $agora;
+
+        foreach (
+            $this->acessosPerfil
+            as $chave => $acesso
+        ) {
+            if (
+                (int) (
+                    $acesso['expira_em'] ?? 0
+                ) <= $agora
+            ) {
+                unset(
+                    $this->acessosPerfil[
+                        $chave
+                    ]
+                );
             }
         }
     }
@@ -1455,23 +2389,46 @@ class WebSocket implements MessageComponentInterface
     ): ?string {
         if (
             $visualizadorId === $perfilId ||
-            $this->membrosEstaoBloqueadosNoCache($visualizadorId, $perfilId) ||
-            !$this->membrosNaMesmaFaixaEtaria($visualizadorId, $perfilId)
+            $this->membrosEstaoBloqueadosNoCache(
+                $visualizadorId,
+                $perfilId
+            ) ||
+            !$this->membrosNaMesmaFaixaEtaria(
+                $visualizadorId,
+                $perfilId
+            )
         ) {
             return null;
         }
 
         $agora = time();
-        $chave = $visualizadorId . '>' . $perfilId;
-        $acessoAtual = $this->acessosPerfil[$chave] ?? null;
+
+        $chave =
+            $visualizadorId .
+            '>' .
+            $perfilId;
+
+        $acessoAtual =
+            $this->acessosPerfil[
+                $chave
+            ] ?? null;
 
         if (
             is_array($acessoAtual) &&
-            (int) ($acessoAtual['expira_em'] ?? 0) >
-                $agora + self::ACESSO_PERFIL_RENOVAR_ANTES_SEGUNDOS &&
-            preg_match('/^[a-f0-9]{64}$/', (string) ($acessoAtual['token'] ?? ''))
+            (int) (
+                $acessoAtual['expira_em'] ?? 0
+            ) >
+                $agora +
+                self::ACESSO_PERFIL_RENOVAR_ANTES_SEGUNDOS &&
+            preg_match(
+                '/^[a-f0-9]{64}$/',
+                (string) (
+                    $acessoAtual['token'] ?? ''
+                )
+            )
         ) {
-            return (string) $acessoAtual['token'];
+            return (string)
+                $acessoAtual['token'];
         }
 
         $database = null;
@@ -1480,12 +2437,26 @@ class WebSocket implements MessageComponentInterface
 
         try {
             $database = $this->getDatabase();
-            $this->limparAcessosPerfilExpirados($database, $agora);
 
-            $token = bin2hex(random_bytes(32));
-            $tokenHash = hash('sha256', $token);
-            $proposito = $this->propositoAcessoPerfil($visualizadorId);
-            $expiraEm = $agora + self::ACESSO_PERFIL_VALIDADE_SEGUNDOS;
+            $this->limparAcessosPerfilExpirados(
+                $database,
+                $agora
+            );
+
+            $token =
+                bin2hex(random_bytes(32));
+
+            $tokenHash =
+                hash('sha256', $token);
+
+            $proposito =
+                $this->propositoAcessoPerfil(
+                    $visualizadorId
+                );
+
+            $expiraEm =
+                $agora +
+                self::ACESSO_PERFIL_VALIDADE_SEGUNDOS;
 
             $database->beginTransaction();
 
@@ -1518,20 +2489,28 @@ class WebSocket implements MessageComponentInterface
             $insert->execute([
                 'token' => $tokenHash,
                 'perfil_id' => $perfilId,
-                'validade' => gmdate('Y-m-d H:i:s', $expiraEm),
+                'validade' => gmdate(
+                    'Y-m-d H:i:s',
+                    $expiraEm
+                ),
                 'proposito' => $proposito
             ]);
 
             $database->commit();
 
-            $this->acessosPerfil[$chave] = [
+            $this->acessosPerfil[
+                $chave
+            ] = [
                 'token' => $token,
                 'expira_em' => $expiraEm
             ];
 
             return $token;
         } catch (\Throwable $erro) {
-            if ($database instanceof PDO && $database->inTransaction()) {
+            if (
+                $database instanceof PDO &&
+                $database->inTransaction()
+            ) {
                 $database->rollBack();
             }
 
@@ -1557,10 +2536,18 @@ class WebSocket implements MessageComponentInterface
         float $longitude2
     ): float {
         $raioTerra = 6371000;
-        $latitude1Rad = deg2rad($latitude1);
-        $latitude2Rad = deg2rad($latitude2);
-        $diferencaLatitude = deg2rad($latitude2 - $latitude1);
-        $diferencaLongitude = deg2rad($longitude2 - $longitude1);
+
+        $latitude1Rad =
+            deg2rad($latitude1);
+
+        $latitude2Rad =
+            deg2rad($latitude2);
+
+        $diferencaLatitude =
+            deg2rad($latitude2 - $latitude1);
+
+        $diferencaLongitude =
+            deg2rad($longitude2 - $longitude1);
 
         $a =
             sin($diferencaLatitude / 2) ** 2 +
@@ -1568,19 +2555,35 @@ class WebSocket implements MessageComponentInterface
             cos($latitude2Rad) *
             sin($diferencaLongitude / 2) ** 2;
 
-        $a = min(1.0, max(0.0, $a));
-        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+        $a = min(
+            1.0,
+            max(0.0, $a)
+        );
+
+        $c = 2 * atan2(
+            sqrt($a),
+            sqrt(1 - $a)
+        );
 
         return $raioTerra * $c;
     }
 
-    public function onClose(ConnectionInterface $conn): void
-    {
-        if ($this->clients->contains($conn)) $this->clients->detach($conn);
+    public function onClose(
+        ConnectionInterface $conn
+    ): void {
+        if ($this->clients->contains($conn)) {
+            $this->clients->detach($conn);
+        }
 
-        $membroId = $this->obterMembroDaLigacao($conn);
+        $membroId =
+            $this->obterMembroDaLigacao($conn);
 
-        if ($membroId !== null) $this->removerLigacaoDoMembro($conn, $membroId);
+        if ($membroId !== null) {
+            $this->removerLigacaoDoMembro(
+                $conn,
+                $membroId
+            );
+        }
 
         echo sprintf(
             "[CLOSE] Ligação %d fechada. Pessoas: %d. Ligações: %d\n",
@@ -1592,77 +2595,162 @@ class WebSocket implements MessageComponentInterface
         $this->enviarEstadosIndividuais();
     }
 
-    private function removerLigacaoDoMembro(ConnectionInterface $conn, string $membroId): void
-    {
+    private function removerLigacaoDoMembro(
+        ConnectionInterface $conn,
+        string $membroId
+    ): void {
         unset(
-            $this->membroPorLigacao[$conn->resourceId],
-            $this->localizacaoPorLigacao[$conn->resourceId],
-            $this->visibilidadePorLigacao[$conn->resourceId],
-            $this->ligacoesPorMembro[$membroId][$conn->resourceId]
+            $this->membroPorLigacao[
+                $conn->resourceId
+            ],
+            $this->localizacaoPorLigacao[
+                $conn->resourceId
+            ],
+            $this->visibilidadePorLigacao[
+                $conn->resourceId
+            ],
+            $this->ligacoesPorMembro[
+                $membroId
+            ][$conn->resourceId]
         );
 
-        if (empty($this->ligacoesPorMembro[$membroId])) unset($this->ligacoesPorMembro[$membroId]);
+        if (
+            empty(
+                $this->ligacoesPorMembro[
+                    $membroId
+                ]
+            )
+        ) {
+            unset(
+                $this->ligacoesPorMembro[
+                    $membroId
+                ]
+            );
+        }
 
         if (
-            !$this->membroTemLigacaoVisivel($membroId) ||
-            !$this->membroTemLigacaoComLocalizacaoAtiva($membroId)
+            !$this->membroTemLigacaoVisivel(
+                $membroId
+            ) ||
+            !$this->membroTemLigacaoComLocalizacaoAtiva(
+                $membroId
+            )
         ) {
             $this->agendarSaida($membroId);
         }
     }
 
-    private function membroTemLigacaoVisivel(string $membroId): bool
-    {
-        foreach ($this->ligacoesPorMembro[$membroId] ?? [] as $resourceId => $ligacao) {
-            if ($this->visibilidadePorLigacao[$resourceId] ?? false) return true;
+    private function membroTemLigacaoVisivel(
+        string $membroId
+    ): bool {
+        foreach (
+            $this->ligacoesPorMembro[
+                $membroId
+            ] ?? []
+            as $resourceId => $ligacao
+        ) {
+            if (
+                $this->visibilidadePorLigacao[
+                    $resourceId
+                ] ?? false
+            ) {
+                return true;
+            }
         }
 
         return false;
     }
 
-    private function membroTemLigacaoComLocalizacaoAtiva(string $membroId): bool
-    {
-        foreach ($this->ligacoesPorMembro[$membroId] ?? [] as $resourceId => $ligacao) {
-            if ($this->localizacaoPorLigacao[$resourceId] ?? false) return true;
+    private function membroTemLigacaoComLocalizacaoAtiva(
+        string $membroId
+    ): bool {
+        foreach (
+            $this->ligacoesPorMembro[
+                $membroId
+            ] ?? []
+            as $resourceId => $ligacao
+        ) {
+            if (
+                $this->localizacaoPorLigacao[
+                    $resourceId
+                ] ?? false
+            ) {
+                return true;
+            }
         }
 
         return false;
     }
 
-    private function agendarSaida(string $membroId): void
-    {
-        $this->cancelarSaidaAgendada($membroId);
+    private function agendarSaida(
+        string $membroId
+    ): void {
+        $this->cancelarSaidaAgendada(
+            $membroId
+        );
 
-        $this->temporizadoresSaida[$membroId] = $this->loop->addTimer(
+        $this->temporizadoresSaida[
+            $membroId
+        ] = $this->loop->addTimer(
             self::TOLERANCIA_NAVEGACAO_SEGUNDOS,
             function () use ($membroId): void {
-                unset($this->temporizadoresSaida[$membroId]);
-
-                $this->sincronizarLocalizacoesPersistidas(true);
+                unset(
+                    $this->temporizadoresSaida[
+                        $membroId
+                    ]
+                );
 
                 $removeuPessoa = false;
                 $removeuLocalizacao = false;
-                $presencaPersistida = isset(
-                    $this->membrosVisiveisPorPersistencia[$membroId]
-                );
 
                 if (
-                    !$this->membroTemLigacaoVisivel($membroId) &&
-                    !$presencaPersistida
+                    !$this->membroTemLigacaoVisivel(
+                        $membroId
+                    ) &&
+                    !isset(
+                        $this->membrosVisiveisPorPersistencia[
+                            $membroId
+                        ]
+                    )
                 ) {
-                    $removeuPessoa = isset($this->pessoas[$membroId]);
-                    unset($this->pessoas[$membroId]);
+                    $removeuPessoa = isset(
+                        $this->pessoas[$membroId]
+                    );
+
+                    unset(
+                        $this->pessoas[$membroId]
+                    );
                 }
 
                 if (
-                    !$this->membroTemLigacaoComLocalizacaoAtiva($membroId) &&
-                    !$presencaPersistida
+                    !$this->membroTemLigacaoComLocalizacaoAtiva(
+                        $membroId
+                    ) &&
+                    !isset(
+                        $this->membrosVisiveisPorPersistencia[
+                            $membroId
+                        ]
+                    )
                 ) {
-                    $removeuLocalizacao = isset($this->localizacoes[$membroId]);
-                    unset($this->localizacoes[$membroId]);
+                    $removeuLocalizacao = isset(
+                        $this->localizacoes[
+                            $membroId
+                        ]
+                    );
+
+                    unset(
+                        $this->localizacoes[
+                            $membroId
+                        ]
+                    );
                 }
 
-                if (!$removeuPessoa && !$removeuLocalizacao) return;
+                if (
+                    !$removeuPessoa &&
+                    !$removeuLocalizacao
+                ) {
+                    return;
+                }
 
                 echo sprintf(
                     "[OFFLINE] %s atualizado após o período de tolerância. Pessoas: %d\n",
@@ -1675,18 +2763,36 @@ class WebSocket implements MessageComponentInterface
         );
     }
 
-    private function cancelarSaidaAgendada(string $membroId): void
-    {
-        $temporizador = $this->temporizadoresSaida[$membroId] ?? null;
+    private function cancelarSaidaAgendada(
+        string $membroId
+    ): void {
+        $temporizador =
+            $this->temporizadoresSaida[
+                $membroId
+            ] ?? null;
 
-        if (!$temporizador instanceof TimerInterface) return;
+        if (
+            !$temporizador instanceof
+                TimerInterface
+        ) {
+            return;
+        }
 
-        $this->loop->cancelTimer($temporizador);
-        unset($this->temporizadoresSaida[$membroId]);
+        $this->loop->cancelTimer(
+            $temporizador
+        );
+
+        unset(
+            $this->temporizadoresSaida[
+                $membroId
+            ]
+        );
     }
 
-    public function onError(ConnectionInterface $conn, \Exception $e): void
-    {
+    public function onError(
+        ConnectionInterface $conn,
+        \Exception $e
+    ): void {
         echo sprintf(
             "[CONNECTION ERROR] Ligação %d: %s\n",
             $conn->resourceId,
@@ -1696,28 +2802,52 @@ class WebSocket implements MessageComponentInterface
         $conn->close();
     }
 
-    private function obterMembroDaLigacao(ConnectionInterface $conn): ?string
-    {
-        return $this->membroPorLigacao[$conn->resourceId] ?? null;
+    private function obterMembroDaLigacao(
+        ConnectionInterface $conn
+    ): ?string {
+        return
+            $this->membroPorLigacao[
+                $conn->resourceId
+            ] ?? null;
     }
 
-    private function enviarErro(ConnectionInterface $conn, string $mensagem): void
-    {
+    private function enviarErro(
+        ConnectionInterface $conn,
+        string $mensagem
+    ): void {
         $this->enviar($conn, [
             'type' => 'error',
             'message' => $mensagem
         ]);
     }
 
-    private function enviar(ConnectionInterface $conn, array $data): void
-    {
+    private function enviarErroHey(
+        ConnectionInterface $conn,
+        string $destinatarioId,
+        string $mensagem
+    ): void {
+        $this->enviar($conn, [
+            'type' =>
+                'notification_not_delivered',
+            'destinatario_id' =>
+                $destinatarioId,
+            'message' => $mensagem
+        ]);
+    }
+
+    private function enviar(
+        ConnectionInterface $conn,
+        array $data
+    ): void {
         try {
-            $conn->send(json_encode(
-                $data,
-                JSON_UNESCAPED_UNICODE |
-                JSON_UNESCAPED_SLASHES |
-                JSON_THROW_ON_ERROR
-            ));
+            $conn->send(
+                json_encode(
+                    $data,
+                    JSON_UNESCAPED_UNICODE |
+                    JSON_UNESCAPED_SLASHES |
+                    JSON_THROW_ON_ERROR
+                )
+            );
         } catch (\Throwable $erro) {
             echo sprintf(
                 "[SEND ERROR] Ligação %d: %s\n",
@@ -1727,32 +2857,66 @@ class WebSocket implements MessageComponentInterface
         }
     }
 
-    private function lerBooleano(array $data, string $chave, bool $padrao): bool
-    {
-        if (!array_key_exists($chave, $data)) return $padrao;
+    private function lerBooleano(
+        array $data,
+        string $chave,
+        bool $padrao
+    ): bool {
+        if (
+            !array_key_exists($chave, $data)
+        ) {
+            return $padrao;
+        }
 
-        $valor = filter_var($data[$chave], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+        $valor = filter_var(
+            $data[$chave],
+            FILTER_VALIDATE_BOOLEAN,
+            FILTER_NULL_ON_FAILURE
+        );
 
         return $valor ?? $padrao;
     }
 
-    private function limitarNumero(int $numero, int $minimo, int $maximo): int
-    {
-        return max($minimo, min($maximo, $numero));
+    private function limitarNumero(
+        int $numero,
+        int $minimo,
+        int $maximo
+    ): int {
+        return max(
+            $minimo,
+            min($maximo, $numero)
+        );
     }
 
-    private function atualizarBloqueios(ConnectionInterface $conn, array $data): void
-    {
-        $membroId = $this->obterMembroDaLigacao($conn);
-        $destinatarioId = trim((string) ($data['target_id'] ?? ''));
+    private function atualizarBloqueios(
+        ConnectionInterface $conn,
+        array $data
+    ): void {
+        $membroId =
+            $this->obterMembroDaLigacao($conn);
+
+        $destinatarioId = trim(
+            (string) (
+                $data['target_id'] ?? ''
+            )
+        );
 
         if ($membroId === null) {
-            $this->enviarErro($conn, 'A ligação não está autenticada.');
+            $this->enviarErro(
+                $conn,
+                'A ligação não está autenticada.'
+            );
             return;
         }
 
-        if ($destinatarioId === '' || $destinatarioId === $membroId) {
-            $this->enviarErro($conn, 'O bloqueio indicado não é válido.');
+        if (
+            $destinatarioId === '' ||
+            $destinatarioId === $membroId
+        ) {
+            $this->enviarErro(
+                $conn,
+                'O bloqueio indicado não é válido.'
+            );
             return;
         }
 
@@ -1761,21 +2925,28 @@ class WebSocket implements MessageComponentInterface
 
         try {
             $database = $this->getDatabase();
+
             $statement = $database->prepare("
                 SELECT 1
                 FROM bloqueados
-                WHERE pessoa_bloqueou_id = :membro_id
-                AND pessoa_bloqueada_id = :destinatario_id
+                WHERE pessoa_bloqueou_id =
+                    :membro_id
+                AND pessoa_bloqueada_id =
+                    :destinatario_id
                 LIMIT 1
             ");
 
             $statement->execute([
                 'membro_id' => $membroId,
-                'destinatario_id' => $destinatarioId
+                'destinatario_id' =>
+                    $destinatarioId
             ]);
 
             if (!$statement->fetchColumn()) {
-                $this->enviarErro($conn, 'O bloqueio ainda não foi registado.');
+                $this->enviarErro(
+                    $conn,
+                    'O bloqueio ainda não foi registado.'
+                );
                 return;
             }
         } finally {
@@ -1786,50 +2957,113 @@ class WebSocket implements MessageComponentInterface
         $this->carregarBloqueios(true);
         $this->enviarEstadosIndividuais();
 
-        echo sprintf("[BLOCK] Estado atualizado entre %s e %s.\n", $membroId, $destinatarioId);
+        echo sprintf(
+            "[BLOCK] Estado atualizado entre %s e %s.\n",
+            $membroId,
+            $destinatarioId
+        );
     }
 
-    private function carregarBloqueios(bool $forcar = false): bool
-    {
+    private function carregarBloqueios(
+        bool $forcar = false
+    ): bool {
         $agora = time();
 
-        if (!$forcar && ($agora - $this->bloqueiosCarregadosEm) < self::BLOQUEIOS_CACHE_SEGUNDOS) return false;
+        if (
+            !$forcar &&
+            (
+                $agora -
+                $this->bloqueiosCarregadosEm
+            ) <
+                self::BLOQUEIOS_CACHE_SEGUNDOS
+        ) {
+            return false;
+        }
 
         $database = null;
         $statement = null;
 
         try {
             $database = $this->getDatabase();
+
             $statement = $database->query("
-                SELECT pessoa_bloqueou_id, pessoa_bloqueada_id
+                SELECT
+                    pessoa_bloqueou_id,
+                    pessoa_bloqueada_id
                 FROM bloqueados
-                ORDER BY pessoa_bloqueou_id, pessoa_bloqueada_id
+                ORDER BY
+                    pessoa_bloqueou_id,
+                    pessoa_bloqueada_id
             ");
 
             $bloqueios = [];
 
-            foreach ($statement->fetchAll(PDO::FETCH_ASSOC) as $bloqueio) {
-                $primeiroId = trim((string) ($bloqueio['pessoa_bloqueou_id'] ?? ''));
-                $segundoId = trim((string) ($bloqueio['pessoa_bloqueada_id'] ?? ''));
+            foreach (
+                $statement->fetchAll(
+                    PDO::FETCH_ASSOC
+                ) as $bloqueio
+            ) {
+                $primeiroId = trim(
+                    (string) (
+                        $bloqueio[
+                            'pessoa_bloqueou_id'
+                        ] ?? ''
+                    )
+                );
 
-                if ($primeiroId === '' || $segundoId === '' || $primeiroId === $segundoId) continue;
+                $segundoId = trim(
+                    (string) (
+                        $bloqueio[
+                            'pessoa_bloqueada_id'
+                        ] ?? ''
+                    )
+                );
 
-                $bloqueios[$primeiroId][$segundoId] = true;
-                $bloqueios[$segundoId][$primeiroId] = true;
+                if (
+                    $primeiroId === '' ||
+                    $segundoId === '' ||
+                    $primeiroId === $segundoId
+                ) {
+                    continue;
+                }
+
+                $bloqueios[
+                    $primeiroId
+                ][$segundoId] = true;
+
+                $bloqueios[
+                    $segundoId
+                ][$primeiroId] = true;
             }
 
             ksort($bloqueios);
 
-            foreach ($bloqueios as &$membrosBloqueados) ksort($membrosBloqueados);
+            foreach (
+                $bloqueios
+                as &$membrosBloqueados
+            ) {
+                ksort($membrosBloqueados);
+            }
 
             unset($membrosBloqueados);
 
-            $assinatura = hash('sha256', serialize($bloqueios));
-            $alterou = $assinatura !== $this->assinaturaBloqueios;
+            $assinatura = hash(
+                'sha256',
+                serialize($bloqueios)
+            );
 
-            $this->bloqueiosEntreMembros = $bloqueios;
-            $this->assinaturaBloqueios = $assinatura;
-            $this->bloqueiosCarregadosEm = $agora;
+            $alterou =
+                $assinatura !==
+                $this->assinaturaBloqueios;
+
+            $this->bloqueiosEntreMembros =
+                $bloqueios;
+
+            $this->assinaturaBloqueios =
+                $assinatura;
+
+            $this->bloqueiosCarregadosEm =
+                $agora;
 
             return $alterou;
         } finally {
@@ -1838,19 +3072,34 @@ class WebSocket implements MessageComponentInterface
         }
     }
 
-    private function membrosEstaoBloqueados(string $primeiroId, string $segundoId): bool
-    {
+    private function membrosEstaoBloqueados(
+        string $primeiroId,
+        string $segundoId
+    ): bool {
         try {
             $this->carregarBloqueios();
         } catch (\Throwable $erro) {
-            echo sprintf("[BLOCK CACHE ERROR] %s\n", $erro->getMessage());
+            echo sprintf(
+                "[BLOCK CACHE ERROR] %s\n",
+                $erro->getMessage()
+            );
         }
 
-        return $this->membrosEstaoBloqueadosNoCache($primeiroId, $segundoId);
+        return
+            $this->membrosEstaoBloqueadosNoCache(
+                $primeiroId,
+                $segundoId
+            );
     }
 
-    private function membrosEstaoBloqueadosNoCache(string $primeiroId, string $segundoId): bool
-    {
-        return isset($this->bloqueiosEntreMembros[$primeiroId][$segundoId]);
+    private function membrosEstaoBloqueadosNoCache(
+        string $primeiroId,
+        string $segundoId
+    ): bool {
+        return isset(
+            $this->bloqueiosEntreMembros[
+                $primeiroId
+            ][$segundoId]
+        );
     }
 }
