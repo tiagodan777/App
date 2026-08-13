@@ -429,12 +429,12 @@
 }
 
 @media (max-width: 560px) {
-    #create-account-form > #introducao {
+    #introducao {
         justify-content: flex-start;
         gap: 14px;
     }
 
-    #create-account-form > #introducao > h1 {
+    #introducao > h1 {
         font-size: clamp(2.15rem, 10vw, 3rem);
     }
 
