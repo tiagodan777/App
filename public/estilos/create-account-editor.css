@@ -1,53 +1,8 @@
 @charset "UTF-8";
-@import url('https://fonts.googleapis.com/css2?family=Alfa+Slab+One&display=swap');
 
-html,
-body {
-    overflow-x: hidden;
-    overflow-y: auto;
-}
+/* Introdução da criação */
 
-main#main {
-    width: 100vw;
-    min-height: 100dvh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-}
-
-main#main> div {
-    width: 100%;
-    min-height: 52vh;
-    margin: -8vh 0 0;
-    padding: 20px 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-evenly;
-    align-items: center;
-}
-
-main#main > div > h1 {
-    margin: 0 20px 18px;
-    text-align: center;
-    font-family: 'Alfa Slab One', Helvetica, sans-serif;
-    font-size: clamp(2rem, 8vw, 2.7rem);
-    line-height: 1.08;
-}
-
-main#main > div > p {
-    width: min(80%, 560px);
-    margin: 9px 0;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-}
-
-main#main label {
-    font-weight: 700;
-}
-
-#introducao {
+#create-account-form > #introducao {
     min-height: 100dvh;
     margin: 0;
     padding:
@@ -70,14 +25,14 @@ main#main label {
     letter-spacing: 0.02em;
 }
 
-#introducao > h1 {
+#create-account-form > #introducao > h1 {
     max-width: 700px;
     margin: 0;
     font-size: clamp(2.25rem, 8vw, 4.4rem);
 }
 
-#introducao > .margot-intro-texto,
-#introducao > .margot-intro-privacidade {
+#create-account-form > #introducao > .margot-intro-texto,
+#create-account-form > #introducao > .margot-intro-privacidade {
     width: min(92%, 610px);
     margin: 0;
     align-items: center;
@@ -86,7 +41,7 @@ main#main label {
     text-align: center;
 }
 
-#introducao > .margot-intro-privacidade {
+#create-account-form > #introducao > .margot-intro-privacidade {
     color: #73737c;
     font-size: 0.82rem;
 }
@@ -474,12 +429,12 @@ main#main label {
 }
 
 @media (max-width: 560px) {
-    #introducao {
+    #create-account-form > #introducao {
         justify-content: flex-start;
         gap: 14px;
     }
 
-    #introducao > h1 {
+    #create-account-form > #introducao > h1 {
         font-size: clamp(2.15rem, 10vw, 3rem);
     }
 
