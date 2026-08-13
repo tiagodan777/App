@@ -1,6 +1,20 @@
 @charset "UTF-8";
+@import url('https://fonts.googleapis.com/css2?family=Alfa+Slab+One&display=swap');
 
-/* Introdução da criação */
+html,
+body {
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+main#main {
+    width: 100vw;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
 
 #introducao {
     min-height: 100dvh;
