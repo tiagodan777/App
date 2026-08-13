@@ -1,85 +1,25 @@
 {% extends 'layout.html' %}
 
-{% block title %}
-    Definições | Margot
-{% endblock %}
+{% block title %}Definições | Margot{% endblock %}
 
 {% block styles %}
-    <link
-        rel="stylesheet"
-        href="{{ doc_root }}estilos/settings.css?v=3"
-        data-margot-page-style
-    >
+    <link rel="stylesheet" href="{{ doc_root }}estilos/settings.css?v=3" data-margot-page-style>
 {% endblock %}
 
 {% block content %}
     <main class="definicoes-pagina">
         <h1>Definições</h1>
-
         <nav aria-label="Definições da conta">
             <ul>
+                <li><a href="{{ doc_root }}create-account?editar=1"><img src="{{ doc_root }}imagens/icones/user.png" alt="Ícone de utilizador"> Informações Pessoais e Permissões</a></li>
+                <li><a href="{{ doc_root }}blocked-users"><img src="{{ doc_root }}imagens/icones/block.png" alt=""> Utilizadores Bloqueados</a></li>
+                <li><a href="{{ doc_root }}support"><img src="{{ doc_root }}imagens/icones/support.png" alt="">Contactar o Suporte</a></li>
+                <li><a href="{{ doc_root }}profile-delete"><img src="{{ doc_root }}imagens/icones/delete.png" alt="">Apagar a Minha Conta</a></li>
                 <li>
-                    <a href="{{ doc_root }}create-account?editar=1">
-                        <img
-                            src="{{ doc_root }}imagens/icones/user.png"
-                            alt="Ícone de utilizador"
-                        >
-
-                        Informações Pessoais e Permissões
-                    </a>
-                </li>
-
-                <li>
-                    <a href="{{ doc_root }}blocked-users">
-                        <img
-                            src="{{ doc_root }}imagens/icones/block.png"
-                            alt=""
-                        >
-
-                        Utilizadores Bloqueados
-                    </a>
-                </li>
-
-                <li>
-                    <a href="{{ doc_root }}support">
-                        <img
-                            src="{{ doc_root }}imagens/icones/support.png"
-                            alt=""
-                        >
-
-                        Contactar o Suporte
-                    </a>
-                </li>
-
-                <li>
-                    <a href="{{ doc_root }}profile-delete">
-                        <img
-                            src="{{ doc_root }}imagens/icones/delete.png"
-                            alt=""
-                        >
-
-                        Apagar a Minha Conta
-                    </a>
-                </li>
-
-                <li>
-                    <form
-                        action="{{ doc_root }}logout"
-                        method="post"
-                        class="definicoes-logout"
-                        id="form-logout"
-                    >
-                        <input
-                            type="hidden"
-                            name="_csrf"
-                            value="{{ csrf_token|e('html_attr') }}"
-                        >
-
+                    <form action="{{ doc_root }}logout" method="post" class="definicoes-logout" id="form-logout">
+                        <input type="hidden" name="_csrf" value="{{ csrf_token|e('html_attr') }}">
                         <button type="submit">
-                            <span aria-hidden="true">
-                                ↪
-                            </span>
-
+                            <span aria-hidden="true">↪</span>
                             Terminar sessão
                         </button>
                     </form>
@@ -92,69 +32,52 @@
     (function () {
         'use strict';
 
-        var formulario =
-            document.getElementById(
-                'form-logout'
-            );
+        var formulario = document.getElementById('form-logout');
 
         if (!formulario) return;
 
-        formulario.addEventListener(
-            'submit',
-            function (evento) {
-                if (
-                    formulario.dataset
-                        .aTerminar === '1' ||
-                    !window.MargotBackgroundLocation ||
-                    typeof window
-                        .MargotBackgroundLocation
-                        .stop !== 'function'
-                ) {
-                    return;
-                }
+        formulario.addEventListener('submit', function (evento) {
+            if (formulario.dataset.aTerminar === '1') return;
 
-                evento.preventDefault();
+            var tarefas = [];
 
-                formulario.dataset
-                    .aTerminar = '1';
-
-                var botao =
-                    formulario.querySelector(
-                        'button[type="submit"]'
-                    );
-
-                if (botao) {
-                    botao.disabled = true;
-
-                    botao.textContent =
-                        'A terminar sessão…';
-                }
-
-                Promise.race([
-                    window
-                        .MargotBackgroundLocation
-                        .stop(),
-
-                    new Promise(
-                        function (resolve) {
-                            window.setTimeout(
-                                resolve,
-                                1500
-                            );
-                        }
-                    )
-                ])
-                    .catch(function () {
-                        /*
-                         * O servidor revoga também
-                         * o token durante o logout.
-                         */
-                    })
-                    .finally(function () {
-                        formulario.submit();
-                    });
+            if (
+                window.MargotBackgroundLocation &&
+                typeof window.MargotBackgroundLocation.stop === 'function'
+            ) {
+                tarefas.push(window.MargotBackgroundLocation.stop());
             }
-        );
+
+            if (
+                window.MargotPushNotifications &&
+                typeof window.MargotPushNotifications.unregister === 'function'
+            ) {
+                tarefas.push(window.MargotPushNotifications.unregister());
+            }
+
+            if (!tarefas.length) return;
+
+            evento.preventDefault();
+            formulario.dataset.aTerminar = '1';
+
+            var botao = formulario.querySelector('button[type="submit"]');
+
+            if (botao) {
+                botao.disabled = true;
+                botao.textContent = 'A terminar sessão…';
+            }
+
+            Promise.race([
+                Promise.allSettled(tarefas),
+                new Promise(function (resolve) {
+                    window.setTimeout(resolve, 1500);
+                })
+            ]).catch(function () {
+                /* O servidor revoga também o token durante o logout. */
+            }).finally(function () {
+                formulario.submit();
+            });
+        });
     })();
     </script>
 {% endblock %}
