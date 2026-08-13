@@ -36,9 +36,9 @@
     <key>NSPhotoLibraryAddUsageDescription</key>
     <string>A Margot precisa de permissão para guardar fotografias na tua biblioteca quando escolheres essa opção.</string>
     <key>NSLocationWhenInUseUsageDescription</key>
-    <string>A Margot usa a tua localização para te mostrar pessoas próximas e permitir que apareças no mapa.</string>
+    <string>A Margot precisa da tua localização para te mostrar e mostrar pessoas próximas no mapa.</string>
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-    <string>Com a tua autorização, a Margot usa a localização em segundo plano para manter a tua presença atualizada no mapa mesmo quando não estás a usar a aplicação. Podes desativar esta opção nas Definições.</string>
+    <string>A Margot usa a tua localização em segundo plano para manter a tua presença atualizada no mapa, mesmo quando não estás a utilizar a aplicação.</string>
     <key>UIBackgroundModes</key>
     <array>
         <string>location</string>
