@@ -5,9 +5,8 @@
     var config = window.createAccountConfig || {};
     var modoEdicao = config.modoEdicao === true;
     var STORAGE_KEY = modoEdicao ? 'editar-perfil-' + String(config.membroId || '') : 'create-account-dados';
-    var ETAPA_INICIAL = modoEdicao ? '#editar-perfil' : '#introducao';
+    var ETAPA_INICIAL = '#editar-perfil';
     var ETAPAS = [
-        '#introducao',
         '#editar-perfil',
         '#nome',
         '#nascimento',
@@ -36,7 +35,6 @@
 
     function etapaPermitida(etapa) {
         if (!ETAPAS.includes(etapa)) return false;
-        if (modoEdicao && etapa === '#introducao') return false;
         if (!modoEdicao && etapa === '#editar-perfil') return false;
         return true;
     }

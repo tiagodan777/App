@@ -1,0 +1,38 @@
+{% extends 'layout.html' %}
+
+{% block 'styles' %}
+    <link rel="stylesheet" href="{{ doc_root }}estilos/create-account.css?v=10">
+{% endblock %}
+
+{% block content %}
+    <div id="introducao">
+        <div class="margot-intro-marca" aria-hidden="true">Margot</div>
+        <h1>Vês alguém.<br>A Margot ajuda-te a dizer olá.</h1>
+        <p class="margot-intro-texto">
+            A Margot mostra-te outras pessoas que também estão por perto. Se reconheceres
+            alguém com quem gostavas de falar, podes enviar um Hey e quebrar o gelo.
+        </p>
+        <div class="margot-demo" aria-label="Exemplo: duas pessoas próximas encontram-se na Margot e começam uma conversa">
+            <div class="margot-demo-cenario" aria-hidden="true">
+                <span class="margot-demo-pessoa margot-demo-pessoa-a">🙂</span>
+                <span class="margot-demo-onda margot-demo-onda-a"></span>
+                <span class="margot-demo-onda margot-demo-onda-b"></span>
+                <span class="margot-demo-pessoa margot-demo-pessoa-b">😊</span>
+                <div class="margot-demo-telemovel">
+                    <div class="margot-demo-perfil">😊</div>
+                    <strong>Alguém perto de ti</strong>
+                    <span>A cerca de 100 m</span>
+                    <b>Hey 👋</b>
+                </div>
+            </div>
+        </div>
+        <p class="margot-intro-privacidade">
+            Só mostras o teu nome, idade, fotografias, gostos e o que procuras.
+            Os teus contactos e a tua localização nunca são mostrados.
+        </p>
+        <nav class="anterior-proximo">
+            <a href="{{ doc_root }}login">Entrar</a>
+            <a href="{{ doc_root }}create-account" id="registar">Ainda não te registaste? <span>Cria uma conta</span></a>
+        </nav>
+    </div>
+{% endblock %}
