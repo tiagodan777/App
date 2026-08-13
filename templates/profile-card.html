@@ -1,0 +1,129 @@
+{% set fotos = membro.fotos|default([]) %}
+{% set total_fotos = fotos|length %}
+{% set total_slides = total_fotos > 0 ? total_fotos : 1 %}
+
+<main
+    id="perfil"
+    data-perfil-id="{{ membro.id|e('html_attr') }}"
+    data-perfil-proprio="{{ e_perfil_proprio ? 'true' : 'false' }}"
+>
+    <section
+        id="perfil-galeria"
+        class="perfil-galeria"
+        aria-label="Fotografias de {{ membro.nome|e('html_attr') }}"
+        tabindex="0"
+    >
+        {% if total_slides > 1 %}
+            <div id="perfil-indicadores" class="perfil-indicadores" aria-label="Escolher fotografia">
+                {% for indice in 0..(total_slides - 1) %}
+                    <button
+                        type="button"
+                        class="{{ loop.first ? 'ativo' : '' }}"
+                        data-indice="{{ indice }}"
+                        aria-label="Ver fotografia {{ indice + 1 }} de {{ total_slides }}"
+                        aria-current="{{ loop.first ? 'true' : 'false' }}"
+                    >
+                        <span></span>
+                    </button>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div id="perfil-fotos" class="perfil-fotos">
+            {% if total_fotos > 0 %}
+                {% for foto in fotos %}
+                    <figure
+                        id="perfil-foto-{{ loop.index0 }}"
+                        class="perfil-slide"
+                        data-indice="{{ loop.index0 }}"
+                        aria-hidden="{{ loop.first ? 'false' : 'true' }}"
+                    >
+                        <img
+                            src="{{ doc_root }}imagens/fotos-perfil-originais/{{ foto.nome_arquivo|e('html_attr') }}"
+                            data-fallback="{{ doc_root }}imagens/fotos-perfil/{{ foto.nome_arquivo|e('html_attr') }}"
+                            data-default="{{ doc_root }}imagens/fotos-perfil/default.webp"
+                            alt="Fotografia {{ loop.index }} de {{ membro.nome|e('html_attr') }}"
+                            loading="{{ loop.first ? 'eager' : 'lazy' }}"
+                            fetchpriority="{{ loop.first ? 'high' : 'auto' }}"
+                            draggable="false"
+                        >
+                    </figure>
+                {% endfor %}
+            {% else %}
+                <figure id="perfil-foto-0" class="perfil-slide" data-indice="0" aria-hidden="false">
+                    <img
+                        src="{{ doc_root }}imagens/fotos-perfil/default.webp"
+                        data-default="{{ doc_root }}imagens/fotos-perfil/default.webp"
+                        alt="{{ membro.nome|e('html_attr') }} ainda não adicionou fotografias"
+                        loading="eager"
+                        fetchpriority="high"
+                        draggable="false"
+                    >
+                </figure>
+            {% endif %}
+        </div>
+
+        {% if total_slides > 1 %}
+            <button type="button" id="perfil-anterior" class="perfil-navegacao perfil-anterior" aria-label="Fotografia anterior">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M15 5l-7 7 7 7"></path>
+                </svg>
+            </button>
+
+            <button type="button" id="perfil-seguinte" class="perfil-navegacao perfil-seguinte" aria-label="Fotografia seguinte">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M9 5l7 7-7 7"></path>
+                </svg>
+            </button>
+        {% endif %}
+    </section>
+
+    <section class="perfil-conteudo">
+        <header class="perfil-identidade">
+            <h1>{{ membro.nome }}</h1>
+            <p>{{ idade }}</p>
+
+            {% if e_perfil_proprio %}
+                <a href="{{ doc_root }}settings" class="editar-perfil">Definições</a>
+            {% endif %}
+        </header>
+
+        {% if membro.objetivo|default('') %}
+            <section class="perfil-bloco">
+                <h2>Procura</h2>
+                <p>
+                    {{ objetivos[membro.objetivo]|default(
+                        membro.objetivo|replace({'_': ' '})
+                    ) }}
+                </p>
+            </section>
+        {% endif %}
+
+        {% if membro.bio|default('') %}
+            <section class="perfil-bloco">
+                <h2>Sobre</h2>
+                <p>{{ membro.bio }}</p>
+            </section>
+        {% endif %}
+
+        {% if primeiro_gosto %}
+            <section id="adicional" class="perfil-bloco perfil-gostos">
+                <h2>Gostos</h2>
+                <ul>
+                    {% for gosto in membro.gostos|default([]) %}
+                        <li>{{ gosto.nome }}</li>
+                    {% endfor %}
+                </ul>
+            </section>
+        {% endif %}
+
+        {% if not e_perfil_proprio %}
+            <button
+                type="button"
+                class="ola"
+                id="enviar-hey-perfil"
+                data-destinatario-id="{{ membro.id|e('html_attr') }}"
+            >Hey</button>
+        {% endif %}
+    </section>
+</main>

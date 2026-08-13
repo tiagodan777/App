@@ -36,6 +36,14 @@ function responderPerfilIndisponivel(): never
     exit;
 }
 
+function idPerfilValido(string $membroId): bool
+{
+    return preg_match(
+        '/^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i',
+        $membroId
+    ) === 1;
+}
+
 function obterFaixaEtariaPerfil(string $nascimento): ?string
 {
     $nascimento = trim($nascimento);
@@ -61,10 +69,7 @@ function obterFaixaEtariaPerfil(string $nascimento): ?string
         return null;
     }
 
-    $hoje = new DateTimeImmutable(
-        'today',
-        new DateTimeZone('UTC')
-    );
+    $hoje = new DateTimeImmutable('today', new DateTimeZone('UTC'));
 
     if ($dataNascimento > $hoje) return null;
 
@@ -89,58 +94,102 @@ function existeBloqueioEntrePerfis(
     string $primeiroMembroId,
     string $segundoMembroId
 ): bool {
-    $sql = "
-        SELECT 1
-        FROM bloqueados
-        WHERE (
-            pessoa_bloqueou_id = :primeiro1
-            AND pessoa_bloqueada_id = :segundo1
-        )
-        OR (
-            pessoa_bloqueou_id = :segundo2
-            AND pessoa_bloqueada_id = :primeiro2
-        )
-        LIMIT 1
-    ";
-
-    return (bool) $db->runSQL($sql, [
-        'primeiro1' => $primeiroMembroId,
-        'segundo1' => $segundoMembroId,
-        'segundo2' => $segundoMembroId,
-        'primeiro2' => $primeiroMembroId
-    ])->fetchColumn();
+    return (bool) $db->runSQL(
+        'SELECT 1
+         FROM bloqueados
+         WHERE (
+             pessoa_bloqueou_id = :primeiro1
+             AND pessoa_bloqueada_id = :segundo1
+         )
+         OR (
+             pessoa_bloqueou_id = :segundo2
+             AND pessoa_bloqueada_id = :primeiro2
+         )
+         LIMIT 1',
+        [
+            'primeiro1' => $primeiroMembroId,
+            'segundo1' => $segundoMembroId,
+            'segundo2' => $segundoMembroId,
+            'primeiro2' => $primeiroMembroId
+        ]
+    )->fetchColumn();
 }
 
-function existeConversaBilateralPerfil(
+function existeConversaPerfil(
     $db,
     string $primeiroMembroId,
     string $segundoMembroId
 ): bool {
-    $sql = "
-        SELECT
-            EXISTS (
-                SELECT 1
-                FROM mensagens_chat
-                WHERE emissor_id = :primeiro_emissor
-                AND destinatario_id = :segundo_destinatario
-                LIMIT 1
-            )
-            AND
-            EXISTS (
-                SELECT 1
-                FROM mensagens_chat
-                WHERE emissor_id = :segundo_emissor
-                AND destinatario_id = :primeiro_destinatario
-                LIMIT 1
-            ) AS trocaram_mensagens
-    ";
+    return (bool) $db->runSQL(
+        'SELECT 1
+         FROM mensagens_chat
+         WHERE (
+             emissor_id = :primeiro1
+             AND destinatario_id = :segundo1
+         )
+         OR (
+             emissor_id = :segundo2
+             AND destinatario_id = :primeiro2
+         )
+         LIMIT 1',
+        [
+            'primeiro1' => $primeiroMembroId,
+            'segundo1' => $segundoMembroId,
+            'segundo2' => $segundoMembroId,
+            'primeiro2' => $primeiroMembroId
+        ]
+    )->fetchColumn();
+}
 
-    return (bool) $db->runSQL($sql, [
-        'primeiro_emissor' => $primeiroMembroId,
-        'segundo_destinatario' => $segundoMembroId,
-        'segundo_emissor' => $segundoMembroId,
-        'primeiro_destinatario' => $primeiroMembroId
-    ])->fetchColumn();
+function existeHeyVisivelPerfil(
+    $db,
+    string $visualizadorId,
+    string $perfilId
+): bool {
+    return (bool) $db->runSQL(
+        "SELECT 1
+         FROM notificacao
+         WHERE tipo = 'hey'
+         AND (
+             (
+                 emissor_id = :visualizador_emissor
+                 AND destinatario_id = :perfil_destinatario
+                 AND ocultada_para_emissor_em IS NULL
+             )
+             OR
+             (
+                 emissor_id = :perfil_emissor
+                 AND destinatario_id = :visualizador_destinatario
+                 AND ocultada_para_destinatario_em IS NULL
+             )
+         )
+         LIMIT 1",
+        [
+            'visualizador_emissor' => $visualizadorId,
+            'perfil_destinatario' => $perfilId,
+            'perfil_emissor' => $perfilId,
+            'visualizador_destinatario' => $visualizadorId
+        ]
+    )->fetchColumn();
+}
+
+function existePasseAtivoPerfil(
+    $db,
+    string $visualizadorId,
+    string $perfilId
+): bool {
+    return (bool) $db->runSQL(
+        'SELECT 1
+         FROM token
+         WHERE membro_id = :perfil_id
+         AND proposito = :proposito
+         AND validade > UTC_TIMESTAMP()
+         LIMIT 1',
+        [
+            'perfil_id' => $perfilId,
+            'proposito' => propositoAcessoPerfil($visualizadorId)
+        ]
+    )->fetchColumn();
 }
 
 function limparAcessosPerfilDaSessao(): void
@@ -155,7 +204,11 @@ function limparAcessosPerfilDaSessao(): void
     $agora = time();
 
     foreach ($acessos as $perfilId => $expiraEm) {
-        if (!is_numeric($expiraEm) || (int) $expiraEm <= $agora) {
+        if (
+            !is_string($perfilId) ||
+            !is_numeric($expiraEm) ||
+            (int) $expiraEm <= $agora
+        ) {
             unset($acessos[$perfilId]);
         }
     }
@@ -193,34 +246,30 @@ function validarTokenAcessoPerfil(
         return false;
     }
 
-    $sql = "
-        SELECT 1
-        FROM token
-        WHERE token = :token
-        AND membro_id = :perfil_id
-        AND proposito = :proposito
-        AND validade > UTC_TIMESTAMP()
-        LIMIT 1
-    ";
-
-    $statement = $db->runSQL($sql, [
-        'token' => hash('sha256', $token),
-        'perfil_id' => $perfilId,
-        'proposito' => propositoAcessoPerfil($visualizadorId)
-    ]);
-
-    return (bool) $statement->fetchColumn();
+    return (bool) $db->runSQL(
+        'SELECT 1
+         FROM token
+         WHERE token = :token
+         AND membro_id = :perfil_id
+         AND proposito = :proposito
+         AND validade > UTC_TIMESTAMP()
+         LIMIT 1',
+        [
+            'token' => hash('sha256', $token),
+            'perfil_id' => $perfilId,
+            'proposito' => propositoAcessoPerfil($visualizadorId)
+        ]
+    )->fetchColumn();
 }
 
 require_login($session);
 
 header('Cache-Control: no-store, no-cache, must-revalidate');
+header('Pragma: no-cache');
 header('X-Robots-Tag: noindex, nofollow');
 header('Referrer-Policy: no-referrer');
 
-$metodo = strtoupper(
-    (string) ($_SERVER['REQUEST_METHOD'] ?? 'GET')
-);
+$metodo = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 
 if (!in_array($metodo, ['GET', 'POST'], true)) {
     header('Allow: GET, POST');
@@ -232,112 +281,127 @@ $visualizadorId = trim((string) ($session->id ?? ''));
 $perfilPedidoId = trim((string) ($id ?? ''));
 
 if (
-    $visualizadorId === '' ||
-    !preg_match(
-        '/^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i',
-        $perfilPedidoId
+    !idPerfilValido($visualizadorId) ||
+    !idPerfilValido($perfilPedidoId)
+) {
+    responderPerfilIndisponivel();
+}
+
+$membrosBase = $db->runSQL(
+    'SELECT id, nascimento
+     FROM membros
+     WHERE id = :visualizador
+     OR id = :perfil',
+    [
+        'visualizador' => $visualizadorId,
+        'perfil' => $perfilPedidoId
+    ]
+)->fetchAll();
+
+$membrosPorId = [];
+
+foreach ($membrosBase as $membroBase) {
+    $membroBaseId = trim((string) ($membroBase['id'] ?? ''));
+
+    if ($membroBaseId !== '') {
+        $membrosPorId[$membroBaseId] = $membroBase;
+    }
+}
+
+if (
+    !isset(
+        $membrosPorId[$visualizadorId],
+        $membrosPorId[$perfilPedidoId]
     )
 ) {
     responderPerfilIndisponivel();
 }
 
-$perfilBase = $db->runSQL(
-    'SELECT id, nascimento
-     FROM membros
-     WHERE id = :id
-     LIMIT 1',
-    ['id' => $perfilPedidoId]
-)->fetch();
-
-$visualizadorBase = $db->runSQL(
-    'SELECT id, nascimento
-     FROM membros
-     WHERE id = :id
-     LIMIT 1',
-    ['id' => $visualizadorId]
-)->fetch();
-
-if (!$perfilBase || !$visualizadorBase) {
-    responderPerfilIndisponivel();
-}
-
-$perfilId = (string) $perfilBase['id'];
+$visualizadorBase = $membrosPorId[$visualizadorId];
+$perfilBase = $membrosPorId[$perfilPedidoId];
 $visualizadorId = (string) $visualizadorBase['id'];
+$perfilId = (string) $perfilBase['id'];
 $ePerfilProprio = hash_equals($visualizadorId, $perfilId);
-
-$faixaVisualizador = obterFaixaEtariaPerfil(
-    (string) $visualizadorBase['nascimento']
-);
-
-$faixaPerfil = obterFaixaEtariaPerfil(
-    (string) $perfilBase['nascimento']
-);
-
-/*
- * Contas sem idade válida, menores de 13 anos e a mistura entre
- * 13–17 e 18+ falham sempre, mesmo que exista uma conversa antiga.
- */
-if (
-    $faixaVisualizador === null ||
-    $faixaPerfil === null ||
-    $faixaVisualizador !== $faixaPerfil
-) {
-    responderPerfilIndisponivel();
-}
-
-/*
- * Um bloqueio em qualquer direção prevalece sobre proximidade,
- * conversa, passe temporário e acesso anteriormente guardado.
- */
-if (
-    !$ePerfilProprio &&
-    existeBloqueioEntrePerfis(
-        $db,
-        $visualizadorId,
-        $perfilId
-    )
-) {
-    responderPerfilIndisponivel();
-}
-
 $podeVerPerfil = $ePerfilProprio;
 
-if (!$podeVerPerfil) {
-    $podeVerPerfil = existeConversaBilateralPerfil(
-        $db,
-        $visualizadorId,
-        $perfilId
+/*
+ * O perfil próprio nunca depende do passe de proximidade, de uma conversa
+ * ou das verificações aplicáveis entre duas contas diferentes.
+ */
+if (!$ePerfilProprio) {
+    $faixaVisualizador = obterFaixaEtariaPerfil(
+        (string) ($visualizadorBase['nascimento'] ?? '')
     );
-}
 
-if (!$podeVerPerfil) {
-    $podeVerPerfil = sessaoTemAcessoAoPerfil($perfilId);
-}
-
-if (
-    !$podeVerPerfil &&
-    $metodo === 'POST'
-) {
-    $tokenRecebido = (string) (
-        $_POST['profile_access_token']
-        ?? ''
+    $faixaPerfil = obterFaixaEtariaPerfil(
+        (string) ($perfilBase['nascimento'] ?? '')
     );
 
     if (
-        validarTokenAcessoPerfil(
+        $faixaVisualizador === null ||
+        $faixaPerfil === null ||
+        $faixaVisualizador !== $faixaPerfil ||
+        existeBloqueioEntrePerfis(
             $db,
             $visualizadorId,
-            $perfilId,
-            $tokenRecebido
+            $perfilId
         )
     ) {
-        guardarAcessoAoPerfilNaSessao($perfilId);
-        $podeVerPerfil = true;
+        responderPerfilIndisponivel();
+    }
+
+    $podeVerPerfil =
+        existeConversaPerfil(
+            $db,
+            $visualizadorId,
+            $perfilId
+        ) ||
+        existeHeyVisivelPerfil(
+            $db,
+            $visualizadorId,
+            $perfilId
+        ) ||
+        existePasseAtivoPerfil(
+            $db,
+            $visualizadorId,
+            $perfilId
+        ) ||
+        sessaoTemAcessoAoPerfil($perfilId);
+
+    if (!$podeVerPerfil && $metodo === 'POST') {
+        $tokenRecebido = (string) (
+            $_POST['profile_access_token']
+            ?? ''
+        );
+
+        if (
+            validarTokenAcessoPerfil(
+                $db,
+                $visualizadorId,
+                $perfilId,
+                $tokenRecebido
+            )
+        ) {
+            guardarAcessoAoPerfilNaSessao($perfilId);
+            $podeVerPerfil = true;
+        }
     }
 }
 
 if (!$podeVerPerfil) {
     responderPerfilIndisponivel();
+}
+
+/*
+ * Depois de aceitar o passe, mudamos para GET. Assim, Atualizar e Voltar não
+ * repetem o POST nem perdem o acesso que ficou guardado na sessão.
+ */
+if ($metodo === 'POST') {
+    redirect(
+        DOC_ROOT . 'profile/' . rawurlencode($perfilId),
+        [],
+        303
+    );
 }
 
 $membro = $cms->getMember()->get($perfilId);
@@ -346,9 +410,7 @@ if (!$membro) {
     responderPerfilIndisponivel();
 }
 
-/*
- * Estes campos são privados e não devem sequer chegar ao Twig.
- */
+/* Estes campos são privados e nunca devem chegar ao Twig. */
 unset(
     $membro['telefone'],
     $membro['email'],
@@ -359,14 +421,20 @@ $primeiroGosto = trim(
     (string) ($membro['gostos'][0]['nome'] ?? '')
 );
 
-$data = [
-    'membro' => $membro,
-    'primerio_gosto' => $primeiroGosto,
-    'primeiro_gosto' => $primeiroGosto,
-    'idade' => calcularIdade(
-        (string) $membro['nascimento']
-    ),
-    'id' => $perfilId
-];
+try {
+    $idade = calcularIdade(
+        (string) ($membro['nascimento'] ?? '')
+    );
+} catch (Throwable) {
+    responderPerfilIndisponivel();
+}
 
-echo $twig->render('profile.html', $data);
+echo $twig->render('profile.html', [
+    'membro' => $membro,
+    'primeiro_gosto' => $primeiroGosto,
+    /* Compatibilidade temporária com versões antigas do template. */
+    'primerio_gosto' => $primeiroGosto,
+    'idade' => $idade,
+    'id' => $perfilId,
+    'e_perfil_proprio' => $ePerfilProprio
+]);

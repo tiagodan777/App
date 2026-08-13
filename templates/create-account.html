@@ -1,29 +1,40 @@
 {% extends 'layout.html' %}
 
+{% block title %}{{ modo_edicao|default(false) ? 'Editar perfil' : 'Criar conta' }} | Margot{% endblock %}
+
 {% block styles %}
-<link rel="stylesheet" href="{{ doc_root }}estilos/create-account.css?v=10">
-<link rel="stylesheet" href="{{ doc_root }}estilos/create-account-permissoes.css?v=1">
-<link rel="stylesheet" href="{{ doc_root }}estilos/create-account-editor.css?v=1">
-<link rel="stylesheet" href="{{ doc_root }}estilos/create-account-legal.css?v=1">
+<link rel="stylesheet" href="{{ doc_root }}estilos/create-account.css?v=11" data-margot-page-style>
+<link rel="stylesheet" href="{{ doc_root }}estilos/create-account-permissoes.css?v=2" data-margot-page-style>
+<link rel="stylesheet" href="{{ doc_root }}estilos/create-account-editor.css?v=2" data-margot-page-style>
+<link rel="stylesheet" href="{{ doc_root }}estilos/create-account-legal.css?v=2" data-margot-page-style>
 {% endblock %}
 
 {% block content %}
-<form action="{{ doc_root }}create-account" method="post" enctype="multipart/form-data" id="create-account-form" novalidate></form>
+<form
+    action="{{ doc_root }}create-account"
+    method="post"
+    enctype="multipart/form-data"
+    id="create-account-form"
+    novalidate
+>
+    <input type="hidden" name="_csrf" value="{{ csrf_token|e('html_attr') }}">
+</form>
 
 <script>
 window.createAccountConfig = {
-    modoEdicao: {{ modo_edicao|json_encode|raw }},
-    membroId: {{ membro_id_edicao|json_encode|raw }},
-    dadosIniciais: {{ dados_iniciais|json_encode|raw }},
-    fotosExistentes: {{ fotos_existentes|json_encode|raw }},
-    camposUrl: {{ campos_url|json_encode|raw }},
-    perfilUrl: {{ perfil_url|json_encode|raw }}
+    modoEdicao: {{ modo_edicao|default(false)|json_encode(15)|raw }},
+    membroId: {{ membro_id_edicao|default('')|json_encode(15)|raw }},
+    dadosIniciais: {{ dados_iniciais|default({})|json_encode(15)|raw }},
+    fotosExistentes: {{ fotos_existentes|default([])|json_encode(15)|raw }},
+    camposUrl: {{ campos_url|default(doc_root ~ 'create-account-campos')|json_encode(15)|raw }},
+    perfilUrl: {{ perfil_url|default('')|json_encode(15)|raw }},
+    csrfToken: {{ csrf_token|default('')|json_encode(15)|raw }}
 };
 </script>
 
-<script src="{{ doc_root }}js/preferencias.js?v=1"></script>
-<script src="{{ doc_root }}js/create-account-fotos.js?v=6"></script>
-<script src="{{ doc_root }}js/create-account-permissoes.js?v=3"></script>
-<script src="{{ doc_root }}js/create-account-navegacao.js?v=10"></script>
-<script src="{{ doc_root }}js/create-account-autocompletar.js?v=3"></script>
+<script src="{{ doc_root }}js/preferencias.js?v=2"></script>
+<script src="{{ doc_root }}js/create-account-fotos.js?v=7"></script>
+<script src="{{ doc_root }}js/create-account-permissoes.js?v=4"></script>
+<script src="{{ doc_root }}js/create-account-navegacao.js?v=11"></script>
+<script src="{{ doc_root }}js/create-account-autocompletar.js?v=4"></script>
 {% endblock %}
