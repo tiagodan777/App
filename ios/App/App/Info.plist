@@ -39,6 +39,11 @@
     <string>A Margot precisa da tua localização para te mostrar e mostrar pessoas próximas no mapa.</string>
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
     <string>A Margot usa a tua localização em segundo plano para manter a tua presença atualizada no mapa, mesmo quando não estás a utilizar a aplicação.</string>
+    <key>NSLocationTemporaryUsageDescriptionDictionary</key>
+    <dict>
+        <key>MargotNearby</key>
+        <string>A localização exata permite à Margot mostrar corretamente as pessoas que estão perto de ti.</string>
+    </dict>
     <key>UIBackgroundModes</key>
     <array>
         <string>location</string>
