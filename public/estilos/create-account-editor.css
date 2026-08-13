@@ -7,7 +7,14 @@ body {
     overflow-y: auto;
 }
 
-
+main#main {
+    width: 100vw;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
 
 #introducao {
     min-height: 100dvh;
