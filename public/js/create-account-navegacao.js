@@ -35,7 +35,6 @@
     if (!Array.isArray(dados.gostos)) dados.gostos = [];
 
     function etapaPermitida(etapa) {
-        if (!ETAPAS.includes(etapa)) return false;
         if (modoEdicao && etapa === '#introducao') return false;
         if (!modoEdicao && etapa === '#editar-perfil') return false;
         return true;
