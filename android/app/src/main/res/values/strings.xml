@@ -4,4 +4,5 @@
     <string name="title_activity_main">Margot</string>
     <string name="package_name">com.margot.app</string>
     <string name="custom_url_scheme">com.margot.app</string>
+    <string name="default_notification_channel_id">margot_activity</string>
 </resources>
