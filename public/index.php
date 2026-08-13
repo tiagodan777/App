@@ -1,70 +1,33 @@
 <?php
-
 require_once '../src/bootstrap.php';
 
-function rejeitarLimiteRota(
-    array $limite
-): never {
-    $tentarEm = max(
-        1,
-        (int) (
-            $limite['tentar_em'] ?? 1
-        )
-    );
-
-    $minutos =
-        minutosParaTentarNovamente(
-            $tentarEm
-        );
-
-    $espera =
-        $minutos === 1
-            ? '1 minuto'
-            : $minutos . ' minutos';
+function rejeitarLimiteRota(array $limite): never
+{
+    $tentarEm = max(1, (int) ($limite['tentar_em'] ?? 1));
+    $minutos = minutosParaTentarNovamente($tentarEm);
+    $espera = $minutos === 1 ? '1 minuto' : $minutos . ' minutos';
 
     http_response_code(429);
+    header('Retry-After: ' . $tentarEm);
+    header('Content-Type: application/json; charset=UTF-8');
+    header('Cache-Control: no-store, no-cache, must-revalidate');
 
-    header(
-        'Retry-After: ' . $tentarEm
-    );
-
-    header(
-        'Content-Type: application/json; charset=UTF-8'
-    );
-
-    header(
-        'Cache-Control: no-store, no-cache, must-revalidate'
-    );
-
-    echo json_encode(
-        [
-            'success' => false,
-            'message' =>
-                'Estás a fazer pedidos demasiado depressa. ' .
-                'Tenta novamente dentro de ' .
-                $espera .
-                '.'
-        ],
-        JSON_UNESCAPED_UNICODE |
-        JSON_UNESCAPED_SLASHES
-    );
+    echo json_encode([
+        'success' => false,
+        'message' => 'Estás a fazer pedidos demasiado depressa. Tenta novamente dentro de ' . $espera . '.'
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
     exit;
 }
 
-function limitarRota(
-    string $grupo,
-    string $identificador,
-    int $maximo,
-    int $janelaSegundos
-): void {
-    $limite =
-        consumirLimiteRequisicoes(
-            $grupo,
-            $identificador,
-            $maximo,
-            $janelaSegundos
-        );
+function limitarRota(string $grupo, string $identificador, int $maximo, int $janelaSegundos): void
+{
+    $limite = consumirLimiteRequisicoes(
+        $grupo,
+        $identificador,
+        $maximo,
+        $janelaSegundos
+    );
 
     if (!$limite['permitido']) {
         rejeitarLimiteRota($limite);
@@ -73,36 +36,20 @@ function limitarRota(
 
 function obterAutorizacaoRota(): string
 {
-    $autorizacao = trim(
-        (string) (
-            $_SERVER[
-                'HTTP_AUTHORIZATION'
-            ] ??
-            $_SERVER[
-                'REDIRECT_HTTP_AUTHORIZATION'
-            ] ??
-            ''
-        )
-    );
+    $autorizacao = trim((string) (
+        $_SERVER['HTTP_AUTHORIZATION']
+        ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION']
+        ?? ''
+    ));
 
     if ($autorizacao !== '') {
         return $autorizacao;
     }
 
     if (function_exists('getallheaders')) {
-        foreach (
-            getallheaders()
-            as $nome => $valor
-        ) {
-            if (
-                strcasecmp(
-                    (string) $nome,
-                    'Authorization'
-                ) === 0
-            ) {
-                return trim(
-                    (string) $valor
-                );
+        foreach (getallheaders() as $nome => $valor) {
+            if (strcasecmp((string) $nome, 'Authorization') === 0) {
+                return trim((string) $valor);
             }
         }
     }
@@ -112,21 +59,13 @@ function obterAutorizacaoRota(): string
 
 $path = (string) (
     parse_url(
-        (string) (
-            $_SERVER['REQUEST_URI'] ??
-            '/'
-        ),
+        (string) ($_SERVER['REQUEST_URI'] ?? '/'),
         PHP_URL_PATH
     ) ?: '/'
 );
 
 $path = mb_strtolower($path);
-
-$path = substr(
-    $path,
-    strlen(DOC_ROOT)
-);
-
+$path = substr($path, strlen(DOC_ROOT));
 $path = trim($path, '/');
 $parts = explode('/', $path);
 
@@ -134,67 +73,42 @@ if (($parts[0] ?? '') !== 'admin') {
     $page = $parts[0] ?: 'index';
     $id = $parts[1] ?? null;
 } else {
-    $page =
-        'admin/' .
-        ($parts[1] ?? '');
-
+    $page = 'admin/' . ($parts[1] ?? '');
     $id = $parts[2] ?? null;
 }
 
 $id = filter_var($id);
-
-$metodo = strtoupper(
-    (string) (
-        $_SERVER['REQUEST_METHOD'] ??
-        'GET'
-    )
-);
+$metodo = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 
 $atualizacaoBackground =
-    $page ===
-        'background-location-update' &&
-    $metodo === 'POST';
+    $page === 'background-location-update'
+    && $metodo === 'POST';
 
 if (!$atualizacaoBackground) {
     require_csrf_token();
 }
 
-$membroId = trim(
-    (string) ($session->id ?? '')
+$membroId = trim((string) ($session->id ?? ''));
+$endereco = chaveLimiteRequisicoes(enderecoCliente());
+
+$sessaoAtual = session_status() === PHP_SESSION_ACTIVE
+    ? session_id()
+    : '';
+
+$sessaoOuEndereco = chaveLimiteRequisicoes(
+    $sessaoAtual !== ''
+        ? $sessaoAtual
+        : enderecoCliente()
 );
 
-$endereco = chaveLimiteRequisicoes(
-    enderecoCliente()
+$membroOuSessao = chaveLimiteRequisicoes(
+    $membroId !== ''
+        ? $membroId
+        : $sessaoOuEndereco
 );
 
-$sessaoAtual =
-    session_status() ===
-        PHP_SESSION_ACTIVE
-        ? session_id()
-        : '';
-
-$sessaoOuEndereco =
-    chaveLimiteRequisicoes(
-        $sessaoAtual !== ''
-            ? $sessaoAtual
-            : enderecoCliente()
-    );
-
-$membroOuSessao =
-    chaveLimiteRequisicoes(
-        $membroId !== ''
-            ? $membroId
-            : $sessaoOuEndereco
-    );
-
-if (
-    $page === 'create-account' &&
-    $metodo === 'POST'
-) {
-    $modoEdicao =
-        (string) (
-            $_POST['modo'] ?? ''
-        ) === 'editar';
+if ($page === 'create-account' && $metodo === 'POST') {
+    $modoEdicao = (string) ($_POST['modo'] ?? '') === 'editar';
 
     if ($modoEdicao) {
         limitarRota(
@@ -221,13 +135,9 @@ if (
 }
 
 if (
-    $page === 'messages' &&
-    $metodo === 'POST' &&
-    trim(
-        (string) (
-            $_POST['action'] ?? 'send'
-        )
-    ) === 'send'
+    $page === 'messages'
+    && $metodo === 'POST'
+    && trim((string) ($_POST['action'] ?? 'send')) === 'send'
 ) {
     limitarRota(
         'message-send-minute',
@@ -244,14 +154,11 @@ if (
     );
 
     $erroMedia = (int) (
-        $_FILES['media']['error'] ??
-        UPLOAD_ERR_NO_FILE
+        $_FILES['media']['error']
+        ?? UPLOAD_ERR_NO_FILE
     );
 
-    if (
-        $erroMedia !==
-        UPLOAD_ERR_NO_FILE
-    ) {
+    if ($erroMedia !== UPLOAD_ERR_NO_FILE) {
         limitarRota(
             'message-media',
             $membroOuSessao,
@@ -261,10 +168,7 @@ if (
     }
 }
 
-if (
-    $page === 'websocket-token' &&
-    $metodo === 'POST'
-) {
+if ($page === 'websocket-token' && $metodo === 'POST') {
     limitarRota(
         'websocket-token',
         $membroOuSessao,
@@ -273,10 +177,17 @@ if (
     );
 }
 
-if ($atualizacaoBackground) {
-    $autorizacao =
-        obterAutorizacaoRota();
+if ($page === 'push-device' && $metodo === 'POST') {
+    limitarRota(
+        'push-device',
+        $membroOuSessao,
+        120,
+        60 * 60
+    );
+}
 
+if ($atualizacaoBackground) {
+    $autorizacao = obterAutorizacaoRota();
     $tokenLimite = '';
 
     if (
@@ -286,20 +197,14 @@ if ($atualizacaoBackground) {
             $correspondencias
         ) === 1
     ) {
-        $tokenLimite = strtolower(
-            $correspondencias[1]
-        );
+        $tokenLimite = strtolower($correspondencias[1]);
     }
 
-    $identificadorBackground =
-        chaveLimiteRequisicoes(
-            $tokenLimite !== ''
-                ? hash(
-                    'sha256',
-                    $tokenLimite
-                )
-                : enderecoCliente()
-        );
+    $identificadorBackground = chaveLimiteRequisicoes(
+        $tokenLimite !== ''
+            ? hash('sha256', $tokenLimite)
+            : enderecoCliente()
+    );
 
     limitarRota(
         'background-location-update',
@@ -309,10 +214,7 @@ if ($atualizacaoBackground) {
     );
 }
 
-if (
-    $page ===
-    'create-account-autocompletar'
-) {
+if ($page === 'create-account-autocompletar') {
     if ($metodo === 'GET') {
         limitarRota(
             'hobby-search',
@@ -330,19 +232,10 @@ if (
     }
 }
 
-if (
-    $page === 'safety' &&
-    $metodo === 'POST'
-) {
-    $acaoSeguranca = trim(
-        (string) (
-            $_POST['action'] ?? ''
-        )
-    );
+if ($page === 'safety' && $metodo === 'POST') {
+    $acaoSeguranca = trim((string) ($_POST['action'] ?? ''));
 
-    if (
-        $acaoSeguranca === 'report'
-    ) {
+    if ($acaoSeguranca === 'report') {
         limitarRota(
             'safety-report',
             $membroOuSessao,
@@ -359,10 +252,7 @@ if (
     }
 }
 
-if (
-    $page === 'blocked-users' &&
-    $metodo === 'POST'
-) {
+if ($page === 'blocked-users' && $metodo === 'POST') {
     limitarRota(
         'unblock-user',
         $membroOuSessao,
@@ -371,16 +261,10 @@ if (
     );
 }
 
-$phpPage =
-    APP_ROOT .
-    '/src/pages/' .
-    $page .
-    '.php';
+$phpPage = APP_ROOT . '/src/pages/' . $page . '.php';
 
 if (!file_exists($phpPage)) {
-    $phpPage =
-        APP_ROOT .
-        '/src/pages/error-page.php';
+    $phpPage = APP_ROOT . '/src/pages/error-page.php';
 }
 
 include $phpPage;
