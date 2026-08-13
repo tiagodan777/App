@@ -73,7 +73,8 @@ body {
     margin-top: 18px;
     padding: 0 20px;
     display: flex;
-    justify-content: flex-end;
+    flex-flow: column nowrap;
+    justify-content: space-evenly;
     align-items: center;
     gap: 8px;
 }
@@ -99,8 +100,8 @@ body {
 }
 
 #create-account-form nav.anterior-proximo > .proximo {
-    background: #e32636;
-    color: #fff;
+    color: #e32636;
+    background-color: #fff;
 }
 
 #create-account-form nav.anterior-proximo > .proximo:disabled {
