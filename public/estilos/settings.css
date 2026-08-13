@@ -1,61 +1,182 @@
 @charset "UTF-8";
 
-main {
-    width: 100vw;
-    height: 100vh;
+.definicoes-pagina {
+    width:
+        min(
+            100% - 32px,
+            680px
+        );
 
-    display: flex;
-    flex-flow: column nowrap;
-    justify-content: flex-start;
-    align-items: center;
+    min-height: 100dvh;
+    margin: 0 auto;
+
+    padding:
+        calc(
+            40px +
+            env(
+                safe-area-inset-top,
+                0px
+            )
+        )
+        0
+        calc(
+            120px +
+            env(
+                safe-area-inset-bottom,
+                0px
+            )
+        );
+
+    box-sizing: border-box;
+    color: #17171a;
+
+    font-family:
+        Helvetica,
+        Arial,
+        sans-serif;
 }
 
-main > nav {
-    width: 100vw;
-    margin-top: 10vh;
+.definicoes-pagina h1 {
+    margin: 0 0 32px;
 
-    display: flex;
-    flex-flow: column nowrap;
-    justify-content: space-evenly;
-    align-items: center;
+    font-size:
+        clamp(
+            30px,
+            8vw,
+            42px
+        );
+
+    line-height: 1.05;
 }
 
-main > nav > h1 {
-    margin-bottom: 20vh;
-}
-
-main > nav > ul { 
+.definicoes-pagina nav,
+.definicoes-pagina ul {
     width: 100%;
-    height: 100%;
-    padding: 0px;
+}
+
+.definicoes-pagina ul {
+    margin: 0;
+    padding: 0;
+
+    border:
+        1px solid
+        #e7e7ea;
+
+    border-radius: 24px;
+    overflow: hidden;
+    background: #fff;
     list-style: none;
-
-    display: flex;
-    flex-flow: column nowrap;
-    justify-content: space-evenly;
-    align-items: center;
 }
 
-main > nav > ul > li {
-    width: 90%;
-    border-bottom: 1px solid #dddddd;
-    margin-bottom: 20px;
-
+.definicoes-pagina li + li {
+    border-top:
+        1px solid
+        #ececef;
 }
 
-main > nav > ul > li > a {
+.definicoes-pagina li > a,
+.definicoes-logout button {
     width: 100%;
-    color: #888888;
-    text-decoration: none;
+    min-height: 68px;
+    padding: 12px 18px;
+    box-sizing: border-box;
 
     display: flex;
-    flex-flow: row nowrap;
-    justify-content: flex;
     align-items: center;
+    gap: 16px;
+
+    border: 0;
+    background: transparent;
+    color: #34343a;
+    font: inherit;
+    font-size: 16px;
+    line-height: 1.35;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
 }
 
-main > nav > ul > li > a > img {
-    width: 45px;
-    height: 45px;
-    margin-right: 35px;
+.definicoes-pagina li > a:active,
+.definicoes-logout button:active {
+    background: #f5f5f7;
+}
+
+.definicoes-pagina li > a:focus-visible,
+.definicoes-logout button:focus-visible {
+    position: relative;
+    z-index: 1;
+
+    outline:
+        3px solid
+        rgba(
+            32,
+            123,
+            255,
+            0.35
+        );
+
+    outline-offset: -3px;
+}
+
+.definicoes-pagina li > a img,
+.definicoes-logout button span {
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    object-fit: contain;
+}
+
+.definicoes-logout {
+    width: 100%;
+    margin: 0;
+}
+
+.definicoes-logout button {
+    color: #b42318;
+}
+
+.definicoes-logout button span {
+    display: grid;
+    place-items: center;
+
+    border-radius: 50%;
+    background: #fff0ee;
+
+    font-size: 24px;
+    line-height: 1;
+}
+
+@media (max-width: 480px) {
+    .definicoes-pagina {
+        width:
+            min(
+                100% - 24px,
+                680px
+            );
+
+        padding-top:
+            calc(
+                28px +
+                env(
+                    safe-area-inset-top,
+                    0px
+                )
+            );
+    }
+
+    .definicoes-pagina li > a,
+    .definicoes-logout button {
+        min-height: 64px;
+        padding-right: 14px;
+        padding-left: 14px;
+        gap: 13px;
+        font-size: 15px;
+    }
+
+    .definicoes-pagina li > a img,
+    .definicoes-logout button span {
+        width: 36px;
+        height: 36px;
+        flex-basis: 36px;
+    }
 }
