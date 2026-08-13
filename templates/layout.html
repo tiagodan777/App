@@ -221,8 +221,8 @@
             window.profileUrl = {{ (doc_root ~ 'profile/')|json_encode|raw }};
             window.heysUrl = {{ (doc_root ~ 'notifications')|json_encode|raw }};
             window.webSocketTokenUrl = {{ (doc_root ~ 'websocket-token')|json_encode|raw }};
-            window.backgroundLocationTokenUrl = {{ (doc_root ~ 'background-location-token/')|json_encode|raw }};
-            window.backgroundLocationUpdateUrl = {{ (doc_root ~ 'background-location-update/')|json_encode|raw }};
+            window.backgroundLocationTokenUrl = {{ (doc_root ~ 'background-location-token')|json_encode|raw }};
+            window.backgroundLocationUpdateUrl = {{ (doc_root ~ 'background-location-update')|json_encode|raw }};
             window.loginUrl = {{ (doc_root ~ 'login/')|json_encode|raw }};
 
             window.webSocketUrl = window.location.protocol === 'https:'
@@ -232,9 +232,9 @@
 
         <script src="{{ doc_root }}js/hey-vibracao.js?v=1"></script>
         <script src="{{ doc_root }}js/index-notificacoes.js?v=7"></script>
-        <script src="{{ doc_root }}js/background-location.js?v=1"></script>
         <script src="{{ doc_root }}js/websocket.js?v=15"></script>
         <script src="{{ doc_root }}js/menu-invisivel.js?v=2"></script>
+        <script src="{{ doc_root }}js/background-location.js?v=2"></script>
         <script src="{{ doc_root }}js/javascript-geral.js?v=2"></script>
     {% endif %}
 </body>
