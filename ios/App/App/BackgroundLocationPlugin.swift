@@ -12,12 +12,14 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
         CAPPluginMethod(name: "start", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "stop", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "status", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setVisibility", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "openSettings", returnType: CAPPluginReturnPromise)
     ]
 
     private let endpoint = URL(string: "https://margot-app.com/background-location-update/")!
     private let keychainService = "com.margot.background-location"
     private let keychainAccount = "background-token"
+    private let visibilityDefaultsKey = "margot-background-location-visible"
     private let sendInterval: TimeInterval = 60
     private let movementThreshold: CLLocationDistance = 50
 
@@ -27,6 +29,7 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
     private var pendingLocation: CLLocation?
     private var isSending = false
     private var updatesActive = false
+    private var isVisible = true
 
     private lazy var urlSession: URLSession = {
         let configuration = URLSessionConfiguration.ephemeral
@@ -37,6 +40,20 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
     }()
 
     override public func load() {
+        if UserDefaults.standard.object(
+            forKey: visibilityDefaultsKey
+        ) != nil {
+            isVisible = UserDefaults.standard.bool(
+                forKey: visibilityDefaultsKey
+            )
+        } else {
+            /*
+             * O Keychain pode sobreviver à desinstalação. Sem preferências da
+             * instalação atual, um token antigo nunca deve voltar a arrancar.
+             */
+            deleteToken()
+        }
+
         locationManager = CLLocationManager()
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyHundredMeters
@@ -71,6 +88,21 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
             return
         }
 
+        isVisible = call.getBool("visible") ?? isVisible
+        saveVisibility()
+
+        if !isVisible {
+            sendPresence(
+                active: true,
+                visible: false,
+                token: token
+            )
+
+            stopLocationUpdates(removeToken: false)
+            call.resolve(statusData())
+            return
+        }
+
         guard CLLocationManager.locationServicesEnabled() else {
             call.resolve([
                 "success": false,
@@ -102,6 +134,16 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
     }
 
     @objc public func stop(_ call: CAPPluginCall) {
+        if let token = readToken() {
+            sendPresence(
+                active: false,
+                visible: false,
+                token: token
+            )
+        }
+
+        isVisible = false
+        saveVisibility()
         stopLocationUpdates(removeToken: true)
 
         call.resolve([
@@ -113,6 +155,36 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
     }
 
     @objc public func status(_ call: CAPPluginCall) {
+        call.resolve(statusData())
+    }
+
+    @objc public func setVisibility(_ call: CAPPluginCall) {
+        guard let visible = call.getBool("visible") else {
+            call.reject("Não foi indicado o estado de visibilidade.")
+            return
+        }
+
+        isVisible = visible
+        saveVisibility()
+
+        if visible {
+            applyAuthorizationState()
+
+            if updatesActive {
+                locationManager.requestLocation()
+            }
+        } else {
+            stopLocationUpdates(removeToken: false)
+
+            if let token = readToken() {
+                sendPresence(
+                    active: true,
+                    visible: false,
+                    token: token
+                )
+            }
+        }
+
         call.resolve(statusData())
     }
 
@@ -154,6 +226,10 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
             return
         }
 
+        guard isVisible else {
+            return
+        }
+
         guard let location = locations.last else {
             return
         }
@@ -192,7 +268,8 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
         }
 
         guard CLLocationManager.locationServicesEnabled(),
-              readToken() != nil else {
+              readToken() != nil,
+              isVisible else {
             stopLocationUpdates(removeToken: false)
             return
         }
@@ -266,10 +343,16 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
             return
         }
 
+        guard isVisible else {
+            return
+        }
+
         let payload: [String: Any] = [
             "latitude": location.coordinate.latitude,
             "longitude": location.coordinate.longitude,
             "accuracy": location.horizontalAccuracy,
+            "active": true,
+            "visible": true,
             "timestamp": ISO8601DateFormatter().string(
                 from: location.timestamp
             )
@@ -365,6 +448,79 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
             self.pendingLocation = nil
             considerSending(pendingLocation)
         }
+
+        if !isVisible, let token = readToken() {
+            sendPresence(
+                active: true,
+                visible: false,
+                token: token
+            )
+        }
+    }
+
+    private func sendPresence(
+        active: Bool,
+        visible: Bool,
+        token: String
+    ) {
+        let payload: [String: Any] = [
+            "active": active,
+            "visible": visible,
+            "timestamp": ISO8601DateFormatter().string(from: Date())
+        ]
+
+        guard let body = try? JSONSerialization.data(
+            withJSONObject: payload
+        ) else {
+            return
+        }
+
+        var request = URLRequest(url: endpoint)
+        request.httpMethod = "POST"
+        request.httpBody = body
+        request.timeoutInterval = 15
+        request.setValue(
+            "application/json",
+            forHTTPHeaderField: "Content-Type"
+        )
+        request.setValue(
+            "application/json",
+            forHTTPHeaderField: "Accept"
+        )
+        request.setValue(
+            "Bearer \(token)",
+            forHTTPHeaderField: "Authorization"
+        )
+
+        urlSession.dataTask(with: request) {
+            [weak self] _, response, error in
+
+            let statusCode = (
+                response as? HTTPURLResponse
+            )?.statusCode
+
+            DispatchQueue.main.async {
+                guard let self else {
+                    return
+                }
+
+                if statusCode == 401 {
+                    self.stopLocationUpdates(removeToken: true)
+                    self.notifyListeners(
+                        "backgroundLocationAuthorizationExpired",
+                        data: ["expired": true]
+                    )
+                } else if let error {
+                    self.notifyListeners(
+                        "backgroundLocationError",
+                        data: [
+                            "message": error.localizedDescription,
+                            "status": statusCode ?? 0
+                        ]
+                    )
+                }
+            }
+        }.resume()
     }
 
     private func statusData() -> [String: Any] {
@@ -378,9 +534,17 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
             "background_enabled":
                 updatesActive && authorization == .authorizedAlways,
             "token_stored": readToken() != nil,
+            "visible": isVisible,
             "requires_settings":
                 authorization != .authorizedAlways
         ]
+    }
+
+    private func saveVisibility() {
+        UserDefaults.standard.set(
+            isVisible,
+            forKey: visibilityDefaultsKey
+        )
     }
 
     private func authorizationName(

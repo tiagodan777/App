@@ -24,6 +24,7 @@
     var lastSentLongitude = null;
     var lastKnownLocation = null;
     var photoRemovalTimers = Object.create(null);
+    var photoPositions = Object.create(null);
     var latestPeople = [];
 
     var RECONNECT_MIN_DELAY = 1000;
@@ -812,16 +813,16 @@
                 break;
 
             case 'state':
-                if (document.getElementById('gridCanvas')) {
-                    atualizarPessoasNoMapa(
-                        window.disableLocationTracking
-                            ? []
-                            : (
-                                Array.isArray(data.people)
-                                    ? data.people
-                                    : []
-                            )
+                latestPeople = window.disableLocationTracking
+                    ? []
+                    : (
+                        Array.isArray(data.people)
+                            ? data.people.slice()
+                            : []
                     );
+
+                if (document.getElementById('gridCanvas')) {
+                    atualizarPessoasNoMapa(latestPeople);
                 }
 
                 break;
@@ -1047,13 +1048,24 @@
             if (imagemExistente) {
                 cancelarRemocaoFoto(id);
 
+                if (!photoPositions[id]) {
+                    photoPositions[id] = {
+                        top: numeroPosicao(
+                            imagemExistente.getAttribute('data-top'),
+                            pessoa.top
+                        ),
+                        left: numeroPosicao(
+                            imagemExistente.getAttribute('data-left'),
+                            pessoa.left
+                        )
+                    };
+                }
+
                 $(imagemExistente)
                     .removeClass('a-remover')
                     .attr({
-                        'data-top':
-                            Number(pessoa.top) || 0,
-                        'data-left':
-                            Number(pessoa.left) || 0,
+                        'data-top': photoPositions[id].top,
+                        'data-left': photoPositions[id].left,
                         'data-membro-id':
                             pessoa.membro_id || '',
                         'data-nome':
@@ -1074,6 +1086,13 @@
 
             inseriuImagem = true;
 
+            var posicao = photoPositions[id] || {
+                top: numeroPosicao(pessoa.top, 0),
+                left: numeroPosicao(pessoa.left, 0)
+            };
+
+            photoPositions[id] = posicao;
+
             var $imagem = $('<img>', {
                 id: id,
                 class: 'foto',
@@ -1084,10 +1103,8 @@
             });
 
             $imagem.attr({
-                'data-top':
-                    Number(pessoa.top) || 0,
-                'data-left':
-                    Number(pessoa.left) || 0,
+                'data-top': posicao.top,
+                'data-left': posicao.left,
                 'data-membro-id':
                     pessoa.membro_id || '',
                 'data-nome':
@@ -1127,9 +1144,18 @@
 
         if (inseriuImagem) {
             document.body.appendChild(fragmento);
+            reinicializarFotos();
         }
+    }
 
-        reinicializarFotos();
+    function numeroPosicao(valor, padrao) {
+        var numero = Number(valor);
+
+        if (Number.isFinite(numero)) return numero;
+
+        numero = Number(padrao);
+
+        return Number.isFinite(numero) ? numero : 0;
     }
 
     function agendarRemocaoFoto(
@@ -1530,6 +1556,23 @@
     window.addEventListener(
         'margot:preferencias-alteradas',
         aplicarPreferenciasEmTempoReal
+    );
+
+    window.addEventListener(
+        'margot:photo-position-changed',
+        function (evento) {
+            var detalhe = evento && evento.detail
+                ? evento.detail
+                : {};
+            var id = String(detalhe.id || '').trim();
+
+            if (!id) return;
+
+            photoPositions[id] = {
+                top: numeroPosicao(detalhe.top, 0),
+                left: numeroPosicao(detalhe.left, 0)
+            };
+        }
     );
 
     window.addEventListener('storage', function (evento) {

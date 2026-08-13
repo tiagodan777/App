@@ -14,6 +14,7 @@
     var aEnviarHey = false;
     var aEnviarMensagem = false;
     var aProcessarSeguranca = false;
+    var aAbrirPerfil = false;
 
     function texto(valor) {
         return String(valor || '').trim();
@@ -193,30 +194,71 @@
         prepararMiniMenu(this);
     });
 
-    $(document).on('click.margotMiniMenu', '.mini-menu-perfil', function (evento) {
+    $(document).on('click.margotMiniMenu', '.mini-menu-perfil', async function (evento) {
         var token = tokenAcessoPerfilSelecionado();
         var id = idSelecionado();
         var souEu = id !== '' && id === texto(window.membroId);
         var destino = texto($(this).attr('href'));
+        var $link = $(this);
 
         if (!token || !destino || souEu) return;
 
         evento.preventDefault();
 
-        var formulario = document.createElement('form');
-        var campo = document.createElement('input');
+        if (aAbrirPerfil) return;
 
-        formulario.method = 'post';
-        formulario.action = destino;
-        formulario.hidden = true;
+        aAbrirPerfil = true;
+        $link.attr('aria-busy', 'true');
 
-        campo.type = 'hidden';
-        campo.name = 'profile_access_token';
-        campo.value = token;
+        try {
+            var dados = new FormData();
 
-        formulario.appendChild(campo);
-        document.body.appendChild(formulario);
-        formulario.submit();
+            dados.set('action', 'grant_profile_access');
+            dados.set('profile_access_token', token);
+
+            var resposta = await fetch(destino, {
+                method: 'POST',
+                body: dados,
+                credentials: 'same-origin',
+                cache: 'no-store',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            var resultado = await resposta.json().catch(function () {
+                return {};
+            });
+
+            if (!resposta.ok || resultado.success !== true) {
+                throw new Error(
+                    resultado.message ||
+                    'Não foi possível abrir este perfil.'
+                );
+            }
+
+            if (
+                window.MargotNavigation &&
+                typeof window.MargotNavigation.navigate === 'function'
+            ) {
+                await window.MargotNavigation.navigate(destino, {
+                    historico: 'push'
+                });
+            } else {
+                window.location.assign(destino);
+            }
+        } catch (erro) {
+            aviso(
+                erro && erro.message
+                    ? erro.message
+                    : 'Não foi possível abrir este perfil.',
+                'erro'
+            );
+        } finally {
+            aAbrirPerfil = false;
+            $link.removeAttr('aria-busy');
+        }
     });
 
     $(document).on('click.margotMiniMenu', '#enviar-hey', function (evento) {

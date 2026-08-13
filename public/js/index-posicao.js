@@ -11,6 +11,7 @@ let refY = 0;
 let ultimaDistancia = 0;
 let ultimoAngulo = 0;
 let fotoEmArrasto = null;
+let fotoEmInercia = null;
 let inerciaAnimId = null;
 let velX = 0;
 let velY = 0;
@@ -33,14 +34,46 @@ const SAFE_BOTTOM = 100;
 
 let fotosCache = [];
 
+function memorizarPosicaoFoto(foto) {
+    if (!foto || !foto.elemento) return;
+
+    foto.elemento.setAttribute('data-left', String(foto.left));
+    foto.elemento.setAttribute('data-top', String(foto.top));
+
+    window.dispatchEvent(new CustomEvent(
+        'margot:photo-position-changed',
+        {
+            detail: {
+                id: String(
+                    foto.elemento.getAttribute('data-membro-id') ||
+                    foto.elemento.id ||
+                    ''
+                ),
+                left: foto.left,
+                top: foto.top
+            }
+        }
+    ));
+}
+
 function inicializarFotos() {
     const fotos = document.querySelectorAll('.foto');
+    const anteriores = new Map(
+        fotosCache.map(foto => [foto.elemento, foto])
+    );
 
     fotosCache = Array.from(fotos).map(el => {
+        const anterior = anteriores.get(el);
+
         el.style.position = 'absolute';
         el.style.top = '0px';
         el.style.left = '0px';
         el.style.transformOrigin = 'center center';
+
+        if (anterior) {
+            anterior.elemento = el;
+            return anterior;
+        }
 
         return {
             elemento: el,
@@ -191,13 +224,16 @@ function atualizarReferencias() {
 }
 
 function iniciarInerciaFoto(foto, vx, vy) {
+    fotoEmInercia = foto;
+
     function animar() {
         vx *= 0.92;
         vy *= 0.92;
 
         if (Math.abs(vx) < 0.1 && Math.abs(vy) < 0.1) {
-            foto.elemento.setAttribute('data-left', foto.left);
-            foto.elemento.setAttribute('data-top', foto.top);
+            memorizarPosicaoFoto(foto);
+            fotoEmInercia = null;
+            inerciaAnimId = null;
             return;
         }
 
@@ -293,6 +329,11 @@ function touchStart(e) {
 
     cancelAnimationFrame(inerciaAnimId);
     cancelAnimationFrame(mapInerciaAnimId);
+
+    if (fotoEmInercia) {
+        memorizarPosicaoFoto(fotoEmInercia);
+        fotoEmInercia = null;
+    }
 
     velX = 0;
     velY = 0;
@@ -491,15 +532,7 @@ function touchEnd(e) {
                     velY
                 );
             } else {
-                fotoEmArrasto.elemento.setAttribute(
-                    'data-left',
-                    fotoEmArrasto.left
-                );
-
-                fotoEmArrasto.elemento.setAttribute(
-                    'data-top',
-                    fotoEmArrasto.top
-                );
+                memorizarPosicaoFoto(fotoEmArrasto);
             }
         }
 
@@ -539,6 +572,9 @@ window.inicializarFotos = inicializarFotos;
 function desativarPagina() {
     cancelAnimationFrame(inerciaAnimId);
     cancelAnimationFrame(mapInerciaAnimId);
+
+    fotosCache.forEach(memorizarPosicaoFoto);
+    fotoEmInercia = null;
 
     document.removeEventListener('touchstart', touchStart);
     document.removeEventListener('touchmove', touchMove);

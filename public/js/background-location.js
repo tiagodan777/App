@@ -12,6 +12,23 @@
         ? capacitor.Plugins.BackgroundLocation
         : null;
 
+    if (
+        !plugin &&
+        capacitor &&
+        typeof capacitor.registerPlugin === 'function'
+    ) {
+        plugin = capacitor.registerPlugin('BackgroundLocation');
+    }
+
+    function localizacaoPermitida() {
+        return window.disableLocationTracking !== true;
+    }
+
+    function presencaVisivel() {
+        return localizacaoPermitida() &&
+            window.margotInvisible !== true;
+    }
+
     function plataformaNativa() {
         if (!capacitor) {
             return false;
@@ -60,12 +77,18 @@
             headers['X-CSRF-Token'] = csrfToken;
         }
 
-        var resposta = await fetch('/background-location-token/', {
-            method: 'POST',
-            credentials: 'same-origin',
-            cache: 'no-store',
-            headers: headers
-        });
+        var resposta = await fetch(
+            String(
+                window.backgroundLocationTokenUrl ||
+                '/background-location-token/'
+            ),
+            {
+                method: 'POST',
+                credentials: 'same-origin',
+                cache: 'no-store',
+                headers: headers
+            }
+        );
 
         var dados = {};
 
@@ -123,6 +146,26 @@
                 resultado.is_active === true
             )
         );
+    }
+
+    function tokenGuardado(resultado) {
+        return !!(
+            resultado &&
+            (
+                resultado.token_stored === true ||
+                resultado.tokenStored === true
+            )
+        );
+    }
+
+    async function definirVisibilidade(visivel) {
+        if (typeof plugin.setVisibility !== 'function') {
+            return estadoAtual();
+        }
+
+        return plugin.setVisibility({
+            visible: !!visivel
+        });
     }
 
     function adicionarEstiloAviso() {
@@ -274,10 +317,14 @@
         }
 
         var resultado = await plugin.start({
-            token: token
+            token: token,
+            visible: presencaVisivel()
         });
 
-        if (precisaDasDefinicoes(resultado)) {
+        if (
+            presencaVisivel() &&
+            precisaDasDefinicoes(resultado)
+        ) {
             mostrarAvisoDefinicoes(false);
         }
 
@@ -300,19 +347,46 @@
 
         inicializacao = (async function () {
             try {
-                var estado = await estadoAtual();
-
-                if (localizacaoAtiva(estado)) {
-                    return estado;
+                if (!localizacaoPermitida()) {
+                    return parar();
                 }
 
-                if (precisaDasDefinicoes(estado)) {
+                var estado = await estadoAtual();
+
+                if (
+                    localizacaoAtiva(estado) ||
+                    (
+                        tokenGuardado(estado) &&
+                        !presencaVisivel()
+                    )
+                ) {
+                    var estadoSincronizado = await definirVisibilidade(
+                        presencaVisivel()
+                    );
+
+                    if (
+                        presencaVisivel() &&
+                        precisaDasDefinicoes(estadoSincronizado)
+                    ) {
+                        mostrarAvisoDefinicoes(!!forcarAviso);
+                    }
+
+                    return estadoSincronizado;
+                }
+
+                if (
+                    presencaVisivel() &&
+                    precisaDasDefinicoes(estado)
+                ) {
                     mostrarAvisoDefinicoes(!!forcarAviso);
                 }
 
                 var resultado = await renovarToken();
 
-                if (precisaDasDefinicoes(resultado)) {
+                if (
+                    presencaVisivel() &&
+                    precisaDasDefinicoes(resultado)
+                ) {
                     mostrarAvisoDefinicoes(!!forcarAviso);
                 }
 
@@ -377,21 +451,41 @@
         pluginDisponivel() &&
         typeof plugin.addListener === 'function'
     ) {
-        plugin.addListener(
-            'backgroundLocationTokenExpired',
-            function () {
-                renovarToken().catch(function (erro) {
+        var renovarAutorizacao = function () {
+            if (!localizacaoPermitida()) {
+                parar().catch(function (erro) {
                     console.error(
-                        'Não foi possível renovar a autorização da localização:',
+                        'Não foi possível parar a localização:',
                         erro
                     );
                 });
+                return;
             }
-        );
+
+            renovarToken().catch(function (erro) {
+                console.error(
+                    'Não foi possível renovar a autorização da localização:',
+                    erro
+                );
+            });
+        };
+
+        [
+            'backgroundLocationAuthorizationExpired',
+            'backgroundLocationTokenExpired'
+        ].forEach(function (evento) {
+            plugin.addListener(evento, renovarAutorizacao);
+        });
     }
 
     function arrancar() {
-        iniciar(false);
+        if (localizacaoPermitida()) {
+            iniciar(false);
+        } else {
+            parar().catch(function (erro) {
+                console.error('Localização em segundo plano:', erro);
+            });
+        }
     }
 
     if (document.readyState === 'loading') {
@@ -406,7 +500,12 @@
 
     document.addEventListener('visibilitychange', function () {
         if (document.visibilityState === 'visible') {
-            iniciar(false);
+            arrancar();
         }
     });
+
+    window.addEventListener(
+        'margot:preferencias-alteradas',
+        arrancar
+    );
 })();

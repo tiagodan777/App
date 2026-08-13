@@ -531,6 +531,10 @@
         if (window.desativarChatMargot === desativarChat) {
             delete window.desativarChatMargot;
         }
+
+        if (String(window.chatMembroId || '') === outroId) {
+            delete window.chatMembroId;
+        }
     }
 
     window.desativarChatMargot = desativarChat;

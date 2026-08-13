@@ -13,7 +13,8 @@ use React\EventLoop\TimerInterface;
 class WebSocket implements MessageComponentInterface
 {
     private const RAIO_MAXIMO_METROS = 100;
-    private const LOCALIZACAO_MAXIMA_IDADE_SEGUNDOS = 90;
+    private const LOCALIZACAO_MAXIMA_IDADE_SEGUNDOS = 180;
+    private const LOCALIZACOES_PERSISTIDAS_CACHE_SEGUNDOS = 5;
     private const TOLERANCIA_NAVEGACAO_SEGUNDOS = 8.0;
     private const BLOQUEIOS_CACHE_SEGUNDOS = 10;
     private const ACESSO_PERFIL_VALIDADE_SEGUNDOS = 120;
@@ -30,12 +31,14 @@ class WebSocket implements MessageComponentInterface
     private array $ligacoesPorMembro = [];
     private array $pessoas = [];
     private array $localizacoes = [];
+    private array $membrosVisiveisPorPersistencia = [];
     private array $temporizadoresSaida = [];
     private array $bloqueiosEntreMembros = [];
     private array $faixaEtariaPorMembro = [];
     private array $acessosPerfil = [];
     private int $bloqueiosCarregadosEm = 0;
     private int $acessosPerfilLimposEm = 0;
+    private int $localizacoesPersistidasCarregadasEm = 0;
     private string $assinaturaBloqueios = '';
 
     public function __construct(callable $pdoFactory, LoopInterface $loop)
@@ -212,6 +215,7 @@ class WebSocket implements MessageComponentInterface
         $this->visibilidadePorLigacao[$conn->resourceId] = $visivel;
         $this->ligacoesPorMembro[$membroId] ??= [];
         $this->ligacoesPorMembro[$membroId][$conn->resourceId] = $conn;
+        unset($this->membrosVisiveisPorPersistencia[$membroId]);
 
         if (!$this->membroTemLigacaoComLocalizacaoAtiva($membroId)) {
             unset($this->localizacoes[$membroId]);
@@ -306,6 +310,7 @@ class WebSocket implements MessageComponentInterface
 
         $this->localizacaoPorLigacao[$resourceId] = $localizacaoAtiva;
         $this->visibilidadePorLigacao[$resourceId] = $visivel;
+        unset($this->membrosVisiveisPorPersistencia[$membroId]);
 
         $this->cancelarSaidaAgendada($membroId);
 
@@ -945,6 +950,8 @@ class WebSocket implements MessageComponentInterface
 
     private function enviarEstadosIndividuais(): void
     {
+        $this->sincronizarLocalizacoesPersistidas();
+
         try {
             $this->carregarBloqueios();
         } catch (\Throwable $erro) {
@@ -1045,6 +1052,161 @@ class WebSocket implements MessageComponentInterface
         if ($localizacao === null) return false;
 
         return ($agora - (int) ($localizacao['updated_at'] ?? 0)) <= self::LOCALIZACAO_MAXIMA_IDADE_SEGUNDOS;
+    }
+
+    private function sincronizarLocalizacoesPersistidas(bool $forcar = false): void
+    {
+        $agora = time();
+
+        if (
+            !$forcar &&
+            ($agora - $this->localizacoesPersistidasCarregadasEm) <
+                self::LOCALIZACOES_PERSISTIDAS_CACHE_SEGUNDOS
+        ) {
+            return;
+        }
+
+        $database = null;
+        $statement = null;
+
+        try {
+            $database = $this->getDatabase();
+            $idadeMaxima = self::LOCALIZACAO_MAXIMA_IDADE_SEGUNDOS;
+            $statement = $database->query("
+                SELECT
+                    lm.membro_id,
+                    lm.latitude,
+                    lm.longitude,
+                    lm.precisao_m,
+                    GREATEST(
+                        0,
+                        TIMESTAMPDIFF(
+                            SECOND,
+                            lm.atualizada_em,
+                            UTC_TIMESTAMP()
+                        )
+                    ) AS idade_segundos,
+                    CONCAT(m.primeiro_nome, ' ', m.ultimo_nome) AS nome,
+                    m.nascimento,
+                    COALESCE(
+                        (
+                            SELECT fp.nome_arquivo
+                            FROM fotos_perfil AS fp
+                            WHERE fp.membro_id COLLATE utf8mb4_unicode_ci =
+                                  m.id COLLATE utf8mb4_unicode_ci
+                            AND (fp.status = 'completo' OR fp.status IS NULL)
+                            ORDER BY fp.ordem IS NULL ASC, fp.ordem ASC
+                            LIMIT 1
+                        ),
+                        'default.webp'
+                    ) AS foto_perfil
+                FROM localizacao_membro AS lm
+                INNER JOIN membros AS m
+                    ON m.id COLLATE utf8mb4_unicode_ci =
+                       lm.membro_id COLLATE utf8mb4_unicode_ci
+                WHERE lm.localizacao_ativa = 1
+                AND lm.visivel = 1
+                AND lm.latitude IS NOT NULL
+                AND lm.longitude IS NOT NULL
+                AND lm.atualizada_em >= DATE_SUB(
+                    UTC_TIMESTAMP(),
+                    INTERVAL {$idadeMaxima} SECOND
+                )
+            ");
+
+            $persistidosAtuais = [];
+
+            foreach ($statement->fetchAll(PDO::FETCH_ASSOC) as $linha) {
+                $membroId = trim((string) ($linha['membro_id'] ?? ''));
+                $latitude = filter_var(
+                    $linha['latitude'] ?? null,
+                    FILTER_VALIDATE_FLOAT
+                );
+                $longitude = filter_var(
+                    $linha['longitude'] ?? null,
+                    FILTER_VALIDATE_FLOAT
+                );
+                $idadeSegundos = (int) ($linha['idade_segundos'] ?? -1);
+                $atualizadaEm = $agora - $idadeSegundos;
+
+                if (
+                    $membroId === '' ||
+                    $latitude === false ||
+                    $longitude === false ||
+                    $latitude < -90 ||
+                    $latitude > 90 ||
+                    $longitude < -180 ||
+                    $longitude > 180 ||
+                    $idadeSegundos < 0 ||
+                    $idadeSegundos > self::LOCALIZACAO_MAXIMA_IDADE_SEGUNDOS
+                ) {
+                    continue;
+                }
+
+                $localizacaoAtual = $this->localizacoes[$membroId] ?? null;
+
+                if (
+                    $localizacaoAtual === null ||
+                    $atualizadaEm > (int) ($localizacaoAtual['updated_at'] ?? 0)
+                ) {
+                    $precisao = filter_var(
+                        $linha['precisao_m'] ?? 0,
+                        FILTER_VALIDATE_FLOAT
+                    );
+
+                    if ($precisao === false || $precisao < 0) {
+                        $precisao = 0;
+                    }
+
+                    $this->localizacoes[$membroId] = [
+                        'latitude' => (float) $latitude,
+                        'longitude' => (float) $longitude,
+                        'accuracy' => min((float) $precisao, 10000),
+                        'updated_at' => $atualizadaEm
+                    ];
+                }
+
+                /*
+                 * Enquanto existe uma ligação WebSocket, as preferências em
+                 * tempo real dessa ligação prevalecem sobre um registo nativo
+                 * que possa ainda estar em trânsito.
+                 */
+                if (!empty($this->ligacoesPorMembro[$membroId])) {
+                    continue;
+                }
+
+                $this->garantirPessoaVisivel($membroId, $linha);
+
+                if (isset($this->pessoas[$membroId])) {
+                    $persistidosAtuais[$membroId] = true;
+                }
+            }
+
+            foreach ($this->membrosVisiveisPorPersistencia as $membroId => $_) {
+                if (isset($persistidosAtuais[$membroId])) continue;
+
+                if (!$this->membroTemLigacaoVisivel($membroId)) {
+                    unset($this->pessoas[$membroId]);
+                }
+
+                if (!$this->membroTemLigacaoComLocalizacaoAtiva($membroId)) {
+                    unset($this->localizacoes[$membroId]);
+                }
+            }
+
+            $this->membrosVisiveisPorPersistencia = $persistidosAtuais;
+            $this->localizacoesPersistidasCarregadasEm = $agora;
+        } catch (\Throwable $erro) {
+            $this->localizacoesPersistidasCarregadasEm = $agora;
+
+            echo sprintf(
+                "[BACKGROUND LOCATION ERROR] %s\n",
+                $erro->getMessage()
+            );
+        } finally {
+            $statement = null;
+            $database = null;
+        }
     }
 
     private function obterFaixaEtaria(string $nascimento): ?string
@@ -1476,15 +1638,26 @@ class WebSocket implements MessageComponentInterface
             function () use ($membroId): void {
                 unset($this->temporizadoresSaida[$membroId]);
 
+                $this->sincronizarLocalizacoesPersistidas(true);
+
                 $removeuPessoa = false;
                 $removeuLocalizacao = false;
+                $presencaPersistida = isset(
+                    $this->membrosVisiveisPorPersistencia[$membroId]
+                );
 
-                if (!$this->membroTemLigacaoVisivel($membroId)) {
+                if (
+                    !$this->membroTemLigacaoVisivel($membroId) &&
+                    !$presencaPersistida
+                ) {
                     $removeuPessoa = isset($this->pessoas[$membroId]);
                     unset($this->pessoas[$membroId]);
                 }
 
-                if (!$this->membroTemLigacaoComLocalizacaoAtiva($membroId)) {
+                if (
+                    !$this->membroTemLigacaoComLocalizacaoAtiva($membroId) &&
+                    !$presencaPersistida
+                ) {
                     $removeuLocalizacao = isset($this->localizacoes[$membroId]);
                     unset($this->localizacoes[$membroId]);
                 }
