@@ -1,6 +1,6 @@
 <?php
 
-define('DEV', false);
+define('DEV', true);
 define('ROOT_FOLTER', 'public');
 define('DOC_ROOT', '/');
 define('DOMAIN', 'https://margot-app.com/');
