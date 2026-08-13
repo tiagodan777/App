@@ -44,6 +44,7 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin,
     private var retryWorkItem: DispatchWorkItem?
     private var lastSentAt = Date.distantPast
     private var lastSentLocation: CLLocation?
+    private var pendingStartCall: CAPPluginCall?
 
     private let networkMonitor = NWPathMonitor()
     private let networkQueue = DispatchQueue(
@@ -118,10 +119,15 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin,
 
         switch manager.authorizationStatus {
         case .notDetermined:
-            manager.requestAlwaysAuthorization()
+            pendingStartCall?.reject(
+                "Foi iniciado um novo pedido de localização."
+            )
+            pendingStartCall = call
+            manager.requestWhenInUseAuthorization()
+            return
         case .authorizedWhenInUse:
-            manager.requestAlwaysAuthorization()
             startForegroundLocationIfPossible()
+            manager.requestAlwaysAuthorization()
         case .authorizedAlways:
             configureMonitoring()
         case .denied, .restricted:
@@ -177,16 +183,45 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin,
     public func locationManagerDidChangeAuthorization(
         _ manager: CLLocationManager
     ) {
+        let shouldRequestAlways =
+            manager.authorizationStatus == .authorizedWhenInUse &&
+            pendingStartCall != nil
+
         configureMonitoring()
 
         if manager.authorizationStatus == .authorizedWhenInUse {
             startForegroundLocationIfPossible()
         }
 
+        if manager.authorizationStatus != .notDetermined,
+           let startCall = pendingStartCall {
+            pendingStartCall = nil
+            startCall.resolve(statusData())
+        }
+
         notifyListeners(
             "backgroundLocationAuthorizationChanged",
             data: statusData()
         )
+
+        if shouldRequestAlways {
+            /*
+             * Em iOS moderno, o fluxo fiável é: primeiro "Enquanto
+             * utiliza" e só depois um pedido separado para "Sempre".
+             * A pequena espera deixa o primeiro alerta desaparecer antes
+             * de o sistema apresentar o segundo.
+             */
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                [weak self] in
+
+                guard let self = self,
+                      self.manager.authorizationStatus == .authorizedWhenInUse else {
+                    return
+                }
+
+                self.manager.requestAlwaysAuthorization()
+            }
+        }
     }
 
     public func locationManager(
