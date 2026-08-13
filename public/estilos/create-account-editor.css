@@ -2,7 +2,7 @@
 
 /* Introdução da criação */
 
-#create-account-form > #introducao {
+#introducao {
     min-height: 100dvh;
     margin: 0;
     padding:
@@ -25,14 +25,14 @@
     letter-spacing: 0.02em;
 }
 
-#create-account-form > #introducao > h1 {
+#introducao > h1 {
     max-width: 700px;
     margin: 0;
     font-size: clamp(2.25rem, 8vw, 4.4rem);
 }
 
-#create-account-form > #introducao > .margot-intro-texto,
-#create-account-form > #introducao > .margot-intro-privacidade {
+#introducao > .margot-intro-texto,
+#introducao > .margot-intro-privacidade {
     width: min(92%, 610px);
     margin: 0;
     align-items: center;
@@ -41,7 +41,7 @@
     text-align: center;
 }
 
-#create-account-form > #introducao > .margot-intro-privacidade {
+#introducao > .margot-intro-privacidade {
     color: #73737c;
     font-size: 0.82rem;
 }
