@@ -5,4 +5,4 @@ declare(strict_types=1);
 $cookie->delete();
 $session->delete();
 
-redirect(DOC_ROOT . 'login/');
+redirect(DOC_ROOT . 'introduction/');

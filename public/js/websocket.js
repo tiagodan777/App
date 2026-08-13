@@ -184,7 +184,7 @@
                 stopLocationTracking();
 
                 window.location.assign(
-                    String(window.loginUrl || '/login/')
+                    String(window.loginUrl || '/introduction/')
                 );
 
                 return;

@@ -223,7 +223,7 @@
             window.webSocketTokenUrl = {{ (doc_root ~ 'websocket-token')|json_encode|raw }};
             window.backgroundLocationTokenUrl = {{ (doc_root ~ 'background-location-token')|json_encode|raw }};
             window.backgroundLocationUpdateUrl = {{ (doc_root ~ 'background-location-update')|json_encode|raw }};
-            window.loginUrl = {{ (doc_root ~ 'login/')|json_encode|raw }};
+            window.loginUrl = {{ (doc_root ~ 'introduction/')|json_encode|raw }};
 
             window.webSocketUrl = window.location.protocol === 'https:'
                 ? 'wss://' + window.location.host + '/ws/'
