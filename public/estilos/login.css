@@ -14,7 +14,7 @@ main > form {
     width: 85%;
     max-width: 520px;
     height: 50%;
-    margin-top: -15%;
+    margin-top: 0%;
     display: flex;
     flex-flow: column nowrap;
     justify-content: flex-start;
