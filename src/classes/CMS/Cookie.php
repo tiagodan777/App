@@ -12,6 +12,7 @@ class Cookie
     private const DURACAO = 1209600;
 
     private Token $tokens;
+
     public string $token;
 
     public function __construct(Database $db)
@@ -25,18 +26,27 @@ class Cookie
         $membroId = trim((string) ($member['id'] ?? ''));
 
         if ($membroId === '') {
-            throw new RuntimeException('Não foi possível criar o cookie de sessão.');
+            throw new RuntimeException(
+                'Não foi possível criar o cookie de sessão.'
+            );
         }
 
         if ($this->token !== '') {
             $this->tokens->delete($this->token);
         }
 
-        $token = $this->tokens->create($membroId, 'stay_logged_id', self::DURACAO);
+        $token = $this->tokens->create(
+            $membroId,
+            'stay_logged_id',
+            self::DURACAO
+        );
 
         if (!$this->guardar($token, time() + self::DURACAO)) {
             $this->tokens->delete($token);
-            throw new RuntimeException('Não foi possível guardar o cookie de sessão.');
+
+            throw new RuntimeException(
+                'Não foi possível guardar o cookie de sessão.'
+            );
         }
 
         $this->token = $token;
@@ -51,13 +61,15 @@ class Cookie
 
     public function delete(): void
     {
-        if ($this->token !== '') {
-            $this->tokens->delete($this->token);
+        try {
+            if ($this->token !== '') {
+                $this->tokens->delete($this->token);
+            }
+        } finally {
+            $this->guardar('', time() - 3600);
+            $this->token = '';
+            unset($_COOKIE[self::NOME]);
         }
-
-        $this->guardar('', time() - 3600);
-        $this->token = '';
-        unset($_COOKIE[self::NOME]);
     }
 
     private function guardar(string $valor, int $validade): bool

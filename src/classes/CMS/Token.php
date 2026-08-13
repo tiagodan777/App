@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\CMS;
@@ -16,13 +17,15 @@ final class Token
         'delete_account' => 1200,
         'email_verification' => 86400,
         'stay_logged_id' => 1209600,
-        'websocket' => 60
+        'websocket' => 60,
+        'background_location' => 2592000
     ];
 
     private const PROPOSITOS_TOKEN_UNICO = [
         'password_reset',
         'delete_account',
-        'email_verification'
+        'email_verification',
+        'background_location'
     ];
 
     public function __construct(Database $db)
@@ -44,13 +47,17 @@ final class Token
         $this->validarProposito($proposito);
 
         if ($membroId === '') {
-            throw new InvalidArgumentException('O membro do token não é válido.');
+            throw new InvalidArgumentException(
+                'O membro do token não é válido.'
+            );
         }
 
         $duracao ??= self::DURACOES[$proposito];
 
         if ($duracao < 1) {
-            throw new InvalidArgumentException('Duração de token inválida.');
+            throw new InvalidArgumentException(
+                'Duração de token inválida.'
+            );
         }
 
         $token = bin2hex(random_bytes(32));
@@ -61,7 +68,13 @@ final class Token
                 $this->db->beginTransaction();
             }
 
-            if (in_array($proposito, self::PROPOSITOS_TOKEN_UNICO, true)) {
+            if (
+                in_array(
+                    $proposito,
+                    self::PROPOSITOS_TOKEN_UNICO,
+                    true
+                )
+            ) {
                 $this->db->runSQL(
                     'DELETE FROM token
                      WHERE membro_id = :membro_id
@@ -87,7 +100,10 @@ final class Token
                  )',
                 [
                     'token' => self::hash($token),
-                    'validade' => gmdate('Y-m-d H:i:s', time() + $duracao),
+                    'validade' => gmdate(
+                        'Y-m-d H:i:s',
+                        time() + $duracao
+                    ),
                     'membro_id' => $membroId,
                     'proposito' => $proposito
                 ]
@@ -97,7 +113,10 @@ final class Token
                 $this->db->commit();
             }
         } catch (Throwable $erro) {
-            if ($gerirTransacao && $this->db->inTransaction()) {
+            if (
+                $gerirTransacao &&
+                $this->db->inTransaction()
+            ) {
                 $this->db->rollBack();
             }
 
@@ -113,7 +132,10 @@ final class Token
     ): string|false {
         $token = trim($token);
 
-        if ($token === '' || !isset(self::DURACOES[$proposito])) {
+        if (
+            $token === '' ||
+            !isset(self::DURACOES[$proposito])
+        ) {
             return false;
         }
 
@@ -137,7 +159,10 @@ final class Token
     ): string|false {
         $token = trim($token);
 
-        if ($token === '' || !isset(self::DURACOES[$proposito])) {
+        if (
+            $token === '' ||
+            !isset(self::DURACOES[$proposito])
+        ) {
             return false;
         }
 
@@ -187,7 +212,10 @@ final class Token
 
             return (string) $registo['membro_id'];
         } catch (Throwable $erro) {
-            if ($gerirTransacao && $this->db->inTransaction()) {
+            if (
+                $gerirTransacao &&
+                $this->db->inTransaction()
+            ) {
                 $this->db->rollBack();
             }
 
@@ -250,7 +278,9 @@ final class Token
     private function validarProposito(string $proposito): void
     {
         if (!isset(self::DURACOES[$proposito])) {
-            throw new InvalidArgumentException('Propósito de token inválido.');
+            throw new InvalidArgumentException(
+                'Propósito de token inválido.'
+            );
         }
     }
 }

@@ -2,7 +2,10 @@
     'use strict';
 
     var $miniMenu = $('.mini-menu');
-    if (!$miniMenu.length) return;
+
+    if (!$miniMenu.length) {
+        return;
+    }
 
     $(document).off('.margotMiniMenu');
 
@@ -11,10 +14,10 @@
     var $acoes = $('#acoes-perfil');
     var $acoesPrincipal = $('#acoes-perfil-principal');
     var $formDenuncia = $('#form-denuncia');
+
     var aEnviarHey = false;
     var aEnviarMensagem = false;
     var aProcessarSeguranca = false;
-    var aAbrirPerfil = false;
 
     function texto(valor) {
         return String(valor || '').trim();
@@ -22,22 +25,38 @@
 
     function urlFoto(valor) {
         try {
-            return new URL(texto(valor) || '/imagens/fotos-perfil/default.webp', window.location.href).href;
+            return new URL(
+                texto(valor) ||
+                    '/imagens/fotos-perfil/default.webp',
+                window.location.href
+            ).href;
         } catch (erro) {
             return '/imagens/fotos-perfil/default.webp';
         }
     }
 
     function membroId(elemento) {
-        return texto(elemento.getAttribute('data-membro-id') || elemento.getAttribute('data-id') || elemento.id);
+        return texto(
+            elemento.getAttribute('data-membro-id') ||
+            elemento.getAttribute('data-id') ||
+            elemento.id
+        );
     }
 
     function nome(elemento) {
-        return texto(elemento.getAttribute('data-nome') || elemento.getAttribute('alt') || elemento.getAttribute('title')) || 'Utilizador';
+        return texto(
+            elemento.getAttribute('data-nome') ||
+            elemento.getAttribute('alt') ||
+            elemento.getAttribute('title')
+        ) || 'Utilizador';
     }
 
     function foto(elemento) {
-        return urlFoto(elemento.currentSrc || elemento.src || elemento.getAttribute('src'));
+        return urlFoto(
+            elemento.currentSrc ||
+            elemento.src ||
+            elemento.getAttribute('src')
+        );
     }
 
     function baseUrl(valor, fallback) {
@@ -45,40 +64,67 @@
     }
 
     function idSelecionado() {
-        return texto($miniMenu.attr('data-destinatario-id'));
+        return texto(
+            $miniMenu.attr('data-destinatario-id')
+        );
     }
 
     function tokenAcessoPerfilSelecionado() {
-        return texto($miniMenu.attr('data-profile-access-token'));
+        return texto(
+            $miniMenu.attr('data-profile-access-token')
+        );
     }
 
     function nomeSelecionado() {
-        return texto($miniMenu.find('header h1').text()) || 'esta pessoa';
+        return texto(
+            $miniMenu.find('header h1').text()
+        ) || 'esta pessoa';
     }
 
     function ajustarAlturaMiniMenu(acoesAbertas) {
-        if (typeof window.definirMiniMenuAcoes === 'function') {
+        if (
+            typeof window.definirMiniMenuAcoes ===
+            'function'
+        ) {
             window.definirMiniMenuAcoes(acoesAbertas);
         }
     }
 
     function fecharAcoes() {
-        $acoes.removeClass('aberta').attr('aria-hidden', 'true').prop('hidden', true);
+        $acoes
+            .removeClass('aberta')
+            .attr('aria-hidden', 'true')
+            .prop('hidden', true);
+
         $maisOpcoes.attr('aria-expanded', 'false');
         $acoesPrincipal.prop('hidden', false);
         $formDenuncia.prop('hidden', true);
+
         ajustarAlturaMiniMenu(false);
     }
 
     function abrirAcoes() {
-        if ($miniMenu.hasClass('perfil-proprio') || !idSelecionado()) return;
+        if (
+            $miniMenu.hasClass('perfil-proprio') ||
+            !idSelecionado()
+        ) {
+            return;
+        }
 
         ajustarAlturaMiniMenu(true);
-        $acoes.prop('hidden', false).attr('aria-hidden', 'false').addClass('aberta');
+
+        $acoes
+            .prop('hidden', false)
+            .attr('aria-hidden', 'false')
+            .addClass('aberta');
+
         $maisOpcoes.attr('aria-expanded', 'true');
         $acoesPrincipal.prop('hidden', false);
         $formDenuncia.prop('hidden', true);
-        $acoes.find('.acoes-perfil-caixa').trigger('focus');
+
+        $acoes
+            .find('.acoes-perfil-caixa')
+            .trigger('focus');
     }
 
     function abrirFormularioDenuncia() {
@@ -88,39 +134,73 @@
     }
 
     function prepararMiniMenu(elemento) {
-        if (!elemento) return false;
+        if (!elemento) {
+            return false;
+        }
 
         var id = membroId(elemento);
-        if (!id) return false;
+
+        if (!id) {
+            return false;
+        }
 
         var membroNome = nome(elemento);
         var souEu = id === texto(window.membroId);
-        var tokenAcessoPerfil = texto(elemento.getAttribute('data-profile-access-token'));
-        var imagem = $miniMenu.find('header img').get(0);
+
+        var tokenAcessoPerfil = texto(
+            elemento.getAttribute(
+                'data-profile-access-token'
+            )
+        );
+
+        var imagem = $miniMenu
+            .find('header img')
+            .get(0);
 
         fecharAcoes();
 
         $miniMenu
             .attr('data-destinatario-id', id)
-            .attr('data-profile-access-token', tokenAcessoPerfil)
+            .attr(
+                'data-profile-access-token',
+                tokenAcessoPerfil
+            )
             .toggleClass('perfil-proprio', souEu);
 
-        $miniMenu.find('.mini-menu-perfil').attr(
-            'href',
-            baseUrl(window.profileUrl, '/profile') + '/' + encodeURIComponent(id)
-        );
+        $miniMenu
+            .find('.mini-menu-perfil')
+            .attr(
+                'href',
+                baseUrl(
+                    window.profileUrl,
+                    '/profile'
+                ) +
+                '/' +
+                encodeURIComponent(id)
+            );
 
-        $miniMenu.find('header h1').text(membroNome);
+        $miniMenu
+            .find('header h1')
+            .text(membroNome);
 
-        $miniMenu.find('.mini-menu-mensagem').attr(
-            'action',
-            baseUrl(window.messagesUrl, '/messages') + '/' + encodeURIComponent(id)
-        );
+        $miniMenu
+            .find('.mini-menu-mensagem')
+            .attr(
+                'action',
+                baseUrl(
+                    window.messagesUrl,
+                    '/messages'
+                ) +
+                '/' +
+                encodeURIComponent(id)
+            );
 
         if (imagem) {
             imagem.onerror = function () {
                 this.onerror = null;
-                this.src = urlFoto('/imagens/fotos-perfil/default.webp');
+                this.src = urlFoto(
+                    '/imagens/fotos-perfil/default.webp'
+                );
             };
 
             imagem.src = foto(elemento);
@@ -131,14 +211,23 @@
     }
 
     function aviso(mensagem, tipo) {
-        if (typeof window.mostrarMensagemTemporaria === 'function') {
-            window.mostrarMensagemTemporaria(mensagem, tipo);
+        if (
+            typeof window.mostrarMensagemTemporaria ===
+            'function'
+        ) {
+            window.mostrarMensagemTemporaria(
+                mensagem,
+                tipo
+            );
         }
     }
 
     function libertarHey() {
         aEnviarHey = false;
-        $('#enviar-hey').prop('disabled', false).removeAttr('aria-busy');
+
+        $('#enviar-hey')
+            .prop('disabled', false)
+            .removeAttr('aria-busy');
     }
 
     async function pedidoSeguranca(acao, campos) {
@@ -147,19 +236,25 @@
         dados.set('action', acao);
         dados.set('target_id', idSelecionado());
 
-        Object.keys(campos || {}).forEach(function (chave) {
-            dados.set(chave, campos[chave]);
-        });
-
-        var resposta = await fetch(baseUrl(window.safetyUrl, '/safety'), {
-            method: 'POST',
-            body: dados,
-            credentials: 'same-origin',
-            headers: {
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
+        Object.keys(campos || {}).forEach(
+            function (chave) {
+                dados.set(chave, campos[chave]);
             }
-        });
+        );
+
+        var resposta = await fetch(
+            baseUrl(window.safetyUrl, '/safety'),
+            {
+                method: 'POST',
+                body: dados,
+                credentials: 'same-origin',
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With':
+                        'XMLHttpRequest'
+                }
+            }
+        );
 
         var conteudo = await resposta.text();
         var resultado;
@@ -167,248 +262,287 @@
         try {
             resultado = JSON.parse(conteudo);
         } catch (erro) {
-            throw new Error('O servidor devolveu uma resposta inválida.');
+            throw new Error(
+                'O servidor devolveu uma resposta inválida.'
+            );
         }
 
         if (!resposta.ok || !resultado.success) {
-            throw new Error(resultado.message || 'Não foi possível concluir o pedido.');
+            throw new Error(
+                resultado.message ||
+                'Não foi possível concluir o pedido.'
+            );
         }
 
         return resultado;
     }
 
     function removerPessoaDoMapa(id) {
-        $('.foto').filter(function () {
-            return membroId(this) === id;
-        }).remove();
+        $('.foto')
+            .filter(function () {
+                return membroId(this) === id;
+            })
+            .remove();
     }
 
     function definirSegurancaOcupada(ocupada) {
         aProcessarSeguranca = ocupada;
-        $acoes.find('button, select, textarea').prop('disabled', ocupada);
+
+        $acoes
+            .find('button, select, textarea')
+            .prop('disabled', ocupada);
     }
 
-    window.prepararMiniMenuDaFoto = prepararMiniMenu;
+    window.prepararMiniMenuDaFoto =
+        prepararMiniMenu;
 
-    $(document).on('pointerdown.margotMiniMenu click.margotMiniMenu', '.foto', function () {
-        prepararMiniMenu(this);
-    });
+    $(document).on(
+        'pointerdown.margotMiniMenu click.margotMiniMenu',
+        '.foto',
+        function () {
+            prepararMiniMenu(this);
+        }
+    );
 
-    $(document).on('click.margotMiniMenu', '.mini-menu-perfil', async function (evento) {
-        var token = tokenAcessoPerfilSelecionado();
-        var id = idSelecionado();
-        var souEu = id !== '' && id === texto(window.membroId);
-        var destino = texto($(this).attr('href'));
-        var $link = $(this);
+    $(document).on(
+        'click.margotMiniMenu',
+        '#enviar-hey',
+        function (evento) {
+            evento.preventDefault();
+            evento.stopPropagation();
 
-        if (!token || !destino || souEu) return;
+            if (aEnviarHey) {
+                return;
+            }
 
-        evento.preventDefault();
+            var id = idSelecionado();
 
-        if (aAbrirPerfil) return;
-
-        aAbrirPerfil = true;
-        $link.attr('aria-busy', 'true');
-
-        try {
-            var dados = new FormData();
-
-            dados.set('action', 'grant_profile_access');
-            dados.set('profile_access_token', token);
-
-            var resposta = await fetch(destino, {
-                method: 'POST',
-                body: dados,
-                credentials: 'same-origin',
-                cache: 'no-store',
-                headers: {
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            });
-
-            var resultado = await resposta.json().catch(function () {
-                return {};
-            });
-
-            if (!resposta.ok || resultado.success !== true) {
-                throw new Error(
-                    resultado.message ||
-                    'Não foi possível abrir este perfil.'
+            if (!id) {
+                aviso(
+                    'Seleciona primeiro uma pessoa.',
+                    'erro'
                 );
+
+                return;
             }
 
             if (
-                window.MargotNavigation &&
-                typeof window.MargotNavigation.navigate === 'function'
+                !window.AppWebSocket ||
+                !window.AppWebSocket.isConnected()
             ) {
-                await window.MargotNavigation.navigate(destino, {
-                    historico: 'push'
-                });
-            } else {
-                window.location.assign(destino);
-            }
-        } catch (erro) {
-            aviso(
-                erro && erro.message
-                    ? erro.message
-                    : 'Não foi possível abrir este perfil.',
-                'erro'
-            );
-        } finally {
-            aAbrirPerfil = false;
-            $link.removeAttr('aria-busy');
-        }
-    });
+                aviso(
+                    'A ligação está a ser restabelecida.',
+                    'erro'
+                );
 
-    $(document).on('click.margotMiniMenu', '#enviar-hey', function (evento) {
-        evento.preventDefault();
-        evento.stopPropagation();
-
-        if (aEnviarHey) return;
-
-        var id = idSelecionado();
-
-        if (!id) {
-            aviso('Seleciona primeiro uma pessoa.', 'erro');
-            return;
-        }
-
-        if (!window.AppWebSocket || !window.AppWebSocket.isConnected()) {
-            aviso('A ligação está a ser restabelecida.', 'erro');
-
-            if (window.AppWebSocket) {
-                window.AppWebSocket.connect();
-            }
-
-            return;
-        }
-
-        aEnviarHey = true;
-        $(this).prop('disabled', true).attr('aria-busy', 'true');
-
-        var enviado = window.AppWebSocket.send({
-            type: 'notify',
-            destinatario_id: id
-        });
-
-        if (!enviado) {
-            libertarHey();
-            aviso('Não foi possível enviar o Hey.', 'erro');
-            return;
-        }
-
-        window.setTimeout(libertarHey, 1200);
-    });
-
-    $(document).on('submit.margotMiniMenu', '.mini-menu-mensagem', async function (evento) {
-        evento.preventDefault();
-
-        if (aEnviarMensagem) return;
-
-        var id = idSelecionado();
-        var $form = $(this);
-        var $botao = $form.find('[type="submit"]');
-        var dados = new FormData(this);
-        var ficheiro = dados.get('media');
-
-        if (!id) {
-            aviso('Seleciona primeiro uma pessoa.', 'erro');
-            return;
-        }
-
-        if (
-            !texto(dados.get('mensagem')) &&
-            !(ficheiro instanceof File && ficheiro.size)
-        ) {
-            return;
-        }
-
-        dados.set('action', 'send');
-
-        var tokenProximidade = tokenAcessoPerfilSelecionado();
-
-        if (tokenProximidade) {
-            dados.set('profile_access_token', tokenProximidade);
-        }
-
-        aEnviarMensagem = true;
-        $botao.prop('disabled', true).val('A enviar…');
-
-        try {
-            var resposta = await fetch(
-                baseUrl(window.messagesUrl, '/messages') + '/' + encodeURIComponent(id),
-                {
-                    method: 'POST',
-                    body: dados,
-                    credentials: 'same-origin',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
+                if (window.AppWebSocket) {
+                    window.AppWebSocket.connect();
                 }
-            );
 
-            var conteudo = await resposta.text();
-            var resultado;
-
-            try {
-                resultado = JSON.parse(conteudo);
-            } catch (erro) {
-                throw new Error('O servidor devolveu uma resposta inválida.');
+                return;
             }
 
-            if (!resposta.ok || !resultado.success) {
-                throw new Error(
-                    resultado.message ||
-                    'Não foi possível enviar a mensagem.'
+            aEnviarHey = true;
+
+            $(this)
+                .prop('disabled', true)
+                .attr('aria-busy', 'true');
+
+            var enviado = window.AppWebSocket.send({
+                type: 'notify',
+                destinatario_id: id
+            });
+
+            if (!enviado) {
+                libertarHey();
+
+                aviso(
+                    'Não foi possível enviar o Hey.',
+                    'erro'
+                );
+
+                return;
+            }
+
+            window.setTimeout(
+                libertarHey,
+                1200
+            );
+        }
+    );
+
+    $(document).on(
+        'submit.margotMiniMenu',
+        '.mini-menu-mensagem',
+        async function (evento) {
+            evento.preventDefault();
+
+            if (aEnviarMensagem) {
+                return;
+            }
+
+            var id = idSelecionado();
+            var $form = $(this);
+            var $botao = $form.find('[type="submit"]');
+            var dados = new FormData(this);
+            var ficheiro = dados.get('media');
+
+            if (!id) {
+                aviso(
+                    'Seleciona primeiro uma pessoa.',
+                    'erro'
+                );
+
+                return;
+            }
+
+            if (
+                !texto(dados.get('mensagem')) &&
+                !(
+                    ficheiro instanceof File &&
+                    ficheiro.size
+                )
+            ) {
+                return;
+            }
+
+            dados.set('action', 'send');
+
+            var tokenProximidade =
+                tokenAcessoPerfilSelecionado();
+
+            if (tokenProximidade) {
+                dados.set(
+                    'profile_access_token',
+                    tokenProximidade
                 );
             }
 
-            this.reset();
+            aEnviarMensagem = true;
+
+            $botao
+                .prop('disabled', true)
+                .val('A enviar…');
+
+            try {
+                var resposta = await fetch(
+                    baseUrl(
+                        window.messagesUrl,
+                        '/messages'
+                    ) +
+                    '/' +
+                    encodeURIComponent(id),
+                    {
+                        method: 'POST',
+                        body: dados,
+                        credentials: 'same-origin',
+                        headers: {
+                            Accept: 'application/json',
+                            'X-Requested-With':
+                                'XMLHttpRequest'
+                        }
+                    }
+                );
+
+                var conteudo =
+                    await resposta.text();
+
+                var resultado;
+
+                try {
+                    resultado =
+                        JSON.parse(conteudo);
+                } catch (erro) {
+                    throw new Error(
+                        'O servidor devolveu uma resposta inválida.'
+                    );
+                }
+
+                if (
+                    !resposta.ok ||
+                    !resultado.success
+                ) {
+                    throw new Error(
+                        resultado.message ||
+                        'Não foi possível enviar a mensagem.'
+                    );
+                }
+
+                this.reset();
+
+                $anexo
+                    .removeClass('selecionado')
+                    .text('+')
+                    .attr(
+                        'aria-label',
+                        'Adicionar fotografia ou vídeo'
+                    );
+
+                aviso(
+                    'Mensagem enviada.',
+                    'sucesso'
+                );
+
+                if (
+                    window.AppWebSocket &&
+                    window.AppWebSocket.isConnected()
+                ) {
+                    window.AppWebSocket.send({
+                        type: 'chat_publish',
+                        message_id:
+                            resultado.message.id
+                    });
+                }
+            } catch (erro) {
+                aviso(erro.message, 'erro');
+            } finally {
+                aEnviarMensagem = false;
+
+                $botao
+                    .prop('disabled', false)
+                    .val('Enviar');
+            }
+        }
+    );
+
+    $(document).on(
+        'change.margotMiniMenu',
+        '#mini-menu-media',
+        function () {
+            var ficheiro =
+                this.files &&
+                this.files[0];
 
             $anexo
-                .removeClass('selecionado')
-                .text('+')
-                .attr('aria-label', 'Adicionar fotografia ou vídeo');
-
-            aviso('Mensagem enviada.', 'sucesso');
-
-            if (window.AppWebSocket && window.AppWebSocket.isConnected()) {
-                window.AppWebSocket.send({
-                    type: 'chat_publish',
-                    message_id: resultado.message.id
-                });
-            }
-        } catch (erro) {
-            aviso(erro.message, 'erro');
-        } finally {
-            aEnviarMensagem = false;
-            $botao.prop('disabled', false).val('Enviar');
+                .toggleClass(
+                    'selecionado',
+                    Boolean(ficheiro)
+                )
+                .text(ficheiro ? '✓' : '+')
+                .attr(
+                    'aria-label',
+                    ficheiro
+                        ? ficheiro.name
+                        : 'Adicionar fotografia ou vídeo'
+                );
         }
-    });
+    );
 
-    $(document).on('change.margotMiniMenu', '#mini-menu-media', function () {
-        var ficheiro = this.files && this.files[0];
+    $maisOpcoes.on(
+        'pointerdown pointerup',
+        function (evento) {
+            evento.stopPropagation();
+        }
+    );
 
-        $anexo
-            .toggleClass('selecionado', Boolean(ficheiro))
-            .text(ficheiro ? '✓' : '+')
-            .attr(
-                'aria-label',
-                ficheiro ? ficheiro.name : 'Adicionar fotografia ou vídeo'
-            );
-    });
-
-    $maisOpcoes.on('pointerdown pointerup', function (evento) {
-        evento.stopPropagation();
-    });
-
-    $maisOpcoes.on('click', function (evento) {
-        evento.preventDefault();
-        evento.stopPropagation();
-        abrirAcoes();
-    });
+    $maisOpcoes.on(
+        'click',
+        function (evento) {
+            evento.preventDefault();
+            evento.stopPropagation();
+            abrirAcoes();
+        }
+    );
 
     $acoes.on(
         'pointerdown pointermove pointerup pointercancel',
@@ -417,101 +551,160 @@
         }
     );
 
-    $acoes.on('click', '[data-fechar-acoes]', function (evento) {
-        evento.preventDefault();
-        fecharAcoes();
-    });
-
-    $('#abrir-denuncia').on('click', abrirFormularioDenuncia);
-
-    $('#voltar-denuncia').on('click', function () {
-        $formDenuncia.prop('hidden', true);
-        $acoesPrincipal.prop('hidden', false);
-    });
-
-    $('#bloquear-membro').on('click', async function () {
-        if (aProcessarSeguranca) return;
-
-        var id = idSelecionado();
-        var membroNome = nomeSelecionado();
-
-        if (
-            !id ||
-            !window.confirm(
-                'Bloquear ' +
-                membroNome +
-                '? Deixam imediatamente de se ver no mapa.'
-            )
-        ) {
-            return;
+    $acoes.on(
+        'click',
+        '[data-fechar-acoes]',
+        function (evento) {
+            evento.preventDefault();
+            fecharAcoes();
         }
+    );
 
-        definirSegurancaOcupada(true);
+    $('#abrir-denuncia').on(
+        'click',
+        abrirFormularioDenuncia
+    );
 
-        try {
-            await pedidoSeguranca('block');
-            removerPessoaDoMapa(id);
+    $('#voltar-denuncia').on(
+        'click',
+        function () {
+            $formDenuncia.prop('hidden', true);
+            $acoesPrincipal.prop('hidden', false);
+        }
+    );
 
-            if (window.AppWebSocket && window.AppWebSocket.isConnected()) {
-                window.AppWebSocket.send({
-                    type: 'block_refresh',
-                    target_id: id
-                });
+    $('#bloquear-membro').on(
+        'click',
+        async function () {
+            if (aProcessarSeguranca) {
+                return;
             }
 
-            fecharAcoes();
+            var id = idSelecionado();
+            var membroNome = nomeSelecionado();
 
-            if (typeof window.fecharMiniMenu === 'function') {
-                window.fecharMiniMenu();
+            if (
+                !id ||
+                !window.confirm(
+                    'Bloquear ' +
+                    membroNome +
+                    '? Deixam imediatamente de se ver no mapa.'
+                )
+            ) {
+                return;
             }
 
-            aviso(membroNome + ' foi bloqueado.', 'sucesso');
-        } catch (erro) {
-            aviso(erro.message, 'erro');
-        } finally {
-            definirSegurancaOcupada(false);
+            definirSegurancaOcupada(true);
+
+            try {
+                await pedidoSeguranca('block');
+
+                removerPessoaDoMapa(id);
+
+                if (
+                    window.AppWebSocket &&
+                    window.AppWebSocket.isConnected()
+                ) {
+                    window.AppWebSocket.send({
+                        type: 'block_refresh',
+                        target_id: id
+                    });
+                }
+
+                fecharAcoes();
+
+                if (
+                    typeof window.fecharMiniMenu ===
+                    'function'
+                ) {
+                    window.fecharMiniMenu();
+                }
+
+                aviso(
+                    membroNome + ' foi bloqueado.',
+                    'sucesso'
+                );
+            } catch (erro) {
+                aviso(erro.message, 'erro');
+            } finally {
+                definirSegurancaOcupada(false);
+            }
         }
-    });
+    );
 
-    $formDenuncia.on('submit', async function (evento) {
-        evento.preventDefault();
+    $formDenuncia.on(
+        'submit',
+        async function (evento) {
+            evento.preventDefault();
 
-        if (aProcessarSeguranca) return;
+            if (aProcessarSeguranca) {
+                return;
+            }
 
-        var motivo = texto($('#denuncia-motivo').val());
-        var mensagem = texto($('#denuncia-mensagem').val());
+            var motivo = texto(
+                $('#denuncia-motivo').val()
+            );
 
-        if (!motivo) {
-            aviso('Escolhe o motivo da denúncia.', 'erro');
-            return;
+            var mensagem = texto(
+                $('#denuncia-mensagem').val()
+            );
+
+            if (!motivo) {
+                aviso(
+                    'Escolhe o motivo da denúncia.',
+                    'erro'
+                );
+
+                return;
+            }
+
+            definirSegurancaOcupada(true);
+
+            try {
+                await pedidoSeguranca(
+                    'report',
+                    {
+                        motivo: motivo,
+                        mensagem: mensagem
+                    }
+                );
+
+                this.reset();
+                fecharAcoes();
+
+                aviso(
+                    'Denúncia enviada. Obrigado por nos avisares.',
+                    'sucesso'
+                );
+            } catch (erro) {
+                aviso(erro.message, 'erro');
+            } finally {
+                definirSegurancaOcupada(false);
+            }
         }
+    );
 
-        definirSegurancaOcupada(true);
-
-        try {
-            await pedidoSeguranca('report', {
-                motivo: motivo,
-                mensagem: mensagem
-            });
-
-            this.reset();
-            fecharAcoes();
-            aviso('Denúncia enviada. Obrigado por nos avisares.', 'sucesso');
-        } catch (erro) {
-            aviso(erro.message, 'erro');
-        } finally {
-            definirSegurancaOcupada(false);
+    $(document).on(
+        'keydown.margotMiniMenu',
+        function (evento) {
+            if (
+                evento.key === 'Escape' &&
+                !$acoes.prop('hidden')
+            ) {
+                fecharAcoes();
+            }
         }
-    });
+    );
 
-    $(document).on('keydown.margotMiniMenu', function (evento) {
-        if (evento.key === 'Escape' && !$acoes.prop('hidden')) {
-            fecharAcoes();
-        }
-    });
+    window.addEventListener(
+        'app:hey-enviado',
+        libertarHey
+    );
 
-    window.addEventListener('app:hey-enviado', libertarHey);
-    window.addEventListener('app:hey-erro', libertarHey);
+    window.addEventListener(
+        'app:hey-erro',
+        libertarHey
+    );
 
     function desativarPagina() {
         $(document).off('.margotMiniMenu');
@@ -531,7 +724,10 @@
             desativarPagina
         );
 
-        if (window.prepararMiniMenuDaFoto === prepararMiniMenu) {
+        if (
+            window.prepararMiniMenuDaFoto ===
+            prepararMiniMenu
+        ) {
             delete window.prepararMiniMenuDaFoto;
         }
     }
