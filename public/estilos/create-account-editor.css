@@ -47,9 +47,11 @@
 }
 
 #create-account-form > #introducao > a.entrar {
-     color: #fff;
-     background-color: #e32636;
-     padding: 16px 8px;
+    text-decoration: none;
+    color: #fff;
+    background-color: #e32636;
+    padding: 16px 32px;
+    border-radius: 30px;
 }
 
 #create-account-form > #introducao > a.registar > span {
