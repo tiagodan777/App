@@ -4,13 +4,61 @@ declare(strict_types=1);
 
 namespace App\CMS;
 
+use App\Validate\Validate;
+
 class Member
 {
+    public const TERMS_VERSION = '1.0';
+    public const PRIVACY_VERSION = '1.0';
+
     private $db;
 
     public function __construct($db)
     {
         $this->db = $db;
+    }
+
+    public static function currentLegalVersionsMatch(
+        string $termsVersion,
+        string $privacyVersion
+    ): bool {
+        return hash_equals(
+            self::TERMS_VERSION,
+            trim($termsVersion)
+        ) && hash_equals(
+            self::PRIVACY_VERSION,
+            trim($privacyVersion)
+        );
+    }
+
+    public function recordLegalAcceptance(string $memberId): void
+    {
+        $memberId = trim($memberId);
+
+        if (
+            preg_match(
+                '/^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i',
+                $memberId
+            ) !== 1
+        ) {
+            throw new \InvalidArgumentException('O membro não é válido.');
+        }
+
+        $this->db->runSQL(
+            'INSERT INTO aceitacoes_legais
+                (membro_id, documento, versao)
+             VALUES
+                (:membro_termos, :documento_termos, :versao_termos),
+                (:membro_privacidade, :documento_privacidade, :versao_privacidade)',
+            [
+                'membro_termos' => $memberId,
+                'documento_termos' => 'terms',
+                'versao_termos' => self::TERMS_VERSION,
+                'membro_privacidade' => $memberId,
+                'documento_privacidade' => 'privacy',
+                'versao_privacidade' => self::PRIVACY_VERSION
+            ]
+        );
     }
 
     public function get(string $id): array|false
@@ -737,8 +785,7 @@ class Member
             )
         ) {
             $sql .=
-                ' WHERE LOWER(TRIM(m.email)) = :utilizador
-                  LIMIT 1';
+                ' WHERE LOWER(TRIM(m.email)) = :utilizador';
 
             $identificador =
                 $this->normalizarEmail(
@@ -775,7 +822,6 @@ class Member
                     '/',
                     ''
                 ) = :utilizador
-                LIMIT 1
             ";
 
             $identificador =
@@ -787,6 +833,13 @@ class Member
         if ($identificador === '') {
             return false;
         }
+
+        $sql .=
+            ' AND ' .
+            Validate::adultSqlColumnCondition(
+                'm.nascimento'
+            ) .
+            ' LIMIT 1';
 
         $membro = $this->db
             ->runSQL(
