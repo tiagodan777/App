@@ -526,7 +526,15 @@
 
         if (redirectPendingDestination()) return;
 
-        if (memberId() && notificationsWanted()) register();
+        if (memberId() && notificationsWanted()) {
+        var state = await permissionState();
+
+        if (state === 'prompt' || state === 'prompt-with-rationale') {
+            await requestPermission();
+        } else if (state === 'granted') {
+            await register();
+        }
+    }
     }
 
     if (document.readyState === 'loading') {
