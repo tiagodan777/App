@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\CMS;
 
+use App\Validate\Validate;
+
 class Session
 {
     private Database $db;
@@ -35,7 +37,7 @@ class Session
         }
 
         $membro = $this->db->runSQL(
-            "SELECT m.id, m.primeiro_nome, m.nome_seo, COALESCE((SELECT f.nome_arquivo FROM fotos_perfil AS f WHERE f.membro_id = m.id AND (f.status = 'completo' OR f.status IS NULL) ORDER BY COALESCE(f.ordem, 2147483647), f.id LIMIT 1), 'default.webp') AS foto_perfil FROM membros AS m WHERE m.id = :membro_id LIMIT 1",
+            "SELECT m.id, m.primeiro_nome, m.nome_seo, COALESCE((SELECT f.nome_arquivo FROM fotos_perfil AS f WHERE f.membro_id = m.id AND (f.status = 'completo' OR f.status IS NULL) ORDER BY COALESCE(f.ordem, 2147483647), f.id LIMIT 1), 'default.webp') AS foto_perfil FROM membros AS m WHERE m.id = :membro_id AND " . Validate::adultSqlColumnCondition('m.nascimento') . " LIMIT 1",
             ['membro_id' => $membro_id]
         )->fetch();
 
