@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 use App\CMS\EmailVerification;
+use App\CMS\Member;
 use App\Email\Email;
 use App\Validate\Validate;
 
@@ -717,7 +718,13 @@ if ($metodo !== 'POST') {
                             $membroIdSessao
                         )
                     )
-                    : ''
+                    : '',
+            'idade_minima' =>
+                Validate::MINIMUM_AGE,
+            'versao_termos' =>
+                Member::TERMS_VERSION,
+            'versao_privacidade' =>
+                Member::PRIVACY_VERSION
         ]
     );
 
@@ -900,6 +907,15 @@ $nascimentoValido =
         $ano
     );
 
+$dataNascimento = $nascimentoValido
+    ? sprintf(
+        '%04d-%02d-%02d',
+        $ano,
+        $mes,
+        $dia
+    )
+    : '';
+
 if ($editar('nome')) {
     if (
         !Validate::isText(
@@ -924,12 +940,14 @@ if ($editar('nome')) {
     }
 }
 
-if (
-    $editar('nascimento') &&
-    !$nascimentoValido
-) {
-    $erros['nascimento'] =
-        'Escolhe uma data de nascimento válida.';
+if ($editar('nascimento')) {
+    if (!$nascimentoValido) {
+        $erros['nascimento'] =
+            'Escolhe uma data de nascimento válida.';
+    } elseif (!Validate::isAdult($dataNascimento)) {
+        $erros['nascimento'] =
+            'Tens de ter pelo menos 18 anos para utilizar a Margot.';
+    }
 }
 
 if (
@@ -1061,6 +1079,60 @@ if ($alterarPassword) {
     }
 }
 
+if (!$modoEdicao) {
+    $aceitouTermos =
+        trim(
+            (string) (
+                $_POST['aceitou_termos']
+                ?? ''
+            )
+        );
+
+    $aceitouPrivacidade =
+        trim(
+            (string) (
+                $_POST['aceitou_privacidade']
+                ?? ''
+            )
+        );
+
+    $versaoTermos =
+        trim(
+            (string) (
+                $_POST['versao_termos']
+                ?? ''
+            )
+        );
+
+    $versaoPrivacidade =
+        trim(
+            (string) (
+                $_POST['versao_privacidade']
+                ?? ''
+            )
+        );
+
+    if ($aceitouTermos !== '1') {
+        $erros['aceitou_termos'] =
+            'Tens de aceitar os Termos de Utilização para criar uma conta.';
+    }
+
+    if ($aceitouPrivacidade !== '1') {
+        $erros['aceitou_privacidade'] =
+            'Tens de confirmar que leste a Política de Privacidade para criar uma conta.';
+    }
+
+    if (
+        !Member::currentLegalVersionsMatch(
+            $versaoTermos,
+            $versaoPrivacidade
+        )
+    ) {
+        $erros['documentos_legais'] =
+            'Os documentos legais foram atualizados. Atualiza a página e volta a confirmar a aceitação.';
+    }
+}
+
 if ($erros) {
     apagarImagensTemporariasCreateAccount(
         $imagens,
@@ -1094,12 +1166,7 @@ if ($editar('nome')) {
 
 if ($editar('nascimento')) {
     $alteracoes['nascimento'] =
-        sprintf(
-            '%04d-%02d-%02d',
-            $ano,
-            $mes,
-            $dia
-        );
+        $dataNascimento;
 }
 
 if ($editar('sexo')) {
@@ -1181,6 +1248,10 @@ try {
         }
 
         $membroId = (string) $membroId;
+
+        $cms
+            ->getMember()
+            ->recordLegalAcceptance($membroId);
     }
 
     if ($fotosAlteradas) {
