@@ -28,11 +28,21 @@ if ($membroId === '') {
     responderJsonWebSocketToken(['success' => false, 'message' => 'A sessão terminou.'], 401);
 }
 
-if (session_status() === PHP_SESSION_ACTIVE) {
-    session_write_close();
-}
-
 try {
+    $membroExiste = (bool) $db->runSQL(
+        'SELECT 1 FROM membros WHERE id = :id LIMIT 1',
+        ['id' => $membroId]
+    )->fetchColumn();
+
+    if (!$membroExiste) {
+        $session->delete();
+        responderJsonWebSocketToken(['success' => false, 'message' => 'A sessão terminou.'], 401);
+    }
+
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
+    }
+
     $db->runSQL('DELETE FROM token WHERE proposito = :proposito AND validade <= UTC_TIMESTAMP()', ['proposito' => 'websocket']);
 
     $token = $cms->getToken()->create($membroId, 'websocket');
