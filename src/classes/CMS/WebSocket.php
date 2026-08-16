@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\CMS;
 
+use App\Validate\Validate;
 use PDO;
 use Ratchet\ConnectionInterface;
 use Ratchet\MessageComponentInterface;
@@ -924,17 +925,7 @@ class WebSocket implements MessageComponentInterface
 
         if ($faixaEtaria === null) return 0;
 
-        $condicaoFaixaEtaria = $faixaEtaria === '13-17'
-            ? "(
-                em.nascimento <=
-                    DATE_SUB(UTC_DATE(), INTERVAL 13 YEAR)
-                AND em.nascimento >
-                    DATE_SUB(UTC_DATE(), INTERVAL 18 YEAR)
-            )"
-            : "(
-                em.nascimento <=
-                    DATE_SUB(UTC_DATE(), INTERVAL 18 YEAR)
-            )";
+        $condicaoFaixaEtaria = Validate::adultSqlCondition('em');
 
         $database = null;
         $statement = null;
@@ -1281,38 +1272,7 @@ class WebSocket implements MessageComponentInterface
 
     private function obterFaixaEtaria(string $nascimento): ?string
     {
-        $nascimento = trim($nascimento);
-
-        if ($nascimento === '') return null;
-
-        $dataNascimento = \DateTimeImmutable::createFromFormat(
-            '!Y-m-d',
-            $nascimento,
-            new \DateTimeZone('UTC')
-        );
-
-        $erros = \DateTimeImmutable::getLastErrors();
-
-        if (
-            !$dataNascimento ||
-            ($erros !== false && (
-                ($erros['warning_count'] ?? 0) > 0 ||
-                ($erros['error_count'] ?? 0) > 0
-            )) ||
-            $dataNascimento->format('Y-m-d') !== $nascimento
-        ) {
-            return null;
-        }
-
-        $hoje = new \DateTimeImmutable('today', new \DateTimeZone('UTC'));
-
-        if ($dataNascimento > $hoje) return null;
-
-        $idade = $dataNascimento->diff($hoje)->y;
-
-        if ($idade < 13) return null;
-
-        return $idade <= 17 ? '13-17' : '18+';
+        return Validate::ageGroup($nascimento);
     }
 
     private function membrosNaMesmaFaixaEtaria(
