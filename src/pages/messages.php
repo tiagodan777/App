@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Validate\Validate;
+
 const MENSAGEM_TEXTO_MAXIMO = 2000;
 const MENSAGEM_IMAGEM_MAXIMA = 15 * 1024 * 1024;
 const MENSAGEM_VIDEO_MAXIMO = 100 * 1024 * 1024;
@@ -48,41 +50,7 @@ function idMembroMensagensValido(string $membroId): bool
 
 function obterFaixaEtariaMensagens(string $nascimento): ?string
 {
-    $nascimento = trim($nascimento);
-
-    if ($nascimento === '') return null;
-
-    $dataNascimento = DateTimeImmutable::createFromFormat(
-        '!Y-m-d',
-        $nascimento,
-        new DateTimeZone('UTC')
-    );
-
-    $erros = DateTimeImmutable::getLastErrors();
-
-    if (
-        !$dataNascimento ||
-        ($erros !== false && (
-            ($erros['warning_count'] ?? 0) > 0 ||
-            ($erros['error_count'] ?? 0) > 0
-        )) ||
-        $dataNascimento->format('Y-m-d') !== $nascimento
-    ) {
-        return null;
-    }
-
-    $hoje = new DateTimeImmutable(
-        'today',
-        new DateTimeZone('UTC')
-    );
-
-    if ($dataNascimento > $hoje) return null;
-
-    $idade = $dataNascimento->diff($hoje)->y;
-
-    if ($idade < 13) return null;
-
-    return $idade <= 17 ? '13-17' : '18+';
+    return Validate::ageGroup($nascimento);
 }
 
 function obterMembroBaseMensagens($db, string $membroId): array|false
@@ -224,8 +192,8 @@ function obterContextoConversaMensagens(
     );
 
     /*
-     * Contas abaixo dos 13 anos, com data inválida ou pertencentes
-     * a faixas diferentes nunca podem trocar mensagens.
+     * Contas sem idade elegível, com data inválida ou pertencentes
+     * a grupos diferentes nunca podem trocar mensagens.
      */
     if (
         $faixaMembro === null ||
@@ -265,19 +233,11 @@ function condicaoSqlFaixaEtariaMensagens(
     string $faixaEtaria,
     string $alias
 ): string {
-    if ($faixaEtaria === '13-17') {
-        return "(
-            {$alias}.nascimento <=
-                DATE_SUB(UTC_DATE(), INTERVAL 13 YEAR)
-            AND {$alias}.nascimento >
-                DATE_SUB(UTC_DATE(), INTERVAL 18 YEAR)
-        )";
+    if ($faixaEtaria !== Validate::ADULT_GROUP) {
+        return '(1 = 0)';
     }
 
-    return "(
-        {$alias}.nascimento <=
-            DATE_SUB(UTC_DATE(), INTERVAL 18 YEAR)
-    )";
+    return Validate::adultSqlCondition($alias);
 }
 
 function obterMembroChat($db, string $membroId): array|false
