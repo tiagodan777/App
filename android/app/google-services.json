@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "376587311160",
+    "project_id": "margot-35474",
+    "storage_bucket": "margot-35474.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:376587311160:android:38274b31820a028ad72ecd",
+        "android_client_info": {
+          "package_name": "com.margot.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCinfLfCiGsbgr8x3V1CcliOfoRdxyzsrg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
