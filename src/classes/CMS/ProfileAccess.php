@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\CMS;
 
+use App\Validate\Validate;
+
 final class ProfileAccess
 {
     private Database $db;
@@ -40,11 +42,11 @@ final class ProfileAccess
             return true;
         }
 
-        $viewerAgeGroup = $this->ageGroup(
+        $viewerAgeGroup = Validate::ageGroup(
             (string) $members[$viewerId]['nascimento']
         );
 
-        $profileAgeGroup = $this->ageGroup(
+        $profileAgeGroup = Validate::ageGroup(
             (string) $members[$profileId]['nascimento']
         );
 
@@ -180,44 +182,4 @@ final class ProfileAccess
         return 'profile:' . substr(hash('sha256', $viewerId), 0, 24);
     }
 
-    private function ageGroup(string $birthDate): ?string
-    {
-        $birthDate = trim($birthDate);
-
-        $date = \DateTimeImmutable::createFromFormat(
-            '!Y-m-d',
-            $birthDate,
-            new \DateTimeZone('UTC')
-        );
-
-        $errors = \DateTimeImmutable::getLastErrors();
-
-        if (
-            !$date ||
-            ($errors !== false && (
-                ($errors['warning_count'] ?? 0) > 0 ||
-                ($errors['error_count'] ?? 0) > 0
-            )) ||
-            $date->format('Y-m-d') !== $birthDate
-        ) {
-            return null;
-        }
-
-        $today = new \DateTimeImmutable(
-            'today',
-            new \DateTimeZone('UTC')
-        );
-
-        if ($date > $today) {
-            return null;
-        }
-
-        $age = $date->diff($today)->y;
-
-        if ($age < 13) {
-            return null;
-        }
-
-        return $age <= 17 ? '13-17' : '18+';
-    }
 }
