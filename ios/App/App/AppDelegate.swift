@@ -2,196 +2,87 @@ import UIKit
 import WebKit
 import Capacitor
 
-@UIApplicationMain
-class AppDelegate: UIResponder, UIApplicationDelegate {
+class ViewController: CAPBridgeViewController {
 
-    var window: UIWindow?
+    override func capacitorDidLoad() {
+        super.capacitorDidLoad()
 
-    func application(
-        _ application: UIApplication,
-        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
-    ) -> Bool {
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(capacitorApareceu),
-            name: .capacitorViewDidAppear,
-            object: nil
-        )
+        // Mantém o plugin de localização exatamente como estava.
+        bridge?.registerPluginInstance(BackgroundLocationPlugin())
 
-        return true
+        configurarGestosNavegacao()
     }
 
-    @objc private func capacitorApareceu() {
-        configurarGestos()
-    }
+    private func configurarGestosNavegacao() {
+        guard let webView = webView else { return }
 
-    private func configurarGestos() {
-        for scene in UIApplication.shared.connectedScenes {
-            guard let windowScene = scene as? UIWindowScene else { continue }
+        // Não usamos o gesto automático do WKWebView.
+        webView.allowsBackForwardNavigationGestures = false
 
-            for window in windowScene.windows {
-                guard
-                    let bridge = encontrarBridge(window.rootViewController),
-                    let webView = bridge.webView
-                else {
-                    continue
-                }
-
-                webView.allowsBackForwardNavigationGestures = false
-
-                adicionarGesto(
-                    ao: webView,
-                    margem: .left
-                )
-
-                adicionarGesto(
-                    ao: webView,
-                    margem: .right
-                )
-            }
-        }
-    }
-
-    private func adicionarGesto(
-        ao webView: WKWebView,
-        margem: UIRectEdge
-    ) {
-        let jaExiste = webView.gestureRecognizers?.contains(where: { recognizer in
-            guard let edge = recognizer as? UIScreenEdgePanGestureRecognizer else {
-                return false
-            }
-
-            return edge.edges == margem
-        }) ?? false
-
-        if jaExiste { return }
-
-        let gesto = UIScreenEdgePanGestureRecognizer(
+        let voltar = UIScreenEdgePanGestureRecognizer(
             target: self,
             action: #selector(tratarSwipe(_:))
         )
+        voltar.edges = .left
+        voltar.cancelsTouchesInView = true
 
-        gesto.edges = margem
-        gesto.cancelsTouchesInView = true
+        let avancar = UIScreenEdgePanGestureRecognizer(
+            target: self,
+            action: #selector(tratarSwipe(_:))
+        )
+        avancar.edges = .right
+        avancar.cancelsTouchesInView = true
 
-        webView.addGestureRecognizer(gesto)
+        webView.addGestureRecognizer(voltar)
+        webView.addGestureRecognizer(avancar)
+
+        /*
+         * O scroll do WKWebView não pode roubar
+         * um gesto que começou mesmo na margem.
+         */
+        webView.scrollView.panGestureRecognizer.require(toFail: voltar)
+        webView.scrollView.panGestureRecognizer.require(toFail: avancar)
     }
 
     @objc private func tratarSwipe(
         _ gesto: UIScreenEdgePanGestureRecognizer
     ) {
-        guard
-            gesto.state == .ended,
-            let webView = gesto.view as? WKWebView
-        else {
-            return
-        }
+        guard let webView = webView else { return }
+        guard gesto.state == .ended else { return }
 
         let deslocamento = gesto.translation(in: webView)
         let velocidade = gesto.velocity(in: webView)
-        let esquerda = gesto.edges == .left
+        let voltar = gesto.edges == .left
 
-        let distanciaValida = esquerda
-            ? deslocamento.x > 65
-            : deslocamento.x < -65
+        let distanciaValida = voltar
+            ? deslocamento.x > 55
+            : deslocamento.x < -55
 
-        let velocidadeValida = esquerda
-            ? velocidade.x > 500
-            : velocidade.x < -500
+        let velocidadeValida = voltar
+            ? velocidade.x > 400
+            : velocidade.x < -400
 
         guard distanciaValida || velocidadeValida else {
             return
         }
 
-        let comando = esquerda
+        let comando = voltar
             ? "history.back();"
             : "history.forward();"
 
-        let javascript =
-            "if (!document.body.classList.contains('margot-mini-menu-aberto') && " +
-            "!document.body.classList.contains('heys-abertos') && " +
-            "!document.querySelector('dialog[open], [aria-modal=\"true\"]:not([hidden])')) {" +
-            comando +
-            "}"
+        let javascript = """
+        (function () {
+            if (document.body.classList.contains('margot-mini-menu-aberto')) return;
+            if (document.body.classList.contains('heys-abertos')) return;
+            if (document.querySelector('dialog[open]')) return;
+
+            \(comando)
+        })();
+        """
 
         webView.evaluateJavaScript(
             javascript,
             completionHandler: nil
         )
-    }
-
-    private func encontrarBridge(
-        _ controller: UIViewController?
-    ) -> CAPBridgeViewController? {
-        guard let controller = controller else {
-            return nil
-        }
-
-        if let bridge = controller as? CAPBridgeViewController {
-            return bridge
-        }
-
-        if let navigation = controller as? UINavigationController {
-            for child in navigation.viewControllers {
-                if let bridge = encontrarBridge(child) {
-                    return bridge
-                }
-            }
-        }
-
-        if let tabs = controller as? UITabBarController {
-            for child in tabs.viewControllers ?? [] {
-                if let bridge = encontrarBridge(child) {
-                    return bridge
-                }
-            }
-        }
-
-        if let presented = controller.presentedViewController,
-           let bridge = encontrarBridge(presented) {
-            return bridge
-        }
-
-        for child in controller.children {
-            if let bridge = encontrarBridge(child) {
-                return bridge
-            }
-        }
-
-        return nil
-    }
-
-    func application(
-        _ application: UIApplication,
-        didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
-    ) {
-        NotificationCenter.default.post(
-            name: .capacitorDidRegisterForRemoteNotifications,
-            object: deviceToken
-        )
-    }
-
-    func application(
-        _ application: UIApplication,
-        didFailToRegisterForRemoteNotificationsWithError error: Error
-    ) {
-        NotificationCenter.default.post(
-            name: .capacitorDidFailToRegisterForRemoteNotifications,
-            object: error
-        )
-    }
-
-    func application(
-        _ application: UIApplication,
-        configurationForConnecting connectingSceneSession: UISceneSession,
-        options: UIScene.ConnectionOptions
-    ) -> UISceneConfiguration {
-        let configuration = UISceneConfiguration(
-            name: "Default Configuration",
-            sessionRole: connectingSceneSession.role
-        )
-
-        configuration.delegateClass = SceneDelegate.self
-        return configuration
     }
 }
