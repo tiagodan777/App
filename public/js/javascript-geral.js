@@ -8,6 +8,8 @@
     var posicaoHistorico = 0;
     var controlador = null;
     var urlRenderizada = window.location.href;
+    var gestoBorda = null;
+    var bloquearCliqueAte = 0;
 
     function caminhoNormalizado(url) {
         var caminho = new URL(url, window.location.href).pathname.replace(/\/+$/, '') || '/';
@@ -20,38 +22,25 @@
 
     function indiceMenu(url) {
         var caminho = caminhoNormalizado(url);
+
         if (caminho === '/') return 0;
         if (caminho === '/messages') return 1;
         if (caminho.indexOf('/profile/') === 0) return 2;
+
         return null;
     }
 
     function atualizarMenu(url) {
         var caminho = caminhoNormalizado(url);
 
-        document
-            .querySelectorAll('#menuPrincipal a[href]')
-            .forEach(function (link) {
-                var ativo =
-                    caminhoNormalizado(link.href) ===
-                    caminho;
+        document.querySelectorAll('#menuPrincipal a[href]').forEach(function (link) {
+            var ativo = caminhoNormalizado(link.href) === caminho;
 
-                link.classList.toggle(
-                    'active',
-                    ativo
-                );
+            link.classList.toggle('active', ativo);
 
-                if (ativo) {
-                    link.setAttribute(
-                        'aria-current',
-                        'page'
-                    );
-                } else {
-                    link.removeAttribute(
-                        'aria-current'
-                    );
-                }
-            });
+            if (ativo) link.setAttribute('aria-current', 'page');
+            else link.removeAttribute('aria-current');
+        });
     }
 
     function aguardarEstilo(link) {
@@ -61,323 +50,165 @@
                 return;
             }
 
-            link.addEventListener(
-                'load',
-                resolver,
-                {
-                    once: true
-                }
-            );
-
-            link.addEventListener(
-                'error',
-                resolver,
-                {
-                    once: true
-                }
-            );
-
-            window.setTimeout(
-                resolver,
-                2500
-            );
+            link.addEventListener('load', resolver, { once: true });
+            link.addEventListener('error', resolver, { once: true });
+            window.setTimeout(resolver, 2500);
         });
     }
 
-    async function prepararEstilos(
-        documentoNovo
-    ) {
-        var atuais =
-            Array.from(
-                document.head.querySelectorAll(
-                    'link[data-margot-page-style]'
-                )
-            );
+    async function prepararEstilos(documentoNovo) {
+        var atuais = Array.from(
+            document.head.querySelectorAll('link[data-margot-page-style]')
+        );
 
-        var novos =
-            Array.from(
-                documentoNovo.head.querySelectorAll(
-                    'link[data-margot-page-style]'
-                )
-            );
+        var novos = Array.from(
+            documentoNovo.head.querySelectorAll('link[data-margot-page-style]')
+        );
 
-        var hrefsNovos =
-            novos.map(function (link) {
-                return new URL(
-                    link.getAttribute('href'),
-                    window.location.href
-                ).href;
-            });
+        var hrefsNovos = novos.map(function (link) {
+            return new URL(
+                link.getAttribute('href'),
+                window.location.href
+            ).href;
+        });
 
         var promessas = [];
 
-        /*
-         * Primeiro carregamos os estilos
-         * da página nova.
-         *
-         * Os estilos da página atual NÃO são
-         * removidos ainda.
-         *
-         * Assim, durante a animação, a página
-         * antiga continua completamente
-         * estilizada.
-         */
         novos.forEach(function (origem) {
-            var href =
-                new URL(
-                    origem.getAttribute('href'),
-                    window.location.href
-                ).href;
+            var href = new URL(
+                origem.getAttribute('href'),
+                window.location.href
+            ).href;
 
-            if (
-                atuais.some(
-                    function (link) {
-                        return (
-                            link.href === href
-                        );
-                    }
-                )
-            ) {
+            if (atuais.some(function (link) {
+                return link.href === href;
+            })) {
                 return;
             }
 
-            var link =
-                document.createElement(
-                    'link'
-                );
+            var link = document.createElement('link');
 
-            Array.from(
-                origem.attributes
-            ).forEach(
-                function (atributo) {
-                    link.setAttribute(
-                        atributo.name,
-                        atributo.value
-                    );
-                }
-            );
+            Array.from(origem.attributes).forEach(function (atributo) {
+                link.setAttribute(atributo.name, atributo.value);
+            });
 
             link.href = href;
-
-            document.head.appendChild(
-                link
-            );
+            document.head.appendChild(link);
 
             promessas.push(
                 aguardarEstilo(link)
             );
         });
 
-        await Promise.all(
-            promessas
-        );
+        await Promise.all(promessas);
 
-        /*
-         * Em vez de apagar já os estilos
-         * antigos, devolvemos uma função de
-         * limpeza.
-         *
-         * Ela só será chamada quando a página
-         * antiga já tiver desaparecido.
-         */
         return function limparEstilosAntigos() {
             Array.from(
-                document.head.querySelectorAll(
-                    'link[data-margot-page-style]'
-                )
-            ).forEach(
-                function (link) {
-                    if (
-                        !hrefsNovos.includes(
-                            link.href
-                        )
-                    ) {
-                        link.remove();
-                    }
+                document.head.querySelectorAll('link[data-margot-page-style]')
+            ).forEach(function (link) {
+                if (!hrefsNovos.includes(link.href)) {
+                    link.remove();
                 }
-            );
+            });
         };
     }
 
     function retirarScripts(pagina) {
-        var scripts =
-            Array.from(
-                pagina.querySelectorAll(
-                    'script'
-                )
-            );
-
-        scripts.forEach(
-            function (script) {
-                script.remove();
-            }
+        var scripts = Array.from(
+            pagina.querySelectorAll('script')
         );
+
+        scripts.forEach(function (script) {
+            script.remove();
+        });
 
         return scripts;
     }
 
     function executarScript(origem) {
-        return new Promise(
-            function (
-                resolver,
-                rejeitar
-            ) {
-                var script =
-                    document.createElement(
-                        'script'
-                    );
+        return new Promise(function (resolver, rejeitar) {
+            var script = document.createElement('script');
 
-                Array.from(
-                    origem.attributes
-                ).forEach(
-                    function (atributo) {
-                        script.setAttribute(
-                            atributo.name,
-                            atributo.value
-                        );
-                    }
-                );
+            Array.from(origem.attributes).forEach(function (atributo) {
+                script.setAttribute(atributo.name, atributo.value);
+            });
 
-                script.async = false;
+            script.async = false;
 
-                if (origem.src) {
-                    script.src =
-                        new URL(
-                            origem.getAttribute(
-                                'src'
-                            ),
-                            window.location.href
-                        ).href;
+            if (origem.src) {
+                script.src = new URL(
+                    origem.getAttribute('src'),
+                    window.location.href
+                ).href;
 
-                    script.addEventListener(
-                        'load',
-                        function () {
-                            script.remove();
+                script.addEventListener('load', function () {
+                    script.remove();
+                    resolver();
+                }, { once: true });
 
-                            resolver();
-                        },
-                        {
-                            once: true
-                        }
-                    );
-
-                    script.addEventListener(
-                        'error',
-                        function () {
-                            script.remove();
-
-                            rejeitar(
-                                new Error(
-                                    'Não foi possível carregar ' +
-                                    script.src
-                                )
-                            );
-                        },
-                        {
-                            once: true
-                        }
-                    );
-                } else {
-                    script.textContent =
-                        origem.textContent;
-                }
-
-                document.body.appendChild(
-                    script
-                );
-
-                if (!origem.src) {
+                script.addEventListener('error', function () {
                     script.remove();
 
-                    resolver();
-                }
+                    rejeitar(
+                        new Error(
+                            'Não foi possível carregar ' +
+                            script.src
+                        )
+                    );
+                }, { once: true });
+            } else {
+                script.textContent = origem.textContent;
             }
-        );
+
+            document.body.appendChild(script);
+
+            if (!origem.src) {
+                script.remove();
+                resolver();
+            }
+        });
     }
 
-    async function executarScripts(
-        scripts
-    ) {
-        for (
-            var indice = 0;
-            indice < scripts.length;
-            indice += 1
-        ) {
-            await executarScript(
-                scripts[indice]
-            );
+    async function executarScripts(scripts) {
+        for (var indice = 0; indice < scripts.length; indice += 1) {
+            await executarScript(scripts[indice]);
         }
     }
 
-    function animar(
-        pagina,
-        quadros,
-        duracao
-    ) {
-        if (
-            !pagina.animate ||
-            duracao === 0
-        ) {
+    function animar(pagina, quadros, duracao) {
+        if (!pagina.animate || duracao === 0) {
             pagina.style.transform =
-                quadros[
-                    quadros.length - 1
-                ].transform;
+                quadros[quadros.length - 1].transform;
 
             pagina.style.opacity =
-                quadros[
-                    quadros.length - 1
-                ].opacity;
+                quadros[quadros.length - 1].opacity;
 
-            return Promise.resolve(
-                null
-            );
+            return Promise.resolve(null);
         }
 
-        var animacao =
-            pagina.animate(
-                quadros,
-                {
-                    duration:
-                        duracao,
-
-                    easing:
-                        'cubic-bezier(.22,.8,.28,1)',
-
-                    fill:
-                        'forwards'
-                }
-            );
+        var animacao = pagina.animate(quadros, {
+            duration: duracao,
+            easing: 'cubic-bezier(.22,.8,.28,1)',
+            fill: 'forwards'
+        });
 
         return animacao.finished
-            .catch(
-                function () {}
-            )
-            .then(
-                function () {
-                    return animacao;
-                }
-            );
+            .catch(function () {})
+            .then(function () {
+                return animacao;
+            });
     }
 
-    async function trocarPagina(
-        url,
-        opcoes
-    ) {
-        if (
-            aNavegar ||
-            ePaginaAtual(url)
-        ) {
-            atualizarMenu(
-                window.location.href
-            );
+    async function trocarPagina(url, opcoes) {
+        opcoes = opcoes || {};
 
+        if (aNavegar || ePaginaAtual(url)) {
+            atualizarMenu(window.location.href);
             return;
         }
 
         aNavegar = true;
-
-        controlador =
-            new AbortController();
+        controlador = new AbortController();
 
         document.body.setAttribute(
             'aria-busy',
@@ -385,34 +216,22 @@
         );
 
         try {
-            var resposta =
-                await fetch(
-                    url,
-                    {
-                        credentials:
-                            'same-origin',
-
-                        headers: {
-                            'X-Requested-With':
-                                'XMLHttpRequest'
-                        },
-
-                        signal:
-                            controlador.signal
-                    }
-                );
+            var resposta = await fetch(url, {
+                credentials: 'same-origin',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                signal: controlador.signal
+            });
 
             if (!resposta.ok) {
                 throw new Error(
-                    'HTTP ' +
-                    resposta.status
+                    'HTTP ' + resposta.status
                 );
             }
 
             if (
-                new URL(
-                    resposta.url
-                ).origin !==
+                new URL(resposta.url).origin !==
                 window.location.origin
             ) {
                 throw new Error(
@@ -420,41 +239,31 @@
                 );
             }
 
-            var html =
-                await resposta.text();
+            var html = await resposta.text();
 
-            var documentoNovo =
-                new DOMParser()
-                    .parseFromString(
-                        html,
-                        'text/html'
-                    );
+            var documentoNovo = new DOMParser()
+                .parseFromString(
+                    html,
+                    'text/html'
+                );
 
-            var paginaNova =
-                documentoNovo
-                    .querySelector(
-                        seletorPagina
-                    );
+            var paginaNova = documentoNovo.querySelector(
+                seletorPagina
+            );
 
-            var paginaAtual =
-                document
-                    .querySelector(
-                        seletorPagina
-                    );
+            var paginaAtual = document.querySelector(
+                seletorPagina
+            );
 
-            if (
-                !paginaNova ||
-                !paginaAtual
-            ) {
+            if (!paginaNova || !paginaAtual) {
                 throw new Error(
                     'Página incompatível'
                 );
             }
 
             if (
-                caminhoNormalizado(
-                    resposta.url
-                ) === '/login'
+                caminhoNormalizado(resposta.url) ===
+                '/login'
             ) {
                 window.location.assign(
                     resposta.url
@@ -463,15 +272,10 @@
                 return;
             }
 
-            var scripts =
-                retirarScripts(
-                    paginaNova
-                );
+            var scripts = retirarScripts(
+                paginaNova
+            );
 
-            /*
-             * Carrega CSS da página nova,
-             * mas mantém CSS da página atual.
-             */
             var limparEstilosAntigos =
                 await prepararEstilos(
                     documentoNovo
@@ -483,19 +287,16 @@
                 )
             );
 
-            var direcao =
-                opcoes.direcao;
+            var direcao = opcoes.direcao;
 
             if (!direcao) {
-                var atual =
-                    indiceMenu(
-                        window.location.href
-                    );
+                var atual = indiceMenu(
+                    window.location.href
+                );
 
-                var seguinte =
-                    indiceMenu(
-                        resposta.url
-                    );
+                var seguinte = indiceMenu(
+                    resposta.url
+                );
 
                 direcao =
                     atual !== null &&
@@ -515,99 +316,85 @@
                     ? '1'
                     : '.94';
 
-            paginaAtual
-                .insertAdjacentElement(
-                    'afterend',
-                    paginaNova
-                );
+            paginaAtual.insertAdjacentElement(
+                'afterend',
+                paginaNova
+            );
 
             document.body.classList.add(
                 'margot-a-navegar'
             );
 
-            var reduzido =
-                window.matchMedia(
-                    '(prefers-reduced-motion: reduce)'
-                ).matches;
+            var reduzido = window.matchMedia(
+                '(prefers-reduced-motion: reduce)'
+            ).matches;
 
             var duracao =
                 reduzido
                     ? 0
                     : 300;
 
-            var animacoes =
-                await Promise.all([
-                    animar(
-                        paginaAtual,
-                        [
-                            {
-                                transform:
-                                    'translate3d(0,0,0)',
+            var animacoes = await Promise.all([
+                animar(
+                    paginaAtual,
+                    [
+                        {
+                            transform:
+                                'translate3d(0,0,0)',
+                            opacity:
+                                '1'
+                        },
+                        {
+                            transform:
+                                direcao > 0
+                                    ? 'translate3d(-28%,0,0)'
+                                    : 'translate3d(100%,0,0)',
 
-                                opacity:
-                                    '1'
-                            },
-                            {
-                                transform:
-                                    direcao > 0
-                                        ? 'translate3d(-28%,0,0)'
-                                        : 'translate3d(100%,0,0)',
+                            opacity:
+                                direcao > 0
+                                    ? '.94'
+                                    : '1'
+                        }
+                    ],
+                    duracao
+                ),
 
-                                opacity:
-                                    direcao > 0
-                                        ? '.94'
-                                        : '1'
-                            }
-                        ],
-                        duracao
-                    ),
+                animar(
+                    paginaNova,
+                    [
+                        {
+                            transform:
+                                direcao > 0
+                                    ? 'translate3d(100%,0,0)'
+                                    : 'translate3d(-28%,0,0)',
 
-                    animar(
-                        paginaNova,
-                        [
-                            {
-                                transform:
-                                    direcao > 0
-                                        ? 'translate3d(100%,0,0)'
-                                        : 'translate3d(-28%,0,0)',
+                            opacity:
+                                direcao > 0
+                                    ? '1'
+                                    : '.94'
+                        },
+                        {
+                            transform:
+                                'translate3d(0,0,0)',
+                            opacity:
+                                '1'
+                        }
+                    ],
+                    duracao
+                )
+            ]);
 
-                                opacity:
-                                    direcao > 0
-                                        ? '1'
-                                        : '.94'
-                            },
-                            {
-                                transform:
-                                    'translate3d(0,0,0)',
-
-                                opacity:
-                                    '1'
-                            }
-                        ],
-                        duracao
-                    )
-                ]);
-
-            animacoes.forEach(
-                function (animacao) {
-                    if (animacao) {
-                        animacao.cancel();
-                    }
+            animacoes.forEach(function (animacao) {
+                if (animacao) {
+                    animacao.cancel();
                 }
-            );
+            });
 
-            /*
-             * A página antiga desaparece
-             * primeiro.
-             */
             paginaAtual.remove();
 
             /*
-             * Só AGORA é seguro remover
-             * os estilos antigos.
-             *
-             * Isto elimina o flash de links
-             * sem CSS ao sair das mensagens.
+             * Só removemos o CSS antigo depois
+             * de a página antiga sair.
              */
             limparEstilosAntigos();
 
@@ -623,10 +410,7 @@
                 documentoNovo.title ||
                 document.title;
 
-            if (
-                opcoes.historico ===
-                'push'
-            ) {
+            if (opcoes.historico === 'push') {
                 posicaoHistorico += 1;
 
                 history.pushState(
@@ -669,8 +453,7 @@
                     .refreshMap ===
                     'function'
             ) {
-                window
-                    .AppWebSocket
+                window.AppWebSocket
                     .refreshMap();
             }
 
@@ -689,17 +472,11 @@
                 'margot-a-navegar'
             );
 
-            if (
-                erro.name !==
-                'AbortError'
-            ) {
-                window.location.assign(
-                    url
-                );
+            if (erro.name !== 'AbortError') {
+                window.location.assign(url);
             }
         } finally {
             controlador = null;
-
             aNavegar = false;
 
             document.body.removeAttribute(
@@ -708,30 +485,320 @@
         }
     }
 
-    function voltarPagina(
-        urlAlternativo
-    ) {
+    function voltarPagina(urlAlternativo) {
         if (aNavegar) return;
 
-        if (
-            posicaoHistorico > 0
-        ) {
+        if (posicaoHistorico > 0) {
             history.back();
-
             return;
         }
 
         trocarPagina(
             urlAlternativo,
             {
-                historico:
-                    'replace',
-
-                direcao:
-                    -1
+                historico: 'replace',
+                direcao: -1
             }
         );
     }
+
+    /*
+     * EDGE SWIPE
+     * Só é criado dentro da app Capacitor.
+     */
+
+    function eAplicacaoNativa() {
+        if (!window.Capacitor) {
+            return false;
+        }
+
+        if (
+            typeof window.Capacitor
+                .isNativePlatform ===
+            'function'
+        ) {
+            return window.Capacitor
+                .isNativePlatform();
+        }
+
+        if (
+            typeof window.Capacitor
+                .getPlatform ===
+            'function'
+        ) {
+            var plataforma =
+                window.Capacitor
+                    .getPlatform();
+
+            return (
+                plataforma === 'ios' ||
+                plataforma === 'android'
+            );
+        }
+
+        return false;
+    }
+
+    function interfaceSobrepostaAberta() {
+        return (
+            document.body.classList.contains(
+                'margot-mini-menu-aberto'
+            ) ||
+
+            document.body.classList.contains(
+                'heys-abertos'
+            ) ||
+
+            Boolean(
+                document.querySelector(
+                    'dialog[open], [aria-modal="true"]:not([hidden])'
+                )
+            )
+        );
+    }
+
+    function alvoProtegido(alvo) {
+        return Boolean(
+            alvo &&
+            alvo.closest(
+                'input, textarea, select, option, [contenteditable="true"], video, audio'
+            )
+        );
+    }
+
+    function cancelarGestoBorda() {
+        gestoBorda = null;
+    }
+
+    function iniciarGestoBorda(evento) {
+        if (
+            aNavegar ||
+            interfaceSobrepostaAberta() ||
+            alvoProtegido(evento.target)
+        ) {
+            return;
+        }
+
+        if (
+            evento.button !== undefined &&
+            evento.button !== 0
+        ) {
+            return;
+        }
+
+        var margem = 28;
+        var largura = window.innerWidth;
+        var lado = null;
+
+        if (evento.clientX <= margem) {
+            lado = 'esquerda';
+        } else if (
+            evento.clientX >=
+            largura - margem
+        ) {
+            lado = 'direita';
+        } else {
+            return;
+        }
+
+        gestoBorda = {
+            lado: lado,
+            ponteiroId: evento.pointerId,
+            inicioX: evento.clientX,
+            inicioY: evento.clientY,
+            atualX: evento.clientX,
+            atualY: evento.clientY,
+            inicioTempo: Date.now()
+        };
+    }
+
+    function moverGestoBorda(evento) {
+        if (
+            !gestoBorda ||
+            evento.pointerId !==
+            gestoBorda.ponteiroId
+        ) {
+            return;
+        }
+
+        gestoBorda.atualX =
+            evento.clientX;
+
+        gestoBorda.atualY =
+            evento.clientY;
+
+        var dx =
+            gestoBorda.atualX -
+            gestoBorda.inicioX;
+
+        var dy =
+            gestoBorda.atualY -
+            gestoBorda.inicioY;
+
+        var absX =
+            Math.abs(dx);
+
+        var absY =
+            Math.abs(dy);
+
+        /*
+         * Se for claramente scroll vertical,
+         * abandonamos o gesto.
+         */
+        if (
+            absY > 24 &&
+            absY > absX
+        ) {
+            cancelarGestoBorda();
+            return;
+        }
+
+        /*
+         * Também cancelamos se começar
+         * a andar no sentido errado.
+         */
+        if (
+            gestoBorda.lado ===
+            'esquerda' &&
+            dx < -18
+        ) {
+            cancelarGestoBorda();
+        }
+
+        if (
+            gestoBorda.lado ===
+            'direita' &&
+            dx > 18
+        ) {
+            cancelarGestoBorda();
+        }
+    }
+
+    function terminarGestoBorda(evento) {
+        if (
+            !gestoBorda ||
+            evento.pointerId !==
+            gestoBorda.ponteiroId
+        ) {
+            return;
+        }
+
+        gestoBorda.atualX =
+            evento.clientX;
+
+        gestoBorda.atualY =
+            evento.clientY;
+
+        var gesto = gestoBorda;
+
+        cancelarGestoBorda();
+
+        var dx =
+            gesto.atualX -
+            gesto.inicioX;
+
+        var dy =
+            gesto.atualY -
+            gesto.inicioY;
+
+        var absX =
+            Math.abs(dx);
+
+        var absY =
+            Math.abs(dy);
+
+        var duracao =
+            Math.max(
+                1,
+                Date.now() -
+                gesto.inicioTempo
+            );
+
+        var velocidade =
+            absX / duracao;
+
+        var horizontal =
+            absX >
+            absY * 1.25;
+
+        var distanciaSuficiente =
+            absX >= 72;
+
+        var gestoRapido =
+            absX >= 42 &&
+            velocidade >= 0.5;
+
+        var sentidoCorreto =
+            gesto.lado === 'esquerda'
+                ? dx > 0
+                : dx < 0;
+
+        if (
+            !horizontal ||
+            !sentidoCorreto ||
+            (
+                !distanciaSuficiente &&
+                !gestoRapido
+            )
+        ) {
+            return;
+        }
+
+        /*
+         * Evita clicar num link/botão que
+         * estivesse debaixo do dedo.
+         */
+        bloquearCliqueAte =
+            Date.now() + 350;
+
+        evento.preventDefault();
+        evento.stopPropagation();
+
+        if (
+            typeof evento
+                .stopImmediatePropagation ===
+            'function'
+        ) {
+            evento
+                .stopImmediatePropagation();
+        }
+
+        if (
+            gesto.lado ===
+            'esquerda'
+        ) {
+            history.back();
+        } else {
+            history.forward();
+        }
+    }
+
+    function bloquearCliqueDepoisDoSwipe(
+        evento
+    ) {
+        if (
+            Date.now() >=
+            bloquearCliqueAte
+        ) {
+            return;
+        }
+
+        evento.preventDefault();
+        evento.stopPropagation();
+
+        if (
+            typeof evento
+                .stopImmediatePropagation ===
+            'function'
+        ) {
+            evento
+                .stopImmediatePropagation();
+        }
+    }
+
+    /*
+     * Navegação pelos links principais.
+     */
 
     document.addEventListener(
         'click',
@@ -824,6 +891,10 @@
         }
     );
 
+    /*
+     * Back / forward do histórico.
+     */
+
     window.addEventListener(
         'popstate',
         function (evento) {
@@ -893,11 +964,47 @@
         window.location.href
     );
 
-    window.MargotNavigation = {
-        navigate:
-            trocarPagina,
+    /*
+     * Não instalamos estes listeners na PWA
+     * nem no browser normal.
+     *
+     * Aí o próprio browser já tem os seus
+     * gestos de navegação.
+     */
+    if (eAplicacaoNativa()) {
+        window.addEventListener(
+            'pointerdown',
+            iniciarGestoBorda,
+            true
+        );
 
-        back:
-            voltarPagina
+        window.addEventListener(
+            'pointermove',
+            moverGestoBorda,
+            true
+        );
+
+        window.addEventListener(
+            'pointerup',
+            terminarGestoBorda,
+            true
+        );
+
+        window.addEventListener(
+            'pointercancel',
+            cancelarGestoBorda,
+            true
+        );
+
+        document.addEventListener(
+            'click',
+            bloquearCliqueDepoisDoSwipe,
+            true
+        );
+    }
+
+    window.MargotNavigation = {
+        navigate: trocarPagina,
+        back: voltarPagina
     };
 })(window, document);
