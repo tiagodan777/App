@@ -55,7 +55,15 @@ public final class BackgroundLocationService extends Service
     private static final String CHANNEL_ID = "margot_background_location";
     private static final int NOTIFICATION_ID = 41027;
 
+    /*
+     * A presença no servidor expira ao fim de 180 s. Mantemos um heartbeat
+     * de 60 s, mas não esperamos obrigatoriamente 60 s quando há movimento:
+     * uma deslocação relevante pode ser enviada mais cedo.
+     */
     private static final long SEND_INTERVAL_MS = 60_000L;
+    private static final long LOCATION_REQUEST_MIN_TIME_MS = 30_000L;
+    private static final float LOCATION_REQUEST_MIN_DISTANCE_METRES = 20f;
+    private static final float MOVEMENT_SEND_THRESHOLD_METRES = 50f;
     private static final long MAX_LOCATION_AGE_MS = 120_000L;
     private static final float MAX_ACCURACY_METRES = 1_000f;
 
@@ -80,6 +88,35 @@ public final class BackgroundLocationService extends Service
     private boolean updatesRegistered;
     private boolean sending;
     private long lastSuccessfulSendAt;
+    private Location lastSuccessfulLocation;
+    private Location lastUsableLocation;
+    private boolean heartbeatStarted;
+
+    private final Runnable heartbeat = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                if (
+                    canRun(BackgroundLocationService.this) &&
+                    !sending &&
+                    lastUsableLocation != null
+                ) {
+                    long now = SystemClock.elapsedRealtime();
+
+                    if (
+                        lastSuccessfulSendAt == 0 ||
+                        now - lastSuccessfulSendAt >= SEND_INTERVAL_MS
+                    ) {
+                        sendLocation(new Location(lastUsableLocation));
+                    }
+                }
+            } finally {
+                if (heartbeatStarted) {
+                    mainHandler.postDelayed(this, SEND_INTERVAL_MS);
+                }
+            }
+        }
+    };
 
     @Override
     public void onCreate() {
@@ -101,6 +138,7 @@ public final class BackgroundLocationService extends Service
         try {
             startAsForeground();
             registerLocationUpdates();
+            startHeartbeat();
             return START_STICKY;
         } catch (SecurityException | IllegalStateException exception) {
             stopUnavailable();
@@ -110,6 +148,7 @@ public final class BackgroundLocationService extends Service
 
     @Override
     public void onDestroy() {
+        stopHeartbeat();
         removeLocationUpdates();
         running = false;
         stopForeground(STOP_FOREGROUND_REMOVE);
@@ -124,20 +163,34 @@ public final class BackgroundLocationService extends Service
 
     @Override
     public void onLocationChanged(Location location) {
-        if (!canRun(this) || !usable(location) || sending) {
+        if (!canRun(this) || !usable(location)) {
+            return;
+        }
+
+        lastUsableLocation = new Location(location);
+
+        if (sending) {
             return;
         }
 
         long now = SystemClock.elapsedRealtime();
+        boolean heartbeatDue =
+            lastSuccessfulSendAt == 0 ||
+            now - lastSuccessfulSendAt >= SEND_INTERVAL_MS;
 
-        if (
-            lastSuccessfulSendAt > 0 &&
-            now - lastSuccessfulSendAt < SEND_INTERVAL_MS
-        ) {
-            return;
+        boolean movedEnough =
+            lastSuccessfulLocation == null ||
+            lastSuccessfulLocation.distanceTo(location) >=
+                MOVEMENT_SEND_THRESHOLD_METRES;
+
+        /*
+         * Igual ao comportamento que queremos no iPhone:
+         * envia por tempo OU por movimento. Portanto, 60 s é um heartbeat,
+         * não uma espera obrigatória entre posições.
+         */
+        if (heartbeatDue || movedEnough) {
+            sendLocation(new Location(location));
         }
-
-        sendLocation(new Location(location));
     }
 
     @Override
@@ -421,8 +474,8 @@ public final class BackgroundLocationService extends Service
 
             locationManager.requestLocationUpdates(
                 provider,
-                SEND_INTERVAL_MS,
-                0f,
+                LOCATION_REQUEST_MIN_TIME_MS,
+                LOCATION_REQUEST_MIN_DISTANCE_METRES,
                 this,
                 Looper.getMainLooper()
             );
@@ -457,6 +510,17 @@ public final class BackgroundLocationService extends Service
         } catch (IllegalArgumentException | SecurityException exception) {
             return null;
         }
+    }
+
+    private void startHeartbeat() {
+        heartbeatStarted = true;
+        mainHandler.removeCallbacks(heartbeat);
+        mainHandler.postDelayed(heartbeat, SEND_INTERVAL_MS);
+    }
+
+    private void stopHeartbeat() {
+        heartbeatStarted = false;
+        mainHandler.removeCallbacks(heartbeat);
     }
 
     private void removeLocationUpdates() {
@@ -520,11 +584,18 @@ public final class BackgroundLocationService extends Service
 
         NETWORK.execute(() -> {
             int status = post(token, body);
-            mainHandler.post(() -> finishSend(token, status));
+            Location sentLocation = new Location(location);
+            mainHandler.post(
+                () -> finishSend(token, status, sentLocation)
+            );
         });
     }
 
-    private void finishSend(String token, int status) {
+    private void finishSend(
+        String token,
+        int status,
+        Location sentLocation
+    ) {
         sending = false;
 
         if (status == HttpURLConnection.HTTP_UNAUTHORIZED) {
@@ -535,6 +606,7 @@ public final class BackgroundLocationService extends Service
 
         if (status >= 200 && status <= 299) {
             lastSuccessfulSendAt = SystemClock.elapsedRealtime();
+            lastSuccessfulLocation = new Location(sentLocation);
         }
 
         if (!isVisible(this)) {

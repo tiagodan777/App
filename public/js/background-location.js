@@ -142,6 +142,7 @@
             resultado.authorization_status ||
             ''
         ).toLowerCase();
+
         var permissao = String(
             resultado.permission ||
             resultado.permissionStatus ||
@@ -199,6 +200,7 @@
         var estilo = document.createElement('style');
 
         estilo.id = 'margot-background-location-style';
+
         estilo.textContent = [
             '.margot-background-location-overlay{position:fixed;inset:0;z-index:10000;padding:20px;background:rgba(0,0,0,.38);display:flex;align-items:flex-end;justify-content:center;}',
             '.margot-background-location-card{width:min(100%,420px);margin-bottom:max(12px,env(safe-area-inset-bottom,12px));padding:22px;border-radius:28px;background:#fff;color:#111;box-shadow:0 18px 55px rgba(0,0,0,.24);font-family:Helvetica,Arial,sans-serif;}',
@@ -226,11 +228,10 @@
     function conteudoAvisoDefinicoes() {
         if (plataformaAtual() === 'android') {
             return {
-                titulo: 'Ativa a localização na Margot',
+                titulo: 'Ativa a localização',
                 texto:
-                    'No Android, abre as Definições e permite o acesso à localização. ' +
-                    'Não precisas de escolher “Sempre”: quando a Margot estiver em segundo plano, ' +
-                    'o Android mostrará uma notificação discreta enquanto a tua posição é atualizada.',
+                    'A Margot precisa da tua localização para mostrar as pessoas que estão perto de ti. ' +
+                    'Podes alterar esta permissão nas Definições.',
                 botao: 'Abrir Definições'
             };
         }
@@ -258,9 +259,11 @@
         }
 
         var chave = 'margot-background-location-aviso';
+
         var ultimaApresentacao = Number(
             localStorage.getItem(chave) || 0
         );
+
         var umDia = 24 * 60 * 60 * 1000;
 
         if (!forcar && Date.now() - ultimaApresentacao < umDia) {
@@ -268,6 +271,7 @@
         }
 
         localStorage.setItem(chave, String(Date.now()));
+
         adicionarEstiloAviso();
 
         var fundo = document.createElement('div');
@@ -305,6 +309,7 @@
         abrirDefinicoes.type = 'button';
         abrirDefinicoes.className =
             'margot-background-location-settings';
+
         abrirDefinicoes.textContent = conteudo.botao;
 
         maisTarde.addEventListener('click', fecharAviso);
@@ -324,10 +329,13 @@
 
         acoes.appendChild(maisTarde);
         acoes.appendChild(abrirDefinicoes);
+
         cartao.appendChild(titulo);
         cartao.appendChild(texto);
         cartao.appendChild(acoes);
+
         fundo.appendChild(cartao);
+
         document.body.appendChild(fundo);
     }
 
@@ -467,6 +475,7 @@
         }
 
         fecharAviso();
+
         return plugin.stop();
     }
 
@@ -476,6 +485,7 @@
         }
 
         await plugin.openSettings();
+
         return true;
     }
 
@@ -483,9 +493,13 @@
         start: function () {
             return iniciar(true);
         },
+
         stop: parar,
+
         status: estadoAtual,
+
         openSettings: abrirDefinicoes,
+
         showSettingsNotice: function () {
             mostrarAvisoDefinicoes(true);
         }
@@ -503,6 +517,7 @@
                         erro
                     );
                 });
+
                 return;
             }
 
@@ -527,7 +542,10 @@
             iniciar(false);
         } else {
             parar().catch(function (erro) {
-                console.error('Localização em segundo plano:', erro);
+                console.error(
+                    'Localização em segundo plano:',
+                    erro
+                );
             });
         }
     }
@@ -542,11 +560,14 @@
         arrancar();
     }
 
-    document.addEventListener('visibilitychange', function () {
-        if (document.visibilityState === 'visible') {
-            arrancar();
+    document.addEventListener(
+        'visibilitychange',
+        function () {
+            if (document.visibilityState === 'visible') {
+                arrancar();
+            }
         }
-    });
+    );
 
     window.addEventListener(
         'margot:preferencias-alteradas',
