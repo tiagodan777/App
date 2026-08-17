@@ -3,31 +3,40 @@
 
     var $miniMenu = $('.mini-menu');
 
-    if (!$miniMenu.length) {
-        return;
-    }
+    if (!$miniMenu.length) return;
 
-    $(document).off('.margotMiniMenu');
+    var $anexo =
+        $miniMenu.find(
+            '.mini-menu-anexo'
+        );
 
-    var $anexo = $miniMenu.find('.mini-menu-anexo');
-    var $maisOpcoes = $('#abrir-acoes-perfil');
-    var $acoes = $('#acoes-perfil');
-    var $acoesPrincipal = $('#acoes-perfil-principal');
-    var $formDenuncia = $('#form-denuncia');
+    var $maisOpcoes =
+        $('#abrir-acoes-perfil');
+
+    var $acoes =
+        $('#acoes-perfil');
+
+    var $acoesPrincipal =
+        $('#acoes-perfil-principal');
+
+    var $formDenuncia =
+        $('#form-denuncia');
 
     var aEnviarHey = false;
     var aEnviarMensagem = false;
     var aProcessarSeguranca = false;
 
     function texto(valor) {
-        return String(valor || '').trim();
+        return String(
+            valor || ''
+        ).trim();
     }
 
     function urlFoto(valor) {
         try {
             return new URL(
                 texto(valor) ||
-                    '/imagens/fotos-perfil/default.webp',
+                '/imagens/fotos-perfil/default.webp',
                 window.location.href
             ).href;
         } catch (erro) {
@@ -37,138 +46,242 @@
 
     function membroId(elemento) {
         return texto(
-            elemento.getAttribute('data-membro-id') ||
-            elemento.getAttribute('data-id') ||
+            elemento.getAttribute(
+                'data-membro-id'
+            ) ||
+            elemento.getAttribute(
+                'data-id'
+            ) ||
             elemento.id
         );
     }
 
     function nome(elemento) {
-        return texto(
-            elemento.getAttribute('data-nome') ||
-            elemento.getAttribute('alt') ||
-            elemento.getAttribute('title')
-        ) || 'Utilizador';
+        return (
+            texto(
+                elemento.getAttribute(
+                    'data-nome'
+                ) ||
+                elemento.getAttribute(
+                    'alt'
+                ) ||
+                elemento.getAttribute(
+                    'title'
+                )
+            ) ||
+            'Utilizador'
+        );
     }
 
     function foto(elemento) {
         return urlFoto(
             elemento.currentSrc ||
             elemento.src ||
-            elemento.getAttribute('src')
+            elemento.getAttribute(
+                'src'
+            )
         );
     }
 
-    function baseUrl(valor, fallback) {
-        return texto(valor || fallback).replace(/\/+$/, '');
+    function baseUrl(
+        valor,
+        fallback
+    ) {
+        return texto(
+            valor ||
+            fallback
+        ).replace(
+            /\/+$/,
+            ''
+        );
     }
 
     function idSelecionado() {
         return texto(
-            $miniMenu.attr('data-destinatario-id')
-        );
-    }
-
-    function tokenAcessoPerfilSelecionado() {
-        return texto(
-            $miniMenu.attr('data-profile-access-token')
+            $miniMenu.attr(
+                'data-destinatario-id'
+            )
         );
     }
 
     function nomeSelecionado() {
-        return texto(
-            $miniMenu.find('header h1').text()
-        ) || 'esta pessoa';
+        return (
+            texto(
+                $miniMenu
+                    .find('header h1')
+                    .text()
+            ) ||
+            'esta pessoa'
+        );
     }
 
-    function ajustarAlturaMiniMenu(acoesAbertas) {
+    function ajustarAlturaMiniMenu(
+        acoesAbertas
+    ) {
         if (
-            typeof window.definirMiniMenuAcoes ===
+            typeof window
+                .definirMiniMenuAcoes ===
             'function'
         ) {
-            window.definirMiniMenuAcoes(acoesAbertas);
+            window
+                .definirMiniMenuAcoes(
+                    acoesAbertas
+                );
         }
     }
 
     function fecharAcoes() {
         $acoes
-            .removeClass('aberta')
-            .attr('aria-hidden', 'true')
-            .prop('hidden', true);
+            .removeClass(
+                'aberta'
+            )
+            .attr(
+                'aria-hidden',
+                'true'
+            )
+            .prop(
+                'hidden',
+                true
+            );
 
-        $maisOpcoes.attr('aria-expanded', 'false');
-        $acoesPrincipal.prop('hidden', false);
-        $formDenuncia.prop('hidden', true);
+        $maisOpcoes.attr(
+            'aria-expanded',
+            'false'
+        );
 
-        ajustarAlturaMiniMenu(false);
+        $acoesPrincipal.prop(
+            'hidden',
+            false
+        );
+
+        $formDenuncia.prop(
+            'hidden',
+            true
+        );
+
+        ajustarAlturaMiniMenu(
+            false
+        );
     }
 
     function abrirAcoes() {
         if (
-            $miniMenu.hasClass('perfil-proprio') ||
+            $miniMenu.hasClass(
+                'perfil-proprio'
+            ) ||
             !idSelecionado()
         ) {
             return;
         }
 
-        ajustarAlturaMiniMenu(true);
+        ajustarAlturaMiniMenu(
+            true
+        );
 
         $acoes
-            .prop('hidden', false)
-            .attr('aria-hidden', 'false')
-            .addClass('aberta');
+            .prop(
+                'hidden',
+                false
+            )
+            .attr(
+                'aria-hidden',
+                'false'
+            )
+            .addClass(
+                'aberta'
+            );
 
-        $maisOpcoes.attr('aria-expanded', 'true');
-        $acoesPrincipal.prop('hidden', false);
-        $formDenuncia.prop('hidden', true);
+        $maisOpcoes.attr(
+            'aria-expanded',
+            'true'
+        );
+
+        $acoesPrincipal.prop(
+            'hidden',
+            false
+        );
+
+        $formDenuncia.prop(
+            'hidden',
+            true
+        );
 
         $acoes
-            .find('.acoes-perfil-caixa')
-            .trigger('focus');
+            .find(
+                '.acoes-perfil-caixa'
+            )
+            .trigger(
+                'focus'
+            );
     }
 
     function abrirFormularioDenuncia() {
-        $acoesPrincipal.prop('hidden', true);
-        $formDenuncia.prop('hidden', false);
-        $('#denuncia-motivo').trigger('focus');
+        $acoesPrincipal.prop(
+            'hidden',
+            true
+        );
+
+        $formDenuncia.prop(
+            'hidden',
+            false
+        );
+
+        $('#denuncia-motivo')
+            .trigger(
+                'focus'
+            );
     }
 
-    function prepararMiniMenu(elemento) {
+    function prepararMiniMenu(
+        elemento
+    ) {
         if (!elemento) {
             return false;
         }
 
-        var id = membroId(elemento);
+        var id =
+            membroId(
+                elemento
+            );
 
         if (!id) {
             return false;
         }
 
-        var membroNome = nome(elemento);
-        var souEu = id === texto(window.membroId);
+        var membroNome =
+            nome(
+                elemento
+            );
 
-        var tokenAcessoPerfil = texto(
-            elemento.getAttribute(
-                'data-profile-access-token'
-            )
-        );
+        var souEu =
+            id ===
+            texto(
+                window.membroId
+            );
 
-        var imagem = $miniMenu
-            .find('header img')
-            .get(0);
+        var imagem =
+            $miniMenu
+                .find(
+                    'header img'
+                )
+                .get(0);
 
         fecharAcoes();
 
         $miniMenu
-            .attr('data-destinatario-id', id)
             .attr(
-                'data-profile-access-token',
-                tokenAcessoPerfil
+                'data-destinatario-id',
+                id
             )
-            .toggleClass('perfil-proprio', souEu);
+            .toggleClass(
+                'perfil-proprio',
+                souEu
+            );
 
         $miniMenu
-            .find('.mini-menu-perfil')
+            .find(
+                '.mini-menu-perfil'
+            )
             .attr(
                 'href',
                 baseUrl(
@@ -176,15 +289,23 @@
                     '/profile'
                 ) +
                 '/' +
-                encodeURIComponent(id)
+                encodeURIComponent(
+                    id
+                )
             );
 
         $miniMenu
-            .find('header h1')
-            .text(membroNome);
+            .find(
+                'header h1'
+            )
+            .text(
+                membroNome
+            );
 
         $miniMenu
-            .find('.mini-menu-mensagem')
+            .find(
+                '.mini-menu-mensagem'
+            )
             .attr(
                 'action',
                 baseUrl(
@@ -192,82 +313,140 @@
                     '/messages'
                 ) +
                 '/' +
-                encodeURIComponent(id)
+                encodeURIComponent(
+                    id
+                )
             );
 
         if (imagem) {
-            imagem.onerror = function () {
-                this.onerror = null;
-                this.src = urlFoto(
-                    '/imagens/fotos-perfil/default.webp'
-                );
-            };
+            imagem.onerror =
+                function () {
+                    this.onerror =
+                        null;
 
-            imagem.src = foto(elemento);
-            imagem.alt = membroNome;
+                    this.src =
+                        urlFoto(
+                            '/imagens/fotos-perfil/default.webp'
+                        );
+                };
+
+            imagem.src =
+                foto(
+                    elemento
+                );
+
+            imagem.alt =
+                membroNome;
         }
 
         return true;
     }
 
-    function aviso(mensagem, tipo) {
+    function aviso(
+        mensagem,
+        tipo
+    ) {
         if (
-            typeof window.mostrarMensagemTemporaria ===
+            typeof window
+                .mostrarMensagemTemporaria ===
             'function'
         ) {
-            window.mostrarMensagemTemporaria(
-                mensagem,
-                tipo
-            );
+            window
+                .mostrarMensagemTemporaria(
+                    mensagem,
+                    tipo
+                );
         }
     }
 
     function libertarHey() {
-        aEnviarHey = false;
+        aEnviarHey =
+            false;
 
         $('#enviar-hey')
-            .prop('disabled', false)
-            .removeAttr('aria-busy');
+            .prop(
+                'disabled',
+                false
+            )
+            .removeAttr(
+                'aria-busy'
+            );
     }
 
-    async function pedidoSeguranca(acao, campos) {
-        var dados = new FormData();
+    async function pedidoSeguranca(
+        acao,
+        campos
+    ) {
+        var dados =
+            new FormData();
 
-        dados.set('action', acao);
-        dados.set('target_id', idSelecionado());
+        dados.set(
+            'action',
+            acao
+        );
 
-        Object.keys(campos || {}).forEach(
+        dados.set(
+            'target_id',
+            idSelecionado()
+        );
+
+        Object.keys(
+            campos || {}
+        ).forEach(
             function (chave) {
-                dados.set(chave, campos[chave]);
+                dados.set(
+                    chave,
+                    campos[chave]
+                );
             }
         );
 
-        var resposta = await fetch(
-            baseUrl(window.safetyUrl, '/safety'),
-            {
-                method: 'POST',
-                body: dados,
-                credentials: 'same-origin',
-                headers: {
-                    Accept: 'application/json',
-                    'X-Requested-With':
-                        'XMLHttpRequest'
+        var resposta =
+            await fetch(
+                baseUrl(
+                    window.safetyUrl,
+                    '/safety'
+                ),
+                {
+                    method:
+                        'POST',
+
+                    body:
+                        dados,
+
+                    credentials:
+                        'same-origin',
+
+                    headers: {
+                        'Accept':
+                            'application/json',
+
+                        'X-Requested-With':
+                            'XMLHttpRequest'
+                    }
                 }
-            }
-        );
+            );
 
-        var conteudo = await resposta.text();
+        var conteudo =
+            await resposta.text();
+
         var resultado;
 
         try {
-            resultado = JSON.parse(conteudo);
+            resultado =
+                JSON.parse(
+                    conteudo
+                );
         } catch (erro) {
             throw new Error(
                 'O servidor devolveu uma resposta inválida.'
             );
         }
 
-        if (!resposta.ok || !resultado.success) {
+        if (
+            !resposta.ok ||
+            !resultado.success
+        ) {
             throw new Error(
                 resultado.message ||
                 'Não foi possível concluir o pedido.'
@@ -277,45 +456,151 @@
         return resultado;
     }
 
-    function removerPessoaDoMapa(id) {
+    function removerPessoaDoMapa(
+        id
+    ) {
         $('.foto')
-            .filter(function () {
-                return membroId(this) === id;
-            })
+            .filter(
+                function () {
+                    return (
+                        membroId(
+                            this
+                        ) ===
+                        id
+                    );
+                }
+            )
             .remove();
     }
 
-    function definirSegurancaOcupada(ocupada) {
-        aProcessarSeguranca = ocupada;
+    function definirSegurancaOcupada(
+        ocupada
+    ) {
+        aProcessarSeguranca =
+            ocupada;
 
         $acoes
-            .find('button, select, textarea')
-            .prop('disabled', ocupada);
+            .find(
+                'button, select, textarea'
+            )
+            .prop(
+                'disabled',
+                ocupada
+            );
     }
 
+    /*
+     * O index-tap-foto.js usa esta função
+     * antes de abrir o mini-menu.
+     */
     window.prepararMiniMenuDaFoto =
         prepararMiniMenu;
 
     $(document).on(
-        'pointerdown.margotMiniMenu click.margotMiniMenu',
+        'pointerdown click',
         '.foto',
         function () {
-            prepararMiniMenu(this);
+            prepararMiniMenu(
+                this
+            );
+        }
+    );
+
+    /*
+     * FOTO / NOME DO PERFIL NO MINI-MENU
+     *
+     * O link continua a ser um <a> normal,
+     * portanto existe fallback caso o
+     * MargotNavigation não esteja disponível.
+     *
+     * Quando está disponível, abrimos o perfil
+     * através do sistema de navegação interno
+     * para obter a animação lateral.
+     */
+    $(document).on(
+        'click',
+        '.mini-menu-perfil[href]',
+        function (evento) {
+            if (
+                evento.defaultPrevented ||
+                (
+                    evento.button !==
+                        undefined &&
+                    evento.button !== 0
+                ) ||
+                evento.metaKey ||
+                evento.ctrlKey ||
+                evento.shiftKey ||
+                evento.altKey
+            ) {
+                return;
+            }
+
+            var href =
+                this.getAttribute(
+                    'href'
+                );
+
+            if (!href) {
+                return;
+            }
+
+            var url =
+                new URL(
+                    href,
+                    window.location.href
+                );
+
+            if (
+                url.origin !==
+                window.location.origin
+            ) {
+                return;
+            }
+
+            if (
+                !window.MargotNavigation ||
+                typeof window
+                    .MargotNavigation
+                    .navigate !==
+                    'function'
+            ) {
+                return;
+            }
+
+            evento.preventDefault();
+            evento.stopPropagation();
+
+            window
+                .MargotNavigation
+                .navigate(
+                    url.href,
+                    {
+                        historico:
+                            'push',
+
+                        direcao:
+                            1
+                    }
+                );
         }
     );
 
     $(document).on(
-        'click.margotMiniMenu',
+        'click',
         '#enviar-hey',
         function (evento) {
             evento.preventDefault();
             evento.stopPropagation();
 
-            if (aEnviarHey) {
+            if (
+                aEnviarHey
+            ) {
                 return;
             }
 
-            var id = idSelecionado();
+            var id =
+                idSelecionado();
 
             if (!id) {
                 aviso(
@@ -328,30 +613,49 @@
 
             if (
                 !window.AppWebSocket ||
-                !window.AppWebSocket.isConnected()
+                !window
+                    .AppWebSocket
+                    .isConnected()
             ) {
                 aviso(
                     'A ligação está a ser restabelecida.',
                     'erro'
                 );
 
-                if (window.AppWebSocket) {
-                    window.AppWebSocket.connect();
+                if (
+                    window.AppWebSocket
+                ) {
+                    window
+                        .AppWebSocket
+                        .connect();
                 }
 
                 return;
             }
 
-            aEnviarHey = true;
+            aEnviarHey =
+                true;
 
             $(this)
-                .prop('disabled', true)
-                .attr('aria-busy', 'true');
+                .prop(
+                    'disabled',
+                    true
+                )
+                .attr(
+                    'aria-busy',
+                    'true'
+                );
 
-            var enviado = window.AppWebSocket.send({
-                type: 'notify',
-                destinatario_id: id
-            });
+            var enviado =
+                window
+                    .AppWebSocket
+                    .send({
+                        type:
+                            'notify',
+
+                        destinatario_id:
+                            id
+                    });
 
             if (!enviado) {
                 libertarHey();
@@ -372,20 +676,39 @@
     );
 
     $(document).on(
-        'submit.margotMiniMenu',
+        'submit',
         '.mini-menu-mensagem',
-        async function (evento) {
+        async function (
+            evento
+        ) {
             evento.preventDefault();
 
-            if (aEnviarMensagem) {
+            if (
+                aEnviarMensagem
+            ) {
                 return;
             }
 
-            var id = idSelecionado();
-            var $form = $(this);
-            var $botao = $form.find('[type="submit"]');
-            var dados = new FormData(this);
-            var ficheiro = dados.get('media');
+            var id =
+                idSelecionado();
+
+            var $form =
+                $(this);
+
+            var $botao =
+                $form.find(
+                    '[type="submit"]'
+                );
+
+            var dados =
+                new FormData(
+                    this
+                );
+
+            var ficheiro =
+                dados.get(
+                    'media'
+                );
 
             if (!id) {
                 aviso(
@@ -397,66 +720,62 @@
             }
 
             if (
-                !texto(dados.get('mensagem')) &&
+                !texto(
+                    dados.get(
+                        'mensagem'
+                    )
+                ) &&
                 !(
-                    ficheiro instanceof File &&
+                    ficheiro instanceof
+                        File &&
                     ficheiro.size
                 )
             ) {
                 return;
             }
 
-            dados.set('action', 'send');
+            dados.set(
+                'action',
+                'send'
+            );
 
-            var tokenProximidade =
-                tokenAcessoPerfilSelecionado();
-
-            if (tokenProximidade) {
-                dados.set(
-                    'profile_access_token',
-                    tokenProximidade
-                );
-            }
-
-            aEnviarMensagem = true;
+            aEnviarMensagem =
+                true;
 
             $botao
-                .prop('disabled', true)
-                .val('A enviar…');
-
-            try {
-                var resposta = await fetch(
-                    baseUrl(
-                        window.messagesUrl,
-                        '/messages'
-                    ) +
-                    '/' +
-                    encodeURIComponent(id),
-                    {
-                        method: 'POST',
-                        body: dados,
-                        credentials: 'same-origin',
-                        headers: {
-                            Accept: 'application/json',
-                            'X-Requested-With':
-                                'XMLHttpRequest'
-                        }
-                    }
+                .prop(
+                    'disabled',
+                    true
+                )
+                .val(
+                    'A enviar…'
                 );
 
-                var conteudo =
-                    await resposta.text();
+            try {
+                var resposta =
+                    await fetch(
+                        baseUrl(
+                            window.messagesUrl,
+                            '/messages'
+                        ) +
+                        '/' +
+                        encodeURIComponent(
+                            id
+                        ),
+                        {
+                            method:
+                                'POST',
 
-                var resultado;
+                            body:
+                                dados,
 
-                try {
-                    resultado =
-                        JSON.parse(conteudo);
-                } catch (erro) {
-                    throw new Error(
-                        'O servidor devolveu uma resposta inválida.'
+                            credentials:
+                                'same-origin'
+                        }
                     );
-                }
+
+                var resultado =
+                    await resposta.json();
 
                 if (
                     !resposta.ok ||
@@ -471,8 +790,12 @@
                 this.reset();
 
                 $anexo
-                    .removeClass('selecionado')
-                    .text('+')
+                    .removeClass(
+                        'selecionado'
+                    )
+                    .text(
+                        '+'
+                    )
                     .attr(
                         'aria-label',
                         'Adicionar fotografia ou vídeo'
@@ -485,28 +808,45 @@
 
                 if (
                     window.AppWebSocket &&
-                    window.AppWebSocket.isConnected()
+                    window
+                        .AppWebSocket
+                        .isConnected()
                 ) {
-                    window.AppWebSocket.send({
-                        type: 'chat_publish',
-                        message_id:
-                            resultado.message.id
-                    });
+                    window
+                        .AppWebSocket
+                        .send({
+                            type:
+                                'chat_publish',
+
+                            message_id:
+                                resultado
+                                    .message
+                                    .id
+                        });
                 }
             } catch (erro) {
-                aviso(erro.message, 'erro');
+                aviso(
+                    erro.message,
+                    'erro'
+                );
             } finally {
-                aEnviarMensagem = false;
+                aEnviarMensagem =
+                    false;
 
                 $botao
-                    .prop('disabled', false)
-                    .val('Enviar');
+                    .prop(
+                        'disabled',
+                        false
+                    )
+                    .val(
+                        'Enviar'
+                    );
             }
         }
     );
 
     $(document).on(
-        'change.margotMiniMenu',
+        'change',
         '#mini-menu-media',
         function () {
             var ficheiro =
@@ -516,9 +856,15 @@
             $anexo
                 .toggleClass(
                     'selecionado',
-                    Boolean(ficheiro)
+                    Boolean(
+                        ficheiro
+                    )
                 )
-                .text(ficheiro ? '✓' : '+')
+                .text(
+                    ficheiro
+                        ? '✓'
+                        : '+'
+                )
                 .attr(
                     'aria-label',
                     ficheiro
@@ -540,6 +886,7 @@
         function (evento) {
             evento.preventDefault();
             evento.stopPropagation();
+
             abrirAcoes();
         }
     );
@@ -556,98 +903,143 @@
         '[data-fechar-acoes]',
         function (evento) {
             evento.preventDefault();
+
             fecharAcoes();
         }
     );
 
-    $('#abrir-denuncia').on(
-        'click',
-        abrirFormularioDenuncia
-    );
+    $('#abrir-denuncia')
+        .on(
+            'click',
+            abrirFormularioDenuncia
+        );
 
-    $('#voltar-denuncia').on(
-        'click',
-        function () {
-            $formDenuncia.prop('hidden', true);
-            $acoesPrincipal.prop('hidden', false);
-        }
-    );
+    $('#voltar-denuncia')
+        .on(
+            'click',
+            function () {
+                $formDenuncia.prop(
+                    'hidden',
+                    true
+                );
 
-    $('#bloquear-membro').on(
-        'click',
-        async function () {
-            if (aProcessarSeguranca) {
-                return;
+                $acoesPrincipal.prop(
+                    'hidden',
+                    false
+                );
             }
+        );
 
-            var id = idSelecionado();
-            var membroNome = nomeSelecionado();
+    $('#bloquear-membro')
+        .on(
+            'click',
+            async function () {
+                if (
+                    aProcessarSeguranca
+                ) {
+                    return;
+                }
+
+                var id =
+                    idSelecionado();
+
+                var membroNome =
+                    nomeSelecionado();
+
+                if (
+                    !id ||
+                    !window.confirm(
+                        'Bloquear ' +
+                        membroNome +
+                        '? Deixam imediatamente de se ver no mapa.'
+                    )
+                ) {
+                    return;
+                }
+
+                definirSegurancaOcupada(
+                    true
+                );
+
+                try {
+                    await pedidoSeguranca(
+                        'block'
+                    );
+
+                    removerPessoaDoMapa(
+                        id
+                    );
+
+                    if (
+                        window.AppWebSocket &&
+                        window
+                            .AppWebSocket
+                            .isConnected()
+                    ) {
+                        window
+                            .AppWebSocket
+                            .send({
+                                type:
+                                    'block_refresh',
+
+                                target_id:
+                                    id
+                            });
+                    }
+
+                    fecharAcoes();
+
+                    if (
+                        typeof window
+                            .fecharMiniMenu ===
+                        'function'
+                    ) {
+                        window
+                            .fecharMiniMenu();
+                    }
+
+                    aviso(
+                        membroNome +
+                        ' foi bloqueado.',
+                        'sucesso'
+                    );
+                } catch (erro) {
+                    aviso(
+                        erro.message,
+                        'erro'
+                    );
+                } finally {
+                    definirSegurancaOcupada(
+                        false
+                    );
+                }
+            }
+        );
+
+    $formDenuncia.on(
+        'submit',
+        async function (
+            evento
+        ) {
+            evento.preventDefault();
 
             if (
-                !id ||
-                !window.confirm(
-                    'Bloquear ' +
-                    membroNome +
-                    '? Deixam imediatamente de se ver no mapa.'
-                )
+                aProcessarSeguranca
             ) {
                 return;
             }
 
-            definirSegurancaOcupada(true);
-
-            try {
-                await pedidoSeguranca('block');
-
-                removerPessoaDoMapa(id);
-
-                if (
-                    window.AppWebSocket &&
-                    window.AppWebSocket.isConnected()
-                ) {
-                    window.AppWebSocket.send({
-                        type: 'block_refresh',
-                        target_id: id
-                    });
-                }
-
-                fecharAcoes();
-
-                if (
-                    typeof window.fecharMiniMenu ===
-                    'function'
-                ) {
-                    window.fecharMiniMenu();
-                }
-
-                aviso(
-                    membroNome + ' foi bloqueado.',
-                    'sucesso'
+            var motivo =
+                texto(
+                    $('#denuncia-motivo')
+                        .val()
                 );
-            } catch (erro) {
-                aviso(erro.message, 'erro');
-            } finally {
-                definirSegurancaOcupada(false);
-            }
-        }
-    );
 
-    $formDenuncia.on(
-        'submit',
-        async function (evento) {
-            evento.preventDefault();
-
-            if (aProcessarSeguranca) {
-                return;
-            }
-
-            var motivo = texto(
-                $('#denuncia-motivo').val()
-            );
-
-            var mensagem = texto(
-                $('#denuncia-mensagem').val()
-            );
+            var mensagem =
+                texto(
+                    $('#denuncia-mensagem')
+                        .val()
+                );
 
             if (!motivo) {
                 aviso(
@@ -658,18 +1050,24 @@
                 return;
             }
 
-            definirSegurancaOcupada(true);
+            definirSegurancaOcupada(
+                true
+            );
 
             try {
                 await pedidoSeguranca(
                     'report',
                     {
-                        motivo: motivo,
-                        mensagem: mensagem
+                        motivo:
+                            motivo,
+
+                        mensagem:
+                            mensagem
                     }
                 );
 
                 this.reset();
+
                 fecharAcoes();
 
                 aviso(
@@ -677,19 +1075,27 @@
                     'sucesso'
                 );
             } catch (erro) {
-                aviso(erro.message, 'erro');
+                aviso(
+                    erro.message,
+                    'erro'
+                );
             } finally {
-                definirSegurancaOcupada(false);
+                definirSegurancaOcupada(
+                    false
+                );
             }
         }
     );
 
     $(document).on(
-        'keydown.margotMiniMenu',
+        'keydown',
         function (evento) {
             if (
-                evento.key === 'Escape' &&
-                !$acoes.prop('hidden')
+                evento.key ===
+                    'Escape' &&
+                !$acoes.prop(
+                    'hidden'
+                )
             ) {
                 fecharAcoes();
             }
@@ -705,35 +1111,8 @@
         'app:hey-erro',
         libertarHey
     );
-
-    function desativarPagina() {
-        $(document).off('.margotMiniMenu');
-
-        window.removeEventListener(
-            'app:hey-enviado',
-            libertarHey
-        );
-
-        window.removeEventListener(
-            'app:hey-erro',
-            libertarHey
-        );
-
-        document.removeEventListener(
-            'margot:page-leave',
-            desativarPagina
-        );
-
-        if (
-            window.prepararMiniMenuDaFoto ===
-            prepararMiniMenu
-        ) {
-            delete window.prepararMiniMenuDaFoto;
-        }
-    }
-
-    document.addEventListener(
-        'margot:page-leave',
-        desativarPagina
-    );
-})(window, document, jQuery);
+})(
+    window,
+    document,
+    jQuery
+);
