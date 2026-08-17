@@ -158,95 +158,53 @@ img {
 
 #enviar-hey,
 #enviar-hey-perfil {
-    position: relative;
+    width: 180px;
+    height: 180px;
+    min-width: 180px;
+    min-height: 180px;
 
-    width: 168px;
-    height: 168px;
-    min-width: 168px;
-    min-height: 168px;
-
-    margin: 14px auto 20px;
+    margin: 10px auto 18px;
     padding: 0;
 
     border: 0;
     border-radius: 50%;
 
     background: #b60020;
+    color: #fff7ee;
 
-    color: #fff4e6;
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Helvetica Neue",
+        Arial,
+        sans-serif;
 
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: 2.35rem;
-    font-weight: 600;
-    letter-spacing: -0.055em;
+    font-size: 2.65rem;
+    font-weight: 750;
+    letter-spacing: -0.07em;
     line-height: 1;
 
     display: flex;
     align-items: center;
     justify-content: center;
 
-    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
 
-    box-shadow:
-        0 14px 32px rgba(120, 0, 20, 0.18);
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 
     transition:
-        transform 180ms cubic-bezier(.2,.8,.2,1),
-        box-shadow 180ms ease,
-        background-color 180ms ease,
-        opacity 180ms ease;
-
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-}
-
-/* pequeno coração — identidade Margot */
-
-#enviar-hey::before,
-#enviar-hey-perfil::before {
-    content: "♥";
-
-    position: absolute;
-
-    top: 30px;
-    left: 50%;
-
-    transform: translateX(-50%);
-
-    color: #fff4e6;
-
-    font-family: Georgia, serif;
-    font-size: 17px;
-    line-height: 1;
-
-    opacity: 0.95;
-
-    pointer-events: none;
-}
-
-/* Hey ligeiramente mais abaixo por causa do coração */
-
-#enviar-hey,
-#enviar-hey-perfil {
-    padding-top: 18px;
-}
-
-#enviar-hey:hover:not(:disabled),
-#enviar-hey-perfil:hover:not(:disabled) {
-    background: #c00827;
-
-    box-shadow:
-        0 17px 38px rgba(120, 0, 20, 0.22);
+        transform 160ms cubic-bezier(.2,.8,.2,1),
+        background-color 160ms ease,
+        opacity 160ms ease;
 }
 
 #enviar-hey:active:not(:disabled),
 #enviar-hey-perfil:active:not(:disabled) {
     transform: scale(0.94);
-
-    background: #a9001b;
-
-    box-shadow:
-        0 7px 18px rgba(120, 0, 20, 0.16);
+    background: #9f001b;
 }
 
 #enviar-hey:focus-visible,
@@ -259,7 +217,11 @@ img {
 #enviar-hey-perfil:disabled {
     opacity: 0.45;
     cursor: default;
-    transform: none;
+}
+
+.mini-menu.perfil-proprio #enviar-hey,
+.mini-menu.perfil-proprio .mini-menu-mensagem {
+    display: none !important;
 }
 
 .mini-menu > form {
