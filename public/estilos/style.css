@@ -159,44 +159,55 @@ img {
 #enviar-hey,
 #enviar-hey-perfil {
     position: relative;
-    isolation: isolate;
-    width: min(64vw, 280px);
-    min-width: 190px;
-    height: 58px;
-    margin: 18px auto 8px;
-    padding: 0 28px;
-    overflow: hidden;
 
-    border: 1px solid rgba(255, 255, 255, 0.48);
-    border-radius: 999px;
+    width: 102px;
+    height: 102px;
+
+    min-width: 102px;
+    min-height: 102px;
+
+    margin: 14px auto 14px;
+    padding: 0;
+
+    border:
+        1px solid
+        rgba(130, 0, 15, 0.22);
+
+    border-radius: 50%;
 
     background:
         linear-gradient(
-            135deg,
-            #7657ff 0%,
-            #5d70ff 45%,
-            #438bff 100%
+            145deg,
+            #c50022 0%,
+            #b0001b 55%,
+            #970014 100%
         );
 
-    color: #ffffff;
+    color: #fff4e6;
 
-    font-size: 1.16rem;
+    font-size: 1.38rem;
     font-weight: 800;
-    letter-spacing: 0.01em;
-    line-height: 1;
-    text-align: center;
+    letter-spacing: -0.035em;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
     cursor: pointer;
+
     touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
+
+    -webkit-tap-highlight-color:
+        transparent;
 
     box-shadow:
-        0 10px 26px rgba(72, 86, 226, 0.28),
-        inset 0 1px 0 rgba(255, 255, 255, 0.34),
-        inset 0 -1px 0 rgba(54, 63, 164, 0.16);
+        0 4px 10px rgba(90, 0, 10, 0.12),
+        0 12px 28px rgba(170, 0, 24, 0.19),
+        inset 0 1px 1px rgba(255, 255, 255, 0.22),
+        inset 0 -2px 4px rgba(80, 0, 8, 0.10);
 
     transition:
-        transform 150ms ease,
+        transform 160ms cubic-bezier(.2,.8,.2,1),
         box-shadow 180ms ease,
         filter 180ms ease,
         opacity 180ms ease;
@@ -205,73 +216,118 @@ img {
 #enviar-hey::before,
 #enviar-hey-perfil::before {
     content: "";
+
     position: absolute;
-    z-index: -1;
-    top: 0;
-    right: 0;
-    left: 0;
 
-    height: 52%;
+    top: 8px;
+    left: 18px;
+    right: 18px;
 
-    border-radius: inherit;
+    height: 32px;
+
+    border-radius: 50%;
 
     background:
-        linear-gradient(
-            to bottom,
-            rgba(255, 255, 255, 0.23),
+        radial-gradient(
+            ellipse at top,
+            rgba(255, 255, 255, 0.20),
             rgba(255, 255, 255, 0)
         );
 
     pointer-events: none;
 }
 
+#enviar-hey::after,
+#enviar-hey-perfil::after {
+    content: "";
+
+    position: absolute;
+
+    left: 17px;
+    right: 17px;
+    bottom: -8px;
+
+    height: 17px;
+
+    border-radius: 50%;
+
+    background:
+        rgba(167, 0, 22, 0.20);
+
+    filter: blur(7px);
+
+    z-index: -1;
+
+    pointer-events: none;
+
+    transition:
+        transform 160ms ease,
+        opacity 160ms ease;
+}
+
 #enviar-hey:hover:not(:disabled),
 #enviar-hey-perfil:hover:not(:disabled) {
     filter:
-        brightness(1.035)
-        saturate(1.04);
+        brightness(1.045);
 
     box-shadow:
-        0 12px 30px rgba(72, 86, 226, 0.34),
-        inset 0 1px 0 rgba(255, 255, 255, 0.38),
-        inset 0 -1px 0 rgba(54, 63, 164, 0.16);
+        0 5px 12px rgba(90, 0, 10, 0.13),
+        0 15px 32px rgba(170, 0, 24, 0.23),
+        inset 0 1px 1px rgba(255, 255, 255, 0.25);
 }
 
 #enviar-hey:active:not(:disabled),
 #enviar-hey-perfil:active:not(:disabled) {
-    transform: scale(0.965);
+    transform:
+        scale(0.92);
+
+    filter:
+        brightness(0.97);
 
     box-shadow:
-        0 6px 17px rgba(72, 86, 226, 0.24),
-        inset 0 1px 0 rgba(255, 255, 255, 0.28);
+        0 2px 7px rgba(90, 0, 10, 0.11),
+        0 7px 18px rgba(170, 0, 24, 0.17),
+        inset 0 2px 4px rgba(75, 0, 8, 0.12);
+}
+
+#enviar-hey:active:not(:disabled)::after,
+#enviar-hey-perfil:active:not(:disabled)::after {
+    transform:
+        scaleX(0.72);
+
+    opacity:
+        0.55;
 }
 
 #enviar-hey:focus-visible,
 #enviar-hey-perfil:focus-visible {
     outline:
         3px solid
-        rgba(76, 112, 255, 0.28);
+        rgba(190, 0, 28, 0.22);
 
-    outline-offset: 4px;
+    outline-offset:
+        4px;
 }
 
 #enviar-hey:disabled,
 #enviar-hey-perfil:disabled {
-    opacity: 0.58;
-    cursor: default;
+    opacity:
+        0.48;
 
-    transform: none;
+    cursor:
+        default;
 
-    filter: saturate(0.72);
+    transform:
+        none;
 
-    box-shadow:
-        0 5px 14px rgba(72, 86, 226, 0.18),
-        inset 0 1px 0 rgba(255, 255, 255, 0.24);
+    filter:
+        saturate(0.65);
 }
 
-.mini-menu.perfil-proprio #enviar-hey,
-.mini-menu.perfil-proprio form {
-    display: none !important;
+#enviar-hey:disabled::after,
+#enviar-hey-perfil:disabled::after {
+    opacity:
+        0.25;
 }
 
 .mini-menu > form {
