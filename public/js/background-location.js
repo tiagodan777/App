@@ -8,21 +8,37 @@
     window.__margotBackgroundLocationLoaded = true;
 
     var capacitor = window.Capacitor;
-    var plugin = null;
+    var plugin = capacitor && capacitor.Plugins
+        ? capacitor.Plugins.BackgroundLocation
+        : null;
 
-    if (capacitor) {
-        plugin = capacitor.Plugins
-            ? capacitor.Plugins.BackgroundLocation
-            : null;
+    if (
+        !plugin &&
+        capacitor &&
+        typeof capacitor.registerPlugin === 'function'
+    ) {
+        plugin = capacitor.registerPlugin('BackgroundLocation');
+    }
 
+    function plataformaAtual() {
         if (
-            !plugin &&
-            typeof capacitor.registerPlugin === 'function'
+            capacitor &&
+            typeof capacitor.getPlatform === 'function'
         ) {
-            plugin = capacitor.registerPlugin(
-                'BackgroundLocation'
-            );
+            return String(capacitor.getPlatform() || 'web')
+                .toLowerCase();
         }
+
+        return 'web';
+    }
+
+    function localizacaoPermitida() {
+        return window.disableLocationTracking !== true;
+    }
+
+    function presencaVisivel() {
+        return localizacaoPermitida() &&
+            window.margotInvisible !== true;
     }
 
     function plataformaNativa() {
@@ -30,17 +46,11 @@
             return false;
         }
 
-        if (
-            typeof capacitor.isNativePlatform ===
-            'function'
-        ) {
+        if (typeof capacitor.isNativePlatform === 'function') {
             return capacitor.isNativePlatform();
         }
 
-        if (
-            typeof capacitor.getPlatform ===
-            'function'
-        ) {
+        if (typeof capacitor.getPlatform === 'function') {
             return capacitor.getPlatform() !== 'web';
         }
 
@@ -52,40 +62,24 @@
             return false;
         }
 
-        if (
-            typeof capacitor.isPluginAvailable ===
-            'function'
-        ) {
-            return capacitor.isPluginAvailable(
-                'BackgroundLocation'
-            );
+        if (typeof capacitor.isPluginAvailable === 'function') {
+            return capacitor.isPluginAvailable('BackgroundLocation');
         }
 
         return true;
     }
 
-    function deveUsarLocalizacaoBackground() {
-        return (
-            window.disableLocationTracking !== true &&
-            window.margotInvisible !== true
-        );
-    }
-
     function obterTokenCsrf() {
-        var elemento = document.querySelector(
-            'meta[name="csrf-token"]'
-        );
+        var elemento = document.querySelector('meta[name="csrf-token"]');
 
         return elemento
-            ? String(
-                elemento.getAttribute('content') || ''
-            ).trim()
+            ? String(elemento.getAttribute('content') || '').trim()
             : '';
     }
 
     async function pedirTokenBackground() {
         var headers = {
-            Accept: 'application/json',
+            'Accept': 'application/json',
             'X-Requested-With': 'XMLHttpRequest'
         };
 
@@ -96,8 +90,10 @@
         }
 
         var resposta = await fetch(
-            window.backgroundLocationTokenUrl ||
-                '/background-location-token/',
+            String(
+                window.backgroundLocationTokenUrl ||
+                '/background-location-token/'
+            ),
             {
                 method: 'POST',
                 credentials: 'same-origin',
@@ -118,11 +114,7 @@
             return null;
         }
 
-        if (
-            !resposta.ok ||
-            !dados.success ||
-            !dados.token
-        ) {
+        if (!resposta.ok || !dados.success || !dados.token) {
             throw new Error(
                 dados.message ||
                 'Não foi possível ativar a localização em segundo plano.'
@@ -133,10 +125,7 @@
     }
 
     function precisaDasDefinicoes(resultado) {
-        if (
-            !resultado ||
-            typeof resultado !== 'object'
-        ) {
+        if (!resultado || typeof resultado !== 'object') {
             return false;
         }
 
@@ -153,13 +142,22 @@
             resultado.authorization_status ||
             ''
         ).toLowerCase();
+        var permissao = String(
+            resultado.permission ||
+            resultado.permissionStatus ||
+            resultado.permission_status ||
+            ''
+        ).toLowerCase();
 
-        return (
-            autorizacao === 'authorizedwheninuse' ||
+        return autorizacao === 'authorizedwheninuse' ||
             autorizacao === 'wheninuse' ||
+            autorizacao === 'when_in_use' ||
             autorizacao === 'denied' ||
-            autorizacao === 'restricted'
-        );
+            autorizacao === 'restricted' ||
+            permissao === 'disabled' ||
+            permissao === 'when_in_use' ||
+            permissao === 'denied' ||
+            permissao === 'restricted';
     }
 
     function localizacaoAtiva(resultado) {
@@ -173,20 +171,34 @@
         );
     }
 
-    function adicionarEstiloAviso() {
-        if (
-            document.getElementById(
-                'margot-background-location-style'
+    function tokenGuardado(resultado) {
+        return !!(
+            resultado &&
+            (
+                resultado.token_stored === true ||
+                resultado.tokenStored === true
             )
-        ) {
+        );
+    }
+
+    async function definirVisibilidade(visivel) {
+        if (typeof plugin.setVisibility !== 'function') {
+            return estadoAtual();
+        }
+
+        return plugin.setVisibility({
+            visible: !!visivel
+        });
+    }
+
+    function adicionarEstiloAviso() {
+        if (document.getElementById('margot-background-location-style')) {
             return;
         }
 
         var estilo = document.createElement('style');
 
-        estilo.id =
-            'margot-background-location-style';
-
+        estilo.id = 'margot-background-location-style';
         estilo.textContent = [
             '.margot-background-location-overlay{position:fixed;inset:0;z-index:10000;padding:20px;background:rgba(0,0,0,.38);display:flex;align-items:flex-end;justify-content:center;}',
             '.margot-background-location-card{width:min(100%,420px);margin-bottom:max(12px,env(safe-area-inset-bottom,12px));padding:22px;border-radius:28px;background:#fff;color:#111;box-shadow:0 18px 55px rgba(0,0,0,.24);font-family:Helvetica,Arial,sans-serif;}',
@@ -211,6 +223,27 @@
         }
     }
 
+    function conteudoAvisoDefinicoes() {
+        if (plataformaAtual() === 'android') {
+            return {
+                titulo: 'Ativa a localização na Margot',
+                texto:
+                    'No Android, abre as Definições e permite o acesso à localização. ' +
+                    'Não precisas de escolher “Sempre”: quando a Margot estiver em segundo plano, ' +
+                    'o Android mostrará uma notificação discreta enquanto a tua posição é atualizada.',
+                botao: 'Abrir Definições'
+            };
+        }
+
+        return {
+            titulo: 'Mantém-te visível na Margot',
+            texto:
+                'No iPhone, abre Localização e escolhe “Sempre”. ' +
+                'Assim continuas a aparecer no mapa quando a Margot está em segundo plano.',
+            botao: 'Abrir Definições'
+        };
+    }
+
     function mostrarAvisoDefinicoes(forcar) {
         if (!pluginDisponivel()) {
             return;
@@ -224,27 +257,17 @@
             return;
         }
 
-        var chave =
-            'margot-background-location-aviso';
-
+        var chave = 'margot-background-location-aviso';
         var ultimaApresentacao = Number(
             localStorage.getItem(chave) || 0
         );
-
         var umDia = 24 * 60 * 60 * 1000;
 
-        if (
-            !forcar &&
-            Date.now() - ultimaApresentacao < umDia
-        ) {
+        if (!forcar && Date.now() - ultimaApresentacao < umDia) {
             return;
         }
 
-        localStorage.setItem(
-            chave,
-            String(Date.now())
-        );
-
+        localStorage.setItem(chave, String(Date.now()));
         adicionarEstiloAviso();
 
         var fundo = document.createElement('div');
@@ -252,17 +275,11 @@
         var titulo = document.createElement('h2');
         var texto = document.createElement('p');
         var acoes = document.createElement('div');
-        var maisTarde =
-            document.createElement('button');
-        var abrirDefinicoes =
-            document.createElement('button');
+        var maisTarde = document.createElement('button');
+        var abrirDefinicoes = document.createElement('button');
 
-        fundo.id =
-            'margot-background-location-overlay';
-
-        fundo.className =
-            'margot-background-location-overlay';
-
+        fundo.id = 'margot-background-location-overlay';
+        fundo.className = 'margot-background-location-overlay';
         fundo.setAttribute('role', 'dialog');
         fundo.setAttribute('aria-modal', 'true');
         fundo.setAttribute(
@@ -270,54 +287,40 @@
             'margot-background-location-title'
         );
 
-        cartao.className =
-            'margot-background-location-card';
+        cartao.className = 'margot-background-location-card';
 
-        titulo.id =
-            'margot-background-location-title';
+        var conteudo = conteudoAvisoDefinicoes();
 
-        titulo.textContent =
-            'Mantém-te visível na Margot';
+        titulo.id = 'margot-background-location-title';
+        titulo.textContent = conteudo.titulo;
 
-        texto.textContent =
-            'No iPhone, abre Localização e escolhe “Sempre”. ' +
-            'A Margot usa alterações significativas e visitas do iOS, sem ' +
-            'manter o GPS continuamente ligado em segundo plano.';
+        texto.textContent = conteudo.texto;
 
-        acoes.className =
-            'margot-background-location-actions';
+        acoes.className = 'margot-background-location-actions';
 
         maisTarde.type = 'button';
-        maisTarde.className =
-            'margot-background-location-later';
+        maisTarde.className = 'margot-background-location-later';
         maisTarde.textContent = 'Agora não';
 
         abrirDefinicoes.type = 'button';
         abrirDefinicoes.className =
             'margot-background-location-settings';
-        abrirDefinicoes.textContent =
-            'Abrir Definições';
+        abrirDefinicoes.textContent = conteudo.botao;
 
-        maisTarde.addEventListener(
-            'click',
-            fecharAviso
-        );
+        maisTarde.addEventListener('click', fecharAviso);
 
-        abrirDefinicoes.addEventListener(
-            'click',
-            async function () {
-                fecharAviso();
+        abrirDefinicoes.addEventListener('click', async function () {
+            fecharAviso();
 
-                try {
-                    await plugin.openSettings();
-                } catch (erro) {
-                    console.error(
-                        'Não foi possível abrir as definições:',
-                        erro
-                    );
-                }
+            try {
+                await plugin.openSettings();
+            } catch (erro) {
+                console.error(
+                    'Não foi possível abrir as definições:',
+                    erro
+                );
             }
-        );
+        });
 
         acoes.appendChild(maisTarde);
         acoes.appendChild(abrirDefinicoes);
@@ -358,10 +361,14 @@
         }
 
         var resultado = await plugin.start({
-            token: token
+            token: token,
+            visible: presencaVisivel()
         });
 
-        if (precisaDasDefinicoes(resultado)) {
+        if (
+            presencaVisivel() &&
+            precisaDasDefinicoes(resultado)
+        ) {
             mostrarAvisoDefinicoes(false);
         }
 
@@ -378,37 +385,53 @@
             };
         }
 
-        if (!deveUsarLocalizacaoBackground()) {
-            return parar();
-        }
-
         if (inicializacao) {
             return inicializacao;
         }
 
         inicializacao = (async function () {
             try {
+                if (!localizacaoPermitida()) {
+                    return parar();
+                }
+
                 var estado = await estadoAtual();
 
-                if (localizacaoAtiva(estado)) {
-                    return estado;
-                }
-
-                if (precisaDasDefinicoes(estado)) {
-                    mostrarAvisoDefinicoes(
-                        !!forcarAviso
+                if (
+                    localizacaoAtiva(estado) ||
+                    (
+                        tokenGuardado(estado) &&
+                        !presencaVisivel()
+                    )
+                ) {
+                    var estadoSincronizado = await definirVisibilidade(
+                        presencaVisivel()
                     );
-                }
 
-                var resultado =
-                    await renovarToken();
+                    if (
+                        presencaVisivel() &&
+                        precisaDasDefinicoes(estadoSincronizado)
+                    ) {
+                        mostrarAvisoDefinicoes(!!forcarAviso);
+                    }
+
+                    return estadoSincronizado;
+                }
 
                 if (
+                    presencaVisivel() &&
+                    precisaDasDefinicoes(estado)
+                ) {
+                    mostrarAvisoDefinicoes(!!forcarAviso);
+                }
+
+                var resultado = await renovarToken();
+
+                if (
+                    presencaVisivel() &&
                     precisaDasDefinicoes(resultado)
                 ) {
-                    mostrarAvisoDefinicoes(
-                        !!forcarAviso
-                    );
+                    mostrarAvisoDefinicoes(!!forcarAviso);
                 }
 
                 return resultado;
@@ -444,7 +467,6 @@
         }
 
         fecharAviso();
-
         return plugin.stop();
     }
 
@@ -454,7 +476,6 @@
         }
 
         await plugin.openSettings();
-
         return true;
     }
 
@@ -462,11 +483,9 @@
         start: function () {
             return iniciar(true);
         },
-
         stop: parar,
         status: estadoAtual,
         openSettings: abrirDefinicoes,
-
         showSettingsNotice: function () {
             mostrarAvisoDefinicoes(true);
         }
@@ -476,32 +495,40 @@
         pluginDisponivel() &&
         typeof plugin.addListener === 'function'
     ) {
-        plugin.addListener(
-            'backgroundLocationTokenExpired',
-            function () {
-                if (
-                    !deveUsarLocalizacaoBackground()
-                ) {
-                    return;
-                }
-
-                renovarToken().catch(
-                    function (erro) {
-                        console.error(
-                            'Não foi possível renovar a autorização da localização:',
-                            erro
-                        );
-                    }
-                );
+        var renovarAutorizacao = function () {
+            if (!localizacaoPermitida()) {
+                parar().catch(function (erro) {
+                    console.error(
+                        'Não foi possível parar a localização:',
+                        erro
+                    );
+                });
+                return;
             }
-        );
+
+            renovarToken().catch(function (erro) {
+                console.error(
+                    'Não foi possível renovar a autorização da localização:',
+                    erro
+                );
+            });
+        };
+
+        [
+            'backgroundLocationAuthorizationExpired',
+            'backgroundLocationTokenExpired'
+        ].forEach(function (evento) {
+            plugin.addListener(evento, renovarAutorizacao);
+        });
     }
 
     function arrancar() {
-        if (deveUsarLocalizacaoBackground()) {
+        if (localizacaoPermitida()) {
             iniciar(false);
         } else {
-            parar();
+            parar().catch(function (erro) {
+                console.error('Localização em segundo plano:', erro);
+            });
         }
     }
 
@@ -515,29 +542,14 @@
         arrancar();
     }
 
-    document.addEventListener(
-        'visibilitychange',
-        function () {
-            if (
-                document.visibilityState ===
-                    'visible' &&
-                deveUsarLocalizacaoBackground()
-            ) {
-                iniciar(false);
-            }
+    document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'visible') {
+            arrancar();
         }
-    );
+    });
 
     window.addEventListener(
         'margot:preferencias-alteradas',
-        function () {
-            if (
-                deveUsarLocalizacaoBackground()
-            ) {
-                iniciar(false);
-            } else {
-                parar();
-            }
-        }
+        arrancar
     );
 })();
