@@ -1,8 +1,12 @@
-<?xml version='1.0' encoding='utf-8'?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Margot</string>
     <string name="title_activity_main">Margot</string>
     <string name="package_name">com.margot.app</string>
     <string name="custom_url_scheme">com.margot.app</string>
-    <string name="default_notification_channel_id">margot_activity</string>
+
+    <string name="background_location_channel_name">Localização em segundo plano</string>
+    <string name="background_location_channel_description">Mantém a posição atualizada quando a Margot está em segundo plano.</string>
+    <string name="background_location_notification_title">Localização da Margot ativa</string>
+    <string name="background_location_notification_text">A tua posição está a ser atualizada em segundo plano.</string>
 </resources>
