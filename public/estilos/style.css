@@ -160,30 +160,31 @@ img {
 #enviar-hey-perfil {
     position: relative;
 
-    width: 142px;
-    height: 142px;
-    min-width: 142px;
-    min-height: 142px;
+    width: 154px;
+    height: 154px;
+    min-width: 154px;
+    min-height: 154px;
 
-    margin: 14px auto 18px;
+    margin: 12px auto 18px;
     padding: 0;
 
-    border: 0;
+    border: none;
     border-radius: 50%;
 
     background:
         radial-gradient(
-            circle at 35% 28%,
-            #c8172c 0%,
-            #bb0d24 42%,
-            #a9001b 100%
+            circle at 32% 28%,
+            #cf1732 0%,
+            #bf1028 38%,
+            #ae081d 68%,
+            #980014 100%
         );
 
-    color: #fff4e5;
+    color: #fff4e6;
 
-    font-size: 2rem;
+    font-size: 2.15rem;
     font-weight: 800;
-    letter-spacing: -0.055em;
+    letter-spacing: -0.05em;
     line-height: 1;
 
     display: flex;
@@ -191,15 +192,14 @@ img {
     justify-content: center;
 
     cursor: pointer;
-
-    -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 
     box-shadow:
-        0 8px 18px rgba(120, 0, 18, 0.16),
-        0 18px 38px rgba(155, 0, 22, 0.18),
+        0 10px 24px rgba(120, 0, 18, 0.14),
+        0 20px 44px rgba(155, 0, 22, 0.16),
         inset 0 1px 0 rgba(255, 255, 255, 0.14),
-        inset 0 -4px 10px rgba(80, 0, 12, 0.10);
+        inset 0 -6px 14px rgba(70, 0, 10, 0.12);
 
     transition:
         transform 160ms cubic-bezier(.2,.8,.2,1),
@@ -208,47 +208,39 @@ img {
         opacity 180ms ease;
 }
 
-/* aro creme muito subtil */
+/* aro interior subtil */
 
 #enviar-hey::before,
 #enviar-hey-perfil::before {
     content: "";
 
     position: absolute;
-    inset: 8px;
-
-    border:
-        1.5px solid
-        rgba(255, 244, 229, 0.18);
+    inset: 10px;
 
     border-radius: 50%;
+    border: 1.5px solid rgba(255, 244, 230, 0.16);
 
     pointer-events: none;
 }
 
-/* sombra imediatamente por baixo do botão */
+/* sombra suave por baixo */
 
 #enviar-hey::after,
 #enviar-hey-perfil::after {
     content: "";
 
     position: absolute;
+    left: 26px;
+    right: 26px;
+    bottom: -12px;
 
-    left: 21px;
-    right: 21px;
-    bottom: -10px;
-
-    height: 23px;
-
+    height: 22px;
     border-radius: 50%;
 
-    background:
-        rgba(145, 0, 20, 0.19);
-
-    filter: blur(9px);
+    background: rgba(135, 0, 20, 0.18);
+    filter: blur(10px);
 
     z-index: -1;
-
     pointer-events: none;
 
     transition:
@@ -258,62 +250,49 @@ img {
 
 #enviar-hey:hover:not(:disabled),
 #enviar-hey-perfil:hover:not(:disabled) {
-    filter:
-        brightness(1.035);
+    filter: brightness(1.03);
 
     box-shadow:
-        0 10px 21px rgba(120, 0, 18, 0.17),
-        0 21px 42px rgba(155, 0, 22, 0.21),
+        0 12px 28px rgba(120, 0, 18, 0.15),
+        0 24px 48px rgba(155, 0, 22, 0.19),
         inset 0 1px 0 rgba(255, 255, 255, 0.17),
-        inset 0 -4px 10px rgba(80, 0, 12, 0.10);
+        inset 0 -6px 14px rgba(70, 0, 10, 0.12);
 }
 
 #enviar-hey:active:not(:disabled),
 #enviar-hey-perfil:active:not(:disabled) {
-    transform:
-        scale(0.955);
-
-    filter:
-        brightness(0.96);
+    transform: scale(0.95);
+    filter: brightness(0.97);
 
     box-shadow:
-        0 4px 10px rgba(120, 0, 18, 0.15),
-        0 10px 24px rgba(155, 0, 22, 0.16),
-        inset 0 3px 8px rgba(70, 0, 10, 0.13);
+        0 5px 12px rgba(120, 0, 18, 0.14),
+        0 12px 28px rgba(155, 0, 22, 0.15),
+        inset 0 3px 8px rgba(70, 0, 10, 0.14);
 }
 
 #enviar-hey:active:not(:disabled)::after,
 #enviar-hey-perfil:active:not(:disabled)::after {
-    transform:
-        scaleX(0.74);
-
-    opacity:
-        0.58;
+    transform: scaleX(0.78);
+    opacity: 0.55;
 }
 
 #enviar-hey:focus-visible,
 #enviar-hey-perfil:focus-visible {
-    outline:
-        3px solid
-        rgba(185, 8, 34, 0.22);
-
-    outline-offset:
-        5px;
+    outline: 3px solid rgba(190, 10, 35, 0.20);
+    outline-offset: 5px;
 }
 
 #enviar-hey:disabled,
 #enviar-hey-perfil:disabled {
-    opacity:
-        0.48;
+    opacity: 0.48;
+    cursor: default;
+    transform: none;
+    filter: saturate(0.7);
+}
 
-    cursor:
-        default;
-
-    transform:
-        none;
-
-    filter:
-        saturate(0.68);
+#enviar-hey:disabled::after,
+#enviar-hey-perfil:disabled::after {
+    opacity: 0.22;
 }
 
 .mini-menu > form {
