@@ -49,12 +49,15 @@
     var aEnviar = false;
     var ativo = true;
     var aFixarNoFim = true;
-    var temporizadoresScroll = [];
 
     var animacaoScrollTeclado = null;
     var aumentoScrollTeclado = 0;
     var ancorarScrollTeclado = false;
     var destinoScrollFecho = null;
+
+    var preparacaoInicialConcluida = false;
+    var temporizadorPreparacaoInicial = null;
+    var instantePreparacaoInicial = 0;
 
     var curvaAbrirTeclado =
         criarCurvaBezier(
@@ -288,8 +291,52 @@
                 }
 
                 $mensagens[0].scrollTop =
-                    $mensagens[0]
-                        .scrollHeight;
+                    $mensagens[0].scrollHeight;
+            }
+        );
+    }
+
+    /*
+     * Depois de criar uma mensagem, esperamos o
+     * browser fechar o layout desse frame e
+     * confirmamos novamente o fundo.
+     */
+
+    function fixarNoFimAposMudanca() {
+        if (
+            !ativo ||
+            !$mensagens[0]
+        ) {
+            return;
+        }
+
+        aFixarNoFim = true;
+
+        window.requestAnimationFrame(
+            function () {
+                if (
+                    !ativo ||
+                    !$mensagens[0]
+                ) {
+                    return;
+                }
+
+                $mensagens[0].scrollTop =
+                    $mensagens[0].scrollHeight;
+
+                window.requestAnimationFrame(
+                    function () {
+                        if (
+                            !ativo ||
+                            !$mensagens[0]
+                        ) {
+                            return;
+                        }
+
+                        $mensagens[0].scrollTop =
+                            $mensagens[0].scrollHeight;
+                    }
+                );
             }
         );
     }
@@ -439,7 +486,6 @@
 
                     $(imagem).one(
                         'load.margotChatScroll error.margotChatScroll',
-
                         function () {
                             deslocarParaFim(
                                 forcar
@@ -469,7 +515,6 @@
 
                     $(video).one(
                         'loadedmetadata.margotChatScroll error.margotChatScroll',
-
                         function () {
                             deslocarParaFim(
                                 forcar
@@ -480,46 +525,246 @@
             );
     }
 
-    function cancelarScrollInicial() {
-        temporizadoresScroll.forEach(
-            function (
-                temporizadorScroll
-            ) {
-                window.clearTimeout(
-                    temporizadorScroll
-                );
-            }
-        );
+    /*
+     * ENTRADA NO CHAT
+     *
+     * A navegação da Margot só executa o chat.js
+     * depois da animação lateral.
+     *
+     * Por isso deixamos o histórico invisível,
+     * estabilizamos imagens/layout/scroll e só
+     * depois o mostramos já no sítio certo.
+     */
 
-        temporizadoresScroll = [];
-    }
+    function finalizarPreparacaoInicial() {
+        if (
+            preparacaoInicialConcluida
+        ) {
+            return;
+        }
 
-    function prepararScrollInicial() {
-        acompanharMedia(
-            $mensagens,
-            false
-        );
+        preparacaoInicialConcluida =
+            true;
 
-        [
-            0,
-            70,
-            180,
-            360
-        ].forEach(
-            function (atraso) {
-                temporizadoresScroll.push(
-                    window.setTimeout(
-                        function () {
-                            deslocarParaFim(
-                                false
-                            );
-                        },
-                        atraso
+        instantePreparacaoInicial =
+            window.performance.now();
+
+        if (
+            temporizadorPreparacaoInicial !==
+            null
+        ) {
+            window.clearTimeout(
+                temporizadorPreparacaoInicial
+            );
+
+            temporizadorPreparacaoInicial =
+                null;
+        }
+
+        if (
+            !$mensagens[0]
+        ) {
+            return;
+        }
+
+        var elemento =
+            $mensagens[0];
+
+        elemento.scrollTop =
+            elemento.scrollHeight;
+
+        window.requestAnimationFrame(
+            function () {
+                if (
+                    !ativo ||
+                    !$mensagens[0]
+                ) {
+                    return;
+                }
+
+                elemento.scrollTop =
+                    elemento.scrollHeight;
+
+                $mensagens
+                    .removeClass(
+                        'chat-mensagens-a-preparar'
                     )
-                );
+                    .attr(
+                        'aria-busy',
+                        'false'
+                    );
             }
         );
     }
+
+    function prepararConteudoInicial() {
+        var elemento =
+            $mensagens[0];
+
+        if (
+            !elemento
+        ) {
+            return;
+        }
+
+        var pendentes =
+            0;
+
+        /*
+         * As mensagens mais recentes são as que
+         * podem aparecer no viewport inicial.
+         *
+         * Só estas imagens deixam de ser lazy.
+         * Não descarregamos à força 100 imagens
+         * antigas da conversa.
+         */
+
+        var $recentes =
+            $mensagens
+                .find(
+                    '.chat-mensagem'
+                )
+                .slice(
+                    -14
+                );
+
+        $recentes
+            .find(
+                'img.chat-imagem'
+            )
+            .attr(
+                'loading',
+                'eager'
+            );
+
+        function terminouMediaInicial() {
+            pendentes =
+                Math.max(
+                    0,
+                    pendentes -
+                    1
+                );
+
+            if (
+                preparacaoInicialConcluida
+            ) {
+                /*
+                 * Se algum ficheiro demorou mais
+                 * que o limite inicial, só seguimos
+                 * o fundo enquanto o utilizador ainda
+                 * não começou a navegar pelo histórico.
+                 */
+
+                if (
+                    aFixarNoFim &&
+                    (
+                        window.performance.now() -
+                        instantePreparacaoInicial
+                    ) <
+                    800
+                ) {
+                    deslocarParaFim(
+                        false
+                    );
+                }
+
+                return;
+            }
+
+            if (
+                pendentes ===
+                0
+            ) {
+                finalizarPreparacaoInicial();
+            }
+        }
+
+        /*
+         * Observamos todo o media que já existe.
+         *
+         * O que estiver realmente a carregar durante
+         * a entrada fica pronto antes de revelarmos
+         * o histórico, sempre que possível.
+         */
+
+        $mensagens
+            .find(
+                'img.chat-imagem'
+            )
+            .each(
+                function () {
+                    if (
+                        this.complete
+                    ) {
+                        return;
+                    }
+
+                    pendentes += 1;
+
+                    $(this).one(
+                        'load.margotChatInicial error.margotChatInicial',
+                        terminouMediaInicial
+                    );
+                }
+            );
+
+        $mensagens
+            .find(
+                'video.chat-video'
+            )
+            .each(
+                function () {
+                    if (
+                        this.readyState >=
+                        1
+                    ) {
+                        return;
+                    }
+
+                    pendentes += 1;
+
+                    $(this).one(
+                        'loadedmetadata.margotChatInicial error.margotChatInicial',
+                        terminouMediaInicial
+                    );
+                }
+            );
+
+        /*
+         * Primeiro posicionamos a área invisível
+         * no fundo. Isto também faz o browser começar
+         * a carregar lazy media perto do final.
+         */
+
+        elemento.scrollTop =
+            elemento.scrollHeight;
+
+        if (
+            pendentes ===
+            0
+        ) {
+            window.requestAnimationFrame(
+                finalizarPreparacaoInicial
+            );
+
+            return;
+        }
+
+        /*
+         * Não deixamos o utilizador à espera.
+         *
+         * Na prática, durante os 300 ms da transição
+         * a maioria destas imagens já ficou pronta.
+         */
+
+        temporizadorPreparacaoInicial =
+            window.setTimeout(
+                finalizarPreparacaoInicial,
+                180
+            );
+    }
+
+    /* TECLADO */
 
     function tecladoVaiAbrir(info) {
         if (
@@ -529,7 +774,12 @@
             return;
         }
 
-        cancelarScrollInicial();
+        if (
+            !preparacaoInicialConcluida
+        ) {
+            finalizarPreparacaoInicial();
+        }
+
         cancelarAnimacaoScrollTeclado();
 
         var elemento =
@@ -640,14 +890,6 @@
             );
         }
 
-        /*
-         * Não interrompemos nem fazemos hard-set
-         * do scroll no último frame.
-         *
-         * A animação iniciada em keyboardWillShow
-         * termina naturalmente.
-         */
-
         if (
             ancorarScrollTeclado
         ) {
@@ -701,13 +943,6 @@
         ) {
             return;
         }
-
-        /*
-         * Não cancelamos a animação no último frame.
-         *
-         * Esperamos um frame visual e só depois
-         * retiramos o espaço reservado ao teclado.
-         */
 
         window.requestAnimationFrame(
             function () {
@@ -861,6 +1096,8 @@
         }
     }
 
+    /* MENSAGENS */
+
     function criarMensagem(mensagem) {
         var eMinha =
             minha(
@@ -886,7 +1123,8 @@
 
         var $balao =
             $('<div>', {
-                class: 'chat-balao'
+                class:
+                    'chat-balao'
             });
 
         if (
@@ -896,8 +1134,11 @@
         ) {
             $balao.append(
                 $('<img>', {
-                    class: 'chat-imagem',
-                    src: mensagem.media_url,
+                    class:
+                        'chat-imagem',
+
+                    src:
+                        mensagem.media_url,
 
                     alt:
                         'Fotografia enviada por ' +
@@ -906,8 +1147,11 @@
                             'utilizador'
                         ),
 
-                    loading: 'lazy',
-                    draggable: false
+                    loading:
+                        'eager',
+
+                    draggable:
+                        false
                 })
             );
         }
@@ -919,15 +1163,23 @@
         ) {
             var $video =
                 $('<video>', {
-                    class: 'chat-video',
-                    controls: true,
-                    playsinline: true,
-                    preload: 'metadata'
+                    class:
+                        'chat-video',
+
+                    controls:
+                        true,
+
+                    playsinline:
+                        true,
+
+                    preload:
+                        'metadata'
                 });
 
             $video.append(
                 $('<source>', {
-                    src: mensagem.media_url,
+                    src:
+                        mensagem.media_url,
 
                     type:
                         mensagem.ficheiro_mime ||
@@ -967,7 +1219,8 @@
         ) {
             $rodape.append(
                 $('<span>', {
-                    class: 'chat-lida',
+                    class:
+                        'chat-lida',
 
                     'aria-label':
                         mensagem.lida
@@ -1033,18 +1286,17 @@
                 true
             );
 
-            deslocarParaFim(
-                true
-            );
+            fixarNoFimAposMudanca();
         }
 
         return true;
     }
 
+    /* ENVIAR */
+
     function temConteudoParaEnviar() {
         return Boolean(
             $texto.val().trim() ||
-
             (
                 $media[0] &&
                 $media[0].files &&
@@ -1131,7 +1383,6 @@
             !ficheiro
         ) {
             atualizarEstadoEnviar();
-
             return;
         }
 
@@ -1163,7 +1414,6 @@
                 );
 
             atualizarEstadoEnviar();
-
             return;
         }
 
@@ -1175,15 +1425,27 @@
         var $conteudo =
             eVideo
                 ? $('<video>', {
-                    src: previewUrl,
-                    muted: true,
-                    controls: true,
-                    playsinline: true
+                    src:
+                        previewUrl,
+
+                    muted:
+                        true,
+
+                    controls:
+                        true,
+
+                    playsinline:
+                        true
                 })
                 : $('<img>', {
-                    src: previewUrl,
-                    alt: 'Pré-visualização',
-                    draggable: false
+                    src:
+                        previewUrl,
+
+                    alt:
+                        'Pré-visualização',
+
+                    draggable:
+                        false
                 });
 
         $preview
@@ -1191,9 +1453,14 @@
                 $conteudo,
 
                 $('<button>', {
-                    type: 'button',
-                    class: 'chat-media-remover',
-                    'aria-label': 'Remover ficheiro'
+                    type:
+                        'button',
+
+                    class:
+                        'chat-media-remover',
+
+                    'aria-label':
+                        'Remover ficheiro'
                 }).text(
                     '×'
                 )
@@ -1215,8 +1482,11 @@
         }
 
         window.AppWebSocket.send({
-            type: 'chat_publish',
-            message_id: mensagemId
+            type:
+                'chat_publish',
+
+            message_id:
+                mensagemId
         });
     }
 
@@ -1231,6 +1501,14 @@
         }
 
         aEnviar =
+            true;
+
+        /*
+         * A conversa tem de continuar presa ao
+         * fundo enquanto a nova mensagem entra.
+         */
+
+        aFixarNoFim =
             true;
 
         $enviar
@@ -1254,7 +1532,8 @@
                 await fetch(
                     conversaUrl(),
                     {
-                        method: 'POST',
+                        method:
+                            'POST',
 
                         body:
                             new FormData(
@@ -1292,6 +1571,14 @@
 
             limparMedia();
 
+            /*
+             * O textarea acabou de diminuir.
+             * Confirmamos o fundo depois de o layout
+             * ter fechado essa alteração.
+             */
+
+            fixarNoFimAposMudanca();
+
             publicarMensagem(
                 dados.message.id
             );
@@ -1311,6 +1598,8 @@
             atualizarEstadoEnviar();
         }
     }
+
+    /* LIDAS */
 
     async function marcarComoLidas() {
         if (
@@ -1332,9 +1621,14 @@
             await fetch(
                 conversaUrl(),
                 {
-                    method: 'POST',
-                    body: corpo,
-                    credentials: 'same-origin'
+                    method:
+                        'POST',
+
+                    body:
+                        corpo,
+
+                    credentials:
+                        'same-origin'
                 }
             );
 
@@ -1343,8 +1637,11 @@
                 window.AppWebSocket.isConnected()
             ) {
                 window.AppWebSocket.send({
-                    type: 'chat_read',
-                    with_member_id: outroId
+                    type:
+                        'chat_read',
+
+                    with_member_id:
+                        outroId
                 });
             }
         } catch (erro) {
@@ -1353,6 +1650,8 @@
             );
         }
     }
+
+    /* POLLING */
 
     async function procurarNovasMensagens() {
         try {
@@ -1363,8 +1662,11 @@
                     ultimoId,
 
                     {
-                        credentials: 'same-origin',
-                        cache: 'no-store'
+                        credentials:
+                            'same-origin',
+
+                        cache:
+                            'no-store'
                     }
                 );
 
@@ -1457,6 +1759,8 @@
             );
     }
 
+    /* ESTADO INICIAL */
+
     $mensagens
         .find(
             '.chat-mensagem'
@@ -1493,11 +1797,12 @@
             }
         );
 
-    prepararScrollInicial();
+    prepararConteudoInicial();
+
+    /* EVENTOS DE SCROLL */
 
     $mensagens.on(
         'pointerdown.margotChatScroll touchstart.margotChatScroll wheel.margotChatScroll',
-
         function () {
             cancelarAnimacaoScrollTeclado();
 
@@ -1509,14 +1814,87 @@
         }
     );
 
+    /* FORM */
+
     $form.on(
         'submit',
         enviarMensagem
     );
 
+    /*
+     * IMPORTANTE:
+     *
+     * Um tap normal num <button> pode transferir
+     * o foco do textarea para o botão no WebKit.
+     * Foi isso que se vê no vídeo: Enviar -> teclado
+     * fecha -> mensagem entra durante o fecho.
+     *
+     * Enviamos logo no pointerdown e impedimos
+     * essa transferência de foco.
+     *
+     * Portanto o teclado continua aberto depois
+     * de enviar, como numa app de mensagens normal.
+     */
+
+    $enviar.on(
+        'pointerdown.margotChatEnviar',
+        function (evento) {
+            if (
+                aEnviar ||
+                $enviar.prop(
+                    'disabled'
+                )
+            ) {
+                return;
+            }
+
+            if (
+                evento.pointerType ===
+                    'mouse' &&
+                evento.button !==
+                    0
+            ) {
+                return;
+            }
+
+            evento.preventDefault();
+
+            $form.trigger(
+                'submit'
+            );
+        }
+    );
+
+    /*
+     * Fallback para teclado/acessibilidade ou
+     * plataformas onde a ativação não venha
+     * precedida de pointerdown.
+     */
+
+    $enviar.on(
+        'click.margotChatEnviar',
+        function (evento) {
+            evento.preventDefault();
+
+            if (
+                aEnviar ||
+                $enviar.prop(
+                    'disabled'
+                )
+            ) {
+                return;
+            }
+
+            $form.trigger(
+                'submit'
+            );
+        }
+    );
+
+    /* MEDIA */
+
     $media.on(
         'change',
-
         function () {
             mostrarPreview(
                 this.files[0]
@@ -1530,9 +1908,10 @@
         limparMedia
     );
 
+    /* TEXTAREA */
+
     $texto.on(
         'input',
-
         function () {
             this.style.height =
                 'auto';
@@ -1550,7 +1929,6 @@
 
     $texto.on(
         'keydown',
-
         function (evento) {
             if (
                 evento.key ===
@@ -1565,6 +1943,8 @@
             }
         }
     );
+
+    /* WEBSOCKET */
 
     function aoReceberMensagem(evento) {
         var mensagem =
@@ -1581,27 +1961,27 @@
                 String(
                     mensagem.emissor_id
                 ) ===
-                outroId &&
+                    outroId &&
 
                 String(
                     mensagem.destinatario_id
                 ) ===
-                String(
-                    window.membroId
-                )
+                    String(
+                        window.membroId
+                    )
             ) ||
             (
                 String(
                     mensagem.emissor_id
                 ) ===
-                String(
-                    window.membroId
-                ) &&
+                    String(
+                        window.membroId
+                    ) &&
 
                 String(
                     mensagem.destinatario_id
                 ) ===
-                outroId
+                    outroId
             );
 
         if (
@@ -1664,6 +2044,8 @@
             5000
         );
 
+    /* CLEANUP */
+
     function desativarChat() {
         if (
             !ativo
@@ -1678,12 +2060,28 @@
             temporizador
         );
 
-        cancelarScrollInicial();
+        if (
+            temporizadorPreparacaoInicial !==
+            null
+        ) {
+            window.clearTimeout(
+                temporizadorPreparacaoInicial
+            );
+
+            temporizadorPreparacaoInicial =
+                null;
+        }
+
         cancelarAnimacaoScrollTeclado();
 
-        aumentoScrollTeclado = 0;
-        ancorarScrollTeclado = false;
-        destinoScrollFecho = null;
+        aumentoScrollTeclado =
+            0;
+
+        ancorarScrollTeclado =
+            false;
+
+        destinoScrollFecho =
+            null;
 
         $mensagens.off(
             '.margotChatScroll'
@@ -1695,7 +2093,14 @@
             )
             .off(
                 '.margotChatScroll'
+            )
+            .off(
+                '.margotChatInicial'
             );
+
+        $enviar.off(
+            '.margotChatEnviar'
+        );
 
         document.body.classList.remove(
             'margot-chat-teclado-aberto'

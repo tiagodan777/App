@@ -1,7 +1,7 @@
 {% extends 'layout.html' %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ doc_root }}estilos/chat.css?v=11" data-margot-page-style>
+<link rel="stylesheet" href="{{ doc_root }}estilos/chat.css?v=12" data-margot-page-style>
 {% endblock %}
 
 {% block content %}
@@ -30,8 +30,9 @@
 
     <section
         id="chat-mensagens"
-        class="chat-mensagens"
+        class="chat-mensagens chat-mensagens-a-preparar"
         aria-live="polite"
+        aria-busy="true"
         aria-label="Conversa com {{ outro.nome }}"
     >
         {% for mensagem in mensagens %}
@@ -164,5 +165,5 @@ window.webSocketUrl = window.location.protocol === 'https:'
     : 'ws://' + window.location.hostname + ':8080';
 </script>
 
-<script src="{{ doc_root }}js/chat.js?v=9"></script>
+<script src="{{ doc_root }}js/chat.js?v=10"></script>
 {% endblock %}
