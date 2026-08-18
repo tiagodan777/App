@@ -4,54 +4,74 @@
 <dict>
     <key>CAPACITOR_DEBUG</key>
     <string>$(CAPACITOR_DEBUG)</string>
+
     <key>CFBundleDevelopmentRegion</key>
     <string>pt-PT</string>
+
     <key>CFBundleLocalizations</key>
     <array>
         <string>pt-PT</string>
         <string>pt</string>
     </array>
+
     <key>CFBundleDisplayName</key>
     <string>Margot</string>
+
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
+
     <key>CFBundleIdentifier</key>
     <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
+
     <key>CFBundleName</key>
     <string>$(PRODUCT_NAME)</string>
+
     <key>CFBundlePackageType</key>
     <string>APPL</string>
+
     <key>CFBundleShortVersionString</key>
     <string>$(MARKETING_VERSION)</string>
+
     <key>CFBundleVersion</key>
     <string>$(CURRENT_PROJECT_VERSION)</string>
+
     <key>LSRequiresIPhoneOS</key>
     <true/>
+
     <key>NSCameraUsageDescription</key>
     <string>A Margot precisa de acesso à câmara para tirares fotografias para o teu perfil e para as enviares em mensagens.</string>
+
     <key>NSPhotoLibraryUsageDescription</key>
     <string>A Margot precisa de acesso às tuas fotografias para escolheres imagens para o teu perfil e para as enviares em mensagens.</string>
+
     <key>NSPhotoLibraryAddUsageDescription</key>
     <string>A Margot precisa de permissão para guardar fotografias na tua biblioteca quando escolheres essa opção.</string>
+
     <key>NSLocationWhenInUseUsageDescription</key>
     <string>A Margot precisa da tua localização para te mostrar e mostrar pessoas próximas no mapa.</string>
+
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
     <string>A Margot usa a tua localização em segundo plano para manter a tua presença atualizada no mapa, mesmo quando não estás a utilizar a aplicação.</string>
+
     <key>NSLocationTemporaryUsageDescriptionDictionary</key>
     <dict>
         <key>MargotNearby</key>
         <string>A localização exata permite à Margot mostrar corretamente as pessoas que estão perto de ti.</string>
     </dict>
+
     <key>UIBackgroundModes</key>
     <array>
         <string>location</string>
     </array>
+
     <key>UIApplicationSceneManifest</key>
     <dict>
         <key>UIApplicationSupportsMultipleScenes</key>
         <false/>
+
         <key>UISceneConfigurations</key>
         <dict>
             <key>UIWindowSceneSessionRoleApplication</key>
@@ -59,35 +79,38 @@
                 <dict>
                     <key>UISceneConfigurationName</key>
                     <string>Default Configuration</string>
+
                     <key>UISceneDelegateClassName</key>
                     <string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
+
                     <key>UISceneStoryboardFile</key>
                     <string>Main</string>
                 </dict>
             </array>
         </dict>
     </dict>
+
     <key>UILaunchStoryboardName</key>
     <string>LaunchScreen</string>
+
     <key>UIMainStoryboardFile</key>
     <string>Main</string>
+
     <key>UIRequiredDeviceCapabilities</key>
     <array>
         <string>armv7</string>
     </array>
+
     <key>UISupportedInterfaceOrientations</key>
     <array>
         <string>UIInterfaceOrientationPortrait</string>
-        <string>UIInterfaceOrientationLandscapeLeft</string>
-        <string>UIInterfaceOrientationLandscapeRight</string>
     </array>
+
     <key>UISupportedInterfaceOrientations~ipad</key>
     <array>
         <string>UIInterfaceOrientationPortrait</string>
-        <string>UIInterfaceOrientationPortraitUpsideDown</string>
-        <string>UIInterfaceOrientationLandscapeLeft</string>
-        <string>UIInterfaceOrientationLandscapeRight</string>
     </array>
+
     <key>UIViewControllerBasedStatusBarAppearance</key>
     <true/>
 </dict>
