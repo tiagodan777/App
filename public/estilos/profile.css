@@ -1,32 +1,49 @@
 @charset "UTF-8";
 
-html,
-body {
+/*
+ * PERFIL
+ *
+ * Há apenas um scroll vertical: o scroll normal da página.
+ * O #perfil não cria um segundo contentor de scroll.
+ */
+
+html:has(#perfil) {
     width: 100%;
-    height: 100%;
+    height: auto !important;
     min-height: 100%;
     margin: 0;
     padding: 0;
-    overflow-x: hidden;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
     background: #ffffff;
+    -webkit-overflow-scrolling: touch;
 }
 
-body {
-    position: relative;
-    min-height: 100vh;
-    min-height: 100dvh;
-    overflow-y: auto;
-    overscroll-behavior-y: none;
-}
-
-#perfil {
+body:has(#perfil) {
+    position: relative !important;
     width: 100%;
-    min-height: 100vh;
-    min-height: 100dvh;
+    height: auto !important;
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
     margin: 0;
     padding: 0;
+    overflow: visible !important;
+    background: #ffffff;
+    overscroll-behavior-y: auto;
+}
+
+body:has(#perfil) #perfil {
+    width: 100%;
+    height: auto !important;
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+    margin: 0;
+    padding: 0;
+    overflow: visible !important;
     background: #ffffff;
 }
+
+/* Galeria */
 
 .perfil-galeria {
     position: relative;
@@ -52,12 +69,20 @@ body {
 
 .perfil-galeria::before {
     top: 0;
-    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.34), transparent);
+    background: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0.34),
+        transparent
+    );
 }
 
 .perfil-galeria::after {
     bottom: 0;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.2), transparent);
+    background: linear-gradient(
+        to top,
+        rgba(0, 0, 0, 0.2),
+        transparent
+    );
 }
 
 .perfil-fotos {
@@ -71,8 +96,11 @@ body {
     scrollbar-width: none;
     cursor: grab;
     touch-action: pan-x pan-y;
+
     display: flex;
     flex-flow: row nowrap;
+
+    -webkit-overflow-scrolling: touch;
 }
 
 .perfil-fotos::-webkit-scrollbar {
@@ -109,12 +137,15 @@ body {
     -webkit-user-drag: none;
 }
 
+/* Indicadores */
+
 .perfil-indicadores {
     position: absolute;
     z-index: 4;
     right: 50%;
     bottom: 22px;
     transform: translateX(50%);
+
     display: flex;
     align-items: center;
     justify-content: center;
@@ -139,6 +170,7 @@ body {
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.5);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+
     transition:
         background-color 160ms ease,
         transform 160ms ease,
@@ -151,6 +183,8 @@ body {
     box-shadow: 0 1px 5px rgba(0, 0, 0, 0.35);
 }
 
+/* Setas da galeria */
+
 .perfil-navegacao {
     position: absolute;
     z-index: 4;
@@ -158,15 +192,20 @@ body {
     width: 44px;
     height: 44px;
     padding: 0;
+
     border: 1px solid rgba(255, 255, 255, 0.5);
     border-radius: 50%;
+
     background: rgba(20, 20, 20, 0.34);
     color: #ffffff;
+
     transform: translateY(-50%);
     -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
+
     cursor: pointer;
     touch-action: manipulation;
+
     display: flex;
     align-items: center;
     justify-content: center;
@@ -194,19 +233,27 @@ body {
     stroke-linejoin: round;
 }
 
+/* Conteúdo */
+
 .perfil-conteudo {
     position: relative;
     z-index: 5;
+
+    width: 100%;
     min-height: calc(30svh + 28px);
+
     margin-top: -28px;
+
     padding:
         30px
         20px
         calc(
             var(--menu-principal-height, 56px) +
             var(--menu-principal-bottom, 18px) +
-            28px
+            env(safe-area-inset-bottom, 0px) +
+            42px
         );
+
     border-radius: 30px 30px 0 0;
     background: #ffffff;
 }
@@ -230,6 +277,12 @@ body {
     font-size: 22px;
     font-weight: 600;
 }
+
+.editar-perfil {
+    margin-left: auto;
+}
+
+/* Blocos */
 
 .perfil-bloco {
     margin-top: 26px;
@@ -257,6 +310,7 @@ body {
     margin: 0;
     padding: 0;
     list-style: none;
+
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
@@ -270,6 +324,32 @@ body {
     font-size: 14px;
 }
 
+/*
+ * Hey
+ *
+ * O estilo visual continua a vir do style.css,
+ * exatamente igual ao Hey do mini-menu.
+ *
+ * Aqui garantimos apenas posição/visibilidade
+ * dentro do perfil.
+ */
+
+#enviar-hey-perfil {
+    position: relative !important;
+    z-index: 10;
+
+    margin:
+        34px
+        auto
+        10px !important;
+
+    display: flex !important;
+    visibility: visible !important;
+    flex-shrink: 0;
+}
+
+/* Touch */
+
 @media (pointer: coarse) {
     .perfil-navegacao {
         display: none;
@@ -280,22 +360,53 @@ body {
     }
 }
 
+/*
+ * PWA / WebView standalone.
+ *
+ * Anulamos especificamente as regras globais
+ * que tentavam criar scroll dentro de #perfil.
+ */
+
 @media all and (display-mode: standalone) {
-    html,
-    body,
-    #perfil {
-        min-height: 100%;
-        min-height: 100dvh;
+    html:has(#perfil) {
+        height: auto !important;
+        min-height: 100% !important;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+    }
+
+    body:has(#perfil) {
+        position: relative !important;
+        height: auto !important;
+        min-height: 100dvh !important;
+        overflow: visible !important;
+    }
+
+    body:has(#perfil) #perfil {
+        width: 100% !important;
+        height: auto !important;
+        min-height: 100dvh !important;
+        overflow: visible !important;
     }
 
     .perfil-galeria {
-        height: calc(70svh + env(safe-area-inset-top, 0px));
-        margin-top: calc(-1 * env(safe-area-inset-top, 0px));
+        height: calc(
+            70svh +
+            env(safe-area-inset-top, 0px)
+        );
+
+        margin-top:
+            calc(
+                -1 *
+                env(safe-area-inset-top, 0px)
+            );
     }
 }
 
+/* Tablet / desktop */
+
 @media (min-width: 800px) {
-    body {
+    body:has(#perfil) {
         background: #ededf0;
     }
 
@@ -309,6 +420,8 @@ body {
         height: min(78vh, 820px);
     }
 }
+
+/* Movimento reduzido */
 
 @media (prefers-reduced-motion: reduce) {
     .perfil-fotos {
