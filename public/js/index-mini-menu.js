@@ -1,13 +1,57 @@
 (function (window, document, $) {
     'use strict';
 
-    var $miniMenu = $('.mini-menu');
+    if (
+        typeof window.desativarIndexMiniMenuMargot ===
+        'function'
+    ) {
+        window.desativarIndexMiniMenuMargot();
+    }
 
-    if (!$miniMenu.length) return;
+    var NS =
+        '.margotMiniMenu';
+
+    $(document).off(
+        NS
+    );
+
+    var $miniMenu =
+        $('.mini-menu');
+
+    if (
+        !$miniMenu.length
+    ) {
+        return;
+    }
 
     var $anexo =
         $miniMenu.find(
             '.mini-menu-anexo'
+        );
+
+    var $botaoHey =
+        $miniMenu.find(
+            '#enviar-hey'
+        );
+
+    var $formMensagem =
+        $miniMenu.find(
+            '.mini-menu-mensagem'
+        );
+
+    var $inputMensagem =
+        $miniMenu.find(
+            '#mensagem'
+        );
+
+    var $media =
+        $miniMenu.find(
+            '#mini-menu-media'
+        );
+
+    var $perfil =
+        $miniMenu.find(
+            '.mini-menu-perfil'
         );
 
     var $maisOpcoes =
@@ -22,29 +66,90 @@
     var $formDenuncia =
         $('#form-denuncia');
 
-    var aEnviarHey = false;
-    var aEnviarMensagem = false;
-    var aProcessarSeguranca = false;
+    var $abrirDenuncia =
+        $('#abrir-denuncia');
 
-    function texto(valor) {
+    var $voltarDenuncia =
+        $('#voltar-denuncia');
+
+    var $bloquearMembro =
+        $('#bloquear-membro');
+
+    var capacitor =
+        window.Capacitor ||
+        null;
+
+    var teclado =
+        capacitor &&
+        capacitor.Plugins
+            ? capacitor
+                .Plugins
+                .Keyboard
+            : null;
+
+    var tecladoListeners = [];
+
+    var aEnviarHey =
+        false;
+
+    var aEnviarMensagem =
+        false;
+
+    var aProcessarSeguranca =
+        false;
+
+    var paginaAtiva =
+        true;
+
+    var temporizadorHey =
+        null;
+
+    var campoMensagemFocado =
+        false;
+
+    var tecladoAberto =
+        false;
+
+    var alturaTeclado =
+        0;
+
+    var deslocamentoFormulario =
+        0;
+
+    var temporizadorLimparFormulario =
+        null;
+
+    function texto(
+        valor
+    ) {
         return String(
-            valor || ''
+            valor ||
+            ''
         ).trim();
     }
 
-    function urlFoto(valor) {
+    function urlFoto(
+        valor
+    ) {
         try {
             return new URL(
-                texto(valor) ||
+                texto(
+                    valor
+                ) ||
                 '/imagens/fotos-perfil/default.webp',
+
                 window.location.href
             ).href;
-        } catch (erro) {
+        } catch (
+            erro
+        ) {
             return '/imagens/fotos-perfil/default.webp';
         }
     }
 
-    function membroId(elemento) {
+    function membroId(
+        elemento
+    ) {
         return texto(
             elemento.getAttribute(
                 'data-membro-id'
@@ -56,7 +161,9 @@
         );
     }
 
-    function nome(elemento) {
+    function nome(
+        elemento
+    ) {
         return (
             texto(
                 elemento.getAttribute(
@@ -73,7 +180,9 @@
         );
     }
 
-    function foto(elemento) {
+    function foto(
+        elemento
+    ) {
         return urlFoto(
             elemento.currentSrc ||
             elemento.src ||
@@ -108,10 +217,29 @@
         return (
             texto(
                 $miniMenu
-                    .find('header h1')
+                    .find(
+                        'header h1'
+                    )
                     .text()
             ) ||
             'esta pessoa'
+        );
+    }
+
+    function eIOSNativo() {
+        return Boolean(
+            capacitor &&
+            typeof capacitor
+                .isNativePlatform ===
+                'function' &&
+            capacitor
+                .isNativePlatform() &&
+            typeof capacitor
+                .getPlatform ===
+                'function' &&
+            capacitor
+                .getPlatform() ===
+                'ios'
         );
     }
 
@@ -235,7 +363,10 @@
     function prepararMiniMenu(
         elemento
     ) {
-        if (!elemento) {
+        if (
+            !paginaAtiva ||
+            !elemento
+        ) {
             return false;
         }
 
@@ -244,7 +375,9 @@
                 elemento
             );
 
-        if (!id) {
+        if (
+            !id
+        ) {
             return false;
         }
 
@@ -264,7 +397,9 @@
                 .find(
                     'header img'
                 )
-                .get(0);
+                .get(
+                    0
+                );
 
         fecharAcoes();
 
@@ -278,21 +413,17 @@
                 souEu
             );
 
-        $miniMenu
-            .find(
-                '.mini-menu-perfil'
+        $perfil.attr(
+            'href',
+            baseUrl(
+                window.profileUrl,
+                '/profile'
+            ) +
+            '/' +
+            encodeURIComponent(
+                id
             )
-            .attr(
-                'href',
-                baseUrl(
-                    window.profileUrl,
-                    '/profile'
-                ) +
-                '/' +
-                encodeURIComponent(
-                    id
-                )
-            );
+        );
 
         $miniMenu
             .find(
@@ -302,23 +433,21 @@
                 membroNome
             );
 
-        $miniMenu
-            .find(
-                '.mini-menu-mensagem'
+        $formMensagem.attr(
+            'action',
+            baseUrl(
+                window.messagesUrl,
+                '/messages'
+            ) +
+            '/' +
+            encodeURIComponent(
+                id
             )
-            .attr(
-                'action',
-                baseUrl(
-                    window.messagesUrl,
-                    '/messages'
-                ) +
-                '/' +
-                encodeURIComponent(
-                    id
-                )
-            );
+        );
 
-        if (imagem) {
+        if (
+            imagem
+        ) {
             imagem.onerror =
                 function () {
                     this.onerror =
@@ -359,11 +488,467 @@
         }
     }
 
+    /*
+     * TECLADO DO MINI-MENU
+     *
+     * Não movemos o mini-menu inteiro.
+     *
+     * Só deslocamos o formulário o número
+     * exato de pixels em que ficaria tapado
+     * pelo teclado.
+     */
+
+    function cancelarLimpezaFormulario() {
+        if (
+            temporizadorLimparFormulario ===
+            null
+        ) {
+            return;
+        }
+
+        window.clearTimeout(
+            temporizadorLimparFormulario
+        );
+
+        temporizadorLimparFormulario =
+            null;
+    }
+
+    function alturaViewportLayout() {
+        return (
+            window.innerHeight ||
+            document
+                .documentElement
+                .clientHeight ||
+            0
+        );
+    }
+
+    function moverFormularioParaTeclado(
+        novaAltura,
+        animar
+    ) {
+        if (
+            !paginaAtiva ||
+            !campoMensagemFocado ||
+            !$formMensagem[0]
+        ) {
+            return;
+        }
+
+        novaAltura =
+            Math.max(
+                0,
+                Number(
+                    novaAltura
+                ) ||
+                0
+            );
+
+        if (
+            novaAltura <
+            80
+        ) {
+            return;
+        }
+
+        alturaTeclado =
+            novaAltura;
+
+        tecladoAberto =
+            true;
+
+        cancelarLimpezaFormulario();
+
+        var elemento =
+            $formMensagem[0];
+
+        var retangulo =
+            elemento
+                .getBoundingClientRect();
+
+        /*
+         * Como o elemento pode já estar
+         * transformado, reconstruímos a posição
+         * que teria sem o nosso deslocamento.
+         */
+        var fundoSemDeslocamento =
+            retangulo.bottom +
+            deslocamentoFormulario;
+
+        var topoTeclado =
+            alturaViewportLayout() -
+            novaAltura;
+
+        /*
+         * 10px de folga para o formulário não
+         * ficar colado ao teclado.
+         */
+        var limite =
+            topoTeclado -
+            10;
+
+        var novoDeslocamento =
+            Math.max(
+                0,
+                Math.ceil(
+                    fundoSemDeslocamento -
+                    limite
+                )
+            );
+
+        /*
+         * Nunca deslocamos mais do que é
+         * necessário.
+         */
+        deslocamentoFormulario =
+            novoDeslocamento;
+
+        $formMensagem.css({
+            position:
+                'relative',
+
+            zIndex:
+                '1600',
+
+            willChange:
+                'transform',
+
+            transition:
+                animar
+                    ? 'transform 294ms cubic-bezier(.303,.886,.436,.976)'
+                    : 'none',
+
+            transform:
+                'translate3d(0,' +
+                (
+                    -novoDeslocamento
+                ) +
+                'px,0)'
+        });
+    }
+
+    function restaurarFormularioDepoisDoTeclado(
+        animar
+    ) {
+        tecladoAberto =
+            false;
+
+        alturaTeclado =
+            0;
+
+        deslocamentoFormulario =
+            0;
+
+        cancelarLimpezaFormulario();
+
+        $formMensagem.css({
+            transition:
+                animar
+                    ? 'transform 313ms cubic-bezier(.335,.884,.381,.961)'
+                    : 'none',
+
+            transform:
+                'translate3d(0,0,0)'
+        });
+
+        temporizadorLimparFormulario =
+            window.setTimeout(
+                function () {
+                    temporizadorLimparFormulario =
+                        null;
+
+                    if (
+                        !paginaAtiva ||
+                        tecladoAberto
+                    ) {
+                        return;
+                    }
+
+                    $formMensagem.css({
+                        position:
+                            '',
+
+                        zIndex:
+                            '',
+
+                        willChange:
+                            '',
+
+                        transition:
+                            '',
+
+                        transform:
+                            ''
+                    });
+                },
+                animar
+                    ? 340
+                    : 0
+            );
+    }
+
+    function tecladoVaiAbrir(
+        info
+    ) {
+        if (
+            !campoMensagemFocado
+        ) {
+            return;
+        }
+
+        moverFormularioParaTeclado(
+            info &&
+            info.keyboardHeight,
+            true
+        );
+    }
+
+    function tecladoAbriu(
+        info
+    ) {
+        if (
+            !campoMensagemFocado
+        ) {
+            return;
+        }
+
+        /*
+         * Confirma a altura final sem iniciar
+         * uma segunda animação perceptível.
+         */
+        window.requestAnimationFrame(
+            function () {
+                moverFormularioParaTeclado(
+                    info &&
+                    info.keyboardHeight,
+                    false
+                );
+            }
+        );
+    }
+
+    function tecladoVaiFechar() {
+        if (
+            !tecladoAberto
+        ) {
+            return;
+        }
+
+        restaurarFormularioDepoisDoTeclado(
+            true
+        );
+    }
+
+    function tecladoFechou() {
+        restaurarFormularioDepoisDoTeclado(
+            false
+        );
+    }
+
+    function alturaTecladoVisualViewport() {
+        if (
+            !window.visualViewport
+        ) {
+            return 0;
+        }
+
+        return Math.max(
+            0,
+            alturaViewportLayout() -
+            (
+                window
+                    .visualViewport
+                    .height +
+                window
+                    .visualViewport
+                    .offsetTop
+            )
+        );
+    }
+
+    function aoAlterarVisualViewport() {
+        /*
+         * Fallback para browser/PWA.
+         *
+         * Dentro do Capacitor usamos os eventos
+         * nativos do Keyboard, que são mais
+         * estáveis.
+         */
+        if (
+            teclado ||
+            !campoMensagemFocado
+        ) {
+            return;
+        }
+
+        var altura =
+            alturaTecladoVisualViewport();
+
+        if (
+            altura >=
+            80
+        ) {
+            moverFormularioParaTeclado(
+                altura,
+                true
+            );
+        } else if (
+            tecladoAberto
+        ) {
+            restaurarFormularioDepoisDoTeclado(
+                true
+            );
+        }
+    }
+
+    async function prepararTecladoNativo() {
+        if (
+            !teclado ||
+            typeof teclado
+                .addListener !==
+                'function'
+        ) {
+            return;
+        }
+
+        try {
+            tecladoListeners.push(
+                await teclado.addListener(
+                    'keyboardWillShow',
+                    tecladoVaiAbrir
+                )
+            );
+
+            tecladoListeners.push(
+                await teclado.addListener(
+                    'keyboardDidShow',
+                    tecladoAbriu
+                )
+            );
+
+            tecladoListeners.push(
+                await teclado.addListener(
+                    'keyboardWillHide',
+                    tecladoVaiFechar
+                )
+            );
+
+            tecladoListeners.push(
+                await teclado.addListener(
+                    'keyboardDidHide',
+                    tecladoFechou
+                )
+            );
+        } catch (
+            erro
+        ) {
+            console.warn(
+                'Não foi possível acompanhar o teclado no mini-menu.',
+                erro
+            );
+        }
+    }
+
+    function removerListenersTeclado() {
+        var listeners =
+            tecladoListeners.slice();
+
+        tecladoListeners =
+            [];
+
+        listeners.forEach(
+            function (
+                listener
+            ) {
+                if (
+                    listener &&
+                    typeof listener
+                        .remove ===
+                        'function'
+                ) {
+                    Promise.resolve(
+                        listener.remove()
+                    ).catch(
+                        function () {}
+                    );
+                }
+            }
+        );
+    }
+
+    $inputMensagem.on(
+        'focus' + NS,
+        function () {
+            campoMensagemFocado =
+                true;
+
+            /*
+             * No fallback web o visualViewport
+             * pode já ter começado a diminuir.
+             */
+            if (
+                !teclado &&
+                window.visualViewport
+            ) {
+                window.requestAnimationFrame(
+                    aoAlterarVisualViewport
+                );
+            }
+        }
+    );
+
+    $inputMensagem.on(
+        'blur' + NS,
+        function () {
+            campoMensagemFocado =
+                false;
+
+            /*
+             * O movimento para baixo é feito pelo
+             * evento keyboardWillHide.
+             *
+             * Se não tivermos plugin nativo,
+             * deixamos o visualViewport fazê-lo.
+             */
+            if (
+                !teclado &&
+                !window.visualViewport
+            ) {
+                restaurarFormularioDepoisDoTeclado(
+                    true
+                );
+            }
+        }
+    );
+
+    /*
+     * HEY
+     */
+
     function libertarHey() {
+        if (
+            !paginaAtiva
+        ) {
+            return;
+        }
+
         aEnviarHey =
             false;
 
-        $('#enviar-hey')
+        if (
+            temporizadorHey !==
+            null
+        ) {
+            window.clearTimeout(
+                temporizadorHey
+            );
+
+            temporizadorHey =
+                null;
+        }
+
+        $botaoHey
             .prop(
                 'disabled',
                 false
@@ -391,9 +976,12 @@
         );
 
         Object.keys(
-            campos || {}
+            campos ||
+            {}
         ).forEach(
-            function (chave) {
+            function (
+                chave
+            ) {
                 dados.set(
                     chave,
                     campos[chave]
@@ -437,7 +1025,9 @@
                 JSON.parse(
                     conteudo
                 );
-        } catch (erro) {
+        } catch (
+            erro
+        ) {
             throw new Error(
                 'O servidor devolveu uma resposta inválida.'
             );
@@ -489,15 +1079,16 @@
             );
     }
 
-    /*
-     * O index-tap-foto.js usa esta função
-     * antes de abrir o mini-menu.
-     */
     window.prepararMiniMenuDaFoto =
         prepararMiniMenu;
 
+    /*
+     * FOTOS DO MAPA
+     */
+
     $(document).on(
-        'pointerdown click',
+        'pointerdown' + NS +
+        ' click' + NS,
         '.foto',
         function () {
             prepararMiniMenu(
@@ -507,26 +1098,23 @@
     );
 
     /*
-     * FOTO / NOME DO PERFIL NO MINI-MENU
-     *
-     * O link continua a ser um <a> normal,
-     * portanto existe fallback caso o
-     * MargotNavigation não esteja disponível.
-     *
-     * Quando está disponível, abrimos o perfil
-     * através do sistema de navegação interno
-     * para obter a animação lateral.
+     * PERFIL
      */
-    $(document).on(
-        'click',
-        '.mini-menu-perfil[href]',
-        function (evento) {
+
+    $perfil.on(
+        'click' + NS,
+        function (
+            evento
+        ) {
+            evento.stopImmediatePropagation();
+
             if (
                 evento.defaultPrevented ||
                 (
                     evento.button !==
                         undefined &&
-                    evento.button !== 0
+                    evento.button !==
+                        0
                 ) ||
                 evento.metaKey ||
                 evento.ctrlKey ||
@@ -541,7 +1129,9 @@
                     'href'
                 );
 
-            if (!href) {
+            if (
+                !href
+            ) {
                 return;
             }
 
@@ -569,7 +1159,6 @@
             }
 
             evento.preventDefault();
-            evento.stopPropagation();
 
             window
                 .MargotNavigation
@@ -586,14 +1175,23 @@
         }
     );
 
-    $(document).on(
-        'click',
-        '#enviar-hey',
-        function (evento) {
+    /*
+     * BOTÃO HEY
+     *
+     * Handler direto para não acumular
+     * listeners entre visitas ao mapa.
+     */
+
+    $botaoHey.on(
+        'click' + NS,
+        function (
+            evento
+        ) {
             evento.preventDefault();
-            evento.stopPropagation();
+            evento.stopImmediatePropagation();
 
             if (
+                !paginaAtiva ||
                 aEnviarHey
             ) {
                 return;
@@ -602,7 +1200,9 @@
             var id =
                 idSelecionado();
 
-            if (!id) {
+            if (
+                !id
+            ) {
                 aviso(
                     'Seleciona primeiro uma pessoa.',
                     'erro'
@@ -636,7 +1236,7 @@
             aEnviarHey =
                 true;
 
-            $(this)
+            $botaoHey
                 .prop(
                     'disabled',
                     true
@@ -657,7 +1257,9 @@
                             id
                     });
 
-            if (!enviado) {
+            if (
+                !enviado
+            ) {
                 libertarHey();
 
                 aviso(
@@ -668,22 +1270,28 @@
                 return;
             }
 
-            window.setTimeout(
-                libertarHey,
-                1200
-            );
+            temporizadorHey =
+                window.setTimeout(
+                    libertarHey,
+                    1200
+                );
         }
     );
 
-    $(document).on(
-        'submit',
-        '.mini-menu-mensagem',
+    /*
+     * MENSAGEM DIRETA DO MINI-MENU
+     */
+
+    $formMensagem.on(
+        'submit' + NS,
         async function (
             evento
         ) {
             evento.preventDefault();
+            evento.stopImmediatePropagation();
 
             if (
+                !paginaAtiva ||
                 aEnviarMensagem
             ) {
                 return;
@@ -710,7 +1318,9 @@
                     'media'
                 );
 
-            if (!id) {
+            if (
+                !id
+            ) {
                 aviso(
                     'Seleciona primeiro uma pessoa.',
                     'erro'
@@ -824,7 +1434,9 @@
                                     .id
                         });
                 }
-            } catch (erro) {
+            } catch (
+                erro
+            ) {
                 aviso(
                     erro.message,
                     'erro'
@@ -833,22 +1445,33 @@
                 aEnviarMensagem =
                     false;
 
-                $botao
-                    .prop(
-                        'disabled',
-                        false
-                    )
-                    .val(
-                        'Enviar'
-                    );
+                if (
+                    paginaAtiva
+                ) {
+                    $botao
+                        .prop(
+                            'disabled',
+                            false
+                        )
+                        .val(
+                            'Enviar'
+                        );
+                }
             }
         }
     );
 
-    $(document).on(
-        'change',
-        '#mini-menu-media',
-        function () {
+    /*
+     * FICHEIRO
+     */
+
+    $media.on(
+        'change' + NS,
+        function (
+            evento
+        ) {
+            evento.stopImmediatePropagation();
+
             var ficheiro =
                 this.files &&
                 this.files[0];
@@ -874,16 +1497,25 @@
         }
     );
 
+    /*
+     * OPÇÕES
+     */
+
     $maisOpcoes.on(
-        'pointerdown pointerup',
-        function (evento) {
+        'pointerdown' + NS +
+        ' pointerup' + NS,
+        function (
+            evento
+        ) {
             evento.stopPropagation();
         }
     );
 
     $maisOpcoes.on(
-        'click',
-        function (evento) {
+        'click' + NS,
+        function (
+            evento
+        ) {
             evento.preventDefault();
             evento.stopPropagation();
 
@@ -892,132 +1524,146 @@
     );
 
     $acoes.on(
-        'pointerdown pointermove pointerup pointercancel',
-        function (evento) {
+        'pointerdown' + NS +
+        ' pointermove' + NS +
+        ' pointerup' + NS +
+        ' pointercancel' + NS,
+        function (
+            evento
+        ) {
             evento.stopPropagation();
         }
     );
 
     $acoes.on(
-        'click',
+        'click' + NS,
         '[data-fechar-acoes]',
-        function (evento) {
+        function (
+            evento
+        ) {
             evento.preventDefault();
 
             fecharAcoes();
         }
     );
 
-    $('#abrir-denuncia')
-        .on(
-            'click',
-            abrirFormularioDenuncia
-        );
+    $abrirDenuncia.on(
+        'click' + NS,
+        abrirFormularioDenuncia
+    );
 
-    $('#voltar-denuncia')
-        .on(
-            'click',
-            function () {
-                $formDenuncia.prop(
-                    'hidden',
-                    true
+    $voltarDenuncia.on(
+        'click' + NS,
+        function () {
+            $formDenuncia.prop(
+                'hidden',
+                true
+            );
+
+            $acoesPrincipal.prop(
+                'hidden',
+                false
+            );
+        }
+    );
+
+    /*
+     * BLOQUEAR
+     */
+
+    $bloquearMembro.on(
+        'click' + NS,
+        async function () {
+            if (
+                aProcessarSeguranca
+            ) {
+                return;
+            }
+
+            var id =
+                idSelecionado();
+
+            var membroNome =
+                nomeSelecionado();
+
+            if (
+                !id ||
+                !window.confirm(
+                    'Bloquear ' +
+                    membroNome +
+                    '? Deixam imediatamente de se ver no mapa.'
+                )
+            ) {
+                return;
+            }
+
+            definirSegurancaOcupada(
+                true
+            );
+
+            try {
+                await pedidoSeguranca(
+                    'block'
                 );
 
-                $acoesPrincipal.prop(
-                    'hidden',
+                removerPessoaDoMapa(
+                    id
+                );
+
+                if (
+                    window.AppWebSocket &&
+                    window
+                        .AppWebSocket
+                        .isConnected()
+                ) {
+                    window
+                        .AppWebSocket
+                        .send({
+                            type:
+                                'block_refresh',
+
+                            target_id:
+                                id
+                        });
+                }
+
+                fecharAcoes();
+
+                if (
+                    typeof window
+                        .fecharMiniMenu ===
+                    'function'
+                ) {
+                    window
+                        .fecharMiniMenu();
+                }
+
+                aviso(
+                    membroNome +
+                    ' foi bloqueado.',
+                    'sucesso'
+                );
+            } catch (
+                erro
+            ) {
+                aviso(
+                    erro.message,
+                    'erro'
+                );
+            } finally {
+                definirSegurancaOcupada(
                     false
                 );
             }
-        );
+        }
+    );
 
-    $('#bloquear-membro')
-        .on(
-            'click',
-            async function () {
-                if (
-                    aProcessarSeguranca
-                ) {
-                    return;
-                }
-
-                var id =
-                    idSelecionado();
-
-                var membroNome =
-                    nomeSelecionado();
-
-                if (
-                    !id ||
-                    !window.confirm(
-                        'Bloquear ' +
-                        membroNome +
-                        '? Deixam imediatamente de se ver no mapa.'
-                    )
-                ) {
-                    return;
-                }
-
-                definirSegurancaOcupada(
-                    true
-                );
-
-                try {
-                    await pedidoSeguranca(
-                        'block'
-                    );
-
-                    removerPessoaDoMapa(
-                        id
-                    );
-
-                    if (
-                        window.AppWebSocket &&
-                        window
-                            .AppWebSocket
-                            .isConnected()
-                    ) {
-                        window
-                            .AppWebSocket
-                            .send({
-                                type:
-                                    'block_refresh',
-
-                                target_id:
-                                    id
-                            });
-                    }
-
-                    fecharAcoes();
-
-                    if (
-                        typeof window
-                            .fecharMiniMenu ===
-                        'function'
-                    ) {
-                        window
-                            .fecharMiniMenu();
-                    }
-
-                    aviso(
-                        membroNome +
-                        ' foi bloqueado.',
-                        'sucesso'
-                    );
-                } catch (erro) {
-                    aviso(
-                        erro.message,
-                        'erro'
-                    );
-                } finally {
-                    definirSegurancaOcupada(
-                        false
-                    );
-                }
-            }
-        );
+    /*
+     * DENÚNCIA
+     */
 
     $formDenuncia.on(
-        'submit',
+        'submit' + NS,
         async function (
             evento
         ) {
@@ -1041,7 +1687,9 @@
                         .val()
                 );
 
-            if (!motivo) {
+            if (
+                !motivo
+            ) {
                 aviso(
                     'Escolhe o motivo da denúncia.',
                     'erro'
@@ -1074,7 +1722,9 @@
                     'Denúncia enviada. Obrigado por nos avisares.',
                     'sucesso'
                 );
-            } catch (erro) {
+            } catch (
+                erro
+            ) {
                 aviso(
                     erro.message,
                     'erro'
@@ -1088,8 +1738,10 @@
     );
 
     $(document).on(
-        'keydown',
-        function (evento) {
+        'keydown' + NS,
+        function (
+            evento
+        ) {
             if (
                 evento.key ===
                     'Escape' &&
@@ -1102,14 +1754,212 @@
         }
     );
 
+    /*
+     * EVENTOS DO HEY
+     */
+
+    function aoHeyEnviado() {
+        libertarHey();
+    }
+
+    function aoHeyErro() {
+        libertarHey();
+    }
+
     window.addEventListener(
         'app:hey-enviado',
-        libertarHey
+        aoHeyEnviado
     );
 
     window.addEventListener(
         'app:hey-erro',
-        libertarHey
+        aoHeyErro
+    );
+
+    /*
+     * VISUAL VIEWPORT
+     */
+
+    if (
+        window.visualViewport
+    ) {
+        window
+            .visualViewport
+            .addEventListener(
+                'resize',
+                aoAlterarVisualViewport,
+                {
+                    passive:
+                        true
+                }
+            );
+
+        window
+            .visualViewport
+            .addEventListener(
+                'scroll',
+                aoAlterarVisualViewport,
+                {
+                    passive:
+                        true
+                }
+            );
+    }
+
+    prepararTecladoNativo();
+
+    /*
+     * CLEANUP
+     */
+
+    function desativarPagina() {
+        if (
+            !paginaAtiva
+        ) {
+            return;
+        }
+
+        paginaAtiva =
+            false;
+
+        if (
+            temporizadorHey !==
+            null
+        ) {
+            window.clearTimeout(
+                temporizadorHey
+            );
+
+            temporizadorHey =
+                null;
+        }
+
+        cancelarLimpezaFormulario();
+
+        restaurarFormularioDepoisDoTeclado(
+            false
+        );
+
+        removerListenersTeclado();
+
+        $(document).off(
+            NS
+        );
+
+        $miniMenu.off(
+            NS
+        );
+
+        $botaoHey.off(
+            NS
+        );
+
+        $formMensagem.off(
+            NS
+        );
+
+        $inputMensagem.off(
+            NS
+        );
+
+        $media.off(
+            NS
+        );
+
+        $perfil.off(
+            NS
+        );
+
+        $maisOpcoes.off(
+            NS
+        );
+
+        $acoes.off(
+            NS
+        );
+
+        $abrirDenuncia.off(
+            NS
+        );
+
+        $voltarDenuncia.off(
+            NS
+        );
+
+        $bloquearMembro.off(
+            NS
+        );
+
+        $formDenuncia.off(
+            NS
+        );
+
+        window.removeEventListener(
+            'app:hey-enviado',
+            aoHeyEnviado
+        );
+
+        window.removeEventListener(
+            'app:hey-erro',
+            aoHeyErro
+        );
+
+        if (
+            window.visualViewport
+        ) {
+            window
+                .visualViewport
+                .removeEventListener(
+                    'resize',
+                    aoAlterarVisualViewport
+                );
+
+            window
+                .visualViewport
+                .removeEventListener(
+                    'scroll',
+                    aoAlterarVisualViewport
+                );
+        }
+
+        document.removeEventListener(
+            'margot:page-leave',
+            desativarPagina
+        );
+
+        window.removeEventListener(
+            'pagehide',
+            desativarPagina
+        );
+
+        if (
+            window.prepararMiniMenuDaFoto ===
+            prepararMiniMenu
+        ) {
+            delete window
+                .prepararMiniMenuDaFoto;
+        }
+
+        if (
+            window.desativarIndexMiniMenuMargot ===
+            desativarPagina
+        ) {
+            delete window
+                .desativarIndexMiniMenuMargot;
+        }
+    }
+
+    window.desativarIndexMiniMenuMargot =
+        desativarPagina;
+
+    document.addEventListener(
+        'margot:page-leave',
+        desativarPagina
+    );
+
+    window.addEventListener(
+        'pagehide',
+        desativarPagina
     );
 })(
     window,

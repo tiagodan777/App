@@ -36,23 +36,9 @@
                     aria-hidden="true"
                     focusable="false"
                 >
-                    <circle
-                        cx="5"
-                        cy="12"
-                        r="2"
-                    ></circle>
-
-                    <circle
-                        cx="12"
-                        cy="12"
-                        r="2"
-                    ></circle>
-
-                    <circle
-                        cx="19"
-                        cy="12"
-                        r="2"
-                    ></circle>
+                    <circle cx="5" cy="12" r="2"></circle>
+                    <circle cx="12" cy="12" r="2"></circle>
+                    <circle cx="19" cy="12" r="2"></circle>
                 </svg>
             </button>
         </header>
@@ -250,6 +236,7 @@
                 id="mensagem"
                 maxlength="2000"
                 autocomplete="off"
+                autocapitalize="sentences"
                 placeholder="Mensagem…"
             >
 
@@ -266,7 +253,7 @@
     </script>
 
     <script src="{{ doc_root }}js/index-posicao.js?v=13"></script>
-    <script src="{{ doc_root }}js/index-mini-menu.js?v=14"></script>
+    <script src="{{ doc_root }}js/index-mini-menu.js?v=16"></script>
     <script src="{{ doc_root }}js/index-animacao.js?v=10"></script>
     <script src="{{ doc_root }}js/index-tap-foto.js?v=13"></script>
 {% endblock %}
