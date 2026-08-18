@@ -8,10 +8,30 @@
 
     --chat-compositor-altura: 66px;
 
-    --chat-teclado-duracao: 230ms;
+    /*
+     * Valores medidos diretamente na gravação
+     * do teclado deste iPhone.
+     */
 
-    --chat-teclado-easing:
-        cubic-bezier(.32, .72, 0, 1);
+    --chat-teclado-abrir-duracao: 294ms;
+
+    --chat-teclado-abrir-easing:
+        cubic-bezier(
+            .303,
+            .886,
+            .436,
+            .976
+        );
+
+    --chat-teclado-fechar-duracao: 313ms;
+
+    --chat-teclado-fechar-easing:
+        cubic-bezier(
+            .335,
+            .884,
+            .381,
+            .961
+        );
 }
 
 html,
@@ -42,8 +62,8 @@ body {
 }
 
 /*
- * Dentro de um chat não mostramos
- * o menu principal nem o botão dos Heys.
+ * Dentro de um chat, o menu principal
+ * e o botão dos Heys ficam sempre escondidos.
  */
 
 body:has(#chat-pagina) #menuPrincipal,
@@ -277,7 +297,8 @@ body:has(#chat-pagina) #abrir-heys {
 }
 
 /*
- * Só muda depois de keyboardDidShow.
+ * Este espaço só é aplicado depois de
+ * keyboardDidShow, não durante a animação.
  */
 
 body.margot-chat-teclado-pronto .chat-mensagens {
@@ -356,9 +377,11 @@ body.margot-chat-teclado-pronto .chat-mensagens {
 }
 
 /*
- * A imagem deixou de ser link.
- * Também bloqueamos drag/callout para não
- * parecer um elemento de browser.
+ * A fotografia não é um link.
+ *
+ * O !important é necessário porque o style.css
+ * global aplica border-radius: 50% a todas
+ * as imagens.
  */
 
 .chat-balao > .chat-imagem {
@@ -391,14 +414,16 @@ body.margot-chat-teclado-pronto .chat-mensagens {
 .chat-video {
     display: block;
 
-    width: 100%;
-    height: auto;
+    width: 100% !important;
+    max-width: 100% !important;
 
-    max-height:
-        min(
-            58dvh,
-            520px
-        );
+    height: auto !important;
+    max-height: min(58dvh, 520px);
+
+    margin: 0;
+
+    border: 0 !important;
+    border-radius: 0 !important;
 
     object-fit: contain;
 
@@ -478,15 +503,28 @@ body.margot-chat-teclado-pronto .chat-mensagens {
 
     transform-origin: center bottom;
 
-    transition:
-        transform
-        var(--chat-teclado-duracao)
-        var(--chat-teclado-easing);
+    /*
+     * Esta é a animação usada quando a classe
+     * é retirada e o teclado está a fechar.
+     */
+
+    transition-property: transform;
+
+    transition-duration:
+        var(
+            --chat-teclado-fechar-duracao
+        );
+
+    transition-timing-function:
+        var(
+            --chat-teclado-fechar-easing
+        );
+
+    transition-delay: 0ms;
 
     will-change: transform;
 
     -webkit-backface-visibility: hidden;
-
     backface-visibility: hidden;
 
     border-top:
@@ -499,9 +537,8 @@ body.margot-chat-teclado-pronto .chat-mensagens {
         );
 
     /*
-     * Sem backdrop-filter aqui.
-     * É um elemento que se move e o blur
-     * custa demasiado durante a animação.
+     * Sem backdrop-filter no elemento móvel.
+     * Evita recomposição cara durante o movimento.
      */
 
     background:
@@ -514,10 +551,21 @@ body.margot-chat-teclado-pronto .chat-mensagens {
 }
 
 /*
- * Só transform GPU.
+ * Ao adicionar esta classe, a animação passa
+ * a usar os valores medidos para a abertura.
  */
 
 body.margot-chat-teclado-aberto .chat-form {
+    transition-duration:
+        var(
+            --chat-teclado-abrir-duracao
+        );
+
+    transition-timing-function:
+        var(
+            --chat-teclado-abrir-easing
+        );
+
     transform:
         translate3d(
             -50%,
@@ -618,7 +666,7 @@ body.margot-chat-teclado-aberto .chat-form {
         );
 }
 
-/* + */
+/* BOTÃO + */
 
 .chat-anexar {
     flex: 0 0 40px;
@@ -823,10 +871,10 @@ body.margot-chat-teclado-aberto .chat-form {
 
 .chat-media-preview img,
 .chat-media-preview video {
-    width: 100%;
-    height: 100%;
+    width: 100% !important;
+    height: 100% !important;
 
-    border-radius: 0;
+    border-radius: 0 !important;
 
     object-fit: cover;
 }
