@@ -3,8 +3,7 @@
 :root {
     --margot-roxo: #7657ff;
     --margot-azul: #438bff;
-    --chat-menu-space:
-        calc(88px + env(safe-area-inset-bottom, 0px));
+    --chat-menu-space: calc(88px + env(safe-area-inset-bottom, 0px));
 }
 
 html,
@@ -21,9 +20,10 @@ body {
     min-height: 100%;
     margin: 0 auto;
     padding-bottom: var(--chat-menu-space);
-    background: #fff;
+    background: #ffffff;
     display: flex;
     flex-direction: column;
+    transition: padding-bottom 180ms ease;
 }
 
 @media all and (display-mode: standalone) {
@@ -53,10 +53,7 @@ body {
 .chat-cabecalho {
     flex: 0 0 auto;
     min-height: 72px;
-    padding:
-        calc(env(safe-area-inset-top, 0px) + 8px)
-        14px
-        8px;
+    padding: calc(env(safe-area-inset-top, 0px) + 8px) 14px 8px;
     border-bottom: 1px solid rgba(0, 0, 0, 0.07);
     background: rgba(255, 255, 255, 0.88);
     -webkit-backdrop-filter: blur(22px);
@@ -162,12 +159,8 @@ body {
 }
 
 .chat-mensagem.minha .chat-balao {
-    background: linear-gradient(
-        145deg,
-        var(--margot-roxo),
-        var(--margot-azul)
-    );
-    color: white;
+    background: linear-gradient(145deg, var(--margot-roxo), var(--margot-azul));
+    color: #ffffff;
     border-bottom-right-radius: 7px;
 }
 
@@ -197,7 +190,7 @@ body {
     height: auto;
     border-radius: 0;
     object-fit: contain;
-    background: #111;
+    background: #111111;
 }
 
 .chat-video-abrir {
@@ -231,26 +224,27 @@ body {
 }
 
 .chat-form {
+    position: relative;
+    z-index: 6;
     flex: 0 0 auto;
-    padding:
-        8px
-        10px
-        calc(8px + env(safe-area-inset-bottom, 0px));
-    border-top: 1px solid rgba(0, 0, 0, 0.07);
-    background: rgba(255, 255, 255, 0.92);
-    -webkit-backdrop-filter: blur(20px);
-    backdrop-filter: blur(20px);
+    padding: 7px 10px calc(7px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    background: rgba(255, 255, 255, 0.96);
+    -webkit-backdrop-filter: blur(22px);
+    backdrop-filter: blur(22px);
+    transition: padding-bottom 180ms ease;
 }
 
 .chat-compositor {
-    min-height: 52px;
-    padding: 5px;
-    border: 1px solid #dedee5;
-    border-radius: 27px;
-    background: white;
+    min-height: 50px;
+    padding: 4px;
+    border: 1px solid rgba(60, 60, 67, 0.16);
+    border-radius: 25px;
+    background: rgba(246, 246, 248, 0.96);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
     display: flex;
     align-items: flex-end;
-    gap: 5px;
+    gap: 4px;
 }
 
 .chat-anexar {
@@ -258,16 +252,20 @@ body {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: #efedf9;
+    background: rgba(118, 87, 255, 0.10);
     color: var(--margot-roxo);
     cursor: pointer;
     display: grid;
     place-items: center;
 }
 
+.chat-anexar:active {
+    transform: scale(0.94);
+}
+
 .chat-anexar svg {
-    width: 23px;
-    height: 23px;
+    width: 22px;
+    height: 22px;
     fill: none;
     stroke: currentColor;
     stroke-width: 2;
@@ -278,7 +276,8 @@ body {
     flex: 1;
     min-width: 0;
     max-height: 120px;
-    padding: 10px 6px;
+    min-height: 40px;
+    padding: 10px 7px;
     resize: none;
     overflow-y: auto;
     border: 0;
@@ -286,29 +285,47 @@ body {
     background: transparent;
     color: #18181c;
     font: inherit;
-    font-size: 15px;
+    font-size: 16px;
     line-height: 20px;
+    caret-color: var(--margot-roxo);
+}
+
+.chat-compositor textarea::placeholder {
+    color: #96969e;
+    opacity: 1;
 }
 
 .chat-compositor button {
     flex: 0 0 auto;
     min-height: 40px;
-    padding: 0 15px;
+    padding: 0 14px;
     border: 0;
     border-radius: 20px;
-    background: linear-gradient(
-        135deg,
-        var(--margot-roxo),
-        var(--margot-azul)
-    );
-    color: white;
+    background: transparent;
+    color: #a7a7af;
+    font: inherit;
+    font-size: 15px;
     font-weight: 800;
+    cursor: default;
+    transition:
+        background 140ms ease,
+        color 140ms ease,
+        opacity 140ms ease,
+        transform 120ms ease;
+}
+
+.chat-compositor button.ativo {
+    background: linear-gradient(135deg, var(--margot-roxo), var(--margot-azul));
+    color: #ffffff;
     cursor: pointer;
 }
 
+.chat-compositor button.ativo:active {
+    transform: scale(0.96);
+}
+
 .chat-compositor button:disabled {
-    opacity: 0.52;
-    cursor: wait;
+    opacity: 1;
 }
 
 .chat-media-preview {
@@ -339,7 +356,7 @@ body {
     border: 0;
     border-radius: 50%;
     background: rgba(20, 20, 24, 0.78);
-    color: white;
+    color: #ffffff;
     font-size: 18px;
     line-height: 28px;
 }
@@ -350,14 +367,34 @@ body {
     font-size: 12px;
 }
 
+body.margot-chat-teclado-aberto #menuPrincipal,
+body:has(#chat-texto:focus) #menuPrincipal {
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+body.margot-chat-teclado-aberto #abrir-heys,
+body:has(#chat-texto:focus) #abrir-heys {
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+body.margot-chat-teclado-aberto .chat-pagina,
+body:has(#chat-texto:focus) .chat-pagina {
+    padding-bottom: 0;
+}
+
+body.margot-chat-teclado-aberto .chat-form,
+body:has(#chat-texto:focus) .chat-form {
+    padding-bottom: 7px;
+}
+
 @media (min-width: 700px) {
     .chat-pagina {
         margin-top: 12px;
         height: calc(100dvh - 24px);
         border-radius: 30px;
-        box-shadow:
-            0 22px 70px
-            rgba(20, 20, 35, 0.12);
+        box-shadow: 0 22px 70px rgba(20, 20, 35, 0.12);
         overflow: hidden;
     }
 

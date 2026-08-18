@@ -10,12 +10,16 @@
     var $erro = $('#chat-erro');
     var $enviar = $('#chat-enviar');
 
-    var outroId = String(
-        $pagina.attr('data-outro-id') ||
-        window.chatMembroId ||
-        ''
-    );
+    if (!$pagina.length || !$mensagens.length || !$form.length) return;
 
+    if (typeof window.desativarChatMargot === 'function') {
+        window.desativarChatMargot();
+    }
+
+    var capacitor = window.Capacitor || null;
+    var teclado = capacitor && capacitor.Plugins ? capacitor.Plugins.Keyboard : null;
+    var tecladoListeners = [];
+    var outroId = String($pagina.attr('data-outro-id') || window.chatMembroId || '');
     var ultimoId = 0;
     var previewUrl = null;
     var aEnviar = false;
@@ -23,25 +27,107 @@
     var aFixarNoFim = true;
     var temporizadoresScroll = [];
 
-    if (!$pagina.length || !$mensagens.length || !$form.length) return;
+    function eIOSNativo() {
+        return Boolean(
+            capacitor &&
+            typeof capacitor.isNativePlatform === 'function' &&
+            capacitor.isNativePlatform() &&
+            typeof capacitor.getPlatform === 'function' &&
+            capacitor.getPlatform() === 'ios'
+        );
+    }
 
-    if (typeof window.desativarChatMargot === 'function') {
-        window.desativarChatMargot();
+    function definirTecladoAberto(aberto) {
+        if (!ativo) return;
+
+        document.body.classList.toggle('margot-chat-teclado-aberto', !!aberto);
+        $pagina.toggleClass('chat-teclado-aberto', !!aberto);
+
+        if (aberto) {
+            aFixarNoFim = true;
+            window.setTimeout(function () { deslocarParaFim(true); }, 80);
+            window.setTimeout(function () { deslocarParaFim(true); }, 280);
+        }
+    }
+
+    async function prepararTecladoNativo() {
+        if (!teclado) return;
+
+        if (eIOSNativo() && typeof teclado.setAccessoryBarVisible === 'function') {
+            try {
+                await teclado.setAccessoryBarVisible({ isVisible: false });
+            } catch (erro) {
+                console.warn('Não foi possível ocultar a barra auxiliar do teclado.', erro);
+            }
+        }
+
+        if (typeof teclado.addListener !== 'function') return;
+
+        try {
+            tecladoListeners.push(
+                await teclado.addListener('keyboardWillShow', function () {
+                    definirTecladoAberto(true);
+                })
+            );
+
+            tecladoListeners.push(
+                await teclado.addListener('keyboardWillHide', function () {
+                    definirTecladoAberto(false);
+                })
+            );
+        } catch (erro) {
+            console.warn('Não foi possível acompanhar o teclado nativo.', erro);
+        }
+    }
+
+    async function restaurarTecladoNativo() {
+        var listeners = tecladoListeners.slice();
+        tecladoListeners = [];
+
+        listeners.forEach(function (listener) {
+            if (listener && typeof listener.remove === 'function') {
+                Promise.resolve(listener.remove()).catch(function () {});
+            }
+        });
+
+        if (teclado && eIOSNativo() && typeof teclado.setAccessoryBarVisible === 'function') {
+            try {
+                await teclado.setAccessoryBarVisible({ isVisible: true });
+            } catch (erro) {}
+        }
+    }
+
+    function baseUrl() {
+        return String(window.messagesUrl || '/messages').replace(/\/+$/, '');
+    }
+
+    function conversaUrl() {
+        return baseUrl() + '/' + encodeURIComponent(outroId);
+    }
+
+    function dataLocal(valor) {
+        var texto = String(valor || '');
+        var data = new Date(texto.replace(' ', 'T') + (texto.includes('Z') ? '' : 'Z'));
+
+        return Number.isNaN(data.getTime())
+            ? ''
+            : data.toLocaleTimeString('pt-PT', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+    }
+
+    function minha(mensagem) {
+        return String(mensagem.emissor_id) === String(window.membroId);
     }
 
     function deslocarParaFim(forcar) {
-        if (
-            !ativo ||
-            !$mensagens[0] ||
-            (!forcar && !aFixarNoFim)
-        ) {
-            return;
-        }
+        if (!ativo || !$mensagens[0] || (!forcar && !aFixarNoFim)) return;
 
         window.requestAnimationFrame(function () {
-            if (!ativo || !$mensagens[0]) return;
-
-            $mensagens[0].scrollTop = $mensagens[0].scrollHeight;
+            if (ativo && $mensagens[0]) {
+                $mensagens[0].scrollTop = $mensagens[0].scrollHeight;
+            }
         });
     }
 
@@ -89,30 +175,6 @@
                 }, atraso)
             );
         });
-    }
-
-    function baseUrl() {
-        return String(window.messagesUrl || '/messages').replace(/\/+$/, '');
-    }
-
-    function conversaUrl() {
-        return baseUrl() + '/' + encodeURIComponent(outroId);
-    }
-
-    function dataLocal(valor) {
-        var texto = String(valor || '');
-        var data = new Date(texto.replace(' ', 'T') + (texto.includes('Z') ? '' : 'Z'));
-
-        return Number.isNaN(data.getTime())
-            ? ''
-            : data.toLocaleTimeString('pt-PT', {
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-    }
-
-    function minha(mensagem) {
-        return String(mensagem.emissor_id) === String(window.membroId);
     }
 
     function criarMensagem(mensagem) {
@@ -182,7 +244,9 @@
         var $rodape = $('<footer>').append(
             $('<time>', {
                 datetime: mensagem.criada_em
-            }).text(dataLocal(mensagem.criada_em))
+            }).text(
+                dataLocal(mensagem.criada_em)
+            )
         );
 
         if (eMinha) {
@@ -208,7 +272,12 @@
     function adicionarMensagem(mensagem, deslocar) {
         var id = Number(mensagem.id) || 0;
 
-        if (!id || $mensagens.find('[data-mensagem-id="' + id + '"]').length) {
+        if (
+            !id ||
+            $mensagens.find(
+                '[data-mensagem-id="' + id + '"]'
+            ).length
+        ) {
             return false;
         }
 
@@ -216,60 +285,171 @@
 
         $mensagens.append($novaMensagem);
 
-        ultimoId = Math.max(ultimoId, id);
+        ultimoId = Math.max(
+            ultimoId,
+            id
+        );
 
         if (deslocar !== false) {
-            acompanharMedia($novaMensagem, true);
+            acompanharMedia(
+                $novaMensagem,
+                true
+            );
+
             deslocarParaFim(true);
         }
 
         return true;
     }
 
+    function temConteudoParaEnviar() {
+        return Boolean(
+            $texto.val().trim() ||
+            (
+                $media[0] &&
+                $media[0].files &&
+                $media[0].files.length
+            )
+        );
+    }
+
+    function atualizarEstadoEnviar() {
+        var temConteudo =
+            temConteudoParaEnviar();
+
+        $enviar
+            .toggleClass(
+                'ativo',
+                temConteudo
+            )
+            .prop(
+                'disabled',
+                aEnviar ||
+                !temConteudo
+            );
+
+        if (!aEnviar) {
+            $enviar.text('Enviar');
+        }
+    }
+
     function limparMedia() {
-        if (previewUrl) URL.revokeObjectURL(previewUrl);
+        if (previewUrl) {
+            URL.revokeObjectURL(
+                previewUrl
+            );
+        }
 
         previewUrl = null;
+
         $media.val('');
-        $preview.empty().prop('hidden', true);
+
+        $preview
+            .empty()
+            .prop(
+                'hidden',
+                true
+            );
+
+        atualizarEstadoEnviar();
     }
 
     function mostrarPreview(ficheiro) {
-        if (previewUrl) URL.revokeObjectURL(previewUrl);
+        if (previewUrl) {
+            URL.revokeObjectURL(
+                previewUrl
+            );
+        }
 
         previewUrl = null;
-        $preview.empty().prop('hidden', true);
-        $erro.prop('hidden', true).text('');
 
-        if (!ficheiro) return;
+        $preview
+            .empty()
+            .prop(
+                'hidden',
+                true
+            );
 
-        var eVideo = ficheiro.type.startsWith('video/');
-        var limite = eVideo ? 100 * 1024 * 1024 : 15 * 1024 * 1024;
+        $erro
+            .prop(
+                'hidden',
+                true
+            )
+            .text('');
 
-        if (ficheiro.size > limite) {
-            $media.val('');
-            $erro.text(eVideo ? 'O vídeo pode ter no máximo 100 MB.' : 'A fotografia pode ter no máximo 15 MB.').prop('hidden', false);
+        if (!ficheiro) {
+            atualizarEstadoEnviar();
             return;
         }
 
-        previewUrl = URL.createObjectURL(ficheiro);
+        var eVideo =
+            ficheiro.type
+                .startsWith('video/');
 
-        var $conteudo = eVideo
-            ? $('<video>', {src: previewUrl, muted: true, controls: true, playsinline: true})
-            : $('<img>', {src: previewUrl, alt: 'Pré-visualização'});
+        var limite =
+            eVideo
+                ? 100 * 1024 * 1024
+                : 15 * 1024 * 1024;
 
-        $preview.append(
-            $conteudo,
-            $('<button>', {
-                type: 'button',
-                class: 'chat-media-remover',
-                'aria-label': 'Remover ficheiro'
-            }).text('×')
-        ).prop('hidden', false);
+        if (ficheiro.size > limite) {
+            $media.val('');
+
+            $erro
+                .text(
+                    eVideo
+                        ? 'O vídeo pode ter no máximo 100 MB.'
+                        : 'A fotografia pode ter no máximo 15 MB.'
+                )
+                .prop(
+                    'hidden',
+                    false
+                );
+
+            atualizarEstadoEnviar();
+            return;
+        }
+
+        previewUrl =
+            URL.createObjectURL(
+                ficheiro
+            );
+
+        var $conteudo =
+            eVideo
+                ? $('<video>', {
+                    src: previewUrl,
+                    muted: true,
+                    controls: true,
+                    playsinline: true
+                })
+                : $('<img>', {
+                    src: previewUrl,
+                    alt: 'Pré-visualização'
+                });
+
+        $preview
+            .append(
+                $conteudo,
+
+                $('<button>', {
+                    type: 'button',
+                    class: 'chat-media-remover',
+                    'aria-label': 'Remover ficheiro'
+                }).text('×')
+            )
+            .prop(
+                'hidden',
+                false
+            );
+
+        atualizarEstadoEnviar();
     }
 
     function publicarMensagem(mensagemId) {
-        if (!window.AppWebSocket || !window.AppWebSocket.isConnected()) {
+        if (
+            !window.AppWebSocket ||
+            !window.AppWebSocket.isConnected()
+        ) {
             return;
         }
 
@@ -284,10 +464,7 @@
 
         if (
             aEnviar ||
-            (
-                !$texto.val().trim() &&
-                !$media[0].files.length
-            )
+            !temConteudoParaEnviar()
         ) {
             return;
         }
@@ -295,57 +472,105 @@
         aEnviar = true;
 
         $enviar
-            .prop('disabled', true)
-            .text('A enviar…');
+            .prop(
+                'disabled',
+                true
+            )
+            .text(
+                'A enviar…'
+            );
 
-        $erro.prop('hidden', true).text('');
+        $erro
+            .prop(
+                'hidden',
+                true
+            )
+            .text('');
 
         try {
-            var resposta = await fetch(conversaUrl(), {
-                method: 'POST',
-                body: new FormData($form[0]),
-                credentials: 'same-origin'
-            });
+            var resposta =
+                await fetch(
+                    conversaUrl(),
+                    {
+                        method: 'POST',
+                        body: new FormData(
+                            $form[0]
+                        ),
+                        credentials:
+                            'same-origin'
+                    }
+                );
 
-            var dados = await resposta.json();
+            var dados =
+                await resposta.json();
 
-            if (!resposta.ok || !dados.success) {
+            if (
+                !resposta.ok ||
+                !dados.success
+            ) {
                 throw new Error(
                     dados.message ||
                     'Não foi possível enviar a mensagem.'
                 );
             }
 
-            adicionarMensagem(dados.message);
+            adicionarMensagem(
+                dados.message
+            );
 
-            $texto.val('').css('height', 'auto');
+            $texto
+                .val('')
+                .css(
+                    'height',
+                    'auto'
+                );
 
             limparMedia();
-            publicarMensagem(dados.message.id);
+
+            publicarMensagem(
+                dados.message.id
+            );
         } catch (erro) {
-            $erro.text(erro.message).prop('hidden', false);
+            $erro
+                .text(
+                    erro.message
+                )
+                .prop(
+                    'hidden',
+                    false
+                );
         } finally {
             aEnviar = false;
-
-            $enviar
-                .prop('disabled', false)
-                .text('Enviar');
+            atualizarEstadoEnviar();
         }
     }
 
     async function marcarComoLidas() {
-        if (document.visibilityState === 'hidden') return;
+        if (
+            document.visibilityState ===
+            'hidden'
+        ) {
+            return;
+        }
 
-        var corpo = new FormData();
+        var corpo =
+            new FormData();
 
-        corpo.set('action', 'mark_read');
+        corpo.set(
+            'action',
+            'mark_read'
+        );
 
         try {
-            await fetch(conversaUrl(), {
-                method: 'POST',
-                body: corpo,
-                credentials: 'same-origin'
-            });
+            await fetch(
+                conversaUrl(),
+                {
+                    method: 'POST',
+                    body: corpo,
+                    credentials:
+                        'same-origin'
+                }
+            );
 
             if (
                 window.AppWebSocket &&
@@ -353,7 +578,8 @@
             ) {
                 window.AppWebSocket.send({
                     type: 'chat_read',
-                    with_member_id: outroId
+                    with_member_id:
+                        outroId
                 });
             }
         } catch (erro) {
@@ -363,62 +589,129 @@
 
     async function procurarNovasMensagens() {
         try {
-            var resposta = await fetch(
-                conversaUrl() +
-                '?api=history&after_id=' +
-                ultimoId,
-                {
-                    credentials: 'same-origin',
-                    cache: 'no-store'
-                }
-            );
+            var resposta =
+                await fetch(
+                    conversaUrl() +
+                    '?api=history&after_id=' +
+                    ultimoId,
+                    {
+                        credentials:
+                            'same-origin',
+                        cache:
+                            'no-store'
+                    }
+                );
 
-            var dados = await resposta.json();
+            var dados =
+                await resposta.json();
 
-            if (!resposta.ok || !dados.success) return;
+            if (
+                !resposta.ok ||
+                !dados.success
+            ) {
+                return;
+            }
 
             var recebeu = false;
 
-            (dados.messages || []).forEach(function (mensagem) {
-                if (adicionarMensagem(mensagem) && !minha(mensagem)) {
-                    recebeu = true;
-                }
-            });
+            (dados.messages || [])
+                .forEach(
+                    function (mensagem) {
+                        if (
+                            adicionarMensagem(
+                                mensagem
+                            ) &&
+                            !minha(mensagem)
+                        ) {
+                            recebeu = true;
+                        }
+                    }
+                );
 
-            if (recebeu) marcarComoLidas();
+            if (recebeu) {
+                marcarComoLidas();
+            }
         } catch (erro) {
             console.error(erro);
         }
     }
 
-    function atualizarConfirmacoes(lidoPor, ultimoLido) {
-        if (String(lidoPor) !== outroId) return;
+    function atualizarConfirmacoes(
+        lidoPor,
+        ultimoLido
+    ) {
+        if (
+            String(lidoPor) !==
+            outroId
+        ) {
+            return;
+        }
 
-        $mensagens.find('.chat-mensagem.minha').each(function () {
-            if (
-                Number($(this).attr('data-mensagem-id')) <=
-                Number(ultimoLido)
-            ) {
-                $(this)
-                    .find('.chat-lida')
-                    .text('✓✓')
-                    .attr('aria-label', 'Lida');
-            }
-        });
+        $mensagens
+            .find(
+                '.chat-mensagem.minha'
+            )
+            .each(
+                function () {
+                    if (
+                        Number(
+                            $(this).attr(
+                                'data-mensagem-id'
+                            )
+                        ) <=
+                        Number(
+                            ultimoLido
+                        )
+                    ) {
+                        $(this)
+                            .find(
+                                '.chat-lida'
+                            )
+                            .text(
+                                '✓✓'
+                            )
+                            .attr(
+                                'aria-label',
+                                'Lida'
+                            );
+                    }
+                }
+            );
     }
 
-    $mensagens.find('.chat-mensagem').each(function () {
-        ultimoId = Math.max(
-            ultimoId,
-            Number($(this).attr('data-mensagem-id')) || 0
+    $mensagens
+        .find(
+            '.chat-mensagem'
+        )
+        .each(
+            function () {
+                ultimoId =
+                    Math.max(
+                        ultimoId,
+                        Number(
+                            $(this).attr(
+                                'data-mensagem-id'
+                            )
+                        ) || 0
+                    );
+            }
         );
-    });
 
-    $mensagens.find('time[data-data-mensagem]').each(function () {
-        $(this).text(
-            dataLocal($(this).attr('datetime'))
+    $mensagens
+        .find(
+            'time[data-data-mensagem]'
+        )
+        .each(
+            function () {
+                $(this).text(
+                    dataLocal(
+                        $(this).attr(
+                            'datetime'
+                        )
+                    )
+                );
+            }
         );
-    });
 
     prepararScrollInicial();
 
@@ -429,11 +722,19 @@
         }
     );
 
-    $form.on('submit', enviarMensagem);
+    $form.on(
+        'submit',
+        enviarMensagem
+    );
 
-    $media.on('change', function () {
-        mostrarPreview(this.files[0]);
-    });
+    $media.on(
+        'change',
+        function () {
+            mostrarPreview(
+                this.files[0]
+            );
+        }
+    );
 
     $preview.on(
         'click',
@@ -441,37 +742,105 @@
         limparMedia
     );
 
-    $texto.on('input', function () {
-        this.style.height = 'auto';
-        this.style.height = Math.min(this.scrollHeight, 120) + 'px';
-    });
+    $texto.on(
+        'input',
+        function () {
+            this.style.height =
+                'auto';
 
-    $texto.on('keydown', function (evento) {
-        if (evento.key === 'Enter' && !evento.shiftKey) {
-            evento.preventDefault();
-            $form.trigger('submit');
+            this.style.height =
+                Math.min(
+                    this.scrollHeight,
+                    120
+                ) + 'px';
+
+            atualizarEstadoEnviar();
         }
-    });
+    );
+
+    $texto.on(
+        'focus.margotChatKeyboard',
+        function () {
+            definirTecladoAberto(
+                true
+            );
+        }
+    );
+
+    $texto.on(
+        'blur.margotChatKeyboard',
+        function () {
+            window.setTimeout(
+                function () {
+                    if (
+                        ativo &&
+                        document.activeElement !==
+                        $texto[0]
+                    ) {
+                        definirTecladoAberto(
+                            false
+                        );
+                    }
+                },
+                80
+            );
+        }
+    );
+
+    $texto.on(
+        'keydown',
+        function (evento) {
+            if (
+                evento.key === 'Enter' &&
+                !evento.shiftKey
+            ) {
+                evento.preventDefault();
+
+                $form.trigger(
+                    'submit'
+                );
+            }
+        }
+    );
 
     function aoReceberMensagem(evento) {
-        var mensagem = evento.detail.message;
+        var mensagem =
+            evento.detail.message;
 
         if (!mensagem) return;
 
         var pertence =
             (
-                String(mensagem.emissor_id) === outroId &&
-                String(mensagem.destinatario_id) === String(window.membroId)
+                String(
+                    mensagem.emissor_id
+                ) === outroId &&
+                String(
+                    mensagem.destinatario_id
+                ) ===
+                String(
+                    window.membroId
+                )
             ) ||
             (
-                String(mensagem.emissor_id) === String(window.membroId) &&
-                String(mensagem.destinatario_id) === outroId
+                String(
+                    mensagem.emissor_id
+                ) ===
+                String(
+                    window.membroId
+                ) &&
+                String(
+                    mensagem.destinatario_id
+                ) === outroId
             );
 
         if (
             pertence &&
-            adicionarMensagem(mensagem) &&
-            !minha(mensagem)
+            adicionarMensagem(
+                mensagem
+            ) &&
+            !minha(
+                mensagem
+            )
         ) {
             marcarComoLidas();
         }
@@ -485,60 +854,156 @@
     }
 
     function aoAlterarVisibilidade() {
-        if (document.visibilityState === 'visible') {
+        if (
+            document.visibilityState ===
+            'visible'
+        ) {
             procurarNovasMensagens();
             marcarComoLidas();
         }
     }
 
-    window.addEventListener('app:chat-message', aoReceberMensagem);
-    window.addEventListener('app:chat-messages-read', aoLerMensagens);
-    document.addEventListener('visibilitychange', aoAlterarVisibilidade);
+    window.addEventListener(
+        'app:chat-message',
+        aoReceberMensagem
+    );
 
-    $('#menuPrincipal a').removeClass('active');
-    $('#menuPrincipal a[href*="messages"]').first().addClass('active');
+    window.addEventListener(
+        'app:chat-messages-read',
+        aoLerMensagens
+    );
 
+    document.addEventListener(
+        'visibilitychange',
+        aoAlterarVisibilidade
+    );
+
+    $('#menuPrincipal a')
+        .removeClass(
+            'active'
+        );
+
+    $('#menuPrincipal a[href*="messages"]')
+        .first()
+        .addClass(
+            'active'
+        );
+
+    atualizarEstadoEnviar();
+    prepararTecladoNativo();
     marcarComoLidas();
 
-    var temporizador = window.setInterval(
-        procurarNovasMensagens,
-        5000
-    );
+    var temporizador =
+        window.setInterval(
+            procurarNovasMensagens,
+            5000
+        );
 
     function desativarChat() {
         if (!ativo) return;
 
         ativo = false;
-        window.clearInterval(temporizador);
 
-        temporizadoresScroll.forEach(function (temporizadorScroll) {
-            window.clearTimeout(temporizadorScroll);
-        });
+        window.clearInterval(
+            temporizador
+        );
+
+        temporizadoresScroll
+            .forEach(
+                function (
+                    temporizadorScroll
+                ) {
+                    window.clearTimeout(
+                        temporizadorScroll
+                    );
+                }
+            );
 
         temporizadoresScroll = [];
 
-        $mensagens.off('.margotChatScroll');
-        $mensagens.find('img, video').off('.margotChatScroll');
+        $mensagens.off(
+            '.margotChatScroll'
+        );
 
-        window.removeEventListener('app:chat-message', aoReceberMensagem);
-        window.removeEventListener('app:chat-messages-read', aoLerMensagens);
-        document.removeEventListener('visibilitychange', aoAlterarVisibilidade);
-        document.removeEventListener('margot:page-leave', desativarChat);
-        window.removeEventListener('pagehide', desativarChat);
+        $mensagens
+            .find(
+                'img, video'
+            )
+            .off(
+                '.margotChatScroll'
+            );
+
+        $texto.off(
+            '.margotChatKeyboard'
+        );
+
+        document.body.classList.remove(
+            'margot-chat-teclado-aberto'
+        );
+
+        restaurarTecladoNativo();
+
+        window.removeEventListener(
+            'app:chat-message',
+            aoReceberMensagem
+        );
+
+        window.removeEventListener(
+            'app:chat-messages-read',
+            aoLerMensagens
+        );
+
+        document.removeEventListener(
+            'visibilitychange',
+            aoAlterarVisibilidade
+        );
+
+        document.removeEventListener(
+            'margot:page-leave',
+            desativarChat
+        );
+
+        window.removeEventListener(
+            'pagehide',
+            desativarChat
+        );
 
         limparMedia();
 
-        if (window.desativarChatMargot === desativarChat) {
-            delete window.desativarChatMargot;
+        if (
+            window.desativarChatMargot ===
+            desativarChat
+        ) {
+            delete window
+                .desativarChatMargot;
         }
 
-        if (String(window.chatMembroId || '') === outroId) {
-            delete window.chatMembroId;
+        if (
+            String(
+                window.chatMembroId ||
+                ''
+            ) ===
+            outroId
+        ) {
+            delete window
+                .chatMembroId;
         }
     }
 
-    window.desativarChatMargot = desativarChat;
+    window.desativarChatMargot =
+        desativarChat;
 
-    document.addEventListener('margot:page-leave', desativarChat);
-    window.addEventListener('pagehide', desativarChat);
-})(window, document, jQuery);
+    document.addEventListener(
+        'margot:page-leave',
+        desativarChat
+    );
+
+    window.addEventListener(
+        'pagehide',
+        desativarChat
+    );
+})(
+    window,
+    document,
+    jQuery
+);
