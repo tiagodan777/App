@@ -350,8 +350,8 @@ body.margot-mini-menu-aberto #menuPrincipal {
 
     background-color: rgba(0, 0, 0, 0.08);
 
-    -webkit-backdrop-filter: blur(18px) saturate(160%);
-    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(3px) saturate(160%);
+    backdrop-filter: blur(3px) saturate(160%);
 
     box-shadow:
         0 6px 24px rgba(0, 0, 0, 0.08),
