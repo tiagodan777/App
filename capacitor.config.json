@@ -13,6 +13,13 @@
     "Keyboard": {
       "resize": "none",
       "autoBackdropColor": "dom"
+    },
+    "SplashScreen": {
+      "launchShowDuration": 900,
+      "launchAutoHide": true,
+      "launchFadeOutDuration": 250,
+      "backgroundColor": "#FFFFFFFF",
+      "showSpinner": false
     }
   }
 }

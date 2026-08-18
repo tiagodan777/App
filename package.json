@@ -25,7 +25,8 @@
     "@capacitor/geolocation": "^8.2.1",
     "@capacitor/ios": "^8.5.0",
     "@capacitor/keyboard": "^8.0.5",
-    "@capacitor/push-notifications": "^8.1.2"
+    "@capacitor/push-notifications": "^8.1.2",
+    "@capacitor/splash-screen": "^8.0.2"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.5.0"
