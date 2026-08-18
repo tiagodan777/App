@@ -210,9 +210,7 @@
         x2,
         y2
     ) {
-        return function (
-            progresso
-        ) {
+        return function (progresso) {
             var tempo =
                 progresso;
 
@@ -268,9 +266,7 @@
         };
     }
 
-    function deslocarParaFim(
-        forcar
-    ) {
+    function deslocarParaFim(forcar) {
         if (
             !ativo ||
             !$mensagens[0] ||
@@ -367,9 +363,7 @@
         var inicio =
             window.performance.now();
 
-        function animar(
-            agora
-        ) {
+        function animar(agora) {
             if (
                 !ativo ||
                 !$mensagens[0]
@@ -512,9 +506,7 @@
             180,
             360
         ].forEach(
-            function (
-                atraso
-            ) {
+            function (atraso) {
                 temporizadoresScroll.push(
                     window.setTimeout(
                         function () {
@@ -529,9 +521,7 @@
         );
     }
 
-    function tecladoVaiAbrir(
-        info
-    ) {
+    function tecladoVaiAbrir(info) {
         if (
             !ativo ||
             !$mensagens[0]
@@ -622,18 +612,13 @@
         );
     }
 
-    function tecladoAbriu(
-        info
-    ) {
+    function tecladoAbriu(info) {
         if (
             !ativo ||
             !$mensagens[0]
         ) {
             return;
         }
-
-        var elemento =
-            $mensagens[0];
 
         var altura =
             Math.max(
@@ -649,34 +634,23 @@
             altura >
             0
         ) {
-            var alturaScrollAntes =
-                elemento.scrollHeight;
-
             document.documentElement.style.setProperty(
                 '--margot-keyboard-height',
                 altura + 'px'
             );
-
-            aumentoScrollTeclado +=
-                Math.max(
-                    0,
-                    elemento.scrollHeight -
-                    alturaScrollAntes
-                );
         }
+
+        /*
+         * Não interrompemos nem fazemos hard-set
+         * do scroll no último frame.
+         *
+         * A animação iniciada em keyboardWillShow
+         * termina naturalmente.
+         */
 
         if (
             ancorarScrollTeclado
         ) {
-            cancelarAnimacaoScrollTeclado();
-
-            elemento.scrollTop =
-                Math.max(
-                    0,
-                    elemento.scrollHeight -
-                    elemento.clientHeight
-                );
-
             aFixarNoFim =
                 true;
         }
@@ -728,55 +702,45 @@
             return;
         }
 
-        var elemento =
-            $mensagens[0];
+        /*
+         * Não cancelamos a animação no último frame.
+         *
+         * Esperamos um frame visual e só depois
+         * retiramos o espaço reservado ao teclado.
+         */
 
-        cancelarAnimacaoScrollTeclado();
+        window.requestAnimationFrame(
+            function () {
+                if (
+                    !ativo ||
+                    !$mensagens[0]
+                ) {
+                    return;
+                }
 
-        if (
-            destinoScrollFecho !==
-            null
-        ) {
-            elemento.scrollTop =
-                destinoScrollFecho;
-        }
-
-        document.body.classList.remove(
-            'margot-chat-teclado-aberto'
-        );
-
-        document.body.classList.remove(
-            'margot-chat-teclado-pronto'
-        );
-
-        document.documentElement.style.setProperty(
-            '--margot-keyboard-height',
-            '0px'
-        );
-
-        if (
-            destinoScrollFecho !==
-            null
-        ) {
-            elemento.scrollTop =
-                Math.min(
-                    destinoScrollFecho,
-                    Math.max(
-                        0,
-                        elemento.scrollHeight -
-                        elemento.clientHeight
-                    )
+                document.body.classList.remove(
+                    'margot-chat-teclado-aberto'
                 );
-        }
 
-        aumentoScrollTeclado =
-            0;
+                document.body.classList.remove(
+                    'margot-chat-teclado-pronto'
+                );
 
-        ancorarScrollTeclado =
-            false;
+                document.documentElement.style.setProperty(
+                    '--margot-keyboard-height',
+                    '0px'
+                );
 
-        destinoScrollFecho =
-            null;
+                aumentoScrollTeclado =
+                    0;
+
+                ancorarScrollTeclado =
+                    false;
+
+                destinoScrollFecho =
+                    null;
+            }
+        );
     }
 
     async function prepararTecladoNativo() {
@@ -853,9 +817,7 @@
         tecladoListeners = [];
 
         listeners.forEach(
-            function (
-                listener
-            ) {
+            function (listener) {
                 if (
                     listener &&
                     typeof listener.remove ===
@@ -899,9 +861,7 @@
         }
     }
 
-    function criarMensagem(
-        mensagem
-    ) {
+    function criarMensagem(mensagem) {
         var eMinha =
             minha(
                 mensagem
@@ -968,6 +928,7 @@
             $video.append(
                 $('<source>', {
                     src: mensagem.media_url,
+
                     type:
                         mensagem.ficheiro_mime ||
                         'video/mp4'
@@ -1140,9 +1101,7 @@
         atualizarEstadoEnviar();
     }
 
-    function mostrarPreview(
-        ficheiro
-    ) {
+    function mostrarPreview(ficheiro) {
         if (
             previewUrl
         ) {
@@ -1233,11 +1192,8 @@
 
                 $('<button>', {
                     type: 'button',
-                    class:
-                        'chat-media-remover',
-
-                    'aria-label':
-                        'Remover ficheiro'
+                    class: 'chat-media-remover',
+                    'aria-label': 'Remover ficheiro'
                 }).text(
                     '×'
                 )
@@ -1250,9 +1206,7 @@
         atualizarEstadoEnviar();
     }
 
-    function publicarMensagem(
-        mensagemId
-    ) {
+    function publicarMensagem(mensagemId) {
         if (
             !window.AppWebSocket ||
             !window.AppWebSocket.isConnected()
@@ -1266,9 +1220,7 @@
         });
     }
 
-    async function enviarMensagem(
-        evento
-    ) {
+    async function enviarMensagem(evento) {
         evento.preventDefault();
 
         if (
@@ -1278,7 +1230,8 @@
             return;
         }
 
-        aEnviar = true;
+        aEnviar =
+            true;
 
         $enviar
             .prop(
@@ -1381,8 +1334,7 @@
                 {
                     method: 'POST',
                     body: corpo,
-                    credentials:
-                        'same-origin'
+                    credentials: 'same-origin'
                 }
             );
 
@@ -1392,8 +1344,7 @@
             ) {
                 window.AppWebSocket.send({
                     type: 'chat_read',
-                    with_member_id:
-                        outroId
+                    with_member_id: outroId
                 });
             }
         } catch (erro) {
@@ -1412,11 +1363,8 @@
                     ultimoId,
 
                     {
-                        credentials:
-                            'same-origin',
-
-                        cache:
-                            'no-store'
+                        credentials: 'same-origin',
+                        cache: 'no-store'
                     }
                 );
 
@@ -1437,9 +1385,7 @@
                 dados.messages ||
                 []
             ).forEach(
-                function (
-                    mensagem
-                ) {
+                function (mensagem) {
                     if (
                         adicionarMensagem(
                             mensagem
@@ -1605,9 +1551,7 @@
     $texto.on(
         'keydown',
 
-        function (
-            evento
-        ) {
+        function (evento) {
             if (
                 evento.key ===
                     'Enter' &&
@@ -1622,9 +1566,7 @@
         }
     );
 
-    function aoReceberMensagem(
-        evento
-    ) {
+    function aoReceberMensagem(evento) {
         var mensagem =
             evento.detail.message;
 
@@ -1675,9 +1617,7 @@
         }
     }
 
-    function aoLerMensagens(
-        evento
-    ) {
+    function aoLerMensagens(evento) {
         atualizarConfirmacoes(
             evento.detail.reader_id,
             evento.detail.last_message_id
@@ -1715,9 +1655,7 @@
         );
 
     atualizarEstadoEnviar();
-
     prepararTecladoNativo();
-
     marcarComoLidas();
 
     var temporizador =
@@ -1733,7 +1671,8 @@
             return;
         }
 
-        ativo = false;
+        ativo =
+            false;
 
         window.clearInterval(
             temporizador
@@ -1804,8 +1743,7 @@
             window.desativarChatMargot ===
             desativarChat
         ) {
-            delete window
-                .desativarChatMargot;
+            delete window.desativarChatMargot;
         }
 
         if (
@@ -1815,8 +1753,7 @@
             ) ===
             outroId
         ) {
-            delete window
-                .chatMembroId;
+            delete window.chatMembroId;
         }
     }
 
