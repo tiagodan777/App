@@ -1,23 +1,36 @@
 {% extends 'layout.html' %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ doc_root }}estilos/chat.css?v=7" data-margot-page-style>
+<link rel="stylesheet" href="{{ doc_root }}estilos/chat.css?v=8" data-margot-page-style>
 {% endblock %}
 
 {% block content %}
-<main id="chat-pagina" class="chat-pagina" data-outro-id="{{ outro.id }}">
+<main
+    id="chat-pagina"
+    class="chat-pagina"
+    data-outro-id="{{ outro.id }}"
+>
     <header class="chat-cabecalho">
-        <a href="{{ doc_root }}messages" class="chat-voltar" data-margot-voltar aria-label="Voltar às mensagens">
+        <a
+            href="{{ doc_root }}messages"
+            class="chat-voltar"
+            data-margot-voltar
+            aria-label="Voltar às mensagens"
+        >
             <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M15 5l-7 7 7 7"></path>
             </svg>
         </a>
 
-        <a href="{{ outro.perfil_url }}" class="chat-pessoa">
+        <a
+            href="{{ outro.perfil_url }}"
+            class="chat-pessoa"
+        >
             <img
                 src="{{ outro.foto_url }}"
                 alt="Fotografia de {{ outro.nome }}"
                 onerror="this.onerror=null;this.src='{{ doc_root }}imagens/fotos-perfil/default.webp';"
+                draggable="false"
             >
 
             <span>
@@ -41,34 +54,26 @@
             >
                 <div class="chat-balao">
                     {% if mensagem.tipo == 'imagem' and mensagem.media_url %}
-                        <a
-                            href="{{ mensagem.media_url }}"
-                            target="_blank"
-                            rel="noopener"
-                            class="chat-media-link"
+                        <img
+                            class="chat-imagem"
+                            src="{{ mensagem.media_url }}"
+                            alt="Fotografia enviada por {{ mensagem.emissor_nome }}"
+                            loading="lazy"
+                            draggable="false"
                         >
-                            <img
-                                src="{{ mensagem.media_url }}"
-                                alt="Fotografia enviada por {{ mensagem.emissor_nome }}"
-                                loading="lazy"
-                            >
-                        </a>
+
                     {% elseif mensagem.tipo == 'video' and mensagem.media_url %}
-                        <video controls playsinline preload="metadata">
+                        <video
+                            class="chat-video"
+                            controls
+                            playsinline
+                            preload="metadata"
+                        >
                             <source
                                 src="{{ mensagem.media_url }}"
                                 type="{{ mensagem.ficheiro_mime }}"
                             >
                         </video>
-
-                        <a
-                            href="{{ mensagem.media_url }}"
-                            target="_blank"
-                            rel="noopener"
-                            class="chat-video-abrir"
-                        >
-                            Abrir vídeo
-                        </a>
                     {% endif %}
 
                     {% if mensagem.texto %}
@@ -102,7 +107,11 @@
         method="post"
         enctype="multipart/form-data"
     >
-        <input type="hidden" name="action" value="send">
+        <input
+            type="hidden"
+            name="action"
+            value="send"
+        >
 
         <div
             id="chat-media-preview"
@@ -171,5 +180,5 @@ window.webSocketUrl = window.location.protocol === 'https:'
     : 'ws://' + window.location.hostname + ':8080';
 </script>
 
-<script src="{{ doc_root }}js/chat.js?v=6"></script>
+<script src="{{ doc_root }}js/chat.js?v=7"></script>
 {% endblock %}

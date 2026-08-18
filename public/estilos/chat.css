@@ -8,7 +8,7 @@
 
     --chat-compositor-altura: 66px;
 
-    --chat-teclado-duracao: 260ms;
+    --chat-teclado-duracao: 230ms;
 
     --chat-teclado-easing:
         cubic-bezier(.32, .72, 0, 1);
@@ -24,9 +24,7 @@ body {
     background: #ffffff;
 }
 
-/*
- * CHAT
- */
+/* PÁGINA */
 
 .chat-pagina {
     position: relative;
@@ -44,11 +42,8 @@ body {
 }
 
 /*
- * Dentro do chat não queremos o menu principal
- * nem o botão dos Heys.
- *
- * O menu mantém a própria transição de opacity
- * definida no CSS global.
+ * Dentro de um chat não mostramos
+ * o menu principal nem o botão dos Heys.
  */
 
 body:has(#chat-pagina) #menuPrincipal,
@@ -103,9 +98,7 @@ body:has(#chat-pagina) #abrir-heys {
     }
 }
 
-/*
- * CABEÇALHO
- */
+/* CABEÇALHO */
 
 .chat-cabecalho {
     position: relative;
@@ -170,17 +163,12 @@ body:has(#chat-pagina) #abrir-heys {
     place-items: center;
 
     transition:
-        transform
-        120ms
-        ease,
-        background
-        140ms
-        ease;
+        transform 120ms ease,
+        background 140ms ease;
 }
 
 .chat-voltar:active {
-    transform:
-        scale(0.92);
+    transform: scale(0.92);
 
     background:
         rgba(
@@ -253,15 +241,7 @@ body:has(#chat-pagina) #abrir-heys {
     font-size: 11px;
 }
 
-/*
- * LISTA DE MENSAGENS
- *
- * Importante:
- * NÃO existe transition de padding aqui.
- *
- * O padding muda apenas quando o teclado
- * terminou completamente a animação.
- */
+/* MENSAGENS */
 
 .chat-mensagens {
     flex: 1 1 auto;
@@ -285,14 +265,11 @@ body:has(#chat-pagina) #abrir-heys {
     overflow-x: hidden;
     overflow-y: auto;
 
-    overscroll-behavior:
-        contain;
+    overscroll-behavior: contain;
 
-    -webkit-overflow-scrolling:
-        touch;
+    -webkit-overflow-scrolling: touch;
 
-    scrollbar-width:
-        none;
+    scrollbar-width: none;
 }
 
 .chat-mensagens::-webkit-scrollbar {
@@ -300,11 +277,7 @@ body:has(#chat-pagina) #abrir-heys {
 }
 
 /*
- * Só aparece depois de keyboardDidShow.
- *
- * Portanto esta alteração nunca acontece
- * enquanto o teclado está fisicamente
- * a subir.
+ * Só muda depois de keyboardDidShow.
  */
 
 body.margot-chat-teclado-pronto .chat-mensagens {
@@ -324,29 +297,21 @@ body.margot-chat-teclado-pronto .chat-mensagens {
 .chat-mensagem {
     width: 100%;
 
-    margin:
-        7px
-        0;
+    margin: 7px 0;
 
     display: flex;
 }
 
 .chat-mensagem.minha {
-    justify-content:
-        flex-end;
+    justify-content: flex-end;
 }
 
 .chat-mensagem.recebida {
-    justify-content:
-        flex-start;
+    justify-content: flex-start;
 }
 
 .chat-balao {
-    max-width:
-        min(
-            78%,
-            520px
-        );
+    max-width: min(78%, 520px);
 
     overflow: hidden;
 
@@ -367,13 +332,11 @@ body.margot-chat-teclado-pronto .chat-mensagens {
 
     color: #ffffff;
 
-    border-bottom-right-radius:
-        7px;
+    border-bottom-right-radius: 7px;
 }
 
 .chat-mensagem.recebida .chat-balao {
-    border-bottom-left-radius:
-        7px;
+    border-bottom-left-radius: 7px;
 }
 
 .chat-balao p {
@@ -387,21 +350,18 @@ body.margot-chat-teclado-pronto .chat-mensagens {
     font-size: 15px;
     line-height: 1.38;
 
-    white-space:
-        pre-wrap;
+    white-space: pre-wrap;
 
-    overflow-wrap:
-        anywhere;
+    overflow-wrap: anywhere;
 }
 
-.chat-media-link {
-    display: block;
+/*
+ * A imagem deixou de ser link.
+ * Também bloqueamos drag/callout para não
+ * parecer um elemento de browser.
+ */
 
-    background: #dcdce3;
-}
-
-.chat-balao img,
-.chat-balao video {
+.chat-imagem {
     display: block;
 
     width: 100%;
@@ -413,30 +373,34 @@ body.margot-chat-teclado-pronto .chat-mensagens {
             520px
         );
 
-    border-radius: 0;
-
-    object-fit:
-        contain;
+    object-fit: contain;
 
     background: #111111;
+
+    user-select: none;
+
+    -webkit-user-select: none;
+
+    -webkit-user-drag: none;
+
+    -webkit-touch-callout: none;
 }
 
-.chat-video-abrir {
+.chat-video {
     display: block;
 
-    padding:
-        7px
-        11px
-        2px;
+    width: 100%;
+    height: auto;
 
-    color: inherit;
+    max-height:
+        min(
+            58dvh,
+            520px
+        );
 
-    font-size: 11px;
-    font-weight: 700;
+    object-fit: contain;
 
-    text-align: right;
-
-    text-decoration: none;
+    background: #111111;
 }
 
 .chat-balao footer {
@@ -477,20 +441,10 @@ body.margot-chat-teclado-pronto .chat-mensagens {
 .chat-lida {
     font-size: 11px;
 
-    letter-spacing:
-        -2px;
+    letter-spacing: -2px;
 }
 
-/*
- * COMPOSITOR
- *
- * Fica SEMPRE fixed.
- *
- * A única propriedade animada durante
- * a abertura/fecho do teclado é transform.
- *
- * Isto evita layout/reflow a cada frame.
- */
+/* COMPOSITOR */
 
 .chat-form {
     position: fixed;
@@ -500,11 +454,7 @@ body.margot-chat-teclado-pronto .chat-mensagens {
 
     z-index: 2000;
 
-    width:
-        min(
-            100%,
-            820px
-        );
+    width: min(100%, 820px);
 
     padding:
         7px
@@ -524,26 +474,18 @@ body.margot-chat-teclado-pronto .chat-mensagens {
             0
         );
 
-    transform-origin:
-        center bottom;
+    transform-origin: center bottom;
 
     transition:
         transform
-        var(
-            --chat-teclado-duracao
-        )
-        var(
-            --chat-teclado-easing
-        );
+        var(--chat-teclado-duracao)
+        var(--chat-teclado-easing);
 
-    will-change:
-        transform;
+    will-change: transform;
 
-    -webkit-backface-visibility:
-        hidden;
+    -webkit-backface-visibility: hidden;
 
-    backface-visibility:
-        hidden;
+    backface-visibility: hidden;
 
     border-top:
         1px solid
@@ -555,11 +497,9 @@ body.margot-chat-teclado-pronto .chat-mensagens {
         );
 
     /*
-     * Sem backdrop-filter no elemento
-     * que está fisicamente em movimento.
-     *
-     * Evita trabalho pesado do WebKit
-     * durante a animação.
+     * Sem backdrop-filter aqui.
+     * É um elemento que se move e o blur
+     * custa demasiado durante a animação.
      */
 
     background:
@@ -572,11 +512,7 @@ body.margot-chat-teclado-pronto .chat-mensagens {
 }
 
 /*
- * Só transform.
- *
- * Não bottom.
- * Não padding.
- * Não height.
+ * Só transform GPU.
  */
 
 body.margot-chat-teclado-aberto .chat-form {
@@ -636,15 +572,9 @@ body.margot-chat-teclado-aberto .chat-form {
     gap: 4px;
 
     transition:
-        border-color
-        160ms
-        ease,
-        background
-        160ms
-        ease,
-        box-shadow
-        160ms
-        ease;
+        border-color 160ms ease,
+        background 160ms ease,
+        box-shadow 160ms ease;
 }
 
 .chat-form:focus-within .chat-compositor {
@@ -686,9 +616,7 @@ body.margot-chat-teclado-aberto .chat-form {
         );
 }
 
-/*
- * BOTÃO +
- */
+/* + */
 
 .chat-anexar {
     flex: 0 0 40px;
@@ -706,10 +634,7 @@ body.margot-chat-teclado-aberto .chat-form {
             0.10
         );
 
-    color:
-        var(
-            --margot-roxo
-        );
+    color: var(--margot-roxo);
 
     cursor: pointer;
 
@@ -717,17 +642,12 @@ body.margot-chat-teclado-aberto .chat-form {
     place-items: center;
 
     transition:
-        transform
-        120ms
-        ease,
-        background
-        150ms
-        ease;
+        transform 120ms ease,
+        background 150ms ease;
 }
 
 .chat-anexar:active {
-    transform:
-        scale(0.90);
+    transform: scale(0.90);
 
     background:
         rgba(
@@ -749,9 +669,7 @@ body.margot-chat-teclado-aberto .chat-form {
     stroke-linecap: round;
 }
 
-/*
- * TEXTAREA
- */
+/* TEXTAREA */
 
 .chat-compositor textarea {
     flex: 1;
@@ -767,14 +685,12 @@ body.margot-chat-teclado-aberto .chat-form {
 
     resize: none;
 
-    overflow-y:
-        auto;
+    overflow-y: auto;
 
     border: 0;
     outline: 0;
 
-    background:
-        transparent;
+    background: transparent;
 
     color: #18181c;
 
@@ -783,10 +699,7 @@ body.margot-chat-teclado-aberto .chat-form {
     font-size: 16px;
     line-height: 20px;
 
-    caret-color:
-        var(
-            --margot-roxo
-        );
+    caret-color: var(--margot-roxo);
 }
 
 .chat-compositor textarea::placeholder {
@@ -795,9 +708,7 @@ body.margot-chat-teclado-aberto .chat-form {
     opacity: 1;
 }
 
-/*
- * ENVIAR
- */
+/* ENVIAR */
 
 .chat-compositor button {
     flex: 0 0 auto;
@@ -812,8 +723,7 @@ body.margot-chat-teclado-aberto .chat-form {
 
     border-radius: 20px;
 
-    background:
-        transparent;
+    background: transparent;
 
     color: #a7a7af;
 
@@ -824,24 +734,14 @@ body.margot-chat-teclado-aberto .chat-form {
 
     cursor: default;
 
-    transform:
-        scale(0.94);
+    transform: scale(0.94);
 
     transition:
         transform
         150ms
-        cubic-bezier(
-            .2,
-            .8,
-            .2,
-            1
-        ),
-        background
-        160ms
-        ease,
-        color
-        160ms
-        ease;
+        cubic-bezier(.2, .8, .2, 1),
+        background 160ms ease,
+        color 160ms ease;
 }
 
 .chat-compositor button.ativo {
@@ -856,22 +756,18 @@ body.margot-chat-teclado-aberto .chat-form {
 
     cursor: pointer;
 
-    transform:
-        scale(1);
+    transform: scale(1);
 }
 
 .chat-compositor button.ativo:active {
-    transform:
-        scale(0.91);
+    transform: scale(0.91);
 }
 
 .chat-compositor button:disabled {
     opacity: 1;
 }
 
-/*
- * PREVIEW
- */
+/* PREVIEW */
 
 .chat-media-preview {
     position: relative;
@@ -894,12 +790,7 @@ body.margot-chat-teclado-aberto .chat-form {
     animation:
         chatPreviewEntrar
         180ms
-        cubic-bezier(
-            .2,
-            .8,
-            .2,
-            1
-        );
+        cubic-bezier(.2, .8, .2, 1);
 }
 
 @keyframes chatPreviewEntrar {
@@ -912,9 +803,7 @@ body.margot-chat-teclado-aberto .chat-form {
                 6px,
                 0
             )
-            scale(
-                0.97
-            );
+            scale(0.97);
     }
 
     to {
@@ -926,9 +815,7 @@ body.margot-chat-teclado-aberto .chat-form {
                 0,
                 0
             )
-            scale(
-                1
-            );
+            scale(1);
     }
 }
 
@@ -982,9 +869,7 @@ body.margot-chat-teclado-aberto .chat-form {
     font-size: 12px;
 }
 
-/*
- * DESKTOP
- */
+/* DESKTOP */
 
 @media (min-width: 700px) {
     .chat-pagina {

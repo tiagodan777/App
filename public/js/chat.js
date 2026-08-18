@@ -66,15 +66,10 @@
         );
 
     var ultimoId = 0;
-
     var previewUrl = null;
-
     var aEnviar = false;
-
     var ativo = true;
-
     var aFixarNoFim = true;
-
     var temporizadoresScroll = [];
 
     function eIOSNativo() {
@@ -209,9 +204,7 @@
         forcar
     ) {
         $contexto
-            .find(
-                'img'
-            )
+            .find('img')
             .each(
                 function () {
                     var imagem =
@@ -240,9 +233,7 @@
             );
 
         $contexto
-            .find(
-                'video'
-            )
+            .find('video')
             .each(
                 function () {
                     var video =
@@ -272,19 +263,40 @@
             );
     }
 
+    function cancelarScrollInicial() {
+        temporizadoresScroll
+            .forEach(
+                function (
+                    temporizadorScroll
+                ) {
+                    window
+                        .clearTimeout(
+                            temporizadorScroll
+                        );
+                }
+            );
+
+        temporizadoresScroll = [];
+    }
+
     function prepararScrollInicial() {
         acompanharMedia(
             $mensagens,
             false
         );
 
+        /*
+         * Sem timers a 900/1600 ms.
+         *
+         * Podiam coincidir com a abertura
+         * do teclado e provocar stutter.
+         */
+
         [
             0,
-            60,
+            70,
             180,
-            420,
-            900,
-            1600
+            360
         ].forEach(
             function (
                 atraso
@@ -305,23 +317,7 @@
         );
     }
 
-    /*
-     * TECLADO
-     *
-     * A regra é simples:
-     *
-     * keyboardWillShow:
-     * apenas inicia o transform do compositor.
-     *
-     * keyboardDidShow:
-     * só depois alteramos o layout das mensagens.
-     *
-     * keyboardWillHide:
-     * apenas inicia o transform de regresso.
-     *
-     * keyboardDidHide:
-     * só depois retiramos o espaço extra.
-     */
+    /* TECLADO */
 
     function tecladoVaiAbrir(
         info
@@ -331,6 +327,13 @@
         ) {
             return;
         }
+
+        /*
+         * Impede timers antigos de mexerem
+         * no scroll durante a animação.
+         */
+
+        cancelarScrollInicial();
 
         var altura =
             Math.max(
@@ -351,6 +354,11 @@
                 altura +
                 'px'
             );
+
+        /*
+         * Daqui até keyboardDidShow:
+         * apenas transform no compositor.
+         */
 
         document.body
             .classList
@@ -392,13 +400,6 @@
                 );
         }
 
-        /*
-         * Só agora alteramos padding.
-         *
-         * O teclado já acabou a animação,
-         * por isso não provoca frames perdidos.
-         */
-
         document.body
             .classList
             .add(
@@ -426,11 +427,7 @@
         }
 
         /*
-         * Mantemos teclado-pronto enquanto
-         * o teclado desce.
-         *
-         * Assim não fazemos qualquer alteração
-         * de layout durante a animação.
+         * Apenas compositor desce.
          */
 
         document.body
@@ -485,7 +482,7 @@
         }
 
         /*
-         * NUNCA alterar resize mode aqui.
+         * Nunca alterar resize mode.
          */
 
         if (
@@ -511,7 +508,7 @@
         if (
             typeof teclado
                 .addListener !==
-                'function'
+            'function'
         ) {
             return;
         }
@@ -622,9 +619,7 @@
         }
     }
 
-    /*
-     * CRIAR MENSAGEM
-     */
+    /* CRIAR MENSAGEM */
 
     function criarMensagem(
         mensagem
@@ -658,13 +653,23 @@
                     'chat-balao'
             });
 
+        /*
+         * IMAGEM
+         *
+         * NÃO é um <a>.
+         * Não abre Safari nem um URL.
+         */
+
         if (
             mensagem.tipo ===
                 'imagem' &&
             mensagem.media_url
         ) {
-            var $imagem =
+            $balao.append(
                 $('<img>', {
+                    class:
+                        'chat-imagem',
+
                     src:
                         mensagem
                             .media_url,
@@ -678,28 +683,20 @@
                         ),
 
                     loading:
-                        'lazy'
-                });
+                        'lazy',
 
-            $balao.append(
-                $('<a>', {
-                    href:
-                        mensagem
-                            .media_url,
-
-                    target:
-                        '_blank',
-
-                    rel:
-                        'noopener',
-
-                    class:
-                        'chat-media-link'
-                }).append(
-                    $imagem
-                )
+                    draggable:
+                        false
+                })
             );
         }
+
+        /*
+         * VÍDEO
+         *
+         * O próprio player é suficiente.
+         * Também não criamos link externo.
+         */
 
         if (
             mensagem.tipo ===
@@ -708,6 +705,9 @@
         ) {
             var $video =
                 $('<video>', {
+                    class:
+                        'chat-video',
+
                     controls:
                         true,
 
@@ -732,24 +732,7 @@
             );
 
             $balao.append(
-                $video,
-
-                $('<a>', {
-                    href:
-                        mensagem
-                            .media_url,
-
-                    target:
-                        '_blank',
-
-                    rel:
-                        'noopener',
-
-                    class:
-                        'chat-video-abrir'
-                }).text(
-                    'Abrir vídeo'
-                )
+                $video
             );
         }
 
@@ -764,19 +747,18 @@
         }
 
         var $rodape =
-            $('<footer>')
-                .append(
-                    $('<time>', {
-                        datetime:
-                            mensagem
-                                .criada_em
-                    }).text(
-                        dataLocal(
-                            mensagem
-                                .criada_em
-                        )
+            $('<footer>').append(
+                $('<time>', {
+                    datetime:
+                        mensagem
+                            .criada_em
+                }).text(
+                    dataLocal(
+                        mensagem
+                            .criada_em
                     )
-                );
+                )
+            );
 
         if (
             eMinha
@@ -798,13 +780,11 @@
             );
         }
 
-        return $artigo
-            .append(
-                $balao
-                    .append(
-                        $rodape
-                    )
-            );
+        return $artigo.append(
+            $balao.append(
+                $rodape
+            )
+        );
     }
 
     function adicionarMensagem(
@@ -862,9 +842,7 @@
         return true;
     }
 
-    /*
-     * ESTADO DO BOTÃO ENVIAR
-     */
+    /* BOTÃO ENVIAR */
 
     function temConteudoParaEnviar() {
         return Boolean(
@@ -907,9 +885,7 @@
         }
     }
 
-    /*
-     * MEDIA
-     */
+    /* MEDIA */
 
     function limparMedia() {
         if (
@@ -1041,7 +1017,10 @@
                         previewUrl,
 
                     alt:
-                        'Pré-visualização'
+                        'Pré-visualização',
+
+                    draggable:
+                        false
                 });
 
         $preview
@@ -1069,9 +1048,7 @@
         atualizarEstadoEnviar();
     }
 
-    /*
-     * WEBSOCKET
-     */
+    /* WEBSOCKET */
 
     function publicarMensagem(
         mensagemId
@@ -1097,9 +1074,7 @@
             });
     }
 
-    /*
-     * ENVIAR
-     */
+    /* ENVIAR */
 
     async function enviarMensagem(
         evento
@@ -1198,9 +1173,7 @@
         }
     }
 
-    /*
-     * LIDAS
-     */
+    /* LIDAS */
 
     async function marcarComoLidas() {
         if (
@@ -1258,9 +1231,7 @@
         }
     }
 
-    /*
-     * POLLING
-     */
+    /* NOVAS MENSAGENS */
 
     async function procurarNovasMensagens() {
         try {
@@ -1372,9 +1343,7 @@
             );
     }
 
-    /*
-     * ESTADO INICIAL
-     */
+    /* ESTADO INICIAL */
 
     $mensagens
         .find(
@@ -1417,9 +1386,7 @@
 
     prepararScrollInicial();
 
-    /*
-     * EVENTOS
-     */
+    /* EVENTOS */
 
     $mensagens.on(
         'pointerdown.margotChatScroll touchstart.margotChatScroll wheel.margotChatScroll',
@@ -1613,9 +1580,7 @@
                 5000
             );
 
-    /*
-     * CLEANUP
-     */
+    /* CLEANUP */
 
     function desativarChat() {
         if (
@@ -1632,19 +1597,7 @@
                 temporizador
             );
 
-        temporizadoresScroll
-            .forEach(
-                function (
-                    temporizadorScroll
-                ) {
-                    window
-                        .clearTimeout(
-                            temporizadorScroll
-                        );
-                }
-            );
-
-        temporizadoresScroll = [];
+        cancelarScrollInicial();
 
         $mensagens
             .off(
