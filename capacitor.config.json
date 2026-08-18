@@ -9,6 +9,9 @@
   "plugins": {
     "PushNotifications": {
       "presentationOptions": []
+    },
+    "Keyboard": {
+      "resize": "none"
     }
   }
 }

@@ -51,51 +51,127 @@
     }
 
     async function prepararTecladoNativo() {
-        if (!teclado) return;
+    if (!teclado) return;
 
-        if (eIOSNativo() && typeof teclado.setAccessoryBarVisible === 'function') {
-            try {
-                await teclado.setAccessoryBarVisible({ isVisible: false });
-            } catch (erro) {
-                console.warn('Não foi possível ocultar a barra auxiliar do teclado.', erro);
-            }
-        }
-
-        if (typeof teclado.addListener !== 'function') return;
-
+    if (
+        eIOSNativo() &&
+        typeof teclado.setResizeMode === 'function'
+    ) {
         try {
-            tecladoListeners.push(
-                await teclado.addListener('keyboardWillShow', function () {
-                    definirTecladoAberto(true);
-                })
-            );
-
-            tecladoListeners.push(
-                await teclado.addListener('keyboardWillHide', function () {
-                    definirTecladoAberto(false);
-                })
-            );
+            await teclado.setResizeMode({
+                mode: 'native'
+            });
         } catch (erro) {
-            console.warn('Não foi possível acompanhar o teclado nativo.', erro);
+            console.warn(
+                'Não foi possível configurar o teclado do chat.',
+                erro
+            );
         }
     }
+
+    if (
+        eIOSNativo() &&
+        typeof teclado.setAccessoryBarVisible === 'function'
+    ) {
+        try {
+            await teclado.setAccessoryBarVisible({
+                isVisible: false
+            });
+        } catch (erro) {
+            console.warn(
+                'Não foi possível ocultar a barra auxiliar do teclado.',
+                erro
+            );
+        }
+    }
+
+    if (
+        typeof teclado.addListener !==
+        'function'
+    ) {
+        return;
+    }
+
+    try {
+        tecladoListeners.push(
+            await teclado.addListener(
+                'keyboardWillShow',
+                function () {
+                    definirTecladoAberto(true);
+                }
+            )
+        );
+
+        tecladoListeners.push(
+            await teclado.addListener(
+                'keyboardWillHide',
+                function () {
+                    definirTecladoAberto(false);
+                }
+            )
+        );
+    } catch (erro) {
+        console.warn(
+            'Não foi possível acompanhar o teclado nativo.',
+            erro
+        );
+    }
+}
 
     async function restaurarTecladoNativo() {
-        var listeners = tecladoListeners.slice();
-        tecladoListeners = [];
+    var listeners =
+        tecladoListeners.slice();
 
-        listeners.forEach(function (listener) {
-            if (listener && typeof listener.remove === 'function') {
-                Promise.resolve(listener.remove()).catch(function () {});
+    tecladoListeners = [];
+
+    listeners.forEach(
+        function (listener) {
+            if (
+                listener &&
+                typeof listener.remove ===
+                'function'
+            ) {
+                Promise
+                    .resolve(
+                        listener.remove()
+                    )
+                    .catch(
+                        function () {}
+                    );
             }
-        });
-
-        if (teclado && eIOSNativo() && typeof teclado.setAccessoryBarVisible === 'function') {
-            try {
-                await teclado.setAccessoryBarVisible({ isVisible: true });
-            } catch (erro) {}
         }
+    );
+
+    if (!teclado || !eIOSNativo()) {
+        return;
     }
+
+    if (
+        typeof teclado
+            .setAccessoryBarVisible ===
+        'function'
+    ) {
+        try {
+            await teclado
+                .setAccessoryBarVisible({
+                    isVisible: true
+                });
+        } catch (erro) {}
+    }
+
+    if (
+        typeof teclado
+            .setResizeMode ===
+        'function'
+    ) {
+        try {
+            await teclado
+                .setResizeMode({
+                    mode: 'none'
+                });
+        } catch (erro) {}
+    }
+}
 
     function baseUrl() {
         return String(window.messagesUrl || '/messages').replace(/\/+$/, '');
