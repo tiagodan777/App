@@ -3,6 +3,7 @@
 :root {
     --margot-roxo: #7657ff;
     --margot-azul: #438bff;
+    --margot-vermelho: #e12346;
 }
 
 html,
@@ -18,19 +19,26 @@ body {
 .mensagens-pagina {
     position: absolute;
     inset: 0;
+
     width: min(100%, 760px);
     height: 100%;
     min-height: 0;
+
     margin: 0 auto;
+
     padding:
         calc(env(safe-area-inset-top, 0px) + 48px)
         18px
         calc(110px + env(safe-area-inset-bottom, 0px));
+
     overflow-x: hidden;
     overflow-y: auto;
+
     overscroll-behavior-y: contain;
     -webkit-overflow-scrolling: touch;
 }
+
+/* CABEÇALHO */
 
 .mensagens-cabecalho {
     margin-bottom: 24px;
@@ -42,31 +50,57 @@ body {
 
 .mensagens-cabecalho h1 {
     margin: 0;
+
     color: #111111;
+
     font-size: clamp(32px, 8vw, 48px);
     line-height: 1;
 }
 
+/* LISTA */
+
 .conversas-lista {
     overflow: hidden;
+
     border: 1px solid rgba(0, 0, 0, 0.06);
     border-radius: 28px;
+
     background: rgba(255, 255, 255, 0.88);
-    box-shadow: 0 18px 55px rgba(22, 22, 36, 0.08);
+
+    box-shadow:
+        0 18px 55px rgba(22, 22, 36, 0.08);
 }
 
 .conversa-item {
+    position: relative;
+
     min-height: 86px;
+
     padding: 12px 14px;
+
     color: #15151a;
+
     text-decoration: none;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+
+    border-bottom:
+        1px solid
+        rgba(0, 0, 0, 0.06);
+
     display: flex;
     align-items: center;
     gap: 13px;
+
+    touch-action: pan-y;
+
+    user-select: none;
+
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+
     transition:
-        background 160ms ease,
-        transform 160ms ease;
+        background 150ms ease,
+        transform 150ms cubic-bezier(.2, .8, .2, 1);
 }
 
 .conversa-item:last-child {
@@ -75,75 +109,133 @@ body {
 
 .conversa-item:active {
     background: #f0eff8;
+
     transform: scale(0.995);
+}
+
+/*
+ * Feedback subtil enquanto o utilizador
+ * está a manter o dedo na conversa.
+ */
+
+.conversa-item.conversa-a-premir {
+    background:
+        rgba(
+            118,
+            87,
+            255,
+            0.075
+        );
+
+    transform:
+        scale(0.987);
 }
 
 .conversa-item > img {
     flex: 0 0 58px;
+
     width: 58px;
     height: 58px;
+
     border-radius: 50%;
+
     object-fit: cover;
+
     background: #e8e8ec;
+
+    pointer-events: none;
 }
 
 .conversa-conteudo {
     min-width: 0;
+
     flex: 1;
+
     display: flex;
     flex-direction: column;
+
     gap: 5px;
+
+    pointer-events: none;
 }
 
 .conversa-conteudo strong {
     overflow: hidden;
+
     font-size: 15px;
+
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 .conversa-resumo {
     overflow: hidden;
+
     color: #777780;
+
     font-size: 13px;
+
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 .conversa-meta {
     flex: 0 0 auto;
+
     min-width: 44px;
+
     align-self: stretch;
+
     display: flex;
     flex-direction: column;
     align-items: flex-end;
     justify-content: center;
+
     gap: 8px;
+
+    pointer-events: none;
 }
 
 .conversa-meta time {
     color: #9999a1;
+
     font-size: 11px;
 }
 
 .conversa-nao-lidas {
     min-width: 21px;
     height: 21px;
+
     padding: 0 6px;
+
     border-radius: 999px;
-    background: linear-gradient(135deg, var(--margot-roxo), var(--margot-azul));
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--margot-roxo),
+            var(--margot-azul)
+        );
+
     color: #ffffff;
+
     font-size: 11px;
     font-weight: 800;
     line-height: 21px;
     text-align: center;
 }
 
+/* VAZIO */
+
 .conversas-vazio {
     min-height: 360px;
+
     padding: 45px 24px;
+
     color: #777780;
+
     text-align: center;
+
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -153,35 +245,311 @@ body {
 .conversas-vazio > span {
     width: 72px;
     height: 72px;
+
     margin-bottom: 18px;
+
     border-radius: 24px;
+
     background: #efedf9;
+
     font-size: 30px;
+
     display: grid;
     place-items: center;
 }
 
 .conversas-vazio h2 {
     margin: 0 0 8px;
+
     color: #18181c;
+
     font-size: 20px;
 }
 
 .conversas-vazio p {
     max-width: 280px;
+
     margin: 0;
+
     font-size: 14px;
     line-height: 1.5;
 }
 
 .conversas-erro {
     margin: 16px;
+
     color: #c32638;
+
     text-align: center;
+}
+
+/* =========================================================
+   ACTION SHEET
+   ========================================================= */
+
+.conversa-acoes {
+    position: fixed;
+
+    top: auto;
+    right: 10px;
+    bottom:
+        max(
+            10px,
+            env(safe-area-inset-bottom, 0px)
+        );
+    left: 10px;
+
+    z-index: 5000;
+
+    width: auto;
+    max-width: 520px;
+
+    margin:
+        auto
+        auto
+        max(
+            10px,
+            env(safe-area-inset-bottom, 0px)
+        );
+
+    padding: 0;
+
+    overflow: visible;
+
+    border: 0;
+
+    background: transparent;
+
+    color: #18181c;
+}
+
+.conversa-acoes:not([open]) {
+    display: none;
+}
+
+.conversa-acoes::backdrop {
+    background:
+        rgba(
+            14,
+            14,
+            20,
+            0.34
+        );
+
+    -webkit-backdrop-filter:
+        blur(8px);
+
+    backdrop-filter:
+        blur(8px);
+}
+
+.conversa-acoes[open] {
+    animation:
+        conversaSheetEntrar
+        260ms
+        cubic-bezier(.22, 1, .36, 1);
+}
+
+@keyframes conversaSheetEntrar {
+    from {
+        opacity: 0;
+
+        transform:
+            translate3d(
+                0,
+                32px,
+                0
+            )
+            scale(0.985);
+    }
+
+    to {
+        opacity: 1;
+
+        transform:
+            translate3d(
+                0,
+                0,
+                0
+            )
+            scale(1);
+    }
+}
+
+.conversa-acoes-caixa {
+    overflow: hidden;
+
+    border:
+        1px solid
+        rgba(
+            255,
+            255,
+            255,
+            0.55
+        );
+
+    border-radius: 27px;
+
+    background:
+        rgba(
+            249,
+            249,
+            251,
+            0.96
+        );
+
+    -webkit-backdrop-filter:
+        blur(28px)
+        saturate(180%);
+
+    backdrop-filter:
+        blur(28px)
+        saturate(180%);
+
+    box-shadow:
+        0
+        25px
+        70px
+        rgba(
+            10,
+            10,
+            20,
+            0.22
+        );
+}
+
+.conversa-acoes-cabecalho {
+    min-height: 72px;
+
+    padding: 15px 18px 13px;
+
+    border-bottom:
+        1px solid
+        rgba(
+            0,
+            0,
+            0,
+            0.065
+        );
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    gap: 3px;
+}
+
+.conversa-acoes-cabecalho strong {
+    color: #18181c;
+
+    font-size: 15px;
+    font-weight: 800;
+}
+
+.conversa-acoes-cabecalho span {
+    max-width: 100%;
+
+    overflow: hidden;
+
+    color: #85858e;
+
+    font-size: 12px;
+
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.conversa-acao {
+    width: 100%;
+    min-height: 68px;
+
+    padding: 11px 18px;
+
+    border: 0;
+    border-bottom:
+        1px solid
+        rgba(
+            0,
+            0,
+            0,
+            0.065
+        );
+
+    background: transparent;
+
+    color: #18181c;
+
+    text-align: left;
+
+    appearance: none;
+    -webkit-appearance: none;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+
+    gap: 3px;
+
+    transition:
+        background 120ms ease,
+        opacity 120ms ease;
+}
+
+.conversa-acao:active {
+    background:
+        rgba(
+            0,
+            0,
+            0,
+            0.055
+        );
+}
+
+.conversa-acao:disabled {
+    opacity: 0.4;
+}
+
+.conversa-acao strong {
+    font-size: 15px;
+    font-weight: 760;
+}
+
+.conversa-acao span {
+    color: #8a8a93;
+
+    font-size: 12px;
+    line-height: 1.3;
+}
+
+.conversa-acao-perigosa strong {
+    color: var(--margot-vermelho);
+}
+
+.conversa-acao-cancelar {
+    min-height: 58px;
+
+    border-bottom: 0;
+
+    color: var(--margot-roxo);
+
+    font-size: 15px;
+    font-weight: 800;
+
+    text-align: center;
+
+    align-items: center;
 }
 
 @media (min-width: 700px) {
     .mensagens-pagina {
-        padding-top: calc(env(safe-area-inset-top, 0px) + 58px);
+        padding-top:
+            calc(
+                env(
+                    safe-area-inset-top,
+                    0px
+                ) +
+                58px
+            );
     }
 }
