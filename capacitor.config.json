@@ -11,7 +11,8 @@
       "presentationOptions": []
     },
     "Keyboard": {
-      "resize": "none"
+      "resize": "none",
+      "autoBackdropColor": "dom"
     }
   }
 }

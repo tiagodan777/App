@@ -53,21 +53,10 @@
     async function prepararTecladoNativo() {
     if (!teclado) return;
 
-    if (
-        eIOSNativo() &&
-        typeof teclado.setResizeMode === 'function'
-    ) {
-        try {
-            await teclado.setResizeMode({
-                mode: 'native'
-            });
-        } catch (erro) {
-            console.warn(
-                'Não foi possível configurar o teclado do chat.',
-                erro
-            );
-        }
-    }
+    /*
+     * NÃO alteramos o resize mode.
+     * A app inteira permanece sempre em "none".
+     */
 
     if (
         eIOSNativo() &&
@@ -85,10 +74,7 @@
         }
     }
 
-    if (
-        typeof teclado.addListener !==
-        'function'
-    ) {
+    if (typeof teclado.addListener !== 'function') {
         return;
     }
 
@@ -96,8 +82,13 @@
         tecladoListeners.push(
             await teclado.addListener(
                 'keyboardWillShow',
-                function () {
+                function (info) {
                     definirTecladoAberto(true);
+
+                    document.documentElement.style.setProperty(
+                        '--margot-keyboard-height',
+                        Math.max(0, Number(info.keyboardHeight) || 0) + 'px'
+                    );
                 }
             )
         );
@@ -107,6 +98,11 @@
                 'keyboardWillHide',
                 function () {
                     definirTecladoAberto(false);
+
+                    document.documentElement.style.setProperty(
+                        '--margot-keyboard-height',
+                        '0px'
+                    );
                 }
             )
         );
@@ -119,56 +115,35 @@
 }
 
     async function restaurarTecladoNativo() {
-    var listeners =
-        tecladoListeners.slice();
+    var listeners = tecladoListeners.slice();
 
     tecladoListeners = [];
 
-    listeners.forEach(
-        function (listener) {
-            if (
-                listener &&
-                typeof listener.remove ===
-                'function'
-            ) {
-                Promise
-                    .resolve(
-                        listener.remove()
-                    )
-                    .catch(
-                        function () {}
-                    );
-            }
+    listeners.forEach(function (listener) {
+        if (
+            listener &&
+            typeof listener.remove === 'function'
+        ) {
+            Promise
+                .resolve(listener.remove())
+                .catch(function () {});
         }
+    });
+
+    document.documentElement.style.setProperty(
+        '--margot-keyboard-height',
+        '0px'
     );
 
-    if (!teclado || !eIOSNativo()) {
-        return;
-    }
-
     if (
-        typeof teclado
-            .setAccessoryBarVisible ===
-        'function'
+        teclado &&
+        eIOSNativo() &&
+        typeof teclado.setAccessoryBarVisible === 'function'
     ) {
         try {
-            await teclado
-                .setAccessoryBarVisible({
-                    isVisible: true
-                });
-        } catch (erro) {}
-    }
-
-    if (
-        typeof teclado
-            .setResizeMode ===
-        'function'
-    ) {
-        try {
-            await teclado
-                .setResizeMode({
-                    mode: 'none'
-                });
+            await teclado.setAccessoryBarVisible({
+                isVisible: true
+            });
         } catch (erro) {}
     }
 }
