@@ -3,68 +3,32 @@
 :root {
     --margot-roxo: #7657ff;
     --margot-azul: #438bff;
-
     --margot-keyboard-height: 0px;
-
     --chat-compositor-altura: 66px;
-
-    /*
-     * Valores medidos diretamente na gravação
-     * do teclado deste iPhone.
-     */
-
     --chat-teclado-abrir-duracao: 294ms;
-
-    --chat-teclado-abrir-easing:
-        cubic-bezier(
-            .303,
-            .886,
-            .436,
-            .976
-        );
-
+    --chat-teclado-abrir-easing: cubic-bezier(.303, .886, .436, .976);
     --chat-teclado-fechar-duracao: 313ms;
-
-    --chat-teclado-fechar-easing:
-        cubic-bezier(
-            .335,
-            .884,
-            .381,
-            .961
-        );
+    --chat-teclado-fechar-easing: cubic-bezier(.335, .884, .381, .961);
 }
 
 html,
 body {
     width: 100%;
     height: 100%;
-
     overflow: hidden;
-
     background: #ffffff;
 }
-
-/* PÁGINA */
 
 .chat-pagina {
     position: relative;
-
     width: min(100%, 820px);
     height: 100dvh;
     min-height: 100%;
-
     margin: 0 auto;
-
     background: #ffffff;
-
     display: flex;
     flex-direction: column;
 }
-
-/*
- * Dentro de um chat, o menu principal
- * e o botão dos Heys ficam sempre escondidos.
- */
 
 body:has(#chat-pagina) #menuPrincipal,
 body:has(#chat-pagina) #abrir-heys {
@@ -75,40 +39,18 @@ body:has(#chat-pagina) #abrir-heys {
 @media all and (display-mode: standalone) {
     html:has(#chat-pagina) {
         width: 100%;
-
-        height:
-            calc(
-                100% +
-                env(
-                    safe-area-inset-top,
-                    0px
-                )
-            );
-
-        min-height:
-            calc(
-                100% +
-                env(
-                    safe-area-inset-top,
-                    0px
-                )
-            );
-
+        height: calc(100% + env(safe-area-inset-top, 0px));
+        min-height: calc(100% + env(safe-area-inset-top, 0px));
         overflow: hidden !important;
-
         background: #ffffff;
     }
 
     body:has(#chat-pagina) {
         position: relative;
-
         width: 100%;
         height: 100%;
-
         min-height: 0;
-
         overflow: hidden !important;
-
         background: #ffffff;
     }
 
@@ -118,70 +60,32 @@ body:has(#chat-pagina) #abrir-heys {
     }
 }
 
-/* CABEÇALHO */
-
 .chat-cabecalho {
     position: relative;
-
     z-index: 20;
-
     flex: 0 0 auto;
-
     min-height: 72px;
-
     padding:
-        calc(
-            env(
-                safe-area-inset-top,
-                0px
-            ) +
-            8px
-        )
+        calc(env(safe-area-inset-top, 0px) + 8px)
         14px
         8px;
-
-    border-bottom:
-        1px solid
-        rgba(
-            0,
-            0,
-            0,
-            0.07
-        );
-
-    background:
-        rgba(
-            255,
-            255,
-            255,
-            0.88
-        );
-
-    -webkit-backdrop-filter:
-        blur(22px);
-
-    backdrop-filter:
-        blur(22px);
-
+    border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+    background: rgba(255, 255, 255, 0.88);
+    -webkit-backdrop-filter: blur(22px);
+    backdrop-filter: blur(22px);
     display: flex;
     align-items: center;
-
     gap: 10px;
 }
 
 .chat-voltar {
     flex: 0 0 42px;
-
     width: 42px;
     height: 42px;
-
     border-radius: 50%;
-
     color: #18181c;
-
     display: grid;
     place-items: center;
-
     transition:
         transform 120ms ease,
         background 140ms ease;
@@ -189,22 +93,13 @@ body:has(#chat-pagina) #abrir-heys {
 
 .chat-voltar:active {
     transform: scale(0.92);
-
-    background:
-        rgba(
-            0,
-            0,
-            0,
-            0.05
-        );
+    background: rgba(0, 0, 0, 0.05);
 }
 
 .chat-voltar svg {
     width: 24px;
     height: 24px;
-
     fill: none;
-
     stroke: currentColor;
     stroke-width: 2;
     stroke-linecap: round;
@@ -213,82 +108,57 @@ body:has(#chat-pagina) #abrir-heys {
 
 .chat-pessoa {
     min-width: 0;
-
     color: #18181c;
-
     text-decoration: none;
-
     display: flex;
     align-items: center;
-
     gap: 10px;
 }
 
 .chat-pessoa > img {
     flex: 0 0 46px;
-
     width: 46px;
     height: 46px;
-
     border-radius: 50%;
-
     object-fit: cover;
-
     background: #e5e5e9;
 }
 
 .chat-pessoa > span {
     min-width: 0;
-
     display: flex;
     flex-direction: column;
-
     gap: 2px;
 }
 
 .chat-pessoa strong {
     overflow: hidden;
-
     font-size: 15px;
-
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 .chat-pessoa small {
     color: #92929a;
-
     font-size: 11px;
 }
 
-/* MENSAGENS */
-
 .chat-mensagens {
     flex: 1 1 auto;
-
     min-height: 0;
-
     padding:
         18px
         13px
         calc(
-            var(
-                --chat-compositor-altura
-            ) +
-            env(
-                safe-area-inset-bottom,
-                0px
-            ) +
+            var(--chat-compositor-altura) +
+            env(safe-area-inset-bottom, 0px) +
             16px
         );
-
     overflow-x: hidden;
     overflow-y: auto;
-
+    overflow-anchor: none;
     overscroll-behavior: contain;
-
     -webkit-overflow-scrolling: touch;
-
     scrollbar-width: none;
 }
 
@@ -296,30 +166,18 @@ body:has(#chat-pagina) #abrir-heys {
     display: none;
 }
 
-/*
- * Este espaço só é aplicado depois de
- * keyboardDidShow, não durante a animação.
- */
-
 body.margot-chat-teclado-pronto .chat-mensagens {
     padding-bottom:
         calc(
-            var(
-                --margot-keyboard-height,
-                0px
-            ) +
-            var(
-                --chat-compositor-altura
-            ) +
+            var(--margot-keyboard-height, 0px) +
+            var(--chat-compositor-altura) +
             12px
         );
 }
 
 .chat-mensagem {
     width: 100%;
-
     margin: 7px 0;
-
     display: flex;
 }
 
@@ -333,26 +191,19 @@ body.margot-chat-teclado-pronto .chat-mensagens {
 
 .chat-balao {
     max-width: min(78%, 520px);
-
     overflow: hidden;
-
     border-radius: 22px;
-
     background: #ececf1;
-
     color: #18181c;
 }
 
 .chat-mensagem.minha .chat-balao {
-    background:
-        linear-gradient(
-            145deg,
-            var(--margot-roxo),
-            var(--margot-azul)
-        );
-
+    background: linear-gradient(
+        145deg,
+        var(--margot-roxo),
+        var(--margot-azul)
+    );
     color: #ffffff;
-
     border-bottom-right-radius: 7px;
 }
 
@@ -362,49 +213,26 @@ body.margot-chat-teclado-pronto .chat-mensagens {
 
 .chat-balao p {
     margin: 0;
-
-    padding:
-        10px
-        13px
-        5px;
-
+    padding: 10px 13px 5px;
     font-size: 15px;
     line-height: 1.38;
-
     white-space: pre-wrap;
-
     overflow-wrap: anywhere;
 }
 
-/*
- * A fotografia não é um link.
- *
- * O !important é necessário porque o style.css
- * global aplica border-radius: 50% a todas
- * as imagens.
- */
-
 .chat-balao > .chat-imagem {
     display: block;
-
     width: 100% !important;
     max-width: 100% !important;
-
     height: auto !important;
     max-height: min(58dvh, 520px);
-
     margin: 0;
-
     border: 0 !important;
     border-radius: 0 !important;
-
     object-fit: contain;
     object-position: center;
-
     background: #111111;
-
     vertical-align: middle;
-
     user-select: none;
     -webkit-user-select: none;
     -webkit-user-drag: none;
@@ -413,168 +241,72 @@ body.margot-chat-teclado-pronto .chat-mensagens {
 
 .chat-video {
     display: block;
-
     width: 100% !important;
     max-width: 100% !important;
-
     height: auto !important;
     max-height: min(58dvh, 520px);
-
     margin: 0;
-
     border: 0 !important;
     border-radius: 0 !important;
-
     object-fit: contain;
-
     background: #111111;
 }
 
 .chat-balao footer {
     min-height: 22px;
-
-    padding:
-        3px
-        10px
-        6px;
-
-    color:
-        rgba(
-            40,
-            40,
-            46,
-            0.56
-        );
-
+    padding: 3px 10px 6px;
+    color: rgba(40, 40, 46, 0.56);
     font-size: 10px;
-
     display: flex;
     align-items: center;
     justify-content: flex-end;
-
     gap: 4px;
 }
 
 .chat-mensagem.minha footer {
-    color:
-        rgba(
-            255,
-            255,
-            255,
-            0.76
-        );
+    color: rgba(255, 255, 255, 0.76);
 }
 
 .chat-lida {
     font-size: 11px;
-
     letter-spacing: -2px;
 }
 
-/* COMPOSITOR */
-
 .chat-form {
     position: fixed;
-
     left: 50%;
     bottom: 0;
-
     z-index: 2000;
-
     width: min(100%, 820px);
-
     padding:
         7px
         10px
         calc(
             7px +
-            env(
-                safe-area-inset-bottom,
-                0px
-            )
+            env(safe-area-inset-bottom, 0px)
         );
-
-    transform:
-        translate3d(
-            -50%,
-            0,
-            0
-        );
-
+    transform: translate3d(-50%, 0, 0);
     transform-origin: center bottom;
-
-    /*
-     * Esta é a animação usada quando a classe
-     * é retirada e o teclado está a fechar.
-     */
-
     transition-property: transform;
-
-    transition-duration:
-        var(
-            --chat-teclado-fechar-duracao
-        );
-
-    transition-timing-function:
-        var(
-            --chat-teclado-fechar-easing
-        );
-
+    transition-duration: var(--chat-teclado-fechar-duracao);
+    transition-timing-function: var(--chat-teclado-fechar-easing);
     transition-delay: 0ms;
-
     will-change: transform;
-
     -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
-
-    border-top:
-        1px solid
-        rgba(
-            0,
-            0,
-            0,
-            0.055
-        );
-
-    /*
-     * Sem backdrop-filter no elemento móvel.
-     * Evita recomposição cara durante o movimento.
-     */
-
-    background:
-        rgba(
-            255,
-            255,
-            255,
-            0.985
-        );
+    border-top: 1px solid rgba(0, 0, 0, 0.055);
+    background: rgba(255, 255, 255, 0.985);
 }
 
-/*
- * Ao adicionar esta classe, a animação passa
- * a usar os valores medidos para a abertura.
- */
-
 body.margot-chat-teclado-aberto .chat-form {
-    transition-duration:
-        var(
-            --chat-teclado-abrir-duracao
-        );
-
-    transition-timing-function:
-        var(
-            --chat-teclado-abrir-easing
-        );
-
+    transition-duration: var(--chat-teclado-abrir-duracao);
+    transition-timing-function: var(--chat-teclado-abrir-easing);
     transform:
         translate3d(
             -50%,
             calc(
                 -1 *
-                var(
-                    --margot-keyboard-height,
-                    0px
-                )
+                var(--margot-keyboard-height, 0px)
             ),
             0
         );
@@ -582,45 +314,15 @@ body.margot-chat-teclado-aberto .chat-form {
 
 .chat-compositor {
     min-height: 50px;
-
     padding: 4px;
-
-    border:
-        1px solid
-        rgba(
-            60,
-            60,
-            67,
-            0.16
-        );
-
+    border: 1px solid rgba(60, 60, 67, 0.16);
     border-radius: 25px;
-
-    background:
-        rgba(
-            246,
-            246,
-            248,
-            0.98
-        );
-
+    background: rgba(246, 246, 248, 0.98);
     box-shadow:
-        inset
-        0
-        1px
-        0
-        rgba(
-            255,
-            255,
-            255,
-            0.86
-        );
-
+        inset 0 1px 0 rgba(255, 255, 255, 0.86);
     display: flex;
     align-items: flex-end;
-
     gap: 4px;
-
     transition:
         border-color 160ms ease,
         background 160ms ease,
@@ -628,69 +330,23 @@ body.margot-chat-teclado-aberto .chat-form {
 }
 
 .chat-form:focus-within .chat-compositor {
-    border-color:
-        rgba(
-            118,
-            87,
-            255,
-            0.30
-        );
-
-    background:
-        rgba(
-            249,
-            249,
-            251,
-            0.99
-        );
-
+    border-color: rgba(118, 87, 255, 0.30);
+    background: rgba(249, 249, 251, 0.99);
     box-shadow:
-        inset
-        0
-        1px
-        0
-        rgba(
-            255,
-            255,
-            255,
-            0.92
-        ),
-        0
-        2px
-        12px
-        rgba(
-            90,
-            75,
-            200,
-            0.07
-        );
+        inset 0 1px 0 rgba(255, 255, 255, 0.92),
+        0 2px 12px rgba(90, 75, 200, 0.07);
 }
-
-/* BOTÃO + */
 
 .chat-anexar {
     flex: 0 0 40px;
-
     width: 40px;
     height: 40px;
-
     border-radius: 50%;
-
-    background:
-        rgba(
-            118,
-            87,
-            255,
-            0.10
-        );
-
+    background: rgba(118, 87, 255, 0.10);
     color: var(--margot-roxo);
-
     cursor: pointer;
-
     display: grid;
     place-items: center;
-
     transition:
         transform 120ms ease,
         background 150ms ease;
@@ -698,114 +354,68 @@ body.margot-chat-teclado-aberto .chat-form {
 
 .chat-anexar:active {
     transform: scale(0.90);
-
-    background:
-        rgba(
-            118,
-            87,
-            255,
-            0.17
-        );
+    background: rgba(118, 87, 255, 0.17);
 }
 
 .chat-anexar svg {
     width: 22px;
     height: 22px;
-
     fill: none;
-
     stroke: currentColor;
     stroke-width: 2;
     stroke-linecap: round;
 }
 
-/* TEXTAREA */
-
 .chat-compositor textarea {
     flex: 1;
-
     min-width: 0;
     min-height: 40px;
-
     max-height: 120px;
-
-    padding:
-        10px
-        7px;
-
+    padding: 10px 7px;
     resize: none;
-
     overflow-y: auto;
-
     border: 0;
     outline: 0;
-
     background: transparent;
-
     color: #18181c;
-
     font: inherit;
-
     font-size: 16px;
     line-height: 20px;
-
     caret-color: var(--margot-roxo);
 }
 
 .chat-compositor textarea::placeholder {
     color: #96969e;
-
     opacity: 1;
 }
 
-/* ENVIAR */
-
 .chat-compositor button {
     flex: 0 0 auto;
-
     min-height: 40px;
-
-    padding:
-        0
-        14px;
-
+    padding: 0 14px;
     border: 0;
-
     border-radius: 20px;
-
     background: transparent;
-
     color: #a7a7af;
-
     font: inherit;
-
     font-size: 15px;
     font-weight: 800;
-
     cursor: default;
-
     transform: scale(0.94);
-
     transition:
-        transform
-        150ms
-        cubic-bezier(.2, .8, .2, 1),
+        transform 150ms cubic-bezier(.2, .8, .2, 1),
         background 160ms ease,
         color 160ms ease;
 }
 
 .chat-compositor button.ativo {
-    background:
-        linear-gradient(
-            135deg,
-            var(--margot-roxo),
-            var(--margot-azul)
-        );
-
+    background: linear-gradient(
+        135deg,
+        var(--margot-roxo),
+        var(--margot-azul)
+    );
     color: #ffffff;
-
     cursor: pointer;
-
     transform: scale(1);
 }
 
@@ -817,26 +427,14 @@ body.margot-chat-teclado-aberto .chat-form {
     opacity: 1;
 }
 
-/* PREVIEW */
-
 .chat-media-preview {
     position: relative;
-
     width: 92px;
     height: 92px;
-
-    margin:
-        0
-        0
-        8px
-        8px;
-
+    margin: 0 0 8px 8px;
     overflow: hidden;
-
     border-radius: 18px;
-
     background: #e8e8ee;
-
     animation:
         chatPreviewEntrar
         180ms
@@ -846,25 +444,15 @@ body.margot-chat-teclado-aberto .chat-form {
 @keyframes chatPreviewEntrar {
     from {
         opacity: 0;
-
         transform:
-            translate3d(
-                0,
-                6px,
-                0
-            )
+            translate3d(0, 6px, 0)
             scale(0.97);
     }
 
     to {
         opacity: 1;
-
         transform:
-            translate3d(
-                0,
-                0,
-                0
-            )
+            translate3d(0, 0, 0)
             scale(1);
     }
 }
@@ -873,77 +461,38 @@ body.margot-chat-teclado-aberto .chat-form {
 .chat-media-preview video {
     width: 100% !important;
     height: 100% !important;
-
     border-radius: 0 !important;
-
     object-fit: cover;
 }
 
 .chat-media-remover {
     position: absolute;
-
     top: 5px;
     right: 5px;
-
     width: 28px;
     height: 28px;
-
     padding: 0;
-
     border: 0;
-
     border-radius: 50%;
-
-    background:
-        rgba(
-            20,
-            20,
-            24,
-            0.78
-        );
-
+    background: rgba(20, 20, 24, 0.78);
     color: #ffffff;
-
     font-size: 18px;
     line-height: 28px;
 }
 
 .chat-erro {
-    margin:
-        7px
-        12px
-        0;
-
+    margin: 7px 12px 0;
     color: #c32638;
-
     font-size: 12px;
 }
-
-/* DESKTOP */
 
 @media (min-width: 700px) {
     .chat-pagina {
         margin-top: 12px;
-
-        height:
-            calc(
-                100dvh -
-                24px
-            );
-
+        height: calc(100dvh - 24px);
         border-radius: 30px;
-
         box-shadow:
-            0
-            22px
-            70px
-            rgba(
-                20,
-                20,
-                35,
-                0.12
-            );
-
+            0 22px 70px rgba(20, 20, 35, 0.12);
         overflow: hidden;
     }
 

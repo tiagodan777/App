@@ -1,29 +1,14 @@
 (function (window, document, $) {
     'use strict';
 
-    var $pagina =
-        $('#chat-pagina');
-
-    var $mensagens =
-        $('#chat-mensagens');
-
-    var $form =
-        $('#chat-form');
-
-    var $texto =
-        $('#chat-texto');
-
-    var $media =
-        $('#chat-media');
-
-    var $preview =
-        $('#chat-media-preview');
-
-    var $erro =
-        $('#chat-erro');
-
-    var $enviar =
-        $('#chat-enviar');
+    var $pagina = $('#chat-pagina');
+    var $mensagens = $('#chat-mensagens');
+    var $form = $('#chat-form');
+    var $texto = $('#chat-texto');
+    var $media = $('#chat-media');
+    var $preview = $('#chat-media-preview');
+    var $erro = $('#chat-erro');
+    var $enviar = $('#chat-enviar');
 
     if (
         !$pagina.length ||
@@ -34,12 +19,10 @@
     }
 
     if (
-        typeof window
-            .desativarChatMargot ===
+        typeof window.desativarChatMargot ===
         'function'
     ) {
-        window
-            .desativarChatMargot();
+        window.desativarChatMargot();
     }
 
     var capacitor =
@@ -49,18 +32,14 @@
     var teclado =
         capacitor &&
         capacitor.Plugins
-            ? capacitor
-                .Plugins
-                .Keyboard
+            ? capacitor.Plugins.Keyboard
             : null;
 
     var tecladoListeners = [];
 
     var outroId =
         String(
-            $pagina.attr(
-                'data-outro-id'
-            ) ||
+            $pagina.attr('data-outro-id') ||
             window.chatMembroId ||
             ''
         );
@@ -72,19 +51,36 @@
     var aFixarNoFim = true;
     var temporizadoresScroll = [];
 
+    var animacaoScrollTeclado = null;
+    var aumentoScrollTeclado = 0;
+    var ancorarScrollTeclado = false;
+    var destinoScrollFecho = null;
+
+    var curvaAbrirTeclado =
+        criarCurvaBezier(
+            0.303,
+            0.886,
+            0.436,
+            0.976
+        );
+
+    var curvaFecharTeclado =
+        criarCurvaBezier(
+            0.335,
+            0.884,
+            0.381,
+            0.961
+        );
+
     function eIOSNativo() {
         return Boolean(
             capacitor &&
-            typeof capacitor
-                .isNativePlatform ===
+            typeof capacitor.isNativePlatform ===
                 'function' &&
-            capacitor
-                .isNativePlatform() &&
-            typeof capacitor
-                .getPlatform ===
+            capacitor.isNativePlatform() &&
+            typeof capacitor.getPlatform ===
                 'function' &&
-            capacitor
-                .getPlatform() ===
+            capacitor.getPlatform() ===
                 'ios'
         );
     }
@@ -109,9 +105,7 @@
         );
     }
 
-    function dataLocal(
-        valor
-    ) {
+    function dataLocal(valor) {
         var texto =
             String(
                 valor ||
@@ -125,9 +119,7 @@
                     'T'
                 ) +
                 (
-                    texto.includes(
-                        'Z'
-                    )
+                    texto.includes('Z')
                         ? ''
                         : 'Z'
                 )
@@ -141,22 +133,16 @@
             return '';
         }
 
-        return data
-            .toLocaleTimeString(
-                'pt-PT',
-                {
-                    hour:
-                        '2-digit',
-
-                    minute:
-                        '2-digit'
-                }
-            );
+        return data.toLocaleTimeString(
+            'pt-PT',
+            {
+                hour: '2-digit',
+                minute: '2-digit'
+            }
+        );
     }
 
-    function minha(
-        mensagem
-    ) {
+    function minha(mensagem) {
         return (
             String(
                 mensagem.emissor_id
@@ -165,6 +151,121 @@
                 window.membroId
             )
         );
+    }
+
+    function amostraBezier(
+        tempo,
+        ponto1,
+        ponto2
+    ) {
+        return (
+            (
+                (
+                    1 -
+                    3 * ponto2 +
+                    3 * ponto1
+                ) *
+                tempo +
+                (
+                    3 * ponto2 -
+                    6 * ponto1
+                )
+            ) *
+            tempo *
+            tempo +
+            3 *
+            ponto1 *
+            tempo
+        );
+    }
+
+    function derivadaBezier(
+        tempo,
+        ponto1,
+        ponto2
+    ) {
+        return (
+            3 *
+            (
+                1 -
+                3 * ponto2 +
+                3 * ponto1
+            ) *
+            tempo *
+            tempo +
+            2 *
+            (
+                3 * ponto2 -
+                6 * ponto1
+            ) *
+            tempo +
+            3 *
+            ponto1
+        );
+    }
+
+    function criarCurvaBezier(
+        x1,
+        y1,
+        x2,
+        y2
+    ) {
+        return function (
+            progresso
+        ) {
+            var tempo =
+                progresso;
+
+            for (
+                var tentativa = 0;
+                tentativa < 6;
+                tentativa += 1
+            ) {
+                var diferenca =
+                    amostraBezier(
+                        tempo,
+                        x1,
+                        x2
+                    ) -
+                    progresso;
+
+                var derivada =
+                    derivadaBezier(
+                        tempo,
+                        x1,
+                        x2
+                    );
+
+                if (
+                    Math.abs(
+                        derivada
+                    ) <
+                    0.000001
+                ) {
+                    break;
+                }
+
+                tempo =
+                    tempo -
+                    diferenca /
+                    derivada;
+
+                tempo =
+                    Math.max(
+                        0,
+                        Math.min(
+                            1,
+                            tempo
+                        )
+                    );
+            }
+
+            return amostraBezier(
+                tempo,
+                y1,
+                y2
+            );
+        };
     }
 
     function deslocarParaFim(
@@ -181,21 +282,143 @@
             return;
         }
 
-        window
-            .requestAnimationFrame(
-                function () {
-                    if (
-                        !ativo ||
-                        !$mensagens[0]
-                    ) {
-                        return;
-                    }
-
-                    $mensagens[0]
-                        .scrollTop =
-                        $mensagens[0]
-                            .scrollHeight;
+        window.requestAnimationFrame(
+            function () {
+                if (
+                    !ativo ||
+                    !$mensagens[0]
+                ) {
+                    return;
                 }
+
+                $mensagens[0].scrollTop =
+                    $mensagens[0]
+                        .scrollHeight;
+            }
+        );
+    }
+
+    function cancelarAnimacaoScrollTeclado() {
+        if (
+            animacaoScrollTeclado !==
+            null
+        ) {
+            window.cancelAnimationFrame(
+                animacaoScrollTeclado
+            );
+
+            animacaoScrollTeclado =
+                null;
+        }
+    }
+
+    function animarScrollAte(
+        destino,
+        duracao,
+        curva
+    ) {
+        cancelarAnimacaoScrollTeclado();
+
+        var elemento =
+            $mensagens[0];
+
+        if (
+            !ativo ||
+            !elemento
+        ) {
+            return;
+        }
+
+        var maximo =
+            Math.max(
+                0,
+                elemento.scrollHeight -
+                elemento.clientHeight
+            );
+
+        destino =
+            Math.max(
+                0,
+                Math.min(
+                    destino,
+                    maximo
+                )
+            );
+
+        var origem =
+            elemento.scrollTop;
+
+        var diferenca =
+            destino -
+            origem;
+
+        if (
+            Math.abs(
+                diferenca
+            ) <
+            0.5
+        ) {
+            elemento.scrollTop =
+                destino;
+
+            return;
+        }
+
+        var inicio =
+            window.performance.now();
+
+        function animar(
+            agora
+        ) {
+            if (
+                !ativo ||
+                !$mensagens[0]
+            ) {
+                animacaoScrollTeclado =
+                    null;
+
+                return;
+            }
+
+            var progresso =
+                Math.min(
+                    1,
+                    (
+                        agora -
+                        inicio
+                    ) /
+                    duracao
+                );
+
+            elemento.scrollTop =
+                origem +
+                diferenca *
+                curva(
+                    progresso
+                );
+
+            if (
+                progresso <
+                1
+            ) {
+                animacaoScrollTeclado =
+                    window.requestAnimationFrame(
+                        animar
+                    );
+
+                return;
+            }
+
+            elemento.scrollTop =
+                destino;
+
+            animacaoScrollTeclado =
+                null;
+        }
+
+        animacaoScrollTeclado =
+            window.requestAnimationFrame(
+                animar
             );
     }
 
@@ -264,17 +487,15 @@
     }
 
     function cancelarScrollInicial() {
-        temporizadoresScroll
-            .forEach(
-                function (
+        temporizadoresScroll.forEach(
+            function (
+                temporizadorScroll
+            ) {
+                window.clearTimeout(
                     temporizadorScroll
-                ) {
-                    window
-                        .clearTimeout(
-                            temporizadorScroll
-                        );
-                }
-            );
+                );
+            }
+        );
 
         temporizadoresScroll = [];
     }
@@ -285,13 +506,6 @@
             false
         );
 
-        /*
-         * Sem timers a 900/1600 ms.
-         *
-         * Podiam coincidir com a abertura
-         * do teclado e provocar stutter.
-         */
-
         [
             0,
             70,
@@ -301,44 +515,39 @@
             function (
                 atraso
             ) {
-                temporizadoresScroll
-                    .push(
-                        window
-                            .setTimeout(
-                                function () {
-                                    deslocarParaFim(
-                                        false
-                                    );
-                                },
-                                atraso
-                            )
-                    );
+                temporizadoresScroll.push(
+                    window.setTimeout(
+                        function () {
+                            deslocarParaFim(
+                                false
+                            );
+                        },
+                        atraso
+                    )
+                );
             }
         );
     }
-
-    /* TECLADO */
 
     function tecladoVaiAbrir(
         info
     ) {
         if (
-            !ativo
+            !ativo ||
+            !$mensagens[0]
         ) {
             return;
         }
 
-        /*
-         * Impede timers antigos de mexerem
-         * no scroll durante a animação.
-         */
-
         cancelarScrollInicial();
+        cancelarAnimacaoScrollTeclado();
+
+        var elemento =
+            $mensagens[0];
 
         var altura =
             Math.max(
                 0,
-
                 Number(
                     info &&
                     info.keyboardHeight
@@ -346,40 +555,89 @@
                 0
             );
 
-        document
-            .documentElement
-            .style
-            .setProperty(
-                '--margot-keyboard-height',
-                altura +
-                'px'
+        var distanciaAoFim =
+            Math.max(
+                0,
+                elemento.scrollHeight -
+                elemento.clientHeight -
+                elemento.scrollTop
             );
 
-        /*
-         * Daqui até keyboardDidShow:
-         * apenas transform no compositor.
-         */
+        ancorarScrollTeclado =
+            aFixarNoFim ||
+            distanciaAoFim <
+            96;
 
-        document.body
-            .classList
-            .add(
-                'margot-chat-teclado-aberto'
+        var alturaScrollAntes =
+            elemento.scrollHeight;
+
+        document.documentElement.style.setProperty(
+            '--margot-keyboard-height',
+            altura + 'px'
+        );
+
+        document.body.classList.add(
+            'margot-chat-teclado-pronto'
+        );
+
+        aumentoScrollTeclado =
+            Math.max(
+                0,
+                elemento.scrollHeight -
+                alturaScrollAntes
             );
+
+        destinoScrollFecho =
+            null;
+
+        document.body.classList.add(
+            'margot-chat-teclado-aberto'
+        );
+
+        if (
+            !ancorarScrollTeclado
+        ) {
+            return;
+        }
+
+        window.requestAnimationFrame(
+            function () {
+                if (
+                    !ativo ||
+                    !$mensagens[0]
+                ) {
+                    return;
+                }
+
+                animarScrollAte(
+                    Math.max(
+                        0,
+                        elemento.scrollHeight -
+                        elemento.clientHeight
+                    ),
+                    294,
+                    curvaAbrirTeclado
+                );
+            }
+        );
     }
 
     function tecladoAbriu(
         info
     ) {
         if (
-            !ativo
+            !ativo ||
+            !$mensagens[0]
         ) {
             return;
         }
 
+        var elemento =
+            $mensagens[0];
+
         var altura =
             Math.max(
                 0,
-
                 Number(
                     info &&
                     info.keyboardHeight
@@ -388,90 +646,137 @@
             );
 
         if (
-            altura > 0
+            altura >
+            0
         ) {
-            document
-                .documentElement
-                .style
-                .setProperty(
-                    '--margot-keyboard-height',
-                    altura +
-                    'px'
+            var alturaScrollAntes =
+                elemento.scrollHeight;
+
+            document.documentElement.style.setProperty(
+                '--margot-keyboard-height',
+                altura + 'px'
+            );
+
+            aumentoScrollTeclado +=
+                Math.max(
+                    0,
+                    elemento.scrollHeight -
+                    alturaScrollAntes
                 );
         }
 
-        document.body
-            .classList
-            .add(
-                'margot-chat-teclado-pronto'
-            );
+        if (
+            ancorarScrollTeclado
+        ) {
+            cancelarAnimacaoScrollTeclado();
 
-        aFixarNoFim =
-            true;
+            elemento.scrollTop =
+                Math.max(
+                    0,
+                    elemento.scrollHeight -
+                    elemento.clientHeight
+                );
 
-        window
-            .requestAnimationFrame(
-                function () {
-                    deslocarParaFim(
-                        true
-                    );
-                }
-            );
+            aFixarNoFim =
+                true;
+        }
     }
 
     function tecladoVaiFechar() {
         if (
-            !ativo
+            !ativo ||
+            !$mensagens[0]
         ) {
             return;
         }
 
-        /*
-         * Apenas compositor desce.
-         */
+        cancelarAnimacaoScrollTeclado();
 
-        document.body
-            .classList
-            .remove(
-                'margot-chat-teclado-aberto'
+        var elemento =
+            $mensagens[0];
+
+        document.body.classList.remove(
+            'margot-chat-teclado-aberto'
+        );
+
+        if (
+            !ancorarScrollTeclado
+        ) {
+            return;
+        }
+
+        destinoScrollFecho =
+            Math.max(
+                0,
+                elemento.scrollHeight -
+                elemento.clientHeight -
+                aumentoScrollTeclado
             );
+
+        animarScrollAte(
+            destinoScrollFecho,
+            313,
+            curvaFecharTeclado
+        );
     }
 
     function tecladoFechou() {
         if (
-            !ativo
+            !ativo ||
+            !$mensagens[0]
         ) {
             return;
         }
 
-        document.body
-            .classList
-            .remove(
-                'margot-chat-teclado-aberto'
-            );
+        var elemento =
+            $mensagens[0];
 
-        document.body
-            .classList
-            .remove(
-                'margot-chat-teclado-pronto'
-            );
+        cancelarAnimacaoScrollTeclado();
 
-        document
-            .documentElement
-            .style
-            .setProperty(
-                '--margot-keyboard-height',
-                '0px'
-            );
+        if (
+            destinoScrollFecho !==
+            null
+        ) {
+            elemento.scrollTop =
+                destinoScrollFecho;
+        }
 
-        window
-            .requestAnimationFrame(
-                function () {
-                    deslocarParaFim(
-                        false
-                    );
-                }
-            );
+        document.body.classList.remove(
+            'margot-chat-teclado-aberto'
+        );
+
+        document.body.classList.remove(
+            'margot-chat-teclado-pronto'
+        );
+
+        document.documentElement.style.setProperty(
+            '--margot-keyboard-height',
+            '0px'
+        );
+
+        if (
+            destinoScrollFecho !==
+            null
+        ) {
+            elemento.scrollTop =
+                Math.min(
+                    destinoScrollFecho,
+                    Math.max(
+                        0,
+                        elemento.scrollHeight -
+                        elemento.clientHeight
+                    )
+                );
+        }
+
+        aumentoScrollTeclado =
+            0;
+
+        ancorarScrollTeclado =
+            false;
+
+        destinoScrollFecho =
+            null;
     }
 
     async function prepararTecladoNativo() {
@@ -481,22 +786,15 @@
             return;
         }
 
-        /*
-         * Nunca alterar resize mode.
-         */
-
         if (
             eIOSNativo() &&
-            typeof teclado
-                .setAccessoryBarVisible ===
+            typeof teclado.setAccessoryBarVisible ===
                 'function'
         ) {
             try {
-                await teclado
-                    .setAccessoryBarVisible({
-                        isVisible:
-                            false
-                    });
+                await teclado.setAccessoryBarVisible({
+                    isVisible: false
+                });
             } catch (erro) {
                 console.warn(
                     'Não foi possível ocultar a barra auxiliar do teclado.',
@@ -506,8 +804,7 @@
         }
 
         if (
-            typeof teclado
-                .addListener !==
+            typeof teclado.addListener !==
             'function'
         ) {
             return;
@@ -515,35 +812,31 @@
 
         try {
             tecladoListeners.push(
-                await teclado
-                    .addListener(
-                        'keyboardWillShow',
-                        tecladoVaiAbrir
-                    )
+                await teclado.addListener(
+                    'keyboardWillShow',
+                    tecladoVaiAbrir
+                )
             );
 
             tecladoListeners.push(
-                await teclado
-                    .addListener(
-                        'keyboardDidShow',
-                        tecladoAbriu
-                    )
+                await teclado.addListener(
+                    'keyboardDidShow',
+                    tecladoAbriu
+                )
             );
 
             tecladoListeners.push(
-                await teclado
-                    .addListener(
-                        'keyboardWillHide',
-                        tecladoVaiFechar
-                    )
+                await teclado.addListener(
+                    'keyboardWillHide',
+                    tecladoVaiFechar
+                )
             );
 
             tecladoListeners.push(
-                await teclado
-                    .addListener(
-                        'keyboardDidHide',
-                        tecladoFechou
-                    )
+                await teclado.addListener(
+                    'keyboardDidHide',
+                    tecladoFechou
+                )
             );
         } catch (erro) {
             console.warn(
@@ -555,8 +848,7 @@
 
     async function restaurarTecladoNativo() {
         var listeners =
-            tecladoListeners
-                .slice();
+            tecladoListeners.slice();
 
         tecladoListeners = [];
 
@@ -566,60 +858,46 @@
             ) {
                 if (
                     listener &&
-                    typeof listener
-                        .remove ===
-                        'function'
+                    typeof listener.remove ===
+                    'function'
                 ) {
-                    Promise
-                        .resolve(
-                            listener
-                                .remove()
-                        )
-                        .catch(
-                            function () {}
-                        );
+                    Promise.resolve(
+                        listener.remove()
+                    ).catch(
+                        function () {}
+                    );
                 }
             }
         );
 
-        document.body
-            .classList
-            .remove(
-                'margot-chat-teclado-aberto'
-            );
+        cancelarAnimacaoScrollTeclado();
 
-        document.body
-            .classList
-            .remove(
-                'margot-chat-teclado-pronto'
-            );
+        document.body.classList.remove(
+            'margot-chat-teclado-aberto'
+        );
 
-        document
-            .documentElement
-            .style
-            .setProperty(
-                '--margot-keyboard-height',
-                '0px'
-            );
+        document.body.classList.remove(
+            'margot-chat-teclado-pronto'
+        );
+
+        document.documentElement.style.setProperty(
+            '--margot-keyboard-height',
+            '0px'
+        );
 
         if (
             teclado &&
             eIOSNativo() &&
-            typeof teclado
-                .setAccessoryBarVisible ===
+            typeof teclado.setAccessoryBarVisible ===
                 'function'
         ) {
             try {
-                await teclado
-                    .setAccessoryBarVisible({
-                        isVisible:
-                            true
-                    });
+                await teclado.setAccessoryBarVisible({
+                    isVisible: true
+                });
             } catch (erro) {}
         }
     }
-
-    /* CRIAR MENSAGEM */
 
     function criarMensagem(
         mensagem
@@ -643,22 +921,13 @@
                     mensagem.id,
 
                 'data-emissor-id':
-                    mensagem
-                        .emissor_id
+                    mensagem.emissor_id
             });
 
         var $balao =
             $('<div>', {
-                class:
-                    'chat-balao'
+                class: 'chat-balao'
             });
-
-        /*
-         * IMAGEM
-         *
-         * NÃO é um <a>.
-         * Não abre Safari nem um URL.
-         */
 
         if (
             mensagem.tipo ===
@@ -667,36 +936,21 @@
         ) {
             $balao.append(
                 $('<img>', {
-                    class:
-                        'chat-imagem',
-
-                    src:
-                        mensagem
-                            .media_url,
+                    class: 'chat-imagem',
+                    src: mensagem.media_url,
 
                     alt:
                         'Fotografia enviada por ' +
                         (
-                            mensagem
-                                .emissor_nome ||
+                            mensagem.emissor_nome ||
                             'utilizador'
                         ),
 
-                    loading:
-                        'lazy',
-
-                    draggable:
-                        false
+                    loading: 'lazy',
+                    draggable: false
                 })
             );
         }
-
-        /*
-         * VÍDEO
-         *
-         * O próprio player é suficiente.
-         * Também não criamos link externo.
-         */
 
         if (
             mensagem.tipo ===
@@ -705,28 +959,17 @@
         ) {
             var $video =
                 $('<video>', {
-                    class:
-                        'chat-video',
-
-                    controls:
-                        true,
-
-                    playsinline:
-                        true,
-
-                    preload:
-                        'metadata'
+                    class: 'chat-video',
+                    controls: true,
+                    playsinline: true,
+                    preload: 'metadata'
                 });
 
             $video.append(
                 $('<source>', {
-                    src:
-                        mensagem
-                            .media_url,
-
+                    src: mensagem.media_url,
                     type:
-                        mensagem
-                            .ficheiro_mime ||
+                        mensagem.ficheiro_mime ||
                         'video/mp4'
                 })
             );
@@ -750,12 +993,10 @@
             $('<footer>').append(
                 $('<time>', {
                     datetime:
-                        mensagem
-                            .criada_em
+                        mensagem.criada_em
                 }).text(
                     dataLocal(
-                        mensagem
-                            .criada_em
+                        mensagem.criada_em
                     )
                 )
             );
@@ -765,8 +1006,7 @@
         ) {
             $rodape.append(
                 $('<span>', {
-                    class:
-                        'chat-lida',
+                    class: 'chat-lida',
 
                     'aria-label':
                         mensagem.lida
@@ -799,13 +1039,11 @@
 
         if (
             !id ||
-            $mensagens
-                .find(
-                    '[data-mensagem-id="' +
-                    id +
-                    '"]'
-                )
-                .length
+            $mensagens.find(
+                '[data-mensagem-id="' +
+                id +
+                '"]'
+            ).length
         ) {
             return false;
         }
@@ -842,21 +1080,14 @@
         return true;
     }
 
-    /* BOTÃO ENVIAR */
-
     function temConteudoParaEnviar() {
         return Boolean(
-            $texto
-                .val()
-                .trim() ||
+            $texto.val().trim() ||
 
             (
                 $media[0] &&
-                $media[0]
-                    .files &&
-                $media[0]
-                    .files
-                    .length
+                $media[0].files &&
+                $media[0].files.length
             )
         );
     }
@@ -885,16 +1116,13 @@
         }
     }
 
-    /* MEDIA */
-
     function limparMedia() {
         if (
             previewUrl
         ) {
-            URL
-                .revokeObjectURL(
-                    previewUrl
-                );
+            URL.revokeObjectURL(
+                previewUrl
+            );
         }
 
         previewUrl =
@@ -918,10 +1146,9 @@
         if (
             previewUrl
         ) {
-            URL
-                .revokeObjectURL(
-                    previewUrl
-                );
+            URL.revokeObjectURL(
+                previewUrl
+            );
         }
 
         previewUrl =
@@ -950,24 +1177,14 @@
         }
 
         var eVideo =
-            ficheiro
-                .type
-                .startsWith(
-                    'video/'
-                );
+            ficheiro.type.startsWith(
+                'video/'
+            );
 
         var limite =
             eVideo
-                ? (
-                    100 *
-                    1024 *
-                    1024
-                )
-                : (
-                    15 *
-                    1024 *
-                    1024
-                );
+                ? 100 * 1024 * 1024
+                : 15 * 1024 * 1024;
 
         if (
             ficheiro.size >
@@ -992,35 +1209,22 @@
         }
 
         previewUrl =
-            URL
-                .createObjectURL(
-                    ficheiro
-                );
+            URL.createObjectURL(
+                ficheiro
+            );
 
         var $conteudo =
             eVideo
                 ? $('<video>', {
-                    src:
-                        previewUrl,
-
-                    muted:
-                        true,
-
-                    controls:
-                        true,
-
-                    playsinline:
-                        true
+                    src: previewUrl,
+                    muted: true,
+                    controls: true,
+                    playsinline: true
                 })
                 : $('<img>', {
-                    src:
-                        previewUrl,
-
-                    alt:
-                        'Pré-visualização',
-
-                    draggable:
-                        false
+                    src: previewUrl,
+                    alt: 'Pré-visualização',
+                    draggable: false
                 });
 
         $preview
@@ -1028,9 +1232,7 @@
                 $conteudo,
 
                 $('<button>', {
-                    type:
-                        'button',
-
+                    type: 'button',
                     class:
                         'chat-media-remover',
 
@@ -1048,39 +1250,26 @@
         atualizarEstadoEnviar();
     }
 
-    /* WEBSOCKET */
-
     function publicarMensagem(
         mensagemId
     ) {
         if (
-            !window
-                .AppWebSocket ||
-            !window
-                .AppWebSocket
-                .isConnected()
+            !window.AppWebSocket ||
+            !window.AppWebSocket.isConnected()
         ) {
             return;
         }
 
-        window
-            .AppWebSocket
-            .send({
-                type:
-                    'chat_publish',
-
-                message_id:
-                    mensagemId
-            });
+        window.AppWebSocket.send({
+            type: 'chat_publish',
+            message_id: mensagemId
+        });
     }
-
-    /* ENVIAR */
 
     async function enviarMensagem(
         evento
     ) {
-        evento
-            .preventDefault();
+        evento.preventDefault();
 
         if (
             aEnviar ||
@@ -1089,8 +1278,7 @@
             return;
         }
 
-        aEnviar =
-            true;
+        aEnviar = true;
 
         $enviar
             .prop(
@@ -1113,8 +1301,7 @@
                 await fetch(
                     conversaUrl(),
                     {
-                        method:
-                            'POST',
+                        method: 'POST',
 
                         body:
                             new FormData(
@@ -1127,8 +1314,7 @@
                 );
 
             var dados =
-                await resposta
-                    .json();
+                await resposta.json();
 
             if (
                 !resposta.ok ||
@@ -1173,12 +1359,9 @@
         }
     }
 
-    /* LIDAS */
-
     async function marcarComoLidas() {
         if (
-            document
-                .visibilityState ===
+            document.visibilityState ===
             'hidden'
         ) {
             return;
@@ -1196,33 +1379,22 @@
             await fetch(
                 conversaUrl(),
                 {
-                    method:
-                        'POST',
-
-                    body:
-                        corpo,
-
+                    method: 'POST',
+                    body: corpo,
                     credentials:
                         'same-origin'
                 }
             );
 
             if (
-                window
-                    .AppWebSocket &&
-                window
-                    .AppWebSocket
-                    .isConnected()
+                window.AppWebSocket &&
+                window.AppWebSocket.isConnected()
             ) {
-                window
-                    .AppWebSocket
-                    .send({
-                        type:
-                            'chat_read',
-
-                        with_member_id:
-                            outroId
-                    });
+                window.AppWebSocket.send({
+                    type: 'chat_read',
+                    with_member_id:
+                        outroId
+                });
             }
         } catch (erro) {
             console.error(
@@ -1230,8 +1402,6 @@
             );
         }
     }
-
-    /* NOVAS MENSAGENS */
 
     async function procurarNovasMensagens() {
         try {
@@ -1251,8 +1421,7 @@
                 );
 
             var dados =
-                await resposta
-                    .json();
+                await resposta.json();
 
             if (
                 !resposta.ok ||
@@ -1318,10 +1487,9 @@
                 function () {
                     if (
                         Number(
-                            $(this)
-                                .attr(
-                                    'data-mensagem-id'
-                                )
+                            $(this).attr(
+                                'data-mensagem-id'
+                            )
                         ) <=
                         Number(
                             ultimoLido
@@ -1343,8 +1511,6 @@
             );
     }
 
-    /* ESTADO INICIAL */
-
     $mensagens
         .find(
             '.chat-mensagem'
@@ -1356,10 +1522,9 @@
                         ultimoId,
 
                         Number(
-                            $(this)
-                                .attr(
-                                    'data-mensagem-id'
-                                )
+                            $(this).attr(
+                                'data-mensagem-id'
+                            )
                         ) ||
                         0
                     );
@@ -1372,26 +1537,27 @@
         )
         .each(
             function () {
-                $(this)
-                    .text(
-                        dataLocal(
-                            $(this)
-                                .attr(
-                                    'datetime'
-                                )
+                $(this).text(
+                    dataLocal(
+                        $(this).attr(
+                            'datetime'
                         )
-                    );
+                    )
+                );
             }
         );
 
     prepararScrollInicial();
 
-    /* EVENTOS */
-
     $mensagens.on(
         'pointerdown.margotChatScroll touchstart.margotChatScroll wheel.margotChatScroll',
 
         function () {
+            cancelarAnimacaoScrollTeclado();
+
+            ancorarScrollTeclado =
+                false;
+
             aFixarNoFim =
                 false;
         }
@@ -1447,13 +1613,11 @@
                     'Enter' &&
                 !evento.shiftKey
             ) {
-                evento
-                    .preventDefault();
+                evento.preventDefault();
 
-                $form
-                    .trigger(
-                        'submit'
-                    );
+                $form.trigger(
+                    'submit'
+                );
             }
         }
     );
@@ -1462,9 +1626,7 @@
         evento
     ) {
         var mensagem =
-            evento
-                .detail
-                .message;
+            evento.detail.message;
 
         if (
             !mensagem
@@ -1475,35 +1637,29 @@
         var pertence =
             (
                 String(
-                    mensagem
-                        .emissor_id
+                    mensagem.emissor_id
                 ) ===
-                    outroId &&
+                outroId &&
 
                 String(
-                    mensagem
-                        .destinatario_id
+                    mensagem.destinatario_id
                 ) ===
-                    String(
-                        window
-                            .membroId
-                    )
+                String(
+                    window.membroId
+                )
             ) ||
             (
                 String(
-                    mensagem
-                        .emissor_id
+                    mensagem.emissor_id
                 ) ===
-                    String(
-                        window
-                            .membroId
-                    ) &&
+                String(
+                    window.membroId
+                ) &&
 
                 String(
-                    mensagem
-                        .destinatario_id
+                    mensagem.destinatario_id
                 ) ===
-                    outroId
+                outroId
             );
 
         if (
@@ -1523,20 +1679,14 @@
         evento
     ) {
         atualizarConfirmacoes(
-            evento
-                .detail
-                .reader_id,
-
-            evento
-                .detail
-                .last_message_id
+            evento.detail.reader_id,
+            evento.detail.last_message_id
         );
     }
 
     function aoAlterarVisibilidade() {
         if (
-            document
-                .visibilityState ===
+            document.visibilityState ===
             'visible'
         ) {
             procurarNovasMensagens();
@@ -1544,23 +1694,20 @@
         }
     }
 
-    window
-        .addEventListener(
-            'app:chat-message',
-            aoReceberMensagem
-        );
+    window.addEventListener(
+        'app:chat-message',
+        aoReceberMensagem
+    );
 
-    window
-        .addEventListener(
-            'app:chat-messages-read',
-            aoLerMensagens
-        );
+    window.addEventListener(
+        'app:chat-messages-read',
+        aoLerMensagens
+    );
 
-    document
-        .addEventListener(
-            'visibilitychange',
-            aoAlterarVisibilidade
-        );
+    document.addEventListener(
+        'visibilitychange',
+        aoAlterarVisibilidade
+    );
 
     $('#menuPrincipal a')
         .removeClass(
@@ -1574,13 +1721,10 @@
     marcarComoLidas();
 
     var temporizador =
-        window
-            .setInterval(
-                procurarNovasMensagens,
-                5000
-            );
-
-    /* CLEANUP */
+        window.setInterval(
+            procurarNovasMensagens,
+            5000
+        );
 
     function desativarChat() {
         if (
@@ -1589,20 +1733,22 @@
             return;
         }
 
-        ativo =
-            false;
+        ativo = false;
 
-        window
-            .clearInterval(
-                temporizador
-            );
+        window.clearInterval(
+            temporizador
+        );
 
         cancelarScrollInicial();
+        cancelarAnimacaoScrollTeclado();
 
-        $mensagens
-            .off(
-                '.margotChatScroll'
-            );
+        aumentoScrollTeclado = 0;
+        ancorarScrollTeclado = false;
+        destinoScrollFecho = null;
+
+        $mensagens.off(
+            '.margotChatScroll'
+        );
 
         $mensagens
             .find(
@@ -1612,63 +1758,50 @@
                 '.margotChatScroll'
             );
 
-        document.body
-            .classList
-            .remove(
-                'margot-chat-teclado-aberto'
-            );
+        document.body.classList.remove(
+            'margot-chat-teclado-aberto'
+        );
 
-        document.body
-            .classList
-            .remove(
-                'margot-chat-teclado-pronto'
-            );
+        document.body.classList.remove(
+            'margot-chat-teclado-pronto'
+        );
 
-        document
-            .documentElement
-            .style
-            .setProperty(
-                '--margot-keyboard-height',
-                '0px'
-            );
+        document.documentElement.style.setProperty(
+            '--margot-keyboard-height',
+            '0px'
+        );
 
         restaurarTecladoNativo();
 
-        window
-            .removeEventListener(
-                'app:chat-message',
-                aoReceberMensagem
-            );
+        window.removeEventListener(
+            'app:chat-message',
+            aoReceberMensagem
+        );
 
-        window
-            .removeEventListener(
-                'app:chat-messages-read',
-                aoLerMensagens
-            );
+        window.removeEventListener(
+            'app:chat-messages-read',
+            aoLerMensagens
+        );
 
-        document
-            .removeEventListener(
-                'visibilitychange',
-                aoAlterarVisibilidade
-            );
+        document.removeEventListener(
+            'visibilitychange',
+            aoAlterarVisibilidade
+        );
 
-        document
-            .removeEventListener(
-                'margot:page-leave',
-                desativarChat
-            );
+        document.removeEventListener(
+            'margot:page-leave',
+            desativarChat
+        );
 
-        window
-            .removeEventListener(
-                'pagehide',
-                desativarChat
-            );
+        window.removeEventListener(
+            'pagehide',
+            desativarChat
+        );
 
         limparMedia();
 
         if (
-            window
-                .desativarChatMargot ===
+            window.desativarChatMargot ===
             desativarChat
         ) {
             delete window
@@ -1677,8 +1810,7 @@
 
         if (
             String(
-                window
-                    .chatMembroId ||
+                window.chatMembroId ||
                 ''
             ) ===
             outroId
@@ -1688,21 +1820,18 @@
         }
     }
 
-    window
-        .desativarChatMargot =
+    window.desativarChatMargot =
         desativarChat;
 
-    document
-        .addEventListener(
-            'margot:page-leave',
-            desativarChat
-        );
+    document.addEventListener(
+        'margot:page-leave',
+        desativarChat
+    );
 
-    window
-        .addEventListener(
-            'pagehide',
-            desativarChat
-        );
+    window.addEventListener(
+        'pagehide',
+        desativarChat
+    );
 })(
     window,
     document,
