@@ -8,15 +8,21 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="csrf-token" content="{{ csrf_token }}">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
     <link rel="manifest" href="{{ doc_root }}js/manifest.json">
+
     <title>{% block title %}Margot{% endblock %}</title>
-    <link rel="stylesheet" href="{{ doc_root }}estilos/style.css?v=15">
+
+    <link rel="stylesheet" href="{{ doc_root }}estilos/style.css?v=16">
+
     {% if session.id %}
         <link rel="stylesheet" href="{{ doc_root }}estilos/index-notificacoes.css?v=6">
         <link rel="stylesheet" href="{{ doc_root }}estilos/messaging-integration.css?v=8">
     {% endif %}
+
     {% block styles %}{% endblock %}
 </head>
+
 <body>
     <script src="{{ doc_root }}js/jquery-4.0.0.js"></script>
     <script src="{{ doc_root }}js/csrf.js?v=1"></script>
@@ -25,6 +31,7 @@
     {% if session.id %}
         <script src="{{ doc_root }}js/preferencias.js?v=2"></script>
     {% endif %}
+
     <script src="{{ doc_root }}js/push-notifications.js?v=2"></script>
 
     <div data-margot-pagina>
@@ -37,19 +44,37 @@
                 <ul>
                     <li>
                         <a href="{{ doc_root }}index" aria-label="Início">
-                            <img src="{{ doc_root }}imagens/icones-menu/home.png" alt="" aria-hidden="true" draggable="false">
+                            <img
+                                src="{{ doc_root }}imagens/icones-menu/home.png"
+                                alt=""
+                                aria-hidden="true"
+                                draggable="false"
+                            >
                         </a>
                     </li>
+
                     <li>
                         <a href="{{ doc_root }}messages" aria-label="Mensagens">
-                            <img src="{{ doc_root }}imagens/icones-menu/messages.png" alt="" aria-hidden="true" draggable="false">
+                            <img
+                                src="{{ doc_root }}imagens/icones-menu/messages.png"
+                                alt=""
+                                aria-hidden="true"
+                                draggable="false"
+                            >
                         </a>
                     </li>
+
                     <li>
                         <a href="{{ doc_root }}profile/{{ session.id }}" aria-label="Perfil">
-                            <img src="{{ doc_root }}imagens/icones-menu/user.png" alt="" aria-hidden="true" draggable="false">
+                            <img
+                                src="{{ doc_root }}imagens/icones-menu/user.png"
+                                alt=""
+                                aria-hidden="true"
+                                draggable="false"
+                            >
                         </a>
                     </li>
+
                     <li class="menu-item-invisivel">
                         <button
                             type="button"
@@ -68,6 +93,7 @@
                                 aria-hidden="true"
                                 draggable="false"
                             >
+
                             <img
                                 class="menu-invisivel-imagem menu-invisivel-imagem-invisivel"
                                 src="{{ doc_root }}imagens/icones-menu/eye-block.png?v=1"
@@ -75,7 +101,11 @@
                                 aria-hidden="true"
                                 draggable="false"
                             >
-                            <span id="alternar-invisivel-estado" class="texto-apenas-leitor">
+
+                            <span
+                                id="alternar-invisivel-estado"
+                                class="texto-apenas-leitor"
+                            >
                                 Modo invisível desativado
                             </span>
                         </button>
@@ -86,7 +116,12 @@
     {% endif %}
 
     {% if session.id %}
-        <div id="estado-ligacao" data-status="connecting" aria-hidden="true" hidden></div>
+        <div
+            id="estado-ligacao"
+            data-status="connecting"
+            aria-hidden="true"
+            hidden
+        ></div>
 
         <button
             type="button"
@@ -107,6 +142,7 @@
             <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M6.4 10.7V6.2a1.35 1.35 0 0 1 2.7 0v3.2-5a1.35 1.35 0 0 1 2.7 0v5-3.8a1.35 1.35 0 0 1 2.7 0v4.1-2.5a1.35 1.35 0 0 1 2.7 0v6.1c0 4-2.7 7.2-6.7 7.2h-.4c-2.5 0-4.5-1.1-5.8-3L1.8 14a1.45 1.45 0 0 1 2.3-1.7l2.3 2.6"></path>
             </svg>
+
             <span
                 id="heys-contador"
                 class="heys-contador"
@@ -117,7 +153,11 @@
             </span>
         </button>
 
-        <div id="heys-area" class="heys-area" aria-hidden="true">
+        <div
+            id="heys-area"
+            class="heys-area"
+            aria-hidden="true"
+        >
             <button
                 type="button"
                 id="heys-fundo"
@@ -139,6 +179,7 @@
                         <p>Atividade</p>
                         <h1 id="heys-titulo">Heys</h1>
                     </div>
+
                     <button
                         type="button"
                         id="fechar-heys"
@@ -151,7 +192,11 @@
                     </button>
                 </header>
 
-                <nav class="heys-separadores" role="tablist" aria-label="Tipo de Hey">
+                <nav
+                    class="heys-separadores"
+                    role="tablist"
+                    aria-label="Tipo de Hey"
+                >
                     <button
                         type="button"
                         id="heys-tab-recebidos"
@@ -162,6 +207,7 @@
                     >
                         Recebidos
                     </button>
+
                     <button
                         type="button"
                         id="heys-tab-enviados"
@@ -191,11 +237,19 @@
                     aria-live="polite"
                 ></div>
 
-                <div id="heys-carregando" class="heys-estado" hidden>
+                <div
+                    id="heys-carregando"
+                    class="heys-estado"
+                    hidden
+                >
                     A carregar…
                 </div>
 
-                <div id="heys-vazio" class="heys-estado" hidden>
+                <div
+                    id="heys-vazio"
+                    class="heys-estado"
+                    hidden
+                >
                     Ainda não existem Heys.
                 </div>
 
@@ -237,7 +291,7 @@
         <script src="{{ doc_root }}js/background-location.js?v=5"></script>
         <script src="{{ doc_root }}js/websocket.js?v=18"></script>
         <script src="{{ doc_root }}js/menu-invisivel.js?v=2"></script>
-        <script src="{{ doc_root }}js/javascript-geral.js?v=2"></script>
+        <script src="{{ doc_root }}js/javascript-geral.js?v=3"></script>
     {% endif %}
 </body>
 </html>
