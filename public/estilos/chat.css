@@ -4,16 +4,13 @@
     --margot-roxo: #7657ff;
     --margot-azul: #438bff;
 
-    --chat-menu-space:
-        calc(
-            88px +
-            env(
-                safe-area-inset-bottom,
-                0px
-            )
-        );
-
     --margot-keyboard-height: 0px;
+
+    --chat-compositor-altura: 66px;
+
+    --chat-animation:
+        280ms
+        cubic-bezier(.32, .72, 0, 1);
 }
 
 html,
@@ -26,22 +23,33 @@ body {
     background: #ffffff;
 }
 
-.chat-pagina {
-    width:
-        min(
-            100%,
-            820px
-        );
+/*
+ * Num chat não queremos o menu principal.
+ *
+ * Como o menu já possui a sua própria transição
+ * de opacity, ele desaparece suavemente quando
+ * o chat entra e regressa ao sair.
+ */
+body:has(#chat-pagina) #menuPrincipal {
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
 
+body:has(#chat-pagina) #abrir-heys {
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+/* PÁGINA */
+
+.chat-pagina {
+    position: relative;
+
+    width: min(100%, 820px);
     height: 100dvh;
     min-height: 100%;
 
     margin: 0 auto;
-
-    padding-bottom:
-        var(
-            --chat-menu-space
-        );
 
     background: #ffffff;
 
@@ -56,24 +64,16 @@ body {
         height:
             calc(
                 100% +
-                env(
-                    safe-area-inset-top,
-                    0px
-                )
+                env(safe-area-inset-top, 0px)
             );
 
         min-height:
             calc(
                 100% +
-                env(
-                    safe-area-inset-top,
-                    0px
-                )
+                env(safe-area-inset-top, 0px)
             );
 
-        overflow:
-            hidden
-            !important;
+        overflow: hidden !important;
 
         background: #ffffff;
     }
@@ -83,12 +83,9 @@ body {
 
         width: 100%;
         height: 100%;
-
         min-height: 0;
 
-        overflow:
-            hidden
-            !important;
+        overflow: hidden !important;
 
         background: #ffffff;
     }
@@ -102,16 +99,17 @@ body {
 /* CABEÇALHO */
 
 .chat-cabecalho {
+    position: relative;
+
+    z-index: 20;
+
     flex: 0 0 auto;
 
     min-height: 72px;
 
     padding:
         calc(
-            env(
-                safe-area-inset-top,
-                0px
-            ) +
+            env(safe-area-inset-top, 0px) +
             8px
         )
         14px
@@ -119,28 +117,16 @@ body {
 
     border-bottom:
         1px solid
-        rgba(
-            0,
-            0,
-            0,
-            0.07
-        );
+        rgba(0, 0, 0, 0.07);
 
     background:
-        rgba(
-            255,
-            255,
-            255,
-            0.88
-        );
+        rgba(255, 255, 255, 0.88);
 
     -webkit-backdrop-filter:
         blur(22px);
 
     backdrop-filter:
         blur(22px);
-
-    z-index: 5;
 
     display: flex;
     align-items: center;
@@ -160,6 +146,18 @@ body {
 
     display: grid;
     place-items: center;
+
+    transition:
+        background 140ms ease,
+        transform 120ms ease;
+}
+
+.chat-voltar:active {
+    background:
+        rgba(0, 0, 0, 0.05);
+
+    transform:
+        scale(0.92);
 }
 
 .chat-voltar svg {
@@ -234,29 +232,43 @@ body {
     padding:
         18px
         13px
-        12px;
+        calc(
+            var(--chat-compositor-altura) +
+            env(safe-area-inset-bottom, 0px) +
+            16px
+        );
 
     overflow-x: hidden;
     overflow-y: auto;
 
     overscroll-behavior: contain;
 
-    -webkit-overflow-scrolling:
-        touch;
+    -webkit-overflow-scrolling: touch;
 
     scrollbar-width: none;
+
+    transition:
+        padding-bottom
+        var(--chat-animation);
 }
 
 .chat-mensagens::-webkit-scrollbar {
     display: none;
 }
 
+body.margot-chat-teclado-aberto .chat-mensagens {
+    padding-bottom:
+        calc(
+            var(--margot-keyboard-height, 0px) +
+            var(--chat-compositor-altura) +
+            12px
+        );
+}
+
 .chat-mensagem {
     width: 100%;
 
-    margin:
-        7px
-        0;
+    margin: 7px 0;
 
     display: flex;
 }
@@ -270,11 +282,7 @@ body {
 }
 
 .chat-balao {
-    max-width:
-        min(
-            78%,
-            520px
-        );
+    max-width: min(78%, 520px);
 
     overflow: hidden;
 
@@ -295,13 +303,11 @@ body {
 
     color: #ffffff;
 
-    border-bottom-right-radius:
-        7px;
+    border-bottom-right-radius: 7px;
 }
 
 .chat-mensagem.recebida .chat-balao {
-    border-bottom-left-radius:
-        7px;
+    border-bottom-left-radius: 7px;
 }
 
 .chat-balao p {
@@ -403,52 +409,71 @@ body {
 .chat-lida {
     font-size: 11px;
 
-    letter-spacing:
-        -2px;
+    letter-spacing: -2px;
 }
 
-/* FORMULÁRIO */
+/* COMPOSITOR */
 
 .chat-form {
-    position: relative;
+    position: fixed;
 
-    z-index: 6;
+    left: 50%;
+    bottom: 0;
 
-    flex: 0 0 auto;
+    z-index: 2000;
+
+    width: min(100%, 820px);
 
     padding:
         7px
         10px
         calc(
             7px +
-            env(
-                safe-area-inset-bottom,
-                0px
-            )
+            env(safe-area-inset-bottom, 0px)
+        );
+
+    transform:
+        translate3d(
+            -50%,
+            0,
+            0
         );
 
     border-top:
         1px solid
-        rgba(
-            0,
-            0,
-            0,
-            0.06
-        );
+        rgba(0, 0, 0, 0.055);
 
     background:
-        rgba(
-            255,
-            255,
-            255,
-            0.96
-        );
+        rgba(255, 255, 255, 0.94);
 
     -webkit-backdrop-filter:
-        blur(22px);
+        blur(24px)
+        saturate(150%);
 
     backdrop-filter:
-        blur(22px);
+        blur(24px)
+        saturate(150%);
+
+    transition:
+        bottom
+            var(--chat-animation),
+        padding-bottom
+            var(--chat-animation);
+}
+
+/*
+ * O form nunca muda de relative para fixed.
+ * Só desliza verticalmente juntamente com o teclado.
+ */
+body.margot-chat-teclado-aberto .chat-form {
+    bottom:
+        var(
+            --margot-keyboard-height,
+            0px
+        );
+
+    padding-bottom:
+        7px;
 }
 
 .chat-compositor {
@@ -458,39 +483,49 @@ body {
 
     border:
         1px solid
-        rgba(
-            60,
-            60,
-            67,
-            0.16
-        );
+        rgba(60, 60, 67, 0.16);
 
     border-radius: 25px;
 
     background:
-        rgba(
-            246,
-            246,
-            248,
-            0.96
-        );
+        rgba(246, 246, 248, 0.96);
 
     box-shadow:
         inset
         0
         1px
         0
-        rgba(
-            255,
-            255,
-            255,
-            0.8
-        );
+        rgba(255, 255, 255, 0.85);
 
     display: flex;
     align-items: flex-end;
 
     gap: 4px;
+
+    transition:
+        border-color 180ms ease,
+        background 180ms ease,
+        box-shadow 180ms ease,
+        transform 180ms ease;
+}
+
+.chat-form:focus-within .chat-compositor {
+    border-color:
+        rgba(118, 87, 255, 0.32);
+
+    background:
+        rgba(249, 249, 251, 0.98);
+
+    box-shadow:
+        inset
+            0
+            1px
+            0
+            rgba(255, 255, 255, 0.9),
+        0
+            2px
+            14px
+            rgba(88, 74, 200, 0.08);
 }
 
 .chat-anexar {
@@ -502,29 +537,27 @@ body {
     border-radius: 50%;
 
     background:
-        rgba(
-            118,
-            87,
-            255,
-            0.10
-        );
+        rgba(118, 87, 255, 0.10);
 
     color:
-        var(
-            --margot-roxo
-        );
+        var(--margot-roxo);
 
     cursor: pointer;
 
     display: grid;
     place-items: center;
+
+    transition:
+        transform 140ms ease,
+        background 160ms ease;
 }
 
 .chat-anexar:active {
     transform:
-        scale(
-            0.94
-        );
+        scale(0.90);
+
+    background:
+        rgba(118, 87, 255, 0.17);
 }
 
 .chat-anexar svg {
@@ -567,9 +600,7 @@ body {
     line-height: 20px;
 
     caret-color:
-        var(
-            --margot-roxo
-        );
+        var(--margot-roxo);
 }
 
 .chat-compositor textarea::placeholder {
@@ -577,6 +608,8 @@ body {
 
     opacity: 1;
 }
+
+/* ENVIAR */
 
 .chat-compositor button {
     flex: 0 0 auto;
@@ -602,19 +635,14 @@ body {
 
     cursor: default;
 
+    transform:
+        scale(0.94);
+
     transition:
-        background
-        140ms
-        ease,
-        color
-        140ms
-        ease,
-        opacity
-        140ms
-        ease,
-        transform
-        120ms
-        ease;
+        background 180ms ease,
+        color 180ms ease,
+        transform 180ms cubic-bezier(.2, .8, .2, 1),
+        opacity 180ms ease;
 }
 
 .chat-compositor button.ativo {
@@ -628,13 +656,14 @@ body {
     color: #ffffff;
 
     cursor: pointer;
+
+    transform:
+        scale(1);
 }
 
 .chat-compositor button.ativo:active {
     transform:
-        scale(
-            0.96
-        );
+        scale(0.91);
 }
 
 .chat-compositor button:disabled {
@@ -660,6 +689,29 @@ body {
     border-radius: 18px;
 
     background: #e8e8ee;
+
+    animation:
+        chatPreviewEntrar
+        180ms
+        cubic-bezier(.2, .8, .2, 1);
+}
+
+@keyframes chatPreviewEntrar {
+    from {
+        opacity: 0;
+
+        transform:
+            translateY(7px)
+            scale(0.96);
+    }
+
+    to {
+        opacity: 1;
+
+        transform:
+            translateY(0)
+            scale(1);
+    }
 }
 
 .chat-media-preview img,
@@ -688,12 +740,7 @@ body {
     border-radius: 50%;
 
     background:
-        rgba(
-            20,
-            20,
-            24,
-            0.78
-        );
+        rgba(20, 20, 24, 0.78);
 
     color: #ffffff;
 
@@ -712,109 +759,6 @@ body {
     font-size: 12px;
 }
 
-/* TECLADO NATIVO */
-
-body.margot-chat-teclado-aberto #menuPrincipal {
-    opacity:
-        0
-        !important;
-
-    pointer-events:
-        none
-        !important;
-}
-
-body.margot-chat-teclado-aberto #abrir-heys {
-    opacity:
-        0
-        !important;
-
-    pointer-events:
-        none
-        !important;
-}
-
-body.margot-chat-teclado-aberto .chat-pagina {
-    padding-bottom: 0;
-}
-
-/*
- * resize:none mantém a WebView inteira.
- *
- * O formulário é levantado pela altura real
- * do teclado devolvida pelo Capacitor.
- */
-body.margot-chat-teclado-aberto .chat-form {
-    position: fixed;
-
-    left: 50%;
-
-    bottom:
-        var(
-            --margot-keyboard-height,
-            0px
-        );
-
-    z-index: 2000;
-
-    width:
-        min(
-            100%,
-            820px
-        );
-
-    padding:
-        7px
-        10px
-        7px;
-
-    transform:
-        translateX(
-            -50%
-        );
-
-    border-top:
-        1px solid
-        rgba(
-            0,
-            0,
-            0,
-            0.06
-        );
-
-    background:
-        rgba(
-            255,
-            255,
-            255,
-            0.96
-        );
-
-    -webkit-backdrop-filter:
-        blur(22px);
-
-    backdrop-filter:
-        blur(22px);
-}
-
-/*
- * Reserva espaço real para teclado + compositor.
- * Assim a última mensagem consegue subir até
- * ficar completamente visível.
- */
-body.margot-chat-teclado-aberto .chat-mensagens {
-    padding-bottom:
-        calc(
-            var(
-                --margot-keyboard-height,
-                0px
-            ) +
-            76px
-        );
-}
-
-/* DESKTOP / TABLET */
-
 @media (min-width: 700px) {
     .chat-pagina {
         margin-top: 12px;
@@ -831,12 +775,7 @@ body.margot-chat-teclado-aberto .chat-mensagens {
             0
             22px
             70px
-            rgba(
-                20,
-                20,
-                35,
-                0.12
-            );
+            rgba(20, 20, 35, 0.12);
 
         overflow: hidden;
     }

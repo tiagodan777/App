@@ -1,29 +1,14 @@
 (function (window, document, $) {
     'use strict';
 
-    var $pagina =
-        $('#chat-pagina');
-
-    var $mensagens =
-        $('#chat-mensagens');
-
-    var $form =
-        $('#chat-form');
-
-    var $texto =
-        $('#chat-texto');
-
-    var $media =
-        $('#chat-media');
-
-    var $preview =
-        $('#chat-media-preview');
-
-    var $erro =
-        $('#chat-erro');
-
-    var $enviar =
-        $('#chat-enviar');
+    var $pagina = $('#chat-pagina');
+    var $mensagens = $('#chat-mensagens');
+    var $form = $('#chat-form');
+    var $texto = $('#chat-texto');
+    var $media = $('#chat-media');
+    var $preview = $('#chat-media-preview');
+    var $erro = $('#chat-erro');
+    var $enviar = $('#chat-enviar');
 
     if (
         !$pagina.length ||
@@ -34,12 +19,10 @@
     }
 
     if (
-        typeof window
-            .desativarChatMargot ===
+        typeof window.desativarChatMargot ===
         'function'
     ) {
-        window
-            .desativarChatMargot();
+        window.desativarChatMargot();
     }
 
     var capacitor =
@@ -49,9 +32,7 @@
     var teclado =
         capacitor &&
         capacitor.Plugins
-            ? capacitor
-                .Plugins
-                .Keyboard
+            ? capacitor.Plugins.Keyboard
             : null;
 
     var tecladoListeners = [];
@@ -66,30 +47,21 @@
         );
 
     var ultimoId = 0;
-
     var previewUrl = null;
-
     var aEnviar = false;
-
     var ativo = true;
-
     var aFixarNoFim = true;
-
     var temporizadoresScroll = [];
 
     function eIOSNativo() {
         return Boolean(
             capacitor &&
-            typeof capacitor
-                .isNativePlatform ===
+            typeof capacitor.isNativePlatform ===
                 'function' &&
-            capacitor
-                .isNativePlatform() &&
-            typeof capacitor
-                .getPlatform ===
+            capacitor.isNativePlatform() &&
+            typeof capacitor.getPlatform ===
                 'function' &&
-            capacitor
-                .getPlatform() ===
+            capacitor.getPlatform() ===
                 'ios'
         );
     }
@@ -143,11 +115,8 @@
             : data.toLocaleTimeString(
                 'pt-PT',
                 {
-                    hour:
-                        '2-digit',
-
-                    minute:
-                        '2-digit'
+                    hour: '2-digit',
+                    minute: '2-digit'
                 }
             );
     }
@@ -175,22 +144,20 @@
             return;
         }
 
-        window
-            .requestAnimationFrame(
-                function () {
-                    if (
-                        !ativo ||
-                        !$mensagens[0]
-                    ) {
-                        return;
-                    }
-
-                    $mensagens[0]
-                        .scrollTop =
-                        $mensagens[0]
-                            .scrollHeight;
+        window.requestAnimationFrame(
+            function () {
+                if (
+                    !ativo ||
+                    !$mensagens[0]
+                ) {
+                    return;
                 }
-            );
+
+                $mensagens[0].scrollTop =
+                    $mensagens[0]
+                        .scrollHeight;
+            }
+        );
     }
 
     function acompanharMedia(
@@ -198,9 +165,7 @@
         forcar
     ) {
         $contexto
-            .find(
-                'img'
-            )
+            .find('img')
             .each(
                 function () {
                     var imagem =
@@ -216,23 +181,20 @@
                         return;
                     }
 
-                    $(imagem)
-                        .one(
-                            'load.margotChatScroll error.margotChatScroll',
+                    $(imagem).one(
+                        'load.margotChatScroll error.margotChatScroll',
 
-                            function () {
-                                deslocarParaFim(
-                                    forcar
-                                );
-                            }
-                        );
+                        function () {
+                            deslocarParaFim(
+                                forcar
+                            );
+                        }
+                    );
                 }
             );
 
         $contexto
-            .find(
-                'video'
-            )
+            .find('video')
             .each(
                 function () {
                     var video =
@@ -249,16 +211,15 @@
                         return;
                     }
 
-                    $(video)
-                        .one(
-                            'loadedmetadata.margotChatScroll error.margotChatScroll',
+                    $(video).one(
+                        'loadedmetadata.margotChatScroll error.margotChatScroll',
 
-                            function () {
-                                deslocarParaFim(
-                                    forcar
-                                );
-                            }
-                        );
+                        function () {
+                            deslocarParaFim(
+                                forcar
+                            );
+                        }
+                    );
                 }
             );
     }
@@ -280,88 +241,180 @@
             function (
                 atraso
             ) {
-                temporizadoresScroll
-                    .push(
-                        window
-                            .setTimeout(
-                                function () {
-                                    deslocarParaFim(
-                                        false
-                                    );
-                                },
-                                atraso
-                            )
-                    );
+                temporizadoresScroll.push(
+                    window.setTimeout(
+                        function () {
+                            deslocarParaFim(
+                                false
+                            );
+                        },
+                        atraso
+                    )
+                );
             }
         );
     }
 
-    function definirTecladoAberto(
-        aberto
+    /*
+     * O teclado nunca muda o tamanho da WKWebView.
+     *
+     * Limitamo-nos a guardar a altura dele e o CSS
+     * desliza o compositor juntamente com o teclado.
+     */
+    function tecladoVaiAbrir(
+        info
     ) {
-        if (!ativo) {
+        if (
+            !ativo
+        ) {
+            return;
+        }
+
+        var altura =
+            Math.max(
+                0,
+
+                Number(
+                    info &&
+                    info.keyboardHeight
+                ) ||
+                0
+            );
+
+        document
+            .documentElement
+            .style
+            .setProperty(
+                '--margot-keyboard-height',
+                altura +
+                'px'
+            );
+
+        document.body
+            .classList
+            .add(
+                'margot-chat-teclado-aberto'
+            );
+
+        aFixarNoFim =
+            true;
+
+        [
+            0,
+            80,
+            180,
+            300
+        ].forEach(
+            function (
+                atraso
+            ) {
+                window.setTimeout(
+                    function () {
+                        deslocarParaFim(
+                            true
+                        );
+                    },
+                    atraso
+                );
+            }
+        );
+    }
+
+    function tecladoAbriu(
+        info
+    ) {
+        if (
+            !ativo
+        ) {
+            return;
+        }
+
+        var altura =
+            Math.max(
+                0,
+
+                Number(
+                    info &&
+                    info.keyboardHeight
+                ) ||
+                0
+            );
+
+        if (
+            altura > 0
+        ) {
+            document
+                .documentElement
+                .style
+                .setProperty(
+                    '--margot-keyboard-height',
+                    altura +
+                    'px'
+                );
+        }
+
+        deslocarParaFim(
+            true
+        );
+    }
+
+    function tecladoVaiFechar() {
+        if (
+            !ativo
+        ) {
             return;
         }
 
         document.body
             .classList
-            .toggle(
-                'margot-chat-teclado-aberto',
-                !!aberto
+            .remove(
+                'margot-chat-teclado-aberto'
             );
 
-        $pagina
-            .toggleClass(
-                'chat-teclado-aberto',
-                !!aberto
+        document
+            .documentElement
+            .style
+            .setProperty(
+                '--margot-keyboard-height',
+                '0px'
             );
+    }
 
-        if (aberto) {
-            aFixarNoFim =
-                true;
-
-            window.setTimeout(
-                function () {
-                    deslocarParaFim(
-                        true
-                    );
-                },
-                40
-            );
-
-            window.setTimeout(
-                function () {
-                    deslocarParaFim(
-                        true
-                    );
-                },
-                180
-            );
-
-            window.setTimeout(
-                function () {
-                    deslocarParaFim(
-                        true
-                    );
-                },
-                320
-            );
+    function tecladoFechou() {
+        if (
+            !ativo
+        ) {
+            return;
         }
+
+        document.body
+            .classList
+            .remove(
+                'margot-chat-teclado-aberto'
+            );
+
+        document
+            .documentElement
+            .style
+            .setProperty(
+                '--margot-keyboard-height',
+                '0px'
+            );
+
+        deslocarParaFim(
+            false
+        );
     }
 
     async function prepararTecladoNativo() {
-        if (!teclado) {
+        if (
+            !teclado
+        ) {
             return;
         }
 
         /*
-         * Muito importante:
-         *
-         * NÃO alteramos o resize mode aqui.
-         *
-         * A aplicação inteira permanece em
-         * resize:none para a WKWebView nunca
-         * ficar presa à altura do teclado.
+         * Não usar setResizeMode aqui.
          */
 
         if (
@@ -394,66 +447,31 @@
 
         try {
             tecladoListeners.push(
-                await teclado
-                    .addListener(
-                        'keyboardWillShow',
-
-                        function (
-                            info
-                        ) {
-                            var altura =
-                                Math.max(
-                                    0,
-
-                                    Number(
-                                        info &&
-                                        info.keyboardHeight
-                                    ) ||
-                                    0
-                                );
-
-                            /*
-                             * Primeiro guardamos
-                             * a altura real.
-                             *
-                             * Só depois ligamos
-                             * a classe de teclado.
-                             */
-                            document
-                                .documentElement
-                                .style
-                                .setProperty(
-                                    '--margot-keyboard-height',
-                                    altura +
-                                    'px'
-                                );
-
-                            definirTecladoAberto(
-                                true
-                            );
-                        }
-                    )
+                await teclado.addListener(
+                    'keyboardWillShow',
+                    tecladoVaiAbrir
+                )
             );
 
             tecladoListeners.push(
-                await teclado
-                    .addListener(
-                        'keyboardWillHide',
+                await teclado.addListener(
+                    'keyboardDidShow',
+                    tecladoAbriu
+                )
+            );
 
-                        function () {
-                            definirTecladoAberto(
-                                false
-                            );
+            tecladoListeners.push(
+                await teclado.addListener(
+                    'keyboardWillHide',
+                    tecladoVaiFechar
+                )
+            );
 
-                            document
-                                .documentElement
-                                .style
-                                .setProperty(
-                                    '--margot-keyboard-height',
-                                    '0px'
-                                );
-                        }
-                    )
+            tecladoListeners.push(
+                await teclado.addListener(
+                    'keyboardDidHide',
+                    tecladoFechou
+                )
             );
         } catch (erro) {
             console.warn(
@@ -465,8 +483,7 @@
 
     async function restaurarTecladoNativo() {
         var listeners =
-            tecladoListeners
-                .slice();
+            tecladoListeners.slice();
 
         tecladoListeners = [];
 
@@ -476,14 +493,12 @@
             ) {
                 if (
                     listener &&
-                    typeof listener
-                        .remove ===
+                    typeof listener.remove ===
                         'function'
                 ) {
                     Promise
                         .resolve(
-                            listener
-                                .remove()
+                            listener.remove()
                         )
                         .catch(
                             function () {}
@@ -492,18 +507,18 @@
             }
         );
 
+        document.body
+            .classList
+            .remove(
+                'margot-chat-teclado-aberto'
+            );
+
         document
             .documentElement
             .style
             .setProperty(
                 '--margot-keyboard-height',
                 '0px'
-            );
-
-        document.body
-            .classList
-            .remove(
-                'margot-chat-teclado-aberto'
             );
 
         if (
@@ -545,8 +560,7 @@
                     mensagem.id,
 
                 'data-emissor-id':
-                    mensagem
-                        .emissor_id
+                    mensagem.emissor_id
             });
 
         var $balao =
@@ -563,14 +577,12 @@
             var $imagem =
                 $('<img>', {
                     src:
-                        mensagem
-                            .media_url,
+                        mensagem.media_url,
 
                     alt:
                         'Fotografia enviada por ' +
                         (
-                            mensagem
-                                .emissor_nome ||
+                            mensagem.emissor_nome ||
                             'utilizador'
                         ),
 
@@ -581,8 +593,7 @@
             $balao.append(
                 $('<a>', {
                     href:
-                        mensagem
-                            .media_url,
+                        mensagem.media_url,
 
                     target:
                         '_blank',
@@ -618,12 +629,10 @@
             $video.append(
                 $('<source>', {
                     src:
-                        mensagem
-                            .media_url,
+                        mensagem.media_url,
 
                     type:
-                        mensagem
-                            .ficheiro_mime ||
+                        mensagem.ficheiro_mime ||
                         'video/mp4'
                 })
             );
@@ -633,8 +642,7 @@
 
                 $('<a>', {
                     href:
-                        mensagem
-                            .media_url,
+                        mensagem.media_url,
 
                     target:
                         '_blank',
@@ -661,19 +669,16 @@
         }
 
         var $rodape =
-            $('<footer>')
-                .append(
-                    $('<time>', {
-                        datetime:
-                            mensagem
-                                .criada_em
-                    }).text(
-                        dataLocal(
-                            mensagem
-                                .criada_em
-                        )
+            $('<footer>').append(
+                $('<time>', {
+                    datetime:
+                        mensagem.criada_em
+                }).text(
+                    dataLocal(
+                        mensagem.criada_em
                     )
-                );
+                )
+            );
 
         if (
             eMinha
@@ -695,13 +700,11 @@
             );
         }
 
-        return $artigo
-            .append(
-                $balao
-                    .append(
-                        $rodape
-                    )
-            );
+        return $artigo.append(
+            $balao.append(
+                $rodape
+            )
+        );
     }
 
     function adicionarMensagem(
@@ -732,10 +735,9 @@
                 mensagem
             );
 
-        $mensagens
-            .append(
-                $novaMensagem
-            );
+        $mensagens.append(
+            $novaMensagem
+        );
 
         ultimoId =
             Math.max(
@@ -768,8 +770,7 @@
 
             (
                 $media[0] &&
-                $media[0]
-                    .files &&
+                $media[0].files &&
                 $media[0]
                     .files
                     .length
@@ -795,10 +796,9 @@
         if (
             !aEnviar
         ) {
-            $enviar
-                .text(
-                    'Enviar'
-                );
+            $enviar.text(
+                'Enviar'
+            );
         }
     }
 
@@ -806,17 +806,15 @@
         if (
             previewUrl
         ) {
-            URL
-                .revokeObjectURL(
-                    previewUrl
-                );
+            URL.revokeObjectURL(
+                previewUrl
+            );
         }
 
         previewUrl =
             null;
 
-        $media
-            .val('');
+        $media.val('');
 
         $preview
             .empty()
@@ -834,10 +832,9 @@
         if (
             previewUrl
         ) {
-            URL
-                .revokeObjectURL(
-                    previewUrl
-                );
+            URL.revokeObjectURL(
+                previewUrl
+            );
         }
 
         previewUrl =
@@ -866,31 +863,21 @@
         }
 
         var eVideo =
-            ficheiro
-                .type
+            ficheiro.type
                 .startsWith(
                     'video/'
                 );
 
         var limite =
             eVideo
-                ? (
-                    100 *
-                    1024 *
-                    1024
-                )
-                : (
-                    15 *
-                    1024 *
-                    1024
-                );
+                ? 100 * 1024 * 1024
+                : 15 * 1024 * 1024;
 
         if (
             ficheiro.size >
             limite
         ) {
-            $media
-                .val('');
+            $media.val('');
 
             $erro
                 .text(
@@ -909,10 +896,9 @@
         }
 
         previewUrl =
-            URL
-                .createObjectURL(
-                    ficheiro
-                );
+            URL.createObjectURL(
+                ficheiro
+            );
 
         var $conteudo =
             eVideo
@@ -966,31 +952,26 @@
         mensagemId
     ) {
         if (
-            !window
-                .AppWebSocket ||
-            !window
-                .AppWebSocket
+            !window.AppWebSocket ||
+            !window.AppWebSocket
                 .isConnected()
         ) {
             return;
         }
 
-        window
-            .AppWebSocket
-            .send({
-                type:
-                    'chat_publish',
+        window.AppWebSocket.send({
+            type:
+                'chat_publish',
 
-                message_id:
-                    mensagemId
-            });
+            message_id:
+                mensagemId
+        });
     }
 
     async function enviarMensagem(
         evento
     ) {
-        evento
-            .preventDefault();
+        evento.preventDefault();
 
         if (
             aEnviar ||
@@ -1037,8 +1018,7 @@
                 );
 
             var dados =
-                await resposta
-                    .json();
+                await resposta.json();
 
             if (
                 !resposta.ok ||
@@ -1085,8 +1065,7 @@
 
     async function marcarComoLidas() {
         if (
-            document
-                .visibilityState ===
+            document.visibilityState ===
             'hidden'
         ) {
             return;
@@ -1116,21 +1095,17 @@
             );
 
             if (
-                window
-                    .AppWebSocket &&
-                window
-                    .AppWebSocket
+                window.AppWebSocket &&
+                window.AppWebSocket
                     .isConnected()
             ) {
-                window
-                    .AppWebSocket
-                    .send({
-                        type:
-                            'chat_read',
+                window.AppWebSocket.send({
+                    type:
+                        'chat_read',
 
-                        with_member_id:
-                            outroId
-                    });
+                    with_member_id:
+                        outroId
+                });
             }
         } catch (erro) {
             console.error(
@@ -1157,8 +1132,7 @@
                 );
 
             var dados =
-                await resposta
-                    .json();
+                await resposta.json();
 
             if (
                 !resposta.ok ||
@@ -1224,10 +1198,9 @@
                 function () {
                     if (
                         Number(
-                            $(this)
-                                .attr(
-                                    'data-mensagem-id'
-                                )
+                            $(this).attr(
+                                'data-mensagem-id'
+                            )
                         ) <=
                         Number(
                             ultimoLido
@@ -1260,10 +1233,9 @@
                         ultimoId,
 
                         Number(
-                            $(this)
-                                .attr(
-                                    'data-mensagem-id'
-                                )
+                            $(this).attr(
+                                'data-mensagem-id'
+                            )
                         ) ||
                         0
                     );
@@ -1276,15 +1248,13 @@
         )
         .each(
             function () {
-                $(this)
-                    .text(
-                        dataLocal(
-                            $(this)
-                                .attr(
-                                    'datetime'
-                                )
+                $(this).text(
+                    dataLocal(
+                        $(this).attr(
+                            'datetime'
                         )
-                    );
+                    )
+                );
             }
         );
 
@@ -1316,9 +1286,7 @@
 
     $preview.on(
         'click',
-
         '.chat-media-remover',
-
         limparMedia
     );
 
@@ -1351,13 +1319,11 @@
                     'Enter' &&
                 !evento.shiftKey
             ) {
-                evento
-                    .preventDefault();
+                evento.preventDefault();
 
-                $form
-                    .trigger(
-                        'submit'
-                    );
+                $form.trigger(
+                    'submit'
+                );
             }
         }
     );
@@ -1366,9 +1332,7 @@
         evento
     ) {
         var mensagem =
-            evento
-                .detail
-                .message;
+            evento.detail.message;
 
         if (
             !mensagem
@@ -1379,35 +1343,29 @@
         var pertence =
             (
                 String(
-                    mensagem
-                        .emissor_id
+                    mensagem.emissor_id
                 ) ===
-                    outroId &&
+                outroId &&
 
                 String(
-                    mensagem
-                        .destinatario_id
+                    mensagem.destinatario_id
                 ) ===
-                    String(
-                        window
-                            .membroId
-                    )
+                String(
+                    window.membroId
+                )
             ) ||
             (
                 String(
-                    mensagem
-                        .emissor_id
+                    mensagem.emissor_id
                 ) ===
-                    String(
-                        window
-                            .membroId
-                    ) &&
+                String(
+                    window.membroId
+                ) &&
 
                 String(
-                    mensagem
-                        .destinatario_id
+                    mensagem.destinatario_id
                 ) ===
-                    outroId
+                outroId
             );
 
         if (
@@ -1427,20 +1385,14 @@
         evento
     ) {
         atualizarConfirmacoes(
-            evento
-                .detail
-                .reader_id,
-
-            evento
-                .detail
-                .last_message_id
+            evento.detail.reader_id,
+            evento.detail.last_message_id
         );
     }
 
     function aoAlterarVisibilidade() {
         if (
-            document
-                .visibilityState ===
+            document.visibilityState ===
             'visible'
         ) {
             procurarNovasMensagens();
@@ -1448,32 +1400,23 @@
         }
     }
 
-    window
-        .addEventListener(
-            'app:chat-message',
-            aoReceberMensagem
-        );
+    window.addEventListener(
+        'app:chat-message',
+        aoReceberMensagem
+    );
 
-    window
-        .addEventListener(
-            'app:chat-messages-read',
-            aoLerMensagens
-        );
+    window.addEventListener(
+        'app:chat-messages-read',
+        aoLerMensagens
+    );
 
-    document
-        .addEventListener(
-            'visibilitychange',
-            aoAlterarVisibilidade
-        );
+    document.addEventListener(
+        'visibilitychange',
+        aoAlterarVisibilidade
+    );
 
     $('#menuPrincipal a')
         .removeClass(
-            'active'
-        );
-
-    $('#menuPrincipal a[href*="messages"]')
-        .first()
-        .addClass(
             'active'
         );
 
@@ -1499,29 +1442,26 @@
         ativo =
             false;
 
-        window
-            .clearInterval(
-                temporizador
-            );
+        window.clearInterval(
+            temporizador
+        );
 
         temporizadoresScroll
             .forEach(
                 function (
                     temporizadorScroll
                 ) {
-                    window
-                        .clearTimeout(
-                            temporizadorScroll
-                        );
+                    window.clearTimeout(
+                        temporizadorScroll
+                    );
                 }
             );
 
         temporizadoresScroll = [];
 
-        $mensagens
-            .off(
-                '.margotChatScroll'
-            );
+        $mensagens.off(
+            '.margotChatScroll'
+        );
 
         $mensagens
             .find(
@@ -1537,8 +1477,7 @@
                 'margot-chat-teclado-aberto'
             );
 
-        document
-            .documentElement
+        document.documentElement
             .style
             .setProperty(
                 '--margot-keyboard-height',
@@ -1547,41 +1486,35 @@
 
         restaurarTecladoNativo();
 
-        window
-            .removeEventListener(
-                'app:chat-message',
-                aoReceberMensagem
-            );
+        window.removeEventListener(
+            'app:chat-message',
+            aoReceberMensagem
+        );
 
-        window
-            .removeEventListener(
-                'app:chat-messages-read',
-                aoLerMensagens
-            );
+        window.removeEventListener(
+            'app:chat-messages-read',
+            aoLerMensagens
+        );
 
-        document
-            .removeEventListener(
-                'visibilitychange',
-                aoAlterarVisibilidade
-            );
+        document.removeEventListener(
+            'visibilitychange',
+            aoAlterarVisibilidade
+        );
 
-        document
-            .removeEventListener(
-                'margot:page-leave',
-                desativarChat
-            );
+        document.removeEventListener(
+            'margot:page-leave',
+            desativarChat
+        );
 
-        window
-            .removeEventListener(
-                'pagehide',
-                desativarChat
-            );
+        window.removeEventListener(
+            'pagehide',
+            desativarChat
+        );
 
         limparMedia();
 
         if (
-            window
-                .desativarChatMargot ===
+            window.desativarChatMargot ===
             desativarChat
         ) {
             delete window
@@ -1590,8 +1523,7 @@
 
         if (
             String(
-                window
-                    .chatMembroId ||
+                window.chatMembroId ||
                 ''
             ) ===
             outroId
@@ -1601,21 +1533,18 @@
         }
     }
 
-    window
-        .desativarChatMargot =
+    window.desativarChatMargot =
         desativarChat;
 
-    document
-        .addEventListener(
-            'margot:page-leave',
-            desativarChat
-        );
+    document.addEventListener(
+        'margot:page-leave',
+        desativarChat
+    );
 
-    window
-        .addEventListener(
-            'pagehide',
-            desativarChat
-        );
+    window.addEventListener(
+        'pagehide',
+        desativarChat
+    );
 })(
     window,
     document,
