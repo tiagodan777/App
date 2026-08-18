@@ -87,7 +87,8 @@
                 .Keyboard
             : null;
 
-    var tecladoListeners = [];
+    var tecladoListeners =
+        [];
 
     var aEnviarHey =
         false;
@@ -104,6 +105,9 @@
     var temporizadorHey =
         null;
 
+    var temporizadorRestauracao =
+        null;
+
     var campoMensagemFocado =
         false;
 
@@ -113,11 +117,19 @@
     var alturaTeclado =
         0;
 
-    var deslocamentoFormulario =
-        0;
-
-    var temporizadorLimparFormulario =
+    /*
+     * O mini-menu normal já vem transformado
+     * pelo index-tap-foto.js.
+     *
+     * Guardamos a posição Y real antes de o
+     * teclado entrar e deslocamos TODO o sheet
+     * a partir daí.
+     */
+    var baseMenuY =
         null;
+
+    var deslocamentoMenu =
+        0;
 
     function texto(
         valor
@@ -489,32 +501,28 @@
     }
 
     /*
-     * TECLADO DO MINI-MENU
-     *
-     * Não movemos o mini-menu inteiro.
-     *
-     * Só deslocamos o formulário o número
-     * exato de pixels em que ficaria tapado
-     * pelo teclado.
+     * ==========================================================
+     * TECLADO / EXPANSÃO DO MINI-MENU
+     * ==========================================================
      */
 
-    function cancelarLimpezaFormulario() {
+    function cancelarRestauracao() {
         if (
-            temporizadorLimparFormulario ===
+            temporizadorRestauracao ===
             null
         ) {
             return;
         }
 
         window.clearTimeout(
-            temporizadorLimparFormulario
+            temporizadorRestauracao
         );
 
-        temporizadorLimparFormulario =
+        temporizadorRestauracao =
             null;
     }
 
-    function alturaViewportLayout() {
+    function viewportAltura() {
         return (
             window.innerHeight ||
             document
@@ -524,96 +532,213 @@
         );
     }
 
-    function moverFormularioParaTeclado(
-        novaAltura,
-        animar
+    function obterTranslateY(
+        elemento
     ) {
         if (
-            !paginaAtiva ||
-            !campoMensagemFocado ||
-            !$formMensagem[0]
+            !elemento
+        ) {
+            return 0;
+        }
+
+        var transformacao =
+            window
+                .getComputedStyle(
+                    elemento
+                )
+                .transform;
+
+        if (
+            !transformacao ||
+            transformacao ===
+                'none'
+        ) {
+            return 0;
+        }
+
+        try {
+            var matriz =
+                new DOMMatrixReadOnly(
+                    transformacao
+                );
+
+            return Number(
+                matriz.m42
+            ) || 0;
+        } catch (
+            erro
+        ) {
+            var valores =
+                transformacao.match(
+                    /matrix(?:3d)?\(([^)]+)\)/
+                );
+
+            if (
+                !valores
+            ) {
+                return 0;
+            }
+
+            var partes =
+                valores[1]
+                    .split(',')
+                    .map(
+                        function (
+                            valor
+                        ) {
+                            return Number(
+                                valor.trim()
+                            );
+                        }
+                    );
+
+            if (
+                transformacao.indexOf(
+                    'matrix3d'
+                ) ===
+                0
+            ) {
+                return partes[13] || 0;
+            }
+
+            return partes[5] || 0;
+        }
+    }
+
+    function guardarPosicaoNormalMiniMenu() {
+        if (
+            baseMenuY !==
+            null ||
+            !$miniMenu[0]
         ) {
             return;
         }
 
-        novaAltura =
+        baseMenuY =
+            obterTranslateY(
+                $miniMenu[0]
+            );
+    }
+
+    function calcularDeslocamentoMenu(
+        novaAlturaTeclado
+    ) {
+        if (
+            !$formMensagem[0]
+        ) {
+            return 0;
+        }
+
+        novaAlturaTeclado =
             Math.max(
                 0,
                 Number(
-                    novaAltura
+                    novaAlturaTeclado
                 ) ||
                 0
             );
 
         if (
-            novaAltura <
+            novaAlturaTeclado <
+            80
+        ) {
+            return 0;
+        }
+
+        /*
+         * Se o menu já está deslocado,
+         * reconstruímos a posição original
+         * do formulário.
+         */
+        var rect =
+            $formMensagem[0]
+                .getBoundingClientRect();
+
+        var fundoNormal =
+            rect.bottom +
+            deslocamentoMenu;
+
+        var topoTeclado =
+            viewportAltura() -
+            novaAlturaTeclado;
+
+        /*
+         * 12px entre formulário e teclado.
+         */
+        var limite =
+            topoTeclado -
+            12;
+
+        return Math.max(
+            0,
+            Math.ceil(
+                fundoNormal -
+                limite
+            )
+        );
+    }
+
+    function expandirMiniMenuParaTeclado(
+        novaAlturaTeclado,
+        animar
+    ) {
+        if (
+            !paginaAtiva ||
+            !campoMensagemFocado ||
+            !$miniMenu[0]
+        ) {
+            return;
+        }
+
+        novaAlturaTeclado =
+            Math.max(
+                0,
+                Number(
+                    novaAlturaTeclado
+                ) ||
+                0
+            );
+
+        if (
+            novaAlturaTeclado <
             80
         ) {
             return;
         }
 
+        cancelarRestauracao();
+
+        guardarPosicaoNormalMiniMenu();
+
         alturaTeclado =
-            novaAltura;
+            novaAlturaTeclado;
 
         tecladoAberto =
             true;
 
-        cancelarLimpezaFormulario();
-
-        var elemento =
-            $formMensagem[0];
-
-        var retangulo =
-            elemento
-                .getBoundingClientRect();
-
-        /*
-         * Como o elemento pode já estar
-         * transformado, reconstruímos a posição
-         * que teria sem o nosso deslocamento.
-         */
-        var fundoSemDeslocamento =
-            retangulo.bottom +
-            deslocamentoFormulario;
-
-        var topoTeclado =
-            alturaViewportLayout() -
-            novaAltura;
-
-        /*
-         * 10px de folga para o formulário não
-         * ficar colado ao teclado.
-         */
-        var limite =
-            topoTeclado -
-            10;
-
         var novoDeslocamento =
-            Math.max(
-                0,
-                Math.ceil(
-                    fundoSemDeslocamento -
-                    limite
-                )
+            calcularDeslocamentoMenu(
+                novaAlturaTeclado
             );
 
-        /*
-         * Nunca deslocamos mais do que é
-         * necessário.
-         */
-        deslocamentoFormulario =
+        deslocamentoMenu =
             novoDeslocamento;
 
-        $formMensagem.css({
-            position:
-                'relative',
+        var destinoY =
+            (
+                baseMenuY ||
+                0
+            ) -
+            novoDeslocamento;
 
-            zIndex:
-                '1600',
-
-            willChange:
-                'transform',
-
+        /*
+         * O sheet inteiro sobe.
+         *
+         * Assim a fotografia, nome, Hey e
+         * caixa de mensagem mantêm exatamente
+         * a mesma composição.
+         */
+        $miniMenu.css({
             transition:
                 animar
                     ? 'transform 294ms cubic-bezier(.303,.886,.436,.976)'
@@ -621,41 +746,79 @@
 
             transform:
                 'translate3d(0,' +
-                (
-                    -novoDeslocamento
-                ) +
+                destinoY +
                 'px,0)'
         });
+
+        document.body
+            .classList
+            .add(
+                'margot-mini-menu-teclado'
+            );
     }
 
-    function restaurarFormularioDepoisDoTeclado(
+    function restaurarMiniMenuDepoisDoTeclado(
         animar
     ) {
+        if (
+            !$miniMenu[0]
+        ) {
+            return;
+        }
+
+        cancelarRestauracao();
+
         tecladoAberto =
             false;
 
         alturaTeclado =
             0;
 
-        deslocamentoFormulario =
-            0;
+        var destinoY =
+            baseMenuY;
 
-        cancelarLimpezaFormulario();
+        /*
+         * Se por algum motivo não conseguimos
+         * guardar a matrix anterior, usamos a
+         * posição normal conhecida do sheet:
+         * 15% da própria altura.
+         */
+        if (
+            destinoY ===
+            null
+        ) {
+            destinoY =
+                $miniMenu[0]
+                    .getBoundingClientRect()
+                    .height *
+                0.15;
+        }
 
-        $formMensagem.css({
+        $miniMenu.css({
             transition:
                 animar
                     ? 'transform 313ms cubic-bezier(.335,.884,.381,.961)'
                     : 'none',
 
             transform:
-                'translate3d(0,0,0)'
+                'translate3d(0,' +
+                destinoY +
+                'px,0)'
         });
 
-        temporizadorLimparFormulario =
+        document.body
+            .classList
+            .remove(
+                'margot-mini-menu-teclado'
+            );
+
+        deslocamentoMenu =
+            0;
+
+        temporizadorRestauracao =
             window.setTimeout(
                 function () {
-                    temporizadorLimparFormulario =
+                    temporizadorRestauracao =
                         null;
 
                     if (
@@ -665,27 +828,70 @@
                         return;
                     }
 
-                    $formMensagem.css({
-                        position:
-                            '',
+                    /*
+                     * Devolvemos o controlo total
+                     * do transform ao
+                     * index-tap-foto.js.
+                     */
+                    if (
+                        typeof window
+                            .definirMiniMenuAcoes ===
+                        'function'
+                    ) {
+                        window
+                            .definirMiniMenuAcoes(
+                                false
+                            );
+                    }
 
-                        zIndex:
-                            '',
-
-                        willChange:
-                            '',
-
-                        transition:
-                            '',
-
-                        transform:
-                            ''
-                    });
+                    baseMenuY =
+                        null;
                 },
                 animar
-                    ? 340
+                    ? 330
                     : 0
             );
+    }
+
+    function esconderTecladoMiniMenu() {
+        if (
+            !campoMensagemFocado &&
+            !tecladoAberto
+        ) {
+            return;
+        }
+
+        campoMensagemFocado =
+            false;
+
+        if (
+            $inputMensagem[0] &&
+            document.activeElement ===
+                $inputMensagem[0]
+        ) {
+            $inputMensagem[0]
+                .blur();
+        }
+
+        /*
+         * Começamos a recolher o sheet logo
+         * neste frame, juntamente com o teclado.
+         */
+        restaurarMiniMenuDepoisDoTeclado(
+            true
+        );
+
+        if (
+            teclado &&
+            typeof teclado.hide ===
+                'function'
+        ) {
+            Promise.resolve(
+                teclado.hide()
+            ).catch(
+                function () {}
+            );
+        }
     }
 
     function tecladoVaiAbrir(
@@ -697,7 +903,7 @@
             return;
         }
 
-        moverFormularioParaTeclado(
+        expandirMiniMenuParaTeclado(
             info &&
             info.keyboardHeight,
             true
@@ -713,13 +919,9 @@
             return;
         }
 
-        /*
-         * Confirma a altura final sem iniciar
-         * uma segunda animação perceptível.
-         */
         window.requestAnimationFrame(
             function () {
-                moverFormularioParaTeclado(
+                expandirMiniMenuParaTeclado(
                     info &&
                     info.keyboardHeight,
                     false
@@ -735,15 +937,47 @@
             return;
         }
 
-        restaurarFormularioDepoisDoTeclado(
+        restaurarMiniMenuDepoisDoTeclado(
             true
         );
     }
 
     function tecladoFechou() {
-        restaurarFormularioDepoisDoTeclado(
-            false
-        );
+        tecladoAberto =
+            false;
+
+        alturaTeclado =
+            0;
+
+        campoMensagemFocado =
+            false;
+
+        deslocamentoMenu =
+            0;
+
+        document.body
+            .classList
+            .remove(
+                'margot-mini-menu-teclado'
+            );
+
+        if (
+            eIOSNativo() &&
+            teclado &&
+            typeof teclado
+                .setAccessoryBarVisible ===
+                'function'
+        ) {
+            Promise.resolve(
+                teclado
+                    .setAccessoryBarVisible({
+                        isVisible:
+                            true
+                    })
+            ).catch(
+                function () {}
+            );
+        }
     }
 
     function alturaTecladoVisualViewport() {
@@ -755,7 +989,7 @@
 
         return Math.max(
             0,
-            alturaViewportLayout() -
+            viewportAltura() -
             (
                 window
                     .visualViewport
@@ -768,13 +1002,6 @@
     }
 
     function aoAlterarVisualViewport() {
-        /*
-         * Fallback para browser/PWA.
-         *
-         * Dentro do Capacitor usamos os eventos
-         * nativos do Keyboard, que são mais
-         * estáveis.
-         */
         if (
             teclado ||
             !campoMensagemFocado
@@ -789,14 +1016,14 @@
             altura >=
             80
         ) {
-            moverFormularioParaTeclado(
+            expandirMiniMenuParaTeclado(
                 altura,
                 true
             );
         } else if (
             tecladoAberto
         ) {
-            restaurarFormularioDepoisDoTeclado(
+            restaurarMiniMenuDepoisDoTeclado(
                 true
             );
         }
@@ -867,15 +1094,72 @@
                         .remove ===
                         'function'
                 ) {
-                    Promise.resolve(
-                        listener.remove()
-                    ).catch(
-                        function () {}
-                    );
+                    Promise
+                        .resolve(
+                            listener
+                                .remove()
+                        )
+                        .catch(
+                            function () {}
+                        );
                 }
             }
         );
     }
+
+    /*
+     * Enquanto o teclado está aberto:
+     *
+     * - toque dentro do form -> comportamento normal
+     * - toque em QUALQUER outro lugar -> apenas
+     *   fecha teclado + recolhe mini-menu.
+     *
+     * Capture=true é importante: bloqueamos o toque
+     * antes de ele chegar ao perfil, Hey, mapa, etc.
+     */
+    function interceptarToqueForaDoInput(
+        evento
+    ) {
+        if (
+            !paginaAtiva ||
+            (
+                !tecladoAberto &&
+                !campoMensagemFocado
+            )
+        ) {
+            return;
+        }
+
+        if (
+            $formMensagem[0] &&
+            $formMensagem[0]
+                .contains(
+                    evento.target
+                )
+        ) {
+            return;
+        }
+
+        evento.preventDefault();
+        evento.stopPropagation();
+
+        if (
+            typeof evento
+                .stopImmediatePropagation ===
+                'function'
+        ) {
+            evento
+                .stopImmediatePropagation();
+        }
+
+        esconderTecladoMiniMenu();
+    }
+
+    document.addEventListener(
+        'pointerdown',
+        interceptarToqueForaDoInput,
+        true
+    );
 
     $inputMensagem.on(
         'focus' + NS,
@@ -883,10 +1167,30 @@
             campoMensagemFocado =
                 true;
 
+            guardarPosicaoNormalMiniMenu();
+
             /*
-             * No fallback web o visualViewport
-             * pode já ter começado a diminuir.
+             * A barra ↑ ↓ ✓ do iOS não é útil
+             * neste campo e ocupa espaço.
              */
+            if (
+                eIOSNativo() &&
+                teclado &&
+                typeof teclado
+                    .setAccessoryBarVisible ===
+                    'function'
+            ) {
+                Promise.resolve(
+                    teclado
+                        .setAccessoryBarVisible({
+                            isVisible:
+                                false
+                        })
+                ).catch(
+                    function () {}
+                );
+            }
+
             if (
                 !teclado &&
                 window.visualViewport
@@ -901,21 +1205,19 @@
     $inputMensagem.on(
         'blur' + NS,
         function () {
+            /*
+             * keyboardWillHide faz a animação
+             * verdadeira. Não forçamos aqui um
+             * segundo movimento.
+             */
             campoMensagemFocado =
                 false;
 
-            /*
-             * O movimento para baixo é feito pelo
-             * evento keyboardWillHide.
-             *
-             * Se não tivermos plugin nativo,
-             * deixamos o visualViewport fazê-lo.
-             */
             if (
                 !teclado &&
                 !window.visualViewport
             ) {
-                restaurarFormularioDepoisDoTeclado(
+                restaurarMiniMenuDepoisDoTeclado(
                     true
                 );
             }
@@ -923,7 +1225,9 @@
     );
 
     /*
+     * ==========================================================
      * HEY
+     * ==========================================================
      */
 
     function libertarHey() {
@@ -1083,7 +1387,7 @@
         prepararMiniMenu;
 
     /*
-     * FOTOS DO MAPA
+     * FOTOS
      */
 
     $(document).on(
@@ -1176,10 +1480,7 @@
     );
 
     /*
-     * BOTÃO HEY
-     *
-     * Handler direto para não acumular
-     * listeners entre visitas ao mapa.
+     * HEY
      */
 
     $botaoHey.on(
@@ -1279,7 +1580,7 @@
     );
 
     /*
-     * MENSAGEM DIRETA DO MINI-MENU
+     * MENSAGEM
      */
 
     $formMensagem.on(
@@ -1755,7 +2056,7 @@
     );
 
     /*
-     * EVENTOS DO HEY
+     * HEY EVENTS
      */
 
     function aoHeyEnviado() {
@@ -1777,7 +2078,7 @@
     );
 
     /*
-     * VISUAL VIEWPORT
+     * WEB / PWA FALLBACK
      */
 
     if (
@@ -1809,7 +2110,9 @@
     prepararTecladoNativo();
 
     /*
+     * ==========================================================
      * CLEANUP
+     * ==========================================================
      */
 
     function desativarPagina() {
@@ -1834,13 +2137,15 @@
                 null;
         }
 
-        cancelarLimpezaFormulario();
-
-        restaurarFormularioDepoisDoTeclado(
-            false
-        );
+        cancelarRestauracao();
 
         removerListenersTeclado();
+
+        document.removeEventListener(
+            'pointerdown',
+            interceptarToqueForaDoInput,
+            true
+        );
 
         $(document).off(
             NS
@@ -1931,6 +2236,12 @@
             'pagehide',
             desativarPagina
         );
+
+        document.body
+            .classList
+            .remove(
+                'margot-mini-menu-teclado'
+            );
 
         if (
             window.prepararMiniMenuDaFoto ===
