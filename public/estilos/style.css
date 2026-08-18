@@ -359,7 +359,7 @@ body.margot-mini-menu-aberto #menuPrincipal {
     /*-webkit-backdrop-filter:
         blur(3px);*/
 
-    backdrop-filter: blur(3px);
+    backdrop-filter: blur(10px);
 
     box-shadow:
         inset
