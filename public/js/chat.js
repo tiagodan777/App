@@ -10,39 +10,21 @@
     var $erro = $('#chat-erro');
     var $enviar = $('#chat-enviar');
 
-    if (
-        !$pagina.length ||
-        !$mensagens.length ||
-        !$form.length
-    ) {
-        return;
-    }
+    if (!$pagina.length || !$mensagens.length || !$form.length) return;
 
-    if (
-        typeof window.desativarChatMargot ===
-        'function'
-    ) {
+    if (typeof window.desativarChatMargot === 'function') {
         window.desativarChatMargot();
     }
 
-    var capacitor =
-        window.Capacitor ||
-        null;
-
-    var teclado =
-        capacitor &&
-        capacitor.Plugins
-            ? capacitor.Plugins.Keyboard
-            : null;
-
+    var capacitor = window.Capacitor || null;
+    var teclado = capacitor && capacitor.Plugins ? capacitor.Plugins.Keyboard : null;
     var tecladoListeners = [];
 
-    var outroId =
-        String(
-            $pagina.attr('data-outro-id') ||
-            window.chatMembroId ||
-            ''
-        );
+    var outroId = String(
+        $pagina.attr('data-outro-id') ||
+        window.chatMembroId ||
+        ''
+    );
 
     var ultimoId = 0;
     var previewUrl = null;
@@ -59,32 +41,27 @@
     var temporizadorPreparacaoInicial = null;
     var instantePreparacaoInicial = 0;
 
-    var curvaAbrirTeclado =
-        criarCurvaBezier(
-            0.303,
-            0.886,
-            0.436,
-            0.976
-        );
+    var curvaAbrirTeclado = criarCurvaBezier(
+        0.303,
+        0.886,
+        0.436,
+        0.976
+    );
 
-    var curvaFecharTeclado =
-        criarCurvaBezier(
-            0.335,
-            0.884,
-            0.381,
-            0.961
-        );
+    var curvaFecharTeclado = criarCurvaBezier(
+        0.335,
+        0.884,
+        0.381,
+        0.961
+    );
 
     function eIOSNativo() {
         return Boolean(
             capacitor &&
-            typeof capacitor.isNativePlatform ===
-                'function' &&
+            typeof capacitor.isNativePlatform === 'function' &&
             capacitor.isNativePlatform() &&
-            typeof capacitor.getPlatform ===
-                'function' &&
-            capacitor.getPlatform() ===
-                'ios'
+            typeof capacitor.getPlatform === 'function' &&
+            capacitor.getPlatform() === 'ios'
         );
     }
 
@@ -92,49 +69,30 @@
         return String(
             window.messagesUrl ||
             '/messages'
-        ).replace(
-            /\/+$/,
-            ''
-        );
+        ).replace(/\/+$/, '');
     }
 
     function conversaUrl() {
         return (
             baseUrl() +
             '/' +
-            encodeURIComponent(
-                outroId
-            )
+            encodeURIComponent(outroId)
         );
     }
 
     function dataLocal(valor) {
-        var texto =
-            String(
-                valor ||
-                ''
-            );
+        var texto = String(valor || '');
 
-        var data =
-            new Date(
-                texto.replace(
-                    ' ',
-                    'T'
-                ) +
-                (
-                    texto.includes('Z')
-                        ? ''
-                        : 'Z'
-                )
-            );
-
-        if (
-            Number.isNaN(
-                data.getTime()
+        var data = new Date(
+            texto.replace(' ', 'T') +
+            (
+                texto.includes('Z')
+                    ? ''
+                    : 'Z'
             )
-        ) {
-            return '';
-        }
+        );
+
+        if (Number.isNaN(data.getTime())) return '';
 
         return data.toLocaleTimeString(
             'pt-PT',
@@ -147,20 +105,12 @@
 
     function minha(mensagem) {
         return (
-            String(
-                mensagem.emissor_id
-            ) ===
-            String(
-                window.membroId
-            )
+            String(mensagem.emissor_id) ===
+            String(window.membroId)
         );
     }
 
-    function amostraBezier(
-        tempo,
-        ponto1,
-        ponto2
-    ) {
+    function amostraBezier(tempo, ponto1, ponto2) {
         return (
             (
                 (
@@ -182,11 +132,7 @@
         );
     }
 
-    function derivadaBezier(
-        tempo,
-        ponto1,
-        ponto2
-    ) {
+    function derivadaBezier(tempo, ponto1, ponto2) {
         return (
             3 *
             (
@@ -207,15 +153,9 @@
         );
     }
 
-    function criarCurvaBezier(
-        x1,
-        y1,
-        x2,
-        y2
-    ) {
+    function criarCurvaBezier(x1, y1, x2, y2) {
         return function (progresso) {
-            var tempo =
-                progresso;
+            var tempo = progresso;
 
             for (
                 var tentativa = 0;
@@ -237,14 +177,7 @@
                         x2
                     );
 
-                if (
-                    Math.abs(
-                        derivada
-                    ) <
-                    0.000001
-                ) {
-                    break;
-                }
+                if (Math.abs(derivada) < 0.000001) break;
 
                 tempo =
                     tempo -
@@ -281,96 +214,50 @@
             return;
         }
 
-        window.requestAnimationFrame(
-            function () {
-                if (
-                    !ativo ||
-                    !$mensagens[0]
-                ) {
-                    return;
-                }
+        window.requestAnimationFrame(function () {
+            if (!ativo || !$mensagens[0]) return;
 
-                $mensagens[0].scrollTop =
-                    $mensagens[0].scrollHeight;
-            }
-        );
+            $mensagens[0].scrollTop =
+                $mensagens[0].scrollHeight;
+        });
     }
 
-    /*
-     * Depois de criar uma mensagem, esperamos o
-     * browser fechar o layout desse frame e
-     * confirmamos novamente o fundo.
-     */
-
     function fixarNoFimAposMudanca() {
-        if (
-            !ativo ||
-            !$mensagens[0]
-        ) {
-            return;
-        }
+        if (!ativo || !$mensagens[0]) return;
 
         aFixarNoFim = true;
 
-        window.requestAnimationFrame(
-            function () {
-                if (
-                    !ativo ||
-                    !$mensagens[0]
-                ) {
-                    return;
-                }
+        window.requestAnimationFrame(function () {
+            if (!ativo || !$mensagens[0]) return;
+
+            $mensagens[0].scrollTop =
+                $mensagens[0].scrollHeight;
+
+            window.requestAnimationFrame(function () {
+                if (!ativo || !$mensagens[0]) return;
 
                 $mensagens[0].scrollTop =
                     $mensagens[0].scrollHeight;
-
-                window.requestAnimationFrame(
-                    function () {
-                        if (
-                            !ativo ||
-                            !$mensagens[0]
-                        ) {
-                            return;
-                        }
-
-                        $mensagens[0].scrollTop =
-                            $mensagens[0].scrollHeight;
-                    }
-                );
-            }
-        );
+            });
+        });
     }
 
     function cancelarAnimacaoScrollTeclado() {
-        if (
-            animacaoScrollTeclado !==
-            null
-        ) {
+        if (animacaoScrollTeclado !== null) {
             window.cancelAnimationFrame(
                 animacaoScrollTeclado
             );
 
-            animacaoScrollTeclado =
-                null;
+            animacaoScrollTeclado = null;
         }
     }
 
-    function animarScrollAte(
-        destino,
-        duracao,
-        curva
-    ) {
+    function animarScrollAte(destino, duracao, curva) {
         cancelarAnimacaoScrollTeclado();
 
-        var elemento =
-            $mensagens[0];
+        var elemento = $mensagens[0];
 
-        if (
-            !ativo ||
-            !elemento
-        ) {
-            return;
-        }
+        if (!ativo || !elemento) return;
 
         var maximo =
             Math.max(
@@ -388,22 +275,11 @@
                 )
             );
 
-        var origem =
-            elemento.scrollTop;
+        var origem = elemento.scrollTop;
+        var diferenca = destino - origem;
 
-        var diferenca =
-            destino -
-            origem;
-
-        if (
-            Math.abs(
-                diferenca
-            ) <
-            0.5
-        ) {
-            elemento.scrollTop =
-                destino;
-
+        if (Math.abs(diferenca) < 0.5) {
+            elemento.scrollTop = destino;
             return;
         }
 
@@ -411,13 +287,8 @@
             window.performance.now();
 
         function animar(agora) {
-            if (
-                !ativo ||
-                !$mensagens[0]
-            ) {
-                animacaoScrollTeclado =
-                    null;
-
+            if (!ativo || !$mensagens[0]) {
+                animacaoScrollTeclado = null;
                 return;
             }
 
@@ -434,14 +305,9 @@
             elemento.scrollTop =
                 origem +
                 diferenca *
-                curva(
-                    progresso
-                );
+                curva(progresso);
 
-            if (
-                progresso <
-                1
-            ) {
+            if (progresso < 1) {
                 animacaoScrollTeclado =
                     window.requestAnimationFrame(
                         animar
@@ -450,11 +316,8 @@
                 return;
             }
 
-            elemento.scrollTop =
-                destino;
-
-            animacaoScrollTeclado =
-                null;
+            elemento.scrollTop = destino;
+            animacaoScrollTeclado = null;
         }
 
         animacaoScrollTeclado =
@@ -463,175 +326,98 @@
             );
     }
 
-    function acompanharMedia(
-        $contexto,
-        forcar
-    ) {
+    function acompanharMedia($contexto, forcar) {
         $contexto
             .find('img')
-            .each(
-                function () {
-                    var imagem =
-                        this;
+            .each(function () {
+                var imagem = this;
 
-                    if (
-                        imagem.complete
-                    ) {
-                        deslocarParaFim(
-                            forcar
-                        );
-
-                        return;
-                    }
-
-                    $(imagem).one(
-                        'load.margotChatScroll error.margotChatScroll',
-                        function () {
-                            deslocarParaFim(
-                                forcar
-                            );
-                        }
-                    );
+                if (imagem.complete) {
+                    deslocarParaFim(forcar);
+                    return;
                 }
-            );
+
+                $(imagem).one(
+                    'load.margotChatScroll error.margotChatScroll',
+                    function () {
+                        deslocarParaFim(forcar);
+                    }
+                );
+            });
 
         $contexto
             .find('video')
-            .each(
-                function () {
-                    var video =
-                        this;
+            .each(function () {
+                var video = this;
 
-                    if (
-                        video.readyState >=
-                        1
-                    ) {
-                        deslocarParaFim(
-                            forcar
-                        );
-
-                        return;
-                    }
-
-                    $(video).one(
-                        'loadedmetadata.margotChatScroll error.margotChatScroll',
-                        function () {
-                            deslocarParaFim(
-                                forcar
-                            );
-                        }
-                    );
+                if (video.readyState >= 1) {
+                    deslocarParaFim(forcar);
+                    return;
                 }
-            );
+
+                $(video).one(
+                    'loadedmetadata.margotChatScroll error.margotChatScroll',
+                    function () {
+                        deslocarParaFim(forcar);
+                    }
+                );
+            });
     }
 
-    /*
-     * ENTRADA NO CHAT
-     *
-     * A navegação da Margot só executa o chat.js
-     * depois da animação lateral.
-     *
-     * Por isso deixamos o histórico invisível,
-     * estabilizamos imagens/layout/scroll e só
-     * depois o mostramos já no sítio certo.
-     */
-
     function finalizarPreparacaoInicial() {
-        if (
-            preparacaoInicialConcluida
-        ) {
-            return;
-        }
+        if (preparacaoInicialConcluida) return;
 
-        preparacaoInicialConcluida =
-            true;
+        preparacaoInicialConcluida = true;
 
         instantePreparacaoInicial =
             window.performance.now();
 
-        if (
-            temporizadorPreparacaoInicial !==
-            null
-        ) {
+        if (temporizadorPreparacaoInicial !== null) {
             window.clearTimeout(
                 temporizadorPreparacaoInicial
             );
 
-            temporizadorPreparacaoInicial =
-                null;
+            temporizadorPreparacaoInicial = null;
         }
 
-        if (
-            !$mensagens[0]
-        ) {
-            return;
-        }
+        if (!$mensagens[0]) return;
 
-        var elemento =
-            $mensagens[0];
+        var elemento = $mensagens[0];
 
         elemento.scrollTop =
             elemento.scrollHeight;
 
-        window.requestAnimationFrame(
-            function () {
-                if (
-                    !ativo ||
-                    !$mensagens[0]
-                ) {
-                    return;
-                }
+        window.requestAnimationFrame(function () {
+            if (!ativo || !$mensagens[0]) return;
 
-                elemento.scrollTop =
-                    elemento.scrollHeight;
+            elemento.scrollTop =
+                elemento.scrollHeight;
 
-                $mensagens
-                    .removeClass(
-                        'chat-mensagens-a-preparar'
-                    )
-                    .attr(
-                        'aria-busy',
-                        'false'
-                    );
-            }
-        );
+            $mensagens
+                .removeClass(
+                    'chat-mensagens-a-preparar'
+                )
+                .attr(
+                    'aria-busy',
+                    'false'
+                );
+        });
     }
 
     function prepararConteudoInicial() {
-        var elemento =
-            $mensagens[0];
+        var elemento = $mensagens[0];
 
-        if (
-            !elemento
-        ) {
-            return;
-        }
+        if (!elemento) return;
 
-        var pendentes =
-            0;
-
-        /*
-         * As mensagens mais recentes são as que
-         * podem aparecer no viewport inicial.
-         *
-         * Só estas imagens deixam de ser lazy.
-         * Não descarregamos à força 100 imagens
-         * antigas da conversa.
-         */
+        var pendentes = 0;
 
         var $recentes =
             $mensagens
-                .find(
-                    '.chat-mensagem'
-                )
-                .slice(
-                    -14
-                );
+                .find('.chat-mensagem')
+                .slice(-14);
 
         $recentes
-            .find(
-                'img.chat-imagem'
-            )
+            .find('img.chat-imagem')
             .attr(
                 'loading',
                 'eager'
@@ -641,20 +427,10 @@
             pendentes =
                 Math.max(
                     0,
-                    pendentes -
-                    1
+                    pendentes - 1
                 );
 
-            if (
-                preparacaoInicialConcluida
-            ) {
-                /*
-                 * Se algum ficheiro demorou mais
-                 * que o limite inicial, só seguimos
-                 * o fundo enquanto o utilizador ainda
-                 * não começou a navegar pelo histórico.
-                 */
-
+            if (preparacaoInicialConcluida) {
                 if (
                     aFixarNoFim &&
                     (
@@ -663,99 +439,53 @@
                     ) <
                     800
                 ) {
-                    deslocarParaFim(
-                        false
-                    );
+                    deslocarParaFim(false);
                 }
 
                 return;
             }
 
-            if (
-                pendentes ===
-                0
-            ) {
+            if (pendentes === 0) {
                 finalizarPreparacaoInicial();
             }
         }
 
-        /*
-         * Observamos todo o media que já existe.
-         *
-         * O que estiver realmente a carregar durante
-         * a entrada fica pronto antes de revelarmos
-         * o histórico, sempre que possível.
-         */
+        $mensagens
+            .find('img.chat-imagem')
+            .each(function () {
+                if (this.complete) return;
+
+                pendentes += 1;
+
+                $(this).one(
+                    'load.margotChatInicial error.margotChatInicial',
+                    terminouMediaInicial
+                );
+            });
 
         $mensagens
-            .find(
-                'img.chat-imagem'
-            )
-            .each(
-                function () {
-                    if (
-                        this.complete
-                    ) {
-                        return;
-                    }
+            .find('video.chat-video')
+            .each(function () {
+                if (this.readyState >= 1) return;
 
-                    pendentes += 1;
+                pendentes += 1;
 
-                    $(this).one(
-                        'load.margotChatInicial error.margotChatInicial',
-                        terminouMediaInicial
-                    );
-                }
-            );
-
-        $mensagens
-            .find(
-                'video.chat-video'
-            )
-            .each(
-                function () {
-                    if (
-                        this.readyState >=
-                        1
-                    ) {
-                        return;
-                    }
-
-                    pendentes += 1;
-
-                    $(this).one(
-                        'loadedmetadata.margotChatInicial error.margotChatInicial',
-                        terminouMediaInicial
-                    );
-                }
-            );
-
-        /*
-         * Primeiro posicionamos a área invisível
-         * no fundo. Isto também faz o browser começar
-         * a carregar lazy media perto do final.
-         */
+                $(this).one(
+                    'loadedmetadata.margotChatInicial error.margotChatInicial',
+                    terminouMediaInicial
+                );
+            });
 
         elemento.scrollTop =
             elemento.scrollHeight;
 
-        if (
-            pendentes ===
-            0
-        ) {
+        if (pendentes === 0) {
             window.requestAnimationFrame(
                 finalizarPreparacaoInicial
             );
 
             return;
         }
-
-        /*
-         * Não deixamos o utilizador à espera.
-         *
-         * Na prática, durante os 300 ms da transição
-         * a maioria destas imagens já ficou pronta.
-         */
 
         temporizadorPreparacaoInicial =
             window.setTimeout(
@@ -764,26 +494,16 @@
             );
     }
 
-    /* TECLADO */
-
     function tecladoVaiAbrir(info) {
-        if (
-            !ativo ||
-            !$mensagens[0]
-        ) {
-            return;
-        }
+        if (!ativo || !$mensagens[0]) return;
 
-        if (
-            !preparacaoInicialConcluida
-        ) {
+        if (!preparacaoInicialConcluida) {
             finalizarPreparacaoInicial();
         }
 
         cancelarAnimacaoScrollTeclado();
 
-        var elemento =
-            $mensagens[0];
+        var elemento = $mensagens[0];
 
         var altura =
             Math.max(
@@ -827,48 +547,31 @@
                 alturaScrollAntes
             );
 
-        destinoScrollFecho =
-            null;
+        destinoScrollFecho = null;
 
         document.body.classList.add(
             'margot-chat-teclado-aberto'
         );
 
-        if (
-            !ancorarScrollTeclado
-        ) {
-            return;
-        }
+        if (!ancorarScrollTeclado) return;
 
-        window.requestAnimationFrame(
-            function () {
-                if (
-                    !ativo ||
-                    !$mensagens[0]
-                ) {
-                    return;
-                }
+        window.requestAnimationFrame(function () {
+            if (!ativo || !$mensagens[0]) return;
 
-                animarScrollAte(
-                    Math.max(
-                        0,
-                        elemento.scrollHeight -
-                        elemento.clientHeight
-                    ),
-                    294,
-                    curvaAbrirTeclado
-                );
-            }
-        );
+            animarScrollAte(
+                Math.max(
+                    0,
+                    elemento.scrollHeight -
+                    elemento.clientHeight
+                ),
+                294,
+                curvaAbrirTeclado
+            );
+        });
     }
 
     function tecladoAbriu(info) {
-        if (
-            !ativo ||
-            !$mensagens[0]
-        ) {
-            return;
-        }
+        if (!ativo || !$mensagens[0]) return;
 
         var altura =
             Math.max(
@@ -880,46 +583,30 @@
                 0
             );
 
-        if (
-            altura >
-            0
-        ) {
+        if (altura > 0) {
             document.documentElement.style.setProperty(
                 '--margot-keyboard-height',
                 altura + 'px'
             );
         }
 
-        if (
-            ancorarScrollTeclado
-        ) {
-            aFixarNoFim =
-                true;
+        if (ancorarScrollTeclado) {
+            aFixarNoFim = true;
         }
     }
 
     function tecladoVaiFechar() {
-        if (
-            !ativo ||
-            !$mensagens[0]
-        ) {
-            return;
-        }
+        if (!ativo || !$mensagens[0]) return;
 
         cancelarAnimacaoScrollTeclado();
 
-        var elemento =
-            $mensagens[0];
+        var elemento = $mensagens[0];
 
         document.body.classList.remove(
             'margot-chat-teclado-aberto'
         );
 
-        if (
-            !ancorarScrollTeclado
-        ) {
-            return;
-        }
+        if (!ancorarScrollTeclado) return;
 
         destinoScrollFecho =
             Math.max(
@@ -937,53 +624,32 @@
     }
 
     function tecladoFechou() {
-        if (
-            !ativo ||
-            !$mensagens[0]
-        ) {
-            return;
-        }
+        if (!ativo || !$mensagens[0]) return;
 
-        window.requestAnimationFrame(
-            function () {
-                if (
-                    !ativo ||
-                    !$mensagens[0]
-                ) {
-                    return;
-                }
+        window.requestAnimationFrame(function () {
+            if (!ativo || !$mensagens[0]) return;
 
-                document.body.classList.remove(
-                    'margot-chat-teclado-aberto'
-                );
+            document.body.classList.remove(
+                'margot-chat-teclado-aberto'
+            );
 
-                document.body.classList.remove(
-                    'margot-chat-teclado-pronto'
-                );
+            document.body.classList.remove(
+                'margot-chat-teclado-pronto'
+            );
 
-                document.documentElement.style.setProperty(
-                    '--margot-keyboard-height',
-                    '0px'
-                );
+            document.documentElement.style.setProperty(
+                '--margot-keyboard-height',
+                '0px'
+            );
 
-                aumentoScrollTeclado =
-                    0;
-
-                ancorarScrollTeclado =
-                    false;
-
-                destinoScrollFecho =
-                    null;
-            }
-        );
+            aumentoScrollTeclado = 0;
+            ancorarScrollTeclado = false;
+            destinoScrollFecho = null;
+        });
     }
 
     async function prepararTecladoNativo() {
-        if (
-            !teclado
-        ) {
-            return;
-        }
+        if (!teclado) return;
 
         if (
             eIOSNativo() &&
@@ -1051,21 +717,19 @@
 
         tecladoListeners = [];
 
-        listeners.forEach(
-            function (listener) {
-                if (
-                    listener &&
-                    typeof listener.remove ===
+        listeners.forEach(function (listener) {
+            if (
+                listener &&
+                typeof listener.remove ===
                     'function'
-                ) {
-                    Promise.resolve(
-                        listener.remove()
-                    ).catch(
-                        function () {}
-                    );
-                }
+            ) {
+                Promise.resolve(
+                    listener.remove()
+                ).catch(
+                    function () {}
+                );
             }
-        );
+        });
 
         cancelarAnimacaoScrollTeclado();
 
@@ -1096,13 +760,9 @@
         }
     }
 
-    /* MENSAGENS */
-
     function criarMensagem(mensagem) {
         var eMinha =
-            minha(
-                mensagem
-            );
+            minha(mensagem);
 
         var $artigo =
             $('<article>', {
@@ -1123,22 +783,17 @@
 
         var $balao =
             $('<div>', {
-                class:
-                    'chat-balao'
+                class: 'chat-balao'
             });
 
         if (
-            mensagem.tipo ===
-                'imagem' &&
+            mensagem.tipo === 'imagem' &&
             mensagem.media_url
         ) {
             $balao.append(
                 $('<img>', {
-                    class:
-                        'chat-imagem',
-
-                    src:
-                        mensagem.media_url,
+                    class: 'chat-imagem',
+                    src: mensagem.media_url,
 
                     alt:
                         'Fotografia enviada por ' +
@@ -1147,33 +802,22 @@
                             'utilizador'
                         ),
 
-                    loading:
-                        'eager',
-
-                    draggable:
-                        false
+                    loading: 'eager',
+                    draggable: false
                 })
             );
         }
 
         if (
-            mensagem.tipo ===
-                'video' &&
+            mensagem.tipo === 'video' &&
             mensagem.media_url
         ) {
             var $video =
                 $('<video>', {
-                    class:
-                        'chat-video',
-
-                    controls:
-                        true,
-
-                    playsinline:
-                        true,
-
-                    preload:
-                        'metadata'
+                    class: 'chat-video',
+                    controls: true,
+                    playsinline: true,
+                    preload: 'metadata'
                 });
 
             $video.append(
@@ -1187,14 +831,10 @@
                 })
             );
 
-            $balao.append(
-                $video
-            );
+            $balao.append($video);
         }
 
-        if (
-            mensagem.texto
-        ) {
+        if (mensagem.texto) {
             $balao.append(
                 $('<p>').text(
                     mensagem.texto
@@ -1214,13 +854,10 @@
                 )
             );
 
-        if (
-            eMinha
-        ) {
+        if (eMinha) {
             $rodape.append(
                 $('<span>', {
-                    class:
-                        'chat-lida',
+                    class: 'chat-lida',
 
                     'aria-label':
                         mensagem.lida
@@ -1246,9 +883,7 @@
         deslocar
     ) {
         var id =
-            Number(
-                mensagem.id
-            ) ||
+            Number(mensagem.id) ||
             0;
 
         if (
@@ -1277,10 +912,7 @@
                 id
             );
 
-        if (
-            deslocar !==
-            false
-        ) {
+        if (deslocar !== false) {
             acompanharMedia(
                 $novaMensagem,
                 true
@@ -1291,8 +923,6 @@
 
         return true;
     }
-
-    /* ENVIAR */
 
     function temConteudoParaEnviar() {
         return Boolean(
@@ -1320,26 +950,19 @@
                 !temConteudo
             );
 
-        if (
-            !aEnviar
-        ) {
-            $enviar.text(
-                'Enviar'
-            );
+        if (!aEnviar) {
+            $enviar.text('Enviar');
         }
     }
 
     function limparMedia() {
-        if (
-            previewUrl
-        ) {
+        if (previewUrl) {
             URL.revokeObjectURL(
                 previewUrl
             );
         }
 
-        previewUrl =
-            null;
+        previewUrl = null;
 
         $media.val('');
 
@@ -1354,16 +977,13 @@
     }
 
     function mostrarPreview(ficheiro) {
-        if (
-            previewUrl
-        ) {
+        if (previewUrl) {
             URL.revokeObjectURL(
                 previewUrl
             );
         }
 
-        previewUrl =
-            null;
+        previewUrl = null;
 
         $preview
             .empty()
@@ -1379,9 +999,7 @@
             )
             .text('');
 
-        if (
-            !ficheiro
-        ) {
+        if (!ficheiro) {
             atualizarEstadoEnviar();
             return;
         }
@@ -1396,10 +1014,7 @@
                 ? 100 * 1024 * 1024
                 : 15 * 1024 * 1024;
 
-        if (
-            ficheiro.size >
-            limite
-        ) {
+        if (ficheiro.size > limite) {
             $media.val('');
 
             $erro
@@ -1425,27 +1040,15 @@
         var $conteudo =
             eVideo
                 ? $('<video>', {
-                    src:
-                        previewUrl,
-
-                    muted:
-                        true,
-
-                    controls:
-                        true,
-
-                    playsinline:
-                        true
+                    src: previewUrl,
+                    muted: true,
+                    controls: true,
+                    playsinline: true
                 })
                 : $('<img>', {
-                    src:
-                        previewUrl,
-
-                    alt:
-                        'Pré-visualização',
-
-                    draggable:
-                        false
+                    src: previewUrl,
+                    alt: 'Pré-visualização',
+                    draggable: false
                 });
 
         $preview
@@ -1453,17 +1056,10 @@
                 $conteudo,
 
                 $('<button>', {
-                    type:
-                        'button',
-
-                    class:
-                        'chat-media-remover',
-
-                    'aria-label':
-                        'Remover ficheiro'
-                }).text(
-                    '×'
-                )
+                    type: 'button',
+                    class: 'chat-media-remover',
+                    'aria-label': 'Remover ficheiro'
+                }).text('×')
             )
             .prop(
                 'hidden',
@@ -1482,11 +1078,8 @@
         }
 
         window.AppWebSocket.send({
-            type:
-                'chat_publish',
-
-            message_id:
-                mensagemId
+            type: 'chat_publish',
+            message_id: mensagemId
         });
     }
 
@@ -1500,16 +1093,8 @@
             return;
         }
 
-        aEnviar =
-            true;
-
-        /*
-         * A conversa tem de continuar presa ao
-         * fundo enquanto a nova mensagem entra.
-         */
-
-        aFixarNoFim =
-            true;
+        aEnviar = true;
+        aFixarNoFim = true;
 
         $enviar
             .prop(
@@ -1532,14 +1117,11 @@
                 await fetch(
                     conversaUrl(),
                     {
-                        method:
-                            'POST',
-
+                        method: 'POST',
                         body:
                             new FormData(
                                 $form[0]
                             ),
-
                         credentials:
                             'same-origin'
                     }
@@ -1571,12 +1153,6 @@
 
             limparMedia();
 
-            /*
-             * O textarea acabou de diminuir.
-             * Confirmamos o fundo depois de o layout
-             * ter fechado essa alteração.
-             */
-
             fixarNoFimAposMudanca();
 
             publicarMensagem(
@@ -1592,14 +1168,10 @@
                     false
                 );
         } finally {
-            aEnviar =
-                false;
-
+            aEnviar = false;
             atualizarEstadoEnviar();
         }
     }
-
-    /* LIDAS */
 
     async function marcarComoLidas() {
         if (
@@ -1621,14 +1193,9 @@
             await fetch(
                 conversaUrl(),
                 {
-                    method:
-                        'POST',
-
-                    body:
-                        corpo,
-
-                    credentials:
-                        'same-origin'
+                    method: 'POST',
+                    body: corpo,
+                    credentials: 'same-origin'
                 }
             );
 
@@ -1637,21 +1204,14 @@
                 window.AppWebSocket.isConnected()
             ) {
                 window.AppWebSocket.send({
-                    type:
-                        'chat_read',
-
-                    with_member_id:
-                        outroId
+                    type: 'chat_read',
+                    with_member_id: outroId
                 });
             }
         } catch (erro) {
-            console.error(
-                erro
-            );
+            console.error(erro);
         }
     }
-
-    /* POLLING */
 
     async function procurarNovasMensagens() {
         try {
@@ -1660,13 +1220,9 @@
                     conversaUrl() +
                     '?api=history&after_id=' +
                     ultimoId,
-
                     {
-                        credentials:
-                            'same-origin',
-
-                        cache:
-                            'no-store'
+                        credentials: 'same-origin',
+                        cache: 'no-store'
                     }
                 );
 
@@ -1680,37 +1236,27 @@
                 return;
             }
 
-            var recebeu =
-                false;
+            var recebeu = false;
 
             (
                 dados.messages ||
                 []
-            ).forEach(
-                function (mensagem) {
-                    if (
-                        adicionarMensagem(
-                            mensagem
-                        ) &&
-                        !minha(
-                            mensagem
-                        )
-                    ) {
-                        recebeu =
-                            true;
-                    }
+            ).forEach(function (mensagem) {
+                if (
+                    adicionarMensagem(
+                        mensagem
+                    ) &&
+                    !minha(mensagem)
+                ) {
+                    recebeu = true;
                 }
-            );
+            });
 
-            if (
-                recebeu
-            ) {
+            if (recebeu) {
                 marcarComoLidas();
             }
         } catch (erro) {
-            console.error(
-                erro
-            );
+            console.error(erro);
         }
     }
 
@@ -1719,122 +1265,80 @@
         ultimoLido
     ) {
         if (
-            String(
-                lidoPor
-            ) !==
+            String(lidoPor) !==
             outroId
         ) {
             return;
         }
 
         $mensagens
-            .find(
-                '.chat-mensagem.minha'
-            )
-            .each(
-                function () {
-                    if (
-                        Number(
-                            $(this).attr(
-                                'data-mensagem-id'
-                            )
-                        ) <=
-                        Number(
-                            ultimoLido
+            .find('.chat-mensagem.minha')
+            .each(function () {
+                if (
+                    Number(
+                        $(this).attr(
+                            'data-mensagem-id'
                         )
-                    ) {
-                        $(this)
-                            .find(
-                                '.chat-lida'
-                            )
-                            .text(
-                                '✓✓'
-                            )
-                            .attr(
-                                'aria-label',
-                                'Lida'
-                            );
-                    }
+                    ) <=
+                    Number(
+                        ultimoLido
+                    )
+                ) {
+                    $(this)
+                        .find('.chat-lida')
+                        .text('✓✓')
+                        .attr(
+                            'aria-label',
+                            'Lida'
+                        );
                 }
-            );
+            });
     }
 
-    /* ESTADO INICIAL */
-
     $mensagens
-        .find(
-            '.chat-mensagem'
-        )
-        .each(
-            function () {
-                ultimoId =
-                    Math.max(
-                        ultimoId,
-
-                        Number(
-                            $(this).attr(
-                                'data-mensagem-id'
-                            )
-                        ) ||
-                        0
-                    );
-            }
-        );
+        .find('.chat-mensagem')
+        .each(function () {
+            ultimoId =
+                Math.max(
+                    ultimoId,
+                    Number(
+                        $(this).attr(
+                            'data-mensagem-id'
+                        )
+                    ) ||
+                    0
+                );
+        });
 
     $mensagens
         .find(
             'time[data-data-mensagem]'
         )
-        .each(
-            function () {
-                $(this).text(
-                    dataLocal(
-                        $(this).attr(
-                            'datetime'
-                        )
+        .each(function () {
+            $(this).text(
+                dataLocal(
+                    $(this).attr(
+                        'datetime'
                     )
-                );
-            }
-        );
+                )
+            );
+        });
 
     prepararConteudoInicial();
-
-    /* EVENTOS DE SCROLL */
 
     $mensagens.on(
         'pointerdown.margotChatScroll touchstart.margotChatScroll wheel.margotChatScroll',
         function () {
             cancelarAnimacaoScrollTeclado();
-
-            ancorarScrollTeclado =
-                false;
-
-            aFixarNoFim =
-                false;
+            ancorarScrollTeclado = false;
+            aFixarNoFim = false;
         }
     );
-
-    /* FORM */
 
     $form.on(
         'submit',
         enviarMensagem
     );
-
-    /*
-     * IMPORTANTE:
-     *
-     * Um tap normal num <button> pode transferir
-     * o foco do textarea para o botão no WebKit.
-     * Foi isso que se vê no vídeo: Enviar -> teclado
-     * fecha -> mensagem entra durante o fecho.
-     *
-     * Enviamos logo no pointerdown e impedimos
-     * essa transferência de foco.
-     *
-     * Portanto o teclado continua aberto depois
-     * de enviar, como numa app de mensagens normal.
-     */
 
     $enviar.on(
         'pointerdown.margotChatEnviar',
@@ -1849,10 +1353,8 @@
             }
 
             if (
-                evento.pointerType ===
-                    'mouse' &&
-                evento.button !==
-                    0
+                evento.pointerType === 'mouse' &&
+                evento.button !== 0
             ) {
                 return;
             }
@@ -1864,12 +1366,6 @@
             );
         }
     );
-
-    /*
-     * Fallback para teclado/acessibilidade ou
-     * plataformas onde a ativação não venha
-     * precedida de pointerdown.
-     */
 
     $enviar.on(
         'click.margotChatEnviar',
@@ -1891,8 +1387,6 @@
         }
     );
 
-    /* MEDIA */
-
     $media.on(
         'change',
         function () {
@@ -1907,8 +1401,6 @@
         '.chat-media-remover',
         limparMedia
     );
-
-    /* TEXTAREA */
 
     $texto.on(
         'input',
@@ -1931,8 +1423,7 @@
         'keydown',
         function (evento) {
             if (
-                evento.key ===
-                    'Enter' &&
+                evento.key === 'Enter' &&
                 !evento.shiftKey
             ) {
                 evento.preventDefault();
@@ -1944,17 +1435,11 @@
         }
     );
 
-    /* WEBSOCKET */
-
     function aoReceberMensagem(evento) {
         var mensagem =
             evento.detail.message;
 
-        if (
-            !mensagem
-        ) {
-            return;
-        }
+        if (!mensagem) return;
 
         var pertence =
             (
@@ -1962,7 +1447,6 @@
                     mensagem.emissor_id
                 ) ===
                     outroId &&
-
                 String(
                     mensagem.destinatario_id
                 ) ===
@@ -1977,7 +1461,6 @@
                     String(
                         window.membroId
                     ) &&
-
                 String(
                     mensagem.destinatario_id
                 ) ===
@@ -2030,9 +1513,7 @@
     );
 
     $('#menuPrincipal a')
-        .removeClass(
-            'active'
-        );
+        .removeClass('active');
 
     atualizarEstadoEnviar();
     prepararTecladoNativo();
@@ -2044,17 +1525,10 @@
             5000
         );
 
-    /* CLEANUP */
-
     function desativarChat() {
-        if (
-            !ativo
-        ) {
-            return;
-        }
+        if (!ativo) return;
 
-        ativo =
-            false;
+        ativo = false;
 
         window.clearInterval(
             temporizador
@@ -2068,35 +1542,23 @@
                 temporizadorPreparacaoInicial
             );
 
-            temporizadorPreparacaoInicial =
-                null;
+            temporizadorPreparacaoInicial = null;
         }
 
         cancelarAnimacaoScrollTeclado();
 
-        aumentoScrollTeclado =
-            0;
-
-        ancorarScrollTeclado =
-            false;
-
-        destinoScrollFecho =
-            null;
+        aumentoScrollTeclado = 0;
+        ancorarScrollTeclado = false;
+        destinoScrollFecho = null;
 
         $mensagens.off(
             '.margotChatScroll'
         );
 
         $mensagens
-            .find(
-                'img, video'
-            )
-            .off(
-                '.margotChatScroll'
-            )
-            .off(
-                '.margotChatInicial'
-            );
+            .find('img, video')
+            .off('.margotChatScroll')
+            .off('.margotChatInicial');
 
         $enviar.off(
             '.margotChatEnviar'
