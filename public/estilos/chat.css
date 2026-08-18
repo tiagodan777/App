@@ -361,28 +361,30 @@ body.margot-chat-teclado-pronto .chat-mensagens {
  * parecer um elemento de browser.
  */
 
-.chat-imagem {
+.chat-balao > .chat-imagem {
     display: block;
 
-    width: 100%;
-    height: auto;
+    width: 100% !important;
+    max-width: 100% !important;
 
-    max-height:
-        min(
-            58dvh,
-            520px
-        );
+    height: auto !important;
+    max-height: min(58dvh, 520px);
+
+    margin: 0;
+
+    border: 0 !important;
+    border-radius: 0 !important;
 
     object-fit: contain;
+    object-position: center;
 
     background: #111111;
 
+    vertical-align: middle;
+
     user-select: none;
-
     -webkit-user-select: none;
-
     -webkit-user-drag: none;
-
     -webkit-touch-callout: none;
 }
 
