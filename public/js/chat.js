@@ -1,32 +1,15 @@
 (function (window, document, $) {
     'use strict';
 
-    var $pagina =
-        $('#chat-pagina');
-
-    var $mensagens =
-        $('#chat-mensagens');
-
-    var $conteudo =
-        $('#chat-mensagens-conteudo');
-
-    var $form =
-        $('#chat-form');
-
-    var $texto =
-        $('#chat-texto');
-
-    var $media =
-        $('#chat-media');
-
-    var $preview =
-        $('#chat-media-preview');
-
-    var $erro =
-        $('#chat-erro');
-
-    var $enviar =
-        $('#chat-enviar');
+    var $pagina = $('#chat-pagina');
+    var $mensagens = $('#chat-mensagens');
+    var $conteudo = $('#chat-mensagens-conteudo');
+    var $form = $('#chat-form');
+    var $texto = $('#chat-texto');
+    var $media = $('#chat-media');
+    var $preview = $('#chat-media-preview');
+    var $erro = $('#chat-erro');
+    var $enviar = $('#chat-enviar');
 
     if (
         !$pagina.length ||
@@ -38,16 +21,13 @@
     }
 
     if (
-        typeof window
-            .desativarChatMargot ===
+        typeof window.desativarChatMargot ===
         'function'
     ) {
-        window
-            .desativarChatMargot();
+        window.desativarChatMargot();
     }
 
-    var NS =
-        '.margotChat';
+    var NS = '.margotChat';
 
     var capacitor =
         window.Capacitor ||
@@ -56,13 +36,14 @@
     var teclado =
         capacitor &&
         capacitor.Plugins
-            ? capacitor
-                .Plugins
-                .Keyboard
+            ? capacitor.Plugins.Keyboard
             : null;
 
-    var tecladoListeners =
-        [];
+    var viewport =
+        window.visualViewport ||
+        null;
+
+    var tecladoListeners = [];
 
     var outroId =
         String(
@@ -73,35 +54,32 @@
             ''
         );
 
-    var ultimoId =
-        0;
+    var ultimoId = 0;
+    var previewUrl = null;
+    var aEnviar = false;
+    var ativo = true;
+    var aFixarNoFim = true;
 
-    var previewUrl =
+    var observadorForm = null;
+    var alturaForm = 0;
+    var rafForm = null;
+    var rafTexto = null;
+    var rafViewport = null;
+
+    var temporizadorFallbackTeclado =
         null;
 
-    var aEnviar =
+    var tecladoPluginAberto =
         false;
 
-    var ativo =
-        true;
+    var alturaTecladoPlugin =
+        0;
 
-    var aFixarNoFim =
-        true;
-
-    var ancorarTeclado =
+    var viewportTecladoAtivo =
         false;
 
-    var alturaTeclado =
+    var alturaViewportBase =
         0;
-
-    var observadorForm =
-        null;
-
-    var alturaForm =
-        0;
-
-    var rafForm =
-        null;
 
     var preparacaoInicialConcluida =
         false;
@@ -149,9 +127,7 @@
         );
     }
 
-    function dataLocal(
-        valor
-    ) {
+    function dataLocal(valor) {
         var texto =
             String(
                 valor ||
@@ -204,6 +180,18 @@
             String(
                 window.membroId
             )
+        );
+    }
+
+    function websocketLigado() {
+        return Boolean(
+            window.AppWebSocket &&
+            typeof window
+                .AppWebSocket
+                .isConnected ===
+                'function' &&
+            window.AppWebSocket
+                .isConnected()
         );
     }
 
@@ -318,10 +306,22 @@
         );
     }
 
+    /*
+     * TECLADO
+     *
+     * Não animamos scrollTop nem padding.
+     *
+     * A própria scroll layer das mensagens
+     * e o compositor deslocam-se juntos.
+     *
+     * Se visualViewport acompanhar o teclado,
+     * seguimos a posição real dele frame a frame.
+     */
+
     function definirAlturaTeclado(
         altura
     ) {
-        alturaTeclado =
+        altura =
             Math.max(
                 0,
                 Math.round(
@@ -332,79 +332,556 @@
                 )
             );
 
-        document
-            .documentElement
+        $pagina[0]
             .style
             .setProperty(
                 '--margot-keyboard-height',
-                alturaTeclado +
+                altura +
                 'px'
             );
     }
 
-    function definirOffsetConteudo(
-        offset
-    ) {
-        document
-            .documentElement
-            .style
-            .setProperty(
-                '--chat-conteudo-offset',
-                Math.round(
-                    Number(
-                        offset
-                    ) ||
-                    0
-                ) +
-                'px'
-            );
-    }
-
-    function limparAnimacaoConteudo() {
-        document.body
-            .classList
-            .remove(
-                'margot-chat-conteudo-abrir'
-            );
-
-        document.body
-            .classList
-            .remove(
-                'margot-chat-conteudo-fechar'
-            );
-    }
-
-    function forcarEstiloConteudo() {
+    function alturaVisualAtual() {
         if (
-            !$conteudo[0]
+            !viewport
         ) {
-            return;
+            return 0;
         }
 
-        void $conteudo[0]
-            .offsetHeight;
-    }
-
-    function medirForm() {
-        if (
-            !ativo ||
-            !$form[0]
-        ) {
-            return;
-        }
-
-        var novaAltura =
+        var limiteVisivel =
+            Number(
+                viewport.height ||
+                0
+            ) +
             Math.max(
-                1,
-                Math.ceil(
-                    $form[0]
-                        .offsetHeight
+                0,
+                Number(
+                    viewport.offsetTop ||
+                    0
                 )
             );
 
         if (
-            novaAltura ===
-            alturaForm
+            !alturaViewportBase
+        ) {
+            alturaViewportBase =
+                Math.max(
+                    Number(
+                        window.innerHeight ||
+                        0
+                    ),
+                    limiteVisivel
+                );
+        }
+
+        if (
+            !tecladoPluginAberto &&
+            !viewportTecladoAtivo
+        ) {
+            alturaViewportBase =
+                Math.max(
+                    Number(
+                        window.innerHeight ||
+                        0
+                    ),
+                    limiteVisivel
+                );
+        }
+
+        return Math.max(
+            0,
+            alturaViewportBase -
+            limiteVisivel
+        );
+    }
+
+    function cancelarFallbackTeclado() {
+        if (
+            temporizadorFallbackTeclado ===
+            null
+        ) {
+            return;
+        }
+
+        window.clearTimeout(
+            temporizadorFallbackTeclado
+        );
+
+        temporizadorFallbackTeclado =
+            null;
+    }
+
+    function aplicarViewport() {
+        rafViewport =
+            null;
+
+        if (
+            !ativo ||
+            !viewport
+        ) {
+            return;
+        }
+
+        var altura =
+            alturaVisualAtual();
+
+        if (
+            altura >
+            24
+        ) {
+            viewportTecladoAtivo =
+                true;
+
+            cancelarFallbackTeclado();
+
+            document.body
+                .classList
+                .remove(
+                    'margot-chat-teclado-fallback'
+                );
+
+            definirAlturaTeclado(
+                altura
+            );
+
+            return;
+        }
+
+        if (
+            !tecladoPluginAberto
+        ) {
+            viewportTecladoAtivo =
+                false;
+
+            document.body
+                .classList
+                .remove(
+                    'margot-chat-teclado-fallback'
+                );
+
+            definirAlturaTeclado(
+                0
+            );
+        }
+    }
+
+    function agendarViewport() {
+        if (
+            rafViewport !==
+            null
+        ) {
+            return;
+        }
+
+        rafViewport =
+            window
+                .requestAnimationFrame(
+                    aplicarViewport
+                );
+    }
+
+    function tecladoVaiAbrir(
+        info
+    ) {
+        if (
+            !ativo
+        ) {
+            return;
+        }
+
+        tecladoPluginAberto =
+            true;
+
+        alturaTecladoPlugin =
+            Math.max(
+                0,
+                Number(
+                    info &&
+                    info.keyboardHeight
+                ) ||
+                0
+            );
+
+        cancelarFallbackTeclado();
+
+        /*
+         * Damos alguns milissegundos ao
+         * visualViewport para começar a mexer.
+         *
+         * Só usamos a animação artificial
+         * se o WebView não reportar o movimento.
+         */
+        temporizadorFallbackTeclado =
+            window.setTimeout(
+                function () {
+                    temporizadorFallbackTeclado =
+                        null;
+
+                    if (
+                        !ativo ||
+                        !tecladoPluginAberto ||
+                        viewportTecladoAtivo
+                    ) {
+                        return;
+                    }
+
+                    document.body
+                        .classList
+                        .add(
+                            'margot-chat-teclado-fallback'
+                        );
+
+                    definirAlturaTeclado(
+                        alturaTecladoPlugin
+                    );
+                },
+                40
+            );
+
+        agendarViewport();
+    }
+
+    function tecladoAbriu(
+        info
+    ) {
+        if (
+            !ativo
+        ) {
+            return;
+        }
+
+        tecladoPluginAberto =
+            true;
+
+        alturaTecladoPlugin =
+            Math.max(
+                0,
+                Number(
+                    info &&
+                    info.keyboardHeight
+                ) ||
+                alturaTecladoPlugin
+            );
+
+        agendarViewport();
+
+        if (
+            !viewportTecladoAtivo &&
+            alturaTecladoPlugin >
+            0
+        ) {
+            definirAlturaTeclado(
+                alturaTecladoPlugin
+            );
+        }
+    }
+
+    function tecladoVaiFechar() {
+        if (
+            !ativo
+        ) {
+            return;
+        }
+
+        cancelarFallbackTeclado();
+
+        tecladoPluginAberto =
+            false;
+
+        /*
+         * Se visualViewport está ativo,
+         * deixamo-lo levar a altura até zero.
+         */
+        if (
+            viewportTecladoAtivo
+        ) {
+            agendarViewport();
+            return;
+        }
+
+        document.body
+            .classList
+            .add(
+                'margot-chat-teclado-fallback'
+            );
+
+        definirAlturaTeclado(
+            0
+        );
+    }
+
+    function tecladoFechou() {
+        if (
+            !ativo
+        ) {
+            return;
+        }
+
+        cancelarFallbackTeclado();
+
+        tecladoPluginAberto =
+            false;
+
+        alturaTecladoPlugin =
+            0;
+
+        agendarViewport();
+
+        window.requestAnimationFrame(
+            function () {
+                if (
+                    !ativo
+                ) {
+                    return;
+                }
+
+                if (
+                    alturaVisualAtual() <=
+                    24
+                ) {
+                    viewportTecladoAtivo =
+                        false;
+
+                    document.body
+                        .classList
+                        .remove(
+                            'margot-chat-teclado-fallback'
+                        );
+
+                    definirAlturaTeclado(
+                        0
+                    );
+                }
+            }
+        );
+    }
+
+    async function prepararTecladoNativo() {
+        if (
+            viewport
+        ) {
+            alturaViewportBase =
+                Math.max(
+                    Number(
+                        window.innerHeight ||
+                        0
+                    ),
+
+                    Number(
+                        viewport.height ||
+                        0
+                    ) +
+                    Math.max(
+                        0,
+                        Number(
+                            viewport.offsetTop ||
+                            0
+                        )
+                    )
+                );
+
+            viewport.addEventListener(
+                'resize',
+                agendarViewport
+            );
+
+            viewport.addEventListener(
+                'scroll',
+                agendarViewport
+            );
+        }
+
+        if (
+            !teclado
+        ) {
+            return;
+        }
+
+        if (
+            eIOSNativo() &&
+            typeof teclado
+                .setAccessoryBarVisible ===
+                'function'
+        ) {
+            try {
+                await teclado
+                    .setAccessoryBarVisible({
+                        isVisible:
+                            false
+                    });
+            } catch (
+                erro
+            ) {
+                console.warn(
+                    'Não foi possível ocultar a barra auxiliar do teclado.',
+                    erro
+                );
+            }
+        }
+
+        if (
+            typeof teclado
+                .addListener !==
+                'function'
+        ) {
+            return;
+        }
+
+        try {
+            tecladoListeners.push(
+                await teclado
+                    .addListener(
+                        'keyboardWillShow',
+                        tecladoVaiAbrir
+                    )
+            );
+
+            tecladoListeners.push(
+                await teclado
+                    .addListener(
+                        'keyboardDidShow',
+                        tecladoAbriu
+                    )
+            );
+
+            tecladoListeners.push(
+                await teclado
+                    .addListener(
+                        'keyboardWillHide',
+                        tecladoVaiFechar
+                    )
+            );
+
+            tecladoListeners.push(
+                await teclado
+                    .addListener(
+                        'keyboardDidHide',
+                        tecladoFechou
+                    )
+            );
+        } catch (
+            erro
+        ) {
+            console.warn(
+                'Não foi possível acompanhar o teclado nativo.',
+                erro
+            );
+        }
+    }
+
+    async function restaurarTecladoNativo() {
+        cancelarFallbackTeclado();
+
+        var listeners =
+            tecladoListeners
+                .slice();
+
+        tecladoListeners =
+            [];
+
+        listeners.forEach(
+            function (
+                listener
+            ) {
+                if (
+                    listener &&
+                    typeof listener
+                        .remove ===
+                        'function'
+                ) {
+                    Promise
+                        .resolve(
+                            listener
+                                .remove()
+                        )
+                        .catch(
+                            function () {}
+                        );
+                }
+            }
+        );
+
+        if (
+            viewport
+        ) {
+            viewport.removeEventListener(
+                'resize',
+                agendarViewport
+            );
+
+            viewport.removeEventListener(
+                'scroll',
+                agendarViewport
+            );
+        }
+
+        if (
+            rafViewport !==
+            null
+        ) {
+            window
+                .cancelAnimationFrame(
+                    rafViewport
+                );
+
+            rafViewport =
+                null;
+        }
+
+        document.body
+            .classList
+            .remove(
+                'margot-chat-teclado-fallback'
+            );
+
+        definirAlturaTeclado(
+            0
+        );
+
+        if (
+            teclado &&
+            eIOSNativo() &&
+            typeof teclado
+                .setAccessoryBarVisible ===
+                'function'
+        ) {
+            try {
+                await teclado
+                    .setAccessoryBarVisible({
+                        isVisible:
+                            true
+                    });
+            } catch (
+                erro
+            ) {}
+        }
+    }
+
+    /*
+     * ALTURA REAL DO FORMULÁRIO
+     */
+
+    function aplicarAlturaForm(
+        novaAltura
+    ) {
+        novaAltura =
+            Math.max(
+                1,
+                Math.ceil(
+                    Number(
+                        novaAltura
+                    ) ||
+                    0
+                )
+            );
+
+        if (
+            !novaAltura ||
+            Math.abs(
+                novaAltura -
+                alturaForm
+            ) <
+            1
         ) {
             return;
         }
@@ -412,8 +889,7 @@
         alturaForm =
             novaAltura;
 
-        document
-            .documentElement
+        $pagina[0]
             .style
             .setProperty(
                 '--chat-form-altura',
@@ -457,7 +933,11 @@
     }
 
     function prepararMedicaoForm() {
-        medirForm();
+        aplicarAlturaForm(
+            $form[0]
+                .getBoundingClientRect()
+                .height
+        );
 
         if (
             typeof ResizeObserver !==
@@ -468,8 +948,57 @@
 
         observadorForm =
             new ResizeObserver(
-                function () {
-                    medirForm();
+                function (
+                    entradas
+                ) {
+                    if (
+                        !ativo ||
+                        !entradas.length
+                    ) {
+                        return;
+                    }
+
+                    var entrada =
+                        entradas[0];
+
+                    var tamanho =
+                        entrada.borderBoxSize;
+
+                    var altura =
+                        0;
+
+                    if (
+                        tamanho
+                    ) {
+                        if (
+                            Array.isArray(
+                                tamanho
+                            )
+                        ) {
+                            altura =
+                                tamanho[0]
+                                    ? tamanho[0]
+                                        .blockSize
+                                    : 0;
+                        } else {
+                            altura =
+                                tamanho.blockSize ||
+                                0;
+                        }
+                    }
+
+                    if (
+                        !altura
+                    ) {
+                        altura =
+                            $form[0]
+                                .getBoundingClientRect()
+                                .height;
+                    }
+
+                    aplicarAlturaForm(
+                        altura
+                    );
                 }
             );
 
@@ -578,13 +1107,13 @@
             return;
         }
 
-        medirForm();
         irParaFimAgora();
 
         window.requestAnimationFrame(
             function () {
                 if (
-                    !ativo
+                    !ativo ||
+                    !$mensagens[0]
                 ) {
                     return;
                 }
@@ -728,403 +1257,6 @@
             );
     }
 
-    /*
-     * TECLADO
-     *
-     * Não existe qualquer animação JS de scrollTop.
-     *
-     * Durante abertura/fecho:
-     * - o formulário usa transform;
-     * - o conteúdo usa transform;
-     * - ambos são compostados pela GPU.
-     *
-     * O scroll real só é ajustado antes/depois.
-     */
-
-    function tecladoVaiAbrir(
-        info
-    ) {
-        if (
-            !ativo ||
-            !$mensagens[0]
-        ) {
-            return;
-        }
-
-        if (
-            !preparacaoInicialConcluida
-        ) {
-            finalizarPreparacaoInicial();
-        }
-
-        var altura =
-            Math.max(
-                0,
-                Number(
-                    info &&
-                    info.keyboardHeight
-                ) ||
-                0
-            );
-
-        ancorarTeclado =
-            aFixarNoFim ||
-            distanciaAoFim() <
-            96;
-
-        limparAnimacaoConteudo();
-
-        document.body
-            .classList
-            .remove(
-                'margot-chat-teclado-aberto'
-            );
-
-        definirAlturaTeclado(
-            altura
-        );
-
-        document.body
-            .classList
-            .add(
-                'margot-chat-teclado-pronto'
-            );
-
-        if (
-            ancorarTeclado &&
-            alturaTeclado >
-            0
-        ) {
-            /*
-             * Aumentar o padding e ir para o novo fundo
-             * moveria as mensagens instantaneamente para cima.
-             *
-             * Compensamos esse movimento com transform,
-             * portanto visualmente ainda não mexem.
-             */
-            definirOffsetConteudo(
-                alturaTeclado
-            );
-
-            irParaFimAgora();
-
-            forcarEstiloConteudo();
-
-            document.body
-                .classList
-                .add(
-                    'margot-chat-conteudo-abrir'
-                );
-
-            definirOffsetConteudo(
-                0
-            );
-        } else {
-            definirOffsetConteudo(
-                0
-            );
-        }
-
-        document.body
-            .classList
-            .add(
-                'margot-chat-teclado-aberto'
-            );
-    }
-
-    function tecladoAbriu(
-        info
-    ) {
-        if (
-            !ativo
-        ) {
-            return;
-        }
-
-        var altura =
-            Math.max(
-                0,
-                Number(
-                    info &&
-                    info.keyboardHeight
-                ) ||
-                0
-            );
-
-        if (
-            altura >
-            0
-        ) {
-            definirAlturaTeclado(
-                altura
-            );
-        }
-
-        definirOffsetConteudo(
-            0
-        );
-
-        if (
-            ancorarTeclado
-        ) {
-            aFixarNoFim =
-                true;
-
-            irParaFimAgora();
-        }
-    }
-
-    function tecladoVaiFechar() {
-        if (
-            !ativo ||
-            !$mensagens[0]
-        ) {
-            return;
-        }
-
-        limparAnimacaoConteudo();
-
-        definirOffsetConteudo(
-            0
-        );
-
-        forcarEstiloConteudo();
-
-        if (
-            ancorarTeclado &&
-            alturaTeclado >
-            0
-        ) {
-            /*
-             * O padding ainda continua com o espaço
-             * do teclado durante toda a animação.
-             *
-             * Só movemos visualmente as mensagens
-             * para baixo por transform GPU.
-             */
-            document.body
-                .classList
-                .add(
-                    'margot-chat-conteudo-fechar'
-                );
-
-            definirOffsetConteudo(
-                alturaTeclado
-            );
-        }
-
-        document.body
-            .classList
-            .remove(
-                'margot-chat-teclado-aberto'
-            );
-    }
-
-    function tecladoFechou() {
-        if (
-            !ativo
-        ) {
-            return;
-        }
-
-        /*
-         * Neste ponto o teclado já desapareceu.
-         *
-         * Retiramos de uma vez:
-         * - o transform compensatório;
-         * - o espaço reservado ao teclado.
-         *
-         * E colocamos o scroll real no fundo.
-         *
-         * Como a posição visual antes/depois é a mesma,
-         * não existe uma segunda animação.
-         */
-
-        limparAnimacaoConteudo();
-
-        document.body
-            .classList
-            .remove(
-                'margot-chat-teclado-aberto'
-            );
-
-        document.body
-            .classList
-            .remove(
-                'margot-chat-teclado-pronto'
-            );
-
-        definirAlturaTeclado(
-            0
-        );
-
-        definirOffsetConteudo(
-            0
-        );
-
-        if (
-            ancorarTeclado
-        ) {
-            aFixarNoFim =
-                true;
-
-            irParaFimAgora();
-        }
-
-        ancorarTeclado =
-            false;
-    }
-
-    async function prepararTecladoNativo() {
-        if (
-            !teclado
-        ) {
-            return;
-        }
-
-        if (
-            eIOSNativo() &&
-            typeof teclado
-                .setAccessoryBarVisible ===
-                'function'
-        ) {
-            try {
-                await teclado
-                    .setAccessoryBarVisible({
-                        isVisible:
-                            false
-                    });
-            } catch (
-                erro
-            ) {
-                console.warn(
-                    'Não foi possível ocultar a barra auxiliar do teclado.',
-                    erro
-                );
-            }
-        }
-
-        if (
-            typeof teclado
-                .addListener !==
-                'function'
-        ) {
-            return;
-        }
-
-        try {
-            tecladoListeners.push(
-                await teclado
-                    .addListener(
-                        'keyboardWillShow',
-                        tecladoVaiAbrir
-                    )
-            );
-
-            tecladoListeners.push(
-                await teclado
-                    .addListener(
-                        'keyboardDidShow',
-                        tecladoAbriu
-                    )
-            );
-
-            tecladoListeners.push(
-                await teclado
-                    .addListener(
-                        'keyboardWillHide',
-                        tecladoVaiFechar
-                    )
-            );
-
-            tecladoListeners.push(
-                await teclado
-                    .addListener(
-                        'keyboardDidHide',
-                        tecladoFechou
-                    )
-            );
-        } catch (
-            erro
-        ) {
-            console.warn(
-                'Não foi possível acompanhar o teclado nativo.',
-                erro
-            );
-        }
-    }
-
-    async function restaurarTecladoNativo() {
-        var listeners =
-            tecladoListeners
-                .slice();
-
-        tecladoListeners =
-            [];
-
-        listeners.forEach(
-            function (
-                listener
-            ) {
-                if (
-                    listener &&
-                    typeof listener
-                        .remove ===
-                        'function'
-                ) {
-                    Promise
-                        .resolve(
-                            listener
-                                .remove()
-                        )
-                        .catch(
-                            function () {}
-                        );
-                }
-            }
-        );
-
-        limparAnimacaoConteudo();
-
-        document.body
-            .classList
-            .remove(
-                'margot-chat-teclado-aberto'
-            );
-
-        document.body
-            .classList
-            .remove(
-                'margot-chat-teclado-pronto'
-            );
-
-        definirAlturaTeclado(
-            0
-        );
-
-        definirOffsetConteudo(
-            0
-        );
-
-        if (
-            teclado &&
-            eIOSNativo() &&
-            typeof teclado
-                .setAccessoryBarVisible ===
-                'function'
-        ) {
-            try {
-                await teclado
-                    .setAccessoryBarVisible({
-                        isVisible:
-                            true
-                    });
-            } catch (
-                erro
-            ) {}
-        }
-    }
-
     function criarMensagem(
         mensagem
     ) {
@@ -1147,7 +1279,8 @@
                     mensagem.id,
 
                 'data-emissor-id':
-                    mensagem.emissor_id
+                    mensagem
+                        .emissor_id
             });
 
         var $balao =
@@ -1167,12 +1300,14 @@
                         'chat-imagem',
 
                     src:
-                        mensagem.media_url,
+                        mensagem
+                            .media_url,
 
                     alt:
                         'Fotografia enviada por ' +
                         (
-                            mensagem.emissor_nome ||
+                            mensagem
+                                .emissor_nome ||
                             'utilizador'
                         ),
 
@@ -1208,10 +1343,12 @@
             $video.append(
                 $('<source>', {
                     src:
-                        mensagem.media_url,
+                        mensagem
+                            .media_url,
 
                     type:
-                        mensagem.ficheiro_mime ||
+                        mensagem
+                            .ficheiro_mime ||
                         'video/mp4'
                 })
             );
@@ -1236,10 +1373,12 @@
                 .append(
                     $('<time>', {
                         datetime:
-                            mensagem.criada_em
+                            mensagem
+                                .criada_em
                     }).text(
                         dataLocal(
-                            mensagem.criada_em
+                            mensagem
+                                .criada_em
                         )
                     )
                 );
@@ -1264,11 +1403,13 @@
             );
         }
 
-        return $artigo.append(
-            $balao.append(
-                $rodape
-            )
-        );
+        return $artigo
+            .append(
+                $balao
+                    .append(
+                        $rodape
+                    )
+            );
     }
 
     function adicionarMensagem(
@@ -1527,10 +1668,7 @@
         mensagemId
     ) {
         if (
-            !window.AppWebSocket ||
-            !window
-                .AppWebSocket
-                .isConnected()
+            !websocketLigado()
         ) {
             return;
         }
@@ -1629,10 +1767,6 @@
 
             limparMedia();
 
-            /*
-             * O ResizeObserver deteta sozinho
-             * a nova altura do compositor.
-             */
             fixarNoFimAposMudanca();
 
             publicarMensagem(
@@ -1659,7 +1793,8 @@
 
     async function marcarComoLidas() {
         if (
-            document.visibilityState ===
+            document
+                .visibilityState ===
             'hidden'
         ) {
             return;
@@ -1689,10 +1824,7 @@
             );
 
             if (
-                window.AppWebSocket &&
-                window
-                    .AppWebSocket
-                    .isConnected()
+                websocketLigado()
             ) {
                 window
                     .AppWebSocket
@@ -1713,7 +1845,22 @@
         }
     }
 
-    async function procurarNovasMensagens() {
+    async function procurarNovasMensagens(
+        forcar
+    ) {
+        /*
+         * Com WebSocket ligado não fazemos
+         * um request de 5 em 5 segundos.
+         *
+         * O polling serve apenas de fallback.
+         */
+        if (
+            !forcar &&
+            websocketLigado()
+        ) {
+            return;
+        }
+
         try {
             var resposta =
                 await fetch(
@@ -1799,9 +1946,10 @@
                 function () {
                     if (
                         Number(
-                            $(this).attr(
-                                'data-mensagem-id'
-                            )
+                            $(this)
+                                .attr(
+                                    'data-mensagem-id'
+                                )
                         ) <=
                         Number(
                             ultimoLido
@@ -1823,8 +1971,19 @@
             );
     }
 
-    function redimensionarTextarea() {
+    /*
+     * TEXTAREA
+     *
+     * O scrollHeight é lido no máximo
+     * uma vez por frame.
+     */
+
+    function ajustarTextareaAgora() {
+        rafTexto =
+            null;
+
         if (
+            !ativo ||
             !$texto[0]
         ) {
             return;
@@ -1842,17 +2001,23 @@
                 120
             ) +
             'px';
+    }
 
-        /*
-         * Não medimos o form aqui.
-         *
-         * Isso fazia uma leitura adicional de layout
-         * durante cada input.
-         *
-         * ResizeObserver só é chamado se a altura
-         * realmente tiver mudado.
-         */
+    function aoAlterarTexto() {
         atualizarEstadoEnviar();
+
+        if (
+            rafTexto !==
+            null
+        ) {
+            return;
+        }
+
+        rafTexto =
+            window
+                .requestAnimationFrame(
+                    ajustarTextareaAgora
+                );
     }
 
     $mensagens
@@ -1864,10 +2029,12 @@
                 ultimoId =
                     Math.max(
                         ultimoId,
+
                         Number(
-                            $(this).attr(
-                                'data-mensagem-id'
-                            )
+                            $(this)
+                                .attr(
+                                    'data-mensagem-id'
+                                )
                         ) ||
                         0
                     );
@@ -1882,9 +2049,10 @@
             function () {
                 $(this).text(
                     dataLocal(
-                        $(this).attr(
-                            'datetime'
-                        )
+                        $(this)
+                            .attr(
+                                'datetime'
+                            )
                     )
                 );
             }
@@ -1893,19 +2061,17 @@
     prepararMedicaoForm();
     prepararConteudoInicial();
 
+    /*
+     * O estado "estou no fundo" depende
+     * do scroll real, não de tocar na lista.
+     */
     $mensagens.on(
-        'pointerdown' +
-        NS +
-        ' touchstart' +
-        NS +
-        ' wheel' +
+        'scroll' +
         NS,
         function () {
             aFixarNoFim =
-                false;
-
-            ancorarTeclado =
-                false;
+                distanciaAoFim() <
+                90;
         }
     );
 
@@ -1990,7 +2156,7 @@
     $texto.on(
         'input' +
         NS,
-        redimensionarTextarea
+        aoAlterarTexto
     );
 
     $texto.on(
@@ -2029,25 +2195,31 @@
         var pertence =
             (
                 String(
-                    mensagem.emissor_id
+                    mensagem
+                        .emissor_id
                 ) ===
                     outroId &&
                 String(
-                    mensagem.destinatario_id
+                    mensagem
+                        .destinatario_id
                 ) ===
                     String(
-                        window.membroId
+                        window
+                            .membroId
                     )
             ) ||
             (
                 String(
-                    mensagem.emissor_id
+                    mensagem
+                        .emissor_id
                 ) ===
                     String(
-                        window.membroId
+                        window
+                            .membroId
                     ) &&
                 String(
-                    mensagem.destinatario_id
+                    mensagem
+                        .destinatario_id
                 ) ===
                     outroId
             );
@@ -2069,17 +2241,24 @@
         evento
     ) {
         atualizarConfirmacoes(
-            evento.detail.reader_id,
-            evento.detail.last_message_id
+            evento.detail
+                .reader_id,
+
+            evento.detail
+                .last_message_id
         );
     }
 
     function aoAlterarVisibilidade() {
         if (
-            document.visibilityState ===
+            document
+                .visibilityState ===
             'visible'
         ) {
-            procurarNovasMensagens();
+            procurarNovasMensagens(
+                true
+            );
+
             marcarComoLidas();
         }
     }
@@ -2108,10 +2287,17 @@
     prepararTecladoNativo();
     marcarComoLidas();
 
+    /*
+     * Só é fallback se o WebSocket cair.
+     */
     var temporizador =
         window.setInterval(
-            procurarNovasMensagens,
-            5000
+            function () {
+                procurarNovasMensagens(
+                    false
+                );
+            },
+            12000
         );
 
     function desativarChat() {
@@ -2144,11 +2330,25 @@
             rafForm !==
             null
         ) {
-            window.cancelAnimationFrame(
-                rafForm
-            );
+            window
+                .cancelAnimationFrame(
+                    rafForm
+                );
 
             rafForm =
+                null;
+        }
+
+        if (
+            rafTexto !==
+            null
+        ) {
+            window
+                .cancelAnimationFrame(
+                    rafTexto
+                );
+
+            rafTexto =
                 null;
         }
 
@@ -2197,36 +2397,19 @@
                 '.margotChatInicial'
             );
 
-        limparAnimacaoConteudo();
+        restaurarTecladoNativo();
 
-        document.body
-            .classList
-            .remove(
-                'margot-chat-teclado-aberto'
+        $pagina[0]
+            .style
+            .removeProperty(
+                '--margot-keyboard-height'
             );
 
-        document.body
-            .classList
-            .remove(
-                'margot-chat-teclado-pronto'
-            );
-
-        definirAlturaTeclado(
-            0
-        );
-
-        definirOffsetConteudo(
-            0
-        );
-
-        document
-            .documentElement
+        $pagina[0]
             .style
             .removeProperty(
                 '--chat-form-altura'
             );
-
-        restaurarTecladoNativo();
 
         window.removeEventListener(
             'app:chat-message',
