@@ -1,7 +1,7 @@
 {% extends 'layout.html' %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ doc_root }}estilos/chat.css?v=13" data-margot-page-style>
+<link rel="stylesheet" href="{{ doc_root }}estilos/chat.css?v=14" data-margot-page-style>
 {% endblock %}
 
 {% block content %}
@@ -35,58 +35,60 @@
         aria-busy="true"
         aria-label="Conversa com {{ outro.nome }}"
     >
-        {% for mensagem in mensagens %}
-            <article
-                class="chat-mensagem {{ mensagem.minha ? 'minha' : 'recebida' }}"
-                data-mensagem-id="{{ mensagem.id }}"
-                data-emissor-id="{{ mensagem.emissor_id }}"
-            >
-                <div class="chat-balao">
-                    {% if mensagem.tipo == 'imagem' and mensagem.media_url %}
-                        <img
-                            class="chat-imagem"
-                            src="{{ mensagem.media_url }}"
-                            alt="Fotografia enviada por {{ mensagem.emissor_nome }}"
-                            loading="lazy"
-                            draggable="false"
-                        >
-
-                    {% elseif mensagem.tipo == 'video' and mensagem.media_url %}
-                        <video
-                            class="chat-video"
-                            controls
-                            playsinline
-                            preload="metadata"
-                        >
-                            <source
+        <div id="chat-mensagens-conteudo" class="chat-mensagens-conteudo">
+            {% for mensagem in mensagens %}
+                <article
+                    class="chat-mensagem {{ mensagem.minha ? 'minha' : 'recebida' }}"
+                    data-mensagem-id="{{ mensagem.id }}"
+                    data-emissor-id="{{ mensagem.emissor_id }}"
+                >
+                    <div class="chat-balao">
+                        {% if mensagem.tipo == 'imagem' and mensagem.media_url %}
+                            <img
+                                class="chat-imagem"
                                 src="{{ mensagem.media_url }}"
-                                type="{{ mensagem.ficheiro_mime }}"
+                                alt="Fotografia enviada por {{ mensagem.emissor_nome }}"
+                                loading="lazy"
+                                draggable="false"
                             >
-                        </video>
-                    {% endif %}
 
-                    {% if mensagem.texto %}
-                        <p>{{ mensagem.texto }}</p>
-                    {% endif %}
-
-                    <footer>
-                        <time
-                            datetime="{{ mensagem.criada_em }}"
-                            data-data-mensagem="{{ mensagem.criada_em }}"
-                        ></time>
-
-                        {% if mensagem.minha %}
-                            <span
-                                class="chat-lida"
-                                aria-label="{{ mensagem.lida ? 'Lida' : 'Enviada' }}"
+                        {% elseif mensagem.tipo == 'video' and mensagem.media_url %}
+                            <video
+                                class="chat-video"
+                                controls
+                                playsinline
+                                preload="metadata"
                             >
-                                {{ mensagem.lida ? '✓✓' : '✓' }}
-                            </span>
+                                <source
+                                    src="{{ mensagem.media_url }}"
+                                    type="{{ mensagem.ficheiro_mime }}"
+                                >
+                            </video>
                         {% endif %}
-                    </footer>
-                </div>
-            </article>
-        {% endfor %}
+
+                        {% if mensagem.texto %}
+                            <p>{{ mensagem.texto }}</p>
+                        {% endif %}
+
+                        <footer>
+                            <time
+                                datetime="{{ mensagem.criada_em }}"
+                                data-data-mensagem="{{ mensagem.criada_em }}"
+                            ></time>
+
+                            {% if mensagem.minha %}
+                                <span
+                                    class="chat-lida"
+                                    aria-label="{{ mensagem.lida ? 'Lida' : 'Enviada' }}"
+                                >
+                                    {{ mensagem.lida ? '✓✓' : '✓' }}
+                                </span>
+                            {% endif %}
+                        </footer>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
     </section>
 
     <form
@@ -165,5 +167,5 @@ window.webSocketUrl = window.location.protocol === 'https:'
     : 'ws://' + window.location.hostname + ':8080';
 </script>
 
-<script src="{{ doc_root }}js/chat.js?v=10"></script>
+<script src="{{ doc_root }}js/chat.js?v=11"></script>
 {% endblock %}
