@@ -15,7 +15,7 @@ class WebSocket implements MessageComponentInterface
 {
     private const RAIO_MAXIMO_METROS = 100;
     /* O iOS envia eventos de movimento/visita, não pings exatos por minuto. */
-    private const LOCALIZACAO_MAXIMA_IDADE_SEGUNDOS = 900;
+    private const LOCALIZACAO_MAXIMA_IDADE_SEGUNDOS = 180;
     private const LOCALIZACOES_PERSISTIDAS_CACHE_SEGUNDOS = 5;
     private const TOLERANCIA_NAVEGACAO_SEGUNDOS = 8.0;
     private const BLOQUEIOS_CACHE_SEGUNDOS = 10;
