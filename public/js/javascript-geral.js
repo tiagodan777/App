@@ -4,209 +4,856 @@
     if (window.MargotNavigation) return;
 
     var seletorPagina = '[data-margot-pagina]';
+
     var aNavegar = false;
+    var faseNavegacao = 'idle';
+    var urlEmNavegacao = null;
+    var navegacaoPendente = null;
+
     var posicaoHistorico = 0;
     var controlador = null;
     var urlRenderizada = window.location.href;
 
+    var preAquecimentos = new Map();
+    var preAquecimentoAgendado = false;
+
+    var ESPERA_MAXIMA_ESTILO = 180;
+    var DURACAO_NAVEGACAO = 220;
+    var TEMPO_REAQUECER = 30000;
+
+    function urlAbsoluta(url) {
+        return new URL(
+            url,
+            window.location.href
+        ).href;
+    }
+
     function caminhoNormalizado(url) {
-        var caminho = new URL(url, window.location.href).pathname.replace(/\/+$/, '') || '/';
-        return caminho === '/index' ? '/' : caminho;
+        var caminho = new URL(
+            url,
+            window.location.href
+        ).pathname.replace(
+            /\/+$/,
+            ''
+        ) || '/';
+
+        return caminho === '/index'
+            ? '/'
+            : caminho;
     }
 
     function ePaginaAtual(url) {
-        return caminhoNormalizado(url) === caminhoNormalizado(urlRenderizada);
+        return (
+            caminhoNormalizado(url) ===
+            caminhoNormalizado(urlRenderizada)
+        );
     }
 
     function indiceMenu(url) {
-        var caminho = caminhoNormalizado(url);
+        var caminho =
+            caminhoNormalizado(url);
 
-        if (caminho === '/') return 0;
-        if (caminho === '/messages') return 1;
-        if (caminho.indexOf('/profile/') === 0) return 2;
+        if (caminho === '/') {
+            return 0;
+        }
+
+        if (caminho === '/messages') {
+            return 1;
+        }
+
+        if (
+            caminho.indexOf(
+                '/profile/'
+            ) === 0
+        ) {
+            return 2;
+        }
 
         return null;
     }
 
     function atualizarMenu(url) {
-        var caminho = caminhoNormalizado(url);
+        var caminho =
+            caminhoNormalizado(url);
 
-        document.querySelectorAll('#menuPrincipal a[href]').forEach(function (link) {
-            var ativo = caminhoNormalizado(link.href) === caminho;
+        document
+            .querySelectorAll(
+                '#menuPrincipal a[href]'
+            )
+            .forEach(
+                function (link) {
+                    var ativo =
+                        caminhoNormalizado(
+                            link.href
+                        ) ===
+                        caminho;
 
-            link.classList.toggle('active', ativo);
+                    link.classList.toggle(
+                        'active',
+                        ativo
+                    );
 
-            if (ativo) link.setAttribute('aria-current', 'page');
-            else link.removeAttribute('aria-current');
-        });
+                    if (ativo) {
+                        link.setAttribute(
+                            'aria-current',
+                            'page'
+                        );
+                    } else {
+                        link.removeAttribute(
+                            'aria-current'
+                        );
+                    }
+                }
+            );
     }
 
+    /*
+     * Antes esperávamos até 2500 ms pelo CSS.
+     *
+     * Isso era uma das principais causas
+     * dos atrasos de vários segundos.
+     *
+     * Agora damos ao stylesheet apenas uma
+     * pequena janela para ficar disponível.
+     */
     function aguardarEstilo(link) {
-        return new Promise(function (resolver) {
-            if (link.sheet) {
-                resolver();
+        return new Promise(
+            function (resolver) {
+                if (link.sheet) {
+                    resolver();
+                    return;
+                }
+
+                var terminado = false;
+                var temporizador = null;
+
+                function terminar() {
+                    if (terminado) {
+                        return;
+                    }
+
+                    terminado = true;
+
+                    if (
+                        temporizador !==
+                        null
+                    ) {
+                        window.clearTimeout(
+                            temporizador
+                        );
+                    }
+
+                    link.removeEventListener(
+                        'load',
+                        terminar
+                    );
+
+                    link.removeEventListener(
+                        'error',
+                        terminar
+                    );
+
+                    resolver();
+                }
+
+                link.addEventListener(
+                    'load',
+                    terminar
+                );
+
+                link.addEventListener(
+                    'error',
+                    terminar
+                );
+
+                temporizador =
+                    window.setTimeout(
+                        terminar,
+                        ESPERA_MAXIMA_ESTILO
+                    );
+            }
+        );
+    }
+
+    function hrefJaCarregado(
+        href,
+        tipo
+    ) {
+        var links =
+            Array.from(
+                document.querySelectorAll(
+                    'link[href]'
+                )
+            );
+
+        if (
+            links.some(
+                function (link) {
+                    return (
+                        link.href ===
+                        href
+                    );
+                }
+            )
+        ) {
+            return true;
+        }
+
+        if (
+            tipo ===
+            'script'
+        ) {
+            return Array.from(
+                document.querySelectorAll(
+                    'script[src]'
+                )
+            ).some(
+                function (script) {
+                    return (
+                        script.src ===
+                        href
+                    );
+                }
+            );
+        }
+
+        return false;
+    }
+
+    function adicionarPreload(
+        href,
+        tipo
+    ) {
+        href =
+            urlAbsoluta(
+                href
+            );
+
+        if (
+            hrefJaCarregado(
+                href,
+                tipo
+            )
+        ) {
+            return;
+        }
+
+        var preload =
+            document.createElement(
+                'link'
+            );
+
+        preload.rel =
+            'preload';
+
+        preload.href =
+            href;
+
+        preload.as =
+            tipo;
+
+        preload.setAttribute(
+            'data-margot-preload',
+            ''
+        );
+
+        document.head.appendChild(
+            preload
+        );
+    }
+
+    /*
+     * Quando descarregamos uma página em
+     * background, aproveitamos para aquecer
+     * os seus CSS e JS.
+     *
+     * Assim, quando o utilizador toca no menu,
+     * esses ficheiros normalmente já estão
+     * na cache do WebView.
+     */
+    function preAquecerRecursos(
+        documentoNovo
+    ) {
+        Array.from(
+            documentoNovo
+                .head
+                .querySelectorAll(
+                    'link[data-margot-page-style][href]'
+                )
+        ).forEach(
+            function (link) {
+                adicionarPreload(
+                    link.getAttribute(
+                        'href'
+                    ),
+                    'style'
+                );
+            }
+        );
+
+        var pagina =
+            documentoNovo.querySelector(
+                seletorPagina
+            );
+
+        if (!pagina) {
+            return;
+        }
+
+        Array.from(
+            pagina.querySelectorAll(
+                'script[src]'
+            )
+        ).forEach(
+            function (script) {
+                adicionarPreload(
+                    script.getAttribute(
+                        'src'
+                    ),
+                    'script'
+                );
+            }
+        );
+    }
+
+    async function preAquecerPagina(
+        url
+    ) {
+        var href =
+            urlAbsoluta(
+                url
+            );
+
+        var destino =
+            new URL(
+                href
+            );
+
+        if (
+            destino.origin !==
+            window.location.origin ||
+            ePaginaAtual(
+                href
+            )
+        ) {
+            return;
+        }
+
+        var ultimo =
+            preAquecimentos.get(
+                href
+            );
+
+        if (
+            ultimo &&
+            (
+                Date.now() -
+                ultimo
+            ) <
+            TEMPO_REAQUECER
+        ) {
+            return;
+        }
+
+        preAquecimentos.set(
+            href,
+            Date.now()
+        );
+
+        try {
+            var resposta =
+                await fetch(
+                    href,
+                    {
+                        credentials:
+                            'same-origin',
+
+                        headers: {
+                            'X-Requested-With':
+                                'XMLHttpRequest'
+                        }
+                    }
+                );
+
+            if (
+                !resposta.ok ||
+                new URL(
+                    resposta.url
+                ).origin !==
+                window.location.origin ||
+                caminhoNormalizado(
+                    resposta.url
+                ) ===
+                '/login'
+            ) {
                 return;
             }
 
-            link.addEventListener('load', resolver, { once: true });
-            link.addEventListener('error', resolver, { once: true });
-            window.setTimeout(resolver, 2500);
-        });
+            var html =
+                await resposta.text();
+
+            var documentoNovo =
+                new DOMParser()
+                    .parseFromString(
+                        html,
+                        'text/html'
+                    );
+
+            preAquecerRecursos(
+                documentoNovo
+            );
+        } catch (erro) {
+            /*
+             * É apenas otimização.
+             * Uma falha aqui nunca deve
+             * interferir com a app.
+             */
+        }
     }
 
-    async function prepararEstilos(documentoNovo) {
-        var atuais = Array.from(
-            document.head.querySelectorAll('link[data-margot-page-style]')
-        );
+    function preAquecerMenu() {
+        if (
+            preAquecimentoAgendado
+        ) {
+            return;
+        }
 
-        var novos = Array.from(
-            documentoNovo.head.querySelectorAll('link[data-margot-page-style]')
-        );
+        preAquecimentoAgendado =
+            true;
 
-        var hrefsNovos = novos.map(function (link) {
-            return new URL(
-                link.getAttribute('href'),
-                window.location.href
-            ).href;
-        });
+        function executar() {
+            preAquecimentoAgendado =
+                false;
+
+            document
+                .querySelectorAll(
+                    '#menuPrincipal a[href]'
+                )
+                .forEach(
+                    function (link) {
+                        preAquecerPagina(
+                            link.href
+                        );
+                    }
+                );
+        }
+
+        if (
+            typeof window
+                .requestIdleCallback ===
+            'function'
+        ) {
+            window.requestIdleCallback(
+                executar,
+                {
+                    timeout:
+                        800
+                }
+            );
+
+            return;
+        }
+
+        window.setTimeout(
+            executar,
+            350
+        );
+    }
+
+    async function prepararEstilos(
+        documentoNovo
+    ) {
+        var atuais =
+            Array.from(
+                document.head
+                    .querySelectorAll(
+                        'link[data-margot-page-style]'
+                    )
+            );
+
+        var novos =
+            Array.from(
+                documentoNovo.head
+                    .querySelectorAll(
+                        'link[data-margot-page-style]'
+                    )
+            );
+
+        var hrefsNovos =
+            novos.map(
+                function (link) {
+                    return urlAbsoluta(
+                        link.getAttribute(
+                            'href'
+                        )
+                    );
+                }
+            );
 
         var promessas = [];
 
-        novos.forEach(function (origem) {
-            var href = new URL(
-                origem.getAttribute('href'),
-                window.location.href
-            ).href;
+        novos.forEach(
+            function (origem) {
+                var href =
+                    urlAbsoluta(
+                        origem.getAttribute(
+                            'href'
+                        )
+                    );
 
-            if (atuais.some(function (link) {
-                return link.href === href;
-            })) {
-                return;
+                if (
+                    atuais.some(
+                        function (link) {
+                            return (
+                                link.href ===
+                                href
+                            );
+                        }
+                    )
+                ) {
+                    return;
+                }
+
+                var link =
+                    document.createElement(
+                        'link'
+                    );
+
+                Array.from(
+                    origem.attributes
+                ).forEach(
+                    function (atributo) {
+                        link.setAttribute(
+                            atributo.name,
+                            atributo.value
+                        );
+                    }
+                );
+
+                link.href =
+                    href;
+
+                document.head.appendChild(
+                    link
+                );
+
+                promessas.push(
+                    aguardarEstilo(
+                        link
+                    )
+                );
             }
+        );
 
-            var link = document.createElement('link');
-
-            Array.from(origem.attributes).forEach(function (atributo) {
-                link.setAttribute(atributo.name, atributo.value);
-            });
-
-            link.href = href;
-            document.head.appendChild(link);
-
-            promessas.push(
-                aguardarEstilo(link)
-            );
-        });
-
-        await Promise.all(promessas);
+        await Promise.all(
+            promessas
+        );
 
         return function limparEstilosAntigos() {
             Array.from(
-                document.head.querySelectorAll('link[data-margot-page-style]')
-            ).forEach(function (link) {
-                if (!hrefsNovos.includes(link.href)) {
-                    link.remove();
+                document.head
+                    .querySelectorAll(
+                        'link[data-margot-page-style]'
+                    )
+            ).forEach(
+                function (link) {
+                    if (
+                        !hrefsNovos.includes(
+                            link.href
+                        )
+                    ) {
+                        link.remove();
+                    }
                 }
-            });
+            );
         };
     }
 
-    function retirarScripts(pagina) {
-        var scripts = Array.from(
-            pagina.querySelectorAll('script')
-        );
+    function retirarScripts(
+        pagina
+    ) {
+        var scripts =
+            Array.from(
+                pagina.querySelectorAll(
+                    'script'
+                )
+            );
 
-        scripts.forEach(function (script) {
-            script.remove();
-        });
+        scripts.forEach(
+            function (script) {
+                script.remove();
+            }
+        );
 
         return scripts;
     }
 
-    function executarScript(origem) {
-        return new Promise(function (resolver, rejeitar) {
-            var script = document.createElement('script');
+    function executarScript(
+        origem
+    ) {
+        return new Promise(
+            function (
+                resolver,
+                rejeitar
+            ) {
+                var script =
+                    document.createElement(
+                        'script'
+                    );
 
-            Array.from(origem.attributes).forEach(function (atributo) {
-                script.setAttribute(atributo.name, atributo.value);
-            });
+                Array.from(
+                    origem.attributes
+                ).forEach(
+                    function (atributo) {
+                        script.setAttribute(
+                            atributo.name,
+                            atributo.value
+                        );
+                    }
+                );
 
-            script.async = false;
+                script.async =
+                    false;
 
-            if (origem.src) {
-                script.src = new URL(
-                    origem.getAttribute('src'),
-                    window.location.href
-                ).href;
+                if (origem.src) {
+                    script.src =
+                        urlAbsoluta(
+                            origem.getAttribute(
+                                'src'
+                            )
+                        );
 
-                script.addEventListener('load', function () {
+                    script.addEventListener(
+                        'load',
+                        function () {
+                            script.remove();
+                            resolver();
+                        },
+                        {
+                            once:
+                                true
+                        }
+                    );
+
+                    script.addEventListener(
+                        'error',
+                        function () {
+                            var src =
+                                script.src;
+
+                            script.remove();
+
+                            rejeitar(
+                                new Error(
+                                    'Não foi possível carregar ' +
+                                    src
+                                )
+                            );
+                        },
+                        {
+                            once:
+                                true
+                        }
+                    );
+                } else {
+                    script.textContent =
+                        origem.textContent;
+                }
+
+                document.body
+                    .appendChild(
+                        script
+                    );
+
+                if (!origem.src) {
                     script.remove();
                     resolver();
-                }, { once: true });
-
-                script.addEventListener('error', function () {
-                    script.remove();
-
-                    rejeitar(
-                        new Error(
-                            'Não foi possível carregar ' +
-                            script.src
-                        )
-                    );
-                }, { once: true });
-            } else {
-                script.textContent = origem.textContent;
+                }
             }
-
-            document.body.appendChild(script);
-
-            if (!origem.src) {
-                script.remove();
-                resolver();
-            }
-        });
+        );
     }
 
-    async function executarScripts(scripts) {
-        for (var indice = 0; indice < scripts.length; indice += 1) {
-            await executarScript(scripts[indice]);
+    async function executarScripts(
+        scripts
+    ) {
+        for (
+            var indice = 0;
+            indice <
+            scripts.length;
+            indice += 1
+        ) {
+            await executarScript(
+                scripts[indice]
+            );
         }
     }
 
-    function animar(pagina, quadros, duracao) {
-        if (!pagina.animate || duracao === 0) {
+    function animar(
+        pagina,
+        quadros,
+        duracao
+    ) {
+        if (
+            !pagina.animate ||
+            duracao ===
+            0
+        ) {
             pagina.style.transform =
-                quadros[quadros.length - 1].transform;
+                quadros[
+                    quadros.length -
+                    1
+                ].transform;
 
             pagina.style.opacity =
-                quadros[quadros.length - 1].opacity;
+                quadros[
+                    quadros.length -
+                    1
+                ].opacity;
 
-            return Promise.resolve(null);
+            return Promise.resolve(
+                null
+            );
         }
 
-        var animacao = pagina.animate(quadros, {
-            duration: duracao,
-            easing: 'cubic-bezier(.22,.8,.28,1)',
-            fill: 'forwards'
-        });
+        var animacao =
+            pagina.animate(
+                quadros,
+                {
+                    duration:
+                        duracao,
+
+                    easing:
+                        'cubic-bezier(.22,.8,.28,1)',
+
+                    fill:
+                        'forwards'
+                }
+            );
 
         return animacao.finished
-            .catch(function () {})
-            .then(function () {
-                return animacao;
-            });
+            .catch(
+                function () {}
+            )
+            .then(
+                function () {
+                    return animacao;
+                }
+            );
     }
 
-    async function trocarPagina(url, opcoes) {
-        opcoes = opcoes || {};
+    function colocarNavegacaoPendente(
+        url,
+        opcoes
+    ) {
+        navegacaoPendente = {
+            url:
+                urlAbsoluta(
+                    url
+                ),
 
-        if (aNavegar || ePaginaAtual(url)) {
-            atualizarMenu(window.location.href);
+            opcoes:
+                Object.assign(
+                    {},
+                    opcoes ||
+                    {}
+                )
+        };
+
+        /*
+         * Feedback visual imediato.
+         *
+         * O utilizador vê a tab selecionada
+         * no instante em que toca.
+         */
+        atualizarMenu(
+            navegacaoPendente.url
+        );
+
+        /*
+         * Se ainda só estamos à espera da rede,
+         * cancelamos já a navegação anterior.
+         *
+         * A última tab tocada ganha.
+         */
+        if (
+            faseNavegacao ===
+                'fetch' &&
+            controlador
+        ) {
+            controlador.abort();
+        }
+    }
+
+    async function trocarPagina(
+        url,
+        opcoes
+    ) {
+        opcoes =
+            opcoes ||
+            {};
+
+        url =
+            urlAbsoluta(
+                url
+            );
+
+        /*
+         * Antes, todos os toques recebidos enquanto
+         * aNavegar era true eram simplesmente perdidos.
+         *
+         * Agora guardamos o último.
+         */
+        if (aNavegar) {
+            if (
+                url ===
+                urlEmNavegacao
+            ) {
+                atualizarMenu(
+                    url
+                );
+
+                return;
+            }
+
+            colocarNavegacaoPendente(
+                url,
+                opcoes
+            );
+
             return;
         }
 
-        aNavegar = true;
-        controlador = new AbortController();
+        if (
+            ePaginaAtual(
+                url
+            )
+        ) {
+            atualizarMenu(
+                url
+            );
+
+            return;
+        }
+
+        aNavegar =
+            true;
+
+        faseNavegacao =
+            'fetch';
+
+        urlEmNavegacao =
+            url;
+
+        controlador =
+            new AbortController();
+
+        /*
+         * O botão do menu muda logo.
+         * Não esperamos pelo PHP, CSS nem animação.
+         */
+        atualizarMenu(
+            url
+        );
 
         document.body.setAttribute(
             'aria-busy',
@@ -214,22 +861,34 @@
         );
 
         try {
-            var resposta = await fetch(url, {
-                credentials: 'same-origin',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                signal: controlador.signal
-            });
+            var resposta =
+                await fetch(
+                    url,
+                    {
+                        credentials:
+                            'same-origin',
+
+                        headers: {
+                            'X-Requested-With':
+                                'XMLHttpRequest'
+                        },
+
+                        signal:
+                            controlador.signal
+                    }
+                );
 
             if (!resposta.ok) {
                 throw new Error(
-                    'HTTP ' + resposta.status
+                    'HTTP ' +
+                    resposta.status
                 );
             }
 
             if (
-                new URL(resposta.url).origin !==
+                new URL(
+                    resposta.url
+                ).origin !==
                 window.location.origin
             ) {
                 throw new Error(
@@ -237,30 +896,39 @@
                 );
             }
 
-            var html = await resposta.text();
+            var html =
+                await resposta.text();
 
-            var documentoNovo = new DOMParser()
-                .parseFromString(
-                    html,
-                    'text/html'
+            var documentoNovo =
+                new DOMParser()
+                    .parseFromString(
+                        html,
+                        'text/html'
+                    );
+
+            var paginaNova =
+                documentoNovo.querySelector(
+                    seletorPagina
                 );
 
-            var paginaNova = documentoNovo.querySelector(
-                seletorPagina
-            );
+            var paginaAtual =
+                document.querySelector(
+                    seletorPagina
+                );
 
-            var paginaAtual = document.querySelector(
-                seletorPagina
-            );
-
-            if (!paginaNova || !paginaAtual) {
+            if (
+                !paginaNova ||
+                !paginaAtual
+            ) {
                 throw new Error(
                     'Página incompatível'
                 );
             }
 
             if (
-                caminhoNormalizado(resposta.url) ===
+                caminhoNormalizado(
+                    resposta.url
+                ) ===
                 '/login'
             ) {
                 window.location.assign(
@@ -270,10 +938,19 @@
                 return;
             }
 
-            var scripts = retirarScripts(
-                paginaNova
-            );
+            faseNavegacao =
+                'render';
 
+            var scripts =
+                retirarScripts(
+                    paginaNova
+                );
+
+            /*
+             * Máximo 180 ms de espera.
+             * Normalmente é 0 porque os recursos
+             * das tabs já foram pré-aquecidos.
+             */
             var limparEstilosAntigos =
                 await prepararEstilos(
                     documentoNovo
@@ -285,16 +962,19 @@
                 )
             );
 
-            var direcao = opcoes.direcao;
+            var direcao =
+                opcoes.direcao;
 
             if (!direcao) {
-                var atual = indiceMenu(
-                    window.location.href
-                );
+                var atual =
+                    indiceMenu(
+                        urlRenderizada
+                    );
 
-                var seguinte = indiceMenu(
-                    resposta.url
-                );
+                var seguinte =
+                    indiceMenu(
+                        resposta.url
+                    );
 
                 direcao =
                     atual !== null &&
@@ -323,77 +1003,79 @@
                 'margot-a-navegar'
             );
 
-            var reduzido = window.matchMedia(
-                '(prefers-reduced-motion: reduce)'
-            ).matches;
+            var reduzido =
+                window.matchMedia(
+                    '(prefers-reduced-motion: reduce)'
+                ).matches;
 
             var duracao =
                 reduzido
                     ? 0
-                    : 300;
+                    : DURACAO_NAVEGACAO;
 
-            var animacoes = await Promise.all([
-                animar(
-                    paginaAtual,
-                    [
-                        {
-                            transform:
-                                'translate3d(0,0,0)',
-                            opacity:
-                                '1'
-                        },
-                        {
-                            transform:
-                                direcao > 0
-                                    ? 'translate3d(-28%,0,0)'
-                                    : 'translate3d(100%,0,0)',
+            var animacoes =
+                await Promise.all([
+                    animar(
+                        paginaAtual,
+                        [
+                            {
+                                transform:
+                                    'translate3d(0,0,0)',
 
-                            opacity:
-                                direcao > 0
-                                    ? '.94'
-                                    : '1'
-                        }
-                    ],
-                    duracao
-                ),
+                                opacity:
+                                    '1'
+                            },
+                            {
+                                transform:
+                                    direcao > 0
+                                        ? 'translate3d(-28%,0,0)'
+                                        : 'translate3d(100%,0,0)',
 
-                animar(
-                    paginaNova,
-                    [
-                        {
-                            transform:
-                                direcao > 0
-                                    ? 'translate3d(100%,0,0)'
-                                    : 'translate3d(-28%,0,0)',
+                                opacity:
+                                    direcao > 0
+                                        ? '.94'
+                                        : '1'
+                            }
+                        ],
+                        duracao
+                    ),
 
-                            opacity:
-                                direcao > 0
-                                    ? '1'
-                                    : '.94'
-                        },
-                        {
-                            transform:
-                                'translate3d(0,0,0)',
-                            opacity:
-                                '1'
-                        }
-                    ],
-                    duracao
-                )
-            ]);
+                    animar(
+                        paginaNova,
+                        [
+                            {
+                                transform:
+                                    direcao > 0
+                                        ? 'translate3d(100%,0,0)'
+                                        : 'translate3d(-28%,0,0)',
 
-            animacoes.forEach(function (animacao) {
-                if (animacao) {
-                    animacao.cancel();
+                                opacity:
+                                    direcao > 0
+                                        ? '1'
+                                        : '.94'
+                            },
+                            {
+                                transform:
+                                    'translate3d(0,0,0)',
+
+                                opacity:
+                                    '1'
+                            }
+                        ],
+                        duracao
+                    )
+                ]);
+
+            animacoes.forEach(
+                function (animacao) {
+                    if (animacao) {
+                        animacao.cancel();
+                    }
                 }
-            });
+            );
 
             paginaAtual.remove();
 
-            /*
-             * Só removemos o CSS antigo depois
-             * de a página antiga sair.
-             */
             limparEstilosAntigos();
 
             paginaNova.removeAttribute(
@@ -408,85 +1090,163 @@
                 documentoNovo.title ||
                 document.title;
 
-            if (opcoes.historico === 'push') {
-                posicaoHistorico += 1;
-
-                history.pushState(
-                    {
-                        margotPosition:
-                            posicaoHistorico
-                    },
-                    '',
-                    resposta.url
-                );
-            } else if (
-                opcoes.historico ===
-                'replace'
+            /*
+             * Se entretanto o utilizador tocou
+             * noutra tab, não criamos uma entrada
+             * intermédia inútil no histórico.
+             */
+            if (
+                !navegacaoPendente
             ) {
-                history.replaceState(
-                    {
-                        margotPosition:
-                            posicaoHistorico
-                    },
-                    '',
-                    resposta.url
-                );
+                if (
+                    opcoes.historico ===
+                    'push'
+                ) {
+                    posicaoHistorico +=
+                        1;
+
+                    history.pushState(
+                        {
+                            margotPosition:
+                                posicaoHistorico
+                        },
+                        '',
+                        resposta.url
+                    );
+                } else if (
+                    opcoes.historico ===
+                    'replace'
+                ) {
+                    history.replaceState(
+                        {
+                            margotPosition:
+                                posicaoHistorico
+                        },
+                        '',
+                        resposta.url
+                    );
+                }
             }
 
             urlRenderizada =
                 resposta.url;
 
-            atualizarMenu(
-                resposta.url
-            );
-
-            await executarScripts(
-                scripts
-            );
-
             if (
-                window.AppWebSocket &&
-                typeof window
-                    .AppWebSocket
-                    .refreshMap ===
-                    'function'
+                !navegacaoPendente
             ) {
-                window.AppWebSocket
-                    .refreshMap();
+                atualizarMenu(
+                    resposta.url
+                );
+
+                await executarScripts(
+                    scripts
+                );
+
+                if (
+                    window.AppWebSocket &&
+                    typeof window
+                        .AppWebSocket
+                        .refreshMap ===
+                        'function'
+                ) {
+                    window
+                        .AppWebSocket
+                        .refreshMap();
+                }
+
+                window.scrollTo(
+                    0,
+                    0
+                );
+
+                document.dispatchEvent(
+                    new CustomEvent(
+                        'margot:page-ready'
+                    )
+                );
+
+                preAquecerMenu();
             }
-
-            window.scrollTo(
-                0,
-                0
-            );
-
-            document.dispatchEvent(
-                new CustomEvent(
-                    'margot:page-ready'
-                )
-            );
         } catch (erro) {
             document.body.classList.remove(
                 'margot-a-navegar'
             );
 
-            if (erro.name !== 'AbortError') {
-                window.location.assign(url);
+            if (
+                erro.name !==
+                'AbortError'
+            ) {
+                window.location.assign(
+                    url
+                );
+
+                return;
             }
         } finally {
-            controlador = null;
-            aNavegar = false;
+            controlador =
+                null;
+
+            urlEmNavegacao =
+                null;
+
+            faseNavegacao =
+                'idle';
+
+            aNavegar =
+                false;
 
             document.body.removeAttribute(
                 'aria-busy'
             );
+
+            /*
+             * Se houve outro toque enquanto
+             * carregávamos/transitávamos,
+             * executamo-lo imediatamente agora.
+             */
+            if (
+                navegacaoPendente
+            ) {
+                var pendente =
+                    navegacaoPendente;
+
+                navegacaoPendente =
+                    null;
+
+                window.requestAnimationFrame(
+                    function () {
+                        trocarPagina(
+                            pendente.url,
+                            pendente.opcoes
+                        );
+                    }
+                );
+            }
         }
     }
 
-    function voltarPagina(urlAlternativo) {
-        if (aNavegar) return;
+    function voltarPagina(
+        urlAlternativo
+    ) {
+        if (aNavegar) {
+            colocarNavegacaoPendente(
+                urlAlternativo,
+                {
+                    historico:
+                        'replace',
 
-        if (posicaoHistorico > 0) {
+                    direcao:
+                        -1
+                }
+            );
+
+            return;
+        }
+
+        if (
+            posicaoHistorico >
+            0
+        ) {
             history.back();
             return;
         }
@@ -494,8 +1254,11 @@
         trocarPagina(
             urlAlternativo,
             {
-                historico: 'replace',
-                direcao: -1
+                historico:
+                    'replace',
+
+                direcao:
+                    -1
             }
         );
     }
@@ -503,7 +1266,6 @@
     /*
      * Navegação pelos links principais.
      */
-
     document.addEventListener(
         'click',
         function (evento) {
@@ -515,7 +1277,8 @@
             if (
                 linkVoltar &&
                 !evento.defaultPrevented &&
-                evento.button === 0 &&
+                evento.button ===
+                    0 &&
                 !evento.metaKey &&
                 !evento.ctrlKey &&
                 !evento.shiftKey &&
@@ -549,7 +1312,8 @@
             if (
                 !link ||
                 evento.defaultPrevented ||
-                evento.button !== 0 ||
+                evento.button !==
+                    0 ||
                 evento.metaKey ||
                 evento.ctrlKey ||
                 evento.shiftKey ||
@@ -573,18 +1337,6 @@
 
             evento.preventDefault();
 
-            if (
-                ePaginaAtual(
-                    url.href
-                )
-            ) {
-                atualizarMenu(
-                    url.href
-                );
-
-                return;
-            }
-
             trocarPagina(
                 url.href,
                 {
@@ -598,7 +1350,6 @@
     /*
      * Back / forward do histórico.
      */
-
     window.addEventListener(
         'popstate',
         function (evento) {
@@ -610,7 +1361,8 @@
                 )
                     ? evento.state
                         .margotPosition
-                    : posicaoHistorico - 1;
+                    : posicaoHistorico -
+                        1;
 
             var indiceAtual =
                 indiceMenu(
@@ -623,9 +1375,12 @@
                 );
 
             var direcao =
-                indiceAtual !== null &&
-                indiceSeguinte !== null &&
-                indiceAtual !== indiceSeguinte
+                indiceAtual !==
+                    null &&
+                indiceSeguinte !==
+                    null &&
+                indiceAtual !==
+                    indiceSeguinte
                     ? (
                         indiceSeguinte <
                         indiceAtual
@@ -668,8 +1423,23 @@
         window.location.href
     );
 
+    /*
+     * Aquecemos as outras opções do menu
+     * sem bloquear o arranque da app.
+     */
+    preAquecerMenu();
+
     window.MargotNavigation = {
-        navigate: trocarPagina,
-        back: voltarPagina
+        navigate:
+            trocarPagina,
+
+        back:
+            voltarPagina,
+
+        prefetch:
+            preAquecerPagina
     };
-})(window, document);
+})(
+    window,
+    document
+);
