@@ -3,75 +3,75 @@
 /*
  * PERFIL
  *
- * Há apenas um scroll vertical: o scroll nativo da página/WKWebView.
- * Não criamos um contentor vertical artificial para preservar o
- * rubber-banding natural do iPhone.
+ * html/body continuam presos à shell global da Margot.
+ * O próprio #perfil é o scroll vertical.
+ *
+ * Isto é intencional: no WKWebView/iPhone permite que o
+ * UIScrollView associado à área apresente o rubber-banding
+ * natural ao chegar ao topo/fundo.
  */
 
-html:has(#perfil) {
-    width: 100%;
-    height: auto !important;
-    min-height: 100%;
+html:has(#perfil),
+body:has(#perfil) {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 100% !important;
+
     margin: 0;
     padding: 0;
 
-    overflow-x: hidden !important;
-    overflow-y: visible !important;
+    overflow: hidden !important;
 
     background: #ffffff;
-
-    overscroll-behavior-y: auto !important;
 }
 
 body:has(#perfil) {
     position: relative !important;
+}
 
-    width: 100%;
-    height: auto !important;
-    min-height: 100vh !important;
-    min-height: 100dvh !important;
+body:has(#perfil) #perfil {
+    position: relative;
+
+    width: 100% !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    min-height: 0 !important;
 
     margin: 0;
     padding: 0;
 
     overflow-x: hidden !important;
-    overflow-y: visible !important;
+    overflow-y: auto !important;
 
     background: #ffffff;
 
-    overscroll-behavior-y: auto !important;
-}
+    -webkit-overflow-scrolling: touch;
 
-body:has(#perfil) #perfil {
-    width: 100%;
-    height: auto !important;
-    min-height: 100vh !important;
-    min-height: 100dvh !important;
+    overscroll-behavior-x: none;
+    overscroll-behavior-y: auto;
 
-    margin: 0;
-    padding: 0;
-
-    overflow: visible !important;
-
-    background: #ffffff;
+    touch-action: pan-y;
 }
 
 /* Galeria */
 
 .perfil-galeria {
     position: relative;
+    z-index: 1;
 
     width: 100%;
-    height: 76svh;
+    height: 82vh;
+    height: 82dvh;
 
-    min-height: 520px;
-    max-height: 900px;
+    min-height: 620px;
 
     overflow: hidden;
 
     background: #161616;
 
     isolation: isolate;
+
+    flex-shrink: 0;
 }
 
 .perfil-galeria::before,
@@ -182,10 +182,10 @@ body:has(#perfil) #perfil {
 
 .perfil-indicadores {
     position: absolute;
-    z-index: 4;
+    z-index: 6;
 
     right: 50%;
-    bottom: 24px;
+    bottom: 54px;
 
     transform: translateX(50%);
 
@@ -194,15 +194,18 @@ body:has(#perfil) #perfil {
     justify-content: center;
 
     gap: 7px;
+
+    pointer-events: auto;
 }
 
 .perfil-indicadores button {
-    flex: 0 0 18px;
+    flex: 0 0 20px;
 
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
 
-    padding: 5px;
+    margin: 0;
+    padding: 6px;
 
     border: 0;
 
@@ -221,11 +224,11 @@ body:has(#perfil) #perfil {
 
     border-radius: 50%;
 
-    background: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.52);
 
     box-shadow:
-        0 1px 3px
-        rgba(0, 0, 0, 0.18);
+        0 1px 4px
+        rgba(0, 0, 0, 0.24);
 
     transition:
         background-color 160ms ease,
@@ -240,7 +243,7 @@ body:has(#perfil) #perfil {
 
     box-shadow:
         0 1px 5px
-        rgba(0, 0, 0, 0.35);
+        rgba(0, 0, 0, 0.36);
 }
 
 /* Setas da galeria */
@@ -309,15 +312,11 @@ body:has(#perfil) #perfil {
 
 .perfil-conteudo {
     position: relative;
-    z-index: 5;
+    z-index: 2;
 
     width: 100%;
 
-    min-height:
-        calc(
-            24svh +
-            34px
-        );
+    min-height: 360px;
 
     margin-top: -34px;
 
@@ -328,7 +327,7 @@ body:has(#perfil) #perfil {
             var(--menu-principal-height, 56px) +
             var(--menu-principal-bottom, 18px) +
             env(safe-area-inset-bottom, 0px) +
-            42px
+            48px
         );
 
     border-radius:
@@ -509,12 +508,7 @@ body:has(#perfil) #perfil {
     font-size: 14px;
 }
 
-/*
- * Hey
- *
- * O estilo visual continua a vir do style.css,
- * exatamente igual ao Hey do mini-menu.
- */
+/* Hey */
 
 #enviar-hey-perfil {
     position: relative !important;
@@ -544,50 +538,49 @@ body:has(#perfil) #perfil {
 }
 
 /*
- * PWA / Capacitor / WebView
+ * PWA / Capacitor
  *
- * Importante:
- * não usamos overflow-y:auto no html.
- * Assim o UIScrollView do WKWebView continua a ser o responsável
- * pelo scroll vertical e pelo rubber-banding do iOS.
+ * A shell fica fixa e o #perfil é deliberadamente
+ * o contentor de scroll desta página.
  */
 
 @media all and (display-mode: standalone) {
-    html:has(#perfil) {
-        height: auto !important;
+    html:has(#perfil),
+    body:has(#perfil) {
+        width: 100% !important;
+        height: 100% !important;
+
         min-height: 100% !important;
 
-        overflow-x: hidden !important;
-        overflow-y: visible !important;
-
-        overscroll-behavior-y: auto !important;
-    }
-
-    body:has(#perfil) {
-        position: relative !important;
-
-        height: auto !important;
-        min-height: 100dvh !important;
-
-        overflow-x: hidden !important;
-        overflow-y: visible !important;
-
-        overscroll-behavior-y: auto !important;
+        overflow: hidden !important;
     }
 
     body:has(#perfil) #perfil {
         width: 100% !important;
 
-        height: auto !important;
-        min-height: 100dvh !important;
+        height: 100vh !important;
+        height: 100dvh !important;
 
-        overflow: visible !important;
+        min-height: 0 !important;
+
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+
+        -webkit-overflow-scrolling: touch;
+
+        overscroll-behavior-y: auto;
     }
 
     .perfil-galeria {
         height:
             calc(
-                76svh +
+                82dvh +
+                env(safe-area-inset-top, 0px)
+            );
+
+        min-height:
+            calc(
+                620px +
                 env(safe-area-inset-top, 0px)
             );
 
@@ -599,40 +592,12 @@ body:has(#perfil) #perfil {
     }
 }
 
-/* Ecrãs mais pequenos */
+/* Ecrãs mais baixos */
 
-@media (max-width: 390px) {
+@media (max-height: 760px) {
     .perfil-galeria {
-        height: 74svh;
-        min-height: 500px;
-    }
-
-    .perfil-identidade {
-        gap: 7px;
-    }
-
-    .perfil-identidade h1 {
-        font-size:
-            clamp(
-                26px,
-                6.8vw,
-                33px
-            );
-    }
-
-    .editar-perfil {
-        min-height: 36px;
-
-        padding:
-            0
-            10px;
-
-        font-size: 12.5px;
-    }
-
-    .editar-perfil svg {
-        width: 14px;
-        height: 14px;
+        height: 78dvh;
+        min-height: 560px;
     }
 }
 
@@ -658,7 +623,8 @@ body:has(#perfil) #perfil {
     }
 
     .perfil-galeria {
-        height: min(80vh, 860px);
+        height: min(82dvh, 900px);
+        min-height: 620px;
     }
 }
 
