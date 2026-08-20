@@ -200,8 +200,8 @@ final class PushNotification
         return $this->enqueue(
             $recipientId,
             'hey',
-            'Recebeste um Hey!',
-            $sender['name'] . ' enviou-te um Hey.',
+            $sender['name'] . ' mandou-te um Hey!',
+            'Toca para ver o perfil.',
             '/profile/' . rawurlencode($senderId),
             [
                 'type' => 'hey',
@@ -227,11 +227,42 @@ final class PushNotification
         $recipientId = $this->validMemberId($recipientId);
         $sender = $this->memberPreview($senderId);
 
+        $statement = $this->db->prepare(
+            'SELECT texto, tipo
+             FROM mensagens_chat
+             WHERE id = :id
+             AND emissor_id = :sender_id
+             AND destinatario_id = :recipient_id
+             LIMIT 1'
+        );
+
+        $statement->execute([
+            'id' => $messageId,
+            'sender_id' => $senderId,
+            'recipient_id' => $recipientId
+        ]);
+
+        $message = $statement->fetch(PDO::FETCH_ASSOC);
+
+        if (!$message) {
+            throw new RuntimeException('Mensagem não encontrada.');
+        }
+
+        $body = trim((string) ($message['texto'] ?? ''));
+
+        if ($body === '') {
+            $body = match ((string) ($message['tipo'] ?? '')) {
+                'imagem' => '📷 Fotografia',
+                'video' => '🎥 Vídeo',
+                default => 'Nova mensagem'
+            };
+        }
+
         return $this->enqueue(
             $recipientId,
             'message',
-            'Nova mensagem',
-            $sender['name'] . ' enviou-te uma mensagem.',
+            $sender['name'],
+            $body,
             '/messages/' . rawurlencode($senderId),
             [
                 'type' => 'message',
