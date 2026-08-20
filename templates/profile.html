@@ -3,7 +3,7 @@
 {% block title %}{{ membro.nome }} | Margot{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ doc_root }}estilos/profile.css?v=7" data-margot-page-style>
+<link rel="stylesheet" href="{{ doc_root }}estilos/profile.css?v=8" data-margot-page-style>
 {% endblock %}
 
 {% block content %}
@@ -181,6 +181,82 @@ window.membroId = {{ session.id|json_encode|raw }};
 window.webSocketUrl = window.location.protocol === 'https:'
     ? 'wss://' + window.location.host + '/ws/'
     : 'ws://' + window.location.hostname + ':8080';
+</script>
+
+<script>
+(function () {
+    'use strict';
+
+    var perfil = document.getElementById('perfil');
+
+    if (!perfil) {
+        return;
+    }
+
+    var frame = null;
+
+    function atualizarPull() {
+        frame = null;
+
+        var scroll = perfil.scrollTop;
+
+        var pull = scroll < 0
+            ? Math.min(120, Math.abs(scroll))
+            : 0;
+
+        perfil.style.setProperty(
+            '--perfil-pull',
+            pull + 'px'
+        );
+    }
+
+    function aoScroll() {
+        if (frame !== null) {
+            return;
+        }
+
+        frame = window.requestAnimationFrame(
+            atualizarPull
+        );
+    }
+
+    function destruir() {
+        if (frame !== null) {
+            window.cancelAnimationFrame(frame);
+            frame = null;
+        }
+
+        perfil.removeEventListener(
+            'scroll',
+            aoScroll
+        );
+
+        document.removeEventListener(
+            'margot:page-leave',
+            destruir
+        );
+
+        perfil.style.setProperty(
+            '--perfil-pull',
+            '0px'
+        );
+    }
+
+    perfil.addEventListener(
+        'scroll',
+        aoScroll,
+        {
+            passive: true
+        }
+    );
+
+    document.addEventListener(
+        'margot:page-leave',
+        destruir
+    );
+
+    atualizarPull();
+})();
 </script>
 
 <script src="{{ doc_root }}js/profile.js?v=6"></script>
