@@ -1,25 +1,13 @@
 @charset "UTF-8";
 
-html:has(#perfil),
-body:has(#perfil) {
-    width: 100% !important;
-    height: 100% !important;
-    min-height: 100% !important;
-
-    margin: 0;
-    padding: 0;
-
-    overflow: hidden !important;
-
-    background: #ffffff;
-}
-
-body:has(#perfil) {
-    position: relative !important;
-}
-
 body:has(#perfil) #perfil {
-    --perfil-pull: 0px;
+    --perfil-deslocacao-foto: 18px;
+    --perfil-altura-galeria:
+        clamp(
+            460px,
+            70svh,
+            850px
+        );
 
     position: relative;
 
@@ -36,14 +24,86 @@ body:has(#perfil) #perfil {
     overflow-x: hidden !important;
     overflow-y: auto !important;
 
-    background: #161616;
+    background: #ffffff;
 
     -webkit-overflow-scrolling: touch;
 
     overscroll-behavior-x: none;
     overscroll-behavior-y: auto;
+}
 
-    touch-action: pan-y;
+html:has(#perfil),
+body:has(#perfil) {
+    width: 100% !important;
+    height: 100% !important;
+
+    min-height: 100% !important;
+
+    margin: 0;
+    padding: 0;
+
+    overflow: hidden !important;
+
+    background: #ffffff;
+}
+
+/*
+ * RUBBER BANDING DO TOPO
+ *
+ * Esta faixa existe fisicamente imediatamente acima
+ * da posição inicial do scroll.
+ *
+ * Em repouso fica fora do viewport.
+ *
+ * Quando o iPhone faz rubber banding para baixo,
+ * esta faixa entra no ecrã.
+ *
+ * Não existe zoom nem transformação durante o gesto.
+ */
+
+.perfil-rubber-reveal {
+    position: relative;
+    z-index: 1;
+
+    width: 100%;
+    height: var(--perfil-deslocacao-foto);
+
+    margin-top:
+        calc(
+            -1 *
+            var(--perfil-deslocacao-foto)
+        );
+
+    overflow: hidden;
+
+    background: #161616;
+
+    pointer-events: none;
+}
+
+.perfil-rubber-reveal img {
+    position: absolute;
+
+    top: 0;
+    left: 0;
+
+    display: block;
+
+    width: 100%;
+    height: var(--perfil-altura-galeria);
+
+    max-width: none;
+
+    border-radius: 0;
+
+    object-fit: cover;
+    object-position: center;
+
+    pointer-events: none;
+
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-user-drag: none;
 }
 
 /* Galeria */
@@ -53,55 +113,13 @@ body:has(#perfil) #perfil {
     z-index: 1;
 
     width: 100%;
-
-    /*
-     * Antes: 70svh.
-     * Agora: apenas um pouco maior.
-     */
-    height:
-        calc(
-            74dvh +
-            var(--perfil-pull)
-        );
-
-    min-height:
-        calc(
-            550px +
-            var(--perfil-pull)
-        );
-
-    /*
-     * Quando o iPhone desloca o conteúdo para baixo durante
-     * o rubber banding, fazemos a fotografia subir exatamente
-     * a mesma distância.
-     */
-    transform:
-        translateY(
-            calc(
-                -1 *
-                var(--perfil-pull)
-            )
-        );
-
-    /*
-     * O crescimento durante o pull não empurra
-     * permanentemente o conteúdo inferior.
-     */
-    margin-bottom:
-        calc(
-            -1 *
-            var(--perfil-pull)
-        );
+    height: var(--perfil-altura-galeria);
 
     overflow: hidden;
 
     background: #161616;
 
     isolation: isolate;
-
-    transform-origin: center top;
-
-    will-change: height, transform;
 }
 
 .perfil-galeria::before,
@@ -114,7 +132,7 @@ body:has(#perfil) #perfil {
     right: 0;
     left: 0;
 
-    height: 105px;
+    height: 100px;
 
     pointer-events: none;
 }
@@ -124,7 +142,7 @@ body:has(#perfil) #perfil {
 
     background: linear-gradient(
         to bottom,
-        rgba(0, 0, 0, 0.30),
+        rgba(0, 0, 0, 0.34),
         transparent
     );
 }
@@ -134,7 +152,7 @@ body:has(#perfil) #perfil {
 
     background: linear-gradient(
         to top,
-        rgba(0, 0, 0, 0.18),
+        rgba(0, 0, 0, 0.2),
         transparent
     );
 }
@@ -187,8 +205,21 @@ body:has(#perfil) #perfil {
     scroll-snap-align: start;
     scroll-snap-stop: always;
 
-    background: #e8e8e8;
+    background: #161616;
 }
+
+/*
+ * Aqui está o efeito.
+ *
+ * A fotografia NÃO aumenta.
+ * A fotografia NÃO faz scale.
+ * A fotografia NÃO muda de tamanho.
+ *
+ * Apenas sobe 18px.
+ *
+ * O cartão branco sobrepõe mais de 18px no fundo,
+ * portanto a pequena zona que sai por baixo nunca aparece.
+ */
 
 .perfil-slide img {
     display: block;
@@ -196,10 +227,20 @@ body:has(#perfil) #perfil {
     width: 100%;
     height: 100%;
 
+    max-width: none;
+
     border-radius: 0;
 
     object-fit: cover;
     object-position: center;
+
+    transform:
+        translateY(
+            calc(
+                -1 *
+                var(--perfil-deslocacao-foto)
+            )
+        );
 
     pointer-events: none;
 
@@ -215,7 +256,7 @@ body:has(#perfil) #perfil {
     z-index: 6;
 
     right: 50%;
-    bottom: 52px;
+    bottom: 42px;
 
     transform: translateX(50%);
 
@@ -224,8 +265,6 @@ body:has(#perfil) #perfil {
     justify-content: center;
 
     gap: 7px;
-
-    pointer-events: auto;
 }
 
 .perfil-indicadores button {
@@ -352,13 +391,17 @@ body:has(#perfil) #perfil {
 
 .perfil-conteudo {
     position: relative;
-    z-index: 2;
+    z-index: 5;
 
     width: 100%;
 
-    min-height: 360px;
+    min-height:
+        calc(
+            30svh +
+            28px
+        );
 
-    margin-top: -30px;
+    margin-top: -28px;
 
     padding:
         30px
@@ -367,7 +410,7 @@ body:has(#perfil) #perfil {
             var(--menu-principal-height, 56px) +
             var(--menu-principal-bottom, 18px) +
             env(safe-area-inset-bottom, 0px) +
-            48px
+            42px
         );
 
     border-radius:
@@ -405,6 +448,7 @@ body:has(#perfil) #perfil {
         );
 
     font-weight: 750;
+
     line-height: 1.08;
 
     letter-spacing: -0.025em;
@@ -415,7 +459,7 @@ body:has(#perfil) #perfil {
 
     margin: 1px 0 0;
 
-    color: #3d3d3d;
+    color: #333333;
 
     font-size: 20px;
     font-weight: 600;
@@ -490,7 +534,7 @@ body:has(#perfil) #perfil {
 /* Blocos */
 
 .perfil-bloco {
-    margin-top: 27px;
+    margin-top: 26px;
 }
 
 .perfil-bloco h2 {
@@ -577,55 +621,20 @@ body:has(#perfil) #perfil {
     }
 }
 
-/* Standalone / Capacitor */
-
-@media all and (display-mode: standalone) {
-    html:has(#perfil),
-    body:has(#perfil) {
-        width: 100% !important;
-        height: 100% !important;
-
-        min-height: 100% !important;
-
-        overflow: hidden !important;
-    }
-
-    body:has(#perfil) #perfil {
-        width: 100% !important;
-
-        height: 100vh !important;
-        height: 100dvh !important;
-
-        min-height: 0 !important;
-
-        overflow-x: hidden !important;
-        overflow-y: auto !important;
-
-        -webkit-overflow-scrolling: touch;
-
-        overscroll-behavior-y: auto;
-    }
-}
-
-/* Ecrãs mais baixos */
+/* Ecrãs pequenos */
 
 @media (max-height: 760px) {
-    .perfil-galeria {
-        height:
-            calc(
-                72dvh +
-                var(--perfil-pull)
-            );
-
-        min-height:
-            calc(
-                520px +
-                var(--perfil-pull)
+    body:has(#perfil) #perfil {
+        --perfil-altura-galeria:
+            clamp(
+                460px,
+                70svh,
+                720px
             );
     }
 }
 
-/* Tablet / desktop */
+/* Desktop */
 
 @media (min-width: 800px) {
     body:has(#perfil) {
@@ -646,17 +655,11 @@ body:has(#perfil) #perfil {
             rgba(0, 0, 0, 0.08);
     }
 
-    .perfil-galeria {
-        height:
-            calc(
-                min(76dvh, 850px) +
-                var(--perfil-pull)
-            );
-
-        min-height:
-            calc(
-                560px +
-                var(--perfil-pull)
+    body:has(#perfil) #perfil {
+        --perfil-altura-galeria:
+            min(
+                78vh,
+                820px
             );
     }
 }

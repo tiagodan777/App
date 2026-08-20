@@ -3,13 +3,14 @@
 {% block title %}{{ membro.nome }} | Margot{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ doc_root }}estilos/profile.css?v=8" data-margot-page-style>
+<link rel="stylesheet" href="{{ doc_root }}estilos/profile.css?v=9" data-margot-page-style>
 {% endblock %}
 
 {% block content %}
 {% set fotos = membro.fotos|default([]) %}
 {% set total_fotos = fotos|length %}
 {% set total_slides = total_fotos > 0 ? total_fotos : 1 %}
+{% set primeira_foto = total_fotos > 0 ? fotos|first : null %}
 
 {% set objetivos = {
     'amizade': 'Fazer amigos',
@@ -21,6 +22,29 @@
 } %}
 
 <main id="perfil">
+
+    <div
+        id="perfil-rubber-reveal"
+        class="perfil-rubber-reveal"
+        aria-hidden="true"
+    >
+        {% if primeira_foto %}
+            <img
+                id="perfil-rubber-reveal-imagem"
+                src="{{ doc_root }}imagens/fotos-perfil-originais/{{ primeira_foto.nome_arquivo }}"
+                alt=""
+                draggable="false"
+            >
+        {% else %}
+            <img
+                id="perfil-rubber-reveal-imagem"
+                src="{{ doc_root }}imagens/fotos-perfil/default.webp"
+                alt=""
+                draggable="false"
+            >
+        {% endif %}
+    </div>
+
     <section
         id="perfil-galeria"
         class="perfil-galeria"
@@ -152,7 +176,10 @@
         {% endif %}
 
         {% if primeiro_gosto %}
-            <section id="adicional" class="perfil-bloco perfil-gostos">
+            <section
+                id="adicional"
+                class="perfil-bloco perfil-gostos"
+            >
                 <h2>Gostos</h2>
 
                 <ul>
@@ -183,81 +210,5 @@ window.webSocketUrl = window.location.protocol === 'https:'
     : 'ws://' + window.location.hostname + ':8080';
 </script>
 
-<script>
-(function () {
-    'use strict';
-
-    var perfil = document.getElementById('perfil');
-
-    if (!perfil) {
-        return;
-    }
-
-    var frame = null;
-
-    function atualizarPull() {
-        frame = null;
-
-        var scroll = perfil.scrollTop;
-
-        var pull = scroll < 0
-            ? Math.min(120, Math.abs(scroll))
-            : 0;
-
-        perfil.style.setProperty(
-            '--perfil-pull',
-            pull + 'px'
-        );
-    }
-
-    function aoScroll() {
-        if (frame !== null) {
-            return;
-        }
-
-        frame = window.requestAnimationFrame(
-            atualizarPull
-        );
-    }
-
-    function destruir() {
-        if (frame !== null) {
-            window.cancelAnimationFrame(frame);
-            frame = null;
-        }
-
-        perfil.removeEventListener(
-            'scroll',
-            aoScroll
-        );
-
-        document.removeEventListener(
-            'margot:page-leave',
-            destruir
-        );
-
-        perfil.style.setProperty(
-            '--perfil-pull',
-            '0px'
-        );
-    }
-
-    perfil.addEventListener(
-        'scroll',
-        aoScroll,
-        {
-            passive: true
-        }
-    );
-
-    document.addEventListener(
-        'margot:page-leave',
-        destruir
-    );
-
-    atualizarPull();
-})();
-</script>
-
-<script src="{{ doc_root }}js/profile.js?v=6"></script>
+<script src="{{ doc_root }}js/profile.js?v=7"></script>
 {% endblock %}
