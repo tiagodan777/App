@@ -3,10 +3,16 @@
 /*
  * PERFIL
  *
- * - ~80% fotografia
- * - ~20% início da ficha
- * - 50px de fotografia escondidos acima
- * - sem scale / zoom / stretch
+ * O perfil é o único scroll vertical desta página.
+ *
+ * A fotografia NÃO é ampliada, NÃO é esticada
+ * e NÃO muda durante o rubber banding.
+ *
+ * A faixa de fotografias inteira fica simplesmente
+ * 46px acima da sua posição normal.
+ *
+ * Esses 46px ficam escondidos pelo topo do scroll.
+ * Quando o iOS faz rubber banding, tornam-se visíveis.
  */
 
 html:has(#perfil),
@@ -28,9 +34,8 @@ body:has(#perfil) {
 }
 
 body:has(#perfil) #perfil {
-    --perfil-reserva-topo: 50px;
-    --perfil-altura-visivel: 82dvh;
-    --perfil-sobreposicao: 22px;
+    --perfil-foto-subida: 46px;
+    --perfil-sobreposicao: 28px;
 
     position: relative;
 
@@ -47,9 +52,6 @@ body:has(#perfil) #perfil {
     overflow-x: hidden !important;
     overflow-y: auto !important;
 
-    /*
-     * Em baixo o rubber banding continua branco.
-     */
     background: #ffffff;
 
     -webkit-overflow-scrolling: touch;
@@ -60,20 +62,7 @@ body:has(#perfil) #perfil {
     touch-action: pan-y;
 }
 
-/*
- * GALERIA
- *
- * A caixa mede:
- *
- * 82dvh visíveis
- * +
- * 50px escondidos em cima.
- *
- * Como o margin-top é -50px, o fim da galeria
- * continua exatamente nos 82dvh.
- *
- * Não existe scale().
- */
+/* Galeria */
 
 .perfil-galeria {
     position: relative;
@@ -81,28 +70,42 @@ body:has(#perfil) #perfil {
 
     width: 100%;
 
-    height:
-        calc(
-            var(--perfil-altura-visivel) +
-            var(--perfil-reserva-topo)
-        );
+    height: 76svh;
 
-    margin-top:
-        calc(
-            -1 *
-            var(--perfil-reserva-topo)
-        );
+    min-height: 500px;
+    max-height: 900px;
 
-    overflow: hidden;
+    /*
+     * É deliberadamente visible.
+     *
+     * A .perfil-fotos pode sair 46px para cima.
+     * O próprio #perfil é que a corta quando está
+     * em repouso e a revela durante o rubber banding.
+     */
+    overflow: visible;
 
     background: #161616;
 
     isolation: isolate;
 }
 
-/* Fotografias */
+/*
+ * A faixa inteira sobe.
+ *
+ * NÃO mexemos no tamanho da imagem.
+ * NÃO usamos scale().
+ * NÃO usamos height extra.
+ */
 
 .perfil-fotos {
+    position: relative;
+
+    top:
+        calc(
+            -1 *
+            var(--perfil-foto-subida)
+        );
+
     width: 100%;
     height: 100%;
 
@@ -138,10 +141,7 @@ body:has(#perfil) #perfil {
 }
 
 .perfil-slide {
-    flex:
-        0
-        0
-        100%;
+    flex: 0 0 100%;
 
     width: 100%;
     height: 100%;
@@ -170,11 +170,11 @@ body:has(#perfil) #perfil {
     object-position: center;
 
     /*
-     * Deliberadamente:
+     * IMPORTANTE:
      *
-     * sem transform
-     * sem scale
-     * sem zoom
+     * não há transform.
+     * não há scale.
+     * não há zoom.
      */
     pointer-events: none;
 
@@ -183,7 +183,12 @@ body:has(#perfil) #perfil {
     -webkit-user-drag: none;
 }
 
-/* Gradientes */
+/*
+ * Gradientes.
+ *
+ * O de baixo termina onde a fotografia termina,
+ * e não no fundo teórico da galeria.
+ */
 
 .perfil-galeria::before,
 .perfil-galeria::after {
@@ -202,25 +207,27 @@ body:has(#perfil) #perfil {
 
 .perfil-galeria::before {
     top:
-        var(--perfil-reserva-topo);
-
-    background:
-        linear-gradient(
-            to bottom,
-            rgba(0, 0, 0, 0.28),
-            transparent
+        calc(
+            -1 *
+            var(--perfil-foto-subida)
         );
+
+    background: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0.30),
+        transparent
+    );
 }
 
 .perfil-galeria::after {
-    bottom: 0;
+    bottom:
+        var(--perfil-foto-subida);
 
-    background:
-        linear-gradient(
-            to top,
-            rgba(0, 0, 0, 0.18),
-            transparent
-        );
+    background: linear-gradient(
+        to top,
+        rgba(0, 0, 0, 0.20),
+        transparent
+    );
 }
 
 /* Indicadores */
@@ -230,7 +237,17 @@ body:has(#perfil) #perfil {
     z-index: 6;
 
     right: 50%;
-    bottom: 36px;
+
+    /*
+     * 46px que a fotografia subiu
+     * +
+     * 22px de distância visual ao fundo.
+     */
+    bottom:
+        calc(
+            var(--perfil-foto-subida) +
+            22px
+        );
 
     transform: translateX(50%);
 
@@ -242,10 +259,7 @@ body:has(#perfil) #perfil {
 }
 
 .perfil-indicadores button {
-    flex:
-        0
-        0
-        20px;
+    flex: 0 0 20px;
 
     width: 20px;
     height: 20px;
@@ -302,7 +316,7 @@ body:has(#perfil) #perfil {
         rgba(0, 0, 0, 0.36);
 }
 
-/* Setas desktop */
+/* Setas */
 
 .perfil-navegacao {
     position: absolute;
@@ -310,8 +324,8 @@ body:has(#perfil) #perfil {
 
     top:
         calc(
-            50% +
-            var(--perfil-reserva-topo) / 2
+            50% -
+            var(--perfil-foto-subida) / 2
         );
 
     width: 44px;
@@ -369,14 +383,14 @@ body:has(#perfil) #perfil {
 }
 
 /*
- * ZONA BRANCA
+ * Conteúdo branco
  *
- * A galeria termina nos 82dvh.
- * O cartão sobrepõe apenas 22px.
+ * A fotografia termina em:
  *
- * Resultado visual:
- * aproximadamente 80% fotografia,
- * 20% ficha no primeiro ecrã.
+ * altura galeria - 46px.
+ *
+ * Depois sobrepomos o cartão mais 28px,
+ * exatamente como no desenho original.
  */
 
 .perfil-conteudo {
@@ -385,34 +399,42 @@ body:has(#perfil) #perfil {
 
     width: 100%;
 
+    /*
+     * Retirado o min-height antigo.
+     * Era uma das razões para o bloco branco
+     * parecer demasiado grande.
+     */
     min-height: 0;
 
     margin-top:
         calc(
             -1 *
-            var(--perfil-sobreposicao)
+            (
+                var(--perfil-foto-subida) +
+                var(--perfil-sobreposicao)
+            )
         );
 
     padding:
-        22px
+        24px
         20px
         calc(
             var(--menu-principal-height, 56px) +
             var(--menu-principal-bottom, 18px) +
             env(safe-area-inset-bottom, 0px) +
-            34px
+            38px
         );
 
     border-radius:
-        28px
-        28px
+        30px
+        30px
         0
         0;
 
     background: #ffffff;
 }
 
-/* Nome */
+/* Identidade */
 
 .perfil-identidade {
     display: flex;
@@ -420,7 +442,7 @@ body:has(#perfil) #perfil {
 
     min-width: 0;
 
-    gap: 7px;
+    gap: 8px;
 }
 
 .perfil-identidade h1 {
@@ -434,11 +456,10 @@ body:has(#perfil) #perfil {
         clamp(
             27px,
             7vw,
-            35px
+            36px
         );
 
     font-weight: 750;
-
     line-height: 1.08;
 
     letter-spacing: -0.025em;
@@ -451,7 +472,7 @@ body:has(#perfil) #perfil {
 
     color: #333333;
 
-    font-size: 19px;
+    font-size: 20px;
     font-weight: 600;
 
     line-height: 1;
@@ -464,7 +485,7 @@ body:has(#perfil) #perfil {
 
     margin-left: auto;
 
-    min-height: 35px;
+    min-height: 36px;
 
     padding:
         0
@@ -482,9 +503,8 @@ body:has(#perfil) #perfil {
 
     text-decoration: none;
 
-    font-size: 12.5px;
+    font-size: 13px;
     font-weight: 700;
-
     line-height: 1;
 
     letter-spacing: -0.01em;
@@ -493,7 +513,7 @@ body:has(#perfil) #perfil {
     align-items: center;
     justify-content: center;
 
-    gap: 5px;
+    gap: 6px;
 
     -webkit-tap-highlight-color: transparent;
 
@@ -503,15 +523,15 @@ body:has(#perfil) #perfil {
 }
 
 .editar-perfil svg {
-    width: 13px;
-    height: 13px;
+    width: 14px;
+    height: 14px;
 
     flex-shrink: 0;
 
     fill: none;
 
     stroke: currentColor;
-    stroke-width: 1.7;
+    stroke-width: 1.65;
     stroke-linecap: round;
     stroke-linejoin: round;
 }
@@ -525,20 +545,20 @@ body:has(#perfil) #perfil {
 /* Blocos */
 
 .perfil-bloco {
-    margin-top: 18px;
+    margin-top: 20px;
 }
 
 .perfil-bloco h2 {
     margin:
         0
         0
-        5px;
+        6px;
 
     padding: 0;
 
     color: #777777;
 
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 800;
 
     letter-spacing: 0.08em;
@@ -551,14 +571,11 @@ body:has(#perfil) #perfil {
 
     color: #222222;
 
-    font-size: 16px;
-
-    line-height: 1.42;
+    font-size: 17px;
+    line-height: 1.45;
 
     overflow-wrap: anywhere;
 }
-
-/* Gostos */
 
 .perfil-gostos ul {
     margin: 0;
@@ -569,13 +586,13 @@ body:has(#perfil) #perfil {
     display: flex;
     flex-wrap: wrap;
 
-    gap: 7px;
+    gap: 8px;
 }
 
 .perfil-gostos li {
     padding:
-        7px
-        12px;
+        8px
+        13px;
 
     border-radius: 999px;
 
@@ -593,9 +610,9 @@ body:has(#perfil) #perfil {
     z-index: 10;
 
     margin:
-        28px
+        30px
         auto
-        8px !important;
+        10px !important;
 
     display: flex !important;
     visibility: visible !important;
@@ -616,15 +633,28 @@ body:has(#perfil) #perfil {
 }
 
 /*
- * iPhone / standalone
+ * Capacitor / standalone
  *
- * A galeria continua por baixo da status bar.
+ * Mantemos a solução original para a safe area:
+ * a galeria entra por baixo da status bar.
  */
 
 @media all and (display-mode: standalone) {
+    html:has(#perfil),
+    body:has(#perfil) {
+        width: 100% !important;
+        height: 100% !important;
+
+        min-height: 100% !important;
+
+        overflow: hidden !important;
+    }
+
     body:has(#perfil) #perfil {
         height: 100vh !important;
         height: 100dvh !important;
+
+        min-height: 0 !important;
 
         overflow-x: hidden !important;
         overflow-y: auto !important;
@@ -637,8 +667,7 @@ body:has(#perfil) #perfil {
     .perfil-galeria {
         height:
             calc(
-                var(--perfil-altura-visivel) +
-                var(--perfil-reserva-topo) +
+                76svh +
                 env(
                     safe-area-inset-top,
                     0px
@@ -648,34 +677,32 @@ body:has(#perfil) #perfil {
         margin-top:
             calc(
                 -1 *
-                (
-                    var(--perfil-reserva-topo) +
-                    env(
-                        safe-area-inset-top,
-                        0px
-                    )
+                env(
+                    safe-area-inset-top,
+                    0px
                 )
             );
     }
 }
 
-/* Ecrãs mais pequenos */
+/* Ecrãs mais baixos */
 
 @media (max-height: 720px) {
-    body:has(#perfil) #perfil {
-        --perfil-altura-visivel: 80dvh;
+    .perfil-galeria {
+        height: 74svh;
+        min-height: 480px;
     }
 
     .perfil-conteudo {
-        padding-top: 20px;
+        padding-top: 22px;
     }
 
     .perfil-bloco {
-        margin-top: 16px;
+        margin-top: 18px;
     }
 }
 
-/* Desktop */
+/* Tablet / desktop */
 
 @media (min-width: 800px) {
     body:has(#perfil) {
@@ -696,14 +723,8 @@ body:has(#perfil) #perfil {
             rgba(0, 0, 0, 0.08);
     }
 
-    body:has(#perfil) #perfil {
-        --perfil-altura-visivel:
-            min(
-                80vh,
-                850px
-            );
-
-        --perfil-reserva-topo: 0px;
+    .perfil-galeria {
+        height: min(78vh, 860px);
     }
 }
 
