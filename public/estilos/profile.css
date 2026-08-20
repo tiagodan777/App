@@ -1,12 +1,30 @@
 @charset "UTF-8";
 
+html:has(#perfil),
+body:has(#perfil) {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 100% !important;
+
+    margin: 0;
+    padding: 0;
+
+    overflow: hidden !important;
+
+    background: #ffffff;
+}
+
+body:has(#perfil) {
+    position: relative !important;
+}
+
 body:has(#perfil) #perfil {
-    --perfil-deslocacao-foto: 18px;
+    --perfil-subida: 48px;
+    --perfil-altura-base: clamp(460px, 70svh, 850px);
     --perfil-altura-galeria:
-        clamp(
-            460px,
-            70svh,
-            850px
+        calc(
+            var(--perfil-altura-base) +
+            var(--perfil-subida)
         );
 
     position: relative;
@@ -24,55 +42,40 @@ body:has(#perfil) #perfil {
     overflow-x: hidden !important;
     overflow-y: auto !important;
 
+    /*
+     * Branco é importante:
+     * o rubber banding no FUNDO continua branco.
+     */
     background: #ffffff;
 
     -webkit-overflow-scrolling: touch;
 
     overscroll-behavior-x: none;
     overscroll-behavior-y: auto;
-}
 
-html:has(#perfil),
-body:has(#perfil) {
-    width: 100% !important;
-    height: 100% !important;
-
-    min-height: 100% !important;
-
-    margin: 0;
-    padding: 0;
-
-    overflow: hidden !important;
-
-    background: #ffffff;
+    touch-action: pan-y;
 }
 
 /*
- * RUBBER BANDING DO TOPO
+ * FUNDO DO RUBBER BANDING SUPERIOR
  *
- * Esta faixa existe fisicamente imediatamente acima
- * da posição inicial do scroll.
+ * Não participa no layout.
+ * Fica atrás da galeria.
  *
- * Em repouso fica fora do viewport.
- *
- * Quando o iPhone faz rubber banding para baixo,
- * esta faixa entra no ecrã.
- *
- * Não existe zoom nem transformação durante o gesto.
+ * Quando o iOS desloca a galeria para baixo durante
+ * o rubber banding, esta imagem fica visível por trás.
  */
 
 .perfil-rubber-reveal {
-    position: relative;
-    z-index: 1;
+    position: fixed;
+
+    z-index: 0;
+
+    top: 0;
+    left: 0;
 
     width: 100%;
-    height: var(--perfil-deslocacao-foto);
-
-    margin-top:
-        calc(
-            -1 *
-            var(--perfil-deslocacao-foto)
-        );
+    height: 72px;
 
     overflow: hidden;
 
@@ -106,7 +109,17 @@ body:has(#perfil) {
     -webkit-user-drag: none;
 }
 
-/* Galeria */
+/*
+ * GALERIA
+ *
+ * Sobe 48px para ocupar a faixa branca do topo.
+ *
+ * A altura ganha exatamente os mesmos 48px,
+ * portanto a borda inferior / cartão branco fica
+ * praticamente no mesmo sítio.
+ *
+ * Não existe scale(), zoom ou transformação na foto.
+ */
 
 .perfil-galeria {
     position: relative;
@@ -114,6 +127,12 @@ body:has(#perfil) {
 
     width: 100%;
     height: var(--perfil-altura-galeria);
+
+    margin-top:
+        calc(
+            -1 *
+            var(--perfil-subida)
+        );
 
     overflow: hidden;
 
@@ -142,7 +161,7 @@ body:has(#perfil) {
 
     background: linear-gradient(
         to bottom,
-        rgba(0, 0, 0, 0.34),
+        rgba(0, 0, 0, 0.28),
         transparent
     );
 }
@@ -209,16 +228,13 @@ body:has(#perfil) {
 }
 
 /*
- * Aqui está o efeito.
+ * IMPORTANTE:
  *
- * A fotografia NÃO aumenta.
- * A fotografia NÃO faz scale.
- * A fotografia NÃO muda de tamanho.
+ * Zero transform.
+ * Zero scale.
+ * Zero zoom.
  *
- * Apenas sobe 18px.
- *
- * O cartão branco sobrepõe mais de 18px no fundo,
- * portanto a pequena zona que sai por baixo nunca aparece.
+ * A fotografia continua apenas com object-fit: cover.
  */
 
 .perfil-slide img {
@@ -233,14 +249,6 @@ body:has(#perfil) {
 
     object-fit: cover;
     object-position: center;
-
-    transform:
-        translateY(
-            calc(
-                -1 *
-                var(--perfil-deslocacao-foto)
-            )
-        );
 
     pointer-events: none;
 
@@ -293,18 +301,10 @@ body:has(#perfil) {
 
     border-radius: 50%;
 
-    background:
-        rgba(
-            255,
-            255,
-            255,
-            0.52
-        );
+    background: rgba(255, 255, 255, 0.52);
 
     box-shadow:
-        0
-        1px
-        4px
+        0 1px 4px
         rgba(0, 0, 0, 0.24);
 
     transition:
@@ -319,9 +319,7 @@ body:has(#perfil) {
     transform: scale(1.4);
 
     box-shadow:
-        0
-        1px
-        5px
+        0 1px 5px
         rgba(0, 0, 0, 0.36);
 }
 
@@ -344,8 +342,7 @@ body:has(#perfil) {
 
     border-radius: 50%;
 
-    background:
-        rgba(20, 20, 20, 0.34);
+    background: rgba(20, 20, 20, 0.34);
 
     color: #ffffff;
 
@@ -395,12 +392,6 @@ body:has(#perfil) {
 
     width: 100%;
 
-    min-height:
-        calc(
-            30svh +
-            28px
-        );
-
     margin-top: -28px;
 
     padding:
@@ -448,7 +439,6 @@ body:has(#perfil) {
         );
 
     font-weight: 750;
-
     line-height: 1.08;
 
     letter-spacing: -0.025em;
@@ -538,10 +528,7 @@ body:has(#perfil) {
 }
 
 .perfil-bloco h2 {
-    margin:
-        0
-        0
-        8px;
+    margin: 0 0 8px;
 
     padding: 0;
 
@@ -579,9 +566,7 @@ body:has(#perfil) {
 }
 
 .perfil-gostos li {
-    padding:
-        8px
-        13px;
+    padding: 8px 13px;
 
     border-radius: 999px;
 
@@ -621,20 +606,35 @@ body:has(#perfil) {
     }
 }
 
-/* Ecrãs pequenos */
+/* Standalone / Capacitor */
 
-@media (max-height: 760px) {
+@media all and (display-mode: standalone) {
+    html:has(#perfil),
+    body:has(#perfil) {
+        width: 100% !important;
+        height: 100% !important;
+
+        min-height: 100% !important;
+
+        overflow: hidden !important;
+    }
+
     body:has(#perfil) #perfil {
-        --perfil-altura-galeria:
-            clamp(
-                460px,
-                70svh,
-                720px
-            );
+        height: 100vh !important;
+        height: 100dvh !important;
+
+        min-height: 0 !important;
+
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+
+        -webkit-overflow-scrolling: touch;
+
+        overscroll-behavior-y: auto;
     }
 }
 
-/* Desktop */
+/* Tablet / desktop */
 
 @media (min-width: 800px) {
     body:has(#perfil) {
@@ -644,23 +644,20 @@ body:has(#perfil) {
     #perfil {
         max-width: 760px;
 
-        margin:
-            0
-            auto;
+        margin: 0 auto;
 
         box-shadow:
-            0
-            0
-            40px
+            0 0 40px
             rgba(0, 0, 0, 0.08);
     }
 
     body:has(#perfil) #perfil {
-        --perfil-altura-galeria:
-            min(
-                78vh,
-                820px
-            );
+        --perfil-subida: 0px;
+        --perfil-altura-base: min(78vh, 820px);
+    }
+
+    .perfil-rubber-reveal {
+        display: none;
     }
 }
 
