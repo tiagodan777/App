@@ -3,7 +3,7 @@
 {% block title %}{{ membro.nome }} | Margot{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ doc_root }}estilos/profile.css?v=4" data-margot-page-style>
+<link rel="stylesheet" href="{{ doc_root }}estilos/profile.css?v=5" data-margot-page-style>
 {% endblock %}
 
 {% block content %}
@@ -21,11 +21,26 @@
 } %}
 
 <main id="perfil">
-    <section id="perfil-galeria" class="perfil-galeria" aria-label="Fotografias de {{ membro.nome }}" tabindex="0">
+    <section
+        id="perfil-galeria"
+        class="perfil-galeria"
+        aria-label="Fotografias de {{ membro.nome }}"
+        tabindex="0"
+    >
         {% if total_slides > 1 %}
-            <div id="perfil-indicadores" class="perfil-indicadores" aria-label="Escolher fotografia">
+            <div
+                id="perfil-indicadores"
+                class="perfil-indicadores"
+                aria-label="Escolher fotografia"
+            >
                 {% for indice in 0..(total_slides - 1) %}
-                    <button type="button" class="{{ loop.first ? 'ativo' : '' }}" data-indice="{{ indice }}" aria-label="Ver fotografia {{ indice + 1 }} de {{ total_slides }}" aria-current="{{ loop.first ? 'true' : 'false' }}">
+                    <button
+                        type="button"
+                        class="{{ loop.first ? 'ativo' : '' }}"
+                        data-indice="{{ indice }}"
+                        aria-label="Ver fotografia {{ indice + 1 }} de {{ total_slides }}"
+                        aria-current="{{ loop.first ? 'true' : 'false' }}"
+                    >
                         <span></span>
                     </button>
                 {% endfor %}
@@ -35,25 +50,60 @@
         <div id="perfil-fotos" class="perfil-fotos">
             {% if total_fotos > 0 %}
                 {% for foto in fotos %}
-                    <figure id="perfil-foto-{{ loop.index0 }}" class="perfil-slide" data-indice="{{ loop.index0 }}" aria-hidden="{{ loop.first ? 'false' : 'true' }}">
-                        <img src="{{ doc_root }}imagens/fotos-perfil-originais/{{ foto.nome_arquivo }}" data-fallback="{{ doc_root }}imagens/fotos-perfil/{{ foto.nome_arquivo }}" data-default="{{ doc_root }}imagens/fotos-perfil/default.webp" alt="Fotografia {{ loop.index }} de {{ membro.nome }}" loading="{{ loop.first ? 'eager' : 'lazy' }}" fetchpriority="{{ loop.first ? 'high' : 'auto' }}" draggable="false">
+                    <figure
+                        id="perfil-foto-{{ loop.index0 }}"
+                        class="perfil-slide"
+                        data-indice="{{ loop.index0 }}"
+                        aria-hidden="{{ loop.first ? 'false' : 'true' }}"
+                    >
+                        <img
+                            src="{{ doc_root }}imagens/fotos-perfil-originais/{{ foto.nome_arquivo }}"
+                            data-fallback="{{ doc_root }}imagens/fotos-perfil/{{ foto.nome_arquivo }}"
+                            data-default="{{ doc_root }}imagens/fotos-perfil/default.webp"
+                            alt="Fotografia {{ loop.index }} de {{ membro.nome }}"
+                            loading="{{ loop.first ? 'eager' : 'lazy' }}"
+                            fetchpriority="{{ loop.first ? 'high' : 'auto' }}"
+                            draggable="false"
+                        >
                     </figure>
                 {% endfor %}
             {% else %}
-                <figure id="perfil-foto-0" class="perfil-slide" data-indice="0" aria-hidden="false">
-                    <img src="{{ doc_root }}imagens/fotos-perfil/default.webp" data-default="{{ doc_root }}imagens/fotos-perfil/default.webp" alt="{{ membro.nome }} ainda não adicionou fotografias" loading="eager" fetchpriority="high" draggable="false">
+                <figure
+                    id="perfil-foto-0"
+                    class="perfil-slide"
+                    data-indice="0"
+                    aria-hidden="false"
+                >
+                    <img
+                        src="{{ doc_root }}imagens/fotos-perfil/default.webp"
+                        data-default="{{ doc_root }}imagens/fotos-perfil/default.webp"
+                        alt="{{ membro.nome }} ainda não adicionou fotografias"
+                        loading="eager"
+                        fetchpriority="high"
+                        draggable="false"
+                    >
                 </figure>
             {% endif %}
         </div>
 
         {% if total_slides > 1 %}
-            <button type="button" id="perfil-anterior" class="perfil-navegacao perfil-anterior" aria-label="Fotografia anterior">
+            <button
+                type="button"
+                id="perfil-anterior"
+                class="perfil-navegacao perfil-anterior"
+                aria-label="Fotografia anterior"
+            >
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M15 5l-7 7 7 7"></path>
                 </svg>
             </button>
 
-            <button type="button" id="perfil-seguinte" class="perfil-navegacao perfil-seguinte" aria-label="Fotografia seguinte">
+            <button
+                type="button"
+                id="perfil-seguinte"
+                class="perfil-navegacao perfil-seguinte"
+                aria-label="Fotografia seguinte"
+            >
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M9 5l7 7-7 7"></path>
                 </svg>
@@ -67,8 +117,17 @@
             <p>{{ idade }}</p>
 
             {% if membro.id == session.id %}
-                <a href="{{ doc_root }}settings" class="editar-perfil">
-                    Definições
+                <a
+                    href="{{ doc_root }}settings"
+                    class="editar-perfil"
+                    aria-label="Abrir definições"
+                >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 15.25A3.25 3.25 0 1 0 12 8.75a3.25 3.25 0 0 0 0 6.5Z"></path>
+                        <path d="M19.4 13.5a7.9 7.9 0 0 0 .05-3l1.75-1.35-2-3.46-2.16.87a8 8 0 0 0-2.6-1.5L14.1 2.75h-4.2l-.34 2.31a8 8 0 0 0-2.6 1.5L4.8 5.69l-2 3.46L4.55 10.5a7.9 7.9 0 0 0 .05 3l-1.8 1.35 2 3.46 2.2-.87a8 8 0 0 0 2.56 1.48l.34 2.33h4.2l.34-2.33A8 8 0 0 0 17 17.44l2.2.87 2-3.46-1.8-1.35Z"></path>
+                    </svg>
+
+                    <span>Definições</span>
                 </a>
             {% endif %}
         </header>
@@ -105,7 +164,12 @@
         {% endif %}
 
         {% if membro.id != session.id %}
-            <button type="button" class="ola" id="enviar-hey-perfil" data-destinatario-id="{{ membro.id }}">
+            <button
+                type="button"
+                class="ola"
+                id="enviar-hey-perfil"
+                data-destinatario-id="{{ membro.id }}"
+            >
                 Hey
             </button>
         {% endif %}

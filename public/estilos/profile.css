@@ -3,8 +3,9 @@
 /*
  * PERFIL
  *
- * Há apenas um scroll vertical: o scroll normal da página.
- * O #perfil não cria um segundo contentor de scroll.
+ * Há apenas um scroll vertical: o scroll nativo da página/WKWebView.
+ * Não criamos um contentor vertical artificial para preservar o
+ * rubber-banding natural do iPhone.
  */
 
 html:has(#perfil) {
@@ -13,23 +14,32 @@ html:has(#perfil) {
     min-height: 100%;
     margin: 0;
     padding: 0;
+
     overflow-x: hidden !important;
-    overflow-y: auto !important;
+    overflow-y: visible !important;
+
     background: #ffffff;
-    -webkit-overflow-scrolling: touch;
+
+    overscroll-behavior-y: auto !important;
 }
 
 body:has(#perfil) {
     position: relative !important;
+
     width: 100%;
     height: auto !important;
     min-height: 100vh !important;
     min-height: 100dvh !important;
+
     margin: 0;
     padding: 0;
-    overflow: visible !important;
+
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
+
     background: #ffffff;
-    overscroll-behavior-y: auto;
+
+    overscroll-behavior-y: auto !important;
 }
 
 body:has(#perfil) #perfil {
@@ -37,9 +47,12 @@ body:has(#perfil) #perfil {
     height: auto !important;
     min-height: 100vh !important;
     min-height: 100dvh !important;
+
     margin: 0;
     padding: 0;
+
     overflow: visible !important;
+
     background: #ffffff;
 }
 
@@ -47,40 +60,51 @@ body:has(#perfil) #perfil {
 
 .perfil-galeria {
     position: relative;
+
     width: 100%;
-    height: 70svh;
-    min-height: 460px;
-    max-height: 850px;
+    height: 76svh;
+
+    min-height: 520px;
+    max-height: 900px;
+
     overflow: hidden;
+
     background: #161616;
+
     isolation: isolate;
 }
 
 .perfil-galeria::before,
 .perfil-galeria::after {
     content: "";
+
     position: absolute;
     z-index: 2;
+
     right: 0;
     left: 0;
-    height: 100px;
+
+    height: 110px;
+
     pointer-events: none;
 }
 
 .perfil-galeria::before {
     top: 0;
+
     background: linear-gradient(
         to bottom,
-        rgba(0, 0, 0, 0.34),
+        rgba(0, 0, 0, 0.32),
         transparent
     );
 }
 
 .perfil-galeria::after {
     bottom: 0;
+
     background: linear-gradient(
         to top,
-        rgba(0, 0, 0, 0.2),
+        rgba(0, 0, 0, 0.18),
         transparent
     );
 }
@@ -88,13 +112,19 @@ body:has(#perfil) #perfil {
 .perfil-fotos {
     width: 100%;
     height: 100%;
+
     overflow-x: auto;
     overflow-y: hidden;
+
     overscroll-behavior-x: contain;
+
     scroll-snap-type: x mandatory;
     scroll-behavior: smooth;
+
     scrollbar-width: none;
+
     cursor: grab;
+
     touch-action: pan-x pan-y;
 
     display: flex;
@@ -109,29 +139,40 @@ body:has(#perfil) #perfil {
 
 .perfil-fotos.a-arrastar {
     cursor: grabbing;
+
     scroll-snap-type: none;
     scroll-behavior: auto;
 }
 
 .perfil-slide {
     flex: 0 0 100%;
+
     width: 100%;
     height: 100%;
+
     margin: 0;
+
     overflow: hidden;
+
     scroll-snap-align: start;
     scroll-snap-stop: always;
+
     background: #e8e8e8;
 }
 
 .perfil-slide img {
     display: block;
+
     width: 100%;
     height: 100%;
+
     border-radius: 0;
+
     object-fit: cover;
     object-position: center;
+
     pointer-events: none;
+
     user-select: none;
     -webkit-user-select: none;
     -webkit-user-drag: none;
@@ -142,34 +183,49 @@ body:has(#perfil) #perfil {
 .perfil-indicadores {
     position: absolute;
     z-index: 4;
+
     right: 50%;
-    bottom: 22px;
+    bottom: 24px;
+
     transform: translateX(50%);
 
     display: flex;
     align-items: center;
     justify-content: center;
+
     gap: 7px;
 }
 
 .perfil-indicadores button {
     flex: 0 0 18px;
+
     width: 18px;
     height: 18px;
+
     padding: 5px;
+
     border: 0;
+
     background: transparent;
+
     cursor: pointer;
+
     touch-action: manipulation;
 }
 
 .perfil-indicadores button span {
     display: block;
+
     width: 8px;
     height: 8px;
+
     border-radius: 50%;
+
     background: rgba(255, 255, 255, 0.5);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+
+    box-shadow:
+        0 1px 3px
+        rgba(0, 0, 0, 0.18);
 
     transition:
         background-color 160ms ease,
@@ -179,8 +235,12 @@ body:has(#perfil) #perfil {
 
 .perfil-indicadores button.ativo span {
     background: #ffffff;
+
     transform: scale(1.4);
-    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.35);
+
+    box-shadow:
+        0 1px 5px
+        rgba(0, 0, 0, 0.35);
 }
 
 /* Setas da galeria */
@@ -188,22 +248,32 @@ body:has(#perfil) #perfil {
 .perfil-navegacao {
     position: absolute;
     z-index: 4;
+
     top: 50%;
+
     width: 44px;
     height: 44px;
+
     padding: 0;
 
-    border: 1px solid rgba(255, 255, 255, 0.5);
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.5);
+
     border-radius: 50%;
 
-    background: rgba(20, 20, 20, 0.34);
+    background:
+        rgba(20, 20, 20, 0.34);
+
     color: #ffffff;
 
     transform: translateY(-50%);
+
     -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
 
     cursor: pointer;
+
     touch-action: manipulation;
 
     display: flex;
@@ -226,7 +296,9 @@ body:has(#perfil) #perfil {
 .perfil-navegacao svg {
     width: 24px;
     height: 24px;
+
     fill: none;
+
     stroke: currentColor;
     stroke-width: 2.2;
     stroke-linecap: round;
@@ -240,12 +312,17 @@ body:has(#perfil) #perfil {
     z-index: 5;
 
     width: 100%;
-    min-height: calc(30svh + 28px);
 
-    margin-top: -28px;
+    min-height:
+        calc(
+            24svh +
+            34px
+        );
+
+    margin-top: -34px;
 
     padding:
-        30px
+        32px
         20px
         calc(
             var(--menu-principal-height, 56px) +
@@ -254,73 +331,181 @@ body:has(#perfil) #perfil {
             42px
         );
 
-    border-radius: 30px 30px 0 0;
+    border-radius:
+        32px
+        32px
+        0
+        0;
+
     background: #ffffff;
 }
 
+/* Identidade */
+
 .perfil-identidade {
     display: flex;
-    align-items: baseline;
-    gap: 10px;
+    align-items: center;
+
+    min-width: 0;
+
+    gap: 8px;
 }
 
 .perfil-identidade h1 {
+    min-width: 0;
+
     margin: 0;
+
     color: #111111;
-    font-size: clamp(27px, 7vw, 36px);
-    line-height: 1.1;
+
+    font-size:
+        clamp(
+            27px,
+            7vw,
+            36px
+        );
+
+    font-weight: 750;
+    line-height: 1.08;
+
+    letter-spacing: -0.025em;
 }
 
 .perfil-identidade p {
-    margin: 0;
-    color: #333333;
-    font-size: 22px;
+    flex-shrink: 0;
+
+    margin: 1px 0 0;
+
+    color: #3d3d3d;
+
+    font-size: 20px;
     font-weight: 600;
+
+    line-height: 1;
 }
 
+/* Definições */
+
 .editar-perfil {
+    flex-shrink: 0;
+
     margin-left: auto;
+
+    min-height: 38px;
+
+    padding:
+        0
+        12px;
+
+    border:
+        1px solid
+        rgba(17, 17, 17, 0.07);
+
+    border-radius: 999px;
+
+    background: #f3f3f5;
+
+    color: #242426;
+
+    text-decoration: none;
+
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1;
+
+    letter-spacing: -0.01em;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 6px;
+
+    -webkit-tap-highlight-color: transparent;
+
+    transition:
+        transform 120ms ease,
+        background-color 120ms ease;
+}
+
+.editar-perfil svg {
+    width: 15px;
+    height: 15px;
+
+    flex-shrink: 0;
+
+    fill: none;
+
+    stroke: currentColor;
+    stroke-width: 1.65;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.editar-perfil:active {
+    transform: scale(0.96);
+
+    background: #e9e9ec;
 }
 
 /* Blocos */
 
 .perfil-bloco {
-    margin-top: 26px;
+    margin-top: 27px;
 }
 
 .perfil-bloco h2 {
-    margin: 0 0 8px;
+    margin:
+        0
+        0
+        8px;
+
     padding: 0;
+
     color: #777777;
+
     font-size: 12px;
     font-weight: 800;
+
     letter-spacing: 0.08em;
+
     text-transform: uppercase;
 }
 
 .perfil-bloco p {
     margin: 0;
+
     color: #222222;
+
     font-size: 17px;
     line-height: 1.5;
+
     overflow-wrap: anywhere;
 }
 
 .perfil-gostos ul {
     margin: 0;
     padding: 0;
+
     list-style: none;
 
     display: flex;
     flex-wrap: wrap;
+
     gap: 8px;
 }
 
 .perfil-gostos li {
-    padding: 8px 13px;
+    padding:
+        8px
+        13px;
+
     border-radius: 999px;
+
     background: #f0f0f3;
+
     color: #222222;
+
     font-size: 14px;
 }
 
@@ -329,9 +514,6 @@ body:has(#perfil) #perfil {
  *
  * O estilo visual continua a vir do style.css,
  * exatamente igual ao Hey do mini-menu.
- *
- * Aqui garantimos apenas posição/visibilidade
- * dentro do perfil.
  */
 
 #enviar-hey-perfil {
@@ -345,6 +527,7 @@ body:has(#perfil) #perfil {
 
     display: flex !important;
     visibility: visible !important;
+
     flex-shrink: 0;
 }
 
@@ -361,45 +544,95 @@ body:has(#perfil) #perfil {
 }
 
 /*
- * PWA / WebView standalone.
+ * PWA / Capacitor / WebView
  *
- * Anulamos especificamente as regras globais
- * que tentavam criar scroll dentro de #perfil.
+ * Importante:
+ * não usamos overflow-y:auto no html.
+ * Assim o UIScrollView do WKWebView continua a ser o responsável
+ * pelo scroll vertical e pelo rubber-banding do iOS.
  */
 
 @media all and (display-mode: standalone) {
     html:has(#perfil) {
         height: auto !important;
         min-height: 100% !important;
+
         overflow-x: hidden !important;
-        overflow-y: auto !important;
+        overflow-y: visible !important;
+
+        overscroll-behavior-y: auto !important;
     }
 
     body:has(#perfil) {
         position: relative !important;
+
         height: auto !important;
         min-height: 100dvh !important;
-        overflow: visible !important;
+
+        overflow-x: hidden !important;
+        overflow-y: visible !important;
+
+        overscroll-behavior-y: auto !important;
     }
 
     body:has(#perfil) #perfil {
         width: 100% !important;
+
         height: auto !important;
         min-height: 100dvh !important;
+
         overflow: visible !important;
     }
 
     .perfil-galeria {
-        height: calc(
-            70svh +
-            env(safe-area-inset-top, 0px)
-        );
+        height:
+            calc(
+                76svh +
+                env(safe-area-inset-top, 0px)
+            );
 
         margin-top:
             calc(
                 -1 *
                 env(safe-area-inset-top, 0px)
             );
+    }
+}
+
+/* Ecrãs mais pequenos */
+
+@media (max-width: 390px) {
+    .perfil-galeria {
+        height: 74svh;
+        min-height: 500px;
+    }
+
+    .perfil-identidade {
+        gap: 7px;
+    }
+
+    .perfil-identidade h1 {
+        font-size:
+            clamp(
+                26px,
+                6.8vw,
+                33px
+            );
+    }
+
+    .editar-perfil {
+        min-height: 36px;
+
+        padding:
+            0
+            10px;
+
+        font-size: 12.5px;
+    }
+
+    .editar-perfil svg {
+        width: 14px;
+        height: 14px;
     }
 }
 
@@ -412,12 +645,20 @@ body:has(#perfil) #perfil {
 
     #perfil {
         max-width: 760px;
-        margin: 0 auto;
-        box-shadow: 0 0 40px rgba(0, 0, 0, 0.08);
+
+        margin:
+            0
+            auto;
+
+        box-shadow:
+            0
+            0
+            40px
+            rgba(0, 0, 0, 0.08);
     }
 
     .perfil-galeria {
-        height: min(78vh, 820px);
+        height: min(80vh, 860px);
     }
 }
 
@@ -428,7 +669,8 @@ body:has(#perfil) #perfil {
         scroll-behavior: auto;
     }
 
-    .perfil-indicadores button span {
+    .perfil-indicadores button span,
+    .editar-perfil {
         transition: none;
     }
 }
