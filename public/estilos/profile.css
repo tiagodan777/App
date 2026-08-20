@@ -1,14 +1,14 @@
 @charset "UTF-8";
 
+:root {
+    --perfil-reveal-top: 160px;
+}
+
 /*
  * PERFIL
  *
- * html/body continuam presos à shell global da Margot.
+ * A shell global fica fixa.
  * O próprio #perfil é o scroll vertical.
- *
- * Isto é intencional: no WKWebView/iPhone permite que o
- * UIScrollView associado à área apresente o rubber-banding
- * natural ao chegar ao topo/fundo.
  */
 
 html:has(#perfil),
@@ -33,8 +33,10 @@ body:has(#perfil) #perfil {
     position: relative;
 
     width: 100% !important;
+
     height: 100vh !important;
     height: 100dvh !important;
+
     min-height: 0 !important;
 
     margin: 0;
@@ -43,7 +45,7 @@ body:has(#perfil) #perfil {
     overflow-x: hidden !important;
     overflow-y: auto !important;
 
-    background: #ffffff;
+    background: #161616;
 
     -webkit-overflow-scrolling: touch;
 
@@ -53,17 +55,48 @@ body:has(#perfil) #perfil {
     touch-action: pan-y;
 }
 
-/* Galeria */
+/*
+ * Galeria
+ *
+ * A galeria tem 160px extra escondidos acima do viewport.
+ *
+ * Em repouso:
+ *   esses 160px ficam fora do ecrã.
+ *
+ * Ao puxar para baixo:
+ *   o rubber banding revela essa continuação da fotografia
+ *   em vez de mostrar uma barra branca.
+ */
 
 .perfil-galeria {
     position: relative;
     z-index: 1;
 
-    width: 100%;
-    height: 82vh;
-    height: 82dvh;
+    top:
+        calc(
+            -1 *
+            var(--perfil-reveal-top)
+        );
 
-    min-height: 620px;
+    width: 100%;
+
+    height:
+        calc(
+            82dvh +
+            var(--perfil-reveal-top)
+        );
+
+    min-height:
+        calc(
+            620px +
+            var(--perfil-reveal-top)
+        );
+
+    margin-bottom:
+        calc(
+            -1 *
+            var(--perfil-reveal-top)
+        );
 
     overflow: hidden;
 
@@ -90,11 +123,11 @@ body:has(#perfil) #perfil {
 }
 
 .perfil-galeria::before {
-    top: 0;
+    top: var(--perfil-reveal-top);
 
     background: linear-gradient(
         to bottom,
-        rgba(0, 0, 0, 0.32),
+        rgba(0, 0, 0, 0.28),
         transparent
     );
 }
@@ -169,7 +202,13 @@ body:has(#perfil) #perfil {
     border-radius: 0;
 
     object-fit: cover;
-    object-position: center;
+
+    /*
+     * A imagem está centrada na galeria maior.
+     * Assim há fotografia real escondida por cima
+     * para ser revelada no rubber banding.
+     */
+    object-position: center center;
 
     pointer-events: none;
 
@@ -252,7 +291,11 @@ body:has(#perfil) #perfil {
     position: absolute;
     z-index: 4;
 
-    top: 50%;
+    top:
+        calc(
+            50% +
+            var(--perfil-reveal-top) / 2
+        );
 
     width: 44px;
     height: 44px;
@@ -537,12 +580,7 @@ body:has(#perfil) #perfil {
     }
 }
 
-/*
- * PWA / Capacitor
- *
- * A shell fica fixa e o #perfil é deliberadamente
- * o contentor de scroll desta página.
- */
+/* Capacitor / standalone */
 
 @media all and (display-mode: standalone) {
     html:has(#perfil),
@@ -570,34 +608,23 @@ body:has(#perfil) #perfil {
 
         overscroll-behavior-y: auto;
     }
-
-    .perfil-galeria {
-        height:
-            calc(
-                82dvh +
-                env(safe-area-inset-top, 0px)
-            );
-
-        min-height:
-            calc(
-                620px +
-                env(safe-area-inset-top, 0px)
-            );
-
-        margin-top:
-            calc(
-                -1 *
-                env(safe-area-inset-top, 0px)
-            );
-    }
 }
 
 /* Ecrãs mais baixos */
 
 @media (max-height: 760px) {
     .perfil-galeria {
-        height: 78dvh;
-        min-height: 560px;
+        height:
+            calc(
+                78dvh +
+                var(--perfil-reveal-top)
+            );
+
+        min-height:
+            calc(
+                560px +
+                var(--perfil-reveal-top)
+            );
     }
 }
 
@@ -623,8 +650,17 @@ body:has(#perfil) #perfil {
     }
 
     .perfil-galeria {
-        height: min(82dvh, 900px);
-        min-height: 620px;
+        height:
+            calc(
+                min(82dvh, 900px) +
+                var(--perfil-reveal-top)
+            );
+
+        min-height:
+            calc(
+                620px +
+                var(--perfil-reveal-top)
+            );
     }
 }
 
