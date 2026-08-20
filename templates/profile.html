@@ -3,7 +3,7 @@
 {% block title %}{{ membro.nome }} | Margot{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ doc_root }}estilos/profile.css?v=11" data-margot-page-style>
+<link rel="stylesheet" href="{{ doc_root }}estilos/profile.css?v=12" data-margot-page-style>
 {% endblock %}
 
 {% block content %}
@@ -181,10 +181,11 @@
 
 <script>
 window.membroId = {{ session.id|json_encode|raw }};
+
 window.webSocketUrl = window.location.protocol === 'https:'
     ? 'wss://' + window.location.host + '/ws/'
     : 'ws://' + window.location.hostname + ':8080';
 </script>
 
-<script src="{{ doc_root }}js/profile.js?v=8"></script>
+<script src="{{ doc_root }}js/profile.js?v=9"></script>
 {% endblock %}
