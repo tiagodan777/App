@@ -19,9 +19,10 @@
                     src="{{ doc_root }}imagens/fotos-perfil/default.webp"
                     alt=""
                 >
-
             </a>
+
             <h1></h1>
+
             <button
                 type="button"
                 id="abrir-acoes-perfil"
@@ -213,6 +214,13 @@
             enctype="multipart/form-data"
             class="mini-menu-mensagem"
         >
+            <input
+                type="hidden"
+                name="profile_access_token"
+                id="mini-menu-profile-access-token"
+                value=""
+            >
+
             <label
                 for="mini-menu-media"
                 class="mini-menu-anexo"
@@ -249,6 +257,83 @@
     <script>
         window.safetyUrl =
             {{ (doc_root ~ 'safety')|json_encode|raw }};
+
+        /*
+         * A primeira mensagem entre duas pessoas exige
+         * o token de proximidade emitido pelo WebSocket.
+         *
+         * O WebSocket mantém o token mais recente na
+         * fotografia correspondente do mapa.
+         *
+         * Atualizamos o hidden input imediatamente antes
+         * do submit, para não reutilizar um token expirado.
+         */
+        (function () {
+            'use strict';
+
+            document.addEventListener(
+                'submit',
+                function (evento) {
+                    var form = evento.target;
+
+                    if (
+                        !form ||
+                        !form.matches(
+                            '.mini-menu-mensagem'
+                        )
+                    ) {
+                        return;
+                    }
+
+                    var miniMenu =
+                        form.closest(
+                            '.mini-menu'
+                        );
+
+                    var inputToken =
+                        form.querySelector(
+                            'input[name="profile_access_token"]'
+                        );
+
+                    if (
+                        !miniMenu ||
+                        !inputToken
+                    ) {
+                        return;
+                    }
+
+                    var destinatarioId =
+                        String(
+                            miniMenu.getAttribute(
+                                'data-destinatario-id'
+                            ) || ''
+                        ).trim();
+
+                    if (!destinatarioId) {
+                        inputToken.value = '';
+                        return;
+                    }
+
+                    var fotografia =
+                        document.getElementById(
+                            destinatarioId
+                        );
+
+                    var token =
+                        fotografia
+                            ? String(
+                                fotografia.getAttribute(
+                                    'data-profile-access-token'
+                                ) || ''
+                            ).trim()
+                            : '';
+
+                    inputToken.value =
+                        token;
+                },
+                true
+            );
+        })();
     </script>
 
     <script src="{{ doc_root }}js/index-posicao.js?v=13"></script>
