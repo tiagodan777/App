@@ -551,6 +551,19 @@
             };
         }
 
+        var temFotos = Array.isArray(window.fotosPerfil) &&
+            window.fotosPerfil.some(function (foto) {
+                return foto && (foto.existente || foto.file);
+            });
+
+        if (!temFotos) {
+            return {
+                etapa: '#fotos',
+                campo: '',
+                mensagem: 'Adiciona pelo menos uma fotografia.'
+            };
+        }
+
         var preferencias = window.MargotPreferencias;
 
         if (

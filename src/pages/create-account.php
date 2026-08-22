@@ -101,6 +101,15 @@ $newPhotos = [];
 try {
     if ($editsPhotos) $newPhotos = $image->receiveProfileUploads($_FILES['imagens'] ?? []);
 
+    if (!$editing && $newPhotos === []) {
+        $json([
+            'success' => false,
+            'erros' => [
+                'imagens' => 'Adiciona pelo menos uma fotografia.'
+            ]
+        ], 422);
+    }
+
     $photoOrder = $_POST['ordem_fotos'] ?? [];
     $photosToRemove = $_POST['fotos_remover'] ?? [];
     $photosChanged = $editsPhotos && (

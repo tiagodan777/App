@@ -795,12 +795,20 @@
     window.pararCameraPerfil =
         fecharCamera;
 
-    window.validarFotosPerfil =
-        function () {
-            mostrarErro('');
+    window.validarFotosPerfil = function () {
+        var temFoto = Array.isArray(window.fotosPerfil) &&
+            window.fotosPerfil.some(function (foto) {
+                return foto && (foto.existente || foto.file);
+            });
 
-            return true;
-        };
+        if (!temFoto) {
+            mostrarErro('Adiciona pelo menos uma fotografia.');
+            return false;
+        }
+
+        mostrarErro('');
+        return true;
+    };
 
     window.adicionarFotosPerfilAoFormData =
         function (formData) {
