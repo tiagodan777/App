@@ -764,7 +764,7 @@
             });
         });
 
-        $(document).on('click', '.editar-area', function () {
+        $(document).on('click', '.editar-area[data-etapa]', function () {
             navegar($(this).data('etapa'), {
                 validar: false,
                 guardar: false
