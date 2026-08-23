@@ -13,7 +13,6 @@
         '#nascimento',
         '#sexo',
         '#gostos',
-        '#objetivo',
         '#contactos',
         '#descricao',
         '#fotos',
@@ -35,7 +34,7 @@
     if (!Array.isArray(dados.gostos)) dados.gostos = [];
 
     function etapaPermitida(etapa) {
-        // if (!ETAPAS.includes(etapa)) return false;
+        if (!ETAPAS.includes(etapa)) return false;
         if (modoEdicao && etapa === '#introducao') return false;
         if (!modoEdicao && etapa === '#editar-perfil') return false;
         return true;
@@ -203,17 +202,6 @@
         }[valor] || 'Editar o género';
     }
 
-    function textoObjetivo(valor) {
-        return {
-            amizade: 'Fazer amigos',
-            conhecer_pessoas: 'Conhecer pessoas novas',
-            relacao_seria: 'Encontrar uma relação séria',
-            algo_casual: 'Algo casual',
-            conversar: 'Conversar e ver no que dá',
-            ainda_nao_sei: 'Ainda não sei'
-        }[valor] || 'Editar o teu objetivo';
-    }
-
     function resumir(valor, limite) {
         var texto = String(valor || '').trim().replace(/\s+/g, ' ');
         if (!texto || texto.length <= limite) return texto;
@@ -279,7 +267,6 @@
         definirResumo('nascimento', nascimento.length >= 8 ? nascimento : 'Editar a data de nascimento');
         definirResumo('genero', textoGenero(dados.genero));
         definirResumo('gostos', resumoGostos);
-        definirResumo('objetivo', textoObjetivo(dados.objetivo));
         definirResumo('sobre_ti', resumir(dados.sobre_ti, 62) || 'Ainda não escreveste uma descrição');
         definirResumo('contactos', contacto || 'Email e telefone privados');
         definirResumo('fotos', numeroFotos === 1 ? '1 fotografia' : numeroFotos + ' fotografias');
@@ -508,21 +495,6 @@
             };
         }
 
-        if (![
-            'amizade',
-            'conhecer_pessoas',
-            'relacao_seria',
-            'algo_casual',
-            'conversar',
-            'ainda_nao_sei'
-        ].includes(textoGuardado('objetivo'))) {
-            return {
-                etapa: '#objetivo',
-                campo: 'objetivo',
-                mensagem: 'Escolhe o que procuras na Margot.'
-            };
-        }
-
         var telefone = textoGuardado('telefone');
 
         if (!telefoneValido(telefone)) {
@@ -744,6 +716,10 @@
     }
 
     restaurarDaSessao();
+
+    // Remove qualquer valor antigo guardado antes de a etapa "objetivo" ser eliminada.
+    delete dados.objetivo;
+    guardarNaSessao();
 
     window.createAccountDados = dados;
     window.guardarCamposCreateAccount = guardarCamposAtuais;

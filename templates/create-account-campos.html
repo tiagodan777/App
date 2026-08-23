@@ -25,7 +25,7 @@
     </div>
 
     <!--<p class="margot-intro-privacidade">
-        Só mostras o teu nome, idade, fotografias, gostos e o que procuras.
+        Só mostras o teu nome, idade, fotografias e gostos.
         Os teus contactos e a tua localização nunca são mostrados.
     </p>-->
 
@@ -100,17 +100,6 @@
             <span class="editar-area-texto">
                 <strong>Gostos e interesses</strong>
                 <small data-resumo-campo="gostos">Editar os teus gostos</small>
-            </span>
-
-            <span class="editar-area-seta" aria-hidden="true">›</span>
-        </button>
-
-        <button type="button" class="editar-area" data-etapa="#objetivo">
-            <span class="editar-area-icone" aria-hidden="true">🧭</span>
-
-            <span class="editar-area-texto">
-                <strong>O que procuras</strong>
-                <small data-resumo-campo="objetivo">Editar o teu objetivo</small>
             </span>
 
             <span class="editar-area-seta" aria-hidden="true">›</span>
@@ -304,56 +293,6 @@
             <button type="submit" class="proximo guardar-secao">Guardar e sair</button>
         {% else %}
             <a data-etapa="#sexo" class="anterior">Anterior</a>
-            <a data-etapa="#objetivo" class="proximo">Próximo</a>
-        {% endif %}
-    </nav>
-</div>
-
-<div id="objetivo">
-    <h1>O que procuras na Margot?</h1>
-
-    <p class="objetivo-explicacao">
-        Escolhe a opção que melhor descreve o teu objetivo principal.
-    </p>
-
-    <div class="objetivo-opcoes">
-        <label class="objetivo-opcao">
-            <input type="radio" name="objetivo" value="amizade" required>
-            <span>🫂 Fazer amigos</span>
-        </label>
-
-        <label class="objetivo-opcao">
-            <input type="radio" name="objetivo" value="conhecer_pessoas" required>
-            <span>✨ Conhecer pessoas novas</span>
-        </label>
-
-        <label class="objetivo-opcao">
-            <input type="radio" name="objetivo" value="relacao_seria" required>
-            <span>❤️ Encontrar uma relação séria</span>
-        </label>
-
-        <label class="objetivo-opcao">
-            <input type="radio" name="objetivo" value="algo_casual" required>
-            <span>🔥 Algo casual</span>
-        </label>
-
-        <label class="objetivo-opcao">
-            <input type="radio" name="objetivo" value="conversar" required>
-            <span>💬 Conversar e ver no que dá</span>
-        </label>
-
-        <label class="objetivo-opcao">
-            <input type="radio" name="objetivo" value="ainda_nao_sei" required>
-            <span>🌊 Ainda não sei</span>
-        </label>
-    </div>
-
-    <nav class="anterior-proximo">
-        {% if modo_edicao %}
-            <a data-etapa="#editar-perfil" data-sem-validar="true" class="anterior">Voltar à lista</a>
-            <button type="submit" class="proximo guardar-secao">Guardar e sair</button>
-        {% else %}
-            <a data-etapa="#gostos" class="anterior">Anterior</a>
             <a data-etapa="#contactos" class="proximo">Próximo</a>
         {% endif %}
     </nav>
@@ -403,7 +342,7 @@
             <a data-etapa="#editar-perfil" data-sem-validar="true" class="anterior">Voltar à lista</a>
             <button type="submit" class="proximo guardar-secao">Guardar e sair</button>
         {% else %}
-            <a data-etapa="#objetivo" class="anterior">Anterior</a>
+            <a data-etapa="#gostos" class="anterior">Anterior</a>
             <a data-etapa="#descricao" class="proximo">Próximo</a>
         {% endif %}
     </nav>

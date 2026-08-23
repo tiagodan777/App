@@ -13,7 +13,7 @@ $memberId = trim((string) ($session->id ?? ''));
 $member = $cms->getMember();
 $base = rtrim((string) DOC_ROOT, '/') . '/';
 $allSections = [
-    'nome', 'nascimento', 'sexo', 'gostos', 'objetivo',
+    'nome', 'nascimento', 'sexo', 'gostos',
     'contactos', 'descricao', 'fotos', 'permissoes', 'palavra-passe'
 ];
 
@@ -49,7 +49,6 @@ if ($method !== 'POST') {
             'ano' => $birth ? $birth->format('Y') : '',
             'genero' => (string) $current['genero'],
             'gostos' => array_column($current['gostos'] ?? [], 'nome'),
-            'objetivo' => (string) $current['objetivo'],
             'telefone' => (string) $current['telefone'],
             'email' => (string) $current['email'],
             'sobre_ti' => (string) $current['bio']

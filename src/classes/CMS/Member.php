@@ -11,11 +11,6 @@ class Member
     public const TERMS_VERSION = '1.0';
     public const PRIVACY_VERSION = '1.0';
 
-    private const OBJECTIVES = [
-        'amizade', 'conhecer_pessoas', 'relacao_seria',
-        'algo_casual', 'conversar', 'ainda_nao_sei'
-    ];
-
     private $db;
 
     public function __construct($db)
@@ -51,7 +46,6 @@ class Member
             'ultimo_nome' => $value('ultimo_nome'),
             'genero' => $value('genero'),
             'gostos' => $this->normalizarGostos($input['gostos'] ?? []),
-            'objetivo' => $value('objetivo'),
             'telefone' => $value('telefone'),
             'email' => $value('email'),
             'sobre_ti' => $value('sobre_ti'),
@@ -96,13 +90,6 @@ class Member
         }
 
         if ($has('gostos')) $changes['gostos'] = $data['gostos'];
-
-        if ($has('objetivo')) {
-            if (!in_array($data['objetivo'], self::OBJECTIVES, true)) {
-                $errors['objetivo'] = 'Escolhe o que procuras na Margot.';
-            }
-            $changes['objetivo'] = $data['objetivo'];
-        }
 
         if ($has('contactos')) {
             if (!Validate::isEmail($data['email'])) $errors['email'] = 'Indica um email válido.';
@@ -189,17 +176,16 @@ class Member
             if ($managesTransaction) $this->db->beginTransaction();
             $this->db->runSQL(
                 'INSERT INTO membros
-                    (primeiro_nome, ultimo_nome, nascimento, genero, objetivo,
+                    (primeiro_nome, ultimo_nome, nascimento, genero,
                      telefone, email, bio, password, nome_seo)
                  VALUES
-                    (:primeiro_nome, :ultimo_nome, :nascimento, :genero, :objetivo,
+                    (:primeiro_nome, :ultimo_nome, :nascimento, :genero,
                      :telefone, :email, :bio, :password, :nome_seo)',
                 [
                     'primeiro_nome' => $member['primeiro_nome'],
                     'ultimo_nome' => $member['ultimo_nome'],
                     'nascimento' => $member['nascimento'],
                     'genero' => $member['genero'],
-                    'objetivo' => $member['objetivo'],
                     'telefone' => $member['telefone'],
                     'email' => $member['email'],
                     'bio' => $member['sobre_ti'],
@@ -234,7 +220,7 @@ class Member
 
         $columns = [
             'primeiro_nome' => 'primeiro_nome', 'ultimo_nome' => 'ultimo_nome',
-            'nascimento' => 'nascimento', 'genero' => 'genero', 'objetivo' => 'objetivo',
+            'nascimento' => 'nascimento', 'genero' => 'genero',
             'nome_seo' => 'nome_seo'
         ];
         $sets = [];
@@ -245,38 +231,62 @@ class Member
             $sets[] = $column . ' = :' . $key;
             $params[$key] = trim((string) $changes[$key]);
         }
+
         if (array_key_exists('telefone', $changes)) {
             $sets[] = 'telefone = :telefone';
             $params['telefone'] = $this->normalizarTelefone((string) $changes['telefone']);
         }
+
         if (array_key_exists('email', $changes)) {
             $sets[] = 'email = :email';
             $params['email'] = $this->normalizarEmail((string) $changes['email']);
         }
+
         if (array_key_exists('sobre_ti', $changes)) {
             $sets[] = 'bio = :bio';
             $params['bio'] = trim((string) $changes['sobre_ti']);
         }
+
         if (!empty($changes['password'])) {
             $sets[] = 'password = :password';
             $params['password'] = password_hash((string) $changes['password'], PASSWORD_DEFAULT);
-            if ($params['password'] === false) throw new \RuntimeException('Não foi possível proteger a palavra-passe.');
+
+            if ($params['password'] === false) {
+                throw new \RuntimeException('Não foi possível proteger a palavra-passe.');
+            }
         }
 
         if (!$sets && !$hasTastes) return true;
+
         $managesTransaction = !$this->db->inTransaction();
 
         try {
             if ($managesTransaction) $this->db->beginTransaction();
+
             if ($sets) {
-                $this->db->runSQL('UPDATE membros SET ' . implode(', ', $sets) . ' WHERE id = :id', $params);
+                $this->db->runSQL(
+                    'UPDATE membros SET ' . implode(', ', $sets) . ' WHERE id = :id',
+                    $params
+                );
             }
+
             if ($hasTastes) $this->sincronizarGostos($id, $tastes);
+
             if ($managesTransaction) $this->db->commit();
+
             return true;
         } catch (\Throwable $error) {
-            if ($managesTransaction && $this->db->inTransaction()) $this->db->rollBack();
-            if ($error instanceof \PDOException && (int) ($error->errorInfo[1] ?? 0) === 1062) return false;
+            if ($managesTransaction && $this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+
+            if (
+                $error instanceof \PDOException &&
+                (int) ($error->errorInfo[1] ?? 0) === 1062
+            ) {
+                return false;
+            }
+
             throw $error;
         }
     }
@@ -294,12 +304,17 @@ class Member
     private function normalizarGostos($tastes): array
     {
         if (!is_array($tastes)) return [];
+
         $result = [];
 
         foreach ($tastes as $taste) {
             if (!is_scalar($taste)) continue;
+
             $taste = trim((string) $taste);
-            if ($taste !== '') $result[mb_strtolower($taste, 'UTF-8')] = $taste;
+
+            if ($taste !== '') {
+                $result[mb_strtolower($taste, 'UTF-8')] = $taste;
+            }
         }
 
         return array_values($result);
@@ -307,17 +322,33 @@ class Member
 
     private function sincronizarGostos(string $memberId, array $tastes): void
     {
-        $this->db->runSQL('DELETE FROM membros_gostos WHERE membro_id = :id', ['id' => $memberId]);
+        $this->db->runSQL(
+            'DELETE FROM membros_gostos WHERE membro_id = :id',
+            ['id' => $memberId]
+        );
 
         foreach ($tastes as $taste) {
-            $this->db->runSQL('INSERT IGNORE INTO hobbies (nome) VALUES (:nome)', ['nome' => $taste]);
-            $hobbyId = $this->db->runSQL(
-                'SELECT id FROM hobbies WHERE nome = :nome LIMIT 1', ['nome' => $taste]
-            )->fetchColumn();
-            if (!$hobbyId) throw new \RuntimeException('Não foi possível guardar um gosto.');
             $this->db->runSQL(
-                'INSERT IGNORE INTO membros_gostos (membro_id, hobbie_id) VALUES (:member, :hobby)',
-                ['member' => $memberId, 'hobby' => $hobbyId]
+                'INSERT IGNORE INTO hobbies (nome) VALUES (:nome)',
+                ['nome' => $taste]
+            );
+
+            $hobbyId = $this->db->runSQL(
+                'SELECT id FROM hobbies WHERE nome = :nome LIMIT 1',
+                ['nome' => $taste]
+            )->fetchColumn();
+
+            if (!$hobbyId) {
+                throw new \RuntimeException('Não foi possível guardar um gosto.');
+            }
+
+            $this->db->runSQL(
+                'INSERT IGNORE INTO membros_gostos (membro_id, hobbie_id)
+                 VALUES (:member, :hobby)',
+                [
+                    'member' => $memberId,
+                    'hobby' => $hobbyId
+                ]
             );
         }
     }
@@ -325,6 +356,7 @@ class Member
     public function login(string $username, string $password): array|false
     {
         $username = trim($username);
+
         if ($username === '' || $password === '') return false;
 
         $select = "SELECT m.id, m.primeiro_nome, m.ultimo_nome, m.nascimento,
@@ -342,21 +374,55 @@ class Member
         } else {
             $condition = "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
                 TRIM(m.telefone), '+', ''), ' ', ''), '-', ''), '(', ''), ')', ''), '.', ''), '/', '') = :username";
+
             $username = $this->normalizarTelefone($username);
         }
 
         if ($username === '') return false;
-        $sql = $select . $condition . ' AND ' . Validate::adultSqlColumnCondition('m.nascimento') . ' LIMIT 1';
-        $member = $this->db->runSQL($sql, ['username' => $username])->fetch();
-        if (!$member || !password_verify($password, (string) $member['password'])) return false;
 
-        if (password_needs_rehash((string) $member['password'], PASSWORD_DEFAULT)) {
-            $hash = password_hash($password, PASSWORD_DEFAULT);
+        $sql = $select .
+            $condition .
+            ' AND ' .
+            Validate::adultSqlColumnCondition('m.nascimento') .
+            ' LIMIT 1';
+
+        $member = $this->db->runSQL(
+            $sql,
+            ['username' => $username]
+        )->fetch();
+
+        if (
+            !$member ||
+            !password_verify(
+                $password,
+                (string) $member['password']
+            )
+        ) {
+            return false;
+        }
+
+        if (
+            password_needs_rehash(
+                (string) $member['password'],
+                PASSWORD_DEFAULT
+            )
+        ) {
+            $hash = password_hash(
+                $password,
+                PASSWORD_DEFAULT
+            );
+
             if ($hash !== false) {
                 $this->db->runSQL(
-                    'UPDATE membros SET password = :password WHERE id = :id',
-                    ['password' => $hash, 'id' => $member['id']]
+                    'UPDATE membros
+                     SET password = :password
+                     WHERE id = :id',
+                    [
+                        'password' => $hash,
+                        'id' => $member['id']
+                    ]
                 );
+
                 $member['password'] = $hash;
             }
         }
@@ -369,53 +435,138 @@ class Member
         if (trim($id) === '') return false;
 
         $photos = $this->db->runSQL(
-            'SELECT nome_arquivo FROM fotos_perfil WHERE membro_id = :id', ['id' => $id]
+            'SELECT nome_arquivo
+             FROM fotos_perfil
+             WHERE membro_id = :id',
+            ['id' => $id]
         )->fetchAll(\PDO::FETCH_COLUMN);
+
         $messageFiles = $this->db->runSQL(
-            'SELECT ficheiro_nome FROM mensagens_chat
-             WHERE (emissor_id = :id1 OR destinatario_id = :id2) AND ficheiro_nome IS NOT NULL',
-            ['id1' => $id, 'id2' => $id]
+            'SELECT ficheiro_nome
+             FROM mensagens_chat
+             WHERE (
+                emissor_id = :id1 OR
+                destinatario_id = :id2
+             )
+             AND ficheiro_nome IS NOT NULL',
+            [
+                'id1' => $id,
+                'id2' => $id
+            ]
         )->fetchAll(\PDO::FETCH_COLUMN);
 
         $deletes = [
-            ['DELETE FROM mensagens_chat WHERE emissor_id = :id1 OR destinatario_id = :id2', ['id1' => $id, 'id2' => $id]],
-            ['DELETE FROM notificacao WHERE emissor_id = :id1 OR destinatario_id = :id2', ['id1' => $id, 'id2' => $id]],
-            ['DELETE FROM bloqueados WHERE pessoa_bloqueou_id = :id1 OR pessoa_bloqueada_id = :id2', ['id1' => $id, 'id2' => $id]],
-            ['DELETE FROM denuncias WHERE membro_denuncia = :id1 OR membro_denunciado = :id2', ['id1' => $id, 'id2' => $id]],
-            ['DELETE FROM token WHERE membro_id = :id', ['id' => $id]],
-            ['DELETE FROM localizacao_membro WHERE membro_id = :id', ['id' => $id]],
-            ['DELETE FROM membros_gostos WHERE membro_id = :id', ['id' => $id]],
-            ['DELETE FROM fotos_perfil WHERE membro_id = :id', ['id' => $id]]
+            [
+                'DELETE FROM mensagens_chat
+                 WHERE emissor_id = :id1 OR destinatario_id = :id2',
+                ['id1' => $id, 'id2' => $id]
+            ],
+            [
+                'DELETE FROM notificacao
+                 WHERE emissor_id = :id1 OR destinatario_id = :id2',
+                ['id1' => $id, 'id2' => $id]
+            ],
+            [
+                'DELETE FROM bloqueados
+                 WHERE pessoa_bloqueou_id = :id1 OR pessoa_bloqueada_id = :id2',
+                ['id1' => $id, 'id2' => $id]
+            ],
+            [
+                'DELETE FROM denuncias
+                 WHERE membro_denuncia = :id1 OR membro_denunciado = :id2',
+                ['id1' => $id, 'id2' => $id]
+            ],
+            [
+                'DELETE FROM token WHERE membro_id = :id',
+                ['id' => $id]
+            ],
+            [
+                'DELETE FROM localizacao_membro WHERE membro_id = :id',
+                ['id' => $id]
+            ],
+            [
+                'DELETE FROM membros_gostos WHERE membro_id = :id',
+                ['id' => $id]
+            ],
+            [
+                'DELETE FROM fotos_perfil WHERE membro_id = :id',
+                ['id' => $id]
+            ]
         ];
 
         try {
             $this->db->beginTransaction();
-            foreach ($deletes as [$sql, $params]) $this->db->runSQL($sql, $params);
-            $deleted = $this->db->runSQL('DELETE FROM membros WHERE id = :id', ['id' => $id])->rowCount() === 1;
+
+            foreach ($deletes as [$sql, $params]) {
+                $this->db->runSQL($sql, $params);
+            }
+
+            $deleted = $this->db->runSQL(
+                'DELETE FROM membros WHERE id = :id',
+                ['id' => $id]
+            )->rowCount() === 1;
+
             $this->db->commit();
         } catch (\Throwable $error) {
-            if ($this->db->inTransaction()) $this->db->rollBack();
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+
             throw $error;
         }
 
         if (!$deleted) return false;
-        $this->apagarFicheiros($photos, [
-            APP_ROOT . '/public/imagens/fotos-perfil/',
-            APP_ROOT . '/public/imagens/fotos-perfil-originais/',
-            APP_ROOT . '/public/imagens/fotos-perfil-temp/'
-        ], ['default.webp']);
-        $this->apagarFicheiros($messageFiles, [APP_ROOT . '/public/media/mensagens/']);
+
+        $this->apagarFicheiros(
+            $photos,
+            [
+                APP_ROOT . '/public/imagens/fotos-perfil/',
+                APP_ROOT . '/public/imagens/fotos-perfil-originais/',
+                APP_ROOT . '/public/imagens/fotos-perfil-temp/'
+            ],
+            ['default.webp']
+        );
+
+        $this->apagarFicheiros(
+            $messageFiles,
+            [APP_ROOT . '/public/media/mensagens/']
+        );
+
         return true;
     }
 
-    private function apagarFicheiros(array $names, array $directories, array $protected = []): void
-    {
+    private function apagarFicheiros(
+        array $names,
+        array $directories,
+        array $protected = []
+    ): void {
         foreach (array_unique($names) as $name) {
-            $name = basename(trim((string) $name));
-            if ($name === '' || in_array($name, $protected, true)) continue;
+            $name = basename(
+                trim((string) $name)
+            );
+
+            if (
+                $name === '' ||
+                in_array($name, $protected, true)
+            ) {
+                continue;
+            }
+
             foreach ($directories as $directory) {
-                $path = rtrim($directory, '/') . '/' . $name;
-                if (is_file($path) && !@unlink($path)) error_log('Não foi possível apagar: ' . $path);
+                $path =
+                    rtrim($directory, '/') .
+                    '/' .
+                    $name;
+
+                if (
+                    is_file($path) &&
+                    !@unlink($path)
+                ) {
+                    error_log(
+                        'Não foi possível apagar: ' .
+                        $path
+                    );
+                }
             }
         }
     }

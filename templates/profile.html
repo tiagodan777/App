@@ -11,15 +11,6 @@
 {% set total_fotos = fotos|length %}
 {% set total_slides = total_fotos > 0 ? total_fotos : 1 %}
 
-{% set objetivos = {
-    'amizade': 'Fazer amigos',
-    'conhecer_pessoas': 'Conhecer pessoas novas',
-    'relacao_seria': 'Uma relação séria',
-    'algo_casual': 'Algo casual',
-    'conversar': 'Conversar',
-    'ainda_nao_sei': 'Ainda não sabe'
-} %}
-
 <main id="perfil">
     <section
         id="perfil-galeria"
@@ -131,18 +122,6 @@
                 </a>
             {% endif %}
         </header>
-
-        {% if membro.objetivo|default('') %}
-            <section class="perfil-bloco">
-                <h2>Procura</h2>
-
-                <p>
-                    {{ objetivos[membro.objetivo]|default(
-                        membro.objetivo|replace({'_': ' '})
-                    ) }}
-                </p>
-            </section>
-        {% endif %}
 
         {% if membro.bio|default('') %}
             <section class="perfil-bloco">
