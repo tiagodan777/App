@@ -745,14 +745,26 @@ button:disabled {
 
 /* DESKTOP */
 
-@media (min-width: 700px) {
+/* Tablet / desktop */
+
+@media (min-width: 768px) {
+    body:has(#chat-pagina) {
+        background: #f3f3f6;
+    }
+
     .chat-pagina {
-        margin-top: 12px;
+        width:
+            min(
+                calc(100% - 40px),
+                820px
+            );
+
+        margin-top: 20px;
 
         height:
             calc(
                 100dvh -
-                24px
+                40px
             );
 
         border-radius: 30px;
@@ -761,12 +773,38 @@ button:disabled {
             0
             22px
             70px
-            rgba(20, 20, 35, 0.12);
+            rgba(
+                20,
+                20,
+                35,
+                0.12
+            );
 
         overflow: hidden;
     }
 
     .chat-cabecalho {
         padding-top: 8px;
+    }
+
+    .chat-form {
+        width:
+            min(
+                calc(100% - 40px),
+                820px
+            );
+
+        bottom: 20px;
+
+        border-radius:
+            0
+            0
+            30px
+            30px;
+    }
+
+    .chat-mensagens {
+        padding-right: 20px;
+        padding-left: 20px;
     }
 }

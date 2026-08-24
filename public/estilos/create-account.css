@@ -618,3 +618,41 @@ body.perfil-camera-aberta > footer {
         justify-content: center;
     }
 }
+
+/* Tablet */
+
+@media (min-width: 768px) {
+    #create-account-form {
+        padding:
+            32px
+            24px;
+    }
+
+    #create-account-form > div {
+        width:
+            min(
+                100%,
+                760px
+            );
+
+        min-height:
+            min(
+                640px,
+                calc(100dvh - 64px)
+            );
+
+        margin:
+            0
+            auto;
+    }
+
+    #create-account-form > div > h1 {
+        max-width: 720px;
+
+        font-size: 2.7rem;
+    }
+
+    #descricao textarea {
+        height: 220px;
+    }
+}

@@ -680,3 +680,108 @@ body.margot-a-navegar
     backface-visibility:
         hidden;
 }
+
+/* =========================================================
+   TABLET / ECRÃS LARGOS
+   ========================================================= */
+
+@media (min-width: 768px) {
+
+    /*
+     * Menu principal
+     *
+     * No iPhone continua a ocupar 90%.
+     * Em iPad deixa de crescer indefinidamente.
+     */
+    #menuPrincipal {
+        right: auto !important;
+        left: 50% !important;
+
+        width:
+            min(
+                calc(100% - 48px),
+                760px
+            ) !important;
+
+        transform:
+            translateX(-50%)
+            !important;
+    }
+
+    #menuPrincipal > nav > ul {
+        width: 100% !important;
+    }
+
+    /*
+     * Mini-menu de uma pessoa.
+     *
+     * Em iPhone continua bottom-sheet a 100%.
+     * Num tablet passa a ser um painel centrado.
+     *
+     * Não usamos transform para o centrar porque
+     * o JS já utiliza transform para abrir/fechar.
+     */
+    .mini-menu {
+        left:
+            calc(
+                50% -
+                300px
+            ) !important;
+
+        width: 600px;
+
+        max-width:
+            calc(
+                100vw -
+                48px
+            );
+
+        height:
+            min(
+                72vh,
+                720px
+            );
+
+        border-radius:
+            38px
+            38px
+            0
+            0;
+    }
+
+    .mini-menu > div#barra {
+        width: 120px;
+    }
+
+    .mini-menu > header > a > img {
+        width: 150px;
+        height: 150px;
+    }
+
+    .mini-menu > form {
+        width:
+            min(
+                100% - 48px,
+                520px
+            );
+    }
+
+    .mini-menu > form > input#mensagem {
+        flex: 1;
+        width: auto;
+    }
+}
+
+
+/*
+ * Para larguras entre 768 e 648-ish o cálculo de 300px
+ * continuaria seguro, mas mantemos esta regra para o
+ * painel nunca tocar nas margens.
+ */
+@media (min-width: 768px) and (max-width: 648px) {
+    .mini-menu {
+        right: 24px !important;
+        left: 24px !important;
+        width: auto;
+    }
+}

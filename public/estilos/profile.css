@@ -704,27 +704,73 @@ body:has(#perfil) #perfil {
 
 /* Tablet / desktop */
 
-@media (min-width: 800px) {
+/* Tablet / desktop */
+
+@media (min-width: 768px) {
     body:has(#perfil) {
         background: #ededf0;
     }
 
-    #perfil {
-        max-width: 760px;
+    /*
+     * Tem de repetir o seletor mais específico usado
+     * no início do ficheiro; caso contrário margin:auto
+     * perde para body:has(#perfil) #perfil { margin: 0 }.
+     */
+    body:has(#perfil) #perfil {
+        width:
+            min(
+                calc(100% - 48px),
+                720px
+            ) !important;
+
+        max-width: 720px;
 
         margin:
             0
             auto;
 
+        background: #ffffff;
+
         box-shadow:
             0
             0
-            40px
-            rgba(0, 0, 0, 0.08);
+            45px
+            rgba(
+                0,
+                0,
+                0,
+                0.09
+            );
     }
 
     .perfil-galeria {
-        height: min(78vh, 860px);
+        height:
+            min(
+                68dvh,
+                720px
+            );
+
+        min-height: 540px;
+        max-height: 720px;
+    }
+
+    .perfil-conteudo {
+        padding-right: 28px;
+        padding-left: 28px;
+    }
+}
+
+
+/*
+ * iPad em landscape / janelas muito largas.
+ *
+ * Não aumentamos novamente o perfil.
+ * Uma fotografia de perfil com 1100px de largura
+ * não acrescentaria nada à experiência.
+ */
+@media (min-width: 1024px) {
+    body:has(#perfil) #perfil {
+        max-width: 720px;
     }
 }
 
