@@ -21,6 +21,28 @@
     var DURACAO_NAVEGACAO = 220;
     var TEMPO_REAQUECER = 30000;
 
+    /*
+     * Swipe para voltar em praticamente qualquer ponto do ecrã.
+     * A margem esquerda fica reservada ao gesto nativo do iOS
+     * para evitar que o mesmo gesto dispare dois backs.
+     */
+    var SWIPE_BACK_MARGEM_NATIVA = 24;
+    var SWIPE_BACK_DISTANCIA_MINIMA = 70;
+    var SWIPE_BACK_MOVIMENTO_INICIAL = 12;
+    var SWIPE_BACK_RAZAO_HORIZONTAL = 1.2;
+    var SWIPE_BACK_VELOCIDADE_MINIMA = 0.45;
+
+    var swipeBack = {
+        ativo: false,
+        horizontal: false,
+        ignorar: false,
+        inicioX: 0,
+        inicioY: 0,
+        ultimoX: 0,
+        ultimoY: 0,
+        inicioTempo: 0
+    };
+
     function urlAbsoluta(url) {
         return new URL(
             url,
@@ -1262,6 +1284,285 @@
             }
         );
     }
+
+    /*
+     * Swipe horizontal para voltar.
+     *
+     * Pode começar praticamente em qualquer ponto do ecrã.
+     * Não interfere com a galeria do perfil nem com elementos
+     * marcados manualmente com data-margot-no-back-swipe.
+     */
+    function elementoBloqueiaSwipeBack(elemento) {
+        if (!(elemento instanceof Element)) {
+            return false;
+        }
+
+        return Boolean(
+            elemento.closest(
+                '#perfil-galeria, ' +
+                '[data-margot-no-back-swipe]'
+            )
+        );
+    }
+
+    function limparSwipeBack() {
+        swipeBack.ativo = false;
+        swipeBack.horizontal = false;
+        swipeBack.ignorar = false;
+        swipeBack.inicioX = 0;
+        swipeBack.inicioY = 0;
+        swipeBack.ultimoX = 0;
+        swipeBack.ultimoY = 0;
+        swipeBack.inicioTempo = 0;
+    }
+
+    function urlAlternativoParaVoltar() {
+        var link =
+            document.querySelector(
+                '[data-margot-voltar][href]'
+            );
+
+        if (link && link.href) {
+            return link.href;
+        }
+
+        return '/';
+    }
+
+    function iniciarSwipeBack(evento) {
+        if (
+            aNavegar ||
+            !evento.touches ||
+            evento.touches.length !== 1
+        ) {
+            limparSwipeBack();
+            return;
+        }
+
+        var toque =
+            evento.touches[0];
+
+        if (
+            elementoBloqueiaSwipeBack(
+                evento.target
+            )
+        ) {
+            limparSwipeBack();
+            swipeBack.ignorar = true;
+            return;
+        }
+
+        /*
+         * Nos primeiros píxeis da esquerda deixamos o
+         * gesto nativo do iOS trabalhar sozinho.
+         */
+        if (
+            toque.clientX <=
+            SWIPE_BACK_MARGEM_NATIVA
+        ) {
+            limparSwipeBack();
+            swipeBack.ignorar = true;
+            return;
+        }
+
+        swipeBack.ativo = true;
+        swipeBack.horizontal = false;
+        swipeBack.ignorar = false;
+
+        swipeBack.inicioX =
+            toque.clientX;
+
+        swipeBack.inicioY =
+            toque.clientY;
+
+        swipeBack.ultimoX =
+            toque.clientX;
+
+        swipeBack.ultimoY =
+            toque.clientY;
+
+        swipeBack.inicioTempo =
+            performance.now();
+    }
+
+    function moverSwipeBack(evento) {
+        if (
+            !swipeBack.ativo ||
+            swipeBack.ignorar ||
+            !evento.touches ||
+            evento.touches.length !== 1
+        ) {
+            return;
+        }
+
+        var toque =
+            evento.touches[0];
+
+        var diferencaX =
+            toque.clientX -
+            swipeBack.inicioX;
+
+        var diferencaY =
+            toque.clientY -
+            swipeBack.inicioY;
+
+        swipeBack.ultimoX =
+            toque.clientX;
+
+        swipeBack.ultimoY =
+            toque.clientY;
+
+        /*
+         * Back apenas da esquerda para a direita.
+         */
+        if (diferencaX <= 0) {
+            if (
+                Math.abs(diferencaX) >
+                SWIPE_BACK_MOVIMENTO_INICIAL
+            ) {
+                limparSwipeBack();
+            }
+
+            return;
+        }
+
+        if (!swipeBack.horizontal) {
+            var horizontal =
+                Math.abs(diferencaX);
+
+            var vertical =
+                Math.abs(diferencaY);
+
+            if (
+                horizontal <
+                    SWIPE_BACK_MOVIMENTO_INICIAL &&
+                vertical <
+                    SWIPE_BACK_MOVIMENTO_INICIAL
+            ) {
+                return;
+            }
+
+            /*
+             * Se o gesto for sobretudo vertical, deixamos
+             * o scroll seguir normalmente.
+             */
+            if (vertical > horizontal) {
+                limparSwipeBack();
+                return;
+            }
+
+            if (
+                horizontal <
+                vertical *
+                    SWIPE_BACK_RAZAO_HORIZONTAL
+            ) {
+                return;
+            }
+
+            swipeBack.horizontal = true;
+        }
+
+        if (swipeBack.horizontal) {
+            evento.preventDefault();
+        }
+    }
+
+    function terminarSwipeBack() {
+        if (
+            !swipeBack.ativo ||
+            swipeBack.ignorar
+        ) {
+            limparSwipeBack();
+            return;
+        }
+
+        var diferencaX =
+            swipeBack.ultimoX -
+            swipeBack.inicioX;
+
+        var diferencaY =
+            swipeBack.ultimoY -
+            swipeBack.inicioY;
+
+        var duracao =
+            Math.max(
+                1,
+                performance.now() -
+                    swipeBack.inicioTempo
+            );
+
+        var velocidade =
+            diferencaX /
+            duracao;
+
+        var gestoHorizontal =
+            swipeBack.horizontal &&
+            diferencaX > 0 &&
+            Math.abs(diferencaX) >
+                Math.abs(diferencaY) *
+                SWIPE_BACK_RAZAO_HORIZONTAL;
+
+        var distanciaSuficiente =
+            diferencaX >=
+            SWIPE_BACK_DISTANCIA_MINIMA;
+
+        var velocidadeSuficiente =
+            diferencaX >= 35 &&
+            velocidade >=
+                SWIPE_BACK_VELOCIDADE_MINIMA;
+
+        limparSwipeBack();
+
+        if (
+            !gestoHorizontal ||
+            (
+                !distanciaSuficiente &&
+                !velocidadeSuficiente
+            )
+        ) {
+            return;
+        }
+
+        voltarPagina(
+            urlAlternativoParaVoltar()
+        );
+    }
+
+    function cancelarSwipeBack() {
+        limparSwipeBack();
+    }
+
+    document.addEventListener(
+        'touchstart',
+        iniciarSwipeBack,
+        {
+            passive: true
+        }
+    );
+
+    document.addEventListener(
+        'touchmove',
+        moverSwipeBack,
+        {
+            passive: false
+        }
+    );
+
+    document.addEventListener(
+        'touchend',
+        terminarSwipeBack,
+        {
+            passive: true
+        }
+    );
+
+    document.addEventListener(
+        'touchcancel',
+        cancelarSwipeBack,
+        {
+            passive: true
+        }
+    );
 
     /*
      * Navegação pelos links principais.
