@@ -121,7 +121,7 @@
 
             <span class="editar-area-texto">
                 <strong>Contactos</strong>
-                <small data-resumo-campo="contactos">Email e telefone privados</small>
+                <small data-resumo-campo="contactos">Email privado · telefone opcional</small>
             </span>
 
             <span class="editar-area-seta" aria-hidden="true">›</span>
@@ -305,8 +305,9 @@
         <span class="privacidade-nota-icone" aria-hidden="true">🔒</span>
 
         <p>
-            O teu número de telefone e o teu email <strong>NUNCA</strong> são
-            mostrados no perfil nem partilhados com outros utilizadores.
+            O teu email e, caso o adiciones, o teu número de telefone
+            <strong>NUNCA</strong> são mostrados no perfil nem partilhados
+            com outros utilizadores.
         </p>
 
         <details class="privacidade-info">
@@ -316,25 +317,41 @@
                 <strong>Para que servem?</strong>
 
                 <p>
-                    São utilizados para iniciares sessão, recuperares o acesso ou
-                    mudares a palavra-passe, verificarmos e protegermos a conta e,
-                    quando for indispensável, enviarmos comunicações sobre segurança
-                    ou sobre o funcionamento do serviço.
+                    O email é utilizado para iniciares sessão, recuperares o acesso,
+                    verificarmos e protegermos a tua conta e, quando for indispensável,
+                    enviarmos comunicações sobre segurança ou sobre o funcionamento
+                    do serviço.
                 </p>
 
-                <p>Podes ficar descansado: nunca aparecem publicamente.</p>
+                <p>
+                    O número de telefone é opcional. Se o adicionares, também podes
+                    utilizá-lo para iniciar sessão.
+                </p>
+
+                <p>Os teus contactos nunca aparecem publicamente.</p>
             </div>
         </details>
     </div>
 
     <p>
-        <label for="telefone">Qual é o teu número de telefone?</label>
-        <input type="tel" name="telefone" id="telefone" autocomplete="tel">
+        <label for="telefone">Número de telefone <span>(opcional)</span></label>
+        <input
+            type="tel"
+            name="telefone"
+            id="telefone"
+            autocomplete="tel"
+        >
     </p>
 
     <p>
-        <label for="email">E o teu email?</label>
-        <input type="email" name="email" id="email" autocomplete="email" required>
+        <label for="email">Email</label>
+        <input
+            type="email"
+            name="email"
+            id="email"
+            autocomplete="email"
+            required
+        >
     </p>
 
     <nav class="anterior-proximo">
