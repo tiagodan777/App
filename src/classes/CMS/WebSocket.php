@@ -13,7 +13,7 @@ use React\EventLoop\TimerInterface;
 
 class WebSocket implements MessageComponentInterface
 {
-    private const RAIO_MAXIMO_METROS = 100;
+    private const RAIO_MAXIMO_METROS = 1600000;
     /* O iOS envia eventos de movimento/visita, não pings exatos por minuto. */
     private const LOCALIZACAO_MAXIMA_IDADE_SEGUNDOS = 180;
     private const LOCALIZACOES_PERSISTIDAS_CACHE_SEGUNDOS = 5;
@@ -578,7 +578,7 @@ class WebSocket implements MessageComponentInterface
             $this->enviarErroHey(
                 $from,
                 $destinatarioId,
-                'Esta pessoa já não está num raio de 100 metros.'
+                'Esta pessoa já não está dentro do raio disponível.'
             );
             $this->enviarEstadosIndividuais();
             return;
