@@ -436,7 +436,7 @@
 
             texto:
                 'No iPhone, abre Localização e escolhe “Sempre”. ' +
-                'Assim continuas a aparecer no mapa quando a Margot está em segundo plano.',
+                'Assim podes continuar a aparecer entre as pessoas por perto quando a Margot está em segundo plano.',
 
             botao:
                 'Abrir Definições'
