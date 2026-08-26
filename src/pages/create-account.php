@@ -74,6 +74,7 @@ if ($method !== 'POST') {
         'campos_url' => $base . 'create-account-campos' . ($editing ? '?editar=1' : ''),
         'perfil_url' => $editing ? $base . 'profile/' . rawurlencode($memberId) : '',
         'idade_minima' => Validate::MINIMUM_AGE,
+        'ano_atual' => (int) date('Y'),
         'versao_termos' => Member::TERMS_VERSION,
         'versao_privacidade' => Member::PRIVACY_VERSION
     ]);

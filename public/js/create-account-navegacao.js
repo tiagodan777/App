@@ -28,7 +28,15 @@
     }, config.dadosIniciais || {});
     var etapaAtual = null;
     var pedidoAtual = null;
-    var camposHtmlCache = null;
+    var templateCampos =
+        document.getElementById(
+            'create-account-campos-cache'
+        );
+
+    var camposHtmlCache =
+        templateCampos
+            ? templateCampos.innerHTML
+            : null;
     var aEnviar = false;
     var erroValidacaoPendente = null;
 
@@ -834,9 +842,17 @@
     window.guardarCamposCreateAccount = guardarCamposAtuais;
     window.carregarEtapaCreateAccount = navegar;
 
-    $(function () {
-        inicializar();
+   /*
+ * O formulário e o <template> já existem quando este script
+ * é executado porque os scripts estão no fim do bloco.
+ *
+ * Inicializamos imediatamente, antes de esperar pelo
+ * DOMContentLoaded/jQuery ready. Assim a primeira etapa
+ * já está no DOM quando o browser desenha a nova página.
+ */
+    inicializar();
 
+    $(function () {
         $(document).on('click', 'nav.anterior-proximo > a', function (evento) {
             evento.preventDefault();
 

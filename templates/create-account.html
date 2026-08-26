@@ -17,8 +17,28 @@
     id="create-account-form"
     novalidate
 >
-    <input type="hidden" name="_csrf" value="{{ csrf_token|e('html_attr') }}">
+    <input
+        type="hidden"
+        name="_csrf"
+        value="{{ csrf_token|e('html_attr') }}"
+    >
 </form>
+
+{#
+    As etapas ficam carregadas juntamente com a própria página.
+
+    <template> é inerte:
+    - não aparece no ecrã;
+    - os inputs não pertencem ao formulário;
+    - os required não interferem com validação;
+    - não existem pedidos AJAX adicionais para começar o registo.
+
+    create-account-navegacao.js retira daqui apenas a etapa
+    necessária antes do primeiro paint.
+#}
+<template id="create-account-campos-cache">
+    {% include 'create-account-campos.html' %}
+</template>
 
 <script>
 window.createAccountConfig = {
@@ -35,6 +55,6 @@ window.createAccountConfig = {
 <script src="{{ doc_root }}js/preferencias.js?v=2"></script>
 <script src="{{ doc_root }}js/create-account-fotos.js?v=7"></script>
 <script src="{{ doc_root }}js/create-account-permissoes.js?v=5"></script>
-<script src="{{ doc_root }}js/create-account-navegacao.js?v=14"></script>
+<script src="{{ doc_root }}js/create-account-navegacao.js?v=15"></script>
 <script src="{{ doc_root }}js/create-account-autocompletar.js?v=4"></script>
 {% endblock %}
