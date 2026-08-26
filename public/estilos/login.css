@@ -318,13 +318,8 @@ main > form > input[type="submit"]:focus-visible {
 /*
  * Transição nativa entre Entrar e Criar conta.
  *
- * Estes dois links não passam pela animação documental
- * em JavaScript porque essa animação atrasava o início
- * da navegação real.
- *
- * Quando o browser suporta View Transitions entre
- * documentos, a página anterior permanece visualmente
- * disponível enquanto a nova fica pronta.
+ * Um pouco mais lenta para o movimento ser claramente
+ * perceptível sem voltar a parecer pesado.
  */
 
 @view-transition {
@@ -334,7 +329,7 @@ main > form > input[type="submit"]:focus-visible {
 ::view-transition-old(root) {
     animation:
         margot-auth-sair
-        180ms
+        240ms
         cubic-bezier(.4, 0, .2, 1)
         both;
 }
@@ -342,7 +337,7 @@ main > form > input[type="submit"]:focus-visible {
 ::view-transition-new(root) {
     animation:
         margot-auth-entrar
-        240ms
+        330ms
         cubic-bezier(.22, .8, .28, 1)
         both;
 }

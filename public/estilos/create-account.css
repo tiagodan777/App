@@ -1225,8 +1225,6 @@ body.perfil-camera-aberta > footer {
     }
 }
 
-/* Tablet / desktop */
-
 @media (min-width: 768px) {
     #create-account-form {
         padding:
@@ -1267,14 +1265,10 @@ body.perfil-camera-aberta > footer {
 }
 
 /*
- * Transição nativa entre Entrar e Criar conta.
+ * Transição nativa Entrar <-> Criar conta.
  *
- * Aqui não utilizamos a animação documental JS.
- * A navegação começa imediatamente.
- *
- * Nos browsers que suportam View Transitions
- * entre documentos, o browser mantém o snapshot
- * anterior enquanto prepara o documento seguinte.
+ * Mantemos exatamente o mesmo movimento.
+ * Apenas aumentamos ligeiramente a duração.
  */
 
 @view-transition {
@@ -1284,7 +1278,7 @@ body.perfil-camera-aberta > footer {
 ::view-transition-old(root) {
     animation:
         margot-auth-sair
-        180ms
+        240ms
         cubic-bezier(.4, 0, .2, 1)
         both;
 }
@@ -1292,7 +1286,7 @@ body.perfil-camera-aberta > footer {
 ::view-transition-new(root) {
     animation:
         margot-auth-entrar
-        240ms
+        330ms
         cubic-bezier(.22, .8, .28, 1)
         both;
 }
