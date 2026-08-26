@@ -77,13 +77,6 @@ body:has(#chat-pagina) #abrir-heys {
         1px solid
         rgba(0, 0, 0, 0.07);
 
-    /*
-     * Sem backdrop-filter.
-     *
-     * O blur sobre uma scroll layer em movimento
-     * é caro no WKWebView e não traz benefício
-     * suficiente aqui.
-     */
     background:
         rgba(255, 255, 255, 0.985);
 
@@ -182,12 +175,6 @@ body:has(#chat-pagina) #abrir-heys {
 
     opacity: 1;
 
-    /*
-     * A própria scroll layer segue o teclado.
-     *
-     * Não existe alteração de scrollTop
-     * durante a animação do teclado.
-     */
     transform:
         translate3d(
             0,
@@ -273,14 +260,6 @@ body:has(#chat-pagina) #abrir-heys {
         rgba(255, 255, 255, 0.985);
 }
 
-/*
- * Só entra em ação se visualViewport
- * não acompanhar o teclado.
- *
- * No iPhone normal não queremos uma
- * animação inventada por nós.
- */
-
 body.margot-chat-teclado-fallback
 .chat-form {
     transition:
@@ -304,7 +283,7 @@ body.margot-chat-teclado-fallback
 
 .chat-mensagem {
     width: 100%;
-    margin: 7px 0;
+    margin: 3px 0;
     display: flex;
 }
 
@@ -353,12 +332,12 @@ body.margot-chat-teclado-fallback
     margin: 0;
 
     padding:
-        10px
-        13px
-        5px;
+        8px
+        11px
+        1px;
 
     font-size: 15px;
-    line-height: 1.38;
+    line-height: 1.34;
 
     white-space: pre-wrap;
     overflow-wrap: anywhere;
@@ -403,12 +382,12 @@ body.margot-chat-teclado-fallback
 /* RODAPÉ DO BALÃO */
 
 .chat-balao footer {
-    min-height: 22px;
+    min-height: 17px;
 
     padding:
-        3px
-        10px
-        6px;
+        0
+        9px
+        4px;
 
     color:
         rgba(40, 40, 46, 0.56);
@@ -484,8 +463,6 @@ body.margot-chat-teclado-fallback
         rgba(90, 75, 200, 0.07);
 }
 
-/* BOTÃO + */
-
 .chat-anexar {
     flex: 0 0 40px;
 
@@ -530,8 +507,6 @@ body.margot-chat-teclado-fallback
     stroke-linecap: round;
 }
 
-/* TEXTAREA */
-
 .chat-compositor textarea {
     flex: 1;
 
@@ -568,8 +543,6 @@ textarea::placeholder {
     color: #96969e;
     opacity: 1;
 }
-
-/* ENVIAR */
 
 .chat-compositor button {
     flex: 0 0 auto;
@@ -644,8 +617,6 @@ button.ativo:active {
 button:disabled {
     opacity: 1;
 }
-
-/* PREVIEW */
 
 .chat-media-preview {
     position: relative;
@@ -742,8 +713,6 @@ button:disabled {
 
     font-size: 12px;
 }
-
-/* DESKTOP */
 
 /* Tablet / desktop */
 
