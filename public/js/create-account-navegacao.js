@@ -312,46 +312,79 @@
     }
 
     function animarEntradaEtapa($etapa, direcao) {
-        var elemento = $etapa.get(0);
+    var elemento = $etapa.get(0);
 
-        // Nunca deixamos margens inline. A animação antiga fazia margin-left
-        // terminar em 0%, anulando o margin: 0 auto do layout de desktop.
-        $etapa.css('margin-left', '');
+    /*
+     * Nunca deixar margin-left inline.
+     * Isto é o que mantém o formulário centrado no desktop.
+     */
+    $etapa.css('margin-left', '');
 
-        if (
-            !elemento ||
-            typeof elemento.animate !== 'function' ||
-            window.matchMedia('(prefers-reduced-motion: reduce)').matches
-        ) {
-            return;
-        }
-
-        var distancia = Math.max(32, Math.min(56, window.innerWidth * 0.055));
-        var inicioX = (direcao < 0 ? -1 : 1) * distancia;
-
-        elemento.style.willChange = 'transform, opacity';
-
-        var animacao = elemento.animate([
-            {
-                transform: 'translate3d(' + inicioX + 'px, 0, 0)',
-                opacity: 0.82
-            },
-            {
-                transform: 'translate3d(0, 0, 0)',
-                opacity: 1
-            }
-        ], {
-            duration: 190,
-            easing: 'cubic-bezier(.22,.8,.28,1)',
-            fill: 'none'
-        });
-
-        animacao.finished
-            .catch(function () {})
-            .then(function () {
-                elemento.style.willChange = '';
-            });
+    if (
+        !elemento ||
+        typeof elemento.animate !== 'function' ||
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ) {
+        return;
     }
+
+    /*
+     * Queremos que a mudança de etapa seja claramente perceptível,
+     * mas sem o movimento exagerado de 200% que existia antes.
+     *
+     * Mobile: ~90px
+     * Tablet: ~140px
+     * Desktop: máximo 190px
+     */
+    var distancia = Math.max(
+        90,
+        Math.min(
+            190,
+            window.innerWidth * 0.18
+        )
+    );
+
+    var inicioX =
+        (direcao < 0 ? -1 : 1) *
+        distancia;
+
+    elemento.style.willChange =
+        'transform, opacity';
+
+    var animacao =
+        elemento.animate(
+            [
+                {
+                    transform:
+                        'translate3d(' +
+                        inicioX +
+                        'px, 0, 0)',
+
+                    opacity: 0.72
+                },
+                {
+                    transform:
+                        'translate3d(0, 0, 0)',
+
+                    opacity: 1
+                }
+            ],
+            {
+                duration: 310,
+
+                easing:
+                    'cubic-bezier(.22,.8,.28,1)',
+
+                fill: 'none'
+            }
+        );
+
+    animacao.finished
+        .catch(function () {})
+        .then(function () {
+            elemento.style.willChange = '';
+        });
+}
 
     function renderizarEtapa(resposta, etapa, opcoes, origem) {
         var $resposta = $('<div>').append($.parseHTML(resposta, document, false));
