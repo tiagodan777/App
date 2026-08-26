@@ -28,6 +28,7 @@
     }, config.dadosIniciais || {});
     var etapaAtual = null;
     var pedidoAtual = null;
+    var camposHtmlCache = null;
     var aEnviar = false;
     var erroValidacaoPendente = null;
 
@@ -299,14 +300,119 @@
         }
     }
 
+    function direcaoEntreEtapas(origem, destino) {
+        var indiceOrigem = ETAPAS.indexOf(normalizarEtapa(origem));
+        var indiceDestino = ETAPAS.indexOf(normalizarEtapa(destino));
+
+        if (indiceOrigem === -1 || indiceDestino === -1 || indiceOrigem === indiceDestino) {
+            return 1;
+        }
+
+        return indiceDestino > indiceOrigem ? 1 : -1;
+    }
+
+    function animarEntradaEtapa($etapa, direcao) {
+        var elemento = $etapa.get(0);
+
+        // Nunca deixamos margens inline. A animação antiga fazia margin-left
+        // terminar em 0%, anulando o margin: 0 auto do layout de desktop.
+        $etapa.css('margin-left', '');
+
+        if (
+            !elemento ||
+            typeof elemento.animate !== 'function' ||
+            window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        ) {
+            return;
+        }
+
+        var distancia = Math.max(32, Math.min(56, window.innerWidth * 0.055));
+        var inicioX = (direcao < 0 ? -1 : 1) * distancia;
+
+        elemento.style.willChange = 'transform, opacity';
+
+        var animacao = elemento.animate([
+            {
+                transform: 'translate3d(' + inicioX + 'px, 0, 0)',
+                opacity: 0.82
+            },
+            {
+                transform: 'translate3d(0, 0, 0)',
+                opacity: 1
+            }
+        ], {
+            duration: 190,
+            easing: 'cubic-bezier(.22,.8,.28,1)',
+            fill: 'none'
+        });
+
+        animacao.finished
+            .catch(function () {})
+            .then(function () {
+                elemento.style.willChange = '';
+            });
+    }
+
+    function renderizarEtapa(resposta, etapa, opcoes, origem) {
+        var $resposta = $('<div>').append($.parseHTML(resposta, document, false));
+        var $etapa = $resposta.find(etapa).first();
+
+        if (!$etapa.length) {
+            console.error('A etapa não existe na resposta:', etapa);
+            alert('Não foi possível carregar esta área.');
+            return;
+        }
+
+        $form.empty().append($etapa);
+        etapaAtual = etapa;
+        restaurarEtapa();
+
+        if (erroValidacaoPendente && erroValidacaoPendente.etapa === etapa) {
+            apresentarErroValidacao(erroValidacaoPendente);
+        }
+
+        if (opcoes.animar) {
+            animarEntradaEtapa(
+                $etapa,
+                opcoes.direcao || direcaoEntreEtapas(origem, etapa)
+            );
+        } else {
+            // Garante que uma versão antiga da animação nunca deixa a etapa
+            // desalinhada ao abrir diretamente uma URL ?etapa=... no desktop.
+            $etapa.css('margin-left', '');
+        }
+
+        if (opcoes.historico === 'push') {
+            atualizarHistorico(etapa, false);
+        }
+
+        if (opcoes.historico === 'replace') {
+            atualizarHistorico(etapa, true);
+        }
+    }
+
     function carregarEtapa(destino, opcoes) {
         opcoes = Object.assign({
             historico: 'nenhum',
-            animar: true
+            animar: true,
+            direcao: 0
         }, opcoes || {});
 
         var etapa = normalizarEtapa(destino);
+        var origem = etapaVisivel();
+
         pararRecursos();
+
+        /*
+         * create-account-campos devolve todas as etapas de uma só vez.
+         * A versão anterior voltava a descarregar exatamente o mesmo HTML
+         * em cada toque em Próximo/Anterior. Guardamos a primeira resposta
+         * em memória para as mudanças seguintes serem imediatas.
+         */
+        if (camposHtmlCache !== null) {
+            renderizarEtapa(camposHtmlCache, etapa, opcoes, origem);
+            return;
+        }
 
         if (pedidoAtual && pedidoAtual.readyState !== 4) {
             pedidoAtual.abort();
@@ -316,44 +422,14 @@
             url: config.camposUrl || '/create-account-campos',
             method: 'GET',
             dataType: 'html',
-            cache: false
+            cache: true
         });
 
         pedidoAtual = pedido;
 
         pedido.done(function (resposta) {
-            var $resposta = $('<div>').append($.parseHTML(resposta, document, false));
-            var $etapa = $resposta.find(etapa).first();
-
-            if (!$etapa.length) {
-                console.error('A etapa não existe na resposta:', etapa);
-                alert('Não foi possível carregar esta área.');
-                return;
-            }
-
-            $form.empty().append($etapa);
-            etapaAtual = etapa;
-            restaurarEtapa();
-
-            if (erroValidacaoPendente && erroValidacaoPendente.etapa === etapa) {
-                apresentarErroValidacao(erroValidacaoPendente);
-            }
-
-            if (opcoes.animar) {
-                $etapa.css('margin-left', '200%').stop(true, true).animate({
-                    marginLeft: '0%'
-                }, 420);
-            } else {
-                $etapa.css('margin-left', '0');
-            }
-
-            if (opcoes.historico === 'push') {
-                atualizarHistorico(etapa, false);
-            }
-
-            if (opcoes.historico === 'replace') {
-                atualizarHistorico(etapa, true);
-            }
+            camposHtmlCache = resposta;
+            renderizarEtapa(resposta, etapa, opcoes, origem);
         });
 
         pedido.fail(function (xhr, estado) {
