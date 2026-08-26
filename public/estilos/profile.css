@@ -75,27 +75,12 @@ body:has(#perfil) #perfil {
     min-height: 500px;
     max-height: 900px;
 
-    /*
-     * É deliberadamente visible.
-     *
-     * A .perfil-fotos pode sair 46px para cima.
-     * O próprio #perfil é que a corta quando está
-     * em repouso e a revela durante o rubber banding.
-     */
     overflow: visible;
 
     background: #161616;
 
     isolation: isolate;
 }
-
-/*
- * A faixa inteira sobe.
- *
- * NÃO mexemos no tamanho da imagem.
- * NÃO usamos scale().
- * NÃO usamos height extra.
- */
 
 .perfil-fotos {
     position: relative;
@@ -169,26 +154,12 @@ body:has(#perfil) #perfil {
     object-fit: cover;
     object-position: center;
 
-    /*
-     * IMPORTANTE:
-     *
-     * não há transform.
-     * não há scale.
-     * não há zoom.
-     */
     pointer-events: none;
 
     user-select: none;
     -webkit-user-select: none;
     -webkit-user-drag: none;
 }
-
-/*
- * Gradientes.
- *
- * O de baixo termina onde a fotografia termina,
- * e não no fundo teórico da galeria.
- */
 
 .perfil-galeria::before,
 .perfil-galeria::after {
@@ -238,11 +209,6 @@ body:has(#perfil) #perfil {
 
     right: 50%;
 
-    /*
-     * 46px que a fotografia subiu
-     * +
-     * 22px de distância visual ao fundo.
-     */
     bottom:
         calc(
             var(--perfil-foto-subida) +
@@ -382,28 +348,13 @@ body:has(#perfil) #perfil {
     stroke-linejoin: round;
 }
 
-/*
- * Conteúdo branco
- *
- * A fotografia termina em:
- *
- * altura galeria - 46px.
- *
- * Depois sobrepomos o cartão mais 28px,
- * exatamente como no desenho original.
- */
+/* Conteúdo */
 
 .perfil-conteudo {
     position: relative;
     z-index: 5;
 
     width: 100%;
-
-    /*
-     * Retirado o min-height antigo.
-     * Era uma das razões para o bloco branco
-     * parecer demasiado grande.
-     */
     min-height: 0;
 
     margin-top:
@@ -632,13 +583,6 @@ body:has(#perfil) #perfil {
     }
 }
 
-/*
- * Capacitor / standalone
- *
- * Mantemos a solução original para a safe area:
- * a galeria entra por baixo da status bar.
- */
-
 @media all and (display-mode: standalone) {
     html:has(#perfil),
     body:has(#perfil) {
@@ -704,26 +648,24 @@ body:has(#perfil) #perfil {
 
 /* Tablet / desktop */
 
-/* Tablet / desktop */
-
 @media (min-width: 768px) {
     body:has(#perfil) {
         background: #ededf0;
     }
 
     /*
-     * Tem de repetir o seletor mais específico usado
-     * no início do ficheiro; caso contrário margin:auto
-     * perde para body:has(#perfil) #perfil { margin: 0 }.
+     * No iPad o perfil deve continuar a parecer uma interface
+     * móvel deliberada, em vez de uma fotografia gigante com
+     * texto igualmente ampliado.
      */
     body:has(#perfil) #perfil {
         width:
             min(
-                calc(100% - 48px),
-                720px
+                calc(100% - 64px),
+                620px
             ) !important;
 
-        max-width: 720px;
+        max-width: 620px;
 
         margin:
             0
@@ -734,43 +676,110 @@ body:has(#perfil) #perfil {
         box-shadow:
             0
             0
-            45px
+            38px
             rgba(
                 0,
                 0,
                 0,
-                0.09
+                0.08
             );
     }
 
     .perfil-galeria {
         height:
             min(
-                68dvh,
-                720px
+                58dvh,
+                600px
             );
 
-        min-height: 540px;
-        max-height: 720px;
+        min-height: 430px;
+        max-height: 600px;
     }
 
     .perfil-conteudo {
-        padding-right: 28px;
-        padding-left: 28px;
+        padding:
+            20px
+            22px
+            calc(
+                var(--menu-principal-height, 56px) +
+                var(--menu-principal-bottom, 18px) +
+                env(safe-area-inset-bottom, 0px) +
+                28px
+            );
+
+        border-radius:
+            26px
+            26px
+            0
+            0;
+    }
+
+    .perfil-identidade {
+        gap: 7px;
+    }
+
+    .perfil-identidade h1 {
+        font-size: 30px;
+    }
+
+    .perfil-identidade p {
+        font-size: 18px;
+    }
+
+    .editar-perfil {
+        min-height: 34px;
+        padding: 0 10px;
+        font-size: 12px;
+    }
+
+    .perfil-bloco {
+        margin-top: 15px;
+    }
+
+    .perfil-bloco h2 {
+        margin-bottom: 5px;
+        font-size: 11px;
+    }
+
+    .perfil-bloco p {
+        font-size: 15px;
+        line-height: 1.4;
+    }
+
+    .perfil-gostos ul {
+        gap: 6px;
+    }
+
+    .perfil-gostos li {
+        padding: 7px 11px;
+        font-size: 13px;
+    }
+
+    #enviar-hey-perfil {
+        width: 136px;
+        height: 136px;
+        min-width: 136px;
+        min-height: 136px;
+
+        margin:
+            22px
+            auto
+            6px !important;
+
+        font-size: 2.05rem;
     }
 }
 
-
 /*
- * iPad em landscape / janelas muito largas.
- *
- * Não aumentamos novamente o perfil.
- * Uma fotografia de perfil com 1100px de largura
- * não acrescentaria nada à experiência.
+ * Em landscape a altura disponível é o fator limitante.
+ * A galeria encolhe mais um pouco para o conteúdo principal
+ * ficar visível sem parecer um segundo ecrã inteiro.
  */
-@media (min-width: 1024px) {
-    body:has(#perfil) #perfil {
-        max-width: 720px;
+@media (min-width: 1024px) and (max-height: 900px) {
+    .perfil-galeria {
+        height: min(54dvh, 500px);
+        min-height: 390px;
+        max-height: 500px;
     }
 }
 
