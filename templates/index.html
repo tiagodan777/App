@@ -87,7 +87,7 @@
                         <strong>Bloquear</strong>
 
                         <span>
-                            Deixam de se ver no mapa.
+                            Deixam de aparecer um ao outro entre as pessoas por perto.
                         </span>
                     </button>
 
@@ -258,16 +258,6 @@
         window.safetyUrl =
             {{ (doc_root ~ 'safety')|json_encode|raw }};
 
-        /*
-         * A primeira mensagem entre duas pessoas exige
-         * o token de proximidade emitido pelo WebSocket.
-         *
-         * O WebSocket mantém o token mais recente na
-         * fotografia correspondente do mapa.
-         *
-         * Atualizamos o hidden input imediatamente antes
-         * do submit, para não reutilizar um token expirado.
-         */
         (function () {
             'use strict';
 
@@ -337,7 +327,7 @@
     </script>
 
     <script src="{{ doc_root }}js/index-posicao.js?v=13"></script>
-    <script src="{{ doc_root }}js/index-mini-menu.js?v=17"></script>
+    <script src="{{ doc_root }}js/index-mini-menu.js?v=18"></script>
     <script src="{{ doc_root }}js/index-animacao.js?v=10"></script>
     <script src="{{ doc_root }}js/index-tap-foto.js?v=13"></script>
 {% endblock %}

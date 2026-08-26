@@ -119,18 +119,11 @@
                     return;
                 }
 
-                /*
-                 * Atualiza imediatamente:
-                 * - data-invisivel;
-                 * - aria-label;
-                 * - eye.png / eye-block.png,
-                 *   através do CSS.
-                 */
                 renderizar();
 
                 if (novoEstado) {
                     mostrarMensagem(
-                        'Modo invisível ativado. Já não apareces no mapa.'
+                        'Modo invisível ativado. Já não apareces entre as pessoas por perto.'
                     );
 
                     return;
@@ -150,17 +143,11 @@
                 }
 
                 mostrarMensagem(
-                    'Modo invisível desativado. Voltaste a aparecer no mapa.'
+                    'Modo invisível desativado. Voltaste a aparecer entre as pessoas por perto.'
                 );
             }
         );
 
-        /*
-         * Atualiza o botão quando a preferência é alterada:
-         * - noutra página;
-         * - noutro separador;
-         * - através do localStorage.
-         */
         window.addEventListener(
             'margot:preferencias-alteradas',
             renderizar

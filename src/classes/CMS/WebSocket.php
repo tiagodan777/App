@@ -195,7 +195,7 @@ class WebSocket implements MessageComponentInterface
         );
 
         if ($faixaEtaria === null) {
-            $this->enviarErro($conn, 'A conta não tem uma idade válida para utilizar o mapa.');
+            $this->enviarErro($conn, 'A conta não tem uma idade válida para utilizar a descoberta de pessoas próximas.');
             $conn->close();
             return;
         }

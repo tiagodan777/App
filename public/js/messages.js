@@ -312,7 +312,7 @@
                     ),
 
                     $('<p>').text(
-                        'Abre uma pessoa no mapa e envia a primeira mensagem.'
+                        'Abre uma pessoa no ecrã inicial e envia a primeira mensagem.'
                     )
                 )
             );

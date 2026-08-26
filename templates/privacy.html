@@ -198,8 +198,8 @@
 
                 <p>
                     A localização é uma funcionalidade central da Margot. É usada
-                    para determinar se existem outras pessoas por perto e para as
-                    representar no mapa da aplicação.
+                    para determinar se existem outras pessoas por perto e apresentar os
+                    respetivos perfis no ecrã principal.
                 </p>
 
                 <p>
@@ -209,8 +209,8 @@
                 </p>
 
                 <p>
-                    A posição apresentada no mapa não deve ser interpretada como a
-                    localização geográfica exata de uma pessoa.
+                    A disposição visual das fotografias no ecrã principal não representa a
+                    localização geográfica exata de nenhuma pessoa.
                 </p>
 
                 <p>
@@ -242,7 +242,7 @@
                 <p>
                     A versão inicial da Margot não cria um histórico permanente dos teus
                     percursos. A posição mais recente pode ser mantida temporariamente
-                    enquanto for necessária ao funcionamento do mapa, sendo substituída,
+                    enquanto for necessária ao funcionamento da descoberta por proximidade, sendo substituída,
                     expirada ou eliminada quando deixar de ser necessária.
                 </p>
             </section>
@@ -337,7 +337,7 @@
 
                 <p>
                     Os outros membros podem ver as informações do perfil que tornas
-                    visíveis, a tua presença aproximada no mapa e os conteúdos que
+                    visíveis, a tua presença entre as pessoas por perto e os conteúdos que
                     lhes envias.
                 </p>
 
@@ -419,8 +419,8 @@
 
                     <li>
                         <strong>Localização atual:</strong>
-                        apenas enquanto necessária para a proximidade e presença no
-                        mapa, sem criação de um histórico permanente de percursos
+                        apenas enquanto necessária para calcular proximidade e determinar se
+                        apareces entre as pessoas por perto, sem criação de um histórico permanente de percursos
                         na versão inicial.
                     </li>
 
@@ -581,7 +581,7 @@
 
                 <p>
                     A Margot utiliza processos automáticos para calcular proximidade,
-                    apresentar pessoas no mapa, ordenar informação e aplicar medidas
+                    apresentar pessoas próximas, ordenar informação e aplicar medidas
                     técnicas contra spam e abuso.
                 </p>
 
@@ -733,14 +733,29 @@
                 eCreateAccount(document.referrer) &&
                 window.history.length > 1
             ) {
-                window.history.back();
+                if (
+                    window.MargotDocumentNavigation &&
+                    typeof window.MargotDocumentNavigation.back === 'function'
+                ) {
+                    window.MargotDocumentNavigation.back();
+                } else {
+                    window.history.back();
+                }
                 return;
             }
 
-            window.location.href = voltar.href;
+            if (
+                window.MargotDocumentNavigation &&
+                typeof window.MargotDocumentNavigation.navigate === 'function'
+            ) {
+                window.MargotDocumentNavigation.navigate(voltar.href, true);
+            } else {
+                window.location.href = voltar.href;
+            }
         });
     })();
     </script>
 
+    <script src="{{ doc_root }}js/navegacao-documento.js?v=1"></script>
 </body>
 </html>

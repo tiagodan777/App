@@ -117,14 +117,6 @@
     var alturaTeclado =
         0;
 
-    /*
-     * O mini-menu normal já vem transformado
-     * pelo index-tap-foto.js.
-     *
-     * Guardamos a posição Y real antes de o
-     * teclado entrar e deslocamos TODO o sheet
-     * a partir daí.
-     */
     var baseMenuY =
         null;
 
@@ -500,12 +492,6 @@
         }
     }
 
-    /*
-     * ==========================================================
-     * TECLADO / EXPANSÃO DO MINI-MENU
-     * ==========================================================
-     */
-
     function cancelarRestauracao() {
         if (
             temporizadorRestauracao ===
@@ -645,11 +631,6 @@
             return 0;
         }
 
-        /*
-         * Se o menu já está deslocado,
-         * reconstruímos a posição original
-         * do formulário.
-         */
         var rect =
             $formMensagem[0]
                 .getBoundingClientRect();
@@ -662,9 +643,6 @@
             viewportAltura() -
             novaAlturaTeclado;
 
-        /*
-         * 12px entre formulário e teclado.
-         */
         var limite =
             topoTeclado -
             12;
@@ -731,13 +709,6 @@
             ) -
             novoDeslocamento;
 
-        /*
-         * O sheet inteiro sobe.
-         *
-         * Assim a fotografia, nome, Hey e
-         * caixa de mensagem mantêm exatamente
-         * a mesma composição.
-         */
         $miniMenu.css({
             transition:
                 animar
@@ -777,12 +748,6 @@
         var destinoY =
             baseMenuY;
 
-        /*
-         * Se por algum motivo não conseguimos
-         * guardar a matrix anterior, usamos a
-         * posição normal conhecida do sheet:
-         * 15% da própria altura.
-         */
         if (
             destinoY ===
             null
@@ -828,11 +793,6 @@
                         return;
                     }
 
-                    /*
-                     * Devolvemos o controlo total
-                     * do transform ao
-                     * index-tap-foto.js.
-                     */
                     if (
                         typeof window
                             .definirMiniMenuAcoes ===
@@ -873,10 +833,6 @@
                 .blur();
         }
 
-        /*
-         * Começamos a recolher o sheet logo
-         * neste frame, juntamente com o teclado.
-         */
         restaurarMiniMenuDepoisDoTeclado(
             true
         );
@@ -1107,16 +1063,6 @@
         );
     }
 
-    /*
-     * Enquanto o teclado está aberto:
-     *
-     * - toque dentro do form -> comportamento normal
-     * - toque em QUALQUER outro lugar -> apenas
-     *   fecha teclado + recolhe mini-menu.
-     *
-     * Capture=true é importante: bloqueamos o toque
-     * antes de ele chegar ao perfil, Hey, mapa, etc.
-     */
     function interceptarToqueForaDoInput(
         evento
     ) {
@@ -1169,10 +1115,6 @@
 
             guardarPosicaoNormalMiniMenu();
 
-            /*
-             * A barra ↑ ↓ ✓ do iOS não é útil
-             * neste campo e ocupa espaço.
-             */
             if (
                 eIOSNativo() &&
                 teclado &&
@@ -1205,11 +1147,6 @@
     $inputMensagem.on(
         'blur' + NS,
         function () {
-            /*
-             * keyboardWillHide faz a animação
-             * verdadeira. Não forçamos aqui um
-             * segundo movimento.
-             */
             campoMensagemFocado =
                 false;
 
@@ -1223,12 +1160,6 @@
             }
         }
     );
-
-    /*
-     * ==========================================================
-     * HEY
-     * ==========================================================
-     */
 
     function libertarHey() {
         if (
@@ -1386,10 +1317,6 @@
     window.prepararMiniMenuDaFoto =
         prepararMiniMenu;
 
-    /*
-     * FOTOS
-     */
-
     $(document).on(
         'pointerdown' + NS +
         ' click' + NS,
@@ -1400,10 +1327,6 @@
             );
         }
     );
-
-    /*
-     * PERFIL
-     */
 
     $perfil.on(
         'click' + NS,
@@ -1478,10 +1401,6 @@
                 );
         }
     );
-
-    /*
-     * HEY
-     */
 
     $botaoHey.on(
         'click' + NS,
@@ -1578,10 +1497,6 @@
                 );
         }
     );
-
-    /*
-     * MENSAGEM
-     */
 
     $formMensagem.on(
         'submit' + NS,
@@ -1762,10 +1677,6 @@
         }
     );
 
-    /*
-     * FICHEIRO
-     */
-
     $media.on(
         'change' + NS,
         function (
@@ -1797,10 +1708,6 @@
                 );
         }
     );
-
-    /*
-     * OPÇÕES
-     */
 
     $maisOpcoes.on(
         'pointerdown' + NS +
@@ -1868,10 +1775,6 @@
         }
     );
 
-    /*
-     * BLOQUEAR
-     */
-
     $bloquearMembro.on(
         'click' + NS,
         async function () {
@@ -1892,7 +1795,7 @@
                 !window.confirm(
                     'Bloquear ' +
                     membroNome +
-                    '? Deixam imediatamente de se ver no mapa.'
+                    '? Deixam imediatamente de aparecer um ao outro entre as pessoas por perto.'
                 )
             ) {
                 return;
@@ -1958,10 +1861,6 @@
             }
         }
     );
-
-    /*
-     * DENÚNCIA
-     */
 
     $formDenuncia.on(
         'submit' + NS,
@@ -2055,10 +1954,6 @@
         }
     );
 
-    /*
-     * HEY EVENTS
-     */
-
     function aoHeyEnviado() {
         libertarHey();
     }
@@ -2076,10 +1971,6 @@
         'app:hey-erro',
         aoHeyErro
     );
-
-    /*
-     * WEB / PWA FALLBACK
-     */
 
     if (
         window.visualViewport
@@ -2108,12 +1999,6 @@
     }
 
     prepararTecladoNativo();
-
-    /*
-     * ==========================================================
-     * CLEANUP
-     * ==========================================================
-     */
 
     function desativarPagina() {
         if (

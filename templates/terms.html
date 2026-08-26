@@ -238,7 +238,7 @@
 
                 <ul>
                     <li>um membro apresentado como próximo pode já se ter deslocado;</li>
-                    <li>podem existir atrasos na atualização do mapa;</li>
+                    <li>podem existir atrasos na atualização das pessoas apresentadas como próximas;</li>
                     <li>a distância calculada pode não corresponder exatamente à distância real;</li>
                     <li>a localização pode deixar de ser atualizada devido a bateria, rede, permissões ou limitações do dispositivo.</li>
                 </ul>
@@ -508,7 +508,7 @@
 
                 <p>
                     A Margot depende de serviços prestados por terceiros, que podem
-                    incluir alojamento, mapas e localização, email, notificações,
+                    incluir alojamento, serviços de localização, email, notificações,
                     processamento de imagens, sistemas operativos e lojas de aplicações.
                 </p>
 
@@ -739,31 +739,33 @@
         voltar.addEventListener('click', function (evento) {
             evento.preventDefault();
 
-            /*
-             * Se viemos efetivamente do create-account,
-             * voltar no histórico é a melhor opção:
-             *
-             * - regressa ao passo palavra-passe;
-             * - mantém o estado da criação de conta;
-             * - mantém os campos que o browser ainda tem
-             *   na página anterior.
-             */
             if (
                 eCreateAccount(document.referrer) &&
                 window.history.length > 1
             ) {
-                window.history.back();
+                if (
+                    window.MargotDocumentNavigation &&
+                    typeof window.MargotDocumentNavigation.back === 'function'
+                ) {
+                    window.MargotDocumentNavigation.back();
+                } else {
+                    window.history.back();
+                }
                 return;
             }
 
-            /*
-             * Fallback caso os Termos tenham sido
-             * abertos sem uma entrada anterior utilizável.
-             */
-            window.location.href = voltar.href;
+            if (
+                window.MargotDocumentNavigation &&
+                typeof window.MargotDocumentNavigation.navigate === 'function'
+            ) {
+                window.MargotDocumentNavigation.navigate(voltar.href, true);
+            } else {
+                window.location.href = voltar.href;
+            }
         });
     })();
     </script>
 
+    <script src="{{ doc_root }}js/navegacao-documento.js?v=1"></script>
 </body>
 </html>

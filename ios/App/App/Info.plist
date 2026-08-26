@@ -51,10 +51,10 @@
     <string>A Margot precisa de permissão para guardar fotografias na tua biblioteca quando escolheres essa opção.</string>
 
     <key>NSLocationWhenInUseUsageDescription</key>
-    <string>A Margot precisa da tua localização para te mostrar e mostrar pessoas próximas no mapa.</string>
+    <string>A Margot usa a tua localização para calcular quem está aproximadamente até 100 m de ti e mostrar apenas pessoas próximas. A tua localização exata não é mostrada a outros utilizadores.</string>
 
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-    <string>A Margot usa a tua localização em segundo plano para manter a tua presença atualizada no mapa, mesmo quando não estás a utilizar a aplicação.</string>
+    <string>A Margot usa a tua localização em segundo plano para manter atualizada a descoberta de pessoas próximas, mesmo quando não estás a utilizar a aplicação. A tua localização exata não é mostrada a outros utilizadores.</string>
 
     <key>NSLocationTemporaryUsageDescriptionDictionary</key>
     <dict>
