@@ -115,6 +115,10 @@
         </footer>
     {% endif %}
 
+    {% if not session.id %}
+        <script src="{{ doc_root }}js/navegacao-documento.js?v=1"></script>
+    {% endif %}
+
     {% if session.id %}
         <div
             id="estado-ligacao"
@@ -290,8 +294,8 @@
         <script src="{{ doc_root }}js/index-notificacoes.js?v=8"></script>
         <script src="{{ doc_root }}js/background-location.js?v=6"></script>
         <script src="{{ doc_root }}js/websocket.js?v=18"></script>
-        <script src="{{ doc_root }}js/menu-invisivel.js?v=2"></script>
-        <script src="{{ doc_root }}js/javascript-geral.js?v=4"></script>
+        <script src="{{ doc_root }}js/menu-invisivel.js?v=3"></script>
+        <script src="{{ doc_root }}js/javascript-geral.js?v=5"></script>
     {% endif %}
 </body>
 </html>

@@ -64,10 +64,24 @@
             : caminho;
     }
 
+    function chavePagina(url) {
+        var destino = new URL(
+            url,
+            window.location.href
+        );
+
+        return (
+            caminhoNormalizado(
+                destino.href
+            ) +
+            destino.search
+        );
+    }
+
     function ePaginaAtual(url) {
         return (
-            caminhoNormalizado(url) ===
-            caminhoNormalizado(urlRenderizada)
+            chavePagina(url) ===
+            chavePagina(urlRenderizada)
         );
     }
 
@@ -763,6 +777,72 @@
             );
     }
 
+    async function navegarDocumentoComAnimacao(
+        url,
+        direcao
+    ) {
+        var paginaAtual =
+            document.querySelector(
+                seletorPagina
+            );
+
+        if (!paginaAtual) {
+            window.location.assign(url);
+            return;
+        }
+
+        var reduzido =
+            window.matchMedia(
+                '(prefers-reduced-motion: reduce)'
+            ).matches;
+
+        var duracao =
+            reduzido
+                ? 0
+                : 160;
+
+        document.body.classList.add(
+            'margot-a-navegar'
+        );
+
+        try {
+            var animacao =
+                await animar(
+                    paginaAtual,
+                    [
+                        {
+                            transform:
+                                'translate3d(0,0,0)',
+
+                            opacity:
+                                '1'
+                        },
+                        {
+                            transform:
+                                direcao < 0
+                                    ? 'translate3d(18%,0,0)'
+                                    : 'translate3d(-18%,0,0)',
+
+                            opacity:
+                                '.82'
+                        }
+                    ],
+                    duracao
+                );
+
+            if (animacao) {
+                animacao.cancel();
+            }
+        } catch (erro) {
+            /*
+             * Uma falha da animação nunca pode
+             * impedir a navegação real.
+             */
+        }
+
+        window.location.assign(url);
+    }
+
     function colocarNavegacaoPendente(
         url,
         opcoes
@@ -781,22 +861,10 @@
                 )
         };
 
-        /*
-         * Feedback visual imediato.
-         *
-         * O utilizador vê a tab selecionada
-         * no instante em que toca.
-         */
         atualizarMenu(
             navegacaoPendente.url
         );
 
-        /*
-         * Se ainda só estamos à espera da rede,
-         * cancelamos já a navegação anterior.
-         *
-         * A última tab tocada ganha.
-         */
         if (
             faseNavegacao ===
                 'fetch' &&
@@ -819,12 +887,6 @@
                 url
             );
 
-        /*
-         * Antes, todos os toques recebidos enquanto
-         * aNavegar era true eram simplesmente perdidos.
-         *
-         * Agora guardamos o último.
-         */
         if (aNavegar) {
             if (
                 url ===
@@ -869,10 +931,6 @@
         controlador =
             new AbortController();
 
-        /*
-         * O botão do menu muda logo.
-         * Não esperamos pelo PHP, CSS nem animação.
-         */
         atualizarMenu(
             url
         );
@@ -953,8 +1011,9 @@
                 ) ===
                 '/login'
             ) {
-                window.location.assign(
-                    resposta.url
+                await navegarDocumentoComAnimacao(
+                    resposta.url,
+                    opcoes.direcao || -1
                 );
 
                 return;
@@ -968,11 +1027,6 @@
                     paginaNova
                 );
 
-            /*
-             * Máximo 180 ms de espera.
-             * Normalmente é 0 porque os recursos
-             * das tabs já foram pré-aquecidos.
-             */
             var limparEstilosAntigos =
                 await prepararEstilos(
                     documentoNovo
@@ -1112,11 +1166,6 @@
                 documentoNovo.title ||
                 document.title;
 
-            /*
-             * Se entretanto o utilizador tocou
-             * noutra tab, não criamos uma entrada
-             * intermédia inútil no histórico.
-             */
             if (
                 !navegacaoPendente
             ) {
@@ -1198,8 +1247,9 @@
                 erro.name !==
                 'AbortError'
             ) {
-                window.location.assign(
-                    url
+                await navegarDocumentoComAnimacao(
+                    url,
+                    opcoes.direcao || 1
                 );
 
                 return;
@@ -1221,11 +1271,6 @@
                 'aria-busy'
             );
 
-            /*
-             * Se houve outro toque enquanto
-             * carregávamos/transitávamos,
-             * executamo-lo imediatamente agora.
-             */
             if (
                 navegacaoPendente
             ) {
@@ -1352,10 +1397,6 @@
             return;
         }
 
-        /*
-         * Nos primeiros píxeis da esquerda deixamos o
-         * gesto nativo do iOS trabalhar sozinho.
-         */
         if (
             toque.clientX <=
             SWIPE_BACK_MARGEM_NATIVA
@@ -1412,9 +1453,6 @@
         swipeBack.ultimoY =
             toque.clientY;
 
-        /*
-         * Back apenas da esquerda para a direita.
-         */
         if (diferencaX <= 0) {
             if (
                 Math.abs(diferencaX) >
@@ -1442,10 +1480,6 @@
                 return;
             }
 
-            /*
-             * Se o gesto for sobretudo vertical, deixamos
-             * o scroll seguir normalmente.
-             */
             if (vertical > horizontal) {
                 limparSwipeBack();
                 return;
@@ -1565,74 +1599,120 @@
     );
 
     /*
-     * Navegação pelos links principais.
+     * Navegação por links internos.
+     *
+     * Antes só o menu principal e os links com
+     * data-margot-voltar usavam a transição. Isso fazia
+     * conversa -> chat, chat -> perfil, perfil -> definições
+     * e outros links internos abrirem com um reload seco.
+     *
+     * Agora qualquer <a> interno elegível passa pela mesma
+     * navegação animada. Links externos, downloads, novas
+     * janelas e âncoras da própria página continuam nativos.
      */
     document.addEventListener(
         'click',
         function (evento) {
-            var linkVoltar =
-                evento.target.closest(
-                    '[data-margot-voltar][href]'
-                );
-
-            if (
-                linkVoltar &&
-                !evento.defaultPrevented &&
-                evento.button ===
-                    0 &&
-                !evento.metaKey &&
-                !evento.ctrlKey &&
-                !evento.shiftKey &&
-                !evento.altKey
-            ) {
-                var urlVoltar =
-                    new URL(
-                        linkVoltar.href,
-                        window.location.href
-                    );
-
-                if (
-                    urlVoltar.origin ===
-                    window.location.origin
-                ) {
-                    evento.preventDefault();
-
-                    voltarPagina(
-                        urlVoltar.href
-                    );
-
-                    return;
-                }
-            }
-
             var link =
                 evento.target.closest(
-                    '#menuPrincipal a[href]'
+                    'a[href]'
                 );
 
             if (
                 !link ||
                 evento.defaultPrevented ||
-                evento.button !==
-                    0 ||
+                (
+                    evento.button !==
+                        undefined &&
+                    evento.button !==
+                        0
+                ) ||
                 evento.metaKey ||
                 evento.ctrlKey ||
                 evento.shiftKey ||
-                evento.altKey
+                evento.altKey ||
+                link.hasAttribute('download') ||
+                link.hasAttribute(
+                    'data-margot-sem-animacao'
+                )
             ) {
                 return;
             }
 
-            var url =
-                new URL(
+            var alvo =
+                String(
+                    link.getAttribute('target') ||
+                    ''
+                ).toLowerCase();
+
+            if (
+                alvo &&
+                alvo !== '_self' &&
+                alvo !== '_top'
+            ) {
+                return;
+            }
+
+            var hrefOriginal =
+                String(
+                    link.getAttribute('href') ||
+                    ''
+                ).trim();
+
+            if (
+                !hrefOriginal ||
+                hrefOriginal.charAt(0) === '#'
+            ) {
+                return;
+            }
+
+            var url;
+
+            try {
+                url = new URL(
                     link.href,
+                    window.location.href
+                );
+            } catch (erro) {
+                return;
+            }
+
+            if (
+                (
+                    url.protocol !== 'http:' &&
+                    url.protocol !== 'https:'
+                ) ||
+                url.origin !==
+                    window.location.origin
+            ) {
+                return;
+            }
+
+            var atual =
+                new URL(
                     window.location.href
                 );
 
             if (
-                url.origin !==
-                window.location.origin
+                chavePagina(url.href) ===
+                    chavePagina(atual.href) &&
+                url.hash &&
+                url.hash !== atual.hash
             ) {
+                return;
+            }
+
+            if (
+                link.matches(
+                    '[data-margot-voltar]'
+                )
+            ) {
+                evento.preventDefault();
+
+                voltarPagina(
+                    url.href
+                );
+
                 return;
             }
 
@@ -1648,9 +1728,6 @@
         }
     );
 
-    /*
-     * Back / forward do histórico.
-     */
     window.addEventListener(
         'popstate',
         function (evento) {
@@ -1724,10 +1801,6 @@
         window.location.href
     );
 
-    /*
-     * Aquecemos as outras opções do menu
-     * sem bloquear o arranque da app.
-     */
     preAquecerMenu();
 
     window.MargotNavigation = {
