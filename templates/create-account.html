@@ -1,12 +1,33 @@
 {% extends 'layout.html' %}
 
-{% block title %}{{ modo_edicao|default(false) ? 'Editar perfil' : 'Criar conta' }} | Margot{% endblock %}
+{% block title %}
+    {{ modo_edicao|default(false) ? 'Editar perfil' : 'Criar conta' }} | Margot
+{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ doc_root }}estilos/create-account.css?v=11" data-margot-page-style>
-<link rel="stylesheet" href="{{ doc_root }}estilos/create-account-permissoes.css?v=2" data-margot-page-style>
-<link rel="stylesheet" href="{{ doc_root }}estilos/create-account-editor.css?v=2" data-margot-page-style>
-<link rel="stylesheet" href="{{ doc_root }}estilos/create-account-legal.css?v=2" data-margot-page-style>
+<link
+    rel="stylesheet"
+    href="{{ doc_root }}estilos/create-account.css?v=12"
+    data-margot-page-style
+>
+
+<link
+    rel="stylesheet"
+    href="{{ doc_root }}estilos/create-account-permissoes.css?v=2"
+    data-margot-page-style
+>
+
+<link
+    rel="stylesheet"
+    href="{{ doc_root }}estilos/create-account-editor.css?v=2"
+    data-margot-page-style
+>
+
+<link
+    rel="stylesheet"
+    href="{{ doc_root }}estilos/create-account-legal.css?v=2"
+    data-margot-page-style
+>
 {% endblock %}
 
 {% block content %}
@@ -36,19 +57,33 @@
     create-account-navegacao.js retira daqui apenas a etapa
     necessária antes do primeiro paint.
 #}
+
 <template id="create-account-campos-cache">
     {% include 'create-account-campos.html' %}
 </template>
 
 <script>
 window.createAccountConfig = {
-    modoEdicao: {{ modo_edicao|default(false)|json_encode(15)|raw }},
-    membroId: {{ membro_id_edicao|default('')|json_encode(15)|raw }},
-    dadosIniciais: {{ dados_iniciais|default({})|json_encode(15)|raw }},
-    fotosExistentes: {{ fotos_existentes|default([])|json_encode(15)|raw }},
-    camposUrl: {{ campos_url|default(doc_root ~ 'create-account-campos')|json_encode(15)|raw }},
-    perfilUrl: {{ perfil_url|default('')|json_encode(15)|raw }},
-    csrfToken: {{ csrf_token|default('')|json_encode(15)|raw }}
+    modoEdicao:
+        {{ modo_edicao|default(false)|json_encode(15)|raw }},
+
+    membroId:
+        {{ membro_id_edicao|default('')|json_encode(15)|raw }},
+
+    dadosIniciais:
+        {{ dados_iniciais|default({})|json_encode(15)|raw }},
+
+    fotosExistentes:
+        {{ fotos_existentes|default([])|json_encode(15)|raw }},
+
+    camposUrl:
+        {{ campos_url|default(doc_root ~ 'create-account-campos')|json_encode(15)|raw }},
+
+    perfilUrl:
+        {{ perfil_url|default('')|json_encode(15)|raw }},
+
+    csrfToken:
+        {{ csrf_token|default('')|json_encode(15)|raw }}
 };
 </script>
 

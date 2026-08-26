@@ -1,25 +1,44 @@
 <div id="introducao">
-    <div class="margot-intro-marca" aria-hidden="true">Margot</div>
+    <div class="margot-intro-marca" aria-hidden="true">
+        Margot
+    </div>
 
-    <h1>Vês alguém.<br>A Margot ajuda-te a dizer olá.</h1>
+    <h1>
+        Vês alguém.<br>
+        A Margot ajuda-te a dizer olá.
+    </h1>
 
     <!--<p class="margot-intro-texto">
         A Margot mostra-te outras pessoas que também estão por perto. Se reconheceres
         alguém com quem gostavas de falar, podes enviar um Hey e quebrar o gelo.
     </p>-->
 
-    <div class="margot-demo" aria-label="Exemplo: duas pessoas próximas encontram-se na Margot e começam uma conversa">
+    <div
+        class="margot-demo"
+        aria-label="Exemplo: duas pessoas próximas encontram-se na Margot e começam uma conversa"
+    >
         <div class="margot-demo-cenario" aria-hidden="true">
             <span class="margot-demo-pessoa margot-demo-pessoa-a">🙂</span>
+
             <span class="margot-demo-onda margot-demo-onda-a"></span>
             <span class="margot-demo-onda margot-demo-onda-b"></span>
+
             <span class="margot-demo-pessoa margot-demo-pessoa-b">😊</span>
 
             <div class="margot-demo-telemovel">
-                <div class="margot-demo-perfil">😊</div>
-                <strong>Alguém perto de ti</strong>
+                <div class="margot-demo-perfil">
+                    😊
+                </div>
+
+                <strong>
+                    Alguém perto de ti
+                </strong>
+
                 <!--<span>A cerca de 100 m</span>-->
-                <b>Hey 👋</b>
+
+                <b>
+                    Hey 👋
+                </b>
             </div>
         </div>
     </div>
@@ -29,124 +48,247 @@
         Os teus contactos e a tua localização nunca são mostrados.
     </p>-->
 
-    <a href="{{ doc_root }}login" class="entrar" target="_top">Entrar</a>
+    <a
+        href="{{ doc_root }}login"
+        class="entrar"
+        target="_top"
+        data-margot-sem-animacao
+    >
+        Entrar
+    </a>
 
     <nav class="anterior-proximo">
-        <a data-etapa="#nome" class="registar">
-            Ainda não te registaste? <span>Cria uma conta</span>
+        <a
+            data-etapa="#nome"
+            class="registar"
+        >
+            Ainda não te registaste?
+            <span>Cria uma conta</span>
         </a>
     </nav>
 </div>
 
 <div id="editar-perfil">
     <header class="editar-perfil-cabecalho">
-        <button type="button" class="editar-perfil-fechar" data-voltar-perfil aria-label="Fechar edição">×</button>
+        <button
+            type="button"
+            class="editar-perfil-fechar"
+            data-voltar-perfil
+            aria-label="Fechar edição"
+        >
+            ×
+        </button>
 
         <div>
             <span>O teu perfil</span>
-            <h1>O que queres editar?</h1>
-            <p>Escolhe uma área. Podes guardar e sair logo depois da alteração.</p>
+
+            <h1>
+                O que queres editar?
+            </h1>
+
+            <p>
+                Escolhe uma área. Podes guardar e sair logo depois da alteração.
+            </p>
         </div>
     </header>
 
     <div class="editar-perfil-lista">
-        <button type="button" class="editar-area" data-etapa="#fotos">
-            <span class="editar-area-icone" aria-hidden="true">📷</span>
+        <button
+            type="button"
+            class="editar-area"
+            data-etapa="#fotos"
+        >
+            <span class="editar-area-icone" aria-hidden="true">
+                📷
+            </span>
 
             <span class="editar-area-texto">
                 <strong>Fotografias</strong>
-                <small data-resumo-campo="fotos">Gerir as tuas fotografias</small>
+
+                <small data-resumo-campo="fotos">
+                    Gerir as tuas fotografias
+                </small>
             </span>
 
-            <span class="editar-area-seta" aria-hidden="true">›</span>
+            <span class="editar-area-seta" aria-hidden="true">
+                ›
+            </span>
         </button>
 
-        <button type="button" class="editar-area" data-etapa="#nome">
-            <span class="editar-area-icone" aria-hidden="true">👤</span>
+        <button
+            type="button"
+            class="editar-area"
+            data-etapa="#nome"
+        >
+            <span class="editar-area-icone" aria-hidden="true">
+                👤
+            </span>
 
             <span class="editar-area-texto">
                 <strong>Nome</strong>
-                <small data-resumo-campo="nome">Editar o teu nome</small>
+
+                <small data-resumo-campo="nome">
+                    Editar o teu nome
+                </small>
             </span>
 
-            <span class="editar-area-seta" aria-hidden="true">›</span>
+            <span class="editar-area-seta" aria-hidden="true">
+                ›
+            </span>
         </button>
 
-        <button type="button" class="editar-area" data-etapa="#nascimento">
-            <span class="editar-area-icone" aria-hidden="true">🎂</span>
+        <button
+            type="button"
+            class="editar-area"
+            data-etapa="#nascimento"
+        >
+            <span class="editar-area-icone" aria-hidden="true">
+                🎂
+            </span>
 
             <span class="editar-area-texto">
                 <strong>Data de nascimento</strong>
-                <small data-resumo-campo="nascimento">Editar a data de nascimento</small>
+
+                <small data-resumo-campo="nascimento">
+                    Editar a data de nascimento
+                </small>
             </span>
 
-            <span class="editar-area-seta" aria-hidden="true">›</span>
+            <span class="editar-area-seta" aria-hidden="true">
+                ›
+            </span>
         </button>
 
-        <button type="button" class="editar-area" data-etapa="#sexo">
-            <span class="editar-area-icone" aria-hidden="true">✨</span>
+        <button
+            type="button"
+            class="editar-area"
+            data-etapa="#sexo"
+        >
+            <span class="editar-area-icone" aria-hidden="true">
+                ✨
+            </span>
 
             <span class="editar-area-texto">
                 <strong>Género</strong>
-                <small data-resumo-campo="genero">Editar o género</small>
+
+                <small data-resumo-campo="genero">
+                    Editar o género
+                </small>
             </span>
 
-            <span class="editar-area-seta" aria-hidden="true">›</span>
+            <span class="editar-area-seta" aria-hidden="true">
+                ›
+            </span>
         </button>
 
-        <button type="button" class="editar-area" data-etapa="#gostos">
-            <span class="editar-area-icone" aria-hidden="true">🎨</span>
+        <button
+            type="button"
+            class="editar-area"
+            data-etapa="#gostos"
+        >
+            <span class="editar-area-icone" aria-hidden="true">
+                🎨
+            </span>
 
             <span class="editar-area-texto">
                 <strong>Gostos e interesses</strong>
-                <small data-resumo-campo="gostos">Editar os teus gostos</small>
+
+                <small data-resumo-campo="gostos">
+                    Editar os teus gostos
+                </small>
             </span>
 
-            <span class="editar-area-seta" aria-hidden="true">›</span>
+            <span class="editar-area-seta" aria-hidden="true">
+                ›
+            </span>
         </button>
 
-        <button type="button" class="editar-area" data-etapa="#descricao">
-            <span class="editar-area-icone" aria-hidden="true">💬</span>
+        <button
+            type="button"
+            class="editar-area"
+            data-etapa="#descricao"
+        >
+            <span class="editar-area-icone" aria-hidden="true">
+                💬
+            </span>
 
             <span class="editar-area-texto">
                 <strong>Sobre ti</strong>
-                <small data-resumo-campo="sobre_ti">Editar a tua descrição</small>
+
+                <small data-resumo-campo="sobre_ti">
+                    Editar a tua descrição
+                </small>
             </span>
 
-            <span class="editar-area-seta" aria-hidden="true">›</span>
+            <span class="editar-area-seta" aria-hidden="true">
+                ›
+            </span>
         </button>
 
-        <button type="button" class="editar-area" data-etapa="#contactos">
-            <span class="editar-area-icone" aria-hidden="true">🔐</span>
+        <button
+            type="button"
+            class="editar-area"
+            data-etapa="#contactos"
+        >
+            <span class="editar-area-icone" aria-hidden="true">
+                🔐
+            </span>
 
             <span class="editar-area-texto">
                 <strong>Contactos</strong>
-                <small data-resumo-campo="contactos">Email privado · telefone opcional</small>
+
+                <small data-resumo-campo="contactos">
+                    Email privado · telefone opcional
+                </small>
             </span>
 
-            <span class="editar-area-seta" aria-hidden="true">›</span>
+            <span class="editar-area-seta" aria-hidden="true">
+                ›
+            </span>
         </button>
 
-        <button type="button" class="editar-area" data-etapa="#permissoes">
-            <span class="editar-area-icone" aria-hidden="true">📍</span>
+        <button
+            type="button"
+            class="editar-area"
+            data-etapa="#permissoes"
+        >
+            <span class="editar-area-icone" aria-hidden="true">
+                📍
+            </span>
 
             <span class="editar-area-texto">
                 <strong>Privacidade e permissões</strong>
-                <small data-resumo-campo="permissoes">Localização e notificações</small>
+
+                <small data-resumo-campo="permissoes">
+                    Localização e notificações
+                </small>
             </span>
 
-            <span class="editar-area-seta" aria-hidden="true">›</span>
+            <span class="editar-area-seta" aria-hidden="true">
+                ›
+            </span>
         </button>
 
-        <button type="button" class="editar-area" data-etapa="#palavra-passe">
-            <span class="editar-area-icone" aria-hidden="true">🔑</span>
+        <button
+            type="button"
+            class="editar-area"
+            data-etapa="#palavra-passe"
+        >
+            <span class="editar-area-icone" aria-hidden="true">
+                🔑
+            </span>
 
             <span class="editar-area-texto">
                 <strong>Palavra-passe</strong>
-                <small>Alterar a palavra-passe</small>
+
+                <small>
+                    Alterar a palavra-passe
+                </small>
             </span>
 
-            <span class="editar-area-seta" aria-hidden="true">›</span>
+            <span class="editar-area-seta" aria-hidden="true">
+                ›
+            </span>
         </button>
 
         <a
@@ -154,14 +296,23 @@
             class="editar-area"
             target="_top"
         >
-            <span class="editar-area-icone" aria-hidden="true">📄</span>
-
-            <span class="editar-area-texto">
-                <strong>Termos de Utilização</strong>
-                <small>Consulta os termos da Margot</small>
+            <span class="editar-area-icone" aria-hidden="true">
+                📄
             </span>
 
-            <span class="editar-area-seta" aria-hidden="true">›</span>
+            <span class="editar-area-texto">
+                <strong>
+                    Termos de Utilização
+                </strong>
+
+                <small>
+                    Consulta os termos da Margot
+                </small>
+            </span>
+
+            <span class="editar-area-seta" aria-hidden="true">
+                ›
+            </span>
         </a>
 
         <a
@@ -169,54 +320,116 @@
             class="editar-area"
             target="_top"
         >
-            <span class="editar-area-icone" aria-hidden="true">🛡️</span>
-
-            <span class="editar-area-texto">
-                <strong>Política de Privacidade</strong>
-                <small>Consulta como tratamos os teus dados</small>
+            <span class="editar-area-icone" aria-hidden="true">
+                🛡️
             </span>
 
-            <span class="editar-area-seta" aria-hidden="true">›</span>
+            <span class="editar-area-texto">
+                <strong>
+                    Política de Privacidade
+                </strong>
+
+                <small>
+                    Consulta como tratamos os teus dados
+                </small>
+            </span>
+
+            <span class="editar-area-seta" aria-hidden="true">
+                ›
+            </span>
         </a>
     </div>
 </div>
 
 <div id="nome">
-    <h1>{{ modo_edicao ? 'Qual é o teu nome?' : 'Como te chamas?' }}</h1>
+    <h1>
+        {{ modo_edicao ? 'Qual é o teu nome?' : 'Como te chamas?' }}
+    </h1>
 
     <p>
-        <label for="primeiro_nome">Primeiro nome</label>
-        <input type="text" name="primeiro_nome" id="primeiro_nome" required>
+        <label for="primeiro_nome">
+            Primeiro nome
+        </label>
+
+        <input
+            type="text"
+            name="primeiro_nome"
+            id="primeiro_nome"
+            required
+        >
     </p>
 
     <p>
-        <label for="ultimo_nome">Último nome</label>
-        <input type="text" name="ultimo_nome" id="ultimo_nome" required>
+        <label for="ultimo_nome">
+            Último nome
+        </label>
+
+        <input
+            type="text"
+            name="ultimo_nome"
+            id="ultimo_nome"
+            required
+        >
     </p>
 
     <nav class="anterior-proximo">
         {% if modo_edicao %}
-            <a data-etapa="#editar-perfil" data-sem-validar="true" class="anterior">Voltar à lista</a>
-            <button type="submit" class="proximo guardar-secao">Guardar e sair</button>
+            <a
+                data-etapa="#editar-perfil"
+                data-sem-validar="true"
+                class="anterior"
+            >
+                Voltar à lista
+            </a>
+
+            <button
+                type="submit"
+                class="proximo guardar-secao"
+            >
+                Guardar e sair
+            </button>
         {% else %}
-            <a data-etapa="#nascimento" class="proximo">Próximo</a>
+            <a
+                data-etapa="#nascimento"
+                class="proximo"
+            >
+                Próximo
+            </a>
         {% endif %}
     </nav>
 </div>
 
 <div id="nascimento">
-    <h1>Quando nasceste?</h1>
+    <h1>
+        Quando nasceste?
+    </h1>
 
     <nav class="campos-nascimento">
         <div>
-            <label for="dia">Dia</label>
-            <input type="number" name="dia" id="dia" min="1" max="31" required>
+            <label for="dia">
+                Dia
+            </label>
+
+            <input
+                type="number"
+                name="dia"
+                id="dia"
+                min="1"
+                max="31"
+                required
+            >
         </div>
 
         <div>
-            <label for="mes">Mês</label>
+            <label for="mes">
+                Mês
+            </label>
 
-            <select id="mes" name="mes" required>
+            <select
+                id="mes"
+                name="mes"
+                required
+            >
                 <option value="01">Janeiro</option>
                 <option value="02">Fevereiro</option>
                 <option value="03">Março</option>
@@ -233,118 +446,190 @@
         </div>
 
         <div>
-            <label for="ano">Ano</label>
-            <input type="number" name="ano" id="ano" min="1900" max="{{ ano_atual }}" required>
+            <label for="ano">
+                Ano
+            </label>
+
+            <input
+                type="number"
+                name="ano"
+                id="ano"
+                min="1900"
+                max="{{ ano_atual }}"
+                required
+            >
         </div>
     </nav>
 
     <nav class="anterior-proximo">
         {% if modo_edicao %}
-            <a data-etapa="#editar-perfil" data-sem-validar="true" class="anterior">Voltar à lista</a>
-            <button type="submit" class="proximo guardar-secao">Guardar e sair</button>
+            <a
+                data-etapa="#editar-perfil"
+                data-sem-validar="true"
+                class="anterior"
+            >
+                Voltar à lista
+            </a>
+
+            <button
+                type="submit"
+                class="proximo guardar-secao"
+            >
+                Guardar e sair
+            </button>
         {% else %}
-            <a data-etapa="#nome" class="anterior">Anterior</a>
-            <a data-etapa="#sexo" class="proximo">Próximo</a>
+            <a
+                data-etapa="#nome"
+                class="anterior"
+            >
+                Anterior
+            </a>
+
+            <a
+                data-etapa="#sexo"
+                class="proximo"
+            >
+                Próximo
+            </a>
         {% endif %}
     </nav>
 </div>
 
 <div id="sexo">
-    <h1>Qual é o teu género?</h1>
+    <h1>
+        Qual é o teu género?
+    </h1>
 
     <div class="campo-genero">
-        <label for="genero">Género</label>
+        <label for="genero">
+            Género
+        </label>
 
-        <select name="genero" id="genero" required>
-            <option value="M">Masculino</option>
-            <option value="F">Feminino</option>
-            <option value="D">Personalizado</option>
+        <select
+            name="genero"
+            id="genero"
+            required
+        >
+            <option value="M">
+                Masculino
+            </option>
+
+            <option value="F">
+                Feminino
+            </option>
+
+            <option value="D">
+                Personalizado
+            </option>
         </select>
     </div>
 
     <nav class="anterior-proximo">
         {% if modo_edicao %}
-            <a data-etapa="#editar-perfil" data-sem-validar="true" class="anterior">Voltar à lista</a>
-            <button type="submit" class="proximo guardar-secao">Guardar e sair</button>
+            <a
+                data-etapa="#editar-perfil"
+                data-sem-validar="true"
+                class="anterior"
+            >
+                Voltar à lista
+            </a>
+
+            <button
+                type="submit"
+                class="proximo guardar-secao"
+            >
+                Guardar e sair
+            </button>
         {% else %}
-            <a data-etapa="#nascimento" class="anterior">Anterior</a>
-            <a data-etapa="#gostos" class="proximo">Próximo</a>
+            <a
+                data-etapa="#nascimento"
+                class="anterior"
+            >
+                Anterior
+            </a>
+
+            <a
+                data-etapa="#gostos"
+                class="proximo"
+            >
+                Próximo
+            </a>
         {% endif %}
     </nav>
 </div>
 
 <div id="gostos">
-    <h1>O que gostas de fazer?</h1>
+    <h1>
+        O que é que gostas?
+    </h1>
 
     <p class="adicionar-gosto">
-        <input type="text" name="hobbie" id="hobbie" autocomplete="off">
-        <input type="button" id="adicionar-gosto" value="Adicionar">
+        <input
+            type="text"
+            name="hobbie"
+            id="hobbie"
+            autocomplete="off"
+            placeholder="Ex.: música"
+        >
+
+        <button
+            type="button"
+            id="adicionar-gosto"
+        >
+            Adicionar
+        </button>
     </p>
 
     <div id="recomendacoes">
-        <ul id="lista"></ul>
+        <ul></ul>
     </div>
 
     <div id="meus-gostos"></div>
 
     <nav class="anterior-proximo">
         {% if modo_edicao %}
-            <a data-etapa="#editar-perfil" data-sem-validar="true" class="anterior">Voltar à lista</a>
-            <button type="submit" class="proximo guardar-secao">Guardar e sair</button>
+            <a
+                data-etapa="#editar-perfil"
+                data-sem-validar="true"
+                class="anterior"
+            >
+                Voltar à lista
+            </a>
+
+            <button
+                type="submit"
+                class="proximo guardar-secao"
+            >
+                Guardar e sair
+            </button>
         {% else %}
-            <a data-etapa="#sexo" class="anterior">Anterior</a>
-            <a data-etapa="#contactos" class="proximo">Próximo</a>
+            <a
+                data-etapa="#sexo"
+                class="anterior"
+            >
+                Anterior
+            </a>
+
+            <a
+                data-etapa="#contactos"
+                class="proximo"
+            >
+                Próximo
+            </a>
         {% endif %}
     </nav>
 </div>
 
 <div id="contactos">
-    <h1>Contactos privados</h1>
-
-    <div class="privacidade-nota privacidade-nota-contactos">
-        <span class="privacidade-nota-icone" aria-hidden="true">🔒</span>
-
-        <p>
-            O teu email e, caso o adiciones, o teu número de telefone
-            <strong>NUNCA</strong> são mostrados no perfil nem partilhados
-            com outros utilizadores.
-        </p>
-
-        <details class="privacidade-info">
-            <summary aria-label="Para que são utilizados os contactos?">i</summary>
-
-            <div>
-                <strong>Para que servem?</strong>
-
-                <p>
-                    O email é utilizado para iniciares sessão, recuperares o acesso,
-                    verificarmos e protegermos a tua conta e, quando for indispensável,
-                    enviarmos comunicações sobre segurança ou sobre o funcionamento
-                    do serviço.
-                </p>
-
-                <p>
-                    O número de telefone é opcional. Se o adicionares, também podes
-                    utilizá-lo para iniciar sessão.
-                </p>
-
-                <p>Os teus contactos nunca aparecem publicamente.</p>
-            </div>
-        </details>
-    </div>
+    <h1>
+        Como podemos contactar-te?
+    </h1>
 
     <p>
-        <label for="telefone">Número de telefone <span>(opcional)</span></label>
-        <input
-            type="tel"
-            name="telefone"
-            id="telefone"
-            autocomplete="tel"
-        >
-    </p>
+        <label for="email">
+            Email
+        </label>
 
-    <p>
-        <label for="email">Email</label>
         <input
             type="email"
             name="email"
@@ -354,49 +639,151 @@
         >
     </p>
 
+    <p>
+        <label for="telefone">
+            Telefone
+        </label>
+
+        <input
+            type="tel"
+            name="telefone"
+            id="telefone"
+            autocomplete="tel"
+        >
+    </p>
+
     <nav class="anterior-proximo">
         {% if modo_edicao %}
-            <a data-etapa="#editar-perfil" data-sem-validar="true" class="anterior">Voltar à lista</a>
-            <button type="submit" class="proximo guardar-secao">Guardar e sair</button>
+            <a
+                data-etapa="#editar-perfil"
+                data-sem-validar="true"
+                class="anterior"
+            >
+                Voltar à lista
+            </a>
+
+            <button
+                type="submit"
+                class="proximo guardar-secao"
+            >
+                Guardar e sair
+            </button>
         {% else %}
-            <a data-etapa="#gostos" class="anterior">Anterior</a>
-            <a data-etapa="#descricao" class="proximo">Próximo</a>
+            <a
+                data-etapa="#gostos"
+                class="anterior"
+            >
+                Anterior
+            </a>
+
+            <a
+                data-etapa="#descricao"
+                class="proximo"
+            >
+                Próximo
+            </a>
         {% endif %}
     </nav>
 </div>
 
 <div id="descricao">
-    <h1>Fala sobre ti</h1>
+    <h1>
+        Fala um pouco sobre ti
+    </h1>
 
-    <label for="sobre-ti">Sobre ti</label>
-    <textarea name="sobre_ti" id="sobre-ti" maxlength="1000"></textarea>
+    <label for="sobre_ti">
+        Sobre ti
+    </label>
+
+    <textarea
+        name="sobre_ti"
+        id="sobre_ti"
+        maxlength="1000"
+        placeholder="Escreve algo sobre ti…"
+    ></textarea>
 
     <nav class="anterior-proximo">
         {% if modo_edicao %}
-            <a data-etapa="#editar-perfil" data-sem-validar="true" class="anterior">Voltar à lista</a>
-            <button type="submit" class="proximo guardar-secao">Guardar e sair</button>
+            <a
+                data-etapa="#editar-perfil"
+                data-sem-validar="true"
+                class="anterior"
+            >
+                Voltar à lista
+            </a>
+
+            <button
+                type="submit"
+                class="proximo guardar-secao"
+            >
+                Guardar e sair
+            </button>
         {% else %}
-            <a data-etapa="#contactos" class="anterior">Anterior</a>
-            <a data-etapa="#fotos" class="proximo">Próximo</a>
+            <a
+                data-etapa="#contactos"
+                class="anterior"
+            >
+                Anterior
+            </a>
+
+            <a
+                data-etapa="#fotos"
+                class="proximo"
+            >
+                Próximo
+            </a>
         {% endif %}
     </nav>
 </div>
 
 <div id="fotos">
-    <div id="perfil-camera-interface">
-        <video id="perfil-camera-video" autoplay playsinline muted></video>
+    <div
+        id="perfil-camera-interface"
+        aria-hidden="true"
+    >
+        <video
+            id="perfil-camera-video"
+            autoplay
+            playsinline
+            muted
+        ></video>
+
         <canvas id="perfil-camera-canvas"></canvas>
 
         <div class="perfil-camera-header">
-            <button type="button" id="perfil-fechar-camera" class="perfil-camera-icon" aria-label="Fechar câmara">
-                <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <button
+                type="button"
+                id="perfil-fechar-camera"
+                class="perfil-camera-icon"
+                aria-label="Fechar câmara"
+            >
+                <svg
+                    width="25"
+                    height="25"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
                     <line x1="18" y1="6" x2="6" y2="18"></line>
                     <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
             </button>
 
-            <button type="button" id="perfil-trocar-camera" class="perfil-camera-icon" aria-label="Trocar câmara">
-                <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <button
+                type="button"
+                id="perfil-trocar-camera"
+                class="perfil-camera-icon"
+                aria-label="Trocar câmara"
+            >
+                <svg
+                    width="25"
+                    height="25"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
                     <path d="M23 4v6h-6"></path>
                     <path d="M1 20v-6h6"></path>
                     <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"></path>
@@ -407,19 +794,53 @@
 
         <div class="perfil-camera-guia">
             <div class="perfil-camera-circulo"></div>
-            <p>Enquadra o teu rosto dentro do círculo</p>
+
+            <p>
+                Enquadra o teu rosto dentro do círculo
+            </p>
         </div>
 
         <div class="perfil-camera-footer">
-            <button type="button" id="perfil-abrir-galeria-camera" class="perfil-galeria-botao" aria-label="Abrir galeria">
-                <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                    <rect x="3" y="3" width="18" height="18" rx="2"></rect>
-                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                    <polyline points="21 15 16 10 5 21"></polyline>
+            <button
+                type="button"
+                id="perfil-abrir-galeria-camera"
+                class="perfil-galeria-botao"
+                aria-label="Abrir galeria"
+            >
+                <svg
+                    width="25"
+                    height="25"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="white"
+                    stroke-width="2"
+                >
+                    <rect
+                        x="3"
+                        y="3"
+                        width="18"
+                        height="18"
+                        rx="2"
+                    ></rect>
+
+                    <circle
+                        cx="8.5"
+                        cy="8.5"
+                        r="1.5"
+                    ></circle>
+
+                    <polyline
+                        points="21 15 16 10 5 21"
+                    ></polyline>
                 </svg>
             </button>
 
-            <button type="button" id="perfil-capturar-foto" class="perfil-disparador" aria-label="Tirar fotografia">
+            <button
+                type="button"
+                id="perfil-capturar-foto"
+                class="perfil-disparador"
+                aria-label="Tirar fotografia"
+            >
                 <span></span>
             </button>
 
@@ -428,7 +849,9 @@
     </div>
 
     <div id="perfil-fotos-conteudo">
-        <h1>{{ modo_edicao ? 'Atualiza as tuas fotografias' : 'Mostra quem és' }}</h1>
+        <h1>
+            {{ modo_edicao ? 'Atualiza as tuas fotografias' : 'Mostra quem és' }}
+        </h1>
 
         <p class="perfil-fotos-explicacao">
             Adiciona até 6 fotografias. A primeira será a tua foto principal.
@@ -446,45 +869,119 @@
         <div id="perfil-lista-fotos"></div>
 
         <div class="perfil-fotos-acoes">
-            <button type="button" id="perfil-tirar-foto" class="perfil-botao-foto">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <button
+                type="button"
+                id="perfil-tirar-foto"
+                class="perfil-botao-foto"
+            >
+                <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
                     <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1 2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-                    <circle cx="12" cy="13" r="4"></circle>
+
+                    <circle
+                        cx="12"
+                        cy="13"
+                        r="4"
+                    ></circle>
                 </svg>
 
                 Tirar foto
             </button>
 
-            <button type="button" id="perfil-escolher-fotos" class="perfil-botao-foto">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="3" width="18" height="18" rx="2"></rect>
-                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                    <polyline points="21 15 16 10 5 21"></polyline>
+            <button
+                type="button"
+                id="perfil-escolher-fotos"
+                class="perfil-botao-foto"
+            >
+                <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <rect
+                        x="3"
+                        y="3"
+                        width="18"
+                        height="18"
+                        rx="2"
+                    ></rect>
+
+                    <circle
+                        cx="8.5"
+                        cy="8.5"
+                        r="1.5"
+                    ></circle>
+
+                    <polyline
+                        points="21 15 16 10 5 21"
+                    ></polyline>
                 </svg>
 
                 Escolher fotos
             </button>
         </div>
 
-        <p id="perfil-fotos-erro" aria-live="polite"></p>
+        <p
+            id="perfil-fotos-erro"
+            aria-live="polite"
+        ></p>
 
         <nav class="anterior-proximo">
             {% if modo_edicao %}
-                <a data-etapa="#editar-perfil" data-sem-validar="true" class="anterior">Voltar à lista</a>
-                <button type="submit" class="proximo guardar-secao">Guardar e sair</button>
+                <a
+                    data-etapa="#editar-perfil"
+                    data-sem-validar="true"
+                    class="anterior"
+                >
+                    Voltar à lista
+                </a>
+
+                <button
+                    type="submit"
+                    class="proximo guardar-secao"
+                >
+                    Guardar e sair
+                </button>
             {% else %}
-                <a data-etapa="#descricao" class="anterior">Anterior</a>
-                <a data-etapa="#permissoes" class="proximo">Próximo</a>
+                <a
+                    data-etapa="#descricao"
+                    class="anterior"
+                >
+                    Anterior
+                </a>
+
+                <a
+                    data-etapa="#permissoes"
+                    class="proximo"
+                >
+                    Próximo
+                </a>
             {% endif %}
         </nav>
     </div>
 </div>
 
 <div id="permissoes">
-    <h1>{{ modo_edicao ? 'Privacidade e permissões' : 'Antes de começares' }}</h1>
+    <h1>
+        {{ modo_edicao ? 'Privacidade e permissões' : 'Antes de começares' }}
+    </h1>
 
     <div class="privacidade-nota privacidade-nota-localizacao">
-        <span class="privacidade-nota-icone" aria-hidden="true">🛡️</span>
+        <span
+            class="privacidade-nota-icone"
+            aria-hidden="true"
+        >
+            🛡️
+        </span>
 
         <p>
             A tua localização <strong>NUNCA</strong> é mostrada publicamente nem
@@ -492,10 +989,14 @@
         </p>
 
         <details class="privacidade-info">
-            <summary aria-label="Como é utilizada a localização?">i</summary>
+            <summary aria-label="Como é utilizada a localização?">
+                i
+            </summary>
 
             <div>
-                <strong>Como é utilizada?</strong>
+                <strong>
+                    Como é utilizada?
+                </strong>
 
                 <p>
                     A Margot utiliza-a apenas para calcular uma distância aproximada
@@ -508,49 +1009,139 @@
     </div>
 
     <p class="permissoes-explicacao">
-        Escolhe o que a Margot pode usar neste dispositivo. Podes alterar estas opções mais tarde.
+        Escolhe o que a Margot pode usar neste dispositivo.
+        Podes alterar estas opções mais tarde.
     </p>
 
     <div class="permissoes-lista">
-        <article class="permissao-cartao" data-permissao="localizacao" data-ativa="false">
-            <div class="permissao-icone" aria-hidden="true">📍</div>
+        <article
+            class="permissao-cartao"
+            data-permissao="localizacao"
+            data-ativa="false"
+        >
+            <div
+                class="permissao-icone"
+                aria-hidden="true"
+            >
+                📍
+            </div>
 
             <div class="permissao-conteudo">
-                <h2>Localização</h2>
-                <p>Permite encontrar e mostrar apenas pessoas que estão aproximadamente até 100 m de ti.</p>
-                <span class="permissao-estado" aria-live="polite">A verificar…</span>
+                <h2>
+                    Localização
+                </h2>
+
+                <p>
+                    Permite encontrar e mostrar apenas pessoas que estão aproximadamente até 100 m de ti.
+                </p>
+
+                <span
+                    class="permissao-estado"
+                    aria-live="polite"
+                >
+                    A verificar…
+                </span>
             </div>
 
             <div class="permissao-acoes">
-                <button type="button" class="permissao-ativar" data-permissao="localizacao">Continuar</button>
-                <button type="button" class="permissao-desativar" data-permissao="localizacao" hidden>Desativar</button>
+                <button
+                    type="button"
+                    class="permissao-ativar"
+                    data-permissao="localizacao"
+                >
+                    Continuar
+                </button>
+
+                <button
+                    type="button"
+                    class="permissao-desativar"
+                    data-permissao="localizacao"
+                    hidden
+                >
+                    Desativar
+                </button>
             </div>
         </article>
 
-        <article class="permissao-cartao" data-permissao="notificacoes" data-ativa="false">
-            <div class="permissao-icone" aria-hidden="true">👋</div>
+        <article
+            class="permissao-cartao"
+            data-permissao="notificacoes"
+            data-ativa="false"
+        >
+            <div
+                class="permissao-icone"
+                aria-hidden="true"
+            >
+                👋
+            </div>
 
             <div class="permissao-conteudo">
-                <h2>Notificações</h2>
-                <p>Permite receber avisos de Heys e mensagens.</p>
-                <span class="permissao-estado" aria-live="polite">A verificar…</span>
+                <h2>
+                    Notificações
+                </h2>
+
+                <p>
+                    Permite receber avisos de Heys e mensagens.
+                </p>
+
+                <span
+                    class="permissao-estado"
+                    aria-live="polite"
+                >
+                    A verificar…
+                </span>
             </div>
 
             <div class="permissao-acoes">
-                <button type="button" class="permissao-ativar" data-permissao="notificacoes">Continuar</button>
-                <button type="button" class="permissao-desativar" data-permissao="notificacoes" hidden>Desativar</button>
+                <button
+                    type="button"
+                    class="permissao-ativar"
+                    data-permissao="notificacoes"
+                >
+                    Continuar
+                </button>
+
+                <button
+                    type="button"
+                    class="permissao-desativar"
+                    data-permissao="notificacoes"
+                    hidden
+                >
+                    Desativar
+                </button>
             </div>
         </article>
     </div>
 
-    <p id="permissoes-erro" role="alert" aria-live="polite"></p>
+    <p
+        id="permissoes-erro"
+        role="alert"
+        aria-live="polite"
+    ></p>
 
     <nav class="anterior-proximo">
         {% if modo_edicao %}
-            <a data-etapa="#editar-perfil" data-sem-validar="true" class="anterior">Voltar à lista</a>
-            <button type="submit" class="proximo guardar-secao">Guardar e sair</button>
+            <a
+                data-etapa="#editar-perfil"
+                data-sem-validar="true"
+                class="anterior"
+            >
+                Voltar à lista
+            </a>
+
+            <button
+                type="submit"
+                class="proximo guardar-secao"
+            >
+                Guardar e sair
+            </button>
         {% else %}
-            <a data-etapa="#fotos" class="anterior">Anterior</a>
+            <a
+                data-etapa="#fotos"
+                class="anterior"
+            >
+                Anterior
+            </a>
 
             <a
                 data-etapa="#palavra-passe"
@@ -565,7 +1156,9 @@
 </div>
 
 <div id="palavra-passe">
-    <h1>{{ modo_edicao ? 'Alterar palavra-passe' : 'Cria a tua palavra-passe' }}</h1>
+    <h1>
+        {{ modo_edicao ? 'Alterar palavra-passe' : 'Cria a tua palavra-passe' }}
+    </h1>
 
     {% if modo_edicao %}
         <p class="password-opcional">
@@ -589,7 +1182,9 @@
     </p>
 
     <p>
-        <label for="confirma-password">Confirma a palavra-passe</label>
+        <label for="confirma-password">
+            Confirma a palavra-passe
+        </label>
 
         <input
             type="password"
@@ -601,13 +1196,23 @@
     </p>
 
     <p id="mostrar-password">
-        <input type="checkbox" name="ver_password" id="ver-password">
-        <label for="ver-password">Mostrar palavra-passe</label>
+        <input
+            type="checkbox"
+            name="ver_password"
+            id="ver-password"
+        >
+
+        <label for="ver-password">
+            Mostrar palavra-passe
+        </label>
     </p>
 
     {% if not modo_edicao %}
         <div class="aceitacao-legal">
-            <label class="aceitacao-legal-opcao" for="aceitou-termos">
+            <label
+                class="aceitacao-legal-opcao"
+                for="aceitou-termos"
+            >
                 <input
                     type="checkbox"
                     name="aceitou_termos"
@@ -618,11 +1223,16 @@
 
                 <span>
                     Li e aceito os
-                    <a href="{{ doc_root }}terms?from=create-account">Termos de Utilização</a>.
+                    <a href="{{ doc_root }}terms?from=create-account">
+                        Termos de Utilização
+                    </a>.
                 </span>
             </label>
 
-            <label class="aceitacao-legal-opcao" for="aceitou-privacidade">
+            <label
+                class="aceitacao-legal-opcao"
+                for="aceitou-privacidade"
+            >
                 <input
                     type="checkbox"
                     name="aceitou_privacidade"
@@ -633,26 +1243,55 @@
 
                 <span>
                     Li a
-                    <a href="{{ doc_root }}privacy?from=create-account">Política de Privacidade</a>.
+                    <a href="{{ doc_root }}privacy?from=create-account">
+                        Política de Privacidade
+                    </a>.
                 </span>
             </label>
 
-            <input type="hidden" name="versao_termos" value="1.0">
-            <input type="hidden" name="versao_privacidade" value="1.0">
+            <input
+                type="hidden"
+                name="versao_termos"
+                value="1.0"
+            >
+
+            <input
+                type="hidden"
+                name="versao_privacidade"
+                value="1.0"
+            >
         </div>
     {% endif %}
 
     <nav class="anterior-proximo">
         {% if modo_edicao %}
-            <a data-etapa="#editar-perfil" data-sem-validar="true" class="anterior">Voltar à lista</a>
+            <a
+                data-etapa="#editar-perfil"
+                data-sem-validar="true"
+                class="anterior"
+            >
+                Voltar à lista
+            </a>
         {% else %}
-            <a data-etapa="#permissoes" class="anterior">Anterior</a>
+            <a
+                data-etapa="#permissoes"
+                class="anterior"
+            >
+                Anterior
+            </a>
         {% endif %}
 
-        <button type="submit" id="criar-conta-submit" class="proximo">
+        <button
+            type="submit"
+            id="criar-conta-submit"
+            class="proximo"
+        >
             {{ modo_edicao ? 'Guardar e sair' : 'Criar conta' }}
         </button>
     </nav>
 
-    <p id="create-account-erro" aria-live="polite"></p>
+    <p
+        id="create-account-erro"
+        aria-live="polite"
+    ></p>
 </div>
