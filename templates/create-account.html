@@ -7,7 +7,7 @@
 {% block styles %}
 <link
     rel="stylesheet"
-    href="{{ doc_root }}estilos/create-account.css?v=12"
+    href="{{ doc_root }}estilos/create-account.css?v=13"
     data-margot-page-style
 >
 
@@ -27,6 +27,32 @@
     rel="stylesheet"
     href="{{ doc_root }}estilos/create-account-legal.css?v=2"
     data-margot-page-style
+>
+
+<!--
+    PRÉ-AQUECIMENTO DO LOGIN
+
+    Se o utilizador regressar ao login, o documento e
+    o respetivo CSS já tiveram oportunidade de entrar
+    na cache.
+-->
+
+<link
+    rel="prefetch"
+    href="{{ doc_root }}login"
+>
+
+<link
+    rel="preload"
+    href="{{ doc_root }}estilos/login.css?v=3"
+    as="style"
+    fetchpriority="low"
+>
+
+<link
+    rel="prefetch"
+    href="{{ doc_root }}js/login.js"
+    as="script"
 >
 {% endblock %}
 
@@ -85,6 +111,27 @@ window.createAccountConfig = {
     csrfToken:
         {{ csrf_token|default('')|json_encode(15)|raw }}
 };
+</script>
+
+<!--
+    Chrome/Chromium pode preparar o login em background.
+
+    Não é prerender:
+    a página não é executada escondida.
+    Estamos apenas a preparar os recursos para uma futura navegação.
+-->
+<script type="speculationrules">
+{
+    "prefetch": [
+        {
+            "source": "list",
+            "urls": [
+                {{ (doc_root ~ 'login')|json_encode|raw }}
+            ],
+            "eagerness": "eager"
+        }
+    ]
+}
 </script>
 
 <script src="{{ doc_root }}js/preferencias.js?v=2"></script>
