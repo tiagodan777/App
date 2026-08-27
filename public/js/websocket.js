@@ -355,57 +355,29 @@
                 return;
             }
 
-            locationWatchStarting = true;
-            locationTrackingStartedAt = Date.now();
+            if (isAndroidNativeApp()) {
+                locationWatchStarting = true;
 
-            var generation = ++locationWatchGeneration;
-
-            nativeGeolocation.watchPosition(
-                getLocationOptions(),
-                function (position, error) {
+                ensureAndroidLocationPermission(
+                    nativeGeolocation
+                ).then(function (granted) {
                     if (
-                        generation !== locationWatchGeneration ||
-                        window.disableLocationTracking
+                        !granted ||
+                        window.disableLocationTracking ||
+                        document.visibilityState !== 'visible'
                     ) {
+                        locationWatchStarting = false;
                         return;
                     }
 
-                    if (error) {
-                        handleLocationError(error);
-                        return;
-                    }
+                    startNativeLocationWatch(nativeGeolocation);
+                });
 
-                    if (position) {
-                        handleLocationSuccess(position);
-                    }
-                }
-            ).then(function (watchId) {
-                if (
-                    generation !== locationWatchGeneration ||
-                    window.disableLocationTracking
-                ) {
-                    return nativeGeolocation.clearWatch({
-                        id: String(watchId)
-                    }).catch(function (error) {
-                        console.warn(
-                            'Não foi possível terminar a localização nativa.',
-                            error
-                        );
-                    });
-                }
+                return;
+            }
 
-                locationWatchId = String(watchId);
-                locationWatchProvider = 'native';
-                locationWatchStarting = false;
-            }).catch(function (error) {
-                if (generation !== locationWatchGeneration) return;
-
-                locationWatchId = null;
-                locationWatchProvider = null;
-                locationWatchStarting = false;
-                handleLocationError(error);
-            });
-
+            locationWatchStarting = true;
+            startNativeLocationWatch(nativeGeolocation);
             return;
         }
 
@@ -436,6 +408,60 @@
         );
     }
 
+    function startNativeLocationWatch(nativeGeolocation) {
+        locationTrackingStartedAt = Date.now();
+
+        var generation = ++locationWatchGeneration;
+
+        nativeGeolocation.watchPosition(
+            getLocationOptions(),
+            function (position, error) {
+                if (
+                    generation !== locationWatchGeneration ||
+                    window.disableLocationTracking
+                ) {
+                    return;
+                }
+
+                if (error) {
+                    handleLocationError(error);
+                    return;
+                }
+
+                if (position) {
+                    handleLocationSuccess(position);
+                }
+            }
+        ).then(function (watchId) {
+            if (
+                generation !== locationWatchGeneration ||
+                window.disableLocationTracking
+            ) {
+                locationWatchStarting = false;
+
+                return nativeGeolocation.clearWatch({
+                    id: String(watchId)
+                }).catch(function (error) {
+                    console.warn(
+                        'Não foi possível terminar a localização nativa.',
+                        error
+                    );
+                });
+            }
+
+            locationWatchId = String(watchId);
+            locationWatchProvider = 'native';
+            locationWatchStarting = false;
+        }).catch(function (error) {
+            if (generation !== locationWatchGeneration) return;
+
+            locationWatchId = null;
+            locationWatchProvider = null;
+            locationWatchStarting = false;
+            handleLocationError(error);
+        });
+    }
+
     function requestCurrentLocation() {
         if (
             window.disableLocationTracking ||
@@ -457,18 +483,29 @@
                 return;
             }
 
+            if (isAndroidNativeApp()) {
+                locationRequestPending = true;
+
+                ensureAndroidLocationPermission(
+                    nativeGeolocation
+                ).then(function (granted) {
+                    if (
+                        !granted ||
+                        window.disableLocationTracking ||
+                        document.visibilityState !== 'visible'
+                    ) {
+                        locationRequestPending = false;
+                        return;
+                    }
+
+                    requestNativeCurrentLocation(nativeGeolocation);
+                });
+
+                return;
+            }
+
             locationRequestPending = true;
-
-            nativeGeolocation.getCurrentPosition(
-                getLocationOptions()
-            ).then(function (position) {
-                locationRequestPending = false;
-                handleLocationSuccess(position);
-            }).catch(function (error) {
-                locationRequestPending = false;
-                handleLocationError(error);
-            });
-
+            requestNativeCurrentLocation(nativeGeolocation);
             return;
         }
 
@@ -494,6 +531,18 @@
         );
     }
 
+    function requestNativeCurrentLocation(nativeGeolocation) {
+        nativeGeolocation.getCurrentPosition(
+            getLocationOptions()
+        ).then(function (position) {
+            locationRequestPending = false;
+            handleLocationSuccess(position);
+        }).catch(function (error) {
+            locationRequestPending = false;
+            handleLocationError(error);
+        });
+    }
+
     function isNativeApp() {
         return Boolean(
             window.Capacitor &&
@@ -502,7 +551,17 @@
         );
     }
 
+    function isAndroidNativeApp() {
+        return Boolean(
+            isNativeApp() &&
+            window.Capacitor &&
+            typeof window.Capacitor.getPlatform === 'function' &&
+            window.Capacitor.getPlatform() === 'android'
+        );
+    }
+
     var nativeGeolocationPlugin = null;
+    var androidLocationPermissionPromise = null;
 
     function getNativeGeolocation() {
         if (!isNativeApp() || !window.Capacitor) {
@@ -528,6 +587,90 @@
         }
 
         return null;
+    }
+
+    function locationPermissionGranted(status) {
+        if (!status || typeof status !== 'object') {
+            return false;
+        }
+
+        return (
+            status.location === 'granted' ||
+            status.coarseLocation === 'granted'
+        );
+    }
+
+    function locationPermissionCanBeRequested(status) {
+        if (!status || typeof status !== 'object') {
+            return true;
+        }
+
+        var locationState = String(status.location || '');
+        var coarseState = String(status.coarseLocation || '');
+
+        return (
+            locationState === 'prompt' ||
+            locationState === 'prompt-with-rationale' ||
+            coarseState === 'prompt' ||
+            coarseState === 'prompt-with-rationale'
+        );
+    }
+
+    function ensureAndroidLocationPermission(nativeGeolocation) {
+        if (!isAndroidNativeApp()) {
+            return Promise.resolve(true);
+        }
+
+        if (androidLocationPermissionPromise) {
+            return androidLocationPermissionPromise;
+        }
+
+        if (
+            !nativeGeolocation ||
+            typeof nativeGeolocation.checkPermissions !== 'function' ||
+            typeof nativeGeolocation.requestPermissions !== 'function'
+        ) {
+            return Promise.resolve(false);
+        }
+
+        androidLocationPermissionPromise =
+            nativeGeolocation.checkPermissions()
+                .then(function (status) {
+                    if (locationPermissionGranted(status)) {
+                        return true;
+                    }
+
+                    if (!locationPermissionCanBeRequested(status)) {
+                        return false;
+                    }
+
+                    return nativeGeolocation.requestPermissions({
+                        permissions: ['location']
+                    }).then(function (requestedStatus) {
+                        return locationPermissionGranted(
+                            requestedStatus
+                        );
+                    });
+                })
+                .then(function (granted) {
+                    androidLocationPermissionPromise = null;
+
+                    if (!granted) {
+                        handleLocationError({
+                            code: 1,
+                            message: 'Location permission denied.'
+                        });
+                    }
+
+                    return granted;
+                })
+                .catch(function (error) {
+                    androidLocationPermissionPromise = null;
+                    handleLocationError(error);
+                    return false;
+                });
+
+        return androidLocationPermissionPromise;
     }
 
     function getLocationOptions() {
