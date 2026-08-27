@@ -17,12 +17,32 @@
         );
     }
 
-    function geolocalizacaoNativa() {
-        var plugins = window.Capacitor && window.Capacitor.Plugins;
+    var geolocalizacaoPlugin = null;
 
-        return aplicacaoNativa() && plugins && plugins.Geolocation
-            ? plugins.Geolocation
-            : null;
+    function geolocalizacaoNativa() {
+        if (!aplicacaoNativa() || !window.Capacitor) {
+            return null;
+        }
+
+        if (geolocalizacaoPlugin) {
+            return geolocalizacaoPlugin;
+        }
+
+        var plugins = window.Capacitor.Plugins || {};
+
+        if (plugins.Geolocation) {
+            geolocalizacaoPlugin = plugins.Geolocation;
+            return geolocalizacaoPlugin;
+        }
+
+        if (typeof window.Capacitor.registerPlugin === 'function') {
+            geolocalizacaoPlugin =
+                window.Capacitor.registerPlugin('Geolocation');
+
+            return geolocalizacaoPlugin;
+        }
+
+        return null;
     }
 
     function notificacoesNativas() {

@@ -502,12 +502,32 @@
         );
     }
 
+    var nativeGeolocationPlugin = null;
+
     function getNativeGeolocation() {
-        if (!isNativeApp()) return null;
+        if (!isNativeApp() || !window.Capacitor) {
+            return null;
+        }
+
+        if (nativeGeolocationPlugin) {
+            return nativeGeolocationPlugin;
+        }
 
         var plugins = window.Capacitor.Plugins || {};
 
-        return plugins.Geolocation || null;
+        if (plugins.Geolocation) {
+            nativeGeolocationPlugin = plugins.Geolocation;
+            return nativeGeolocationPlugin;
+        }
+
+        if (typeof window.Capacitor.registerPlugin === 'function') {
+            nativeGeolocationPlugin =
+                window.Capacitor.registerPlugin('Geolocation');
+
+            return nativeGeolocationPlugin;
+        }
+
+        return null;
     }
 
     function getLocationOptions() {
