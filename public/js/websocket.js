@@ -616,6 +616,53 @@
         );
     }
 
+    function waitForAndroidNotificationPermissionFlow() {
+        if (!isAndroidNativeApp()) {
+            return Promise.resolve();
+        }
+
+        var hasNotificationFlow =
+            Boolean(document.getElementById('abrir-heys')) &&
+            'Notification' in window;
+
+        if (
+            !hasNotificationFlow ||
+            Notification.permission !== 'default' ||
+            window.margotNotificationPermissionFlowCompleted === true
+        ) {
+            return Promise.resolve();
+        }
+
+        return new Promise(function (resolve) {
+            var finished = false;
+
+            var finish = function () {
+                if (finished) return;
+
+                finished = true;
+
+                window.removeEventListener(
+                    'margot:notificacoes-permissao-concluida',
+                    finish
+                );
+
+                resolve();
+            };
+
+            window.addEventListener(
+                'margot:notificacoes-permissao-concluida',
+                finish
+            );
+
+            if (
+                Notification.permission !== 'default' ||
+                window.margotNotificationPermissionFlowCompleted === true
+            ) {
+                finish();
+            }
+        });
+    }
+
     function ensureAndroidLocationPermission(nativeGeolocation) {
         if (!isAndroidNativeApp()) {
             return Promise.resolve(true);
@@ -634,7 +681,10 @@
         }
 
         androidLocationPermissionPromise =
-            nativeGeolocation.checkPermissions()
+            waitForAndroidNotificationPermissionFlow()
+                .then(function () {
+                    return nativeGeolocation.checkPermissions();
+                })
                 .then(function (status) {
                     if (locationPermissionGranted(status)) {
                         return true;

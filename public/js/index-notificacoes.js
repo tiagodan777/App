@@ -29,6 +29,28 @@
         return;
     }
 
+    window.margotNotificationPermissionFlowManaged = true;
+    window.margotNotificationPermissionFlowCompleted =
+        window.disableNotifications === true ||
+        !('Notification' in window) ||
+        Notification.permission !== 'default';
+
+    function concluirFluxoPermissaoNotificacoes() {
+        if (
+            window.margotNotificationPermissionFlowCompleted === true
+        ) {
+            return;
+        }
+
+        window.margotNotificationPermissionFlowCompleted = true;
+
+        window.dispatchEvent(
+            new CustomEvent(
+                'margot:notificacoes-permissao-concluida'
+            )
+        );
+    }
+
     function texto(valor) {
         return String(valor ?? '').trim();
     }
@@ -490,6 +512,7 @@
 
     async function pedirPermissao() {
         if (window.disableNotifications) {
+            concluirFluxoPermissaoNotificacoes();
             return;
         }
 
@@ -498,6 +521,7 @@
             Notification.permission !==
                 'default'
         ) {
+            concluirFluxoPermissaoNotificacoes();
             return;
         }
 
@@ -508,6 +532,8 @@
                 'Não foi possível pedir permissão para notificações.',
                 falha
             );
+        } finally {
+            concluirFluxoPermissaoNotificacoes();
         }
     }
 
@@ -530,13 +556,16 @@
     }
 
     function prepararPedidoPermissao() {
-        if (window.disableNotifications) {
+        if (
+            window.disableNotifications ||
+            !('Notification' in window) ||
+            Notification.permission !== 'default'
+        ) {
+            concluirFluxoPermissaoNotificacoes();
             return;
         }
 
         var pedirUmaVez = function () {
-            pedirPermissao();
-
             document.removeEventListener(
                 'pointerup',
                 pedirUmaVez,
@@ -548,6 +577,8 @@
                 pedirUmaVez,
                 true
             );
+
+            pedirPermissao();
         };
 
         document.addEventListener(
