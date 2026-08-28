@@ -13,7 +13,7 @@ use React\EventLoop\TimerInterface;
 
 class WebSocket implements MessageComponentInterface
 {
-    private const RAIO_MAXIMO_METROS = 40000;
+    private const RAIO_MAXIMO_METROS = 100;
     /* O iOS envia eventos de movimento/visita, não pings exatos por minuto. */
     private const LOCALIZACAO_MAXIMA_IDADE_SEGUNDOS = 180;
     private const LOCALIZACOES_PERSISTIDAS_CACHE_SEGUNDOS = 5;
