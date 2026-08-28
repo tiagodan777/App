@@ -38,7 +38,7 @@
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="location"
-            android:stopWithTask="true" />
+            android:stopWithTask="false" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
