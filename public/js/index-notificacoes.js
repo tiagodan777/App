@@ -1,7 +1,9 @@
 (function (window, document) {
     'use strict';
 
-    var endpoint = window.heysUrl || '/notifications';
+    var endpoint =
+        window.heysUrl ||
+        '/notifications';
 
     var estado = {
         aberto: false,
@@ -12,37 +14,151 @@
         iniciou: false
     };
 
-    var abrir = document.getElementById('abrir-heys');
-    var area = document.getElementById('heys-area');
-    var painel = document.getElementById('heys-painel');
-    var fundo = document.getElementById('heys-fundo');
-    var fechar = document.getElementById('fechar-heys');
-    var lista = document.getElementById('heys-lista');
-    var carregando = document.getElementById('heys-carregando');
-    var vazio = document.getElementById('heys-vazio');
-    var erro = document.getElementById('heys-erro');
-    var contador = document.getElementById('heys-contador');
-    var limparTodos = document.getElementById('limpar-todos-heys');
-    var avisos = document.getElementById('heys-avisos');
+    var abrir =
+        document.getElementById(
+            'abrir-heys'
+        );
 
-    if (!abrir || !area || !painel || !lista) {
+    var area =
+        document.getElementById(
+            'heys-area'
+        );
+
+    var painel =
+        document.getElementById(
+            'heys-painel'
+        );
+
+    var fundo =
+        document.getElementById(
+            'heys-fundo'
+        );
+
+    var fechar =
+        document.getElementById(
+            'fechar-heys'
+        );
+
+    var lista =
+        document.getElementById(
+            'heys-lista'
+        );
+
+    var carregando =
+        document.getElementById(
+            'heys-carregando'
+        );
+
+    var vazio =
+        document.getElementById(
+            'heys-vazio'
+        );
+
+    var erro =
+        document.getElementById(
+            'heys-erro'
+        );
+
+    var contador =
+        document.getElementById(
+            'heys-contador'
+        );
+
+    var limparTodos =
+        document.getElementById(
+            'limpar-todos-heys'
+        );
+
+    var avisos =
+        document.getElementById(
+            'heys-avisos'
+        );
+
+    if (
+        !abrir ||
+        !area ||
+        !painel ||
+        !lista
+    ) {
         return;
     }
 
-    window.margotNotificationPermissionFlowManaged = true;
-    window.margotNotificationPermissionFlowCompleted =
-        window.disableNotifications === true ||
-        !('Notification' in window) ||
-        Notification.permission !== 'default';
+    function notificacoesNativas() {
+        var push =
+            window.MargotPushNotifications;
+
+        if (
+            !push ||
+            typeof push.isNative !==
+                'function' ||
+            typeof push.isAvailable !==
+                'function'
+        ) {
+            return null;
+        }
+
+        if (
+            !push.isNative() ||
+            !push.isAvailable()
+        ) {
+            return null;
+        }
+
+        return push;
+    }
+
+    /*
+     * Na app nativa, push-notifications.js é o único
+     * responsável pela autorização do sistema.
+     *
+     * Na Web, este ficheiro continua a gerir a
+     * Web Notifications API.
+     */
+    if (notificacoesNativas()) {
+        window.margotNotificationPermissionFlowManaged =
+            true;
+
+        if (
+            typeof window
+                .margotNotificationPermissionFlowCompleted !==
+                'boolean'
+        ) {
+            window.margotNotificationPermissionFlowCompleted =
+                false;
+        }
+    } else {
+        window.margotNotificationPermissionFlowManaged =
+            true;
+
+        window.margotNotificationPermissionFlowCompleted =
+            window.disableNotifications === true ||
+            !('Notification' in window) ||
+            Notification.permission !==
+                'default';
+    }
 
     function concluirFluxoPermissaoNotificacoes() {
+        /*
+         * Na app nativa não podemos concluir este fluxo
+         * com base em Notification.permission da WebView.
+         *
+         * push-notifications.js conclui-o apenas depois de
+         * PushNotifications.requestPermissions().
+         */
+        if (notificacoesNativas()) {
+            return;
+        }
+
         if (
-            window.margotNotificationPermissionFlowCompleted === true
+            window
+                .margotNotificationPermissionFlowCompleted ===
+                true
         ) {
             return;
         }
 
-        window.margotNotificationPermissionFlowCompleted = true;
+        window.margotNotificationPermissionFlowCompleted =
+            true;
 
         window.dispatchEvent(
             new CustomEvent(
@@ -52,59 +168,98 @@
     }
 
     function texto(valor) {
-        return String(valor ?? '').trim();
+        return String(
+            valor ?? ''
+        ).trim();
     }
 
     function numero(valor) {
-        var resultado = Number.parseInt(valor, 10);
+        var resultado =
+            Number.parseInt(
+                valor,
+                10
+            );
 
-        return Number.isFinite(resultado) ? resultado : 0;
+        return Number.isFinite(
+            resultado
+        )
+            ? resultado
+            : 0;
     }
 
     function urlFoto(valor) {
-        var caminho = texto(valor);
+        var caminho =
+            texto(valor);
 
         if (!caminho) {
-            caminho = '/imagens/fotos-perfil/default.webp';
+            caminho =
+                '/imagens/fotos-perfil/default.webp';
         }
 
         try {
-            return new URL(caminho, window.location.href).href;
+            return new URL(
+                caminho,
+                window.location.href
+            ).href;
         } catch (falha) {
-            return '/imagens/fotos-perfil/default.webp';
+            return (
+                '/imagens/fotos-perfil/default.webp'
+            );
         }
     }
 
     function urlPerfil(membroId) {
-        var base = texto(
-            window.profileUrl || '/profile'
-        ).replace(/\/+$/, '');
+        var base =
+            texto(
+                window.profileUrl ||
+                '/profile'
+            ).replace(
+                /\/+$/,
+                ''
+            );
 
         return (
             base +
             '/' +
-            encodeURIComponent(texto(membroId))
+            encodeURIComponent(
+                texto(membroId)
+            )
         );
     }
 
-    function aplicarFoto(imagem, caminho) {
-        imagem.onerror = function () {
-            this.onerror = null;
-            this.src = urlFoto(
-                '/imagens/fotos-perfil/default.webp'
-            );
-        };
+    function aplicarFoto(
+        imagem,
+        caminho
+    ) {
+        imagem.onerror =
+            function () {
+                this.onerror =
+                    null;
 
-        imagem.src = urlFoto(caminho);
+                this.src =
+                    urlFoto(
+                        '/imagens/fotos-perfil/default.webp'
+                    );
+            };
+
+        imagem.src =
+            urlFoto(caminho);
     }
 
     function definirContador(valor) {
-        var total = Math.max(0, numero(valor));
+        var total =
+            Math.max(
+                0,
+                numero(valor)
+            );
 
         contador.textContent =
-            total > 99 ? '99+' : String(total);
+            total > 99
+                ? '99+'
+                : String(total);
 
-        contador.hidden = total === 0;
+        contador.hidden =
+            total === 0;
 
         contador.setAttribute(
             'aria-label',
@@ -122,9 +277,13 @@
             return '';
         }
 
-        var normalizada = String(valor)
-            .trim()
-            .replace(' ', 'T');
+        var normalizada =
+            String(valor)
+                .trim()
+                .replace(
+                    ' ',
+                    'T'
+                );
 
         if (
             !/[zZ]|[+-]\d\d:\d\d$/.test(
@@ -134,10 +293,19 @@
             normalizada += 'Z';
         }
 
-        var data = new Date(normalizada);
+        var data =
+            new Date(
+                normalizada
+            );
 
-        if (Number.isNaN(data.getTime())) {
-            return String(valor);
+        if (
+            Number.isNaN(
+                data.getTime()
+            )
+        ) {
+            return String(
+                valor
+            );
         }
 
         return new Intl.DateTimeFormat(
@@ -160,11 +328,16 @@
             return;
         }
 
-        if (mensagem !== undefined) {
-            elemento.textContent = mensagem;
+        if (
+            mensagem !==
+            undefined
+        ) {
+            elemento.textContent =
+                mensagem;
         }
 
-        elemento.hidden = !mostrar;
+        elemento.hidden =
+            !mostrar;
     }
 
     function criarElemento(
@@ -173,84 +346,114 @@
         conteudo
     ) {
         var elemento =
-            document.createElement(nome);
+            document.createElement(
+                nome
+            );
 
         if (classe) {
-            elemento.className = classe;
+            elemento.className =
+                classe;
         }
 
-        if (conteudo !== undefined) {
-            elemento.textContent = conteudo;
+        if (
+            conteudo !==
+            undefined
+        ) {
+            elemento.textContent =
+                conteudo;
         }
 
         return elemento;
     }
 
     function criarItem(item) {
-        var artigo = criarElemento(
-            'article',
-            'hey-item'
-        );
+        var artigo =
+            criarElemento(
+                'article',
+                'hey-item'
+            );
 
         if (
-            item.direcao === 'recebido' &&
+            item.direcao ===
+                'recebido' &&
             !item.lida
         ) {
-            artigo.classList.add('nao-lido');
+            artigo.classList.add(
+                'nao-lido'
+            );
         }
 
         var perfil =
-            urlPerfil(item.outro_membro_id);
+            urlPerfil(
+                item.outro_membro_id
+            );
 
         var nomePessoa =
-            texto(item.outro_nome) || 'Alguém';
+            texto(
+                item.outro_nome
+            ) ||
+            'Alguém';
 
-        var linkFoto = criarElemento(
-            'a',
-            'hey-item-foto-link'
-        );
+        var linkFoto =
+            criarElemento(
+                'a',
+                'hey-item-foto-link'
+            );
 
-        linkFoto.href = perfil;
+        linkFoto.href =
+            perfil;
 
         linkFoto.setAttribute(
             'aria-label',
-            'Abrir perfil de ' + nomePessoa
+            'Abrir perfil de ' +
+                nomePessoa
         );
 
-        var imagem = criarElemento(
-            'img',
-            'hey-item-foto'
-        );
+        var imagem =
+            criarElemento(
+                'img',
+                'hey-item-foto'
+            );
 
         imagem.alt = '';
-        imagem.loading = 'lazy';
+        imagem.loading =
+            'lazy';
 
         aplicarFoto(
             imagem,
             item.outro_foto_url
         );
 
-        linkFoto.appendChild(imagem);
-
-        var corpo = criarElemento(
-            'div',
-            'hey-item-corpo'
+        linkFoto.appendChild(
+            imagem
         );
 
-        var frase = criarElemento(
-            'p',
-            'hey-item-frase'
-        );
+        var corpo =
+            criarElemento(
+                'div',
+                'hey-item-corpo'
+            );
 
-        var linkNome = criarElemento(
-            'a',
-            'hey-item-nome',
-            nomePessoa
-        );
+        var frase =
+            criarElemento(
+                'p',
+                'hey-item-frase'
+            );
 
-        linkNome.href = perfil;
+        var linkNome =
+            criarElemento(
+                'a',
+                'hey-item-nome',
+                nomePessoa
+            );
 
-        if (item.direcao === 'enviado') {
+        linkNome.href =
+            perfil;
+
+        if (
+            item.direcao ===
+            'enviado'
+        ) {
             frase.append(
                 'Enviaste um Hey a ',
                 linkNome,
@@ -263,27 +466,40 @@
             );
         }
 
-        var momento = criarElemento(
-            'time',
-            'hey-item-data',
-            dataLocal(item.criada_em)
+        var momento =
+            criarElemento(
+                'time',
+                'hey-item-data',
+                dataLocal(
+                    item.criada_em
+                )
+            );
+
+        momento.dateTime =
+            texto(
+                item.criada_em
+            );
+
+        corpo.append(
+            frase,
+            momento
         );
 
-        momento.dateTime = texto(
-            item.criada_em
-        );
+        var botaoLimpar =
+            criarElemento(
+                'button',
+                'hey-item-limpar'
+            );
 
-        corpo.append(frase, momento);
-
-        var botaoLimpar = criarElemento(
-            'button',
-            'hey-item-limpar'
-        );
-
-        botaoLimpar.type = 'button';
+        botaoLimpar.type =
+            'button';
 
         botaoLimpar.dataset.notificationId =
-            String(numero(item.id));
+            String(
+                numero(
+                    item.id
+                )
+            );
 
         botaoLimpar.dataset.direction =
             item.direcao;
@@ -311,37 +527,47 @@
         lista.replaceChildren();
 
         var filtradas =
-            estado.notificacoes.filter(
-                function (item) {
-                    return (
-                        item.direcao ===
-                        estado.direcao
-                    );
-                }
-            );
+            estado.notificacoes
+                .filter(
+                    function (
+                        item
+                    ) {
+                        return (
+                            item.direcao ===
+                            estado.direcao
+                        );
+                    }
+                );
 
         mostrarEstado(
             vazio,
-            filtradas.length === 0 &&
-                !estado.carregando
+            filtradas.length ===
+                0 &&
+            !estado.carregando
         );
 
         if (limparTodos) {
             limparTodos.hidden =
-                filtradas.length === 0 ||
+                filtradas.length ===
+                    0 ||
                 estado.carregando;
 
             limparTodos.textContent =
-                estado.direcao === 'enviado'
+                estado.direcao ===
+                    'enviado'
                     ? 'Limpar enviados'
                     : 'Limpar recebidos';
         }
 
-        filtradas.forEach(function (item) {
-            lista.appendChild(
-                criarItem(item)
-            );
-        });
+        filtradas.forEach(
+            function (item) {
+                lista.appendChild(
+                    criarItem(
+                        item
+                    )
+                );
+            }
+        );
     }
 
     function mostrarAviso(opcoes) {
@@ -349,64 +575,91 @@
             return;
         }
 
-        var dados = Object.assign(
-            {
-                titulo: 'Hey',
-                mensagem: '',
-                foto: '',
-                url: '',
-                tipo: 'hey',
-                duracao: 4800
-            },
-            opcoes || {}
-        );
+        var dados =
+            Object.assign(
+                {
+                    titulo: 'Hey',
+                    mensagem: '',
+                    foto: '',
+                    url: '',
+                    tipo: 'hey',
+                    duracao: 4800
+                },
+                opcoes || {}
+            );
 
-        var aviso = criarElemento(
-            dados.url ? 'a' : 'div',
-            'hey-aviso hey-aviso-' +
-                dados.tipo
-        );
+        var aviso =
+            criarElemento(
+                dados.url
+                    ? 'a'
+                    : 'div',
+
+                'hey-aviso hey-aviso-' +
+                    dados.tipo
+            );
 
         if (dados.url) {
-            aviso.href = dados.url;
+            aviso.href =
+                dados.url;
 
             aviso.classList.add(
                 'hey-aviso-link'
             );
 
-            aviso.style.color = 'inherit';
-            aviso.style.textDecoration = 'none';
-            aviso.style.pointerEvents = 'auto';
+            aviso.style.color =
+                'inherit';
+
+            aviso.style.textDecoration =
+                'none';
+
+            aviso.style.pointerEvents =
+                'auto';
         }
 
-        aviso.setAttribute('role', 'status');
+        aviso.setAttribute(
+            'role',
+            'status'
+        );
 
         if (dados.foto) {
-            var foto = criarElemento(
-                'img',
-                'hey-aviso-foto'
+            var foto =
+                criarElemento(
+                    'img',
+                    'hey-aviso-foto'
+                );
+
+            aplicarFoto(
+                foto,
+                dados.foto
             );
 
-            aplicarFoto(foto, dados.foto);
             foto.alt = '';
 
-            aviso.appendChild(foto);
-        } else {
-            var simbolo = criarElemento(
-                'span',
-                'hey-aviso-simbolo',
-                dados.tipo === 'erro'
-                    ? '!'
-                    : '👋'
+            aviso.appendChild(
+                foto
             );
+        } else {
+            var simbolo =
+                criarElemento(
+                    'span',
+                    'hey-aviso-simbolo',
 
-            aviso.appendChild(simbolo);
+                    dados.tipo ===
+                        'erro'
+                        ? '!'
+                        : '👋'
+                );
+
+            aviso.appendChild(
+                simbolo
+            );
         }
 
-        var corpo = criarElemento(
-            'div',
-            'hey-aviso-corpo'
-        );
+        var corpo =
+            criarElemento(
+                'div',
+                'hey-aviso-corpo'
+            );
 
         corpo.append(
             criarElemento(
@@ -414,6 +667,7 @@
                 '',
                 dados.titulo
             ),
+
             criarElemento(
                 'p',
                 '',
@@ -421,22 +675,37 @@
             )
         );
 
-        aviso.appendChild(corpo);
-        avisos.appendChild(aviso);
+        aviso.appendChild(
+            corpo
+        );
+
+        avisos.appendChild(
+            aviso
+        );
 
         window.requestAnimationFrame(
             function () {
-                aviso.classList.add('visivel');
+                aviso.classList.add(
+                    'visivel'
+                );
             }
         );
 
-        window.setTimeout(function () {
-            aviso.classList.remove('visivel');
+        window.setTimeout(
+            function () {
+                aviso.classList.remove(
+                    'visivel'
+                );
 
-            window.setTimeout(function () {
-                aviso.remove();
-            }, 260);
-        }, dados.duracao);
+                window.setTimeout(
+                    function () {
+                        aviso.remove();
+                    },
+                    260
+                );
+            },
+            dados.duracao
+        );
     }
 
     async function mostrarNotificacaoSistema(
@@ -445,7 +714,9 @@
         foto,
         url
     ) {
-        if (window.disableNotifications) {
+        if (
+            window.disableNotifications
+        ) {
             return;
         }
 
@@ -459,28 +730,43 @@
 
         var opcoes = {
             body: mensagem,
-            icon: urlFoto(foto),
-            badge: urlFoto(
-                '/imagens/fotos-perfil/default.webp'
-            ),
+
+            icon:
+                urlFoto(foto),
+
+            badge:
+                urlFoto(
+                    '/imagens/fotos-perfil/default.webp'
+                ),
+
             tag:
                 'hey-recebido-' +
                 Date.now(),
+
             renotify: true,
+
             data: {
-                url: url || window.location.href
+                url:
+                    url ||
+                    window.location.href
             }
         };
 
         try {
-            if ('serviceWorker' in navigator) {
+            if (
+                'serviceWorker' in
+                navigator
+            ) {
                 var registo =
-                    await navigator.serviceWorker.ready;
+                    await navigator
+                        .serviceWorker
+                        .ready;
 
-                await registo.showNotification(
-                    titulo,
-                    opcoes
-                );
+                await registo
+                    .showNotification(
+                        titulo,
+                        opcoes
+                    );
 
                 return;
             }
@@ -491,17 +777,19 @@
                     opcoes
                 );
 
-            notificacao.onclick = function () {
-                window.focus();
+            notificacao.onclick =
+                function () {
+                    window.focus();
 
-                if (url) {
-                    window.location.href = url;
-                } else {
-                    abrirPainel();
-                }
+                    if (url) {
+                        window.location.href =
+                            url;
+                    } else {
+                        abrirPainel();
+                    }
 
-                notificacao.close();
-            };
+                    notificacao.close();
+                };
         } catch (falha) {
             console.warn(
                 'Não foi possível mostrar a notificação do sistema.',
@@ -511,8 +799,32 @@
     }
 
     async function pedirPermissao() {
-        if (window.disableNotifications) {
-            concluirFluxoPermissaoNotificacoes();
+        if (
+            window.disableNotifications
+        ) {
+            if (
+                !notificacoesNativas()
+            ) {
+                concluirFluxoPermissaoNotificacoes();
+            }
+
+            return;
+        }
+
+        var push =
+            notificacoesNativas();
+
+        if (push) {
+            try {
+                await push
+                    .requestPermission();
+            } catch (falha) {
+                console.warn(
+                    'Não foi possível pedir permissão nativa para notificações.',
+                    falha
+                );
+            }
+
             return;
         }
 
@@ -522,11 +834,13 @@
                 'default'
         ) {
             concluirFluxoPermissaoNotificacoes();
+
             return;
         }
 
         try {
-            await Notification.requestPermission();
+            await Notification
+                .requestPermission();
         } catch (falha) {
             console.warn(
                 'Não foi possível pedir permissão para notificações.',
@@ -546,40 +860,60 @@
         }
 
         navigator.serviceWorker
-            .register('/service-worker.js')
-            .catch(function (falha) {
-                console.warn(
-                    'Não foi possível iniciar as notificações da app.',
-                    falha
-                );
-            });
+            .register(
+                '/service-worker.js'
+            )
+            .catch(
+                function (falha) {
+                    console.warn(
+                        'Não foi possível iniciar as notificações da app.',
+                        falha
+                    );
+                }
+            );
     }
 
     function prepararPedidoPermissao() {
+        /*
+         * Na app nativa, push-notifications.js trata
+         * automaticamente PushNotifications.requestPermissions().
+         *
+         * Não devemos pedir também Notification.requestPermission()
+         * dentro da WebView.
+         */
         if (
-            window.disableNotifications ||
-            !('Notification' in window) ||
-            Notification.permission !== 'default'
+            notificacoesNativas()
         ) {
-            concluirFluxoPermissaoNotificacoes();
             return;
         }
 
-        var pedirUmaVez = function () {
-            document.removeEventListener(
-                'pointerup',
-                pedirUmaVez,
-                true
-            );
+        if (
+            window.disableNotifications ||
+            !('Notification' in window) ||
+            Notification.permission !==
+                'default'
+        ) {
+            concluirFluxoPermissaoNotificacoes();
 
-            document.removeEventListener(
-                'keydown',
-                pedirUmaVez,
-                true
-            );
+            return;
+        }
 
-            pedirPermissao();
-        };
+        var pedirUmaVez =
+            function () {
+                document.removeEventListener(
+                    'pointerup',
+                    pedirUmaVez,
+                    true
+                );
+
+                document.removeEventListener(
+                    'keydown',
+                    pedirUmaVez,
+                    true
+                );
+
+                pedirPermissao();
+            };
 
         document.addEventListener(
             'pointerup',
@@ -597,60 +931,84 @@
     async function obterNotificacoes(
         mostrarCarregamento
     ) {
-        if (estado.carregando) {
+        if (
+            estado.carregando
+        ) {
             return;
         }
 
-        estado.carregando = true;
+        estado.carregando =
+            true;
 
-        if (mostrarCarregamento) {
+        if (
+            mostrarCarregamento
+        ) {
             mostrarEstado(
                 carregando,
                 true
             );
         }
 
-        mostrarEstado(erro, false);
+        mostrarEstado(
+            erro,
+            false
+        );
 
         try {
-            var resposta = await fetch(
-                endpoint,
-                {
-                    method: 'GET',
-                    credentials: 'same-origin',
-                    cache: 'no-store',
-                    headers: {
-                        Accept: 'application/json'
+            var resposta =
+                await fetch(
+                    endpoint,
+                    {
+                        method:
+                            'GET',
+
+                        credentials:
+                            'same-origin',
+
+                        cache:
+                            'no-store',
+
+                        headers: {
+                            Accept:
+                                'application/json'
+                        }
                     }
-                }
-            );
+                );
 
             if (!resposta.ok) {
                 var detalhe = '';
 
                 try {
                     var erroHttp =
-                        await resposta.json();
+                        await resposta
+                            .json();
 
-                    detalhe = texto(
-                        erroHttp.message
-                    );
-                } catch (ignorar) {
+                    detalhe =
+                        texto(
+                            erroHttp
+                                .message
+                        );
+                } catch (
+                    ignorar
+                ) {
                     detalhe = '';
                 }
 
                 throw new Error(
                     'Resposta HTTP ' +
-                        resposta.status +
-                        (
-                            detalhe
-                                ? ': ' + detalhe
-                                : ''
-                        )
+                    resposta.status +
+                    (
+                        detalhe
+                            ? ': ' +
+                                detalhe
+                            : ''
+                    )
                 );
             }
 
-            var dados = await resposta.json();
+            var dados =
+                await resposta
+                    .json();
 
             if (!dados.success) {
                 throw new Error(
@@ -668,21 +1026,28 @@
 
             if (estado.iniciou) {
                 recebidas.forEach(
-                    function (item) {
-                        var id = numero(item.id);
+                    function (
+                        item
+                    ) {
+                        var id =
+                            numero(
+                                item.id
+                            );
 
                         if (
                             item.direcao ===
                                 'recebido' &&
                             !item.lida &&
-                            !estado.idsConhecidos.has(
-                                id
-                            )
+                            !estado
+                                .idsConhecidos
+                                .has(id)
                         ) {
                             var nome =
                                 texto(
-                                    item.outro_nome
-                                ) || 'Alguém';
+                                    item
+                                        .outro_nome
+                                ) ||
+                                'Alguém';
 
                             var mensagem =
                                 nome +
@@ -690,25 +1055,33 @@
 
                             var perfil =
                                 urlPerfil(
-                                    item.outro_membro_id
+                                    item
+                                        .outro_membro_id
                                 );
 
                             mostrarAviso({
                                 titulo:
                                     'Recebeste um Hey!',
+
                                 mensagem:
                                     mensagem,
-                                foto: texto(
-                                    item.outro_foto_url
-                                ),
-                                url: perfil
+
+                                foto:
+                                    texto(
+                                        item
+                                            .outro_foto_url
+                                    ),
+
+                                url:
+                                    perfil
                             });
 
                             mostrarNotificacaoSistema(
                                 'Recebeste um Hey!',
                                 mensagem,
                                 texto(
-                                    item.outro_foto_url
+                                    item
+                                        .outro_foto_url
                                 ),
                                 perfil
                             );
@@ -717,15 +1090,24 @@
                 );
             }
 
-            estado.notificacoes = recebidas;
+            estado.notificacoes =
+                recebidas;
 
-            estado.idsConhecidos = new Set(
-                recebidas.map(function (item) {
-                    return numero(item.id);
-                })
-            );
+            estado.idsConhecidos =
+                new Set(
+                    recebidas.map(
+                        function (
+                            item
+                        ) {
+                            return numero(
+                                item.id
+                            );
+                        }
+                    )
+                );
 
-            estado.iniciou = true;
+            estado.iniciou =
+                true;
 
             definirContador(
                 dados.unread_count
@@ -735,9 +1117,13 @@
 
             return true;
         } catch (falha) {
-            console.error(falha);
+            console.error(
+                falha
+            );
 
-            if (estado.aberto) {
+            if (
+                estado.aberto
+            ) {
                 mostrarEstado(
                     erro,
                     true,
@@ -747,7 +1133,8 @@
 
             return false;
         } finally {
-            estado.carregando = false;
+            estado.carregando =
+                false;
 
             mostrarEstado(
                 carregando,
@@ -762,39 +1149,65 @@
         acao,
         valores
     ) {
-        var corpo = new URLSearchParams();
+        var corpo =
+            new URLSearchParams();
 
-        corpo.set('action', acao);
+        corpo.set(
+            'action',
+            acao
+        );
 
         Object.entries(
             valores || {}
-        ).forEach(function (entrada) {
-            corpo.set(
-                entrada[0],
-                String(entrada[1])
-            );
-        });
-
-        var resposta = await fetch(
-            endpoint,
-            {
-                method: 'POST',
-                credentials: 'same-origin',
-                cache: 'no-store',
-                headers: {
-                    Accept: 'application/json',
-                    'Content-Type':
-                        'application/x-www-form-urlencoded;charset=UTF-8'
-                },
-                body: corpo.toString()
+        ).forEach(
+            function (
+                entrada
+            ) {
+                corpo.set(
+                    entrada[0],
+                    String(
+                        entrada[1]
+                    )
+                );
             }
         );
 
-        var dados = null;
+        var resposta =
+            await fetch(
+                endpoint,
+                {
+                    method:
+                        'POST',
+
+                    credentials:
+                        'same-origin',
+
+                    cache:
+                        'no-store',
+
+                    headers: {
+                        Accept:
+                            'application/json',
+
+                        'Content-Type':
+                            'application/x-www-form-urlencoded;charset=UTF-8'
+                    },
+
+                    body:
+                        corpo.toString()
+                }
+            );
+
+        var dados =
+            null;
 
         try {
-            dados = await resposta.json();
-        } catch (ignorar) {
+            dados =
+                await resposta
+                    .json();
+        } catch (
+            ignorar
+        ) {
             dados = null;
         }
 
@@ -804,7 +1217,9 @@
             !dados.success
         ) {
             throw new Error(
-                texto(dados?.message) ||
+                texto(
+                    dados?.message
+                ) ||
                 'Não foi possível concluir a ação.'
             );
         }
@@ -817,33 +1232,44 @@
         direcao,
         botao
     ) {
-        if (notificacaoId <= 0) {
+        if (
+            notificacaoId <= 0
+        ) {
             return;
         }
 
         if (botao) {
-            botao.disabled = true;
+            botao.disabled =
+                true;
         }
 
         try {
-            var dados = await enviarAcao(
-                'hide_one',
-                {
-                    notification_id:
-                        notificacaoId,
-                    direction: direcao
-                }
-            );
+            var dados =
+                await enviarAcao(
+                    'hide_one',
+                    {
+                        notification_id:
+                            notificacaoId,
 
-            estado.notificacoes =
-                estado.notificacoes.filter(
-                    function (item) {
-                        return (
-                            numero(item.id) !==
-                            notificacaoId
-                        );
+                        direction:
+                            direcao
                     }
                 );
+
+            estado.notificacoes =
+                estado.notificacoes
+                    .filter(
+                        function (
+                            item
+                        ) {
+                            return (
+                                numero(
+                                    item.id
+                                ) !==
+                                notificacaoId
+                            );
+                        }
+                    );
 
             definirContador(
                 dados.unread_count
@@ -851,22 +1277,30 @@
 
             renderizar();
         } catch (falha) {
-            console.error(falha);
+            console.error(
+                falha
+            );
 
             mostrarAviso({
                 titulo:
                     'Não foi possível limpar',
+
                 mensagem:
-                    texto(falha.message) ||
+                    texto(
+                        falha.message
+                    ) ||
                     'Tenta novamente.',
-                tipo: 'erro'
+
+                tipo:
+                    'erro'
             });
 
             if (
                 botao &&
                 botao.isConnected
             ) {
-                botao.disabled = false;
+                botao.disabled =
+                    false;
             }
         }
     }
@@ -879,27 +1313,34 @@
             return;
         }
 
-        var direcao = estado.direcao;
+        var direcao =
+            estado.direcao;
 
-        limparTodos.disabled = true;
+        limparTodos.disabled =
+            true;
 
         try {
-            var dados = await enviarAcao(
-                'hide_all',
-                {
-                    direction: direcao
-                }
-            );
-
-            estado.notificacoes =
-                estado.notificacoes.filter(
-                    function (item) {
-                        return (
-                            item.direcao !==
+            var dados =
+                await enviarAcao(
+                    'hide_all',
+                    {
+                        direction:
                             direcao
-                        );
                     }
                 );
+
+            estado.notificacoes =
+                estado.notificacoes
+                    .filter(
+                        function (
+                            item
+                        ) {
+                            return (
+                                item.direcao !==
+                                direcao
+                            );
+                        }
+                    );
 
             definirContador(
                 dados.unread_count
@@ -907,18 +1348,26 @@
 
             renderizar();
         } catch (falha) {
-            console.error(falha);
+            console.error(
+                falha
+            );
 
             mostrarAviso({
                 titulo:
                     'Não foi possível limpar',
+
                 mensagem:
-                    texto(falha.message) ||
+                    texto(
+                        falha.message
+                    ) ||
                     'Tenta novamente.',
-                tipo: 'erro'
+
+                tipo:
+                    'erro'
             });
         } finally {
-            limparTodos.disabled = false;
+            limparTodos.disabled =
+                false;
         }
     }
 
@@ -932,48 +1381,66 @@
                 'mark_all_read'
             );
 
-            var resposta = await fetch(
-                endpoint,
-                {
-                    method: 'POST',
-                    credentials:
-                        'same-origin',
-                    cache: 'no-store',
-                    headers: {
-                        Accept:
-                            'application/json',
-                        'Content-Type':
-                            'application/x-www-form-urlencoded;charset=UTF-8'
-                    },
-                    body: corpo.toString()
-                }
-            );
+            var resposta =
+                await fetch(
+                    endpoint,
+                    {
+                        method:
+                            'POST',
 
-            if (!resposta.ok) {
+                        credentials:
+                            'same-origin',
+
+                        cache:
+                            'no-store',
+
+                        headers: {
+                            Accept:
+                                'application/json',
+
+                            'Content-Type':
+                                'application/x-www-form-urlencoded;charset=UTF-8'
+                        },
+
+                        body:
+                            corpo.toString()
+                    }
+                );
+
+            if (
+                !resposta.ok
+            ) {
                 return;
             }
 
             estado.notificacoes =
-                estado.notificacoes.map(
-                    function (item) {
-                        if (
-                            item.direcao ===
-                            'recebido'
+                estado.notificacoes
+                    .map(
+                        function (
+                            item
                         ) {
-                            return Object.assign(
-                                {},
-                                item,
-                                {
-                                    lida: true
-                                }
-                            );
+                            if (
+                                item.direcao ===
+                                'recebido'
+                            ) {
+                                return Object.assign(
+                                    {},
+                                    item,
+                                    {
+                                        lida:
+                                            true
+                                    }
+                                );
+                            }
+
+                            return item;
                         }
+                    );
 
-                        return item;
-                    }
-                );
+            definirContador(
+                0
+            );
 
-            definirContador(0);
             renderizar();
         } catch (falha) {
             console.warn(
@@ -984,9 +1451,12 @@
     }
 
     function abrirPainel() {
-        estado.aberto = true;
+        estado.aberto =
+            true;
 
-        area.classList.add('aberta');
+        area.classList.add(
+            'aberta'
+        );
 
         area.setAttribute(
             'aria-hidden',
@@ -998,16 +1468,22 @@
             'true'
         );
 
-        document.body.classList.add(
-            'heys-abertos'
-        );
+        document.body
+            .classList.add(
+                'heys-abertos'
+            );
 
         painel.focus({
-            preventScroll: true
+            preventScroll:
+                true
         });
 
-        obterNotificacoes(true).then(
-            function (carregou) {
+        obterNotificacoes(
+            true
+        ).then(
+            function (
+                carregou
+            ) {
                 if (carregou) {
                     marcarComoLidas();
                 }
@@ -1016,9 +1492,12 @@
     }
 
     function fecharPainel() {
-        estado.aberto = false;
+        estado.aberto =
+            false;
 
-        area.classList.remove('aberta');
+        area.classList.remove(
+            'aberta'
+        );
 
         area.setAttribute(
             'aria-hidden',
@@ -1030,61 +1509,86 @@
             'false'
         );
 
-        document.body.classList.remove(
-            'heys-abertos'
-        );
+        document.body
+            .classList.remove(
+                'heys-abertos'
+            );
 
         abrir.focus({
-            preventScroll: true
+            preventScroll:
+                true
         });
     }
 
     function ativarArrastoPainel() {
-        var ativo = false;
-        var horizontal = false;
-        var ponteiroId = null;
-        var inicioX = 0;
-        var inicioY = 0;
-        var atualX = 0;
-        var inicioTempo = 0;
+        var ativo =
+            false;
+
+        var horizontal =
+            false;
+
+        var ponteiroId =
+            null;
+
+        var inicioX =
+            0;
+
+        var inicioY =
+            0;
+
+        var atualX =
+            0;
+
+        var inicioTempo =
+            0;
 
         function limparEstilos() {
-            painel.classList.remove(
-                'a-arrastar'
-            );
+            painel.classList
+                .remove(
+                    'a-arrastar'
+                );
 
-            painel.style.removeProperty(
-                'transition'
-            );
-
-            painel.style.removeProperty(
-                'transform'
-            );
-
-            if (fundo) {
-                fundo.style.removeProperty(
+            painel.style
+                .removeProperty(
                     'transition'
                 );
 
-                fundo.style.removeProperty(
-                    'opacity'
+            painel.style
+                .removeProperty(
+                    'transform'
                 );
+
+            if (fundo) {
+                fundo.style
+                    .removeProperty(
+                        'transition'
+                    );
+
+                fundo.style
+                    .removeProperty(
+                        'opacity'
+                    );
             }
         }
 
         function libertarPonteiro() {
             if (
-                !painel.releasePointerCapture ||
-                ponteiroId === null
+                !painel
+                    .releasePointerCapture ||
+                ponteiroId ===
+                    null
             ) {
                 return;
             }
 
             try {
-                painel.releasePointerCapture(
-                    ponteiroId
-                );
-            } catch (falha) {
+                painel
+                    .releasePointerCapture(
+                        ponteiroId
+                    );
+            } catch (
+                falha
+            ) {
                 /*
                  * O navegador pode já ter
                  * libertado o ponteiro.
@@ -1092,37 +1596,51 @@
             }
         }
 
-        function terminarArrasto(evento) {
+        function terminarArrasto(
+            evento
+        ) {
             if (
                 !ativo ||
-                evento.pointerId !== ponteiroId
+                evento.pointerId !==
+                    ponteiroId
             ) {
                 return;
             }
 
             var distancia =
-                atualX - inicioX;
+                atualX -
+                inicioX;
 
-            var duracao = Math.max(
-                1,
-                Date.now() - inicioTempo
-            );
+            var duracao =
+                Math.max(
+                    1,
+                    Date.now() -
+                        inicioTempo
+                );
 
             var velocidade =
-                distancia / duracao;
+                distancia /
+                duracao;
 
             var deveFechar =
                 horizontal &&
                 (
-                    distancia < -90 ||
-                    velocidade < -0.55
+                    distancia <
+                        -90 ||
+                    velocidade <
+                        -0.55
                 );
 
             libertarPonteiro();
 
-            ativo = false;
-            horizontal = false;
-            ponteiroId = null;
+            ativo =
+                false;
+
+            horizontal =
+                false;
+
+            ponteiroId =
+                null;
 
             painel.style.transition =
                 'transform 220ms cubic-bezier(.4,0,1,1)';
@@ -1137,16 +1655,23 @@
                     'opacity 220ms ease';
 
                 fundo.style.opacity =
-                    deveFechar ? '0' : '1';
+                    deveFechar
+                        ? '0'
+                        : '1';
             }
 
-            window.setTimeout(function () {
-                if (deveFechar) {
-                    fecharPainel();
-                }
+            window.setTimeout(
+                function () {
+                    if (
+                        deveFechar
+                    ) {
+                        fecharPainel();
+                    }
 
-                limparEstilos();
-            }, 220);
+                    limparEstilos();
+                },
+                220
+            );
         }
 
         painel.addEventListener(
@@ -1154,25 +1679,39 @@
             function (evento) {
                 if (
                     !estado.aberto ||
-                    evento.button > 0
+                    evento.button >
+                        0
                 ) {
                     return;
                 }
 
                 if (
-                    evento.target.closest(
-                        'a, button, input, textarea, select, label'
-                    )
+                    evento.target
+                        .closest(
+                            'a, button, input, textarea, select, label'
+                        )
                 ) {
                     return;
                 }
 
-                ativo = true;
-                horizontal = false;
-                ponteiroId = evento.pointerId;
-                inicioX = atualX = evento.clientX;
-                inicioY = evento.clientY;
-                inicioTempo = Date.now();
+                ativo =
+                    true;
+
+                horizontal =
+                    false;
+
+                ponteiroId =
+                    evento.pointerId;
+
+                inicioX =
+                    atualX =
+                    evento.clientX;
+
+                inicioY =
+                    evento.clientY;
+
+                inicioTempo =
+                    Date.now();
             }
         );
 
@@ -1181,39 +1720,58 @@
             function (evento) {
                 if (
                     !ativo ||
-                    evento.pointerId !== ponteiroId
+                    evento.pointerId !==
+                        ponteiroId
                 ) {
                     return;
                 }
 
                 var distanciaX =
-                    evento.clientX - inicioX;
+                    evento.clientX -
+                    inicioX;
 
                 var distanciaY =
-                    evento.clientY - inicioY;
+                    evento.clientY -
+                    inicioY;
 
                 if (!horizontal) {
                     if (
-                        Math.abs(distanciaX) < 8 &&
-                        Math.abs(distanciaY) < 8
+                        Math.abs(
+                            distanciaX
+                        ) <
+                            8 &&
+                        Math.abs(
+                            distanciaY
+                        ) <
+                            8
                     ) {
                         return;
                     }
 
                     if (
-                        Math.abs(distanciaY) >=
-                        Math.abs(distanciaX)
+                        Math.abs(
+                            distanciaY
+                        ) >=
+                        Math.abs(
+                            distanciaX
+                        )
                     ) {
-                        ativo = false;
-                        ponteiroId = null;
+                        ativo =
+                            false;
+
+                        ponteiroId =
+                            null;
+
                         return;
                     }
 
-                    horizontal = true;
+                    horizontal =
+                        true;
 
-                    painel.classList.add(
-                        'a-arrastar'
-                    );
+                    painel.classList
+                        .add(
+                            'a-arrastar'
+                        );
 
                     painel.style.transition =
                         'none';
@@ -1224,13 +1782,17 @@
                     }
 
                     if (
-                        painel.setPointerCapture
+                        painel
+                            .setPointerCapture
                     ) {
                         try {
-                            painel.setPointerCapture(
-                                evento.pointerId
-                            );
-                        } catch (falha) {
+                            painel
+                                .setPointerCapture(
+                                    evento.pointerId
+                                );
+                        } catch (
+                            falha
+                        ) {
                             /*
                              * Alguns Safari recusam
                              * a captura do ponteiro.
@@ -1239,16 +1801,23 @@
                     }
                 }
 
-                atualX = evento.clientX;
+                atualX =
+                    evento.clientX;
 
                 var deslocamento =
-                    Math.min(0, distanciaX);
+                    Math.min(
+                        0,
+                        distanciaX
+                    );
 
-                var progresso = Math.min(
-                    1,
-                    Math.abs(deslocamento) /
+                var progresso =
+                    Math.min(
+                        1,
+                        Math.abs(
+                            deslocamento
+                        ) /
                         painel.offsetWidth
-                );
+                    );
 
                 painel.style.transform =
                     'translateX(' +
@@ -1257,7 +1826,10 @@
 
                 if (fundo) {
                     fundo.style.opacity =
-                        String(1 - progresso);
+                        String(
+                            1 -
+                            progresso
+                        );
                 }
 
                 evento.preventDefault();
@@ -1276,10 +1848,12 @@
         );
     }
 
-    function selecionarDirecao(botao) {
+    function selecionarDirecao(
+        botao
+    ) {
         estado.direcao =
             botao.dataset.direcao ===
-            'enviado'
+                'enviado'
                 ? 'enviado'
                 : 'recebido';
 
@@ -1287,20 +1861,28 @@
             .querySelectorAll(
                 '.heys-separadores [role="tab"]'
             )
-            .forEach(function (separador) {
-                var ativo =
-                    separador === botao;
+            .forEach(
+                function (
+                    separador
+                ) {
+                    var ativo =
+                        separador ===
+                        botao;
 
-                separador.classList.toggle(
-                    'ativo',
-                    ativo
-                );
+                    separador.classList
+                        .toggle(
+                            'ativo',
+                            ativo
+                        );
 
-                separador.setAttribute(
-                    'aria-selected',
-                    String(ativo)
-                );
-            });
+                    separador.setAttribute(
+                        'aria-selected',
+                        String(
+                            ativo
+                        )
+                    );
+                }
+            );
 
         renderizar();
     }
@@ -1319,18 +1901,23 @@
             'touchstart',
             'touchmove',
             'touchend'
-        ].forEach(function (tipo) {
-            elemento.addEventListener(
-                tipo,
-                function (evento) {
-                    evento.stopPropagation();
-                },
-                {
-                    passive:
-                        tipo !== 'touchmove'
-                }
-            );
-        });
+        ].forEach(
+            function (tipo) {
+                elemento.addEventListener(
+                    tipo,
+                    function (
+                        evento
+                    ) {
+                        evento.stopPropagation();
+                    },
+                    {
+                        passive:
+                            tipo !==
+                            'touchmove'
+                    }
+                );
+            }
+        );
     }
 
     abrir.addEventListener(
@@ -1356,7 +1943,8 @@
         'keydown',
         function (evento) {
             if (
-                evento.key === 'Escape' &&
+                evento.key ===
+                    'Escape' &&
                 estado.aberto
             ) {
                 fecharPainel();
@@ -1368,35 +1956,44 @@
         .querySelectorAll(
             '.heys-separadores [role="tab"]'
         )
-        .forEach(function (botao) {
-            botao.addEventListener(
-                'click',
-                function () {
-                    selecionarDirecao(
-                        botao
-                    );
-                }
-            );
-        });
+        .forEach(
+            function (botao) {
+                botao.addEventListener(
+                    'click',
+                    function () {
+                        selecionarDirecao(
+                            botao
+                        );
+                    }
+                );
+            }
+        );
 
     lista.addEventListener(
         'click',
         function (evento) {
-            var origem = evento.target;
+            var origem =
+                evento.target;
 
             if (
-                !(origem instanceof Element)
+                !(
+                    origem instanceof
+                    Element
+                )
             ) {
                 return;
             }
 
-            var botao = origem.closest(
-                '.hey-item-limpar'
-            );
+            var botao =
+                origem.closest(
+                    '.hey-item-limpar'
+                );
 
             if (
                 !botao ||
-                !lista.contains(botao)
+                !lista.contains(
+                    botao
+                )
             ) {
                 return;
             }
@@ -1406,12 +2003,16 @@
 
             limparUmHey(
                 numero(
-                    botao.dataset.notificationId
+                    botao.dataset
+                        .notificationId
                 ),
-                botao.dataset.direction ===
+
+                botao.dataset
+                    .direction ===
                     'enviado'
                     ? 'enviado'
                     : 'recebido',
+
                 botao
             );
         }
@@ -1432,66 +2033,95 @@
     window.addEventListener(
         'app:hey-recebido',
         function (evento) {
-            var dados = evento.detail || {};
-            var id = numero(
-                dados.notification_id
-            );
+            var dados =
+                evento.detail || {};
+
+            var id =
+                numero(
+                    dados
+                        .notification_id
+                );
 
             if (
                 id > 0 &&
-                estado.idsConhecidos.has(id)
+                estado.idsConhecidos
+                    .has(id)
             ) {
                 return;
             }
 
             if (id > 0) {
-                estado.idsConhecidos.add(id);
+                estado.idsConhecidos
+                    .add(id);
             }
 
             var nome =
-                texto(dados.from_name) ||
+                texto(
+                    dados.from_name
+                ) ||
                 'Alguém';
 
             var mensagem =
-                nome + ' enviou-te um Hey.';
+                nome +
+                ' enviou-te um Hey.';
 
             var perfil =
                 urlPerfil(
-                    dados.from_member_id
+                    dados
+                        .from_member_id
                 );
 
             mostrarAviso({
-                titulo: 'Recebeste um Hey!',
-                mensagem: mensagem,
-                foto: texto(
-                    dados.from_photo
-                ),
-                url: perfil
+                titulo:
+                    'Recebeste um Hey!',
+
+                mensagem:
+                    mensagem,
+
+                foto:
+                    texto(
+                        dados
+                            .from_photo
+                    ),
+
+                url:
+                    perfil
             });
 
             mostrarNotificacaoSistema(
                 'Recebeste um Hey!',
                 mensagem,
-                texto(dados.from_photo),
+                texto(
+                    dados
+                        .from_photo
+                ),
                 perfil
             );
 
             definirContador(
                 numero(
-                    contador.textContent
-                ) + 1
+                    contador
+                        .textContent
+                ) +
+                1
             );
 
-            window.setTimeout(function () {
-                obterNotificacoes(false);
-            }, 250);
+            window.setTimeout(
+                function () {
+                    obterNotificacoes(
+                        false
+                    );
+                },
+                250
+            );
         }
     );
 
     window.addEventListener(
         'app:hey-enviado',
         function (evento) {
-            var dados = evento.detail || {};
+            var dados =
+                evento.detail || {};
 
             var miniMenu =
                 document.querySelector(
@@ -1500,7 +2130,8 @@
 
             var nome =
                 texto(
-                    dados.destinatario_nome
+                    dados
+                        .destinatario_nome
                 ) ||
                 texto(
                     miniMenu
@@ -1513,7 +2144,8 @@
 
             var foto =
                 texto(
-                    dados.destinatario_foto
+                    dados
+                        .destinatario_foto
                 ) ||
                 texto(
                     miniMenu
@@ -1531,19 +2163,34 @@
                 );
 
             mostrarAviso({
-                titulo: 'Hey enviado',
+                titulo:
+                    'Hey enviado',
+
                 mensagem:
-                    texto(dados.message) ||
+                    texto(
+                        dados.message
+                    ) ||
                     nome +
-                        ' recebeu o teu Hey.',
-                foto: foto,
-                tipo: 'sucesso',
-                duracao: 2600
+                    ' recebeu o teu Hey.',
+
+                foto:
+                    foto,
+
+                tipo:
+                    'sucesso',
+
+                duracao:
+                    2600
             });
 
-            window.setTimeout(function () {
-                obterNotificacoes(false);
-            }, 250);
+            window.setTimeout(
+                function () {
+                    obterNotificacoes(
+                        false
+                    );
+                },
+                250
+            );
         }
     );
 
@@ -1553,47 +2200,82 @@
             mostrarAviso({
                 titulo:
                     'Não foi possível enviar',
+
                 mensagem:
                     texto(
-                        evento.detail?.message
+                        evento.detail
+                            ?.message
                     ) ||
                     'Tenta novamente.',
-                tipo: 'erro'
+
+                tipo:
+                    'erro'
             });
         }
     );
 
     ativarArrastoPainel();
 
-    bloquearGestosDoMapa(abrir);
-    bloquearGestosDoMapa(area);
-    bloquearGestosDoMapa(painel);
+    bloquearGestosDoMapa(
+        abrir
+    );
+
+    bloquearGestosDoMapa(
+        area
+    );
+
+    bloquearGestosDoMapa(
+        painel
+    );
 
     window.mostrarMensagemTemporaria =
-        function (mensagem, tipo) {
-            var eErro = tipo === 'erro';
+        function (
+            mensagem,
+            tipo
+        ) {
+            var eErro =
+                tipo ===
+                'erro';
 
             mostrarAviso({
-                titulo: eErro
-                    ? 'Não foi possível'
-                    : 'Tudo certo',
-                mensagem: texto(mensagem),
-                tipo: eErro
-                    ? 'erro'
-                    : 'sucesso',
-                duracao: eErro
-                    ? 4200
-                    : 2600
+                titulo:
+                    eErro
+                        ? 'Não foi possível'
+                        : 'Tudo certo',
+
+                mensagem:
+                    texto(
+                        mensagem
+                    ),
+
+                tipo:
+                    eErro
+                        ? 'erro'
+                        : 'sucesso',
+
+                duracao:
+                    eErro
+                        ? 4200
+                        : 2600
             });
         };
 
     registarServiceWorker();
     prepararPedidoPermissao();
-    obterNotificacoes(false);
+    obterNotificacoes(
+        false
+    );
 
-    window.setInterval(function () {
-        if (!document.hidden) {
-            obterNotificacoes(false);
-        }
-    }, 10000);
+    window.setInterval(
+        function () {
+            if (
+                !document.hidden
+            ) {
+                obterNotificacoes(
+                    false
+                );
+            }
+        },
+        10000
+    );
 })(window, document);

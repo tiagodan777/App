@@ -1,13 +1,17 @@
 (function () {
     'use strict';
 
-    if (window.__margotBackgroundLocationLoaded) {
+    if (
+        window.__margotBackgroundLocationLoaded
+    ) {
         return;
     }
 
-    window.__margotBackgroundLocationLoaded = true;
+    window.__margotBackgroundLocationLoaded =
+        true;
 
-    var capacitor = window.Capacitor;
+    var capacitor =
+        window.Capacitor;
 
     var plugin =
         capacitor &&
@@ -200,7 +204,8 @@
     ) {
         if (
             !estado ||
-            typeof estado !== 'object'
+            typeof estado !==
+                'object'
         ) {
             return false;
         }
@@ -213,15 +218,32 @@
         );
     }
 
+    /*
+     * Android:
+     *
+     * Não usamos Notification.permission da WebView para
+     * decidir se a autorização de notificações terminou.
+     *
+     * push-notifications.js é carregado primeiro e gere
+     * POST_NOTIFICATIONS através do plugin nativo.
+     *
+     * Só avançamos para LOCATION depois de esse fluxo
+     * emitir margot:notificacoes-permissao-concluida.
+     */
     function aguardarPermissaoNotificacoesAndroid() {
+        if (!androidNativo()) {
+            return Promise.resolve();
+        }
+
         if (
-            !androidNativo() ||
             window
                 .margotNotificationPermissionFlowManaged !==
-                true ||
-            !('Notification' in window) ||
-            Notification.permission !==
-                'default' ||
+                true
+        ) {
+            return Promise.resolve();
+        }
+
+        if (
             window
                 .margotNotificationPermissionFlowCompleted ===
                 true
@@ -231,7 +253,8 @@
 
         return new Promise(
             function (resolve) {
-                var terminou = false;
+                var terminou =
+                    false;
 
                 var concluir =
                     function () {
@@ -239,7 +262,8 @@
                             return;
                         }
 
-                        terminou = true;
+                        terminou =
+                            true;
 
                         window.removeEventListener(
                             'margot:notificacoes-permissao-concluida',
@@ -255,8 +279,6 @@
                 );
 
                 if (
-                    Notification.permission !==
-                        'default' ||
                     window
                         .margotNotificationPermissionFlowCompleted ===
                         true
@@ -281,10 +303,12 @@
                 {
                     detail: {
                         granted:
-                            granted === true,
+                            granted ===
+                            true,
 
                         status:
-                            estado || null
+                            estado ||
+                            null
                     }
                 }
             )
@@ -292,10 +316,15 @@
     }
 
     function garantirPermissaoLocalizacaoAndroid() {
-        if (!androidNativo()) {
+        if (
+            !androidNativo()
+        ) {
             return Promise.resolve({
-                granted: true,
-                status: null
+                granted:
+                    true,
+
+                status:
+                    null
             });
         }
 
@@ -321,94 +350,114 @@
                 'function'
         ) {
             return Promise.resolve({
-                granted: false,
-                status: null
+                granted:
+                    false,
+
+                status:
+                    null
             });
         }
 
         androidLocationPermissionPromise =
             aguardarPermissaoNotificacoesAndroid()
-                .then(function () {
-                    return (
-                        geolocationPlugin
-                            .checkPermissions()
-                    );
-                })
-                .then(function (estado) {
-                    if (
-                        permissaoLocalizacaoConcedida(
-                            estado
-                        )
+                .then(
+                    function () {
+                        return (
+                            geolocationPlugin
+                                .checkPermissions()
+                        );
+                    }
+                )
+                .then(
+                    function (
+                        estado
                     ) {
+                        if (
+                            permissaoLocalizacaoConcedida(
+                                estado
+                            )
+                        ) {
+                            return {
+                                granted:
+                                    true,
+
+                                status:
+                                    estado
+                            };
+                        }
+
+                        return (
+                            geolocationPlugin
+                                .requestPermissions({
+                                    permissions: [
+                                        'location'
+                                    ]
+                                })
+                                .then(
+                                    function (
+                                        novoEstado
+                                    ) {
+                                        return {
+                                            granted:
+                                                permissaoLocalizacaoConcedida(
+                                                    novoEstado
+                                                ),
+
+                                            status:
+                                                novoEstado
+                                        };
+                                    }
+                                )
+                        );
+                    }
+                )
+                .then(
+                    function (
+                        resultado
+                    ) {
+                        androidLocationPermissionPromise =
+                            null;
+
+                        publicarPermissaoLocalizacaoAndroid(
+                            resultado
+                                .granted,
+
+                            resultado
+                                .status
+                        );
+
+                        return resultado;
+                    }
+                )
+                .catch(
+                    function (
+                        erro
+                    ) {
+                        androidLocationPermissionPromise =
+                            null;
+
+                        console.error(
+                            'Não foi possível pedir a permissão de localização:',
+                            erro
+                        );
+
+                        publicarPermissaoLocalizacaoAndroid(
+                            false,
+                            null
+                        );
+
                         return {
                             granted:
-                                true,
+                                false,
 
                             status:
-                                estado
+                                null,
+
+                            error:
+                                erro
                         };
                     }
-
-                    return (
-                        geolocationPlugin
-                            .requestPermissions({
-                                permissions: [
-                                    'location'
-                                ]
-                            })
-                            .then(
-                                function (
-                                    novoEstado
-                                ) {
-                                    return {
-                                        granted:
-                                            permissaoLocalizacaoConcedida(
-                                                novoEstado
-                                            ),
-
-                                        status:
-                                            novoEstado
-                                    };
-                                }
-                            )
-                    );
-                })
-                .then(function (resultado) {
-                    androidLocationPermissionPromise =
-                        null;
-
-                    publicarPermissaoLocalizacaoAndroid(
-                        resultado.granted,
-                        resultado.status
-                    );
-
-                    return resultado;
-                })
-                .catch(function (erro) {
-                    androidLocationPermissionPromise =
-                        null;
-
-                    console.error(
-                        'Não foi possível pedir a permissão de localização:',
-                        erro
-                    );
-
-                    publicarPermissaoLocalizacaoAndroid(
-                        false,
-                        null
-                    );
-
-                    return {
-                        granted:
-                            false,
-
-                        status:
-                            null,
-
-                        error:
-                            erro
-                    };
-                });
+                );
 
         return (
             androidLocationPermissionPromise
@@ -479,7 +528,8 @@
 
         try {
             dados =
-                await resposta.json();
+                await resposta
+                    .json();
         } catch (
             erro
         ) {
@@ -605,8 +655,9 @@
         visivel
     ) {
         if (
-            typeof plugin.setVisibility !==
-            'function'
+            typeof plugin
+                .setVisibility !==
+                'function'
         ) {
             return estadoAtual();
         }
@@ -1000,12 +1051,17 @@
                     }
 
                     /*
-                     * Android:
-                     * primeiro termina o pedido de notificações,
-                     * depois pedimos a localização aqui.
+                     * ANDROID:
                      *
-                     * Este passa a ser o único fluxo responsável
-                     * por pedir a autorização de localização.
+                     * 1. push-notifications.js pede
+                     *    POST_NOTIFICATIONS.
+                     *
+                     * 2. Esperamos a resposta.
+                     *
+                     * 3. Só depois pedimos LOCATION.
+                     *
+                     * No iOS este bloco não é executado,
+                     * portanto o fluxo existente fica intacto.
                      */
                     if (
                         androidNativo() &&

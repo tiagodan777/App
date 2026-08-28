@@ -10,9 +10,11 @@
     var PENDING_DESTINATION_MAX_AGE = 10 * 60 * 1000;
     var CHANNEL_ID = 'margot_activity';
     var UUID_PATTERN = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
+
     var plugin = null;
     var listenersPromise = null;
     var registrationPromise = null;
+    var permissionRequestPromise = null;
 
     function isNative() {
         return Boolean(
@@ -26,7 +28,9 @@
         if (!isNative()) return 'web';
 
         if (typeof window.Capacitor.getPlatform === 'function') {
-            return String(window.Capacitor.getPlatform() || '').toLowerCase();
+            return String(
+                window.Capacitor.getPlatform() || ''
+            ).toLowerCase();
         }
 
         return /iphone|ipad|ipod/i.test(navigator.userAgent)
@@ -42,34 +46,110 @@
 
         if (plugins.PushNotifications) {
             plugin = plugins.PushNotifications;
-        } else if (typeof window.Capacitor.registerPlugin === 'function') {
-            plugin = window.Capacitor.registerPlugin('PushNotifications');
+        } else if (
+            typeof window.Capacitor.registerPlugin === 'function'
+        ) {
+            plugin = window.Capacitor.registerPlugin(
+                'PushNotifications'
+            );
         }
 
         return plugin;
     }
 
+    function iniciarFluxoPermissaoNotificacoesNativas() {
+        if (!pushPlugin()) {
+            return false;
+        }
+
+        window.margotNotificationPermissionFlowManaged = true;
+
+        if (
+            window.margotNotificationPermissionFlowCompleted !== true
+        ) {
+            window.margotNotificationPermissionFlowCompleted = false;
+        }
+
+        return true;
+    }
+
+    function concluirFluxoPermissaoNotificacoesNativas(estado) {
+        if (!isNative()) {
+            return;
+        }
+
+        window.margotNotificationPermissionFlowManaged = true;
+        window.margotNotificationPermissionState =
+            String(estado || 'unknown');
+
+        if (
+            window.margotNotificationPermissionFlowCompleted === true
+        ) {
+            return;
+        }
+
+        window.margotNotificationPermissionFlowCompleted = true;
+
+        window.dispatchEvent(
+            new CustomEvent(
+                'margot:notificacoes-permissao-concluida',
+                {
+                    detail: {
+                        state:
+                            window.margotNotificationPermissionState
+                    }
+                }
+            )
+        );
+    }
+
+    /*
+     * É importante marcar o fluxo como gerido de forma síncrona.
+     *
+     * push-notifications.js é carregado antes de
+     * background-location.js. Assim, quando o segundo script
+     * arrancar, já sabe que deve esperar pela autorização
+     * nativa de notificações antes de pedir localização.
+     */
+    iniciarFluxoPermissaoNotificacoesNativas();
+
     function newUuid() {
-        if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+        if (
+            window.crypto &&
+            typeof window.crypto.randomUUID === 'function'
+        ) {
             return window.crypto.randomUUID().toLowerCase();
         }
 
         var bytes = new Uint8Array(16);
 
-        if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
+        if (
+            window.crypto &&
+            typeof window.crypto.getRandomValues === 'function'
+        ) {
             window.crypto.getRandomValues(bytes);
         } else {
-            for (var index = 0; index < bytes.length; index += 1) {
-                bytes[index] = Math.floor(Math.random() * 256);
+            for (
+                var index = 0;
+                index < bytes.length;
+                index += 1
+            ) {
+                bytes[index] =
+                    Math.floor(Math.random() * 256);
             }
         }
 
         bytes[6] = (bytes[6] & 15) | 64;
         bytes[8] = (bytes[8] & 63) | 128;
 
-        var hex = Array.from(bytes, function (byte) {
-            return byte.toString(16).padStart(2, '0');
-        }).join('');
+        var hex = Array.from(
+            bytes,
+            function (byte) {
+                return byte
+                    .toString(16)
+                    .padStart(2, '0');
+            }
+        ).join('');
 
         return [
             hex.slice(0, 8),
@@ -84,7 +164,11 @@
         var value = '';
 
         try {
-            value = String(window.localStorage.getItem(INSTALLATION_KEY) || '');
+            value = String(
+                window.localStorage.getItem(
+                    INSTALLATION_KEY
+                ) || ''
+            );
         } catch (error) {
             value = '';
         }
@@ -96,9 +180,15 @@
         value = newUuid();
 
         try {
-            window.localStorage.setItem(INSTALLATION_KEY, value);
+            window.localStorage.setItem(
+                INSTALLATION_KEY,
+                value
+            );
         } catch (error) {
-            console.warn('Não foi possível guardar o identificador push.', error);
+            console.warn(
+                'Não foi possível guardar o identificador push.',
+                error
+            );
         }
 
         return value;
@@ -106,7 +196,11 @@
 
     function storedToken() {
         try {
-            return String(window.localStorage.getItem(TOKEN_KEY) || '').trim();
+            return String(
+                window.localStorage.getItem(
+                    TOKEN_KEY
+                ) || ''
+            ).trim();
         } catch (error) {
             return '';
         }
@@ -114,44 +208,87 @@
 
     function storeToken(token) {
         try {
-            window.localStorage.setItem(TOKEN_KEY, token);
+            window.localStorage.setItem(
+                TOKEN_KEY,
+                token
+            );
         } catch (error) {
-            console.warn('Não foi possível guardar o token push.', error);
+            console.warn(
+                'Não foi possível guardar o token push.',
+                error
+            );
         }
     }
 
     function clearLocalRegistration() {
         try {
-            window.localStorage.removeItem(TOKEN_KEY);
-            window.localStorage.removeItem(SYNC_KEY);
-            window.localStorage.removeItem(PENDING_DESTINATION_KEY);
+            window.localStorage.removeItem(
+                TOKEN_KEY
+            );
+
+            window.localStorage.removeItem(
+                SYNC_KEY
+            );
+
+            window.localStorage.removeItem(
+                PENDING_DESTINATION_KEY
+            );
         } catch (error) {
-            console.warn('Não foi possível limpar o registo push local.', error);
+            console.warn(
+                'Não foi possível limpar o registo push local.',
+                error
+            );
         }
     }
 
     function notificationsWanted() {
-        var preferences = window.MargotPreferencias;
+        var preferences =
+            window.MargotPreferencias;
 
-        return !preferences || preferences.obter('notificacoes') !== false;
+        return (
+            !preferences ||
+            preferences.obter('notificacoes') !== false
+        );
     }
 
     function memberId() {
-        return String(window.membroId || '').trim();
+        return String(
+            window.membroId || ''
+        ).trim();
     }
 
     function validInternalDestination(value) {
-        var destination = String(value || '').trim();
+        var destination =
+            String(value || '').trim();
 
-        if (!destination || destination.indexOf('//') === 0) return '';
+        if (
+            !destination ||
+            destination.indexOf('//') === 0
+        ) {
+            return '';
+        }
 
         try {
-            var url = new URL(destination, window.location.origin);
+            var url = new URL(
+                destination,
+                window.location.origin
+            );
 
-            if (url.origin !== window.location.origin) return '';
+            if (
+                url.origin !== window.location.origin
+            ) {
+                return '';
+            }
 
-            var uuid = '[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}';
-            var allowed = new RegExp('^/(?:profile|messages)/' + uuid + '/?$', 'i');
+            var uuid =
+                '[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}';
+
+            var allowed = new RegExp(
+                '^/(?:profile|messages)/' +
+                    uuid +
+                    '/?$',
+                'i'
+            );
 
             return allowed.test(url.pathname)
                 ? url.pathname + url.search
@@ -162,20 +299,27 @@
     }
 
     function actionDestination(action) {
-        var notification = action && action.notification
-            ? action.notification
-            : {};
-        var data = notification.data && typeof notification.data === 'object'
-            ? notification.data
-            : {};
+        var notification =
+            action && action.notification
+                ? action.notification
+                : {};
+
+        var data =
+            notification.data &&
+            typeof notification.data === 'object'
+                ? notification.data
+                : {};
 
         return validInternalDestination(
-            data.url || notification.url || ''
+            data.url ||
+            notification.url ||
+            ''
         );
     }
 
     function openNotification(action) {
-        var destination = actionDestination(action);
+        var destination =
+            actionDestination(action);
 
         if (!destination) return;
 
@@ -188,17 +332,30 @@
                 })
             );
         } catch (error) {
-            console.warn('Não foi possível guardar o destino do push.', error);
+            console.warn(
+                'Não foi possível guardar o destino do push.',
+                error
+            );
         }
 
         if (memberId()) {
-            window.location.assign(destination);
+            window.location.assign(
+                destination
+            );
+
             return;
         }
 
-        if (!/^\/login\/?$/i.test(window.location.pathname)) {
+        if (
+            !/^\/login\/?$/i.test(
+                window.location.pathname
+            )
+        ) {
             window.location.assign(
-                String(window.loginUrl || '/login/')
+                String(
+                    window.loginUrl ||
+                    '/login/'
+                )
             );
         }
     }
@@ -210,123 +367,231 @@
 
         try {
             pending = JSON.parse(
-                window.localStorage.getItem(PENDING_DESTINATION_KEY) || 'null'
+                window.localStorage.getItem(
+                    PENDING_DESTINATION_KEY
+                ) || 'null'
             );
         } catch (error) {
             pending = null;
         }
 
-        var destination = validInternalDestination(
-            pending && pending.destination
-        );
-        var savedAt = Number(pending && pending.at || 0);
+        var destination =
+            validInternalDestination(
+                pending &&
+                pending.destination
+            );
+
+        var savedAt =
+            Number(
+                pending &&
+                pending.at ||
+                0
+            );
 
         if (
             !destination ||
-            savedAt < Date.now() - PENDING_DESTINATION_MAX_AGE
+            savedAt <
+                Date.now() -
+                PENDING_DESTINATION_MAX_AGE
         ) {
             try {
-                window.localStorage.removeItem(PENDING_DESTINATION_KEY);
+                window.localStorage.removeItem(
+                    PENDING_DESTINATION_KEY
+                );
             } catch (error) {
-                /* O registo expirado não interfere com a navegação. */
+                /*
+                 * O registo expirado não interfere
+                 * com a navegação.
+                 */
             }
 
             return false;
         }
 
-        var current = window.location.pathname + window.location.search;
+        var current =
+            window.location.pathname +
+            window.location.search;
 
         if (current === destination) {
             try {
-                window.localStorage.removeItem(PENDING_DESTINATION_KEY);
+                window.localStorage.removeItem(
+                    PENDING_DESTINATION_KEY
+                );
             } catch (error) {
-                /* O destino já abriu corretamente. */
+                /*
+                 * O destino já abriu corretamente.
+                 */
             }
 
             return false;
         }
 
         try {
-            window.localStorage.removeItem(PENDING_DESTINATION_KEY);
+            window.localStorage.removeItem(
+                PENDING_DESTINATION_KEY
+            );
         } catch (error) {
-            /* A validação anterior mantém o destino seguro. */
+            /*
+             * A validação anterior mantém
+             * o destino seguro.
+             */
         }
 
-        window.location.assign(destination);
+        window.location.assign(
+            destination
+        );
+
         return true;
     }
 
     function notificationData(notification) {
-        return notification &&
+        return (
+            notification &&
             notification.data &&
             typeof notification.data === 'object'
-            ? notification.data
-            : {};
+                ? notification.data
+                : {}
+        );
     }
 
-    function dispatchForegroundNotification(notification) {
-        var data = notificationData(notification);
-        var type = String(data.type || '').toLowerCase();
+    function dispatchForegroundNotification(
+        notification
+    ) {
+        var data =
+            notificationData(notification);
 
-        window.dispatchEvent(new CustomEvent('margot:push-recebido', {
-            detail: notification || {}
-        }));
+        var type =
+            String(
+                data.type || ''
+            ).toLowerCase();
+
+        window.dispatchEvent(
+            new CustomEvent(
+                'margot:push-recebido',
+                {
+                    detail:
+                        notification || {}
+                }
+            )
+        );
 
         if (type === 'hey') {
-            window.dispatchEvent(new CustomEvent('app:hey-recebido', {
-                detail: data
-            }));
+            window.dispatchEvent(
+                new CustomEvent(
+                    'app:hey-recebido',
+                    {
+                        detail: data
+                    }
+                )
+            );
+
             return;
         }
 
         if (type === 'message') {
-            window.dispatchEvent(new CustomEvent(
-                'app:chat-push-recebido',
-                { detail: data }
-            ));
+            window.dispatchEvent(
+                new CustomEvent(
+                    'app:chat-push-recebido',
+                    {
+                        detail: data
+                    }
+                )
+            );
         }
     }
 
-    async function postDevice(action, token) {
-        var endpoint = String(window.pushDeviceUrl || '/push-device/');
-        var currentMemberId = memberId();
+    async function postDevice(
+        action,
+        token
+    ) {
+        var endpoint =
+            String(
+                window.pushDeviceUrl ||
+                '/push-device/'
+            );
 
-        if (!currentMemberId) return false;
+        var currentMemberId =
+            memberId();
 
-        var response = await window.fetch(endpoint, {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify({
-                action: action,
-                platform: platform(),
-                token: token || '',
-                installation_id: installationId()
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error('O servidor recusou o registo push (' + response.status + ').');
+        if (!currentMemberId) {
+            return false;
         }
 
-        var result = await response.json();
-        return result && result.success === true;
+        var response =
+            await window.fetch(
+                endpoint,
+                {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type':
+                            'application/json',
+
+                        'X-Requested-With':
+                            'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        action: action,
+                        platform:
+                            platform(),
+                        token:
+                            token || '',
+                        installation_id:
+                            installationId()
+                    })
+                }
+            );
+
+        if (!response.ok) {
+            throw new Error(
+                'O servidor recusou o registo push (' +
+                response.status +
+                ').'
+            );
+        }
+
+        var result =
+            await response.json();
+
+        return (
+            result &&
+            result.success === true
+        );
     }
 
     function syncFingerprint(token) {
-        return memberId() + ':' + platform() + ':' + token;
+        return (
+            memberId() +
+            ':' +
+            platform() +
+            ':' +
+            token
+        );
     }
 
     function wasRecentlySynced(token) {
         try {
-            var value = JSON.parse(window.localStorage.getItem(SYNC_KEY) || '{}');
+            var value =
+                JSON.parse(
+                    window.localStorage.getItem(
+                        SYNC_KEY
+                    ) || '{}'
+                );
 
-            return value &&
-                value.fingerprint === syncFingerprint(token) &&
-                Number(value.at || 0) > Date.now() - (60 * 60 * 1000);
+            return (
+                value &&
+                value.fingerprint ===
+                    syncFingerprint(token) &&
+                Number(
+                    value.at || 0
+                ) >
+                    Date.now() -
+                    (
+                        60 *
+                        60 *
+                        1000
+                    )
+            );
         } catch (error) {
             return false;
         }
@@ -334,36 +599,77 @@
 
     function markSynced(token) {
         try {
-            window.localStorage.setItem(SYNC_KEY, JSON.stringify({
-                fingerprint: syncFingerprint(token),
-                at: Date.now()
-            }));
+            window.localStorage.setItem(
+                SYNC_KEY,
+                JSON.stringify({
+                    fingerprint:
+                        syncFingerprint(token),
+
+                    at:
+                        Date.now()
+                })
+            );
         } catch (error) {
-            console.warn('Não foi possível guardar o estado push.', error);
+            console.warn(
+                'Não foi possível guardar o estado push.',
+                error
+            );
         }
     }
 
-    async function syncToken(token, force) {
-        token = String(token || '').trim();
+    async function syncToken(
+        token,
+        force
+    ) {
+        token =
+            String(
+                token || ''
+            ).trim();
 
-        if (!token || !memberId() || !notificationsWanted()) return false;
-        if (!force && wasRecentlySynced(token)) return true;
+        if (
+            !token ||
+            !memberId() ||
+            !notificationsWanted()
+        ) {
+            return false;
+        }
 
-        var success = await postDevice('register', token);
+        if (
+            !force &&
+            wasRecentlySynced(token)
+        ) {
+            return true;
+        }
 
-        if (success) markSynced(token);
+        var success =
+            await postDevice(
+                'register',
+                token
+            );
+
+        if (success) {
+            markSynced(token);
+        }
+
         return success;
     }
 
-    async function prepareAndroidChannel(push) {
-        if (platform() !== 'android' || typeof push.createChannel !== 'function') {
+    async function prepareAndroidChannel(
+        push
+    ) {
+        if (
+            platform() !== 'android' ||
+            typeof push.createChannel !==
+                'function'
+        ) {
             return;
         }
 
         await push.createChannel({
             id: CHANNEL_ID,
             name: 'Atividade da Margot',
-            description: 'Heys e novas mensagens',
+            description:
+                'Heys e novas mensagens',
             importance: 4,
             visibility: 1,
             vibration: true
@@ -371,128 +677,303 @@
     }
 
     async function prepareListeners(push) {
-        if (listenersPromise) return listenersPromise;
+        if (listenersPromise) {
+            return listenersPromise;
+        }
 
-        listenersPromise = (async function () {
-            await push.addListener('registration', function (result) {
-                var token = String(result && result.value || '').trim();
+        listenersPromise =
+            (async function () {
+                await push.addListener(
+                    'registration',
+                    function (result) {
+                        var token =
+                            String(
+                                result &&
+                                result.value ||
+                                ''
+                            ).trim();
 
-                if (!token) return;
-                storeToken(token);
+                        if (!token) {
+                            return;
+                        }
 
-                syncToken(token, true).catch(function (error) {
-                    console.warn('Não foi possível sincronizar o token push.', error);
-                });
-            });
+                        storeToken(token);
 
-            await push.addListener('registrationError', function (error) {
-                console.warn(
-                    'O sistema não conseguiu registar as notificações push.',
-                    error
+                        syncToken(
+                            token,
+                            true
+                        ).catch(
+                            function (error) {
+                                console.warn(
+                                    'Não foi possível sincronizar o token push.',
+                                    error
+                                );
+                            }
+                        );
+                    }
                 );
-            });
 
-            await push.addListener(
-                'pushNotificationReceived',
-                dispatchForegroundNotification
-            );
+                await push.addListener(
+                    'registrationError',
+                    function (error) {
+                        console.warn(
+                            'O sistema não conseguiu registar as notificações push.',
+                            error
+                        );
+                    }
+                );
 
-            await push.addListener(
-                'pushNotificationActionPerformed',
-                openNotification
-            );
-        })().catch(function (error) {
-            listenersPromise = null;
-            throw error;
-        });
+                await push.addListener(
+                    'pushNotificationReceived',
+                    dispatchForegroundNotification
+                );
+
+                await push.addListener(
+                    'pushNotificationActionPerformed',
+                    openNotification
+                );
+            })()
+                .catch(
+                    function (error) {
+                        listenersPromise =
+                            null;
+
+                        throw error;
+                    }
+                );
 
         return listenersPromise;
     }
 
     async function permissionState() {
-        var push = pushPlugin();
+        var push =
+            pushPlugin();
 
-        if (!push) return isNative() ? 'unsupported' : 'web';
+        if (!push) {
+            return isNative()
+                ? 'unsupported'
+                : 'web';
+        }
 
         try {
-            var permissions = await push.checkPermissions();
-            return String(permissions && permissions.receive || 'prompt');
+            var permissions =
+                await push
+                    .checkPermissions();
+
+            return String(
+                permissions &&
+                permissions.receive ||
+                'prompt'
+            );
         } catch (error) {
             return 'unknown';
         }
     }
 
     async function requestPermission() {
-        var push = pushPlugin();
-
-        if (!push) return 'unsupported';
-
-        await prepareListeners(push);
-        var permissions = await push.checkPermissions();
-        var state = String(permissions && permissions.receive || 'prompt');
-
-        if (state !== 'granted') {
-            permissions = await push.requestPermissions();
-            state = String(permissions && permissions.receive || 'denied');
+        if (
+            permissionRequestPromise
+        ) {
+            return (
+                permissionRequestPromise
+            );
         }
 
-        if (state === 'granted') {
-            await prepareAndroidChannel(push);
-            await push.register();
+        var push =
+            pushPlugin();
+
+        if (!push) {
+            concluirFluxoPermissaoNotificacoesNativas(
+                'unsupported'
+            );
+
+            return 'unsupported';
         }
 
-        return state;
+        iniciarFluxoPermissaoNotificacoesNativas();
+
+        var estadoFinal =
+            'unknown';
+
+        permissionRequestPromise =
+            (async function () {
+                await prepareListeners(
+                    push
+                );
+
+                var permissions =
+                    await push
+                        .checkPermissions();
+
+                var state =
+                    String(
+                        permissions &&
+                        permissions.receive ||
+                        'prompt'
+                    );
+
+                if (
+                    state === 'prompt' ||
+                    state ===
+                        'prompt-with-rationale'
+                ) {
+                    permissions =
+                        await push
+                            .requestPermissions();
+
+                    state =
+                        String(
+                            permissions &&
+                            permissions.receive ||
+                            'denied'
+                        );
+                }
+
+                if (
+                    state === 'granted'
+                ) {
+                    await prepareAndroidChannel(
+                        push
+                    );
+
+                    await push.register();
+                }
+
+                estadoFinal =
+                    state;
+
+                return state;
+            })()
+                .catch(
+                    function (error) {
+                        estadoFinal =
+                            'unknown';
+
+                        throw error;
+                    }
+                )
+                .finally(
+                    function () {
+                        permissionRequestPromise =
+                            null;
+
+                        concluirFluxoPermissaoNotificacoesNativas(
+                            estadoFinal
+                        );
+                    }
+                );
+
+        return (
+            permissionRequestPromise
+        );
     }
 
     async function register() {
-        if (registrationPromise) return registrationPromise;
+        if (registrationPromise) {
+            return registrationPromise;
+        }
 
-        registrationPromise = (async function () {
-            var push = pushPlugin();
+        registrationPromise =
+            (async function () {
+                var push =
+                    pushPlugin();
 
-            if (!push || !notificationsWanted()) return false;
+                if (
+                    !push ||
+                    !notificationsWanted()
+                ) {
+                    return false;
+                }
 
-            await prepareListeners(push);
-            var state = await permissionState();
+                await prepareListeners(
+                    push
+                );
 
-            if (state !== 'granted') return false;
+                var state =
+                    await permissionState();
 
-            await prepareAndroidChannel(push);
+                if (
+                    state !== 'granted'
+                ) {
+                    return false;
+                }
 
-            var token = storedToken();
-            if (token) await syncToken(token, false);
+                await prepareAndroidChannel(
+                    push
+                );
 
-            await push.register();
-            return true;
-        })().catch(function (error) {
-            console.warn('Não foi possível iniciar as notificações push.', error);
-            return false;
-        }).finally(function () {
-            registrationPromise = null;
-        });
+                var token =
+                    storedToken();
+
+                if (token) {
+                    await syncToken(
+                        token,
+                        false
+                    );
+                }
+
+                await push.register();
+
+                return true;
+            })()
+                .catch(
+                    function (error) {
+                        console.warn(
+                            'Não foi possível iniciar as notificações push.',
+                            error
+                        );
+
+                        return false;
+                    }
+                )
+                .finally(
+                    function () {
+                        registrationPromise =
+                            null;
+                    }
+                );
 
         return registrationPromise;
     }
 
     async function unregister() {
-        var push = pushPlugin();
-        var token = storedToken();
+        var push =
+            pushPlugin();
+
+        var token =
+            storedToken();
 
         try {
             if (memberId()) {
-                await postDevice('unregister', token);
+                await postDevice(
+                    'unregister',
+                    token
+                );
             }
         } catch (error) {
-            console.warn('Não foi possível remover o dispositivo no servidor.', error);
+            console.warn(
+                'Não foi possível remover o dispositivo no servidor.',
+                error
+            );
         }
 
         try {
-            if (push && typeof push.unregister === 'function') {
+            if (
+                push &&
+                typeof push.unregister ===
+                    'function'
+            ) {
                 await push.unregister();
             }
 
-            if (push && typeof push.removeAllDeliveredNotifications === 'function') {
-                await push.removeAllDeliveredNotifications();
+            if (
+                push &&
+                typeof push
+                    .removeAllDeliveredNotifications ===
+                    'function'
+            ) {
+                await push
+                    .removeAllDeliveredNotifications();
             }
         } finally {
             clearLocalRegistration();
@@ -502,54 +983,145 @@
     }
 
     window.MargotPushNotifications = {
-        isNative: isNative,
-        isAvailable: function () { return Boolean(pushPlugin()); },
-        permissionState: permissionState,
-        requestPermission: requestPermission,
-        register: register,
-        unregister: unregister
+        isNative:
+            isNative,
+
+        isAvailable:
+            function () {
+                return Boolean(
+                    pushPlugin()
+                );
+            },
+
+        permissionState:
+            permissionState,
+
+        requestPermission:
+            requestPermission,
+
+        register:
+            register,
+
+        unregister:
+            unregister
     };
 
     async function initialize() {
-        var push = pushPlugin();
+        var push =
+            pushPlugin();
 
-        if (push) {
-            try {
-                await prepareListeners(push);
-            } catch (error) {
-                console.warn(
-                    'Não foi possível preparar as notificações push.',
-                    error
+        if (!push) {
+            if (isNative()) {
+                concluirFluxoPermissaoNotificacoesNativas(
+                    'unsupported'
                 );
             }
+
+            return;
         }
 
-        if (redirectPendingDestination()) return;
+        iniciarFluxoPermissaoNotificacoesNativas();
 
-        if (memberId() && notificationsWanted()) {
-        var state = await permissionState();
+        try {
+            await prepareListeners(
+                push
+            );
 
-        if (state === 'prompt' || state === 'prompt-with-rationale') {
-            await requestPermission();
-        } else if (state === 'granted') {
-            await register();
+            if (
+                redirectPendingDestination()
+            ) {
+                concluirFluxoPermissaoNotificacoesNativas(
+                    'redirect'
+                );
+
+                return;
+            }
+
+            var state =
+                await permissionState();
+
+            if (
+                memberId() &&
+                notificationsWanted()
+            ) {
+                if (
+                    state === 'prompt' ||
+                    state ===
+                        'prompt-with-rationale'
+                ) {
+                    state =
+                        await requestPermission();
+                } else if (
+                    state === 'granted'
+                ) {
+                    await register();
+
+                    concluirFluxoPermissaoNotificacoesNativas(
+                        state
+                    );
+                } else {
+                    concluirFluxoPermissaoNotificacoesNativas(
+                        state
+                    );
+                }
+            } else {
+                concluirFluxoPermissaoNotificacoesNativas(
+                    state
+                );
+            }
+        } catch (error) {
+            console.warn(
+                'Não foi possível preparar as notificações push.',
+                error
+            );
+
+            concluirFluxoPermissaoNotificacoesNativas(
+                'unknown'
+            );
         }
     }
-    }
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initialize, { once: true });
+    if (
+        document.readyState ===
+        'loading'
+    ) {
+        document.addEventListener(
+            'DOMContentLoaded',
+            initialize,
+            {
+                once: true
+            }
+        );
     } else {
         initialize();
     }
 
-    window.addEventListener('margot:preferencias-alteradas', function (event) {
-        var preferences = event.detail || {};
+    window.addEventListener(
+        'margot:preferencias-alteradas',
+        function (event) {
+            var preferences =
+                event.detail || {};
 
-        if (preferences.notificacoes === true) {
-            register();
-        } else if (preferences.notificacoes === false && memberId()) {
-            unregister();
+            if (
+                preferences.notificacoes ===
+                true
+            ) {
+                requestPermission()
+                    .catch(
+                        function (error) {
+                            console.warn(
+                                'Não foi possível ativar as notificações push.',
+                                error
+                            );
+                        }
+                    );
+            } else if (
+                preferences.notificacoes ===
+                    false &&
+                memberId()
+            ) {
+                unregister();
+            }
         }
-    });
+    );
 })(window, document);
