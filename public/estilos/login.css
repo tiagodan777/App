@@ -5,13 +5,24 @@
 );
 
 main {
-    width: 100vw;
-    height: 50vh;
+    width: 100%;
+    height: auto;
+
+    padding:
+        clamp(
+            56px,
+            9vh,
+            96px
+        )
+        0
+        0;
+
+    box-sizing: border-box;
 
     display: flex;
     flex-flow: column nowrap;
 
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
 }
 
@@ -19,9 +30,11 @@ main > form {
     width: 85%;
     max-width: 520px;
 
-    height: 50%;
+    height: auto;
 
-    margin-top: 0%;
+    margin: 0;
+
+    box-sizing: border-box;
 
     display: flex;
     flex-flow: column nowrap;
@@ -176,11 +189,18 @@ aside {
     height: auto;
 
     margin:
-        15vh
+        24px
         auto
-        0;
+        max(
+            24px,
+            env(
+                safe-area-inset-bottom
+            )
+        );
 
     padding: 10px;
+
+    box-sizing: border-box;
 
     border:
         1px solid
@@ -306,12 +326,12 @@ main > form > input[type="submit"]:focus-visible {
 }
 
 @media (max-height: 740px) {
-    main > form {
-        margin-top: -8%;
+    main {
+        padding-top: 36px;
     }
 
     aside {
-        margin-top: 12vh;
+        margin-top: 20px;
     }
 }
 
