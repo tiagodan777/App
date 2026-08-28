@@ -29,6 +29,29 @@
             );
     }
 
+    var geolocationPlugin =
+        capacitor &&
+        capacitor.Plugins
+            ? capacitor
+                .Plugins
+                .Geolocation
+            : null;
+
+    if (
+        !geolocationPlugin &&
+        capacitor &&
+        typeof capacitor.registerPlugin ===
+            'function'
+    ) {
+        geolocationPlugin =
+            capacitor.registerPlugin(
+                'Geolocation'
+            );
+    }
+
+    var androidLocationPermissionPromise =
+        null;
+
     function plataformaAtual() {
         if (
             capacitor &&
@@ -162,6 +185,234 @@
         }
 
         return true;
+    }
+
+    function androidNativo() {
+        return (
+            plataformaNativa() &&
+            plataformaAtual() ===
+                'android'
+        );
+    }
+
+    function permissaoLocalizacaoConcedida(
+        estado
+    ) {
+        if (
+            !estado ||
+            typeof estado !== 'object'
+        ) {
+            return false;
+        }
+
+        return (
+            estado.location ===
+                'granted' ||
+            estado.coarseLocation ===
+                'granted'
+        );
+    }
+
+    function aguardarPermissaoNotificacoesAndroid() {
+        if (
+            !androidNativo() ||
+            window
+                .margotNotificationPermissionFlowManaged !==
+                true ||
+            !('Notification' in window) ||
+            Notification.permission !==
+                'default' ||
+            window
+                .margotNotificationPermissionFlowCompleted ===
+                true
+        ) {
+            return Promise.resolve();
+        }
+
+        return new Promise(
+            function (resolve) {
+                var terminou = false;
+
+                var concluir =
+                    function () {
+                        if (terminou) {
+                            return;
+                        }
+
+                        terminou = true;
+
+                        window.removeEventListener(
+                            'margot:notificacoes-permissao-concluida',
+                            concluir
+                        );
+
+                        resolve();
+                    };
+
+                window.addEventListener(
+                    'margot:notificacoes-permissao-concluida',
+                    concluir
+                );
+
+                if (
+                    Notification.permission !==
+                        'default' ||
+                    window
+                        .margotNotificationPermissionFlowCompleted ===
+                        true
+                ) {
+                    concluir();
+                }
+            }
+        );
+    }
+
+    function publicarPermissaoLocalizacaoAndroid(
+        granted,
+        estado
+    ) {
+        window
+            .margotAndroidLocationPermissionFlowCompleted =
+            true;
+
+        window.dispatchEvent(
+            new CustomEvent(
+                'margot:localizacao-permissao-concluida',
+                {
+                    detail: {
+                        granted:
+                            granted === true,
+
+                        status:
+                            estado || null
+                    }
+                }
+            )
+        );
+    }
+
+    function garantirPermissaoLocalizacaoAndroid() {
+        if (!androidNativo()) {
+            return Promise.resolve({
+                granted: true,
+                status: null
+            });
+        }
+
+        window
+            .margotAndroidLocationPermissionFlowManaged =
+            true;
+
+        if (
+            androidLocationPermissionPromise
+        ) {
+            return (
+                androidLocationPermissionPromise
+            );
+        }
+
+        if (
+            !geolocationPlugin ||
+            typeof geolocationPlugin
+                .checkPermissions !==
+                'function' ||
+            typeof geolocationPlugin
+                .requestPermissions !==
+                'function'
+        ) {
+            return Promise.resolve({
+                granted: false,
+                status: null
+            });
+        }
+
+        androidLocationPermissionPromise =
+            aguardarPermissaoNotificacoesAndroid()
+                .then(function () {
+                    return (
+                        geolocationPlugin
+                            .checkPermissions()
+                    );
+                })
+                .then(function (estado) {
+                    if (
+                        permissaoLocalizacaoConcedida(
+                            estado
+                        )
+                    ) {
+                        return {
+                            granted:
+                                true,
+
+                            status:
+                                estado
+                        };
+                    }
+
+                    return (
+                        geolocationPlugin
+                            .requestPermissions({
+                                permissions: [
+                                    'location'
+                                ]
+                            })
+                            .then(
+                                function (
+                                    novoEstado
+                                ) {
+                                    return {
+                                        granted:
+                                            permissaoLocalizacaoConcedida(
+                                                novoEstado
+                                            ),
+
+                                        status:
+                                            novoEstado
+                                    };
+                                }
+                            )
+                    );
+                })
+                .then(function (resultado) {
+                    androidLocationPermissionPromise =
+                        null;
+
+                    publicarPermissaoLocalizacaoAndroid(
+                        resultado.granted,
+                        resultado.status
+                    );
+
+                    return resultado;
+                })
+                .catch(function (erro) {
+                    androidLocationPermissionPromise =
+                        null;
+
+                    console.error(
+                        'Não foi possível pedir a permissão de localização:',
+                        erro
+                    );
+
+                    publicarPermissaoLocalizacaoAndroid(
+                        false,
+                        null
+                    );
+
+                    return {
+                        granted:
+                            false,
+
+                        status:
+                            null,
+
+                        error:
+                            erro
+                    };
+                });
+
+        return (
+            androidLocationPermissionPromise
+        );
     }
 
     function obterTokenCsrf() {
@@ -746,6 +997,33 @@
                         !localizacaoPermitida()
                     ) {
                         return parar();
+                    }
+
+                    /*
+                     * Android:
+                     * primeiro termina o pedido de notificações,
+                     * depois pedimos a localização aqui.
+                     *
+                     * Este passa a ser o único fluxo responsável
+                     * por pedir a autorização de localização.
+                     */
+                    if (
+                        androidNativo() &&
+                        presencaVisivel()
+                    ) {
+                        var permissaoAndroid =
+                            await garantirPermissaoLocalizacaoAndroid();
+
+                        if (
+                            !permissaoAndroid
+                                .granted
+                        ) {
+                            mostrarAvisoDefinicoes(
+                                !!forcarAviso
+                            );
+
+                            return estadoAtual();
+                        }
                     }
 
                     var estado =
