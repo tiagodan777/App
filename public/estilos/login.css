@@ -325,6 +325,20 @@ main > form > input[type="submit"]:focus-visible {
         2px;
 }
 
+/*
+ * iPhones altos, como o iPhone 16 Pro Max:
+ * baixa ligeiramente todo o bloco de autenticação
+ * para aproveitar melhor o espaço vertical.
+ *
+ * O compatibility mode do iPad fica fora desta regra,
+ * preservando o layout já validado no iPad Air 11".
+ */
+@media (max-width: 480px) and (min-height: 900px) {
+    main {
+        padding-top: 140px;
+    }
+}
+
 @media (max-height: 740px) {
     main {
         padding-top: 36px;
