@@ -7,7 +7,8 @@
       "namespace": "android_app",
       "package_name": "com.margot.app",
       "sha256_cert_fingerprints": [
-        "3F:DB:AB:A0:D8:BA:6C:51:40:C5:87:06:40:06:09:E8:CD:BB:D6:2D:C7:4B:E7:44:C8:70:37:F3:B6:7B:5C:29"
+        "3F:DB:AB:A0:D8:BA:6C:51:40:C5:87:06:40:06:09:E8:CD:BB:D6:2D:C7:4B:E7:44:C8:70:37:F3:B6:7B:5C:29",
+        "8C:88:51:28:1F:6F:DE:32:61:E7:AC:E3:4D:8E:1C:8D:4E:84:73:88:6E:73:B3:AE:9D:35:14:8F:02:34:63:0A"
       ]
     }
   }
