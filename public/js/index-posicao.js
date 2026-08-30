@@ -23,8 +23,8 @@ let mapVelRotation = 0;
 let lastZoomCX = window.innerWidth / 2;
 let lastZoomCY = window.innerHeight / 2;
 
-const MIN_SCALE = 0.3;
-const MAX_SCALE = 5;
+const MIN_SCALE = 0.25;
+const MAX_SCALE = 8;
 const FOTO_ZOOM_INTENSIDADE = 0.25;
 const MIN_FOTO_SCALE = 0.45;
 const SAFE_TOP = 10;
