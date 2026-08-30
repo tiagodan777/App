@@ -14,24 +14,44 @@
     <main>
         <form>
             <h1>Confirmar email</h1>
+
             {% if verificado %}
-                <p class="login-mensagem login-mensagem-sucesso" role="status" aria-live="polite">
+                <p
+                    class="login-mensagem login-mensagem-sucesso"
+                    role="status"
+                    aria-live="polite"
+                >
                     O teu email foi confirmado. Já podes entrar na Margot.
                 </p>
             {% else %}
-                <p class="login-mensagem login-mensagem-erro" role="alert">
+                <p
+                    class="login-mensagem login-mensagem-erro"
+                    role="alert"
+                >
                     {{ mensagem_erro|default('Esta ligação é inválida, expirou ou já foi utilizada.')|e }}
                 </p>
             {% endif %}
         </form>
     </main>
+
     <aside>
         {% if verificado %}
-            <a href="{{ doc_root }}login" id="esqueci-palavra-passe">Entrar na Margot</a>
+            <a
+                href="https://go.margot-app.com/login"
+                id="esqueci-palavra-passe"
+            >
+                Entrar na Margot
+            </a>
         {% else %}
-            <a href="{{ doc_root }}email-verification-resend" id="esqueci-palavra-passe">Pedir uma nova ligação</a>
+            <a
+                href="{{ doc_root }}email-verification-resend"
+                id="esqueci-palavra-passe"
+            >
+                Pedir uma nova ligação
+            </a>
         {% endif %}
     </aside>
+
     <script src="{{ doc_root }}js/navegacao-documento.js?v=1"></script>
 </body>
 </html>
