@@ -1,0 +1,14 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "ZU7R8DGBUR.com.margot.app",
+        "paths": [
+          "/login",
+          "/login/*"
+        ]
+      }
+    ]
+  }
+}
