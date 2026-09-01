@@ -52,7 +52,7 @@ body:has(#perfil) #perfil {
     overflow-x: hidden !important;
     overflow-y: auto !important;
 
-    background: #f6f6f8;
+    background: #ffffff;
 
     -webkit-overflow-scrolling: touch;
 
@@ -373,8 +373,8 @@ body:has(#perfil) #perfil {
         );
 
     padding:
-        18px
-        16px
+        24px
+        20px
         calc(
             var(--menu-principal-height, 56px) +
             var(--menu-principal-bottom, 18px) +
@@ -388,36 +388,17 @@ body:has(#perfil) #perfil {
         0
         0;
 
-    background: #f6f6f8;
+    background: #ffffff;
 }
 
 
 /* Identidade */
 
 .perfil-identidade {
-    min-width: 0;
-
-    padding:
-        16px
-        16px
-        15px;
-
-    border:
-        1px solid
-        rgba(20, 20, 24, 0.055);
-
-    border-radius: 22px;
-
-    background: #ffffff;
-
-    box-shadow:
-        0
-        8px
-        26px
-        rgba(20, 20, 30, 0.045);
-
     display: flex;
-    align-items: center;
+    align-items: flex-start;
+
+    min-width: 0;
 
     gap: 12px;
 }
@@ -426,12 +407,9 @@ body:has(#perfil) #perfil {
     min-width: 0;
 
     display: flex;
-    align-items: center;
-    flex-wrap: wrap;
+    flex-direction: column;
 
-    gap:
-        8px
-        10px;
+    gap: 5px;
 }
 
 .perfil-identidade h1 {
@@ -439,58 +417,44 @@ body:has(#perfil) #perfil {
 
     margin: 0;
 
-    color: #111114;
+    color: #111111;
 
     font-size:
         clamp(
             27px,
             7vw,
-            35px
+            36px
         );
 
-    font-weight: 760;
-    line-height: 1.06;
+    font-weight: 750;
+    line-height: 1.08;
 
-    letter-spacing: -0.035em;
+    letter-spacing: -0.025em;
 }
 
 .perfil-idade {
-    flex-shrink: 0;
+    margin: 0;
 
-    padding:
-        5px
-        9px;
+    color: #8a8a90;
 
-    border:
-        1px solid
-        rgba(17, 17, 20, 0.06);
-
-    border-radius: 999px;
-
-    background: #f4f4f6;
-
-    color: #69696f;
-
-    font-size: 12px;
-    font-weight: 700;
-    line-height: 1;
-
-    letter-spacing: -0.01em;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.2;
 }
 
 
-/* Editar perfil */
+/* Definições */
 
 .editar-perfil {
     flex-shrink: 0;
 
     margin-left: auto;
 
-    min-height: 38px;
+    min-height: 36px;
 
     padding:
         0
-        12px;
+        11px;
 
     border:
         1px solid
@@ -498,14 +462,14 @@ body:has(#perfil) #perfil {
 
     border-radius: 999px;
 
-    background: #f4f4f6;
+    background: #f3f3f5;
 
     color: #242426;
 
     text-decoration: none;
 
-    font-size: 12px;
-    font-weight: 720;
+    font-size: 13px;
+    font-weight: 700;
     line-height: 1;
 
     letter-spacing: -0.01em;
@@ -532,7 +496,7 @@ body:has(#perfil) #perfil {
     fill: none;
 
     stroke: currentColor;
-    stroke-width: 1.8;
+    stroke-width: 1.65;
     stroke-linecap: round;
     stroke-linejoin: round;
 }
@@ -540,127 +504,62 @@ body:has(#perfil) #perfil {
 .editar-perfil:active {
     transform: scale(0.96);
 
-    background: #eaeaed;
+    background: #e9e9ec;
 }
 
 
-/* Informação */
-
-.perfil-informacao {
-    margin-top: 12px;
-
-    display: grid;
-
-    gap: 12px;
-}
+/* Blocos */
 
 .perfil-bloco {
-    margin: 0;
-}
-
-.perfil-card {
-    padding:
-        17px
-        16px
-        18px;
-
-    border:
-        1px solid
-        rgba(20, 20, 24, 0.055);
-
-    border-radius: 22px;
-
-    background: #ffffff;
-
-    box-shadow:
-        0
-        8px
-        26px
-        rgba(20, 20, 30, 0.035);
-}
-
-.perfil-bloco-cabecalho {
-    margin-bottom: 12px;
-
-    display: flex;
-    align-items: center;
-
-    gap: 10px;
-}
-
-.perfil-bloco-icone {
-    width: 34px;
-    height: 34px;
-
-    flex: 0 0 34px;
-
-    border:
-        1px solid
-        rgba(17, 17, 20, 0.04);
-
-    border-radius: 11px;
-
-    background: #f3f3f6;
-
-    color: #303036;
-
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.perfil-bloco-icone svg {
-    width: 17px;
-    height: 17px;
-
-    fill: none;
-
-    stroke: currentColor;
-    stroke-width: 1.8;
-    stroke-linecap: round;
-    stroke-linejoin: round;
+    margin-top: 24px;
 }
 
 .perfil-bloco h2 {
-    margin: 0;
+    margin:
+        0
+        0
+        8px;
+
     padding: 0;
 
-    color: #18181b;
+    color: #777777;
 
-    font-size: 15px;
-    font-weight: 760;
-    line-height: 1.15;
+    font-size: 12px;
+    font-weight: 800;
 
-    letter-spacing: -0.015em;
+    letter-spacing: 0.08em;
+
+    text-transform: uppercase;
 }
 
 .perfil-bloco p {
     margin: 0;
 
-    color: #2b2b2f;
+    color: #222222;
 
-    font-size: 16px;
-    line-height: 1.48;
+    font-size: 17px;
+    line-height: 1.45;
 
     overflow-wrap: anywhere;
 }
 
-.perfil-bloco-descricao {
-    margin-top: 3px !important;
 
-    color: #8b8b91 !important;
+/* Separador */
 
-    font-size: 11px !important;
-    font-weight: 540;
-    line-height: 1.25 !important;
+.perfil-separador {
+    width: 100%;
+    height: 1px;
+
+    margin:
+        2px
+        0
+        22px;
+
+    background: #ededf0;
 }
 
 
 /* Interesses */
-
-.perfil-gostos .perfil-bloco-cabecalho {
-    margin-bottom: 14px;
-}
 
 .perfil-gostos ul {
     margin: 0;
@@ -676,32 +575,18 @@ body:has(#perfil) #perfil {
             minmax(0, 1fr)
         );
 
-    gap: 8px;
+    column-gap: 26px;
+    row-gap: 14px;
 }
 
 .perfil-gostos li {
     min-width: 0;
-    min-height: 44px;
 
-    padding:
-        10px
-        12px;
+    color: #222222;
 
-    border:
-        1px solid
-        rgba(17, 17, 20, 0.055);
-
-    border-radius: 14px;
-
-    background: #f6f6f8;
-
-    color: #26262a;
-
-    font-size: 13px;
-    font-weight: 620;
-    line-height: 1.25;
-
-    letter-spacing: -0.01em;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.3;
 
     display: flex;
     align-items: center;
@@ -709,48 +594,26 @@ body:has(#perfil) #perfil {
     gap: 9px;
 }
 
-.perfil-gosto-marcador {
-    width: 7px;
-    height: 7px;
+.perfil-gosto-ponto {
+    width: 6px;
+    height: 6px;
 
-    flex: 0 0 7px;
+    flex: 0 0 6px;
 
     border-radius: 50%;
 
-    background:
-        linear-gradient(
-            135deg,
-            #6aa7ff,
-            #8f73ff 55%,
-            #df72d8
-        );
-
-    box-shadow:
-        0
-        0
-        0
-        3px
-        rgba(125, 114, 255, 0.08);
+    background: #777777;
 }
 
 
 /* Hey */
-
-.perfil-acao {
-    width: 100%;
-
-    margin-top: 24px;
-
-    display: flex;
-    justify-content: center;
-}
 
 #enviar-hey-perfil {
     position: relative !important;
     z-index: 10;
 
     margin:
-        0
+        30px
         auto
         10px !important;
 
@@ -830,51 +693,37 @@ body:has(#perfil) #perfil {
     }
 
     .perfil-conteudo {
-        padding-top: 16px;
+        padding-top: 22px;
     }
 
-    .perfil-card {
-        padding:
-            15px
-            15px
-            16px;
+    .perfil-bloco {
+        margin-top: 20px;
     }
 
-    .perfil-informacao {
-        gap: 10px;
+    .perfil-separador {
+        margin-bottom: 18px;
+    }
+
+    .perfil-gostos ul {
+        row-gap: 12px;
     }
 }
 
 
-/* Ecrãs muito estreitos */
+/* Ecrãs estreitos */
 
 @media (max-width: 370px) {
     .perfil-conteudo {
-        padding-right: 12px;
-        padding-left: 12px;
-    }
-
-    .perfil-identidade {
-        padding:
-            14px
-            13px;
-    }
-
-    .perfil-identidade h1 {
-        font-size: 26px;
-    }
-
-    .editar-perfil {
-        width: 38px;
-        padding: 0;
-    }
-
-    .editar-perfil span {
-        display: none;
+        padding-right: 16px;
+        padding-left: 16px;
     }
 
     .perfil-gostos ul {
-        grid-template-columns: 1fr;
+        column-gap: 18px;
+    }
+
+    .perfil-gostos li {
+        font-size: 14px;
     }
 }
 
@@ -904,7 +753,7 @@ body:has(#perfil) #perfil {
             0
             auto;
 
-        background: #f6f6f8;
+        background: #ffffff;
 
         box-shadow:
             0
@@ -931,8 +780,8 @@ body:has(#perfil) #perfil {
 
     .perfil-conteudo {
         padding:
-            16px
-            18px
+            20px
+            22px
             calc(
                 var(--menu-principal-height, 56px) +
                 var(--menu-principal-bottom, 18px) +
@@ -948,51 +797,30 @@ body:has(#perfil) #perfil {
     }
 
     .perfil-identidade {
-        padding:
-            14px
-            15px;
-
-        border-radius: 20px;
-    }
-
-    .perfil-identidade {
         gap: 7px;
     }
 
     .perfil-identidade h1 {
-        font-size: 29px;
+        font-size: 30px;
     }
 
     .perfil-idade {
-        font-size: 11px;
+        font-size: 13px;
     }
 
     .editar-perfil {
         min-height: 34px;
         padding: 0 10px;
-        font-size: 11px;
+        font-size: 12px;
     }
 
-    .perfil-informacao {
-        margin-top: 10px;
-        gap: 10px;
-    }
-
-    .perfil-card {
-        padding:
-            15px
-            15px
-            16px;
-
-        border-radius: 20px;
-    }
-
-    .perfil-bloco-cabecalho {
-        margin-bottom: 10px;
+    .perfil-bloco {
+        margin-top: 20px;
     }
 
     .perfil-bloco h2 {
-        font-size: 14px;
+        margin-bottom: 6px;
+        font-size: 11px;
     }
 
     .perfil-bloco p {
@@ -1001,17 +829,12 @@ body:has(#perfil) #perfil {
     }
 
     .perfil-gostos ul {
-        gap: 7px;
+        column-gap: 24px;
+        row-gap: 12px;
     }
 
     .perfil-gostos li {
-        min-height: 40px;
-
-        padding:
-            8px
-            10px;
-
-        font-size: 12px;
+        font-size: 13px;
     }
 
     #enviar-hey-perfil {
@@ -1021,7 +844,7 @@ body:has(#perfil) #perfil {
         min-height: 136px;
 
         margin:
-            0
+            22px
             auto
             6px !important;
 
