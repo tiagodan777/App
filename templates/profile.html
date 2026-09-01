@@ -3,7 +3,7 @@
 {% block title %}{{ membro.nome }} | Margot{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ doc_root }}estilos/profile.css?v=12" data-margot-page-style>
+<link rel="stylesheet" href="{{ doc_root }}estilos/profile.css?v=13" data-margot-page-style>
 {% endblock %}
 
 {% block content %}
@@ -104,56 +104,97 @@
 
     <section class="perfil-conteudo">
         <header class="perfil-identidade">
-            <h1>{{ membro.nome }}</h1>
-            <p>{{ idade }}</p>
+            <div class="perfil-identidade-texto">
+                <h1>{{ membro.nome }}</h1>
+
+                <span
+                    class="perfil-idade"
+                    aria-label="{{ idade }} anos"
+                >
+                    {{ idade }} anos
+                </span>
+            </div>
 
             {% if membro.id == session.id %}
                 <a
                     href="{{ doc_root }}settings"
                     class="editar-perfil"
-                    aria-label="Abrir definições"
+                    aria-label="Editar perfil"
                 >
                     <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M12 15.25A3.25 3.25 0 1 0 12 8.75a3.25 3.25 0 0 0 0 6.5Z"></path>
-                        <path d="M19.4 13.5a7.9 7.9 0 0 0 .05-3l1.75-1.35-2-3.46-2.16.87a8 8 0 0 0-2.6-1.5L14.1 2.75h-4.2l-.34 2.31a8 8 0 0 0-2.6 1.5L4.8 5.69l-2 3.46L4.55 10.5a7.9 7.9 0 0 0 .05 3l-1.8 1.35 2 3.46 2.2-.87a8 8 0 0 0 2.56 1.48l.34 2.33h4.2l.34-2.33A8 8 0 0 0 17 17.44l2.2.87 2-3.46-1.8-1.35Z"></path>
+                        <path d="M12 20h9"></path>
+                        <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"></path>
                     </svg>
 
-                    <span>Definições</span>
+                    <span>Editar perfil</span>
                 </a>
             {% endif %}
         </header>
 
-        {% if membro.bio|default('') %}
-            <section class="perfil-bloco">
-                <h2>Sobre</h2>
-                <p>{{ membro.bio }}</p>
-            </section>
-        {% endif %}
+        <div class="perfil-informacao">
+            {% if membro.bio|default('') %}
+                <section class="perfil-bloco perfil-card perfil-sobre">
+                    <header class="perfil-bloco-cabecalho">
+                        <span class="perfil-bloco-icone" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M5 6h14"></path>
+                                <path d="M5 12h14"></path>
+                                <path d="M5 18h9"></path>
+                            </svg>
+                        </span>
 
-        {% if primeiro_gosto %}
-            <section
-                id="adicional"
-                class="perfil-bloco perfil-gostos"
-            >
-                <h2>Gostos</h2>
+                        <h2>Sobre mim</h2>
+                    </header>
 
-                <ul>
-                    {% for gosto in membro.gostos %}
-                        <li>{{ gosto['nome'] }}</li>
-                    {% endfor %}
-                </ul>
-            </section>
-        {% endif %}
+                    <p>{{ membro.bio }}</p>
+                </section>
+            {% endif %}
+
+            {% if primeiro_gosto %}
+                <section
+                    id="adicional"
+                    class="perfil-bloco perfil-card perfil-gostos"
+                >
+                    <header class="perfil-bloco-cabecalho">
+                        <span class="perfil-bloco-icone" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M12 3l1.35 4.15L17.5 8.5l-4.15 1.35L12 14l-1.35-4.15L6.5 8.5l4.15-1.35Z"></path>
+                                <path d="M18.5 14.5l.75 2.25 2.25.75-2.25.75-.75 2.25-.75-2.25-2.25-.75 2.25-.75Z"></path>
+                                <path d="M5.5 14l.55 1.7 1.7.55-1.7.55-.55 1.7-.55-1.7-1.7-.55 1.7-.55Z"></path>
+                            </svg>
+                        </span>
+
+                        <div>
+                            <h2>Interesses</h2>
+                            <p class="perfil-bloco-descricao">
+                                Coisas de que {{ membro.id == session.id ? 'gostas' : membro.nome ~ ' gosta' }}.
+                            </p>
+                        </div>
+                    </header>
+
+                    <ul>
+                        {% for gosto in membro.gostos %}
+                            <li>
+                                <span class="perfil-gosto-marcador" aria-hidden="true"></span>
+                                <span>{{ gosto['nome'] }}</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </section>
+            {% endif %}
+        </div>
 
         {% if membro.id != session.id %}
-            <button
-                type="button"
-                class="ola"
-                id="enviar-hey-perfil"
-                data-destinatario-id="{{ membro.id }}"
-            >
-                Hey
-            </button>
+            <div class="perfil-acao">
+                <button
+                    type="button"
+                    class="ola"
+                    id="enviar-hey-perfil"
+                    data-destinatario-id="{{ membro.id }}"
+                >
+                    Hey
+                </button>
+            </div>
         {% endif %}
     </section>
 </main>
