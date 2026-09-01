@@ -3,320 +3,301 @@
 {% block title %}{{ membro.nome }} | Margot{% endblock %}
 
 {% block styles %}
-<link
-    rel="stylesheet"
-    href="{{ doc_root }}estilos/profile.css?v=14"
-    data-margot-page-style
->
+<link rel="stylesheet" href="{{ doc_root }}estilos/profile.css?v=14" data-margot-page-style>
 {% endblock %}
 
 {% block content %}
-
 {% set fotos = membro.fotos|default([]) %}
 {% set total_fotos = fotos|length %}
 {% set total_slides = total_fotos > 0 ? total_fotos : 1 %}
+{% set perfil_proprio = membro.id == session.id %}
+{% set tem_bio = membro.bio|default('') %}
 
-<main id="perfil">
+<main
+    id="perfil"
+    class="{{ perfil_proprio ? 'perfil--proprio' : 'perfil--visitante' }}"
+>
+    <div class="perfil-shell">
+        <header class="perfil-cabecalho">
+            <div class="perfil-origem">
+                <span class="perfil-origem-sinal" aria-hidden="true">
+                    <span></span>
+                </span>
 
-    <header class="perfil-topo">
-        <a
-            href="{{ doc_root }}index"
-            class="perfil-voltar"
-            aria-label="Voltar"
-        >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M15 18l-6-6 6-6"></path>
-            </svg>
-        </a>
+                <div>
+                    <span class="perfil-marca">Margot</span>
 
-        <span class="perfil-topo-titulo">
-            Perfil
-        </span>
+                    <p>
+                        {{ perfil_proprio
+                            ? 'O teu cartão quando estás visível'
+                            : 'Uma pessoa por perto'
+                        }}
+                    </p>
+                </div>
+            </div>
 
-        {% if membro.id == session.id %}
-            <a
-                href="{{ doc_root }}settings"
-                class="editar-perfil"
-                aria-label="Abrir definições"
+            {% if perfil_proprio %}
+                <a
+                    href="{{ doc_root }}settings"
+                    class="editar-perfil"
+                    aria-label="Abrir definições do perfil"
+                >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 15.25A3.25 3.25 0 1 0 12 8.75a3.25 3.25 0 0 0 0 6.5Z"></path>
+                        <path d="M19.4 13.5a7.9 7.9 0 0 0 .05-3l1.75-1.35-2-3.46-2.16.87a8 8 0 0 0-2.6-1.5L14.1 2.75h-4.2l-.34 2.31a8 8 0 0 0-2.6 1.5L4.8 5.69l-2 3.46L4.55 10.5a7.9 7.9 0 0 0 .05 3l-1.8 1.35 2 3.46 2.2-.87a8 8 0 0 0 2.56 1.48l.34 2.33h4.2l.34-2.33A8 8 0 0 0 17 17.44l2.2.87 2-3.46-1.8-1.35Z"></path>
+                    </svg>
+
+                    <span>Editar</span>
+                </a>
+            {% endif %}
+        </header>
+
+        <div class="perfil-grid">
+            <section
+                id="perfil-galeria"
+                class="perfil-galeria"
+                aria-label="Fotografias de {{ membro.nome }}"
+                tabindex="0"
             >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M4 7h10"></path>
-                    <path d="M18 7h2"></path>
-                    <path d="M4 17h2"></path>
-                    <path d="M10 17h10"></path>
-                    <circle cx="16" cy="7" r="2"></circle>
-                    <circle cx="8" cy="17" r="2"></circle>
-                </svg>
-            </a>
-        {% else %}
-            <span class="perfil-topo-espaco"></span>
-        {% endif %}
-    </header>
+                {% if total_slides > 1 %}
+                    <div
+                        id="perfil-indicadores"
+                        class="perfil-indicadores"
+                        aria-label="Escolher fotografia"
+                    >
+                        {% for indice in 0..(total_slides - 1) %}
+                            <button
+                                type="button"
+                                class="{{ loop.first ? 'ativo' : '' }}"
+                                data-indice="{{ indice }}"
+                                aria-label="Ver fotografia {{ indice + 1 }} de {{ total_slides }}"
+                                aria-current="{{ loop.first ? 'true' : 'false' }}"
+                            >
+                                <span aria-hidden="true"></span>
+                            </button>
+                        {% endfor %}
+                    </div>
+                {% endif %}
 
-
-    <section class="perfil-apresentacao">
-
-        <section
-            id="perfil-galeria"
-            class="perfil-galeria"
-            aria-label="Fotografias de {{ membro.nome }}"
-            tabindex="0"
-        >
-
-            <div id="perfil-fotos" class="perfil-fotos">
-
-                {% if total_fotos > 0 %}
-
-                    {% for foto in fotos %}
+                <div id="perfil-fotos" class="perfil-fotos">
+                    {% if total_fotos > 0 %}
+                        {% for foto in fotos %}
+                            <figure
+                                id="perfil-foto-{{ loop.index0 }}"
+                                class="perfil-slide"
+                                data-indice="{{ loop.index0 }}"
+                                aria-hidden="{{ loop.first ? 'false' : 'true' }}"
+                            >
+                                <img
+                                    src="{{ doc_root }}imagens/fotos-perfil-originais/{{ foto.nome_arquivo }}"
+                                    data-fallback="{{ doc_root }}imagens/fotos-perfil/{{ foto.nome_arquivo }}"
+                                    data-default="{{ doc_root }}imagens/fotos-perfil/default.webp"
+                                    alt="Fotografia {{ loop.index }} de {{ membro.nome }}"
+                                    loading="{{ loop.first ? 'eager' : 'lazy' }}"
+                                    fetchpriority="{{ loop.first ? 'high' : 'auto' }}"
+                                    draggable="false"
+                                >
+                            </figure>
+                        {% endfor %}
+                    {% else %}
                         <figure
-                            id="perfil-foto-{{ loop.index0 }}"
+                            id="perfil-foto-0"
                             class="perfil-slide"
-                            data-indice="{{ loop.index0 }}"
-                            aria-hidden="{{ loop.first ? 'false' : 'true' }}"
+                            data-indice="0"
+                            aria-hidden="false"
                         >
                             <img
-                                src="{{ doc_root }}imagens/fotos-perfil-originais/{{ foto.nome_arquivo }}"
-                                data-fallback="{{ doc_root }}imagens/fotos-perfil/{{ foto.nome_arquivo }}"
+                                src="{{ doc_root }}imagens/fotos-perfil/default.webp"
                                 data-default="{{ doc_root }}imagens/fotos-perfil/default.webp"
-                                alt="Fotografia {{ loop.index }} de {{ membro.nome }}"
-                                loading="{{ loop.first ? 'eager' : 'lazy' }}"
-                                fetchpriority="{{ loop.first ? 'high' : 'auto' }}"
+                                alt="{{ membro.nome }} ainda não adicionou fotografias"
+                                loading="eager"
+                                fetchpriority="high"
                                 draggable="false"
                             >
                         </figure>
-                    {% endfor %}
-
-                {% else %}
-
-                    <figure
-                        id="perfil-foto-0"
-                        class="perfil-slide"
-                        data-indice="0"
-                        aria-hidden="false"
-                    >
-                        <img
-                            src="{{ doc_root }}imagens/fotos-perfil/default.webp"
-                            data-default="{{ doc_root }}imagens/fotos-perfil/default.webp"
-                            alt="{{ membro.nome }} ainda não adicionou fotografias"
-                            loading="eager"
-                            fetchpriority="high"
-                            draggable="false"
-                        >
-                    </figure>
-
-                {% endif %}
-
-            </div>
-
-
-            {% if total_slides > 1 %}
-
-                <div
-                    id="perfil-indicadores"
-                    class="perfil-indicadores"
-                    aria-label="Escolher fotografia"
-                >
-                    {% for indice in 0..(total_slides - 1) %}
-                        <button
-                            type="button"
-                            class="{{ loop.first ? 'ativo' : '' }}"
-                            data-indice="{{ indice }}"
-                            aria-label="Ver fotografia {{ indice + 1 }} de {{ total_slides }}"
-                            aria-current="{{ loop.first ? 'true' : 'false' }}"
-                        >
-                            <span></span>
-                        </button>
-                    {% endfor %}
+                    {% endif %}
                 </div>
 
-
-                <button
-                    type="button"
-                    id="perfil-anterior"
-                    class="perfil-navegacao perfil-anterior"
-                    aria-label="Fotografia anterior"
-                >
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M15 5l-7 7 7 7"></path>
-                    </svg>
-                </button>
-
-
-                <button
-                    type="button"
-                    id="perfil-seguinte"
-                    class="perfil-navegacao perfil-seguinte"
-                    aria-label="Fotografia seguinte"
-                >
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M9 5l7 7-7 7"></path>
-                    </svg>
-                </button>
-
-            {% endif %}
-
-        </section>
-
-
-        <section class="perfil-identidade">
-
-            <div class="perfil-nome-area">
-                <h1>{{ membro.nome }}</h1>
-
-                <span class="perfil-idade">
-                    {{ idade }} anos
-                </span>
-            </div>
-
-            <div
-                class="perfil-assinatura"
-                aria-hidden="true"
-            >
-                <span></span>
-                <span></span>
-                <span></span>
-            </div>
-
-        </section>
-
-    </section>
-
-
-    <section class="perfil-conteudo">
-
-        {% if membro.bio|default('') %}
-
-            <section class="perfil-bio">
-
-                <div class="perfil-seccao-numero">
-                    01
-                </div>
-
-                <div class="perfil-seccao-conteudo">
-
-                    <h2>
-                        Sobre mim
-                    </h2>
-
-                    <p>
-                        {{ membro.bio }}
-                    </p>
-
-                </div>
-
-            </section>
-
-        {% endif %}
-
-
-        {% if primeiro_gosto %}
-
-            <section
-                id="adicional"
-                class="perfil-interesses"
-            >
-
-                <div class="perfil-seccao-cabecalho">
-
-                    <div class="perfil-seccao-numero">
-                        02
-                    </div>
-
-                    <div class="perfil-seccao-conteudo">
-
-                        <h2>
-                            Interesses
-                        </h2>
-
-                        <p class="perfil-seccao-ajuda">
-                            Algumas coisas que fazem parte do meu mundo.
-                        </p>
-
-                    </div>
-
-                </div>
-
-
-                <ol class="perfil-interesses-lista">
-
-                    {% for gosto in membro.gostos %}
-
-                        <li>
-
-                            <span class="perfil-interesse-indice">
-                                {{ loop.index < 10 ? '0' ~ loop.index : loop.index }}
-                            </span>
-
-                            <span class="perfil-interesse-nome">
-                                {{ gosto['nome'] }}
-                            </span>
-
-                            <span
-                                class="perfil-interesse-seta"
-                                aria-hidden="true"
-                            >
-                                ↗
-                            </span>
-
-                        </li>
-
-                    {% endfor %}
-
-                </ol>
-
-            </section>
-
-        {% endif %}
-
-
-        {% if membro.id != session.id %}
-
-            <section class="perfil-conectar">
-
-                <div class="perfil-conectar-texto">
-
-                    <span class="perfil-conectar-label">
-                        Encontraste alguém por perto
+                <div class="perfil-galeria-rodape" aria-hidden="true">
+                    <span class="perfil-presenca">
+                        <span class="perfil-presenca-ponto"></span>
+                        Por perto
                     </span>
 
-                    <strong>
-                        Quebra o gelo.
-                    </strong>
+                    {% if total_slides > 1 %}
+                        <span class="perfil-contador">
+                            <span id="perfil-contador-atual">01</span>
 
+                            <span class="perfil-contador-separador">/</span>
+
+                            <span>
+                                {{ total_slides < 10
+                                    ? '0' ~ total_slides
+                                    : total_slides
+                                }}
+                            </span>
+                        </span>
+                    {% endif %}
                 </div>
 
+                {% if total_slides > 1 %}
+                    <button
+                        type="button"
+                        id="perfil-anterior"
+                        class="perfil-navegacao perfil-anterior"
+                        aria-label="Fotografia anterior"
+                    >
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M15 5l-7 7 7 7"></path>
+                        </svg>
+                    </button>
 
-                <button
-                    type="button"
-                    class="ola"
-                    id="enviar-hey-perfil"
-                    data-destinatario-id="{{ membro.id }}"
-                >
-                    <span>Hey</span>
-
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M5 12h14"></path>
-                        <path d="M13 6l6 6-6 6"></path>
-                    </svg>
-                </button>
-
+                    <button
+                        type="button"
+                        id="perfil-seguinte"
+                        class="perfil-navegacao perfil-seguinte"
+                        aria-label="Fotografia seguinte"
+                    >
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </button>
+                {% endif %}
             </section>
 
-        {% endif %}
+            <article class="perfil-conteudo">
+                <header class="perfil-identidade">
+                    <p class="perfil-sobrancelha">
+                        {{ perfil_proprio
+                            ? 'O teu perfil'
+                            : 'Perfil Margot'
+                        }}
+                    </p>
 
-    </section>
+                    <h1>{{ membro.nome }}</h1>
 
+                    <p class="perfil-idade">
+                        {{ idade }} anos
+                    </p>
+                </header>
+
+                {% if tem_bio %}
+                    <section
+                        class="perfil-bloco perfil-sobre"
+                        aria-labelledby="perfil-sobre-titulo"
+                    >
+                        <h2 id="perfil-sobre-titulo">
+                            Em poucas palavras
+                        </h2>
+
+                        <p>{{ membro.bio }}</p>
+                    </section>
+                {% endif %}
+
+                {% if primeiro_gosto %}
+                    <section
+                        id="adicional"
+                        class="perfil-bloco perfil-gostos"
+                        aria-labelledby="perfil-gostos-titulo"
+                    >
+                        <h2 id="perfil-gostos-titulo">
+                            Puxa conversa sobre
+                        </h2>
+
+                        <ul>
+                            {% for gosto in membro.gostos %}
+                                <li>
+                                    <span aria-hidden="true">#</span>
+                                    <span>{{ gosto['nome'] }}</span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </section>
+                {% endif %}
+
+                {% if not perfil_proprio %}
+                    <section
+                        class="perfil-acao"
+                        aria-labelledby="perfil-acao-titulo"
+                    >
+                        <div class="perfil-acao-texto">
+                            <p class="perfil-acao-etiqueta">
+                                Quebra o gelo
+                            </p>
+
+                            <h2 id="perfil-acao-titulo">
+                                Estão no mesmo sítio.
+                            </h2>
+
+                            <p>
+                                O Hey só tira a dúvida antes de ires dizer olá.
+                            </p>
+                        </div>
+
+                        <button
+                            type="button"
+                            class="perfil-hey"
+                            id="enviar-hey-perfil"
+                            data-destinatario-id="{{ membro.id }}"
+                            aria-describedby="perfil-hey-estado"
+                        >
+                            <span class="perfil-hey-label">
+                                Enviar Hey
+                            </span>
+
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M5 12h13"></path>
+                                <path d="m13 6 6 6-6 6"></path>
+                            </svg>
+                        </button>
+
+                        <p
+                            id="perfil-hey-estado"
+                            class="sr-only"
+                            aria-live="polite"
+                            aria-atomic="true"
+                        ></p>
+                    </section>
+                {% else %}
+                    <section class="perfil-explicacao">
+                        <span
+                            class="perfil-explicacao-icone"
+                            aria-hidden="true"
+                        >
+                            <svg viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="2.2"></circle>
+                                <path d="M7.5 16.5a6.36 6.36 0 0 1 0-9"></path>
+                                <path d="M16.5 7.5a6.36 6.36 0 0 1 0 9"></path>
+                                <path d="M4.5 19.5a10.6 10.6 0 0 1 0-15"></path>
+                                <path d="M19.5 4.5a10.6 10.6 0 0 1 0 15"></path>
+                            </svg>
+                        </span>
+
+                        <div>
+                            <h2>
+                                É assim que apareces por perto
+                            </h2>
+
+                            <p>
+                                As outras pessoas veem apenas este cartão,
+                                sem mapa nem localização exata.
+                            </p>
+                        </div>
+                    </section>
+                {% endif %}
+            </article>
+        </div>
+    </div>
 </main>
-
 
 <script>
 window.membroId = {{ session.id|json_encode|raw }};
+window.perfilMembroId = {{ membro.id|json_encode|raw }};
 
 window.webSocketUrl = window.location.protocol === 'https:'
     ? 'wss://' + window.location.host + '/ws/'
     : 'ws://' + window.location.hostname + ':8080';
 </script>
 
-<script src="{{ doc_root }}js/profile.js?v=8"></script>
-
+<script src="{{ doc_root }}js/profile.js?v=9"></script>
 {% endblock %}

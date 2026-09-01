@@ -12,7 +12,9 @@
     if (!galeria || !faixa) return;
 
     var slides = Array.prototype.slice.call(
-        faixa.querySelectorAll('.perfil-slide')
+        faixa.querySelectorAll(
+            '.perfil-slide'
+        )
     );
 
     var indicadores = Array.prototype.slice.call(
@@ -29,12 +31,19 @@
         'perfil-seguinte'
     );
 
+    var contadorAtual = document.getElementById(
+        'perfil-contador-atual'
+    );
+
     var indiceAtual = 0;
     var frameScroll = null;
+
     var ratoAtivo = false;
     var ratoMoveu = false;
     var ratoInicioX = 0;
     var scrollInicio = 0;
+
+    var observadorTamanho = null;
 
     if (slides.length === 0) return;
 
@@ -46,6 +55,12 @@
                 slides.length - 1
             )
         );
+    }
+
+    function formatarNumero(numero) {
+        return numero < 10
+            ? '0' + numero
+            : String(numero);
     }
 
     function indiceMaisProximo() {
@@ -73,7 +88,8 @@
                     menorDistancia =
                         distancia;
 
-                    melhorIndice = indice;
+                    melhorIndice =
+                        indice;
                 }
             }
         );
@@ -118,6 +134,13 @@
             }
         );
 
+        if (contadorAtual) {
+            contadorAtual.textContent =
+                formatarNumero(
+                    indiceAtual + 1
+                );
+        }
+
         if (anterior) {
             anterior.disabled =
                 indiceAtual === 0;
@@ -130,17 +153,29 @@
         }
     }
 
+    function prefereMovimentoReduzido() {
+        return Boolean(
+            window.matchMedia &&
+            window.matchMedia(
+                '(prefers-reduced-motion: reduce)'
+            ).matches
+        );
+    }
+
     function mostrarFoto(
         indice,
         suave
     ) {
-        indice = limitarIndice(indice);
+        indice =
+            limitarIndice(indice);
 
         faixa.scrollTo({
             left:
                 slides[indice].offsetLeft,
+
             behavior:
-                suave === false
+                suave === false ||
+                prefereMovimentoReduzido()
                     ? 'auto'
                     : 'smooth'
         });
@@ -166,7 +201,9 @@
                     tentativa === 1 &&
                     fallback
                 ) {
-                    imagem.src = fallback;
+                    imagem.src =
+                        fallback;
+
                     return;
                 }
 
@@ -178,7 +215,8 @@
                             window.location.href
                         ).href
                 ) {
-                    imagem.src = padrao;
+                    imagem.src =
+                        padrao;
                 }
             }
         );
@@ -250,6 +288,14 @@
         );
     }
 
+    /*
+     * O arrasto manual só é necessário
+     * quando se usa rato.
+     *
+     * No toque, o scroll nativo é mais
+     * fluido no iOS e no Android.
+     */
+
     faixa.addEventListener(
         'pointerdown',
         function (evento) {
@@ -263,8 +309,12 @@
 
             ratoAtivo = true;
             ratoMoveu = false;
-            ratoInicioX = evento.clientX;
-            scrollInicio = faixa.scrollLeft;
+
+            ratoInicioX =
+                evento.clientX;
+
+            scrollInicio =
+                faixa.scrollLeft;
 
             faixa.classList.add(
                 'a-arrastar'
@@ -292,7 +342,8 @@
             }
 
             faixa.scrollLeft =
-                scrollInicio - distancia;
+                scrollInicio -
+                distancia;
 
             evento.preventDefault();
         }
@@ -373,6 +424,26 @@
                     indiceAtual + 1
                 );
             }
+
+            if (
+                evento.key ===
+                'Home'
+            ) {
+                evento.preventDefault();
+
+                mostrarFoto(0);
+            }
+
+            if (
+                evento.key ===
+                'End'
+            ) {
+                evento.preventDefault();
+
+                mostrarFoto(
+                    slides.length - 1
+                );
+            }
         }
     );
 
@@ -383,8 +454,31 @@
         );
     }
 
+    if (
+        'ResizeObserver' in window
+    ) {
+        observadorTamanho =
+            new window.ResizeObserver(
+                aoRedimensionar
+            );
+
+        observadorTamanho.observe(
+            faixa
+        );
+    } else {
+        window.addEventListener(
+            'resize',
+            aoRedimensionar,
+            {
+                passive: true
+            }
+        );
+    }
+
     function desativarPagina() {
-        if (frameScroll !== null) {
+        if (
+            frameScroll !== null
+        ) {
             window.cancelAnimationFrame(
                 frameScroll
             );
@@ -392,24 +486,22 @@
             frameScroll = null;
         }
 
-        window.removeEventListener(
-            'resize',
-            aoRedimensionar
-        );
+        if (observadorTamanho) {
+            observadorTamanho.disconnect();
+
+            observadorTamanho = null;
+        } else {
+            window.removeEventListener(
+                'resize',
+                aoRedimensionar
+            );
+        }
 
         document.removeEventListener(
             'margot:page-leave',
             desativarPagina
         );
     }
-
-    window.addEventListener(
-        'resize',
-        aoRedimensionar,
-        {
-            passive: true
-        }
-    );
 
     document.addEventListener(
         'margot:page-leave',
@@ -419,6 +511,7 @@
     atualizarInterface(0);
 })(window, document);
 
+
 (function (window, document) {
     'use strict';
 
@@ -426,15 +519,120 @@
         'enviar-hey-perfil'
     );
 
-    var temporizador = null;
+    if (!botao) return;
+
+    var etiqueta = botao.querySelector(
+        '.perfil-hey-label'
+    );
+
+    var estadoAcessivel =
+        document.getElementById(
+            'perfil-hey-estado'
+        );
+
+    var temporizadorReposicao = null;
     var temporizadorConfirmacao = null;
+
     var aEnviar = false;
 
-    if (!botao) return;
+    var textoInicial =
+        etiqueta
+            ? etiqueta.textContent
+            : 'Enviar Hey';
+
+    function detalheCorresponde(evento) {
+        var detalhe =
+            evento &&
+            evento.detail
+                ? evento.detail
+                : {};
+
+        return (
+            String(
+                detalhe.destinatario_id || ''
+            ) ===
+            String(
+                botao.dataset
+                    .destinatarioId || ''
+            )
+        );
+    }
+
+    function alterarEtiqueta(texto) {
+        if (etiqueta) {
+            etiqueta.textContent =
+                texto;
+        } else {
+            botao.textContent =
+                texto;
+        }
+    }
+
+    function anunciar(texto) {
+        if (estadoAcessivel) {
+            estadoAcessivel.textContent =
+                texto;
+        }
+    }
+
+    function limparTemporizadorConfirmacao() {
+        if (
+            temporizadorConfirmacao ===
+            null
+        ) {
+            return;
+        }
+
+        window.clearTimeout(
+            temporizadorConfirmacao
+        );
+
+        temporizadorConfirmacao = null;
+    }
+
+    function reporBotao() {
+        limparTemporizadorConfirmacao();
+
+        aEnviar = false;
+
+        botao.disabled = false;
+
+        botao.removeAttribute(
+            'aria-busy'
+        );
+
+        botao.classList.remove(
+            'a-enviar',
+            'enviado'
+        );
+
+        alterarEtiqueta(
+            textoInicial
+        );
+    }
+
+    function mostrarMensagem(
+        texto,
+        tipo
+    ) {
+        anunciar(texto);
+
+        if (
+            typeof window
+                .mostrarMensagemTemporaria ===
+            'function'
+        ) {
+            window.mostrarMensagemTemporaria(
+                texto,
+                tipo || 'erro'
+            );
+        }
+    }
 
     function enviarHey() {
         var destinatarioId =
-            botao.dataset.destinatarioId;
+            botao.dataset
+                .destinatarioId;
 
         if (
             aEnviar ||
@@ -445,32 +643,55 @@
 
         if (
             !window.AppWebSocket ||
-            !window.AppWebSocket.isConnected()
+            typeof window.AppWebSocket
+                .isConnected !==
+                'function' ||
+            !window.AppWebSocket
+                .isConnected()
         ) {
-            if (window.AppWebSocket) {
-                window.AppWebSocket.connect();
+            if (
+                window.AppWebSocket &&
+                typeof window.AppWebSocket
+                    .connect ===
+                    'function'
+            ) {
+                window.AppWebSocket
+                    .connect();
             }
 
-            if (
-                typeof window.mostrarMensagemTemporaria ===
-                'function'
-            ) {
-                window.mostrarMensagemTemporaria(
-                    'A ligação está a ser restabelecida.',
-                    'erro'
-                );
-            }
+            mostrarMensagem(
+                'A ligação está a ser restabelecida.',
+                'erro'
+            );
 
             return;
         }
 
         aEnviar = true;
+
         botao.disabled = true;
-        botao.textContent = 'A enviar…';
+
+        botao.setAttribute(
+            'aria-busy',
+            'true'
+        );
+
+        botao.classList.add(
+            'a-enviar'
+        );
+
+        alterarEtiqueta(
+            'A enviar…'
+        );
+
+        anunciar(
+            'A enviar o Hey.'
+        );
 
         var enviado =
             window.AppWebSocket.send({
                 type: 'notify',
+
                 destinatario_id:
                     destinatarioId
             });
@@ -478,15 +699,10 @@
         if (!enviado) {
             reporBotao();
 
-            if (
-                typeof window.mostrarMensagemTemporaria ===
-                'function'
-            ) {
-                window.mostrarMensagemTemporaria(
-                    'Não foi possível enviar o Hey.',
-                    'erro'
-                );
-            }
+            mostrarMensagem(
+                'Não foi possível enviar o Hey.',
+                'erro'
+            );
 
             return;
         }
@@ -498,88 +714,102 @@
                         null;
 
                     reporBotao();
+
+                    anunciar(
+                        'Não foi recebida confirmação do envio. Podes tentar novamente.'
+                    );
                 },
                 8000
             );
     }
 
-    function reporBotao() {
-        if (
-            temporizadorConfirmacao !==
-            null
-        ) {
-            window.clearTimeout(
-                temporizadorConfirmacao
-            );
-
-            temporizadorConfirmacao = null;
-        }
-
-        aEnviar = false;
-        botao.disabled = false;
-        botao.textContent = 'Hey';
-    }
-
     function aoEnviarHey(evento) {
         if (
-            String(
-                evento.detail
-                    ?.destinatario_id || ''
-            ) !==
-            String(
-                botao.dataset
-                    .destinatarioId || ''
+            !detalheCorresponde(
+                evento
             )
         ) {
             return;
         }
 
-        botao.textContent =
-            'Hey enviado';
+        limparTemporizadorConfirmacao();
 
-        temporizador =
+        aEnviar = false;
+
+        botao.disabled = true;
+
+        botao.removeAttribute(
+            'aria-busy'
+        );
+
+        botao.classList.remove(
+            'a-enviar'
+        );
+
+        botao.classList.add(
+            'enviado'
+        );
+
+        alterarEtiqueta(
+            'Hey enviado'
+        );
+
+        anunciar(
+            'Hey enviado com sucesso.'
+        );
+
+        if (
+            temporizadorReposicao !==
+            null
+        ) {
+            window.clearTimeout(
+                temporizadorReposicao
+            );
+        }
+
+        temporizadorReposicao =
             window.setTimeout(
-                reporBotao,
-                1200
+                function () {
+                    temporizadorReposicao =
+                        null;
+
+                    reporBotao();
+                },
+                1600
             );
     }
 
     function aoFalharHey(evento) {
         if (
-            String(
-                evento.detail
-                    ?.destinatario_id || ''
-            ) !==
-            String(
-                botao.dataset
-                    .destinatarioId || ''
+            !detalheCorresponde(
+                evento
             )
         ) {
             return;
         }
 
         reporBotao();
+
+        mostrarMensagem(
+            'Não foi possível enviar o Hey.',
+            'erro'
+        );
     }
 
     function desativarPagina() {
-        if (temporizador !== null) {
-            window.clearTimeout(
-                temporizador
-            );
-
-            temporizador = null;
-        }
-
         if (
-            temporizadorConfirmacao !==
+            temporizadorReposicao !==
             null
         ) {
             window.clearTimeout(
-                temporizadorConfirmacao
+                temporizadorReposicao
             );
 
-            temporizadorConfirmacao = null;
+            temporizadorReposicao =
+                null;
         }
+
+        limparTemporizadorConfirmacao();
 
         botao.removeEventListener(
             'click',
