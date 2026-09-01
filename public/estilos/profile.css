@@ -1,19 +1,9 @@
 @charset "UTF-8";
 
-/*
- * PERFIL
- *
- * O perfil é o único scroll vertical desta página.
- *
- * A fotografia NÃO é ampliada, NÃO é esticada
- * e NÃO muda durante o rubber banding.
- *
- * A faixa de fotografias inteira fica simplesmente
- * 46px acima da sua posição normal.
- *
- * Esses 46px ficam escondidos pelo topo do scroll.
- * Quando o iOS faz rubber banding, tornam-se visíveis.
- */
+
+/* =========================================================
+   PERFIL
+   ========================================================= */
 
 html:has(#perfil),
 body:has(#perfil) {
@@ -26,71 +16,198 @@ body:has(#perfil) {
 
     overflow: hidden !important;
 
-    background: #ffffff;
+    background: #f8f8fa;
 }
+
 
 body:has(#perfil) {
     position: relative !important;
 }
 
-body:has(#perfil) #perfil {
-    --perfil-foto-subida: 46px;
-    --perfil-sobreposicao: 28px;
 
+body:has(#perfil) #perfil {
     position: relative;
 
-    width: 100% !important;
-
-    height: 100vh !important;
-    height: 100dvh !important;
-
-    min-height: 0 !important;
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
 
     margin: 0;
     padding: 0;
 
-    overflow-x: hidden !important;
-    overflow-y: auto !important;
+    overflow-x: hidden;
+    overflow-y: auto;
 
-    background: #ffffff;
+    background: #f8f8fa;
 
     -webkit-overflow-scrolling: touch;
 
     overscroll-behavior-x: none;
-    overscroll-behavior-y: auto !important;
+    overscroll-behavior-y: auto;
 
     touch-action: pan-y;
 }
 
 
-/* Galeria */
+/* =========================================================
+   TOPO
+   ========================================================= */
 
-.perfil-galeria {
+.perfil-topo {
     position: relative;
-    z-index: 1;
+    z-index: 20;
 
     width: 100%;
 
-    height: 76svh;
+    min-height:
+        calc(
+            58px +
+            env(safe-area-inset-top, 0px)
+        );
 
-    min-height: 500px;
-    max-height: 900px;
+    padding:
+        calc(
+            10px +
+            env(safe-area-inset-top, 0px)
+        )
+        18px
+        10px;
 
-    overflow: visible;
+    background:
+        rgba(
+            248,
+            248,
+            250,
+            0.92
+        );
 
-    background: #161616;
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+
+    display: grid;
+
+    grid-template-columns:
+        42px
+        1fr
+        42px;
+
+    align-items: center;
+}
+
+
+.perfil-voltar,
+.editar-perfil {
+    width: 42px;
+    height: 42px;
+
+    padding: 0;
+
+    border:
+        1px solid
+        rgba(20, 20, 24, 0.06);
+
+    border-radius: 50%;
+
+    background: #ffffff;
+
+    color: #161619;
+
+    text-decoration: none;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    box-shadow:
+        0
+        4px
+        14px
+        rgba(20, 20, 30, 0.04);
+
+    -webkit-tap-highlight-color: transparent;
+}
+
+
+.perfil-voltar svg,
+.editar-perfil svg {
+    width: 20px;
+    height: 20px;
+
+    fill: none;
+
+    stroke: currentColor;
+    stroke-width: 1.8;
+
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+
+.perfil-topo-titulo {
+    color: #7d7d83;
+
+    font-size: 12px;
+    font-weight: 760;
+
+    letter-spacing: 0.12em;
+
+    text-align: center;
+    text-transform: uppercase;
+}
+
+
+.perfil-topo-espaco {
+    display: block;
+
+    width: 42px;
+    height: 42px;
+}
+
+
+/* =========================================================
+   APRESENTAÇÃO
+   ========================================================= */
+
+.perfil-apresentacao {
+    padding:
+        8px
+        16px
+        0;
+}
+
+
+/* =========================================================
+   GALERIA
+   ========================================================= */
+
+.perfil-galeria {
+    position: relative;
+
+    width: 100%;
+
+    height: 58svh;
+
+    min-height: 430px;
+    max-height: 680px;
+
+    overflow: hidden;
+
+    border-radius: 30px;
+
+    background: #171719;
+
+    box-shadow:
+        0
+        18px
+        50px
+        rgba(18, 18, 24, 0.11);
 
     isolation: isolate;
 }
 
+
 .perfil-fotos {
     position: relative;
-
-    top:
-        calc(
-            -1 *
-            var(--perfil-foto-subida)
-        );
 
     width: 100%;
     height: 100%;
@@ -98,7 +215,9 @@ body:has(#perfil) #perfil {
     overflow-x: auto;
     overflow-y: hidden;
 
-    overscroll-behavior-x: contain;
+    display: flex;
+
+    flex-flow: row nowrap;
 
     scroll-snap-type: x mandatory;
     scroll-behavior: smooth;
@@ -109,15 +228,16 @@ body:has(#perfil) #perfil {
 
     touch-action: pan-x pan-y;
 
-    display: flex;
-    flex-flow: row nowrap;
-
     -webkit-overflow-scrolling: touch;
+
+    overscroll-behavior-x: contain;
 }
+
 
 .perfil-fotos::-webkit-scrollbar {
     display: none;
 }
+
 
 .perfil-fotos.a-arrastar {
     cursor: grabbing;
@@ -125,6 +245,7 @@ body:has(#perfil) #perfil {
     scroll-snap-type: none;
     scroll-behavior: auto;
 }
+
 
 .perfil-slide {
     flex: 0 0 100%;
@@ -139,8 +260,9 @@ body:has(#perfil) #perfil {
     scroll-snap-align: start;
     scroll-snap-stop: always;
 
-    background: #161616;
+    background: #171719;
 }
+
 
 .perfil-slide img {
     display: block;
@@ -162,7 +284,9 @@ body:has(#perfil) #perfil {
     -webkit-user-drag: none;
 }
 
-.perfil-galeria::before,
+
+/* Gradiente inferior */
+
 .perfil-galeria::after {
     content: "";
 
@@ -170,463 +294,569 @@ body:has(#perfil) #perfil {
     z-index: 2;
 
     right: 0;
+    bottom: 0;
     left: 0;
 
-    height: 100px;
-
-    pointer-events: none;
-}
-
-.perfil-galeria::before {
-    top:
-        calc(
-            -1 *
-            var(--perfil-foto-subida)
-        );
-
-    background:
-        linear-gradient(
-            to bottom,
-            rgba(0, 0, 0, 0.30),
-            transparent
-        );
-}
-
-.perfil-galeria::after {
-    bottom:
-        var(--perfil-foto-subida);
+    height: 110px;
 
     background:
         linear-gradient(
             to top,
-            rgba(0, 0, 0, 0.20),
+            rgba(0, 0, 0, 0.28),
             transparent
         );
+
+    pointer-events: none;
 }
 
 
-/* Indicadores */
+/* =========================================================
+   INDICADORES
+   ========================================================= */
 
 .perfil-indicadores {
     position: absolute;
     z-index: 6;
 
-    right: 50%;
-
-    bottom:
-        calc(
-            var(--perfil-foto-subida) +
-            22px
-        );
-
-    transform: translateX(50%);
+    right: 18px;
+    bottom: 18px;
 
     display: flex;
     align-items: center;
-    justify-content: center;
 
-    gap: 7px;
+    gap: 5px;
 }
 
-.perfil-indicadores button {
-    flex: 0 0 20px;
 
-    width: 20px;
-    height: 20px;
+.perfil-indicadores button {
+    width: auto;
+    height: 16px;
 
     margin: 0;
-    padding: 6px;
+    padding: 5px 1px;
 
     border: 0;
 
     background: transparent;
-
-    cursor: pointer;
-
-    touch-action: manipulation;
 }
+
 
 .perfil-indicadores button span {
     display: block;
 
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
 
-    border-radius: 50%;
+    border-radius: 999px;
 
     background:
         rgba(
             255,
             255,
             255,
-            0.52
+            0.55
         );
 
-    box-shadow:
-        0
-        1px
-        4px
-        rgba(0, 0, 0, 0.24);
-
     transition:
-        background-color 160ms ease,
-        transform 160ms ease,
-        box-shadow 160ms ease;
+        width 150ms ease,
+        background-color 150ms ease;
 }
+
 
 .perfil-indicadores button.ativo span {
+    width: 22px;
+
     background: #ffffff;
-
-    transform: scale(1.4);
-
-    box-shadow:
-        0
-        1px
-        5px
-        rgba(0, 0, 0, 0.36);
 }
 
 
-/* Setas */
+/* =========================================================
+   NAVEGAÇÃO DAS FOTOS
+   ========================================================= */
 
 .perfil-navegacao {
     position: absolute;
-    z-index: 4;
+    z-index: 5;
 
-    top:
-        calc(
-            50% -
-            var(--perfil-foto-subida) / 2
-        );
+    top: 50%;
 
-    width: 44px;
-    height: 44px;
+    width: 42px;
+    height: 42px;
 
     padding: 0;
 
     border:
         1px solid
-        rgba(255, 255, 255, 0.5);
+        rgba(255, 255, 255, 0.25);
 
     border-radius: 50%;
 
     background:
-        rgba(20, 20, 20, 0.34);
+        rgba(20, 20, 20, 0.26);
 
     color: #ffffff;
 
     transform: translateY(-50%);
 
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
-
-    cursor: pointer;
-
-    touch-action: manipulation;
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
 
     display: flex;
     align-items: center;
     justify-content: center;
 }
+
 
 .perfil-navegacao:disabled {
     visibility: hidden;
 }
 
+
 .perfil-anterior {
     left: 14px;
 }
+
 
 .perfil-seguinte {
     right: 14px;
 }
 
+
 .perfil-navegacao svg {
-    width: 24px;
-    height: 24px;
+    width: 21px;
+    height: 21px;
 
     fill: none;
 
     stroke: currentColor;
-    stroke-width: 2.2;
+    stroke-width: 2;
+
     stroke-linecap: round;
     stroke-linejoin: round;
 }
 
 
-/* Conteúdo */
-
-.perfil-conteudo {
-    position: relative;
-    z-index: 5;
-
-    width: 100%;
-    min-height: 0;
-
-    margin-top:
-        calc(
-            -1 *
-            (
-                var(--perfil-foto-subida) +
-                var(--perfil-sobreposicao)
-            )
-        );
-
-    padding:
-        24px
-        20px
-        calc(
-            var(--menu-principal-height, 56px) +
-            var(--menu-principal-bottom, 18px) +
-            env(safe-area-inset-bottom, 0px) +
-            38px
-        );
-
-    border-radius:
-        30px
-        30px
-        0
-        0;
-
-    background: #ffffff;
-}
-
-
-/* Identidade */
+/* =========================================================
+   IDENTIDADE
+   ========================================================= */
 
 .perfil-identidade {
-    display: flex;
-    align-items: flex-start;
+    position: relative;
 
-    min-width: 0;
-
-    gap: 12px;
+    padding:
+        22px
+        4px
+        26px;
 }
 
-.perfil-identidade-texto {
-    min-width: 0;
 
+.perfil-nome-area {
     display: flex;
     flex-direction: column;
 
-    gap: 5px;
+    align-items: flex-start;
+
+    gap: 7px;
 }
 
+
 .perfil-identidade h1 {
-    min-width: 0;
+    max-width: 100%;
 
     margin: 0;
 
-    color: #111111;
+    color: #121214;
 
     font-size:
         clamp(
-            27px,
-            7vw,
-            36px
+            30px,
+            8vw,
+            42px
         );
 
-    font-weight: 750;
-    line-height: 1.08;
+    font-weight: 780;
 
-    letter-spacing: -0.025em;
-}
+    line-height: 0.98;
 
-.perfil-idade {
-    margin: 0;
-
-    color: #8a8a90;
-
-    font-size: 14px;
-    font-weight: 600;
-    line-height: 1.2;
-}
-
-
-/* Definições */
-
-.editar-perfil {
-    flex-shrink: 0;
-
-    margin-left: auto;
-
-    min-height: 36px;
-
-    padding:
-        0
-        11px;
-
-    border:
-        1px solid
-        rgba(17, 17, 17, 0.07);
-
-    border-radius: 999px;
-
-    background: #f3f3f5;
-
-    color: #242426;
-
-    text-decoration: none;
-
-    font-size: 13px;
-    font-weight: 700;
-    line-height: 1;
-
-    letter-spacing: -0.01em;
-
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-
-    gap: 6px;
-
-    -webkit-tap-highlight-color: transparent;
-
-    transition:
-        transform 120ms ease,
-        background-color 120ms ease;
-}
-
-.editar-perfil svg {
-    width: 14px;
-    height: 14px;
-
-    flex-shrink: 0;
-
-    fill: none;
-
-    stroke: currentColor;
-    stroke-width: 1.65;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-
-.editar-perfil:active {
-    transform: scale(0.96);
-
-    background: #e9e9ec;
-}
-
-
-/* Blocos */
-
-.perfil-bloco {
-    margin-top: 24px;
-}
-
-.perfil-bloco h2 {
-    margin:
-        0
-        0
-        8px;
-
-    padding: 0;
-
-    color: #777777;
-
-    font-size: 12px;
-    font-weight: 800;
-
-    letter-spacing: 0.08em;
-
-    text-transform: uppercase;
-}
-
-.perfil-bloco p {
-    margin: 0;
-
-    color: #222222;
-
-    font-size: 17px;
-    line-height: 1.45;
+    letter-spacing: -0.045em;
 
     overflow-wrap: anywhere;
 }
 
 
-/* Separador */
+.perfil-idade {
+    color: #8a8a90;
 
-.perfil-separador {
-    width: 100%;
-    height: 1px;
+    font-size: 13px;
+    font-weight: 650;
 
-    margin:
-        2px
-        0
-        22px;
-
-    background: #ededf0;
+    letter-spacing: 0.01em;
 }
 
 
-/* Interesses */
+/* pequenos pontos Margot */
 
-.perfil-gostos ul {
+.perfil-assinatura {
+    position: absolute;
+
+    right: 3px;
+    bottom: 30px;
+
+    display: flex;
+
+    gap: 5px;
+}
+
+
+.perfil-assinatura span {
+    display: block;
+
+    width: 5px;
+    height: 5px;
+
+    border-radius: 50%;
+
+    background: #7c70ff;
+}
+
+
+.perfil-assinatura span:nth-child(2) {
+    background: #479eff;
+}
+
+
+.perfil-assinatura span:nth-child(3) {
+    background: #da75d9;
+}
+
+
+/* =========================================================
+   CONTEÚDO
+   ========================================================= */
+
+.perfil-conteudo {
+    padding:
+        0
+        20px
+        calc(
+            var(--menu-principal-height, 56px) +
+            var(--menu-principal-bottom, 18px) +
+            env(safe-area-inset-bottom, 0px) +
+            42px
+        );
+}
+
+
+/* =========================================================
+   SECÇÕES
+   ========================================================= */
+
+.perfil-bio,
+.perfil-interesses {
+    border-top:
+        1px solid
+        #e6e6ea;
+}
+
+
+.perfil-bio {
+    padding:
+        25px
+        0
+        32px;
+
+    display: grid;
+
+    grid-template-columns:
+        38px
+        minmax(0, 1fr);
+
+    gap: 10px;
+}
+
+
+.perfil-seccao-cabecalho {
+    padding:
+        26px
+        0
+        18px;
+
+    display: grid;
+
+    grid-template-columns:
+        38px
+        minmax(0, 1fr);
+
+    gap: 10px;
+}
+
+
+.perfil-seccao-numero {
+    color: #a2a2a8;
+
+    font-size: 10px;
+    font-weight: 800;
+
+    letter-spacing: 0.12em;
+
+    padding-top: 3px;
+}
+
+
+.perfil-seccao-conteudo {
+    min-width: 0;
+}
+
+
+.perfil-seccao-conteudo h2 {
+    margin:
+        0
+        0
+        13px;
+
+    color: #17171a;
+
+    font-size: 13px;
+    font-weight: 780;
+
+    letter-spacing: 0.04em;
+
+    text-transform: uppercase;
+}
+
+
+.perfil-bio .perfil-seccao-conteudo p {
+    max-width: 520px;
+
+    margin: 0;
+
+    color: #1e1e22;
+
+    font-size:
+        clamp(
+            20px,
+            5.3vw,
+            26px
+        );
+
+    font-weight: 470;
+
+    line-height: 1.36;
+
+    letter-spacing: -0.025em;
+
+    overflow-wrap: anywhere;
+}
+
+
+.perfil-seccao-ajuda {
+    margin: 0;
+
+    color: #929297;
+
+    font-size: 13px;
+
+    line-height: 1.4;
+}
+
+
+/* =========================================================
+   INTERESSES
+   ========================================================= */
+
+.perfil-interesses {
+    padding-bottom: 32px;
+}
+
+
+.perfil-interesses-lista {
     margin: 0;
     padding: 0;
 
     list-style: none;
 
+    border-bottom:
+        1px solid
+        #e6e6ea;
+}
+
+
+.perfil-interesses-lista li {
+    min-height: 58px;
+
+    border-top:
+        1px solid
+        #e6e6ea;
+
     display: grid;
 
     grid-template-columns:
-        repeat(
-            2,
-            minmax(0, 1fr)
-        );
+        40px
+        minmax(0, 1fr)
+        22px;
 
-    column-gap: 26px;
-    row-gap: 14px;
-}
-
-.perfil-gostos li {
-    min-width: 0;
-
-    color: #222222;
-
-    font-size: 15px;
-    font-weight: 500;
-    line-height: 1.3;
-
-    display: flex;
     align-items: center;
 
-    gap: 9px;
-}
-
-.perfil-gosto-ponto {
-    width: 6px;
-    height: 6px;
-
-    flex: 0 0 6px;
-
-    border-radius: 50%;
-
-    background: #777777;
+    gap: 8px;
 }
 
 
-/* Hey */
+.perfil-interesse-indice {
+    color: #aaaab0;
+
+    font-size: 10px;
+    font-weight: 760;
+
+    letter-spacing: 0.06em;
+}
+
+
+.perfil-interesse-nome {
+    min-width: 0;
+
+    color: #1d1d20;
+
+    font-size: 17px;
+    font-weight: 620;
+
+    letter-spacing: -0.015em;
+
+    overflow-wrap: anywhere;
+}
+
+
+.perfil-interesse-seta {
+    color: #b0b0b5;
+
+    font-size: 14px;
+
+    text-align: right;
+}
+
+
+/* =========================================================
+   CONECTAR / HEY
+   ========================================================= */
+
+.perfil-conectar {
+    margin-top: 6px;
+
+    padding:
+        22px
+        0
+        12px;
+
+    border-top:
+        1px solid
+        #e6e6ea;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 20px;
+}
+
+
+.perfil-conectar-texto {
+    min-width: 0;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 4px;
+}
+
+
+.perfil-conectar-label {
+    color: #96969c;
+
+    font-size: 11px;
+    font-weight: 650;
+
+    letter-spacing: 0.02em;
+}
+
+
+.perfil-conectar-texto strong {
+    color: #161619;
+
+    font-size: 18px;
+    font-weight: 740;
+
+    letter-spacing: -0.02em;
+}
+
+
+/*
+ * Sobrescreve o estilo global .ola.
+ * Aqui o Hey deixa de ser um círculo gigante.
+ */
 
 #enviar-hey-perfil {
     position: relative !important;
-    z-index: 10;
+    z-index: 10 !important;
 
-    margin:
-        30px
-        auto
-        10px !important;
+    width: auto !important;
+    min-width: 112px !important;
 
-    display: flex !important;
+    height: 50px !important;
+    min-height: 50px !important;
+
+    margin: 0 !important;
+    padding:
+        0
+        17px !important;
+
+    border: 0 !important;
+
+    border-radius: 999px !important;
+
+    background: #17171a !important;
+
+    color: #ffffff !important;
+
+    box-shadow: none !important;
+
+    font-size: 16px !important;
+    font-weight: 720 !important;
+
+    line-height: 1 !important;
+
+    display: inline-flex !important;
+
+    align-items: center !important;
+    justify-content: center !important;
+
+    gap: 12px !important;
+
     visibility: visible !important;
 
-    flex-shrink: 0;
+    flex-shrink: 0 !important;
 }
 
 
-/* Touch */
+#enviar-hey-perfil svg {
+    width: 19px;
+    height: 19px;
+
+    fill: none;
+
+    stroke: currentColor;
+    stroke-width: 1.9;
+
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+
+/* =========================================================
+   TOUCH
+   ========================================================= */
 
 @media (pointer: coarse) {
+
     .perfil-navegacao {
         display: none;
     }
@@ -634,10 +864,16 @@ body:has(#perfil) #perfil {
     .perfil-fotos {
         cursor: default;
     }
+
 }
 
 
+/* =========================================================
+   STANDALONE
+   ========================================================= */
+
 @media all and (display-mode: standalone) {
+
     html:has(#perfil),
     body:has(#perfil) {
         width: 100% !important;
@@ -647,6 +883,7 @@ body:has(#perfil) #perfil {
 
         overflow: hidden !important;
     }
+
 
     body:has(#perfil) #perfil {
         height: 100vh !important;
@@ -662,221 +899,240 @@ body:has(#perfil) #perfil {
         overscroll-behavior-y: auto !important;
     }
 
-    .perfil-galeria {
-        height:
-            calc(
-                76svh +
-                env(
-                    safe-area-inset-top,
-                    0px
-                )
-            );
-
-        margin-top:
-            calc(
-                -1 *
-                env(
-                    safe-area-inset-top,
-                    0px
-                )
-            );
-    }
 }
 
 
-/* Ecrãs mais baixos */
+/* =========================================================
+   ECRÃS MAIS BAIXOS
+   ========================================================= */
 
 @media (max-height: 720px) {
+
     .perfil-galeria {
-        height: 74svh;
-        min-height: 480px;
+        height: 54svh;
+
+        min-height: 370px;
     }
 
-    .perfil-conteudo {
-        padding-top: 22px;
+
+    .perfil-identidade {
+        padding-bottom: 22px;
     }
 
-    .perfil-bloco {
-        margin-top: 20px;
+
+    .perfil-bio {
+        padding:
+            22px
+            0
+            27px;
     }
 
-    .perfil-separador {
-        margin-bottom: 18px;
-    }
-
-    .perfil-gostos ul {
-        row-gap: 12px;
-    }
 }
 
 
-/* Ecrãs estreitos */
+/* =========================================================
+   ECRÃS ESTREITOS
+   ========================================================= */
 
 @media (max-width: 370px) {
+
+    .perfil-apresentacao {
+        padding-right: 12px;
+        padding-left: 12px;
+    }
+
+
     .perfil-conteudo {
         padding-right: 16px;
         padding-left: 16px;
     }
 
-    .perfil-gostos ul {
-        column-gap: 18px;
-    }
-
-    .perfil-gostos li {
-        font-size: 14px;
-    }
-}
-
-
-/* Tablet / desktop */
-
-@media (min-width: 768px) {
-    body:has(#perfil) {
-        background: #ededf0;
-    }
-
-    /*
-     * No iPad o perfil deve continuar a parecer uma interface
-     * móvel deliberada, em vez de uma fotografia gigante com
-     * texto igualmente ampliado.
-     */
-    body:has(#perfil) #perfil {
-        width:
-            min(
-                calc(100% - 64px),
-                620px
-            ) !important;
-
-        max-width: 620px;
-
-        margin:
-            0
-            auto;
-
-        background: #ffffff;
-
-        box-shadow:
-            0
-            0
-            38px
-            rgba(
-                0,
-                0,
-                0,
-                0.08
-            );
-    }
 
     .perfil-galeria {
-        height:
-            min(
-                58dvh,
-                600px
-            );
-
-        min-height: 430px;
-        max-height: 600px;
+        border-radius: 26px;
     }
 
-    .perfil-conteudo {
-        padding:
-            20px
-            22px
-            calc(
-                var(--menu-principal-height, 56px) +
-                var(--menu-principal-bottom, 18px) +
-                env(safe-area-inset-bottom, 0px) +
-                28px
-            );
-
-        border-radius:
-            26px
-            26px
-            0
-            0;
-    }
-
-    .perfil-identidade {
-        gap: 7px;
-    }
 
     .perfil-identidade h1 {
         font-size: 30px;
     }
 
-    .perfil-idade {
-        font-size: 13px;
+
+    .perfil-bio,
+    .perfil-seccao-cabecalho {
+        grid-template-columns:
+            32px
+            minmax(0, 1fr);
     }
 
-    .editar-perfil {
-        min-height: 34px;
-        padding: 0 10px;
-        font-size: 12px;
+
+    .perfil-bio .perfil-seccao-conteudo p {
+        font-size: 19px;
     }
 
-    .perfil-bloco {
-        margin-top: 20px;
+
+    .perfil-conectar {
+        align-items: flex-end;
     }
 
-    .perfil-bloco h2 {
-        margin-bottom: 6px;
-        font-size: 11px;
+
+    .perfil-conectar-label {
+        display: none;
     }
 
-    .perfil-bloco p {
-        font-size: 15px;
-        line-height: 1.4;
+}
+
+
+/* =========================================================
+   TABLET / DESKTOP
+   ========================================================= */
+
+@media (min-width: 768px) {
+
+    body:has(#perfil) {
+        background: #ededf0;
     }
 
-    .perfil-gostos ul {
-        column-gap: 24px;
-        row-gap: 12px;
-    }
 
-    .perfil-gostos li {
-        font-size: 13px;
-    }
+    body:has(#perfil) #perfil {
+        width:
+            min(
+                calc(100% - 64px),
+                680px
+            ) !important;
 
-    #enviar-hey-perfil {
-        width: 136px;
-        height: 136px;
-        min-width: 136px;
-        min-height: 136px;
+        max-width: 680px;
 
         margin:
-            22px
-            auto
-            6px !important;
+            0
+            auto;
 
-        font-size: 2.05rem;
+        background: #f8f8fa;
+
+        box-shadow:
+            0
+            0
+            42px
+            rgba(
+                0,
+                0,
+                0,
+                0.075
+            );
     }
+
+
+    .perfil-apresentacao {
+        padding:
+            12px
+            22px
+            0;
+    }
+
+
+    .perfil-galeria {
+        height:
+            min(
+                56dvh,
+                590px
+            );
+
+        min-height: 430px;
+
+        border-radius: 32px;
+    }
+
+
+    .perfil-identidade {
+        padding:
+            24px
+            5px
+            28px;
+    }
+
+
+    .perfil-identidade h1 {
+        font-size: 38px;
+    }
+
+
+    .perfil-conteudo {
+        padding:
+            0
+            26px
+            calc(
+                var(--menu-principal-height, 56px) +
+                var(--menu-principal-bottom, 18px) +
+                env(safe-area-inset-bottom, 0px) +
+                34px
+            );
+    }
+
+
+    .perfil-bio {
+        grid-template-columns:
+            44px
+            minmax(0, 1fr);
+    }
+
+
+    .perfil-seccao-cabecalho {
+        grid-template-columns:
+            44px
+            minmax(0, 1fr);
+    }
+
+
+    .perfil-bio .perfil-seccao-conteudo p {
+        font-size: 23px;
+    }
+
+
+    .perfil-interesses-lista li {
+        min-height: 54px;
+    }
+
+
+    #enviar-hey-perfil {
+        min-width: 118px !important;
+
+        height: 48px !important;
+        min-height: 48px !important;
+
+        font-size: 15px !important;
+    }
+
 }
 
 
-/*
- * Em landscape a altura disponível é o fator limitante.
- * A galeria encolhe mais um pouco para o conteúdo principal
- * ficar visível sem parecer um segundo ecrã inteiro.
- */
+/* =========================================================
+   LANDSCAPE
+   ========================================================= */
 
 @media (min-width: 1024px) and (max-height: 900px) {
+
     .perfil-galeria {
-        height: min(54dvh, 500px);
-        min-height: 390px;
-        max-height: 500px;
+        height: min(50dvh, 470px);
+
+        min-height: 360px;
     }
+
 }
 
 
-/* Movimento reduzido */
+/* =========================================================
+   MOVIMENTO REDUZIDO
+   ========================================================= */
 
 @media (prefers-reduced-motion: reduce) {
+
     .perfil-fotos {
         scroll-behavior: auto;
     }
 
-    .perfil-indicadores button span,
-    .editar-perfil {
+
+    .perfil-indicadores button span {
         transition: none;
     }
+
 }
