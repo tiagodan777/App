@@ -15,7 +15,7 @@
       "autoBackdropColor": "dom"
     },
     "SplashScreen": {
-      "launchShowDuration": 900,
+      "launchShowDuration": 0,
       "launchAutoHide": true,
       "launchFadeOutDuration": 250,
       "backgroundColor": "#FFFFFFFF",
