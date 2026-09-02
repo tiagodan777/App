@@ -83,12 +83,6 @@
         );
 
 
-    var lightboxStage =
-        document.getElementById(
-            'perfil-lightbox-stage'
-        );
-
-
     var lightboxMedia =
         document.getElementById(
             'perfil-lightbox-media'
@@ -131,6 +125,10 @@
         );
 
 
+    /* =====================================================
+       ESTADO
+       ===================================================== */
+
     var indiceAtual =
         0;
 
@@ -159,8 +157,20 @@
         null;
 
 
+    var animacaoGaleriaFrame =
+        null;
+
+
+    var temporizadorTrocaLightbox =
+        null;
+
+
     var pointerAtivo =
         false;
+
+
+    var pointerId =
+        null;
 
 
     var pointerInicioX =
@@ -171,12 +181,32 @@
         0;
 
 
+    var pointerUltimoX =
+        0;
+
+
+    var pointerInicioScroll =
+        0;
+
+
+    var pointerInicioTempo =
+        0;
+
+
+    var pointerDirecao =
+        null;
+
+
     var pointerMoveu =
         false;
 
 
+    var ignorarClickAte =
+        0;
+
+
     /* =====================================================
-       FORMA INICIAL
+       PATHS
        ===================================================== */
 
     var PATH_ILHA = [
@@ -223,10 +253,6 @@
         0.075, 0.235
     ];
 
-
-    /* =====================================================
-       SPLASH
-       ===================================================== */
 
     var PATH_SPLASH = [
         0.008, 0.115,
@@ -277,12 +303,6 @@
     ];
 
 
-    /* =====================================================
-       RETÂNGULO FINAL
-
-       Sem arredondamentos.
-       ===================================================== */
-
     var PATH_RECT = [
         0.000, 0.000,
 
@@ -328,6 +348,10 @@
     ];
 
 
+    /* =====================================================
+       HELPERS
+       ===================================================== */
+
     function limitarIndice(indice) {
         return Math.max(
             0,
@@ -368,16 +392,199 @@
 
 
     function indiceMaisProximo() {
-        var largura =
-            faixa.clientWidth || 1;
+        var centro =
+            faixa.scrollLeft +
+            faixa.clientWidth / 2;
+
+
+        var melhor =
+            0;
+
+
+        var menorDistancia =
+            Infinity;
+
+
+        slides.forEach(
+            function (
+                slide,
+                indice
+            ) {
+                var centroSlide =
+                    slide.offsetLeft +
+                    slide.offsetWidth / 2;
+
+
+                var distancia =
+                    Math.abs(
+                        centroSlide -
+                        centro
+                    );
+
+
+                if (
+                    distancia <
+                    menorDistancia
+                ) {
+                    menorDistancia =
+                        distancia;
+
+
+                    melhor =
+                        indice;
+                }
+            }
+        );
 
 
         return limitarIndice(
-            Math.round(
-                faixa.scrollLeft /
-                largura
-            )
+            melhor
         );
+    }
+
+
+    /* =====================================================
+       ANIMAÇÃO DA GALERIA
+
+       Substitui scroll-behavior:smooth por uma animação
+       consistente em Safari / Chrome / Capacitor.
+       ===================================================== */
+
+    function cancelarAnimacaoGaleria() {
+        if (
+            animacaoGaleriaFrame !==
+            null
+        ) {
+            window.cancelAnimationFrame(
+                animacaoGaleriaFrame
+            );
+
+
+            animacaoGaleriaFrame =
+                null;
+        }
+    }
+
+
+    function easingGaleria(t) {
+        return t < 0.5
+            ? 4 * t * t * t
+            : 1 -
+              Math.pow(
+                  -2 * t + 2,
+                  3
+              ) / 2;
+    }
+
+
+    function animarGaleriaPara(
+        indice,
+        duracao
+    ) {
+        indice =
+            limitarIndice(indice);
+
+
+        cancelarAnimacaoGaleria();
+
+
+        var destino =
+            slides[indice]
+                .offsetLeft;
+
+
+        var origem =
+            faixa.scrollLeft;
+
+
+        var distancia =
+            destino -
+            origem;
+
+
+        if (
+            prefereMovimentoReduzido() ||
+            Math.abs(distancia) < 1
+        ) {
+            faixa.scrollLeft =
+                destino;
+
+
+            atualizarUI(
+                indice
+            );
+
+
+            return;
+        }
+
+
+        var inicio =
+            window.performance.now();
+
+
+        faixa.classList.add(
+            'a-arrastar'
+        );
+
+
+        function frame(agora) {
+            var progresso =
+                Math.min(
+                    1,
+                    (
+                        agora -
+                        inicio
+                    ) /
+                    duracao
+                );
+
+
+            var suavizado =
+                easingGaleria(
+                    progresso
+                );
+
+
+            faixa.scrollLeft =
+                origem +
+                distancia *
+                suavizado;
+
+
+            if (
+                progresso <
+                1
+            ) {
+                animacaoGaleriaFrame =
+                    window.requestAnimationFrame(
+                        frame
+                    );
+            } else {
+                animacaoGaleriaFrame =
+                    null;
+
+
+                faixa.scrollLeft =
+                    destino;
+
+
+                faixa.classList.remove(
+                    'a-arrastar'
+                );
+
+
+                atualizarUI(
+                    indice
+                );
+            }
+        }
+
+
+        animacaoGaleriaFrame =
+            window.requestAnimationFrame(
+                frame
+            );
     }
 
 
@@ -833,45 +1040,11 @@
                 indiceAtual ===
                 slides.length - 1;
         }
-
-
-        if (lightboxAberto) {
-            atualizarLightboxFoto(
-                indiceAtual
-            );
-        }
-    }
-
-
-    function mostrarFoto(
-        indice,
-        suave
-    ) {
-        indice =
-            limitarIndice(indice);
-
-
-        faixa.scrollTo({
-            left:
-                slides[indice]
-                    .offsetLeft,
-
-            behavior:
-                (
-                    suave === false ||
-                    prefereMovimentoReduzido()
-                )
-                    ? 'auto'
-                    : 'smooth'
-        });
-
-
-        atualizarUI(indice);
     }
 
 
     /* =====================================================
-       TAMANHO REAL DA FOTO
+       LIGHTBOX TAMANHO
        ===================================================== */
 
     function ajustarLightboxAoAspecto(
@@ -889,16 +1062,14 @@
 
         var larguraMaxima =
             Math.min(
-                window.innerWidth *
-                    0.92,
+                window.innerWidth * 0.92,
                 880
             );
 
 
         var alturaMaxima =
             Math.min(
-                window.innerHeight *
-                    0.80,
+                window.innerHeight * 0.80,
                 920
             );
 
@@ -913,20 +1084,11 @@
             );
 
 
-        var largura =
-            larguraNatural *
-            proporcao;
-
-
-        var altura =
-            alturaNatural *
-            proporcao;
-
-
         lightboxMedia.style.width =
             Math.max(
                 120,
-                largura
+                larguraNatural *
+                    proporcao
             ) +
             'px';
 
@@ -934,17 +1096,16 @@
         lightboxMedia.style.height =
             Math.max(
                 120,
-                altura
+                alturaNatural *
+                    proporcao
             ) +
             'px';
     }
 
 
-    /* =====================================================
-       FOTO LIGHTBOX
-       ===================================================== */
-
-    function atualizarLightboxFoto(indice) {
+    function atualizarLightboxFoto(
+        indice
+    ) {
         if (!lightboxImagem) {
             return;
         }
@@ -1009,7 +1170,84 @@
 
 
     /* =====================================================
-       TRANSFORMAÇÃO
+       TROCA SUAVE NO LIGHTBOX
+       ===================================================== */
+
+    function trocarFotoLightbox(
+        novoIndice
+    ) {
+        novoIndice =
+            limitarIndice(
+                novoIndice
+            );
+
+
+        if (
+            novoIndice ===
+            indiceAtual
+        ) {
+            return;
+        }
+
+
+        if (
+            temporizadorTrocaLightbox !==
+            null
+        ) {
+            window.clearTimeout(
+                temporizadorTrocaLightbox
+            );
+        }
+
+
+        lightboxImagem.classList.add(
+            'a-trocar'
+        );
+
+
+        temporizadorTrocaLightbox =
+            window.setTimeout(
+                function () {
+                    temporizadorTrocaLightbox =
+                        null;
+
+
+                    indiceAtual =
+                        novoIndice;
+
+
+                    atualizarUI(
+                        indiceAtual
+                    );
+
+
+                    faixa.scrollLeft =
+                        slides[indiceAtual]
+                            .offsetLeft;
+
+
+                    atualizarLightboxFoto(
+                        indiceAtual
+                    );
+
+
+                    window.requestAnimationFrame(
+                        function () {
+                            lightboxImagem
+                                .classList
+                                .remove(
+                                    'a-trocar'
+                                );
+                        }
+                    );
+                },
+                145
+            );
+    }
+
+
+    /* =====================================================
+       ORIGEM LIGHTBOX
        ===================================================== */
 
     function calcularTransformacaoOrigem() {
@@ -1022,11 +1260,13 @@
 
 
         var origem =
-            galeria.getBoundingClientRect();
+            galeria
+                .getBoundingClientRect();
 
 
         var destino =
-            lightboxMedia.getBoundingClientRect();
+            lightboxMedia
+                .getBoundingClientRect();
 
 
         if (
@@ -1059,47 +1299,41 @@
             destino.height / 2;
 
 
-        var deltaX =
-            centroOrigemX -
-            centroDestinoX;
-
-
-        var deltaY =
-            centroOrigemY -
-            centroDestinoY;
-
-
-        var scaleX =
-            origem.width /
-            destino.width;
-
-
-        var scaleY =
-            origem.height /
-            destino.height;
-
-
         lightboxMedia.style.setProperty(
             '--perfil-origem-x',
-            deltaX + 'px'
+            (
+                centroOrigemX -
+                centroDestinoX
+            ) +
+            'px'
         );
 
 
         lightboxMedia.style.setProperty(
             '--perfil-origem-y',
-            deltaY + 'px'
+            (
+                centroOrigemY -
+                centroDestinoY
+            ) +
+            'px'
         );
 
 
         lightboxMedia.style.setProperty(
             '--perfil-origem-scale-x',
-            String(scaleX)
+            String(
+                origem.width /
+                destino.width
+            )
         );
 
 
         lightboxMedia.style.setProperty(
             '--perfil-origem-scale-y',
-            String(scaleY)
+            String(
+                origem.height /
+                destino.height
+            )
         );
     }
 
@@ -1132,15 +1366,17 @@
         }
 
 
-        indice =
+        indiceAtual =
             limitarIndice(indice);
 
 
-        atualizarUI(indice);
+        atualizarUI(
+            indiceAtual
+        );
 
 
         atualizarLightboxFoto(
-            indice
+            indiceAtual
         );
 
 
@@ -1208,7 +1444,8 @@
             window.setTimeout(
                 function () {
                     lightboxFechar.focus({
-                        preventScroll: true
+                        preventScroll:
+                            true
                     });
                 },
                 80
@@ -1299,7 +1536,8 @@
 
 
                     galeria.focus({
-                        preventScroll: true
+                        preventScroll:
+                            true
                     });
                 },
                 prefereMovimentoReduzido()
@@ -1310,47 +1548,332 @@
 
 
     /* =====================================================
-       NAVEGAR LIGHTBOX
+       SWIPE / DRAG PRINCIPAL
        ===================================================== */
 
-    function lightboxFotoAnterior() {
-        if (
-            indiceAtual <= 0
-        ) {
+    function terminarPointer(
+        evento,
+        cancelado
+    ) {
+        if (!pointerAtivo) {
             return;
         }
 
 
-        mostrarFoto(
-            indiceAtual - 1,
-            false
-        );
-    }
+        var largura =
+            faixa.clientWidth || 1;
 
 
-    function lightboxFotoSeguinte() {
+        var distancia =
+            pointerUltimoX -
+            pointerInicioX;
+
+
+        var tempo =
+            Math.max(
+                1,
+                window.performance.now() -
+                pointerInicioTempo
+            );
+
+
+        var velocidade =
+            distancia /
+            tempo;
+
+
+        var indiceInicio =
+            limitarIndice(
+                Math.round(
+                    pointerInicioScroll /
+                    largura
+                )
+            );
+
+
+        var destino =
+            indiceMaisProximo();
+
+
         if (
-            indiceAtual >=
-            slides.length - 1
+            !cancelado &&
+            pointerDirecao ===
+                'horizontal'
         ) {
-            return;
+            var limite =
+                largura * 0.16;
+
+
+            if (
+                distancia <
+                    -limite ||
+                velocidade <
+                    -0.42
+            ) {
+                destino =
+                    limitarIndice(
+                        indiceInicio + 1
+                    );
+            } else if (
+                distancia >
+                    limite ||
+                velocidade >
+                    0.42
+            ) {
+                destino =
+                    limitarIndice(
+                        indiceInicio - 1
+                    );
+            } else {
+                destino =
+                    indiceInicio;
+            }
         }
 
 
-        mostrarFoto(
-            indiceAtual + 1,
-            false
-        );
+        if (
+            pointerDirecao ===
+            'horizontal'
+        ) {
+            ignorarClickAte =
+                window.performance.now() +
+                250;
+
+
+            animarGaleriaPara(
+                destino,
+                380
+            );
+        }
+
+
+        if (
+            pointerId !== null &&
+            faixa.hasPointerCapture &&
+            faixa.hasPointerCapture(
+                pointerId
+            )
+        ) {
+            try {
+                faixa.releasePointerCapture(
+                    pointerId
+                );
+            } catch (erro) {
+                /* sem ação */
+            }
+        }
+
+
+        pointerAtivo =
+            false;
+
+
+        pointerId =
+            null;
+
+
+        pointerDirecao =
+            null;
+
+
+        pointerMoveu =
+            false;
     }
+
+
+    faixa.addEventListener(
+        'pointerdown',
+        function (evento) {
+            if (
+                evento.pointerType ===
+                    'mouse' &&
+                evento.button !== 0
+            ) {
+                return;
+            }
+
+
+            cancelarAnimacaoGaleria();
+
+
+            pointerAtivo =
+                true;
+
+
+            pointerId =
+                evento.pointerId;
+
+
+            pointerDirecao =
+                null;
+
+
+            pointerMoveu =
+                false;
+
+
+            pointerInicioX =
+                evento.clientX;
+
+
+            pointerInicioY =
+                evento.clientY;
+
+
+            pointerUltimoX =
+                evento.clientX;
+
+
+            pointerInicioScroll =
+                faixa.scrollLeft;
+
+
+            pointerInicioTempo =
+                window.performance.now();
+        }
+    );
+
+
+    faixa.addEventListener(
+        'pointermove',
+        function (evento) {
+            if (!pointerAtivo) {
+                return;
+            }
+
+
+            pointerUltimoX =
+                evento.clientX;
+
+
+            var deltaX =
+                evento.clientX -
+                pointerInicioX;
+
+
+            var deltaY =
+                evento.clientY -
+                pointerInicioY;
+
+
+            var absX =
+                Math.abs(deltaX);
+
+
+            var absY =
+                Math.abs(deltaY);
+
+
+            if (
+                pointerDirecao ===
+                    null &&
+                (
+                    absX > 6 ||
+                    absY > 6
+                )
+            ) {
+                if (
+                    absX >
+                    absY * 1.15
+                ) {
+                    pointerDirecao =
+                        'horizontal';
+
+
+                    faixa.classList.add(
+                        'a-arrastar'
+                    );
+
+
+                    if (
+                        faixa
+                            .setPointerCapture
+                    ) {
+                        try {
+                            faixa.setPointerCapture(
+                                evento.pointerId
+                            );
+                        } catch (erro) {
+                            /* sem ação */
+                        }
+                    }
+                } else {
+                    pointerDirecao =
+                        'vertical';
+                }
+            }
+
+
+            if (
+                pointerDirecao !==
+                'horizontal'
+            ) {
+                return;
+            }
+
+
+            evento.preventDefault();
+
+
+            pointerMoveu =
+                true;
+
+
+            faixa.scrollLeft =
+                pointerInicioScroll -
+                deltaX;
+        }
+    );
+
+
+    faixa.addEventListener(
+        'pointerup',
+        function (evento) {
+            faixa.classList.remove(
+                'a-arrastar'
+            );
+
+
+            terminarPointer(
+                evento,
+                false
+            );
+        }
+    );
+
+
+    faixa.addEventListener(
+        'pointercancel',
+        function (evento) {
+            faixa.classList.remove(
+                'a-arrastar'
+            );
+
+
+            terminarPointer(
+                evento,
+                true
+            );
+        }
+    );
 
 
     /* =====================================================
-       SCROLL GALERIA
+       SCROLL
        ===================================================== */
 
     faixa.addEventListener(
         'scroll',
         function () {
+            if (
+                pointerAtivo ||
+                animacaoGaleriaFrame !==
+                    null
+            ) {
+                return;
+            }
+
+
             if (
                 frameScroll !==
                 null
@@ -1390,12 +1913,13 @@
                     evento.stopPropagation();
 
 
-                    mostrarFoto(
+                    animarGaleriaPara(
                         Number(
                             indicador.dataset
                                 .indice ||
                             0
-                        )
+                        ),
+                        420
                     );
                 }
             );
@@ -1404,7 +1928,7 @@
 
 
     /* =====================================================
-       SETAS
+       SETAS PRINCIPAIS
        ===================================================== */
 
     if (anterior) {
@@ -1414,8 +1938,9 @@
                 evento.stopPropagation();
 
 
-                mostrarFoto(
-                    indiceAtual - 1
+                animarGaleriaPara(
+                    indiceAtual - 1,
+                    420
                 );
             }
         );
@@ -1429,8 +1954,9 @@
                 evento.stopPropagation();
 
 
-                mostrarFoto(
-                    indiceAtual + 1
+                animarGaleriaPara(
+                    indiceAtual + 1,
+                    420
                 );
             }
         );
@@ -1438,110 +1964,18 @@
 
 
     /* =====================================================
-       TOQUE VS SWIPE
+       ABRIR FOTO
        ===================================================== */
-
-    faixa.addEventListener(
-        'pointerdown',
-        function (evento) {
-            pointerAtivo =
-                true;
-
-
-            pointerMoveu =
-                false;
-
-
-            pointerInicioX =
-                evento.clientX;
-
-
-            pointerInicioY =
-                evento.clientY;
-        },
-        {
-            passive: true
-        }
-    );
-
-
-    faixa.addEventListener(
-        'pointermove',
-        function (evento) {
-            if (!pointerAtivo) {
-                return;
-            }
-
-
-            var distanciaX =
-                Math.abs(
-                    evento.clientX -
-                    pointerInicioX
-                );
-
-
-            var distanciaY =
-                Math.abs(
-                    evento.clientY -
-                    pointerInicioY
-                );
-
-
-            if (
-                distanciaX > 10 ||
-                distanciaY > 10
-            ) {
-                pointerMoveu =
-                    true;
-            }
-        },
-        {
-            passive: true
-        }
-    );
-
-
-    faixa.addEventListener(
-        'pointerup',
-        function () {
-            pointerAtivo =
-                false;
-
-
-            window.setTimeout(
-                function () {
-                    pointerMoveu =
-                        false;
-                },
-                80
-            );
-        },
-        {
-            passive: true
-        }
-    );
-
-
-    faixa.addEventListener(
-        'pointercancel',
-        function () {
-            pointerAtivo =
-                false;
-
-
-            pointerMoveu =
-                false;
-        },
-        {
-            passive: true
-        }
-    );
-
 
     faixa.addEventListener(
         'click',
         function (evento) {
-            if (pointerMoveu) {
+            if (
+                window.performance.now() <
+                ignorarClickAte
+            ) {
+                evento.preventDefault();
+
                 return;
             }
 
@@ -1580,13 +2014,7 @@
 
 
     /* =====================================================
-       CLICAR FORA DA FOTO FECHA
-
-       Qualquer toque no lightbox que não seja:
-       - na própria fotografia;
-       - nas setas;
-       - no X;
-       fecha a imagem.
+       LIGHTBOX CONTROLOS
        ===================================================== */
 
     if (lightbox) {
@@ -1651,7 +2079,16 @@
                 evento.stopPropagation();
 
 
-                lightboxFotoAnterior();
+                if (
+                    indiceAtual <= 0
+                ) {
+                    return;
+                }
+
+
+                trocarFotoLightbox(
+                    indiceAtual - 1
+                );
             }
         );
     }
@@ -1664,7 +2101,17 @@
                 evento.stopPropagation();
 
 
-                lightboxFotoSeguinte();
+                if (
+                    indiceAtual >=
+                    slides.length - 1
+                ) {
+                    return;
+                }
+
+
+                trocarFotoLightbox(
+                    indiceAtual + 1
+                );
             }
         );
     }
@@ -1693,12 +2140,15 @@
 
             if (
                 evento.key ===
-                'ArrowLeft'
+                    'ArrowLeft' &&
+                indiceAtual > 0
             ) {
                 evento.preventDefault();
 
 
-                lightboxFotoAnterior();
+                trocarFotoLightbox(
+                    indiceAtual - 1
+                );
 
 
                 return;
@@ -1707,12 +2157,16 @@
 
             if (
                 evento.key ===
-                'ArrowRight'
+                    'ArrowRight' &&
+                indiceAtual <
+                    slides.length - 1
             ) {
                 evento.preventDefault();
 
 
-                lightboxFotoSeguinte();
+                trocarFotoLightbox(
+                    indiceAtual + 1
+                );
 
 
                 return;
@@ -1738,12 +2192,10 @@
             evento.preventDefault();
 
 
-            mostrarFoto(
-                indiceAtual - 1
+            animarGaleriaPara(
+                indiceAtual - 1,
+                420
             );
-
-
-            return;
         }
 
 
@@ -1754,42 +2206,10 @@
             evento.preventDefault();
 
 
-            mostrarFoto(
-                indiceAtual + 1
+            animarGaleriaPara(
+                indiceAtual + 1,
+                420
             );
-
-
-            return;
-        }
-
-
-        if (
-            evento.key ===
-            'Home'
-        ) {
-            evento.preventDefault();
-
-
-            mostrarFoto(0);
-
-
-            return;
-        }
-
-
-        if (
-            evento.key ===
-            'End'
-        ) {
-            evento.preventDefault();
-
-
-            mostrarFoto(
-                slides.length - 1
-            );
-
-
-            return;
         }
 
 
@@ -1820,10 +2240,12 @@
        ===================================================== */
 
     function aoRedimensionar() {
-        mostrarFoto(
-            indiceAtual,
-            false
-        );
+        cancelarAnimacaoGaleria();
+
+
+        faixa.scrollLeft =
+            slides[indiceAtual]
+                .offsetLeft;
 
 
         if (lightboxAberto) {
@@ -1866,6 +2288,11 @@
        ===================================================== */
 
     function desativarPagina() {
+        cancelarAnimacaoGaleria();
+
+        cancelarAnimacaoPath();
+
+
         if (
             frameScroll !==
             null
@@ -1880,9 +2307,6 @@
         }
 
 
-        cancelarAnimacaoPath();
-
-
         if (
             temporizadorFecho !==
             null
@@ -1890,26 +2314,25 @@
             window.clearTimeout(
                 temporizadorFecho
             );
-
-
-            temporizadorFecho =
-                null;
         }
 
 
         if (
-            observadorTamanho
+            temporizadorTrocaLightbox !==
+            null
         ) {
+            window.clearTimeout(
+                temporizadorTrocaLightbox
+            );
+        }
+
+
+        if (observadorTamanho) {
             observadorTamanho.disconnect();
 
 
             observadorTamanho =
                 null;
-        } else {
-            window.removeEventListener(
-                'resize',
-                aoRedimensionar
-            );
         }
 
 
@@ -2030,9 +2453,7 @@
 
 
     function anunciar(texto) {
-        if (
-            estadoAcessivel
-        ) {
+        if (estadoAcessivel) {
             estadoAcessivel.textContent =
                 texto;
         }
@@ -2138,7 +2559,8 @@
                     .connect ===
                     'function'
             ) {
-                window.AppWebSocket.connect();
+                window.AppWebSocket
+                    .connect();
             }
 
 
@@ -2321,10 +2743,6 @@
             window.clearTimeout(
                 temporizadorReposicao
             );
-
-
-            temporizadorReposicao =
-                null;
         }
 
 

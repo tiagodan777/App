@@ -21,7 +21,9 @@
     --perfil-roxo-suave: #eee9fa;
 
     --perfil-azul: #8fb2e8;
+
     --perfil-vermelho: #e12346;
+    --perfil-vermelho-escuro: #c91d3e;
 
     --perfil-sombra:
         0 18px 50px rgba(25, 22, 30, 0.075);
@@ -119,10 +121,6 @@ body.perfil-modal-aberta {
 }
 
 
-/* =========================================================
-   SVG
-   ========================================================= */
-
 .perfil-svg-defs {
     position: absolute;
 
@@ -134,10 +132,6 @@ body.perfil-modal-aberta {
     pointer-events: none;
 }
 
-
-/* =========================================================
-   ACESSIBILIDADE
-   ========================================================= */
 
 .sr-only {
     position: absolute !important;
@@ -533,8 +527,7 @@ body.perfil-modal-aberta {
     clip-path:
         url(#perfilIslandClip);
 
-    transform-origin:
-        50% 50%;
+    transform-origin: 50% 50%;
 
     animation:
         perfil-ilha-flutuar
@@ -604,7 +597,7 @@ body.perfil-modal-aberta {
 
 
 /* =========================================================
-   FOTOS
+   FOTOS / SWIPE
    ========================================================= */
 
 .perfil-fotos {
@@ -621,7 +614,12 @@ body.perfil-modal-aberta {
     flex-flow: row nowrap;
 
     scroll-snap-type: x mandatory;
-    scroll-behavior: smooth;
+
+    /*
+        O movimento animado é controlado pelo JS.
+        Evita o "smooth" nativo diferente entre browsers.
+    */
+    scroll-behavior: auto;
 
     overscroll-behavior-x: contain;
 
@@ -629,7 +627,20 @@ body.perfil-modal-aberta {
 
     -webkit-overflow-scrolling: touch;
 
-    touch-action: pan-x pan-y;
+    /*
+        Vertical continua pertencendo à página.
+        Horizontal é tratado pelo JS.
+    */
+    touch-action: pan-y;
+
+    cursor: grab;
+}
+
+
+.perfil-fotos.a-arrastar {
+    scroll-snap-type: none;
+
+    cursor: grabbing;
 }
 
 
@@ -686,8 +697,7 @@ body.perfil-modal-aberta {
     top: 18px;
     left: 50%;
 
-    transform:
-        translateX(-50%);
+    transform: translateX(-50%);
 
     display: flex;
     align-items: center;
@@ -726,8 +736,8 @@ body.perfil-modal-aberta {
         rgba(255, 255, 255, 0.50);
 
     transition:
-        transform 150ms ease,
-        background-color 150ms ease;
+        transform 180ms ease,
+        background-color 180ms ease;
 }
 
 
@@ -861,6 +871,17 @@ body.perfil-modal-aberta {
     place-items: center;
 
     cursor: pointer;
+
+    transition:
+        background-color 160ms ease,
+        transform 160ms ease;
+}
+
+
+.perfil-nav:active {
+    transform:
+        translateY(-50%)
+        scale(0.92);
 }
 
 
@@ -959,8 +980,7 @@ body.perfil-modal-aberta {
             rgba(207, 196, 239, 0.72)
         );
 
-    transform:
-        rotate(10deg);
+    transform: rotate(10deg);
 
     pointer-events: none;
 }
@@ -974,8 +994,7 @@ body.perfil-modal-aberta {
 
     margin: 0;
 
-    color:
-        var(--perfil-preto);
+    color: var(--perfil-preto);
 
     font-family:
         Georgia,
@@ -1043,79 +1062,127 @@ body.perfil-modal-aberta {
 
 /* =========================================================
    HEY
+
+   Os seletores abaixo são deliberadamente mais específicos
+   para sobrepor o antigo #enviar-hey-perfil do style.css.
    ========================================================= */
 
-.perfil-hey {
-    position: relative;
-    z-index: 4;
+#perfil .perfil-hey,
+#perfil #enviar-hey-perfil.perfil-hey {
+    position: relative !important;
+    z-index: 4 !important;
 
-    flex: 0 0 auto;
+    flex: 0 0 auto !important;
 
-    min-width: 82px;
-    height: 42px;
+    width: auto !important;
+    height: 42px !important;
 
-    margin: 0;
-    padding: 0 18px;
+    min-width: 84px !important;
+    min-height: 42px !important;
 
-    border: 0;
+    max-width: none !important;
+    max-height: none !important;
 
-    border-radius: 999px;
+    margin: 0 !important;
 
-    color: #ffffff;
+    padding:
+        0
+        19px !important;
+
+    border: 0 !important;
+
+    border-radius: 999px !important;
 
     background:
-        var(--perfil-preto);
+        var(--perfil-vermelho) !important;
+
+    color: #fff7ee !important;
 
     box-shadow:
-        0 9px 22px rgba(17, 16, 21, 0.15);
+        0
+        9px
+        22px
+        rgba(225, 35, 70, 0.24) !important;
 
-    font: inherit;
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Helvetica Neue",
+        Arial,
+        sans-serif !important;
 
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    font-size: 17px !important;
+    font-weight: 760 !important;
 
-    cursor: pointer;
+    line-height: 1 !important;
 
-    -webkit-tap-highlight-color: transparent;
+    letter-spacing:
+        -0.025em !important;
+
+    appearance: none !important;
+    -webkit-appearance: none !important;
+
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    cursor: pointer !important;
+
+    touch-action: manipulation !important;
+
+    -webkit-tap-highlight-color:
+        transparent !important;
 
     transition:
         transform 150ms ease,
-        opacity 150ms ease,
-        background-color 150ms ease;
+        background-color 150ms ease,
+        box-shadow 150ms ease,
+        opacity 150ms ease !important;
 }
 
 
-.perfil-hey:active:not(:disabled) {
+#perfil .perfil-hey:active:not(:disabled),
+#perfil #enviar-hey-perfil.perfil-hey:active:not(:disabled) {
     transform:
-        scale(0.95);
+        scale(0.94) !important;
+
+    background:
+        var(--perfil-vermelho-escuro) !important;
 }
 
 
-.perfil-hey.enviado {
-    background: #28815c;
+#perfil .perfil-hey.enviado,
+#perfil #enviar-hey-perfil.perfil-hey.enviado {
+    background:
+        #27835d !important;
+
+    box-shadow:
+        0
+        9px
+        22px
+        rgba(39, 131, 93, 0.22) !important;
 }
 
 
-.perfil-hey--preview {
-    pointer-events: none;
+#perfil .perfil-hey--preview {
+    pointer-events: none !important;
 
-    opacity: 1;
+    opacity: 1 !important;
 }
 
 
-.perfil-hey-label {
-    font-size: 17px;
-    font-weight: 760;
+#perfil .perfil-hey-label {
+    font-size: 17px !important;
+    font-weight: 760 !important;
 
-    line-height: 1;
+    line-height: 1 !important;
 
     letter-spacing:
-        -0.025em;
+        -0.025em !important;
 }
 
 
-.perfil-hey.a-enviar {
+#perfil .perfil-hey.a-enviar {
     animation:
         perfil-hey-pulse
         850ms
@@ -1128,11 +1195,13 @@ body.perfil-modal-aberta {
 @keyframes perfil-hey-pulse {
 
     from {
-        transform: scale(1);
+        transform:
+            scale(1);
     }
 
     to {
-        transform: scale(0.97);
+        transform:
+            scale(0.97);
     }
 
 }
@@ -1167,24 +1236,21 @@ body.perfil-modal-aberta {
 .perfil-assinatura span:nth-child(1) {
     width: 23px;
 
-    background:
-        var(--perfil-azul);
+    background: var(--perfil-azul);
 }
 
 
 .perfil-assinatura span:nth-child(2) {
     width: 11px;
 
-    background:
-        var(--perfil-roxo);
+    background: var(--perfil-roxo);
 }
 
 
 .perfil-assinatura span:nth-child(3) {
     width: 7px;
 
-    background:
-        var(--perfil-vermelho);
+    background: var(--perfil-vermelho);
 }
 
 
@@ -1209,11 +1275,8 @@ body.perfil-modal-aberta {
     background:
         rgba(255, 255, 255, 0.76);
 
-    -webkit-backdrop-filter:
-        blur(18px);
-
-    backdrop-filter:
-        blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
 
     box-shadow:
         var(--perfil-sombra);
@@ -1237,10 +1300,6 @@ body.perfil-modal-aberta {
         29px;
 }
 
-
-/* =========================================================
-   CABEÇALHO SECÇÕES
-   ========================================================= */
 
 .perfil-seccao-topo {
     margin-bottom: 15px;
@@ -1312,10 +1371,6 @@ body.perfil-modal-aberta {
         -0.03em;
 }
 
-
-/* =========================================================
-   SOBRE
-   ========================================================= */
 
 .perfil-sobre p {
     margin: 0;
@@ -1577,17 +1632,10 @@ body.perfil-modal-aberta {
     background:
         rgba(12, 11, 16, 0.90);
 
-    -webkit-backdrop-filter:
-        blur(20px);
-
-    backdrop-filter:
-        blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
 }
 
-
-/* =========================================================
-   STAGE
-   ========================================================= */
 
 .perfil-lightbox-stage {
     position: absolute;
@@ -1621,16 +1669,21 @@ body.perfil-modal-aberta {
 }
 
 
-/* =========================================================
-   FOTO ABERTA
-   ========================================================= */
-
 .perfil-lightbox-media {
     position: relative;
     z-index: 4;
 
-    width: min(92vw, 880px);
-    height: min(80dvh, 900px);
+    width:
+        min(
+            92vw,
+            880px
+        );
+
+    height:
+        min(
+            80dvh,
+            900px
+        );
 
     overflow: hidden;
 
@@ -1687,10 +1740,6 @@ body.perfil-modal-aberta {
 }
 
 
-/* =========================================================
-   IMAGEM COMPLETA
-   ========================================================= */
-
 .perfil-lightbox-imagem {
     position: relative;
     z-index: 1;
@@ -1708,6 +1757,8 @@ body.perfil-modal-aberta {
     border: 0;
     border-radius: 0 !important;
 
+    opacity: 1;
+
     user-select: none;
 
     -webkit-user-select: none;
@@ -1716,6 +1767,7 @@ body.perfil-modal-aberta {
     transform: scale(1.025);
 
     transition:
+        opacity 150ms ease,
         transform
         850ms
         cubic-bezier(
@@ -1729,13 +1781,18 @@ body.perfil-modal-aberta {
 
 .perfil-lightbox.is-open
 .perfil-lightbox-imagem {
-    transform: scale(1);
+    transform:
+        scale(1);
 }
 
 
-/* =========================================================
-   MOLDURA RETA
-   ========================================================= */
+.perfil-lightbox-imagem.a-trocar {
+    opacity: 0;
+
+    transform:
+        scale(0.985);
+}
+
 
 .perfil-lightbox-moldura {
     position: absolute;
@@ -1744,8 +1801,7 @@ body.perfil-modal-aberta {
     inset: 0;
 
     border:
-        1px solid
-        rgba(255, 255, 255, 0.24);
+        1px solid rgba(255, 255, 255, 0.24);
 
     pointer-events: none;
 
@@ -1766,7 +1822,7 @@ body.perfil-modal-aberta {
 
 
 /* =========================================================
-   TINTA DA TRANSIÇÃO
+   TINTA
    ========================================================= */
 
 .perfil-tinta {
@@ -1779,7 +1835,8 @@ body.perfil-modal-aberta {
 
     border-radius: 50%;
 
-    transform: scale(0.02);
+    transform:
+        scale(0.02);
 
     pointer-events: none;
 
@@ -1821,7 +1878,8 @@ body.perfil-modal-aberta {
 
 .perfil-lightbox.is-open
 .perfil-tinta--1 {
-    transform: scale(1.25);
+    transform:
+        scale(1.25);
 }
 
 
@@ -1842,7 +1900,8 @@ body.perfil-modal-aberta {
 
 .perfil-lightbox.is-open
 .perfil-tinta--2 {
-    transform: scale(1.18);
+    transform:
+        scale(1.18);
 }
 
 
@@ -1863,7 +1922,8 @@ body.perfil-modal-aberta {
 
 .perfil-lightbox.is-open
 .perfil-tinta--3 {
-    transform: scale(1.20);
+    transform:
+        scale(1.20);
 }
 
 
@@ -1884,13 +1944,42 @@ body.perfil-modal-aberta {
 
 .perfil-lightbox.is-open
 .perfil-tinta--4 {
-    transform: scale(1.15);
+    transform:
+        scale(1.15);
 }
 
 
 /* =========================================================
-   X
+   LIGHTBOX CONTROLOS
    ========================================================= */
+
+.perfil-lightbox-fechar,
+.perfil-lightbox-nav {
+    width: 45px;
+    height: 45px;
+
+    margin: 0;
+    padding: 0;
+
+    border:
+        1px solid rgba(255, 255, 255, 0.14);
+
+    border-radius: 50%;
+
+    color: #ffffff;
+
+    background:
+        rgba(255, 255, 255, 0.09);
+
+    -webkit-backdrop-filter: blur(13px);
+    backdrop-filter: blur(13px);
+
+    display: grid;
+    place-items: center;
+
+    cursor: pointer;
+}
+
 
 .perfil-lightbox-fechar {
     position: absolute;
@@ -1903,55 +1992,8 @@ body.perfil-modal-aberta {
         );
 
     right: 17px;
-
-    width: 45px;
-    height: 45px;
-
-    margin: 0;
-    padding: 0;
-
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.14);
-
-    border-radius: 50%;
-
-    color: #ffffff;
-
-    background:
-        rgba(255, 255, 255, 0.09);
-
-    -webkit-backdrop-filter:
-        blur(13px);
-
-    backdrop-filter:
-        blur(13px);
-
-    display: grid;
-    place-items: center;
-
-    cursor: pointer;
 }
 
-
-.perfil-lightbox-fechar svg {
-    width: 20px;
-    height: 20px;
-
-    fill: none;
-
-    stroke:
-        currentColor;
-
-    stroke-width: 1.9;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-
-
-/* =========================================================
-   SETAS LIGHTBOX
-   ========================================================= */
 
 .perfil-lightbox-nav {
     position: absolute;
@@ -1959,36 +2001,8 @@ body.perfil-modal-aberta {
 
     top: 50%;
 
-    width: 46px;
-    height: 46px;
-
-    margin: 0;
-    padding: 0;
-
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.14);
-
-    border-radius: 50%;
-
-    color: #ffffff;
-
-    background:
-        rgba(255, 255, 255, 0.09);
-
-    -webkit-backdrop-filter:
-        blur(13px);
-
-    backdrop-filter:
-        blur(13px);
-
     transform:
         translateY(-50%);
-
-    display: grid;
-    place-items: center;
-
-    cursor: pointer;
 }
 
 
@@ -2002,14 +2016,14 @@ body.perfil-modal-aberta {
 }
 
 
+.perfil-lightbox-fechar svg,
 .perfil-lightbox-nav svg {
     width: 20px;
     height: 20px;
 
     fill: none;
 
-    stroke:
-        currentColor;
+    stroke: currentColor;
 
     stroke-width: 2;
     stroke-linecap: round;
@@ -2021,10 +2035,6 @@ body.perfil-modal-aberta {
     visibility: hidden;
 }
 
-
-/* =========================================================
-   CONTADOR LIGHTBOX
-   ========================================================= */
 
 .perfil-lightbox-contador {
     position: absolute;
@@ -2040,11 +2050,11 @@ body.perfil-modal-aberta {
 
     min-height: 35px;
 
-    padding: 0 12px;
+    padding:
+        0 12px;
 
     border:
-        1px solid
-        rgba(255, 255, 255, 0.14);
+        1px solid rgba(255, 255, 255, 0.14);
 
     border-radius: 999px;
 
@@ -2076,7 +2086,7 @@ body.perfil-modal-aberta {
 
 
 /* =========================================================
-   MOBILE PEQUENO
+   PEQUENO
    ========================================================= */
 
 @media (max-width: 370px) {
@@ -2118,17 +2128,25 @@ body.perfil-modal-aberta {
     }
 
 
-    .perfil-hey {
-        min-width: 76px;
-        height: 40px;
+    #perfil .perfil-hey,
+    #perfil #enviar-hey-perfil.perfil-hey {
+        min-width:
+            78px !important;
+
+        height:
+            40px !important;
+
+        min-height:
+            40px !important;
 
         padding:
-            0 16px;
+            0 16px !important;
     }
 
 
-    .perfil-hey-label {
-        font-size: 16px;
+    #perfil .perfil-hey-label {
+        font-size:
+            16px !important;
     }
 
 
@@ -2153,12 +2171,6 @@ body.perfil-modal-aberta {
 
     .perfil-gosto-nome {
         font-size: 13px;
-    }
-
-
-    .perfil-lightbox-stage {
-        padding-right: 10px;
-        padding-left: 10px;
     }
 
 }
@@ -2300,11 +2312,6 @@ body.perfil-modal-aberta {
     .perfil-indicadores button span {
         animation: none !important;
         transition: none !important;
-    }
-
-
-    .perfil-fotos {
-        scroll-behavior: auto;
     }
 
 }
