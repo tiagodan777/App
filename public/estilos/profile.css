@@ -72,10 +72,6 @@ body:has(#perfil) {
     overflow-x: hidden !important;
     overflow-y: auto !important;
 
-    /*
-        Mantém o comportamento elástico / rubber banding
-        vertical onde o sistema o disponibiliza.
-    */
     overscroll-behavior-x: none !important;
     overscroll-behavior-y: auto !important;
 
@@ -119,9 +115,6 @@ body.perfil-modal-aberta {
 
     overflow: visible !important;
 
-    /*
-        Não bloqueamos verticalmente a página.
-    */
     overscroll-behavior-y: auto;
 
     color:
@@ -352,7 +345,7 @@ body.perfil-modal-aberta {
 
 
 /* =========================================================
-   MARCA ABSTRATA
+   MARCA
    ========================================================= */
 
 .perfil-marca-abstrata {
@@ -454,12 +447,8 @@ body.perfil-modal-aberta {
         rgba(25, 22, 30, 0.03);
 
     transition:
-        transform
-        150ms
-        ease,
-        background-color
-        150ms
-        ease;
+        transform 150ms ease,
+        background-color 150ms ease;
 
     -webkit-tap-highlight-color:
         transparent;
@@ -497,10 +486,6 @@ body.perfil-modal-aberta {
     margin-bottom: 26px;
 }
 
-
-/* =========================================================
-   FOTO
-   ========================================================= */
 
 .perfil-foto-area {
     position: relative;
@@ -611,10 +596,6 @@ body.perfil-modal-aberta {
 
     overflow: hidden;
 
-    /*
-        Transparente para nunca existir aquele fundo preto
-        visível nas extremidades da forma.
-    */
     background:
         transparent;
 
@@ -633,8 +614,7 @@ body.perfil-modal-aberta {
         url(#perfilIslandClip);
 
     transform-origin:
-        50%
-        50%;
+        50% 50%;
 
     animation:
         perfil-ilha-flutuar
@@ -722,16 +702,11 @@ body.perfil-modal-aberta {
     flex-flow: row nowrap;
 
     scroll-snap-type:
-        x
-        mandatory;
+        x mandatory;
 
     scroll-behavior:
         auto;
 
-    /*
-        Contém apenas o overscroll horizontal da galeria.
-        O vertical continua livre para a página.
-    */
     overscroll-behavior-x:
         contain;
 
@@ -780,9 +755,7 @@ body.perfil-modal-aberta {
     height: 100%;
 
     flex:
-        0
-        0
-        100%;
+        0 0 100%;
 
     margin: 0;
 
@@ -800,10 +773,7 @@ body.perfil-modal-aberta {
 
 
 /* =========================================================
-   FOTO PRINCIPAL
-
-   108% garante uma pequena margem de zoom para nunca
-   aparecer fundo nas curvas da forma.
+   FOTO
    ========================================================= */
 
 .perfil-slide img {
@@ -858,9 +828,9 @@ body.perfil-modal-aberta {
 
 
 /* =========================================================
-   INDICADORES DAS FOTOS
+   INDICADORES
 
-   Mais abaixo e mais pequenos.
+   AGORA FICAM EM BAIXO DA FOTO.
    ========================================================= */
 
 .perfil-indicadores {
@@ -868,10 +838,12 @@ body.perfil-modal-aberta {
     z-index: 8;
 
     /*
-        Antes estavam muito próximos da curva superior.
-        48px coloca-os numa zona estável da fotografia.
+        Importante:
+        não existe qualquer "top" aqui.
     */
-    top: 48px;
+    top: auto !important;
+
+    bottom: 28px;
 
     left: 50%;
 
@@ -882,7 +854,7 @@ body.perfil-modal-aberta {
     align-items: center;
     justify-content: center;
 
-    gap: 4px;
+    gap: 3px;
 
     pointer-events:
         auto;
@@ -890,16 +862,11 @@ body.perfil-modal-aberta {
 
 
 .perfil-indicadores button {
-    width: 14px;
-    height: 14px;
+    width: 13px;
+    height: 13px;
 
     margin: 0;
-
-    /*
-        O ponto é pequeno, mas mantém alguma área
-        de toque à volta.
-    */
-    padding: 5px;
+    padding: 4px;
 
     border: 0;
 
@@ -920,25 +887,23 @@ body.perfil-modal-aberta {
 .perfil-indicadores button span {
     display: block;
 
-    width: 4px;
-    height: 4px;
+    width: 3.5px;
+    height: 3.5px;
 
     flex:
-        0
-        0
-        auto;
+        0 0 auto;
 
     border-radius:
         999px;
 
     background:
-        rgba(255, 255, 255, 0.70);
+        rgba(255, 255, 255, 0.72);
 
     box-shadow:
         0
         1px
         5px
-        rgba(0, 0, 0, 0.15);
+        rgba(0, 0, 0, 0.18);
 
     transition:
         width
@@ -957,8 +922,8 @@ body.perfil-modal-aberta {
 
 
 .perfil-indicadores button.ativo span {
-    width: 11px;
-    height: 4px;
+    width: 10px;
+    height: 3.5px;
 
     background:
         #ffffff;
@@ -970,7 +935,7 @@ body.perfil-modal-aberta {
         0
         1px
         6px
-        rgba(0, 0, 0, 0.17);
+        rgba(0, 0, 0, 0.19);
 }
 
 
@@ -988,8 +953,7 @@ body.perfil-modal-aberta {
     min-height: 34px;
 
     padding:
-        0
-        11px;
+        0 11px;
 
     border:
         1px solid
@@ -1041,7 +1005,8 @@ body.perfil-modal-aberta {
         1px solid
         rgba(255, 255, 255, 0.17);
 
-    border-radius: 50%;
+    border-radius:
+        50%;
 
     color:
         #ffffff;
@@ -1098,7 +1063,8 @@ body.perfil-modal-aberta {
         1px solid
         rgba(255, 255, 255, 0.16);
 
-    border-radius: 50%;
+    border-radius:
+        50%;
 
     color:
         #ffffff;
@@ -1309,8 +1275,7 @@ body.perfil-modal-aberta {
     min-height: 31px;
 
     padding:
-        0
-        12px;
+        0 12px;
 
     border-radius:
         999px;
@@ -1340,9 +1305,7 @@ body.perfil-modal-aberta {
     z-index: 4 !important;
 
     flex:
-        0
-        0
-        auto !important;
+        0 0 auto !important;
 
     width:
         auto !important;
@@ -1466,15 +1429,6 @@ body.perfil-modal-aberta {
         9px
         22px
         rgba(39, 131, 93, 0.22) !important;
-}
-
-
-#perfil .perfil-hey--preview {
-    pointer-events:
-        none !important;
-
-    opacity:
-        1 !important;
 }
 
 
@@ -1621,7 +1575,7 @@ body.perfil-modal-aberta {
 
 
 /* =========================================================
-   TOPO DAS SECÇÕES
+   CABEÇALHOS
    ========================================================= */
 
 .perfil-seccao-topo {
@@ -1639,11 +1593,10 @@ body.perfil-modal-aberta {
     height: 41px;
 
     flex:
-        0
-        0
-        auto;
+        0 0 auto;
 
-    border-radius: 14px;
+    border-radius:
+        14px;
 
     display: grid;
     place-items: center;
@@ -1793,18 +1746,17 @@ body.perfil-modal-aberta {
     width: 48px;
     height: 48px;
 
-    border-radius: 50%;
+    border-radius:
+        50%;
 
-    opacity: 0.70;
+    opacity:
+        0.70;
 }
 
 
 .perfil-gosto--1 {
     border-radius:
-        18px
-        25px
-        20px
-        23px;
+        18px 25px 20px 23px;
 }
 
 
@@ -1816,10 +1768,7 @@ body.perfil-modal-aberta {
 
 .perfil-gosto--2 {
     border-radius:
-        25px
-        18px
-        26px
-        18px;
+        25px 18px 26px 18px;
 }
 
 
@@ -1831,10 +1780,7 @@ body.perfil-modal-aberta {
 
 .perfil-gosto--3 {
     border-radius:
-        21px
-        28px
-        19px
-        25px;
+        21px 28px 19px 25px;
 }
 
 
@@ -1846,10 +1792,7 @@ body.perfil-modal-aberta {
 
 .perfil-gosto--4 {
     border-radius:
-        27px
-        19px
-        23px
-        20px;
+        27px 19px 23px 20px;
 }
 
 
@@ -1861,10 +1804,7 @@ body.perfil-modal-aberta {
 
 .perfil-gosto--5 {
     border-radius:
-        20px
-        25px
-        25px
-        18px;
+        20px 25px 25px 18px;
 }
 
 
@@ -1876,10 +1816,7 @@ body.perfil-modal-aberta {
 
 .perfil-gosto--6 {
     border-radius:
-        25px
-        20px
-        18px
-        27px;
+        25px 20px 18px 27px;
 }
 
 
@@ -1941,11 +1878,14 @@ body.perfil-modal-aberta {
 
     inset: 0;
 
-    visibility: hidden;
+    visibility:
+        hidden;
 
-    opacity: 0;
+    opacity:
+        0;
 
-    pointer-events: none;
+    pointer-events:
+        none;
 
     transition:
         opacity
@@ -1958,14 +1898,17 @@ body.perfil-modal-aberta {
 
 
 .perfil-lightbox.is-mounted {
-    visibility: visible;
+    visibility:
+        visible;
 
-    pointer-events: auto;
+    pointer-events:
+        auto;
 }
 
 
 .perfil-lightbox.is-open {
-    opacity: 1;
+    opacity:
+        1;
 }
 
 
@@ -1984,10 +1927,6 @@ body.perfil-modal-aberta {
         blur(20px);
 }
 
-
-/* =========================================================
-   STAGE
-   ========================================================= */
 
 .perfil-lightbox-stage {
     position: absolute;
@@ -2021,7 +1960,8 @@ body.perfil-modal-aberta {
     align-items: center;
     justify-content: center;
 
-    overflow: hidden;
+    overflow:
+        hidden;
 
     cursor:
         zoom-out;
@@ -2048,7 +1988,8 @@ body.perfil-modal-aberta {
             900px
         );
 
-    overflow: hidden;
+    overflow:
+        hidden;
 
     background:
         transparent;
@@ -2122,10 +2063,6 @@ body.perfil-modal-aberta {
 }
 
 
-/* =========================================================
-   IMAGEM COMPLETA NO LIGHTBOX
-   ========================================================= */
-
 .perfil-lightbox-imagem {
     position: relative;
     z-index: 1;
@@ -2144,12 +2081,14 @@ body.perfil-modal-aberta {
     background:
         transparent;
 
-    border: 0;
+    border:
+        0;
 
     border-radius:
         0 !important;
 
-    opacity: 1;
+    opacity:
+        1;
 
     user-select:
         none;
@@ -2164,9 +2103,7 @@ body.perfil-modal-aberta {
         scale(1.025);
 
     transition:
-        opacity
-        150ms
-        ease,
+        opacity 150ms ease,
         transform
         850ms
         cubic-bezier(
@@ -2186,16 +2123,13 @@ body.perfil-modal-aberta {
 
 
 .perfil-lightbox-imagem.a-trocar {
-    opacity: 0;
+    opacity:
+        0;
 
     transform:
         scale(0.985);
 }
 
-
-/* =========================================================
-   MOLDURA LIGHTBOX
-   ========================================================= */
 
 .perfil-lightbox-moldura {
     position: absolute;
@@ -2210,7 +2144,8 @@ body.perfil-modal-aberta {
     pointer-events:
         none;
 
-    opacity: 0;
+    opacity:
+        0;
 
     transition:
         opacity
@@ -2222,7 +2157,8 @@ body.perfil-modal-aberta {
 
 .perfil-lightbox.is-open
 .perfil-lightbox-moldura {
-    opacity: 1;
+    opacity:
+        1;
 }
 
 
@@ -2234,11 +2170,14 @@ body.perfil-modal-aberta {
     position: absolute;
     z-index: 2;
 
-    display: block;
+    display:
+        block;
 
-    opacity: 0;
+    opacity:
+        0;
 
-    border-radius: 50%;
+    border-radius:
+        50%;
 
     transform:
         scale(0.02);
@@ -2263,7 +2202,8 @@ body.perfil-modal-aberta {
 
 .perfil-lightbox.is-open
 .perfil-tinta {
-    opacity: 1;
+    opacity:
+        1;
 }
 
 
@@ -2278,8 +2218,7 @@ body.perfil-modal-aberta {
         rgba(244, 220, 146, 0.11);
 
     transform-origin:
-        70%
-        60%;
+        70% 60%;
 }
 
 
@@ -2301,8 +2240,7 @@ body.perfil-modal-aberta {
         rgba(207, 196, 239, 0.12);
 
     transform-origin:
-        15%
-        55%;
+        15% 55%;
 }
 
 
@@ -2324,8 +2262,7 @@ body.perfil-modal-aberta {
         rgba(143, 178, 232, 0.09);
 
     transform-origin:
-        75%
-        15%;
+        75% 15%;
 }
 
 
@@ -2347,8 +2284,7 @@ body.perfil-modal-aberta {
         rgba(239, 199, 190, 0.11);
 
     transform-origin:
-        30%
-        20%;
+        30% 20%;
 }
 
 
@@ -2360,7 +2296,7 @@ body.perfil-modal-aberta {
 
 
 /* =========================================================
-   CONTROLOS DO LIGHTBOX
+   CONTROLOS LIGHTBOX
    ========================================================= */
 
 .perfil-lightbox-fechar,
@@ -2375,7 +2311,8 @@ body.perfil-modal-aberta {
         1px solid
         rgba(255, 255, 255, 0.14);
 
-    border-radius: 50%;
+    border-radius:
+        50%;
 
     color:
         #ffffff;
@@ -2410,7 +2347,8 @@ body.perfil-modal-aberta {
             )
         );
 
-    right: 17px;
+    right:
+        17px;
 }
 
 
@@ -2418,7 +2356,8 @@ body.perfil-modal-aberta {
     position: absolute;
     z-index: 9;
 
-    top: 50%;
+    top:
+        50%;
 
     transform:
         translateY(-50%);
@@ -2426,12 +2365,14 @@ body.perfil-modal-aberta {
 
 
 .perfil-lightbox-nav--anterior {
-    left: 14px;
+    left:
+        14px;
 }
 
 
 .perfil-lightbox-nav--seguinte {
-    right: 14px;
+    right:
+        14px;
 }
 
 
@@ -2457,15 +2398,12 @@ body.perfil-modal-aberta {
 }
 
 
-/* =========================================================
-   CONTADOR LIGHTBOX
-   ========================================================= */
-
 .perfil-lightbox-contador {
     position: absolute;
     z-index: 9;
 
-    left: 50%;
+    left:
+        50%;
 
     bottom:
         max(
@@ -2476,7 +2414,8 @@ body.perfil-modal-aberta {
             )
         );
 
-    min-height: 35px;
+    min-height:
+        35px;
 
     padding:
         0
@@ -2504,16 +2443,23 @@ body.perfil-modal-aberta {
     transform:
         translateX(-50%);
 
-    font-size: 10px;
-    font-weight: 730;
+    font-size:
+        10px;
+
+    font-weight:
+        730;
 
     font-variant-numeric:
         tabular-nums;
 
-    display: flex;
-    align-items: center;
+    display:
+        flex;
 
-    gap: 5px;
+    align-items:
+        center;
+
+    gap:
+        5px;
 }
 
 
@@ -2524,8 +2470,11 @@ body.perfil-modal-aberta {
 @media (max-width: 370px) {
 
     .perfil-page {
-        padding-right: 11px;
-        padding-left: 11px;
+        padding-right:
+            11px;
+
+        padding-left:
+            11px;
     }
 
 
@@ -2539,34 +2488,45 @@ body.perfil-modal-aberta {
     }
 
 
-    /*
-        Em ecrãs pequenos descemos ainda ligeiramente
-        os indicadores, porque a curva fica mais apertada.
-    */
     .perfil-indicadores {
-        top: 46px;
+        top:
+            auto !important;
 
-        gap: 3px;
+        bottom:
+            24px;
+
+        gap:
+            3px;
     }
 
 
     .perfil-indicadores button {
-        width: 13px;
-        height: 13px;
+        width:
+            12px;
 
-        padding: 4px;
+        height:
+            12px;
+
+        padding:
+            4px;
     }
 
 
     .perfil-indicadores button span {
-        width: 3.5px;
-        height: 3.5px;
+        width:
+            3px;
+
+        height:
+            3px;
     }
 
 
     .perfil-indicadores button.ativo span {
-        width: 10px;
-        height: 3.5px;
+        width:
+            9px;
+
+        height:
+            3px;
     }
 
 
@@ -2624,7 +2584,8 @@ body.perfil-modal-aberta {
 
 
     .perfil-interesses-grid {
-        gap: 7px;
+        gap:
+            7px;
     }
 
 
@@ -2636,7 +2597,8 @@ body.perfil-modal-aberta {
 
 
     .perfil-gosto-nome {
-        font-size: 13px;
+        font-size:
+            13px;
     }
 
 }
@@ -2649,7 +2611,8 @@ body.perfil-modal-aberta {
 @media (pointer: coarse) {
 
     .perfil-nav {
-        display: none;
+        display:
+            none;
     }
 
 }
@@ -2662,8 +2625,11 @@ body.perfil-modal-aberta {
 @media (min-width: 700px) {
 
     .perfil-page {
-        padding-right: 26px;
-        padding-left: 26px;
+        padding-right:
+            26px;
+
+        padding-left:
+            26px;
     }
 
 
@@ -2678,7 +2644,11 @@ body.perfil-modal-aberta {
 
 
     .perfil-indicadores {
-        top: 54px;
+        top:
+            auto !important;
+
+        bottom:
+            32px;
     }
 
 
@@ -2723,12 +2693,14 @@ body.perfil-modal-aberta {
                 )
             );
 
-        gap: 11px;
+        gap:
+            11px;
     }
 
 
     .perfil-gosto {
-        min-height: 76px;
+        min-height:
+            76px;
 
         padding:
             14px
@@ -2737,7 +2709,8 @@ body.perfil-modal-aberta {
 
 
     .perfil-gosto-nome {
-        font-size: 15px;
+        font-size:
+            15px;
     }
 
 }
@@ -2750,20 +2723,26 @@ body.perfil-modal-aberta {
 @media (min-width: 900px) {
 
     .perfil-page {
-        width: 860px;
+        width:
+            860px;
 
-        padding-right: 0;
-        padding-left: 0;
+        padding-right:
+            0;
+
+        padding-left:
+            0;
     }
 
 
     .perfil-galeria {
-        height: 700px;
+        height:
+            700px;
     }
 
 
     .perfil-identidade {
-        width: 620px;
+        width:
+            620px;
     }
 
 }
