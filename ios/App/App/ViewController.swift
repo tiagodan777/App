@@ -10,7 +10,24 @@ class ViewController: CAPBridgeViewController {
     override func capacitorDidLoad() {
         super.capacitorDidLoad()
 
-        bridge?.registerPluginInstance(BackgroundLocationPlugin())
+        /*
+         * TESTE DE DIAGNÓSTICO — COLD START
+         *
+         * O BackgroundLocationPlugin fica temporariamente
+         * desativado neste build.
+         *
+         * Queremos confirmar se o trabalho que o plugin faz
+         * durante load() está a bloquear a main thread no
+         * primeiro arranque da aplicação.
+         *
+         * NÃO deixar assim na versão final.
+         *
+         * Depois do teste voltamos a ativar:
+         *
+         * bridge?.registerPluginInstance(
+         *     BackgroundLocationPlugin()
+         * )
+         */
 
         configurarScrollNativo()
         configurarGestosNavegacao()
