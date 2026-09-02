@@ -1,12 +1,10 @@
 @charset "UTF-8";
 
-
 :root {
     --margot-vermelho: #e12346;
     --margot-vermelho-escuro: #c81e3d;
 
-    --mensagens-fundo: #f9f8f5;
-
+    --mensagens-fundo: #fbfafc;
     --mensagens-preto: #17171b;
     --mensagens-texto: #343239;
     --mensagens-suave: #85818a;
@@ -15,1472 +13,576 @@
     --mensagens-roxo: #cfc4ef;
     --mensagens-azul: #8fb2e8;
 
-    --mensagens-linha:
-        rgba(22, 21, 25, 0.065);
-
-    --mensagens-cartao:
-        rgba(255, 255, 255, 0.82);
-
-    --mensagens-sombra:
-        0
-        12px
-        34px
-        rgba(25, 22, 30, 0.055);
+    --mensagens-linha: rgba(22, 21, 25, 0.065);
+    --mensagens-cartao: rgba(255, 255, 255, 0.82);
+    --mensagens-sombra: 0 12px 34px rgba(25, 22, 30, 0.055);
 }
-
-
-/* =========================================================
-   DOCUMENTO
-   ========================================================= */
 
 html,
 body {
     width: 100%;
     height: 100%;
     min-height: 0;
-
     margin: 0;
-
     overflow: hidden;
-
-    background:
-        var(--mensagens-fundo);
+    background: var(--mensagens-fundo);
 }
-
-
-/* =========================================================
-   PÁGINA
-   ========================================================= */
 
 .mensagens-pagina {
     position: absolute;
-
     inset: 0;
-
-    width:
-        min(
-            100%,
-            760px
-        );
-
-    height:
-        100%;
-
-    min-height:
-        0;
-
-    margin:
-        0
-        auto;
-
-    overflow-x:
-        hidden;
-
-    overflow-y:
-        auto;
-
-    overscroll-behavior-y:
-        auto;
-
-    -webkit-overflow-scrolling:
-        touch;
-
-    color:
-        var(--mensagens-texto);
-
-    background:
-        var(--mensagens-fundo);
+    width: min(100%, 760px);
+    height: 100%;
+    min-height: 0;
+    margin: 0 auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: auto;
+    -webkit-overflow-scrolling: touch;
+    color: var(--mensagens-texto);
+    background: var(--mensagens-fundo);
 }
 
-
-/* =========================================================
-   FUNDO
-
-   Muito mais subtil do que na versão anterior.
-   ========================================================= */
+/* FUNDO */
 
 .mensagens-fundo {
-    position:
-        fixed;
-
-    z-index:
-        0;
-
-    inset:
-        0;
-
-    overflow:
-        hidden;
-
-    pointer-events:
-        none;
+    position: fixed;
+    z-index: 0;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
 }
-
 
 .mensagens-fundo-forma {
-    position:
-        absolute;
-
-    display:
-        block;
-
-    pointer-events:
-        none;
-
-    filter:
-        blur(1px);
+    position: absolute;
+    display: block;
+    pointer-events: none;
+    filter: blur(1px);
 }
-
 
 .mensagens-fundo-forma--1 {
-    top:
-        75px;
-
-    right:
-        -120px;
-
-    width:
-        250px;
-
-    height:
-        270px;
-
-    border-radius:
-        52% 48% 61% 39% /
-        42% 59% 41% 58%;
-
-    background:
-        rgba(207, 196, 239, 0.12);
-
-    transform:
-        rotate(11deg);
+    top: 75px;
+    right: -120px;
+    width: 250px;
+    height: 270px;
+    border-radius: 52% 48% 61% 39% / 42% 59% 41% 58%;
+    background: rgba(207, 196, 239, 0.12);
+    transform: rotate(11deg);
 }
-
 
 .mensagens-fundo-forma--2 {
-    bottom:
-        70px;
-
-    left:
-        -135px;
-
-    width:
-        255px;
-
-    height:
-        235px;
-
-    border-radius:
-        61% 39% 46% 54% /
-        43% 61% 39% 57%;
-
-    background:
-        rgba(244, 220, 146, 0.10);
-
-    transform:
-        rotate(-8deg);
+    bottom: 70px;
+    left: -135px;
+    width: 255px;
+    height: 235px;
+    border-radius: 61% 39% 46% 54% / 43% 61% 39% 57%;
+    background: rgba(244, 220, 146, 0.045);
+    transform: rotate(-8deg);
 }
 
-
-/* =========================================================
-   CONTEÚDO
-   ========================================================= */
+/* CONTEÚDO */
 
 .mensagens-conteudo {
-    position:
-        relative;
-
-    z-index:
-        2;
-
-    width:
-        100%;
-
+    position: relative;
+    z-index: 2;
+    width: 100%;
     padding:
-        calc(
-            env(
-                safe-area-inset-top,
-                0px
-            ) +
-            37px
-        )
+        calc(env(safe-area-inset-top, 0px) + 37px)
         16px
-        calc(
-            112px +
-            env(
-                safe-area-inset-bottom,
-                0px
-            )
-        );
+        calc(112px + env(safe-area-inset-bottom, 0px));
 }
 
-
-/* =========================================================
-   CABEÇALHO
-   ========================================================= */
+/* CABEÇALHO */
 
 .mensagens-cabecalho {
-    position:
-        relative;
-
-    margin-bottom:
-        27px;
-
-    padding-top:
-        20px;
+    position: relative;
+    margin-bottom: 27px;
+    padding-top: 20px;
 }
-
-
-/* =========================================================
-   PEQUENA ASSINATURA MARGOT
-   ========================================================= */
 
 .mensagens-marca {
-    height:
-        4px;
-
-    margin-bottom:
-        13px;
-
-    display:
-        flex;
-
-    align-items:
-        center;
-
-    gap:
-        5px;
+    height: 4px;
+    margin-bottom: 13px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
 }
-
 
 .mensagens-marca-linha {
-    display:
-        block;
-
-    height:
-        3px;
-
-    border-radius:
-        999px;
+    display: block;
+    height: 3px;
+    border-radius: 999px;
 }
-
 
 .mensagens-marca-linha--1 {
-    width:
-        22px;
-
-    background:
-        var(--mensagens-azul);
+    width: 22px;
+    background: var(--mensagens-azul);
 }
-
 
 .mensagens-marca-linha--2 {
-    width:
-        10px;
-
-    background:
-        var(--mensagens-roxo);
+    width: 10px;
+    background: var(--mensagens-roxo);
 }
-
 
 .mensagens-marca-linha--3 {
-    width:
-        6px;
-
-    background:
-        var(--margot-vermelho);
+    width: 6px;
+    background: var(--margot-vermelho);
 }
-
-
-/* =========================================================
-   TÍTULO
-   ========================================================= */
 
 .mensagens-cabecalho h1 {
-    margin:
-        0;
-
-    color:
-        var(--mensagens-preto);
-
-    font-family:
-        -apple-system,
-        BlinkMacSystemFont,
-        "Helvetica Neue",
-        Inter,
-        Arial,
-        sans-serif;
-
-    font-size:
-        clamp(
-            38px,
-            10vw,
-            54px
-        );
-
-    font-weight:
-        760;
-
-    line-height:
-        0.98;
-
-    letter-spacing:
-        -0.055em;
+    margin: 0;
+    color: var(--mensagens-preto);
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Inter, Arial, sans-serif;
+    font-size: clamp(38px, 10vw, 54px);
+    font-weight: 760;
+    line-height: 0.98;
+    letter-spacing: -0.055em;
 }
 
-
-/* =========================================================
-   LISTA
-   ========================================================= */
+/* LISTA */
 
 .conversas-lista {
-    position:
-        relative;
-
-    display:
-        flex;
-
-    flex-direction:
-        column;
-
-    gap:
-        9px;
-
-    overflow:
-        visible;
-
-    background:
-        transparent;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    overflow: visible;
+    background: transparent;
 }
 
-
-/* =========================================================
-   CONVERSA
-   ========================================================= */
+/* CONVERSA */
 
 .conversa-item {
-    position:
-        relative;
-
-    min-height:
-        84px;
-
-    padding:
-        11px
-        13px;
-
-    overflow:
-        hidden;
-
-    color:
-        var(--mensagens-preto);
-
-    text-decoration:
-        none;
-
-    border:
-        1px solid
-        var(--mensagens-linha);
-
-    border-radius:
-        21px;
-
-    background:
-        var(--mensagens-cartao);
-
-    -webkit-backdrop-filter:
-        blur(18px);
-
-    backdrop-filter:
-        blur(18px);
-
-    box-shadow:
-        var(--mensagens-sombra);
-
-    display:
-        flex;
-
-    align-items:
-        center;
-
-    gap:
-        13px;
-
-    touch-action:
-        pan-y;
-
-    user-select:
-        none;
-
-    -webkit-user-select:
-        none;
-
-    -webkit-touch-callout:
-        none;
-
-    -webkit-tap-highlight-color:
-        transparent;
-
+    position: relative;
+    min-height: 84px;
+    padding: 11px 13px;
+    overflow: hidden;
+    color: var(--mensagens-preto);
+    text-decoration: none;
+    border: 1px solid var(--mensagens-linha);
+    border-radius: 21px;
+    background: var(--mensagens-cartao);
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+    box-shadow: var(--mensagens-sombra);
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    touch-action: pan-y;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
     transition:
-        transform
-        150ms
-        cubic-bezier(
-            .2,
-            .8,
-            .2,
-            1
-        ),
-        background-color
-        150ms
-        ease,
-        box-shadow
-        150ms
-        ease;
+        transform 150ms cubic-bezier(.2, .8, .2, 1),
+        background-color 150ms ease,
+        box-shadow 150ms ease;
 }
-
 
 .conversa-item:active {
-    transform:
-        scale(0.987);
-
-    background:
-        rgba(
-            255,
-            255,
-            255,
-            0.96
-        );
-
-    box-shadow:
-        0
-        8px
-        24px
-        rgba(25, 22, 30, 0.07);
+    transform: scale(0.987);
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 8px 24px rgba(25, 22, 30, 0.07);
 }
-
-
-/* =========================================================
-   LONG PRESS
-   ========================================================= */
 
 .conversa-item.conversa-a-premir {
-    transform:
-        scale(0.982);
-
-    background:
-        rgba(
-            245,
-            242,
-            248,
-            0.96
-        );
-
-    box-shadow:
-        0
-        7px
-        20px
-        rgba(25, 22, 30, 0.06);
+    transform: scale(0.982);
+    background: rgba(245, 242, 248, 0.96);
+    box-shadow: 0 7px 20px rgba(25, 22, 30, 0.06);
 }
 
-
-/* =========================================================
-   FOTO
-   ========================================================= */
+/* FOTO */
 
 .conversa-foto-caixa {
-    position:
-        relative;
-
-    flex:
-        0
-        0
-        58px;
-
-    width:
-        58px;
-
-    height:
-        58px;
-
-    border:
-        1px solid
-        rgba(22, 21, 25, 0.07);
-
-    border-radius:
-        50%;
-
-    overflow:
-        hidden;
-
-    background:
-        #ecebed;
-
-    box-shadow:
-        0
-        5px
-        14px
-        rgba(25, 22, 30, 0.06);
-
-    pointer-events:
-        none;
+    position: relative;
+    flex: 0 0 58px;
+    width: 58px;
+    height: 58px;
+    border: 1px solid rgba(22, 21, 25, 0.07);
+    border-radius: 50%;
+    overflow: hidden;
+    background: #ecebed;
+    box-shadow: 0 5px 14px rgba(25, 22, 30, 0.06);
+    pointer-events: none;
 }
-
 
 .conversa-foto-caixa img {
-    display:
-        block;
-
-    width:
-        100%;
-
-    height:
-        100%;
-
-    border:
-        0;
-
-    border-radius:
-        50%;
-
-    object-fit:
-        cover;
-
-    background:
-        #ecebed;
-
-    pointer-events:
-        none;
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #ecebed;
+    pointer-events: none;
 }
-
-
-/*
-   Compatibilidade com items criados dinamicamente
-   pelo messages.js caso a imagem seja adicionada
-   diretamente ao .conversa-item.
-*/
 
 .conversa-item > img {
-    position:
-        relative;
-
-    flex:
-        0
-        0
-        58px;
-
-    width:
-        58px;
-
-    height:
-        58px;
-
-    border:
-        1px solid
-        rgba(22, 21, 25, 0.07);
-
-    border-radius:
-        50%;
-
-    object-fit:
-        cover;
-
-    background:
-        #ecebed;
-
-    box-shadow:
-        0
-        5px
-        14px
-        rgba(25, 22, 30, 0.06);
-
-    pointer-events:
-        none;
+    position: relative;
+    flex: 0 0 58px;
+    width: 58px;
+    height: 58px;
+    border: 1px solid rgba(22, 21, 25, 0.07);
+    border-radius: 50%;
+    object-fit: cover;
+    background: #ecebed;
+    box-shadow: 0 5px 14px rgba(25, 22, 30, 0.06);
+    pointer-events: none;
 }
 
-
-/* =========================================================
-   TEXTO
-   ========================================================= */
+/* TEXTO */
 
 .conversa-conteudo {
-    min-width:
-        0;
-
-    flex:
-        1;
-
-    display:
-        flex;
-
-    flex-direction:
-        column;
-
-    gap:
-        5px;
-
-    pointer-events:
-        none;
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    pointer-events: none;
 }
-
 
 .conversa-conteudo strong {
-    overflow:
-        hidden;
-
-    color:
-        #202025;
-
-    font-size:
-        15px;
-
-    font-weight:
-        730;
-
-    line-height:
-        1.2;
-
-    letter-spacing:
-        -0.018em;
-
-    text-overflow:
-        ellipsis;
-
-    white-space:
-        nowrap;
+    overflow: hidden;
+    color: #202025;
+    font-size: 15px;
+    font-weight: 730;
+    line-height: 1.2;
+    letter-spacing: -0.018em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
-
 
 .conversa-resumo {
-    overflow:
-        hidden;
-
-    color:
-        #77747c;
-
-    font-size:
-        13px;
-
-    line-height:
-        1.3;
-
-    letter-spacing:
-        -0.005em;
-
-    text-overflow:
-        ellipsis;
-
-    white-space:
-        nowrap;
+    overflow: hidden;
+    color: #77747c;
+    font-size: 13px;
+    line-height: 1.3;
+    letter-spacing: -0.005em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-
-/* =========================================================
-   META
-   ========================================================= */
+/* META */
 
 .conversa-meta {
-    flex:
-        0
-        0
-        auto;
-
-    min-width:
-        42px;
-
-    align-self:
-        stretch;
-
-    display:
-        flex;
-
-    flex-direction:
-        column;
-
-    align-items:
-        flex-end;
-
-    justify-content:
-        center;
-
-    gap:
-        8px;
-
-    pointer-events:
-        none;
+    flex: 0 0 auto;
+    min-width: 42px;
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 8px;
+    pointer-events: none;
 }
-
 
 .conversa-meta time {
-    color:
-        #99969e;
-
-    font-size:
-        10px;
-
-    font-weight:
-        560;
-
-    line-height:
-        1;
-
-    font-variant-numeric:
-        tabular-nums;
+    color: #99969e;
+    font-size: 10px;
+    font-weight: 560;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
 }
-
-
-/* =========================================================
-   NÃO LIDAS
-   ========================================================= */
 
 .conversa-nao-lidas {
-    min-width:
-        21px;
-
-    height:
-        21px;
-
-    padding:
-        0
-        6px;
-
-    border-radius:
-        999px;
-
-    background:
-        var(--margot-vermelho);
-
-    color:
-        #ffffff;
-
-    box-shadow:
-        0
-        4px
-        12px
-        rgba(225, 35, 70, 0.20);
-
-    font-size:
-        10px;
-
-    font-weight:
-        800;
-
-    line-height:
-        21px;
-
-    text-align:
-        center;
+    min-width: 21px;
+    height: 21px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: var(--margot-vermelho);
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(225, 35, 70, 0.20);
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 21px;
+    text-align: center;
 }
 
-
-/* =========================================================
-   VAZIO
-   ========================================================= */
+/* ESTADO VAZIO */
 
 .conversas-vazio {
-    position:
-        relative;
-
-    min-height:
-        350px;
-
-    padding:
-        48px
-        28px;
-
-    overflow:
-        hidden;
-
-    border:
-        1px solid
-        var(--mensagens-linha);
-
-    border-radius:
-        24px;
-
-    background:
-        rgba(
-            255,
-            255,
-            255,
-            0.77
-        );
-
-    -webkit-backdrop-filter:
-        blur(18px);
-
-    backdrop-filter:
-        blur(18px);
-
-    box-shadow:
-        var(--mensagens-sombra);
-
-    color:
-        var(--mensagens-suave);
-
-    text-align:
-        center;
-
-    display:
-        flex;
-
-    flex-direction:
-        column;
-
-    align-items:
-        center;
-
-    justify-content:
-        center;
+    position: relative;
+    min-height: 350px;
+    padding: 48px 28px;
+    overflow: hidden;
+    border: 1px solid var(--mensagens-linha);
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.77);
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+    box-shadow: var(--mensagens-sombra);
+    color: var(--mensagens-suave);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
-
-
-/* =========================================================
-   ÍCONE VAZIO
-   ========================================================= */
 
 .conversas-vazio-icone,
 .conversas-vazio > span {
-    width:
-        60px;
-
-    height:
-        60px;
-
-    margin-bottom:
-        19px;
-
-    border:
-        1px solid
-        rgba(22, 21, 25, 0.07);
-
-    border-radius:
-        19px;
-
-    color:
-        var(--mensagens-preto);
-
-    background:
-        rgba(
-            255,
-            255,
-            255,
-            0.92
-        );
-
-    box-shadow:
-        0
-        7px
-        20px
-        rgba(25, 22, 30, 0.055);
-
-    display:
-        grid;
-
-    place-items:
-        center;
+    width: 60px;
+    height: 60px;
+    margin-bottom: 19px;
+    border: 1px solid rgba(22, 21, 25, 0.07);
+    border-radius: 19px;
+    color: var(--mensagens-preto);
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 7px 20px rgba(25, 22, 30, 0.055);
+    display: grid;
+    place-items: center;
 }
-
 
 .conversas-vazio-icone svg,
 .conversas-vazio > span svg {
-    width:
-        25px;
-
-    height:
-        25px;
-
-    fill:
-        none;
-
-    stroke:
-        currentColor;
-
-    stroke-width:
-        1.65;
-
-    stroke-linecap:
-        round;
-
-    stroke-linejoin:
-        round;
+    width: 25px;
+    height: 25px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.65;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
-
-
-/* =========================================================
-   VAZIO TEXTO
-   ========================================================= */
 
 .conversas-vazio h2 {
-    margin:
-        0
-        0
-        8px;
-
-    color:
-        var(--mensagens-preto);
-
-    font-size:
-        20px;
-
-    font-weight:
-        730;
-
-    line-height:
-        1.2;
-
-    letter-spacing:
-        -0.025em;
+    margin: 0 0 8px;
+    color: var(--mensagens-preto);
+    font-size: 20px;
+    font-weight: 730;
+    line-height: 1.2;
+    letter-spacing: -0.025em;
 }
-
 
 .conversas-vazio p {
-    max-width:
-        270px;
-
-    margin:
-        0;
-
-    color:
-        #7e7a83;
-
-    font-size:
-        13px;
-
-    line-height:
-        1.5;
+    max-width: 270px;
+    margin: 0;
+    color: #7e7a83;
+    font-size: 13px;
+    line-height: 1.5;
 }
-
-
-/* =========================================================
-   ERRO
-   ========================================================= */
 
 .conversas-erro {
-    margin:
-        16px;
-
-    color:
-        var(--margot-vermelho);
-
-    font-size:
-        13px;
-
-    text-align:
-        center;
+    margin: 16px;
+    color: var(--margot-vermelho);
+    font-size: 13px;
+    text-align: center;
 }
 
-
-/* =========================================================
-   ACTION SHEET
-   ========================================================= */
+/* ACTION SHEET */
 
 .conversa-acoes {
-    position:
-        fixed;
-
-    z-index:
-        5000;
-
-    top:
-        auto;
-
-    right:
-        10px;
-
-    bottom:
-        max(
-            10px,
-            env(
-                safe-area-inset-bottom,
-                0px
-            )
-        );
-
-    left:
-        10px;
-
-    width:
-        auto;
-
-    max-width:
-        520px;
-
-    margin:
-        auto
-        auto
-        max(
-            10px,
-            env(
-                safe-area-inset-bottom,
-                0px
-            )
-        );
-
-    padding:
-        0;
-
-    overflow:
-        visible;
-
-    border:
-        0;
-
-    background:
-        transparent;
-
-    color:
-        var(--mensagens-preto);
+    position: fixed;
+    z-index: 5000;
+    top: auto;
+    right: 10px;
+    bottom: max(10px, env(safe-area-inset-bottom, 0px));
+    left: 10px;
+    width: auto;
+    max-width: 520px;
+    margin: auto auto max(10px, env(safe-area-inset-bottom, 0px));
+    padding: 0;
+    overflow: visible;
+    border: 0;
+    background: transparent;
+    color: var(--mensagens-preto);
 }
-
 
 .conversa-acoes:not([open]) {
-    display:
-        none;
+    display: none;
 }
-
 
 .conversa-acoes::backdrop {
-    background:
-        rgba(
-            14,
-            14,
-            18,
-            0.34
-        );
-
-    -webkit-backdrop-filter:
-        blur(7px);
-
-    backdrop-filter:
-        blur(7px);
+    background: rgba(14, 14, 18, 0.34);
+    -webkit-backdrop-filter: blur(7px);
+    backdrop-filter: blur(7px);
 }
-
 
 .conversa-acoes[open] {
-    animation:
-        conversa-sheet-entrar
-        260ms
-        cubic-bezier(
-            .22,
-            1,
-            .36,
-            1
-        );
+    animation: conversa-sheet-entrar 260ms cubic-bezier(.22, 1, .36, 1);
 }
 
-
 @keyframes conversa-sheet-entrar {
-
     from {
-        opacity:
-            0;
-
-        transform:
-            translateY(28px)
-            scale(0.985);
+        opacity: 0;
+        transform: translateY(28px) scale(0.985);
     }
 
     to {
-        opacity:
-            1;
-
-        transform:
-            translateY(0)
-            scale(1);
+        opacity: 1;
+        transform: translateY(0) scale(1);
     }
-
 }
-
-
-/* =========================================================
-   ACTION SHEET CAIXA
-   ========================================================= */
 
 .conversa-acoes-caixa {
-    overflow:
-        hidden;
-
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.55);
-
-    border-radius:
-        24px;
-
-    background:
-        rgba(
-            249,
-            248,
-            246,
-            0.97
-        );
-
-    -webkit-backdrop-filter:
-        blur(28px)
-        saturate(150%);
-
-    backdrop-filter:
-        blur(28px)
-        saturate(150%);
-
-    box-shadow:
-        0
-        24px
-        65px
-        rgba(10, 10, 20, 0.21);
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    border-radius: 24px;
+    background: rgba(249, 248, 246, 0.97);
+    -webkit-backdrop-filter: blur(28px) saturate(150%);
+    backdrop-filter: blur(28px) saturate(150%);
+    box-shadow: 0 24px 65px rgba(10, 10, 20, 0.21);
 }
-
-
-/* =========================================================
-   ACTION SHEET HEADER
-   ========================================================= */
 
 .conversa-acoes-cabecalho {
-    min-height:
-        71px;
-
-    padding:
-        14px
-        18px
-        13px;
-
-    border-bottom:
-        1px solid
-        rgba(0, 0, 0, 0.06);
-
-    display:
-        flex;
-
-    flex-direction:
-        column;
-
-    align-items:
-        center;
-
-    justify-content:
-        center;
-
-    gap:
-        3px;
+    min-height: 71px;
+    padding: 14px 18px 13px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
 }
-
 
 .conversa-acoes-cabecalho strong {
-    color:
-        var(--mensagens-preto);
-
-    font-size:
-        15px;
-
-    font-weight:
-        760;
+    color: var(--mensagens-preto);
+    font-size: 15px;
+    font-weight: 760;
 }
-
 
 .conversa-acoes-cabecalho span {
-    max-width:
-        100%;
-
-    overflow:
-        hidden;
-
-    color:
-        #8b8790;
-
-    font-size:
-        12px;
-
-    text-overflow:
-        ellipsis;
-
-    white-space:
-        nowrap;
+    max-width: 100%;
+    overflow: hidden;
+    color: #8b8790;
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
-
-
-/* =========================================================
-   ACTION SHEET BOTÕES
-   ========================================================= */
 
 .conversa-acao {
-    width:
-        100%;
-
-    min-height:
-        67px;
-
-    padding:
-        11px
-        18px;
-
-    border:
-        0;
-
-    border-bottom:
-        1px solid
-        rgba(0, 0, 0, 0.06);
-
-    background:
-        transparent;
-
-    color:
-        var(--mensagens-preto);
-
-    text-align:
-        left;
-
-    appearance:
-        none;
-
-    -webkit-appearance:
-        none;
-
-    display:
-        flex;
-
-    flex-direction:
-        column;
-
-    justify-content:
-        center;
-
-    gap:
-        3px;
-
-    cursor:
-        pointer;
-
-    -webkit-tap-highlight-color:
-        transparent;
-
+    width: 100%;
+    min-height: 67px;
+    padding: 11px 18px;
+    border: 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    background: transparent;
+    color: var(--mensagens-preto);
+    text-align: left;
+    appearance: none;
+    -webkit-appearance: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
     transition:
-        background-color
-        120ms
-        ease,
-        opacity
-        120ms
-        ease;
+        background-color 120ms ease,
+        opacity 120ms ease;
 }
-
 
 .conversa-acao:active {
-    background:
-        rgba(
-            0,
-            0,
-            0,
-            0.045
-        );
+    background: rgba(0, 0, 0, 0.045);
 }
-
 
 .conversa-acao:disabled {
-    opacity:
-        0.4;
+    opacity: 0.4;
 }
-
 
 .conversa-acao strong {
-    font-size:
-        15px;
-
-    font-weight:
-        720;
+    font-size: 15px;
+    font-weight: 720;
 }
-
 
 .conversa-acao span {
-    color:
-        #89858e;
-
-    font-size:
-        12px;
-
-    line-height:
-        1.3;
+    color: #89858e;
+    font-size: 12px;
+    line-height: 1.3;
 }
-
 
 .conversa-acao-perigosa strong {
-    color:
-        var(--margot-vermelho);
+    color: var(--margot-vermelho);
 }
-
 
 .conversa-acao-cancelar {
-    min-height:
-        57px;
-
-    border-bottom:
-        0;
-
-    color:
-        var(--mensagens-preto);
-
-    font-size:
-        15px;
-
-    font-weight:
-        760;
-
-    text-align:
-        center;
-
-    align-items:
-        center;
+    min-height: 57px;
+    border-bottom: 0;
+    color: var(--mensagens-preto);
+    font-size: 15px;
+    font-weight: 760;
+    text-align: center;
+    align-items: center;
 }
 
-
-/* =========================================================
-   MOBILE PEQUENO
-   ========================================================= */
+/* MOBILE */
 
 @media (max-width: 370px) {
-
     .mensagens-conteudo {
-        padding-right:
-            12px;
-
-        padding-left:
-            12px;
+        padding-right: 12px;
+        padding-left: 12px;
     }
-
 
     .mensagens-cabecalho {
-        margin-bottom:
-            23px;
+        margin-bottom: 23px;
     }
-
 
     .mensagens-cabecalho h1 {
-        font-size:
-            38px;
+        font-size: 38px;
     }
-
 
     .conversa-item {
-        min-height:
-            80px;
-
-        padding:
-            10px
-            11px;
-
-        border-radius:
-            19px;
-
-        gap:
-            11px;
+        min-height: 80px;
+        padding: 10px 11px;
+        border-radius: 19px;
+        gap: 11px;
     }
-
 
     .conversa-foto-caixa,
     .conversa-item > img {
-        flex-basis:
-            54px;
-
-        width:
-            54px;
-
-        height:
-            54px;
+        flex-basis: 54px;
+        width: 54px;
+        height: 54px;
     }
-
 
     .conversa-conteudo strong {
-        font-size:
-            14px;
+        font-size: 14px;
     }
-
 
     .conversa-resumo {
-        font-size:
-            12px;
+        font-size: 12px;
     }
-
 }
 
-
-/* =========================================================
-   TABLET
-   ========================================================= */
+/* TABLET */
 
 @media (min-width: 700px) {
-
     .mensagens-conteudo {
-        padding-top:
-            calc(
-                env(
-                    safe-area-inset-top,
-                    0px
-                ) +
-                50px
-            );
-
-        padding-right:
-            24px;
-
-        padding-left:
-            24px;
+        padding-top: calc(env(safe-area-inset-top, 0px) + 50px);
+        padding-right: 24px;
+        padding-left: 24px;
     }
-
 
     .mensagens-cabecalho {
-        margin-bottom:
-            30px;
+        margin-bottom: 30px;
     }
-
 
     .mensagens-cabecalho h1 {
-        font-size:
-            54px;
+        font-size: 54px;
     }
-
 
     .conversa-item {
-        min-height:
-            90px;
-
-        padding:
-            13px
-            15px;
-
-        border-radius:
-            22px;
+        min-height: 90px;
+        padding: 13px 15px;
+        border-radius: 22px;
     }
-
 
     .conversa-foto-caixa,
     .conversa-item > img {
-        flex-basis:
-            62px;
-
-        width:
-            62px;
-
-        height:
-            62px;
+        flex-basis: 62px;
+        width: 62px;
+        height: 62px;
     }
-
 }
 
-
-/* =========================================================
-   REDUCED MOTION
-   ========================================================= */
+/* REDUCED MOTION */
 
 @media (prefers-reduced-motion: reduce) {
-
     .conversa-item,
     .conversa-acao {
-        transition:
-            none;
+        transition: none;
     }
-
 
     .conversa-acoes[open] {
-        animation:
-            none;
+        animation: none;
     }
-
 }

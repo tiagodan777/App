@@ -1,15 +1,12 @@
 @charset "UTF-8";
 
-
 :root {
-    --perfil-fundo: #f7f5f0;
+    --perfil-fundo: #fbfafc;
 
     --perfil-preto: #17171b;
     --perfil-texto: #303038;
     --perfil-suave: #817d87;
-
-    --perfil-linha:
-        rgba(24, 22, 28, 0.075);
+    --perfil-linha: rgba(24, 22, 28, 0.075);
 
     --perfil-amarelo: #f9f8f5;
     --perfil-amarelo-suave: #eeeadd;
@@ -25,62 +22,40 @@
     --perfil-vermelho: #e12346;
     --perfil-vermelho-escuro: #c91d3e;
 
-    --perfil-sombra:
-        0 18px 50px rgba(25, 22, 30, 0.075);
-
-    --perfil-sombra-forte:
-        0 28px 75px rgba(17, 15, 22, 0.16);
+    --perfil-sombra: 0 18px 50px rgba(25, 22, 30, 0.075);
+    --perfil-sombra-forte: 0 28px 75px rgba(17, 15, 22, 0.16);
 }
 
-
-/* =========================================================
-   SCROLL
-   ========================================================= */
+/* SCROLL */
 
 html:has(#perfil) {
     width: 100% !important;
-
     height: auto !important;
     min-height: 100% !important;
-
     margin: 0 !important;
     padding: 0 !important;
-
     overflow-x: hidden !important;
     overflow-y: auto !important;
-
     overscroll-behavior-x: none !important;
     overscroll-behavior-y: auto !important;
-
-    background:
-        var(--perfil-fundo);
+    background: var(--perfil-fundo);
 }
-
 
 body:has(#perfil) {
     position: relative !important;
-
     width: 100% !important;
-
     height: auto !important;
     min-height: 100vh !important;
     min-height: 100dvh !important;
-
     margin: 0 !important;
     padding: 0 !important;
-
     overflow-x: hidden !important;
     overflow-y: auto !important;
-
     overscroll-behavior-x: none !important;
     overscroll-behavior-y: auto !important;
-
     -webkit-overflow-scrolling: touch;
-
-    background:
-        var(--perfil-fundo);
+    background: var(--perfil-fundo);
 }
-
 
 html.perfil-modal-aberta,
 body.perfil-modal-aberta {
@@ -88,10 +63,7 @@ body.perfil-modal-aberta {
     overscroll-behavior: none !important;
 }
 
-
-/* =========================================================
-   RESET
-   ========================================================= */
+/* RESET */
 
 #perfil,
 #perfil *,
@@ -100,26 +72,16 @@ body.perfil-modal-aberta {
     box-sizing: border-box;
 }
 
-
 #perfil {
     position: relative;
-
     width: 100%;
-
     height: auto !important;
-
     min-height: 100vh;
     min-height: 100dvh;
-
     margin: 0;
-
     overflow: visible !important;
-
     overscroll-behavior-y: auto;
-
-    color:
-        var(--perfil-texto);
-
+    color: var(--perfil-texto);
     background:
         radial-gradient(
             circle at 90% 10%,
@@ -132,7 +94,6 @@ body.perfil-modal-aberta {
             transparent 25%
         ),
         var(--perfil-fundo);
-
     font-family:
         Inter,
         ui-sans-serif,
@@ -143,533 +104,293 @@ body.perfil-modal-aberta {
         sans-serif;
 }
 
-
-/* =========================================================
-   SVG
-   ========================================================= */
+/* SVG */
 
 .perfil-svg-defs {
     position: absolute;
-
     width: 0;
     height: 0;
-
     overflow: hidden;
-
     pointer-events: none;
 }
 
-
-/* =========================================================
-   ACESSIBILIDADE
-   ========================================================= */
+/* ACESSIBILIDADE */
 
 .sr-only {
     position: absolute !important;
-
     width: 1px !important;
     height: 1px !important;
-
     margin: -1px !important;
     padding: 0 !important;
-
     overflow: hidden !important;
-
-    clip:
-        rect(
-            0,
-            0,
-            0,
-            0
-        ) !important;
-
+    clip: rect(0, 0, 0, 0) !important;
     white-space: nowrap !important;
-
     border: 0 !important;
 }
 
-
-/* =========================================================
-   FUNDO
-   ========================================================= */
+/* FUNDO */
 
 .perfil-fundo {
     position: absolute;
     z-index: 0;
-
     inset: 0;
-
     overflow: hidden;
-
     pointer-events: none;
 }
-
 
 .perfil-fundo-forma {
     position: absolute;
-
     display: block;
-
     pointer-events: none;
 }
-
 
 .perfil-fundo-forma--1 {
     top: 210px;
     right: -105px;
-
     width: 230px;
     height: 270px;
-
-    border-radius:
-        57% 43% 66% 34% /
-        39% 59% 41% 61%;
-
+    border-radius: 57% 43% 66% 34% / 39% 59% 41% 61%;
     background:
         linear-gradient(
             145deg,
             rgba(239, 199, 190, 0.30),
             rgba(207, 196, 239, 0.24)
         );
-
-    filter:
-        blur(4px);
-
-    transform:
-        rotate(-9deg);
+    filter: blur(4px);
+    transform: rotate(-9deg);
 }
-
 
 .perfil-fundo-forma--2 {
     top: 810px;
     left: -130px;
-
     width: 280px;
     height: 250px;
-
-    border-radius:
-        42% 58% 37% 63% /
-        60% 38% 62% 40%;
-
+    border-radius: 42% 58% 37% 63% / 60% 38% 62% 40%;
     background:
         linear-gradient(
             145deg,
-            rgba(244, 220, 146, 0.25),
-            rgba(143, 178, 232, 0.16)
+            rgba(244, 220, 146, 0.08),
+            rgba(143, 178, 232, 0.08)
         );
-
-    filter:
-        blur(3px);
+    filter: blur(3px);
 }
-
 
 .perfil-fundo-forma--3 {
-    bottom: 80px;
     right: -75px;
-
+    bottom: 80px;
     width: 190px;
     height: 180px;
-
-    border-radius:
-        64% 36% 49% 51% /
-        42% 63% 37% 58%;
-
-    background:
-        rgba(207, 196, 239, 0.18);
-
-    filter:
-        blur(3px);
+    border-radius: 64% 36% 49% 51% / 42% 63% 37% 58%;
+    background: rgba(207, 196, 239, 0.18);
+    filter: blur(3px);
 }
 
-
-/* =========================================================
-   PÁGINA
-   ========================================================= */
+/* PÁGINA */
 
 .perfil-page {
     position: relative;
     z-index: 2;
-
-    width:
-        min(
-            100%,
-            860px
-        );
-
+    width: min(100%, 860px);
     min-height: 100%;
-
-    margin:
-        0
-        auto;
-
+    margin: 0 auto;
     padding:
-        max(
-            18px,
-            env(
-                safe-area-inset-top,
-                0px
-            )
-        )
+        max(18px, env(safe-area-inset-top, 0px))
         14px
         calc(
-            var(
-                --menu-principal-height,
-                58px
-            ) +
-            var(
-                --menu-principal-bottom,
-                18px
-            ) +
-            env(
-                safe-area-inset-bottom,
-                0px
-            ) +
+            var(--menu-principal-height, 58px) +
+            var(--menu-principal-bottom, 18px) +
+            env(safe-area-inset-bottom, 0px) +
             75px
         );
 }
 
-
-/* =========================================================
-   TOPO
-   ========================================================= */
+/* TOPO */
 
 .perfil-topo {
     min-height: 46px;
-
     margin-bottom: 15px;
-
     display: flex;
     align-items: center;
     justify-content: space-between;
 }
 
-
-/* =========================================================
-   MARCA
-   ========================================================= */
+/* MARCA */
 
 .perfil-marca-abstrata {
     position: relative;
-
     width: 37px;
     height: 29px;
 }
 
-
 .perfil-marca-abstrata span {
     position: absolute;
-
     display: block;
 }
-
 
 .perfil-marca-abstrata--1 {
     top: 0;
     left: 1px;
-
     width: 17px;
     height: 25px;
-
-    border-radius:
-        46% 54% 41% 59% /
-        39% 59% 41% 61%;
-
-    background:
-        linear-gradient(
-            180deg,
-            #ffd38d,
-            #efaea2
-        );
-
-    transform:
-        rotate(9deg);
+    border-radius: 46% 54% 41% 59% / 39% 59% 41% 61%;
+    background: linear-gradient(180deg, #ffd38d, #efaea2);
+    transform: rotate(9deg);
 }
-
 
 .perfil-marca-abstrata--2 {
     right: 2px;
     bottom: 0;
-
     width: 15px;
     height: 15px;
-
     border-radius: 50%;
-
-    background:
-        var(--perfil-roxo);
+    background: var(--perfil-roxo);
 }
 
-
-/* =========================================================
-   EDITAR
-   ========================================================= */
+/* EDITAR */
 
 .perfil-editar {
     min-height: 43px;
-
-    padding:
-        0
-        16px;
-
-    border:
-        1px solid
-        rgba(22, 21, 25, 0.08);
-
+    padding: 0 16px;
+    border: 1px solid rgba(22, 21, 25, 0.08);
     border-radius: 999px;
-
-    color:
-        var(--perfil-preto);
-
-    background:
-        rgba(255, 255, 255, 0.75);
-
-    -webkit-backdrop-filter:
-        blur(15px);
-
-    backdrop-filter:
-        blur(15px);
-
+    color: var(--perfil-preto);
+    background: rgba(255, 255, 255, 0.75);
+    -webkit-backdrop-filter: blur(15px);
+    backdrop-filter: blur(15px);
     text-decoration: none;
-
     font-size: 13px;
     font-weight: 730;
-
     display: inline-flex;
     align-items: center;
     justify-content: center;
-
     gap: 8px;
-
-    box-shadow:
-        0
-        7px
-        24px
-        rgba(25, 22, 30, 0.03);
-
+    box-shadow: 0 7px 24px rgba(25, 22, 30, 0.03);
     transition:
         transform 150ms ease,
         background-color 150ms ease;
-
-    -webkit-tap-highlight-color:
-        transparent;
+    -webkit-tap-highlight-color: transparent;
 }
-
 
 .perfil-editar:active {
-    transform:
-        scale(0.96);
+    transform: scale(0.96);
 }
-
 
 .perfil-editar svg {
     width: 15px;
     height: 15px;
-
     fill: none;
-
-    stroke:
-        currentColor;
-
+    stroke: currentColor;
     stroke-width: 1.8;
     stroke-linecap: round;
     stroke-linejoin: round;
 }
 
-
-/* =========================================================
-   HERO
-   ========================================================= */
+/* HERO */
 
 .perfil-hero {
     position: relative;
-
     margin-bottom: 26px;
 }
 
-
 .perfil-foto-area {
     position: relative;
-
     width: 100%;
-
     padding-top: 10px;
-
     margin-bottom: -26px;
 }
 
-
-/* =========================================================
-   ACENTOS
-   ========================================================= */
+/* ACENTOS */
 
 .perfil-acento {
     position: absolute;
     z-index: 0;
-
     display: block;
-
     pointer-events: none;
 }
-
 
 .perfil-acento--amarelo {
     top: 0;
     left: -13px;
-
     width: 170px;
     height: 130px;
-
-    border-radius:
-        60% 40% 51% 49% /
-        40% 61% 39% 60%;
-
+    border-radius: 60% 40% 51% 49% / 40% 61% 39% 60%;
     background:
         linear-gradient(
             145deg,
             rgba(246, 219, 139, 0.94),
             rgba(246, 219, 139, 0.24)
         );
-
-    transform:
-        rotate(-7deg);
+    transform: rotate(-7deg);
 }
-
 
 .perfil-acento--roxo {
     top: 85px;
     right: -6px;
-
     width: 90px;
     height: 122px;
-
-    border-radius:
-        41% 59% 64% 36% /
-        57% 38% 62% 43%;
-
+    border-radius: 41% 59% 64% 36% / 57% 38% 62% 43%;
     background:
         linear-gradient(
             155deg,
             rgba(207, 196, 239, 0.78),
             rgba(239, 199, 190, 0.34)
         );
-
-    transform:
-        rotate(13deg);
+    transform: rotate(13deg);
 }
-
 
 .perfil-acento--rosa {
     right: 22px;
     bottom: 38px;
-
     width: 75px;
     height: 65px;
-
-    border-radius:
-        53% 47% 42% 58% /
-        58% 38% 62% 42%;
-
-    background:
-        rgba(239, 199, 190, 0.55);
-
-    transform:
-        rotate(-11deg);
+    border-radius: 53% 47% 42% 58% / 58% 38% 62% 42%;
+    background: rgba(239, 199, 190, 0.55);
+    transform: rotate(-11deg);
 }
 
-
-/* =========================================================
-   GALERIA
-   ========================================================= */
+/* GALERIA */
 
 .perfil-galeria {
     position: relative;
     z-index: 2;
-
     width: 100%;
-
-    height:
-        clamp(
-            430px,
-            62svh,
-            640px
-        );
-
+    height: clamp(430px, 62svh, 640px);
     overflow: hidden;
-
-    background:
-        transparent;
-
+    background: transparent;
     outline: none;
-
-    box-shadow:
-        var(--perfil-sombra-forte);
-
-    border-radius:
-        0 !important;
-
-    -webkit-clip-path:
-        url(#perfilIslandClip);
-
-    clip-path:
-        url(#perfilIslandClip);
-
-    transform-origin:
-        50% 50%;
-
-    animation:
-        perfil-ilha-flutuar
-        8s
-        ease-in-out
-        infinite;
-
-    isolation:
-        isolate;
+    box-shadow: var(--perfil-sombra-forte);
+    border-radius: 0 !important;
+    -webkit-clip-path: url(#perfilIslandClip);
+    clip-path: url(#perfilIslandClip);
+    transform-origin: 50% 50%;
+    animation: perfil-ilha-flutuar 8s ease-in-out infinite;
+    isolation: isolate;
 }
 
-
 @keyframes perfil-ilha-flutuar {
-
     0% {
-        transform:
-            translateY(0)
-            rotate(-0.7deg)
-            scale(1);
+        transform: translateY(0) rotate(-0.7deg) scale(1);
     }
 
     30% {
-        transform:
-            translateY(-4px)
-            rotate(0.35deg)
-            scale(1.004);
+        transform: translateY(-4px) rotate(0.35deg) scale(1.004);
     }
 
     60% {
-        transform:
-            translateY(-7px)
-            rotate(0.8deg)
-            scale(1.009);
+        transform: translateY(-7px) rotate(0.8deg) scale(1.009);
     }
 
     100% {
-        transform:
-            translateY(0)
-            rotate(-0.7deg)
-            scale(1);
+        transform: translateY(0) rotate(-0.7deg) scale(1);
     }
-
 }
-
 
 .perfil-galeria::before {
     content: "";
-
     position: absolute;
     z-index: 3;
-
     inset: 0;
-
     pointer-events: none;
-
     background:
         linear-gradient(
             to top,
@@ -683,568 +404,252 @@ body.perfil-modal-aberta {
         );
 }
 
-
-/* =========================================================
-   FOTOS / SWIPE
-   ========================================================= */
+/* FOTOS */
 
 .perfil-fotos {
     position: relative;
     z-index: 1;
-
     width: 100%;
     height: 100%;
-
     overflow-x: auto;
     overflow-y: hidden;
-
     display: flex;
     flex-flow: row nowrap;
-
-    scroll-snap-type:
-        x mandatory;
-
-    scroll-behavior:
-        auto;
-
-    overscroll-behavior-x:
-        contain;
-
-    overscroll-behavior-y:
-        auto;
-
-    scrollbar-width:
-        none;
-
-    -webkit-overflow-scrolling:
-        touch;
-
-    touch-action:
-        pan-y;
-
-    cursor:
-        grab;
-
-    background:
-        transparent;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: auto;
+    overscroll-behavior-x: contain;
+    overscroll-behavior-y: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    cursor: grab;
+    background: transparent;
 }
-
 
 .perfil-fotos.a-arrastar {
-    scroll-snap-type:
-        none;
-
-    cursor:
-        grabbing;
+    scroll-snap-type: none;
+    cursor: grabbing;
 }
-
 
 .perfil-fotos::-webkit-scrollbar {
     display: none;
 }
 
-
-/* =========================================================
-   SLIDE
-   ========================================================= */
-
 .perfil-slide {
     position: relative;
-
     width: 100%;
     height: 100%;
-
-    flex:
-        0 0 100%;
-
+    flex: 0 0 100%;
     margin: 0;
-
     overflow: hidden;
-
-    scroll-snap-align:
-        start;
-
-    scroll-snap-stop:
-        always;
-
-    background:
-        transparent;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    background: transparent;
 }
-
-
-/* =========================================================
-   FOTO
-   ========================================================= */
 
 .perfil-slide img {
     position: absolute;
-
     top: -4%;
     left: -4%;
-
     display: block;
-
     width: 108%;
     height: 108%;
-
     max-width: none;
-
-    object-fit:
-        cover;
-
-    object-position:
-        center center;
-
-    background:
-        transparent;
-
-    cursor:
-        zoom-in;
-
-    user-select:
-        none;
-
-    -webkit-user-select:
-        none;
-
-    -webkit-user-drag:
-        none;
-
-    -webkit-tap-highlight-color:
-        transparent;
-
-    will-change:
-        transform;
-
-    transform:
-        translateZ(0);
-
-    backface-visibility:
-        hidden;
-
-    -webkit-backface-visibility:
-        hidden;
+    object-fit: cover;
+    object-position: center center;
+    background: transparent;
+    cursor: zoom-in;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-user-drag: none;
+    -webkit-tap-highlight-color: transparent;
+    will-change: transform;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
 }
 
-
-/* =========================================================
-   INDICADORES
-   ========================================================= */
+/* INDICADORES */
 
 .perfil-indicadores {
     position: absolute;
     z-index: 8;
-
-    top:
-        auto !important;
-
-    bottom:
-        28px;
-
-    left:
-        50%;
-
-    transform:
-        translateX(-50%);
-
-    display:
-        flex;
-
-    align-items:
-        center;
-
-    justify-content:
-        center;
-
-    gap:
-        3px;
-
-    pointer-events:
-        auto;
+    top: auto !important;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    pointer-events: auto;
 }
-
 
 .perfil-indicadores button {
-    width:
-        13px;
-
-    height:
-        13px;
-
-    margin:
-        0;
-
-    padding:
-        4px;
-
-    border:
-        0;
-
-    background:
-        transparent;
-
-    display:
-        grid;
-
-    place-items:
-        center;
-
-    cursor:
-        pointer;
-
-    -webkit-tap-highlight-color:
-        transparent;
+    width: 13px;
+    height: 13px;
+    margin: 0;
+    padding: 4px;
+    border: 0;
+    background: transparent;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
 }
-
 
 .perfil-indicadores button span {
-    display:
-        block;
-
-    width:
-        3.5px;
-
-    height:
-        3.5px;
-
-    flex:
-        0 0 auto;
-
-    border-radius:
-        999px;
-
-    background:
-        rgba(255, 255, 255, 0.72);
-
-    box-shadow:
-        0
-        1px
-        5px
-        rgba(0, 0, 0, 0.18);
-
+    display: block;
+    width: 3.5px;
+    height: 3.5px;
+    flex: 0 0 auto;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.72);
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.18);
     transition:
-        width
-        180ms
-        cubic-bezier(
-            0.22,
-            1,
-            0.36,
-            1
-        ),
-        transform
-        180ms
-        cubic-bezier(
-            0.22,
-            1,
-            0.36,
-            1
-        ),
-        background-color
-        180ms
-        ease,
-        opacity
-        180ms
-        ease;
+        width 180ms cubic-bezier(0.22, 1, 0.36, 1),
+        transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+        background-color 180ms ease,
+        opacity 180ms ease;
 }
-
 
 .perfil-indicadores button.ativo span {
-    width:
-        10px;
-
-    height:
-        3.5px;
-
-    background:
-        #ffffff;
-
-    transform:
-        scale(1);
-
-    box-shadow:
-        0
-        1px
-        6px
-        rgba(0, 0, 0, 0.19);
+    width: 10px;
+    height: 3.5px;
+    background: #ffffff;
+    transform: scale(1);
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.19);
 }
 
-
-/* =========================================================
-   CONTADOR
-   ========================================================= */
+/* CONTADOR */
 
 .perfil-contador {
     position: absolute;
     z-index: 7;
-
     right: 18px;
     bottom: 19px;
-
     min-height: 34px;
-
-    padding:
-        0
-        11px;
-
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.16);
-
-    border-radius:
-        999px;
-
-    color:
-        #ffffff;
-
-    background:
-        rgba(10, 10, 14, 0.30);
-
-    -webkit-backdrop-filter:
-        blur(12px);
-
-    backdrop-filter:
-        blur(12px);
-
+    padding: 0 11px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 999px;
+    color: #ffffff;
+    background: rgba(10, 10, 14, 0.30);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
     font-size: 10px;
     font-weight: 730;
-
-    font-variant-numeric:
-        tabular-nums;
-
-    display:
-        flex;
-
-    align-items:
-        center;
-
-    gap:
-        4px;
+    font-variant-numeric: tabular-nums;
+    display: flex;
+    align-items: center;
+    gap: 4px;
 }
 
-
-/* =========================================================
-   EXPANDIR
-   ========================================================= */
+/* EXPANDIR */
 
 .perfil-expandir {
     position: absolute;
     z-index: 7;
-
     left: 18px;
     bottom: 18px;
-
     width: 37px;
     height: 37px;
-
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.17);
-
-    border-radius:
-        50%;
-
-    color:
-        #ffffff;
-
-    background:
-        rgba(10, 10, 14, 0.27);
-
-    -webkit-backdrop-filter:
-        blur(12px);
-
-    backdrop-filter:
-        blur(12px);
-
-    display:
-        grid;
-
-    place-items:
-        center;
-
-    pointer-events:
-        none;
+    border: 1px solid rgba(255, 255, 255, 0.17);
+    border-radius: 50%;
+    color: #ffffff;
+    background: rgba(10, 10, 14, 0.27);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    display: grid;
+    place-items: center;
+    pointer-events: none;
 }
-
 
 .perfil-expandir svg {
     width: 15px;
     height: 15px;
-
     fill: none;
-
-    stroke:
-        currentColor;
-
+    stroke: currentColor;
     stroke-width: 1.8;
     stroke-linecap: round;
     stroke-linejoin: round;
 }
 
-
-/* =========================================================
-   SETAS
-   ========================================================= */
+/* SETAS */
 
 .perfil-nav {
     position: absolute;
     z-index: 7;
-
     top: 50%;
-
     width: 42px;
     height: 42px;
-
     margin: 0;
     padding: 0;
-
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.16);
-
-    border-radius:
-        50%;
-
-    color:
-        #ffffff;
-
-    background:
-        rgba(10, 10, 14, 0.26);
-
-    -webkit-backdrop-filter:
-        blur(12px);
-
-    backdrop-filter:
-        blur(12px);
-
-    transform:
-        translateY(-50%);
-
-    display:
-        grid;
-
-    place-items:
-        center;
-
-    cursor:
-        pointer;
-
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 50%;
+    color: #ffffff;
+    background: rgba(10, 10, 14, 0.26);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    transform: translateY(-50%);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
     transition:
-        background-color
-        160ms
-        ease,
-        transform
-        160ms
-        ease;
+        background-color 160ms ease,
+        transform 160ms ease;
 }
-
 
 .perfil-nav:active {
-    transform:
-        translateY(-50%)
-        scale(0.92);
+    transform: translateY(-50%) scale(0.92);
 }
-
 
 .perfil-nav--anterior {
     left: 13px;
 }
 
-
 .perfil-nav--seguinte {
     right: 13px;
 }
 
-
 .perfil-nav svg {
     width: 18px;
     height: 18px;
-
     fill: none;
-
-    stroke:
-        currentColor;
-
+    stroke: currentColor;
     stroke-width: 2.1;
     stroke-linecap: round;
     stroke-linejoin: round;
 }
 
-
 .perfil-nav:disabled {
-    visibility:
-        hidden;
+    visibility: hidden;
 }
 
-
-/* =========================================================
-   IDENTIDADE
-   ========================================================= */
+/* IDENTIDADE */
 
 .perfil-identidade {
     position: relative;
     z-index: 5;
-
-    /*
-        Mais largo do que antes, mas continua
-        a deixar uma pequena margem à esquerda.
-    */
-    width:
-        calc(
-            100% - 8px
-        );
-
-    margin:
-        0
-        0
-        0
-        auto;
-
-    padding:
-        23px
-        19px
-        21px;
-
-    overflow:
-        hidden;
-
-    border:
-        1px solid
-        rgba(22, 21, 25, 0.055);
-
-    border-radius:
-        30px
-        46px
-        28px
-        36px;
-
-    background:
-        rgba(255, 255, 255, 0.88);
-
-    -webkit-backdrop-filter:
-        blur(21px);
-
-    backdrop-filter:
-        blur(21px);
-
-    box-shadow:
-        var(--perfil-sombra);
+    width: calc(100% - 8px);
+    margin: 0 0 0 auto;
+    padding: 23px 19px 21px;
+    overflow: hidden;
+    border: 1px solid rgba(22, 21, 25, 0.055);
+    border-radius: 30px 46px 28px 36px;
+    background: rgba(255, 255, 255, 0.88);
+    -webkit-backdrop-filter: blur(21px);
+    backdrop-filter: blur(21px);
+    box-shadow: var(--perfil-sombra);
 }
-
 
 .perfil-identidade-mancha {
     position: absolute;
     z-index: 0;
-
     top: -26px;
     right: -23px;
-
     width: 120px;
     height: 94px;
-
-    border-radius:
-        43% 57% 38% 62% /
-        58% 39% 61% 42%;
-
+    border-radius: 43% 57% 38% 62% / 58% 39% 61% 42%;
     background:
         linear-gradient(
             145deg,
@@ -1252,1746 +657,762 @@ body.perfil-modal-aberta {
             rgba(239, 199, 190, 0.60),
             rgba(207, 196, 239, 0.72)
         );
-
-    transform:
-        rotate(10deg);
-
-    pointer-events:
-        none;
+    transform: rotate(10deg);
+    pointer-events: none;
 }
-
 
 .perfil-identidade h1 {
     position: relative;
     z-index: 2;
-
-    width:
-        100%;
-
-    max-width:
-        100%;
-
-    margin:
-        0;
-
-    overflow:
-        hidden;
-
-    color:
-        var(--perfil-preto);
-
-    font-family:
-        Georgia,
-        "Times New Roman",
-        serif;
-
-    /*
-        Ligeiramente menor para primeiro + último nome
-        terem muito mais probabilidade de caber juntos.
-    */
-    font-size:
-        clamp(
-            34px,
-            9.4vw,
-            58px
-        );
-
-    font-weight:
-        700;
-
-    line-height:
-        0.98;
-
-    letter-spacing:
-        -0.045em;
-
-    white-space:
-        nowrap;
-
-    overflow-wrap:
-        normal;
-
-    text-overflow:
-        ellipsis;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    overflow: hidden;
+    color: var(--perfil-preto);
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: clamp(34px, 9.4vw, 58px);
+    font-weight: 700;
+    line-height: 0.98;
+    letter-spacing: -0.045em;
+    white-space: nowrap;
+    overflow-wrap: normal;
+    text-overflow: ellipsis;
 }
 
-
-/* =========================================================
-   IDADE + HEY
-   ========================================================= */
+/* IDADE + HEY */
 
 .perfil-identidade-rodape {
     position: relative;
     z-index: 3;
-
     min-height: 44px;
-
     margin-top: 15px;
-
     display: flex;
-
-    align-items:
-        center;
-
-    justify-content:
-        space-between;
-
-    gap:
-        14px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
 }
-
 
 .perfil-idade {
     min-width: 46px;
     min-height: 31px;
-
-    padding:
-        0
-        12px;
-
-    border-radius:
-        999px;
-
-    color:
-        #54461f;
-
-    background:
-        var(--perfil-amarelo-suave);
-
+    padding: 0 12px;
+    border-radius: 999px;
+    color: #54461f;
+    background: var(--perfil-amarelo-suave);
     font-size: 14px;
     font-weight: 790;
-
-    display:
-        inline-flex;
-
-    align-items:
-        center;
-
-    justify-content:
-        center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
-
-/* =========================================================
-   HEY
-   ========================================================= */
+/* HEY */
 
 #perfil .perfil-hey,
 #perfil #enviar-hey-perfil.perfil-hey {
     position: relative !important;
     z-index: 4 !important;
-
-    flex:
-        0 0 auto !important;
-
-    width:
-        auto !important;
-
-    height:
-        42px !important;
-
-    min-width:
-        84px !important;
-
-    min-height:
-        42px !important;
-
-    max-width:
-        none !important;
-
-    max-height:
-        none !important;
-
-    margin:
-        0 !important;
-
-    padding:
-        0
-        19px !important;
-
-    border:
-        0 !important;
-
-    border-radius:
-        999px !important;
-
-    background:
-        var(--perfil-vermelho) !important;
-
-    color:
-        #fff7ee !important;
-
-    box-shadow:
-        0
-        9px
-        22px
-        rgba(225, 35, 70, 0.24) !important;
-
-    font-family:
-        -apple-system,
-        BlinkMacSystemFont,
-        "Helvetica Neue",
-        Arial,
-        sans-serif !important;
-
-    font-size:
-        17px !important;
-
-    font-weight:
-        760 !important;
-
-    line-height:
-        1 !important;
-
-    letter-spacing:
-        -0.025em !important;
-
-    appearance:
-        none !important;
-
-    -webkit-appearance:
-        none !important;
-
-    display:
-        inline-flex !important;
-
-    align-items:
-        center !important;
-
-    justify-content:
-        center !important;
-
-    cursor:
-        pointer !important;
-
-    touch-action:
-        manipulation !important;
-
-    -webkit-tap-highlight-color:
-        transparent !important;
-
+    flex: 0 0 auto !important;
+    width: auto !important;
+    height: 42px !important;
+    min-width: 84px !important;
+    min-height: 42px !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 19px !important;
+    border: 0 !important;
+    border-radius: 999px !important;
+    background: var(--perfil-vermelho) !important;
+    color: #fff7ee !important;
+    box-shadow: 0 9px 22px rgba(225, 35, 70, 0.24) !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif !important;
+    font-size: 17px !important;
+    font-weight: 760 !important;
+    line-height: 1 !important;
+    letter-spacing: -0.025em !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: transparent !important;
     transition:
-        transform
-        150ms
-        ease,
-        background-color
-        150ms
-        ease,
-        box-shadow
-        150ms
-        ease,
-        opacity
-        150ms
-        ease !important;
+        transform 150ms ease,
+        background-color 150ms ease,
+        box-shadow 150ms ease,
+        opacity 150ms ease !important;
 }
-
 
 #perfil .perfil-hey:active:not(:disabled),
 #perfil #enviar-hey-perfil.perfil-hey:active:not(:disabled) {
-    transform:
-        scale(0.94) !important;
-
-    background:
-        var(--perfil-vermelho-escuro) !important;
+    transform: scale(0.94) !important;
+    background: var(--perfil-vermelho-escuro) !important;
 }
-
 
 #perfil .perfil-hey.enviado,
 #perfil #enviar-hey-perfil.perfil-hey.enviado {
-    background:
-        #27835d !important;
-
-    box-shadow:
-        0
-        9px
-        22px
-        rgba(39, 131, 93, 0.22) !important;
+    background: #27835d !important;
+    box-shadow: 0 9px 22px rgba(39, 131, 93, 0.22) !important;
 }
-
 
 #perfil .perfil-hey-label {
-    font-size:
-        17px !important;
-
-    font-weight:
-        760 !important;
-
-    line-height:
-        1 !important;
-
-    letter-spacing:
-        -0.025em !important;
+    font-size: 17px !important;
+    font-weight: 760 !important;
+    line-height: 1 !important;
+    letter-spacing: -0.025em !important;
 }
-
 
 #perfil .perfil-hey.a-enviar {
-    animation:
-        perfil-hey-pulse
-        850ms
-        ease-in-out
-        infinite
-        alternate;
+    animation: perfil-hey-pulse 850ms ease-in-out infinite alternate;
 }
 
-
 @keyframes perfil-hey-pulse {
-
     from {
-        transform:
-            scale(1);
+        transform: scale(1);
     }
 
     to {
-        transform:
-            scale(0.97);
+        transform: scale(0.97);
     }
-
 }
 
-
-/* =========================================================
-   ASSINATURA
-   ========================================================= */
+/* ASSINATURA */
 
 .perfil-assinatura {
     position: relative;
     z-index: 2;
-
     margin-top: 13px;
-
-    display:
-        flex;
-
-    align-items:
-        center;
-
-    gap:
-        6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
-
 
 .perfil-assinatura span {
-    display:
-        block;
-
-    height:
-        3px;
-
-    border-radius:
-        999px;
+    display: block;
+    height: 3px;
+    border-radius: 999px;
 }
-
 
 .perfil-assinatura span:nth-child(1) {
-    width:
-        23px;
-
-    background:
-        var(--perfil-azul);
+    width: 23px;
+    background: var(--perfil-azul);
 }
-
 
 .perfil-assinatura span:nth-child(2) {
-    width:
-        11px;
-
-    background:
-        var(--perfil-roxo);
+    width: 11px;
+    background: var(--perfil-roxo);
 }
-
 
 .perfil-assinatura span:nth-child(3) {
-    width:
-        7px;
-
-    background:
-        var(--perfil-vermelho);
+    width: 7px;
+    background: var(--perfil-vermelho);
 }
 
-
-/* =========================================================
-   SECÇÕES
-   ========================================================= */
+/* SECÇÕES */
 
 .perfil-seccao {
     position: relative;
-
     width: 100%;
-
-    margin-top:
-        17px;
-
-    padding:
-        21px
-        17px;
-
-    border:
-        1px solid
-        rgba(22, 21, 25, 0.055);
-
-    background:
-        rgba(255, 255, 255, 0.76);
-
-    -webkit-backdrop-filter:
-        blur(18px);
-
-    backdrop-filter:
-        blur(18px);
-
-    box-shadow:
-        var(--perfil-sombra);
+    margin-top: 17px;
+    padding: 21px 17px;
+    border: 1px solid rgba(22, 21, 25, 0.055);
+    background: rgba(255, 255, 255, 0.76);
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+    box-shadow: var(--perfil-sombra);
 }
-
 
 .perfil-sobre {
-    border-radius:
-        28px
-        39px
-        27px
-        34px;
+    border-radius: 28px 39px 27px 34px;
 }
-
 
 .perfil-interesses {
-    border-radius:
-        35px
-        27px
-        40px
-        29px;
+    border-radius: 35px 27px 40px 29px;
 }
 
-
-/* =========================================================
-   CABEÇALHOS
-   ========================================================= */
+/* CABEÇALHOS */
 
 .perfil-seccao-topo {
-    margin-bottom:
-        15px;
-
-    display:
-        flex;
-
-    align-items:
-        center;
-
-    gap:
-        11px;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 11px;
 }
-
 
 .perfil-seccao-icone {
-    width:
-        41px;
-
-    height:
-        41px;
-
-    flex:
-        0 0 auto;
-
-    border-radius:
-        14px;
-
-    display:
-        grid;
-
-    place-items:
-        center;
+    width: 41px;
+    height: 41px;
+    flex: 0 0 auto;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
 }
-
 
 .perfil-seccao-icone--roxo {
-    background:
-        var(--perfil-roxo-suave);
+    background: var(--perfil-roxo-suave);
 }
-
 
 .perfil-seccao-icone--amarelo {
-    background:
-        var(--perfil-amarelo-suave);
+    background: var(--perfil-amarelo-suave);
 }
-
 
 .perfil-seccao-icone svg {
-    width:
-        20px;
-
-    height:
-        20px;
-
-    fill:
-        none;
-
-    stroke:
-        var(--perfil-preto);
-
-    stroke-width:
-        1.75;
-
-    stroke-linecap:
-        round;
-
-    stroke-linejoin:
-        round;
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: var(--perfil-preto);
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
-
 
 .perfil-seccao h2 {
-    margin:
-        0;
-
-    color:
-        var(--perfil-preto);
-
-    font-family:
-        Georgia,
-        "Times New Roman",
-        serif;
-
-    font-size:
-        26px;
-
-    font-weight:
-        700;
-
-    line-height:
-        1;
-
-    letter-spacing:
-        -0.03em;
+    margin: 0;
+    color: var(--perfil-preto);
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.03em;
 }
 
-
-/* =========================================================
-   SOBRE
-   ========================================================= */
+/* SOBRE */
 
 .perfil-sobre p {
-    margin:
-        0;
-
-    color:
-        #34323a;
-
-    font-size:
-        clamp(
-            17px,
-            4.4vw,
-            21px
-        );
-
-    font-weight:
-        470;
-
-    line-height:
-        1.55;
-
-    letter-spacing:
-        -0.018em;
-
-    white-space:
-        pre-line;
-
-    overflow-wrap:
-        anywhere;
+    margin: 0;
+    color: #34323a;
+    font-size: clamp(17px, 4.4vw, 21px);
+    font-weight: 470;
+    line-height: 1.55;
+    letter-spacing: -0.018em;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
 }
 
-
-/* =========================================================
-   INTERESSES
-   ========================================================= */
+/* INTERESSES */
 
 .perfil-interesses-grid {
-    margin:
-        0;
-
-    padding:
-        0;
-
-    list-style:
-        none;
-
-    display:
-        grid;
-
-    grid-template-columns:
-        repeat(
-            2,
-            minmax(
-                0,
-                1fr
-            )
-        );
-
-    gap:
-        9px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
 }
-
 
 .perfil-gosto {
-    position:
-        relative;
-
-    min-width:
-        0;
-
-    min-height:
-        68px;
-
-    padding:
-        12px
-        13px;
-
-    overflow:
-        hidden;
-
-    border:
-        1px solid
-        rgba(22, 21, 25, 0.065);
-
-    background:
-        rgba(255, 255, 255, 0.74);
-
-    display:
-        flex;
-
-    flex-direction:
-        column;
-
-    justify-content:
-        center;
-
-    gap:
-        6px;
+    position: relative;
+    min-width: 0;
+    min-height: 68px;
+    padding: 12px 13px;
+    overflow: hidden;
+    border: 1px solid rgba(22, 21, 25, 0.065);
+    background: rgba(255, 255, 255, 0.74);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
 }
-
 
 .perfil-gosto::after {
-    content:
-        "";
-
-    position:
-        absolute;
-
-    right:
-        -13px;
-
-    bottom:
-        -15px;
-
-    width:
-        48px;
-
-    height:
-        48px;
-
-    border-radius:
-        50%;
-
-    opacity:
-        0.70;
+    content: "";
+    position: absolute;
+    right: -13px;
+    bottom: -15px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    opacity: 0.70;
 }
-
 
 .perfil-gosto--1 {
-    border-radius:
-        18px 25px 20px 23px;
+    border-radius: 18px 25px 20px 23px;
 }
-
 
 .perfil-gosto--1::after {
-    background:
-        rgba(244, 220, 146, 0.35);
+    background: rgba(244, 220, 146, 0.35);
 }
-
 
 .perfil-gosto--2 {
-    border-radius:
-        25px 18px 26px 18px;
+    border-radius: 25px 18px 26px 18px;
 }
-
 
 .perfil-gosto--2::after {
-    background:
-        rgba(207, 196, 239, 0.37);
+    background: rgba(207, 196, 239, 0.37);
 }
-
 
 .perfil-gosto--3 {
-    border-radius:
-        21px 28px 19px 25px;
+    border-radius: 21px 28px 19px 25px;
 }
-
 
 .perfil-gosto--3::after {
-    background:
-        rgba(239, 199, 190, 0.34);
+    background: rgba(239, 199, 190, 0.34);
 }
-
 
 .perfil-gosto--4 {
-    border-radius:
-        27px 19px 23px 20px;
+    border-radius: 27px 19px 23px 20px;
 }
-
 
 .perfil-gosto--4::after {
-    background:
-        rgba(143, 178, 232, 0.22);
+    background: rgba(143, 178, 232, 0.22);
 }
-
 
 .perfil-gosto--5 {
-    border-radius:
-        20px 25px 25px 18px;
+    border-radius: 20px 25px 25px 18px;
 }
-
 
 .perfil-gosto--5::after {
-    background:
-        rgba(207, 196, 239, 0.23);
+    background: rgba(207, 196, 239, 0.23);
 }
-
 
 .perfil-gosto--6 {
-    border-radius:
-        25px 20px 18px 27px;
+    border-radius: 25px 20px 18px 27px;
 }
-
 
 .perfil-gosto--6::after {
-    background:
-        rgba(244, 220, 146, 0.25);
+    background: rgba(244, 220, 146, 0.25);
 }
-
 
 .perfil-gosto-numero {
-    position:
-        relative;
-
-    z-index:
-        2;
-
-    color:
-        #9b97a1;
-
-    font-size:
-        9px;
-
-    font-weight:
-        750;
-
-    line-height:
-        1;
-
-    letter-spacing:
-        0.07em;
-
-    font-variant-numeric:
-        tabular-nums;
+    position: relative;
+    z-index: 2;
+    color: #9b97a1;
+    font-size: 9px;
+    font-weight: 750;
+    line-height: 1;
+    letter-spacing: 0.07em;
+    font-variant-numeric: tabular-nums;
 }
-
 
 .perfil-gosto-nome {
-    position:
-        relative;
-
-    z-index:
-        2;
-
-    min-width:
-        0;
-
-    color:
-        #26242b;
-
-    font-size:
-        14px;
-
-    font-weight:
-        690;
-
-    line-height:
-        1.22;
-
-    letter-spacing:
-        -0.018em;
-
-    overflow-wrap:
-        anywhere;
+    position: relative;
+    z-index: 2;
+    min-width: 0;
+    color: #26242b;
+    font-size: 14px;
+    font-weight: 690;
+    line-height: 1.22;
+    letter-spacing: -0.018em;
+    overflow-wrap: anywhere;
 }
 
-
-/* =========================================================
-   LIGHTBOX
-   ========================================================= */
+/* LIGHTBOX */
 
 .perfil-lightbox {
-    position:
-        fixed;
-
-    z-index:
-        5000;
-
-    inset:
-        0;
-
-    visibility:
-        hidden;
-
-    opacity:
-        0;
-
-    pointer-events:
-        none;
-
+    position: fixed;
+    z-index: 5000;
+    inset: 0;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
     transition:
-        opacity
-        300ms
-        ease,
-        visibility
-        300ms
-        ease;
+        opacity 300ms ease,
+        visibility 300ms ease;
 }
-
 
 .perfil-lightbox.is-mounted {
-    visibility:
-        visible;
-
-    pointer-events:
-        auto;
+    visibility: visible;
+    pointer-events: auto;
 }
-
 
 .perfil-lightbox.is-open {
-    opacity:
-        1;
+    opacity: 1;
 }
-
 
 .perfil-lightbox-fundo {
-    position:
-        absolute;
-
-    inset:
-        0;
-
-    background:
-        rgba(12, 11, 16, 0.90);
-
-    -webkit-backdrop-filter:
-        blur(20px);
-
-    backdrop-filter:
-        blur(20px);
+    position: absolute;
+    inset: 0;
+    background: rgba(12, 11, 16, 0.90);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
 }
-
 
 .perfil-lightbox-stage {
-    position:
-        absolute;
-
-    inset:
-        0;
-
+    position: absolute;
+    inset: 0;
     padding:
-        max(
-            68px,
-            calc(
-                env(
-                    safe-area-inset-top,
-                    0px
-                ) +
-                50px
-            )
-        )
+        max(68px, calc(env(safe-area-inset-top, 0px) + 50px))
         18px
-        max(
-            45px,
-            calc(
-                env(
-                    safe-area-inset-bottom,
-                    0px
-                ) +
-                30px
-            )
-        );
-
-    display:
-        flex;
-
-    align-items:
-        center;
-
-    justify-content:
-        center;
-
-    overflow:
-        hidden;
-
-    cursor:
-        zoom-out;
+        max(45px, calc(env(safe-area-inset-bottom, 0px) + 30px));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    cursor: zoom-out;
 }
 
-
-/* =========================================================
-   FOTO ABERTA
-   ========================================================= */
-
 .perfil-lightbox-media {
-    position:
-        relative;
-
-    z-index:
-        4;
-
-    width:
-        min(
-            92vw,
-            880px
-        );
-
-    height:
-        min(
-            80dvh,
-            900px
-        );
-
-    overflow:
-        hidden;
-
-    background:
-        transparent;
-
-    border-radius:
-        0 !important;
-
-    -webkit-clip-path:
-        url(#perfilLightboxClip);
-
-    clip-path:
-        url(#perfilLightboxClip);
-
-    box-shadow:
-        0
-        40px
-        110px
-        rgba(0, 0, 0, 0.46);
-
+    position: relative;
+    z-index: 4;
+    width: min(92vw, 880px);
+    height: min(80dvh, 900px);
+    overflow: hidden;
+    background: transparent;
+    border-radius: 0 !important;
+    -webkit-clip-path: url(#perfilLightboxClip);
+    clip-path: url(#perfilLightboxClip);
+    box-shadow: 0 40px 110px rgba(0, 0, 0, 0.46);
     transform:
         translate(
-            var(
-                --perfil-origem-x,
-                0px
-            ),
-            var(
-                --perfil-origem-y,
-                0px
-            )
+            var(--perfil-origem-x, 0px),
+            var(--perfil-origem-y, 0px)
         )
         scale(
-            var(
-                --perfil-origem-scale-x,
-                1
-            ),
-            var(
-                --perfil-origem-scale-y,
-                1
-            )
+            var(--perfil-origem-scale-x, 1),
+            var(--perfil-origem-scale-y, 1)
         );
-
-    transform-origin:
-        center;
-
-    will-change:
-        transform;
-
-    transition:
-        transform
-        790ms
-        cubic-bezier(
-            0.16,
-            1,
-            0.30,
-            1
-        );
-
-    cursor:
-        default;
+    transform-origin: center;
+    will-change: transform;
+    transition: transform 790ms cubic-bezier(0.16, 1, 0.30, 1);
+    cursor: default;
 }
 
-
-.perfil-lightbox.is-open
-.perfil-lightbox-media {
-    transform:
-        translate(
-            0,
-            0
-        )
-        scale(1);
+.perfil-lightbox.is-open .perfil-lightbox-media {
+    transform: translate(0, 0) scale(1);
 }
-
 
 .perfil-lightbox-imagem {
-    position:
-        relative;
-
-    z-index:
-        1;
-
-    display:
-        block;
-
-    width:
-        100%;
-
-    height:
-        100%;
-
-    object-fit:
-        contain;
-
-    object-position:
-        center;
-
-    background:
-        transparent;
-
-    border:
-        0;
-
-    border-radius:
-        0 !important;
-
-    opacity:
-        1;
-
-    user-select:
-        none;
-
-    -webkit-user-select:
-        none;
-
-    -webkit-user-drag:
-        none;
-
-    transform:
-        scale(1.025);
-
+    position: relative;
+    z-index: 1;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    background: transparent;
+    border: 0;
+    border-radius: 0 !important;
+    opacity: 1;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-user-drag: none;
+    transform: scale(1.025);
     transition:
-        opacity
-        150ms
-        ease,
-        transform
-        850ms
-        cubic-bezier(
-            0.16,
-            1,
-            0.30,
-            1
-        );
+        opacity 150ms ease,
+        transform 850ms cubic-bezier(0.16, 1, 0.30, 1);
 }
 
-
-.perfil-lightbox.is-open
-.perfil-lightbox-imagem {
-    transform:
-        scale(1);
+.perfil-lightbox.is-open .perfil-lightbox-imagem {
+    transform: scale(1);
 }
-
 
 .perfil-lightbox-imagem.a-trocar {
-    opacity:
-        0;
-
-    transform:
-        scale(0.985);
+    opacity: 0;
+    transform: scale(0.985);
 }
-
 
 .perfil-lightbox-moldura {
-    position:
-        absolute;
-
-    z-index:
-        2;
-
-    inset:
-        0;
-
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.24);
-
-    pointer-events:
-        none;
-
-    opacity:
-        0;
-
-    transition:
-        opacity
-        300ms
-        ease
-        480ms;
+    position: absolute;
+    z-index: 2;
+    inset: 0;
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 300ms ease 480ms;
 }
 
-
-.perfil-lightbox.is-open
-.perfil-lightbox-moldura {
-    opacity:
-        1;
+.perfil-lightbox.is-open .perfil-lightbox-moldura {
+    opacity: 1;
 }
 
-
-/* =========================================================
-   TINTA
-   ========================================================= */
+/* TINTA */
 
 .perfil-tinta {
-    position:
-        absolute;
-
-    z-index:
-        2;
-
-    display:
-        block;
-
-    opacity:
-        0;
-
-    border-radius:
-        50%;
-
-    transform:
-        scale(0.02);
-
-    pointer-events:
-        none;
-
+    position: absolute;
+    z-index: 2;
+    display: block;
+    opacity: 0;
+    border-radius: 50%;
+    transform: scale(0.02);
+    pointer-events: none;
     transition:
-        transform
-        780ms
-        cubic-bezier(
-            0.16,
-            1,
-            0.30,
-            1
-        ),
-        opacity
-        260ms
-        ease;
+        transform 780ms cubic-bezier(0.16, 1, 0.30, 1),
+        opacity 260ms ease;
 }
 
-
-.perfil-lightbox.is-open
-.perfil-tinta {
-    opacity:
-        1;
+.perfil-lightbox.is-open .perfil-tinta {
+    opacity: 1;
 }
-
 
 .perfil-tinta--1 {
-    top:
-        2%;
-
-    left:
-        -6%;
-
-    width:
-        260px;
-
-    height:
-        245px;
-
-    background:
-        rgba(244, 220, 146, 0.11);
-
-    transform-origin:
-        70% 60%;
+    top: 2%;
+    left: -6%;
+    width: 260px;
+    height: 245px;
+    background: rgba(244, 220, 146, 0.11);
+    transform-origin: 70% 60%;
 }
 
-
-.perfil-lightbox.is-open
-.perfil-tinta--1 {
-    transform:
-        scale(1.25);
+.perfil-lightbox.is-open .perfil-tinta--1 {
+    transform: scale(1.25);
 }
-
 
 .perfil-tinta--2 {
-    top:
-        13%;
-
-    right:
-        -9%;
-
-    width:
-        250px;
-
-    height:
-        300px;
-
-    background:
-        rgba(207, 196, 239, 0.12);
-
-    transform-origin:
-        15% 55%;
+    top: 13%;
+    right: -9%;
+    width: 250px;
+    height: 300px;
+    background: rgba(207, 196, 239, 0.12);
+    transform-origin: 15% 55%;
 }
 
-
-.perfil-lightbox.is-open
-.perfil-tinta--2 {
-    transform:
-        scale(1.18);
+.perfil-lightbox.is-open .perfil-tinta--2 {
+    transform: scale(1.18);
 }
-
 
 .perfil-tinta--3 {
-    bottom:
-        -7%;
-
-    left:
-        -7%;
-
-    width:
-        290px;
-
-    height:
-        245px;
-
-    background:
-        rgba(143, 178, 232, 0.09);
-
-    transform-origin:
-        75% 15%;
+    bottom: -7%;
+    left: -7%;
+    width: 290px;
+    height: 245px;
+    background: rgba(143, 178, 232, 0.09);
+    transform-origin: 75% 15%;
 }
 
-
-.perfil-lightbox.is-open
-.perfil-tinta--3 {
-    transform:
-        scale(1.20);
+.perfil-lightbox.is-open .perfil-tinta--3 {
+    transform: scale(1.20);
 }
-
 
 .perfil-tinta--4 {
-    right:
-        1%;
-
-    bottom:
-        -8%;
-
-    width:
-        230px;
-
-    height:
-        230px;
-
-    background:
-        rgba(239, 199, 190, 0.11);
-
-    transform-origin:
-        30% 20%;
+    right: 1%;
+    bottom: -8%;
+    width: 230px;
+    height: 230px;
+    background: rgba(239, 199, 190, 0.11);
+    transform-origin: 30% 20%;
 }
 
-
-.perfil-lightbox.is-open
-.perfil-tinta--4 {
-    transform:
-        scale(1.15);
+.perfil-lightbox.is-open .perfil-tinta--4 {
+    transform: scale(1.15);
 }
 
-
-/* =========================================================
-   CONTROLOS LIGHTBOX
-   ========================================================= */
+/* CONTROLOS LIGHTBOX */
 
 .perfil-lightbox-fechar,
 .perfil-lightbox-nav {
-    width:
-        45px;
-
-    height:
-        45px;
-
-    margin:
-        0;
-
-    padding:
-        0;
-
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.14);
-
-    border-radius:
-        50%;
-
-    color:
-        #ffffff;
-
-    background:
-        rgba(255, 255, 255, 0.09);
-
-    -webkit-backdrop-filter:
-        blur(13px);
-
-    backdrop-filter:
-        blur(13px);
-
-    display:
-        grid;
-
-    place-items:
-        center;
-
-    cursor:
-        pointer;
+    width: 45px;
+    height: 45px;
+    margin: 0;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 50%;
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.09);
+    -webkit-backdrop-filter: blur(13px);
+    backdrop-filter: blur(13px);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
 }
-
 
 .perfil-lightbox-fechar {
-    position:
-        absolute;
-
-    z-index:
-        10;
-
-    top:
-        max(
-            17px,
-            env(
-                safe-area-inset-top,
-                0px
-            )
-        );
-
-    right:
-        17px;
+    position: absolute;
+    z-index: 10;
+    top: max(17px, env(safe-area-inset-top, 0px));
+    right: 17px;
 }
-
 
 .perfil-lightbox-nav {
-    position:
-        absolute;
-
-    z-index:
-        9;
-
-    top:
-        50%;
-
-    transform:
-        translateY(-50%);
+    position: absolute;
+    z-index: 9;
+    top: 50%;
+    transform: translateY(-50%);
 }
-
 
 .perfil-lightbox-nav--anterior {
-    left:
-        14px;
+    left: 14px;
 }
-
 
 .perfil-lightbox-nav--seguinte {
-    right:
-        14px;
+    right: 14px;
 }
-
 
 .perfil-lightbox-fechar svg,
 .perfil-lightbox-nav svg {
-    width:
-        20px;
-
-    height:
-        20px;
-
-    fill:
-        none;
-
-    stroke:
-        currentColor;
-
-    stroke-width:
-        2;
-
-    stroke-linecap:
-        round;
-
-    stroke-linejoin:
-        round;
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
-
 
 .perfil-lightbox-nav:disabled {
-    visibility:
-        hidden;
+    visibility: hidden;
 }
-
 
 .perfil-lightbox-contador {
-    position:
-        absolute;
-
-    z-index:
-        9;
-
-    left:
-        50%;
-
-    bottom:
-        max(
-            17px,
-            env(
-                safe-area-inset-bottom,
-                0px
-            )
-        );
-
-    min-height:
-        35px;
-
-    padding:
-        0
-        12px;
-
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.14);
-
-    border-radius:
-        999px;
-
-    color:
-        #ffffff;
-
-    background:
-        rgba(255, 255, 255, 0.09);
-
-    -webkit-backdrop-filter:
-        blur(13px);
-
-    backdrop-filter:
-        blur(13px);
-
-    transform:
-        translateX(-50%);
-
-    font-size:
-        10px;
-
-    font-weight:
-        730;
-
-    font-variant-numeric:
-        tabular-nums;
-
-    display:
-        flex;
-
-    align-items:
-        center;
-
-    gap:
-        5px;
+    position: absolute;
+    z-index: 9;
+    left: 50%;
+    bottom: max(17px, env(safe-area-inset-bottom, 0px));
+    min-height: 35px;
+    padding: 0 12px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 999px;
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.09);
+    -webkit-backdrop-filter: blur(13px);
+    backdrop-filter: blur(13px);
+    transform: translateX(-50%);
+    font-size: 10px;
+    font-weight: 730;
+    font-variant-numeric: tabular-nums;
+    display: flex;
+    align-items: center;
+    gap: 5px;
 }
 
-
-/* =========================================================
-   MOBILE PEQUENO
-   ========================================================= */
+/* MOBILE PEQUENO */
 
 @media (max-width: 370px) {
-
     .perfil-page {
-        padding-right:
-            11px;
-
-        padding-left:
-            11px;
+        padding-right: 11px;
+        padding-left: 11px;
     }
-
 
     .perfil-galeria {
-        height:
-            clamp(
-                400px,
-                60svh,
-                545px
-            );
+        height: clamp(400px, 60svh, 545px);
     }
-
 
     .perfil-indicadores {
-        top:
-            auto !important;
-
-        bottom:
-            24px;
-
-        gap:
-            3px;
+        top: auto !important;
+        bottom: 24px;
+        gap: 3px;
     }
-
 
     .perfil-indicadores button {
-        width:
-            12px;
-
-        height:
-            12px;
-
-        padding:
-            4px;
+        width: 12px;
+        height: 12px;
+        padding: 4px;
     }
-
 
     .perfil-indicadores button span {
-        width:
-            3px;
-
-        height:
-            3px;
+        width: 3px;
+        height: 3px;
     }
-
 
     .perfil-indicadores button.ativo span {
-        width:
-            9px;
-
-        height:
-            3px;
+        width: 9px;
+        height: 3px;
     }
-
 
     .perfil-identidade {
-        width:
-            calc(
-                100% - 6px
-            );
-
-        padding:
-            20px
-            16px
-            18px;
+        width: calc(100% - 6px);
+        padding: 20px 16px 18px;
     }
-
 
     .perfil-identidade h1 {
-        font-size:
-            clamp(
-                31px,
-                9.1vw,
-                46px
-            );
+        font-size: clamp(31px, 9.1vw, 46px);
     }
-
 
     #perfil .perfil-hey,
     #perfil #enviar-hey-perfil.perfil-hey {
-        min-width:
-            78px !important;
-
-        height:
-            40px !important;
-
-        min-height:
-            40px !important;
-
-        padding:
-            0
-            16px !important;
+        min-width: 78px !important;
+        height: 40px !important;
+        min-height: 40px !important;
+        padding: 0 16px !important;
     }
-
 
     #perfil .perfil-hey-label {
-        font-size:
-            16px !important;
+        font-size: 16px !important;
     }
-
 
     .perfil-seccao {
-        padding:
-            19px
-            14px;
+        padding: 19px 14px;
     }
-
 
     .perfil-interesses-grid {
-        gap:
-            7px;
+        gap: 7px;
     }
-
 
     .perfil-gosto {
-        padding:
-            11px
-            10px;
+        padding: 11px 10px;
     }
-
 
     .perfil-gosto-nome {
-        font-size:
-            13px;
+        font-size: 13px;
     }
-
 }
 
-
-/* =========================================================
-   TOUCH
-   ========================================================= */
+/* TOUCH */
 
 @media (pointer: coarse) {
-
     .perfil-nav {
-        display:
-            none;
+        display: none;
     }
-
 }
 
-
-/* =========================================================
-   TABLET
-   ========================================================= */
+/* TABLET */
 
 @media (min-width: 700px) {
-
     .perfil-page {
-        padding-right:
-            26px;
-
-        padding-left:
-            26px;
+        padding-right: 26px;
+        padding-left: 26px;
     }
-
 
     .perfil-galeria {
-        height:
-            clamp(
-                550px,
-                69svh,
-                730px
-            );
+        height: clamp(550px, 69svh, 730px);
     }
-
 
     .perfil-indicadores {
-        top:
-            auto !important;
-
-        bottom:
-            32px;
+        top: auto !important;
+        bottom: 32px;
     }
-
 
     .perfil-identidade {
-        width:
-            min(
-                88%,
-                675px
-            );
-
-        padding:
-            30px
-            30px
-            27px;
+        width: min(88%, 675px);
+        padding: 30px 30px 27px;
     }
-
 
     .perfil-identidade h1 {
-        font-size:
-            clamp(
-                48px,
-                6.8vw,
-                70px
-            );
+        font-size: clamp(48px, 6.8vw, 70px);
     }
-
 
     .perfil-seccao {
-        padding:
-            28px
-            27px;
+        padding: 28px 27px;
     }
-
 
     .perfil-interesses-grid {
-        grid-template-columns:
-            repeat(
-                3,
-                minmax(
-                    0,
-                    1fr
-                )
-            );
-
-        gap:
-            11px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 11px;
     }
-
 
     .perfil-gosto {
-        min-height:
-            76px;
-
-        padding:
-            14px
-            15px;
+        min-height: 76px;
+        padding: 14px 15px;
     }
-
 
     .perfil-gosto-nome {
-        font-size:
-            15px;
+        font-size: 15px;
     }
-
 }
 
-
-/* =========================================================
-   DESKTOP
-   ========================================================= */
+/* DESKTOP */
 
 @media (min-width: 900px) {
-
     .perfil-page {
-        width:
-            860px;
-
-        padding-right:
-            0;
-
-        padding-left:
-            0;
+        width: 860px;
+        padding-right: 0;
+        padding-left: 0;
     }
-
 
     .perfil-galeria {
-        height:
-            700px;
+        height: 700px;
     }
-
 
     .perfil-identidade {
-        width:
-            680px;
+        width: 680px;
     }
-
 }
 
-
-/* =========================================================
-   REDUCED MOTION
-   ========================================================= */
+/* REDUCED MOTION */
 
 @media (prefers-reduced-motion: reduce) {
-
     .perfil-galeria,
     .perfil-lightbox,
     .perfil-lightbox-media,
@@ -3001,11 +1422,7 @@ body.perfil-modal-aberta {
     .perfil-editar,
     .perfil-hey,
     .perfil-indicadores button span {
-        animation:
-            none !important;
-
-        transition:
-            none !important;
+        animation: none !important;
+        transition: none !important;
     }
-
 }
