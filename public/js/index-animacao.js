@@ -22,30 +22,49 @@
     const FRAME_TIME = 1000 / FPS;
     const spacing = 19.5;
 
-    const colorYellow = [255, 215, 0];
-    const colorBlue = [0, 100, 255];
-    const colorPurple = [138, 43, 226];
+    /*
+     * Mesma família cromática usada
+     * no novo perfil e na página de mensagens.
+     */
+    const colorYellow = [244, 220, 146];
+    const colorBlue = [143, 178, 232];
+    const colorPurple = [207, 196, 239];
+
+    /*
+     * #e12346
+     * Vermelho Margot.
+     */
+    const colorRed = [225, 35, 70];
 
     function resize() {
         if (!ativo) return;
+
         resizeFrame = null;
 
-        const rect = canvas.getBoundingClientRect();
+        const rect =
+            canvas.getBoundingClientRect();
 
-        const nextWidth = Math.max(
-            1,
-            Math.ceil(rect.width)
-        );
+        const nextWidth =
+            Math.max(
+                1,
+                Math.ceil(
+                    rect.width
+                )
+            );
 
-        const nextHeight = Math.max(
-            1,
-            Math.ceil(rect.height)
-        );
+        const nextHeight =
+            Math.max(
+                1,
+                Math.ceil(
+                    rect.height
+                )
+            );
 
-        const nextDpr = Math.min(
-            window.devicePixelRatio || 1,
-            1.5
-        );
+        const nextDpr =
+            Math.min(
+                window.devicePixelRatio || 1,
+                1.5
+            );
 
         if (
             nextWidth === width &&
@@ -55,12 +74,24 @@
             return;
         }
 
-        width = nextWidth;
-        height = nextHeight;
-        dpr = nextDpr;
+        width =
+            nextWidth;
 
-        canvas.width = Math.ceil(width * dpr);
-        canvas.height = Math.ceil(height * dpr);
+        height =
+            nextHeight;
+
+        dpr =
+            nextDpr;
+
+        canvas.width =
+            Math.ceil(
+                width * dpr
+            );
+
+        canvas.height =
+            Math.ceil(
+                height * dpr
+            );
 
         ctx.setTransform(
             dpr,
@@ -77,101 +108,214 @@
     function scheduleResize() {
         if (!ativo) return;
 
-        if (resizeFrame !== null) {
-            cancelAnimationFrame(resizeFrame);
+        if (
+            resizeFrame !==
+            null
+        ) {
+            cancelAnimationFrame(
+                resizeFrame
+            );
         }
 
-        resizeFrame = requestAnimationFrame(resize);
+        resizeFrame =
+            requestAnimationFrame(
+                resize
+            );
     }
 
     function createGrid() {
         points = [];
 
-        const cols = Math.ceil(width / spacing) + 6;
-        const rows = Math.ceil(height / spacing) + 6;
-        const startX = -spacing * 3;
-        const startY = -spacing * 3;
+        const cols =
+            Math.ceil(
+                width / spacing
+            ) +
+            6;
 
-        for (let row = 0; row < rows; row++) {
-            for (let col = 0; col < cols; col++) {
+        const rows =
+            Math.ceil(
+                height / spacing
+            ) +
+            6;
+
+        const startX =
+            -spacing * 3;
+
+        const startY =
+            -spacing * 3;
+
+        for (
+            let row = 0;
+            row < rows;
+            row++
+        ) {
+            for (
+                let col = 0;
+                col < cols;
+                col++
+            ) {
                 points.push({
-                    baseX: startX + col * spacing,
-                    baseY: startY + row * spacing
+                    baseX:
+                        startX +
+                        col * spacing,
+
+                    baseY:
+                        startY +
+                        row * spacing
                 });
             }
         }
     }
 
-    function lerp(a, b, t) {
-        return a + (b - a) * t;
+    function lerp(
+        a,
+        b,
+        t
+    ) {
+        return (
+            a +
+            (
+                b -
+                a
+            ) *
+            t
+        );
     }
 
-    function clamp(v, min, max) {
-        return v < min
+    function clamp(
+        v,
+        min,
+        max
+    ) {
+        return (
+            v <
+            min
+        )
             ? min
             : (
-                v > max
+                v >
+                max
                     ? max
                     : v
             );
     }
 
-    function getGradientColorRGB(t) {
-        t = clamp(t, 0, 1);
+    /*
+     * Antes:
+     * amarelo -> azul -> roxo
+     *
+     * Agora:
+     * amarelo -> azul -> roxo -> vermelho Margot
+     */
+    function getGradientColorRGB(
+        t
+    ) {
+        t =
+            clamp(
+                t,
+                0,
+                1
+            );
 
         let c1;
         let c2;
         let factor;
 
-        if (t < 0.5) {
-            c1 = colorYellow;
-            c2 = colorBlue;
-            factor = t * 2;
+        if (
+            t <
+            1 / 3
+        ) {
+            c1 =
+                colorYellow;
+
+            c2 =
+                colorBlue;
+
+            factor =
+                t * 3;
+        } else if (
+            t <
+            2 / 3
+        ) {
+            c1 =
+                colorBlue;
+
+            c2 =
+                colorPurple;
+
+            factor =
+                (
+                    t -
+                    1 / 3
+                ) *
+                3;
         } else {
-            c1 = colorBlue;
-            c2 = colorPurple;
-            factor = (t - 0.5) * 2;
+            c1 =
+                colorPurple;
+
+            c2 =
+                colorRed;
+
+            factor =
+                (
+                    t -
+                    2 / 3
+                ) *
+                3;
         }
 
-        const r = Math.floor(
-            lerp(
-                c1[0],
-                c2[0],
-                factor
-            )
-        );
+        const r =
+            Math.floor(
+                lerp(
+                    c1[0],
+                    c2[0],
+                    factor
+                )
+            );
 
-        const g = Math.floor(
-            lerp(
-                c1[1],
-                c2[1],
-                factor
-            )
-        );
+        const g =
+            Math.floor(
+                lerp(
+                    c1[1],
+                    c2[1],
+                    factor
+                )
+            );
 
-        const b = Math.floor(
-            lerp(
-                c1[2],
-                c2[2],
-                factor
-            )
-        );
+        const b =
+            Math.floor(
+                lerp(
+                    c1[2],
+                    c2[2],
+                    factor
+                )
+            );
 
-        return `${r}, ${g}, ${b}`;
+        return (
+            `${r}, ${g}, ${b}`
+        );
     }
 
-    function draw(now) {
+    function draw(
+        now
+    ) {
         if (!ativo) return;
 
         if (
-            now - lastFrame <
+            now -
+            lastFrame <
             FRAME_TIME
         ) {
-            animationFrame = requestAnimationFrame(draw);
+            animationFrame =
+                requestAnimationFrame(
+                    draw
+                );
+
             return;
         }
 
-        lastFrame = now;
+        lastFrame =
+            now;
 
         ctx.clearRect(
             0,
@@ -180,148 +324,247 @@
             height
         );
 
-        time += 0.0015;
+        time +=
+            0.0015;
 
-        const cx = width / 2;
-        const cy = height / 2;
-        const holeTime = time * 3.5;
+        const cx =
+            width / 2;
+
+        const cy =
+            height / 2;
+
+        const holeTime =
+            time * 3.5;
 
         const holeX =
             cx +
             Math.sin(
-                holeTime * 0.7
-            ) * (cx * 0.9) +
+                holeTime *
+                0.7
+            ) *
+            (
+                cx *
+                0.9
+            ) +
             Math.cos(
-                holeTime * 0.3
-            ) * (cx * 0.3);
+                holeTime *
+                0.3
+            ) *
+            (
+                cx *
+                0.3
+            );
 
         const holeY =
             cy +
             Math.cos(
-                holeTime * 0.8
-            ) * (cy * 0.9) +
+                holeTime *
+                0.8
+            ) *
+            (
+                cy *
+                0.9
+            ) +
             Math.sin(
-                holeTime * 0.4
-            ) * (cy * 0.3);
+                holeTime *
+                0.4
+            ) *
+            (
+                cy *
+                0.3
+            );
 
-        const holeRadius = 160;
-        const holeRadiusSq = holeRadius * holeRadius;
-        const edgeSoftnessInv = 1 / 60;
+        const holeRadius =
+            160;
 
-        for (let i = 0; i < points.length; i++) {
-            const p = points[i];
+        const holeRadiusSq =
+            holeRadius *
+            holeRadius;
 
-            const nx = p.baseX * 0.003;
-            const ny = p.baseY * 0.003;
+        const edgeSoftnessInv =
+            1 / 60;
+
+        for (
+            let i = 0;
+            i < points.length;
+            i++
+        ) {
+            const p =
+                points[i];
+
+            const nx =
+                p.baseX *
+                0.003;
+
+            const ny =
+                p.baseY *
+                0.003;
 
             const waveX =
                 Math.sin(
-                    ny * 2.5 +
-                    time * 2.5
-                ) * 18 +
+                    ny *
+                    2.5 +
+                    time *
+                    2.5
+                ) *
+                18 +
                 Math.cos(
-                    nx * 1.8 -
+                    nx *
+                    1.8 -
                     time
-                ) * 12;
+                ) *
+                12;
 
             const waveY =
                 Math.cos(
-                    nx * 2.5 -
-                    time * 2.5
-                ) * 18 +
+                    nx *
+                    2.5 -
+                    time *
+                    2.5
+                ) *
+                18 +
                 Math.sin(
-                    ny * 1.8 +
+                    ny *
+                    1.8 +
                     time
-                ) * 12;
+                ) *
+                12;
 
-            const finalX = p.baseX + waveX;
-            const finalY = p.baseY + waveY;
+            const finalX =
+                p.baseX +
+                waveX;
+
+            const finalY =
+                p.baseY +
+                waveY;
 
             const waveValue =
                 (
                     Math.sin(
-                        nx * 2.2 +
-                        time * 1.5
+                        nx *
+                        2.2 +
+                        time *
+                        1.5
                     ) +
                     Math.cos(
-                        ny * 2.2 +
-                        time * 1.5
+                        ny *
+                        2.2 +
+                        time *
+                        1.5
                     ) +
                     2
-                ) * 0.25;
+                ) *
+                0.25;
 
-            const dx = finalX - holeX;
-            const dy = finalY - holeY;
-            const distSq = dx * dx + dy * dy;
+            const dx =
+                finalX -
+                holeX;
+
+            const dy =
+                finalY -
+                holeY;
+
+            const distSq =
+                dx *
+                dx +
+                dy *
+                dy;
 
             let alpha;
 
-            if (distSq < holeRadiusSq) {
-                alpha = 0;
+            if (
+                distSq <
+                holeRadiusSq
+            ) {
+                alpha =
+                    0;
             } else {
-                const distance = Math.sqrt(distSq);
+                const distance =
+                    Math.sqrt(
+                        distSq
+                    );
 
-                alpha = clamp(
-                    (
-                        distance -
-                        holeRadius
-                    ) *
-                    edgeSoftnessInv,
-                    0,
-                    1
-                );
+                alpha =
+                    clamp(
+                        (
+                            distance -
+                            holeRadius
+                        ) *
+                        edgeSoftnessInv,
+                        0,
+                        1
+                    );
             }
 
             const borderNoise =
                 Math.sin(
-                    nx * 15 +
-                    time * 5
-                ) * 0.15;
+                    nx *
+                    15 +
+                    time *
+                    5
+                ) *
+                0.15;
 
-            alpha = clamp(
-                alpha +
-                borderNoise,
-                0,
-                1
-            );
+            alpha =
+                clamp(
+                    alpha +
+                    borderNoise,
+                    0,
+                    1
+                );
 
             const finalAlpha =
                 alpha *
                 (
                     0.8 +
-                    waveValue * 0.2
+                    waveValue *
+                    0.2
                 );
 
-            if (finalAlpha < 0.05) {
+            if (
+                finalAlpha <
+                0.05
+            ) {
                 continue;
             }
 
-            const rgb = getGradientColorRGB(waveValue);
+            const rgb =
+                getGradientColorRGB(
+                    waveValue
+                );
 
             const roundedAlpha =
                 Math.round(
-                    finalAlpha * 100
-                ) / 100;
+                    finalAlpha *
+                    100
+                ) /
+                100;
 
             ctx.fillStyle =
                 `rgba(${rgb}, ${roundedAlpha})`;
 
             ctx.fillRect(
-                finalX - 1.2,
-                finalY - 1.2,
+                finalX -
+                1.2,
+                finalY -
+                1.2,
                 2.4,
                 2.4
             );
         }
 
-        animationFrame = requestAnimationFrame(draw);
+        animationFrame =
+            requestAnimationFrame(
+                draw
+            );
     }
 
     window.addEventListener(
         'resize',
         scheduleResize,
         {
-            passive: true
+            passive:
+                true
         }
     );
 
@@ -329,37 +572,78 @@
         'orientationchange',
         scheduleResize,
         {
-            passive: true
+            passive:
+                true
         }
     );
 
-    if ('ResizeObserver' in window) {
-        resizeObserver = new ResizeObserver(scheduleResize);
-        resizeObserver.observe(canvas);
+    if (
+        'ResizeObserver' in
+        window
+    ) {
+        resizeObserver =
+            new ResizeObserver(
+                scheduleResize
+            );
+
+        resizeObserver.observe(
+            canvas
+        );
     }
 
     resize();
-    animationFrame = requestAnimationFrame(draw);
+
+    animationFrame =
+        requestAnimationFrame(
+            draw
+        );
 
     function desativarPagina() {
-        ativo = false;
+        ativo =
+            false;
 
-        if (animationFrame !== null) {
-            cancelAnimationFrame(animationFrame);
+        if (
+            animationFrame !==
+            null
+        ) {
+            cancelAnimationFrame(
+                animationFrame
+            );
         }
 
-        if (resizeFrame !== null) {
-            cancelAnimationFrame(resizeFrame);
+        if (
+            resizeFrame !==
+            null
+        ) {
+            cancelAnimationFrame(
+                resizeFrame
+            );
         }
 
-        if (resizeObserver) {
+        if (
+            resizeObserver
+        ) {
             resizeObserver.disconnect();
         }
 
-        window.removeEventListener('resize', scheduleResize);
-        window.removeEventListener('orientationchange', scheduleResize);
-        document.removeEventListener('margot:page-leave', desativarPagina);
+        window.removeEventListener(
+            'resize',
+            scheduleResize
+        );
+
+        window.removeEventListener(
+            'orientationchange',
+            scheduleResize
+        );
+
+        document.removeEventListener(
+            'margot:page-leave',
+            desativarPagina
+        );
     }
 
-    document.addEventListener('margot:page-leave', desativarPagina);
+    document.addEventListener(
+        'margot:page-leave',
+        desativarPagina
+    );
 })();
