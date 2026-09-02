@@ -31,7 +31,29 @@ jobs:
             }
 
             git config --global --add safe.directory "$APP_DIR"
-            git -C "$APP_DIR" fetch --prune origin main
+
+            FETCH_OK=0
+
+            for tentativa in 1 2 3 4 5; do
+              echo "Fetch do GitHub: tentativa $tentativa de 5"
+
+              if GIT_TERMINAL_PROMPT=0 git -C "$APP_DIR" -c http.version=HTTP/1.1 fetch --prune origin main; then
+                FETCH_OK=1
+                break
+              fi
+
+              if [ "$tentativa" -lt 5 ]; then
+                espera=$((tentativa * 5))
+                echo "Fetch falhou. Nova tentativa em ${espera}s..."
+                sleep "$espera"
+              fi
+            done
+
+            if [ "$FETCH_OK" -ne 1 ]; then
+              echo "ERRO: não foi possível obter a branch main do GitHub após 5 tentativas."
+              exit 1
+            fi
+
             git -C "$APP_DIR" reset --hard origin/main
 
             cd "$APP_DIR"
@@ -44,6 +66,7 @@ jobs:
             sudo install -m 0644 \
               deploy/app-push.service \
               /etc/systemd/system/app-push.service
+
             sudo systemctl daemon-reload
             sudo systemctl enable app-push
             sudo systemctl restart app-websocket

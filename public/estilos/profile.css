@@ -8,7 +8,7 @@ body:has(#perfil) {
     margin: 0;
     padding: 0;
     overflow: hidden !important;
-    background: #f7f6f3;
+    background: #f8f7f4;
 }
 
 body:has(#perfil) {
@@ -23,20 +23,20 @@ body:has(#perfil) {
 }
 
 #perfil {
-    --c-texto: #222328;
-    --c-texto-suave: #727681;
-    --c-linha: rgba(20, 20, 22, 0.08);
-    --c-fundo: #f7f6f3;
-    --c-card: rgba(255, 255, 255, 0.76);
-    --c-card-2: rgba(255, 255, 255, 0.62);
-    --c-amarelo: #e8d18b;
-    --c-amarelo-suave: #f6edd0;
-    --c-azul: #a9bde7;
-    --c-roxo: #d2c7ee;
-    --c-verde: #d7ead3;
-    --c-rosa: #f3dbe3;
-    --c-preto: #17181b;
-    --c-vermelho: #e12346;
+    --perfil-preto: #171719;
+    --perfil-texto: #2f3035;
+    --perfil-suave: #777b85;
+    --perfil-linha: rgba(23, 23, 25, 0.08);
+    --perfil-fundo: #f8f7f4;
+    --perfil-card: rgba(255, 255, 255, 0.8);
+    --perfil-card-2: rgba(255, 255, 255, 0.66);
+    --perfil-amarelo: #f1d27a;
+    --perfil-amarelo-2: #faefc8;
+    --perfil-azul: #9cb8e5;
+    --perfil-roxo: #cdc0ef;
+    --perfil-verde: #cbe7cd;
+    --perfil-rosa: #f2cad9;
+    --perfil-vermelho: #e12346;
 
     position: relative;
     width: 100% !important;
@@ -45,12 +45,14 @@ body:has(#perfil) {
     min-height: 0 !important;
     overflow-x: hidden !important;
     overflow-y: auto !important;
-    color: var(--c-texto);
+    color: var(--perfil-texto);
     background:
-        radial-gradient(circle at top right, rgba(169, 189, 231, 0.15), transparent 24%),
-        radial-gradient(circle at bottom left, rgba(210, 199, 238, 0.14), transparent 26%),
-        linear-gradient(180deg, #fbfaf8 0%, #f7f6f3 52%, #f5f6fa 100%);
+        radial-gradient(circle at top right, rgba(156, 184, 229, 0.15), transparent 22%),
+        radial-gradient(circle at bottom left, rgba(205, 192, 239, 0.17), transparent 24%),
+        linear-gradient(180deg, #fbfaf8 0%, #f8f7f4 55%, #f6f7fa 100%);
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: none;
+    overscroll-behavior-y: auto;
     touch-action: pan-y;
 }
 
@@ -65,7 +67,7 @@ body:has(#perfil) {
     margin: -1px !important;
     padding: 0 !important;
     overflow: hidden !important;
-    clip: rect(0 0 0 0) !important;
+    clip: rect(0, 0, 0, 0) !important;
     white-space: nowrap !important;
     border: 0 !important;
 }
@@ -75,37 +77,38 @@ body:has(#perfil) {
     inset: 0;
     overflow: hidden;
     pointer-events: none;
+    z-index: 0;
 }
 
-.bg-orb {
+.perfil-bg-orb {
     position: absolute;
     border-radius: 50%;
-    filter: blur(10px);
-    opacity: 0.55;
+    filter: blur(8px);
+    opacity: 0.5;
 }
 
-.bg-orb-1 {
-    top: 160px;
-    right: -130px;
-    width: 280px;
-    height: 280px;
-    background: radial-gradient(circle, rgba(232, 209, 139, 0.20), transparent 72%);
+.perfil-bg-orb--1 {
+    top: 220px;
+    right: -120px;
+    width: 260px;
+    height: 260px;
+    background: radial-gradient(circle, rgba(241, 210, 122, 0.2), transparent 70%);
 }
 
-.bg-orb-2 {
-    top: 760px;
-    left: -160px;
-    width: 340px;
-    height: 340px;
-    background: radial-gradient(circle, rgba(169, 189, 231, 0.15), transparent 72%);
+.perfil-bg-orb--2 {
+    top: 640px;
+    left: -150px;
+    width: 320px;
+    height: 320px;
+    background: radial-gradient(circle, rgba(156, 184, 229, 0.16), transparent 72%);
 }
 
-.bg-orb-3 {
-    bottom: 60px;
+.perfil-bg-orb--3 {
+    bottom: 120px;
     right: -90px;
     width: 260px;
     height: 260px;
-    background: radial-gradient(circle, rgba(210, 199, 238, 0.18), transparent 72%);
+    background: radial-gradient(circle, rgba(205, 192, 239, 0.19), transparent 72%);
 }
 
 .perfil-shell {
@@ -116,49 +119,42 @@ body:has(#perfil) {
     padding:
         max(18px, env(safe-area-inset-top, 0px))
         16px
-        calc(var(--menu-principal-height, 58px) + var(--menu-principal-bottom, 18px) + env(safe-area-inset-bottom, 0px) + 68px);
+        calc(var(--menu-principal-height, 58px) + var(--menu-principal-bottom, 18px) + env(safe-area-inset-bottom, 0px) + 58px);
 }
 
-.perfil-topbar {
+.perfil-hero {
+    position: relative;
+    padding-top: 4px;
+}
+
+.perfil-hero-topo {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 16px;
-}
-
-.perfil-micro-marca {
-    display: inline-block;
-    width: 22px;
-    height: 22px;
-    border-radius: 50% 52% 48% 50%;
-    background:
-        radial-gradient(circle at 35% 35%, var(--c-azul) 0 20%, transparent 21%),
-        radial-gradient(circle at 75% 35%, var(--c-roxo) 0 20%, transparent 21%),
-        radial-gradient(circle at 55% 72%, var(--c-vermelho) 0 18%, transparent 19%);
-    opacity: 0.95;
+    justify-content: flex-end;
+    margin-bottom: 12px;
 }
 
 .perfil-editar {
     min-height: 42px;
     padding: 0 15px;
-    border: 1px solid rgba(23, 23, 26, 0.08);
+    border: 1px solid rgba(23, 23, 25, 0.1);
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.78);
-    -webkit-backdrop-filter: blur(12px);
-    backdrop-filter: blur(12px);
-    color: var(--c-preto);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    color: var(--perfil-preto);
     text-decoration: none;
     font-size: 13px;
-    font-weight: 730;
+    font-weight: 720;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    justify-content: center;
+    gap: 7px;
     transition: transform 150ms ease, background-color 150ms ease;
     -webkit-tap-highlight-color: transparent;
 }
 
 .perfil-editar:active {
-    transform: scale(0.97);
+    transform: scale(0.96);
 }
 
 .perfil-editar svg {
@@ -171,40 +167,30 @@ body:has(#perfil) {
     stroke-linejoin: round;
 }
 
-.perfil-hero {
-    position: relative;
-}
-
-.perfil-foto-stack {
-    position: relative;
-    padding-bottom: 20px;
-}
-
-.perfil-foto-acento {
-    position: absolute;
-    top: 24px;
-    left: -2px;
-    width: 138px;
-    height: 170px;
-    border-radius: 28px 64px 28px 28px;
-    background: linear-gradient(180deg, rgba(232, 209, 139, 0.75), rgba(232, 209, 139, 0.28));
-    pointer-events: none;
-}
-
 .perfil-galeria {
     position: relative;
-    z-index: 2;
-    width: min(88%, 420px);
-    height: clamp(420px, 58svh, 590px);
+    width: 100%;
+    height: clamp(420px, 60svh, 620px);
     overflow: hidden;
-    border-radius: 34px 34px 86px 34px;
-    background: #17181b;
-    box-shadow: 0 26px 60px rgba(18, 18, 22, 0.14);
+    border-radius: 34px 34px 110px 34px;
     outline: none;
+    background: #1d1d20;
+    box-shadow: 0 24px 60px rgba(20, 20, 24, 0.14);
+    isolation: isolate;
+}
+
+.perfil-galeria::before {
+    content: "";
+    position: absolute;
+    z-index: 0;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 0%, transparent 55%, rgba(12, 12, 14, 0.18) 100%);
+    pointer-events: none;
 }
 
 .perfil-fotos {
     position: relative;
+    z-index: 1;
     width: 100%;
     height: 100%;
     display: flex;
@@ -213,10 +199,11 @@ body:has(#perfil) {
     overflow-y: hidden;
     scroll-snap-type: x mandatory;
     scroll-behavior: smooth;
+    overscroll-behavior-x: contain;
     scrollbar-width: none;
+    cursor: grab;
     -webkit-overflow-scrolling: touch;
     touch-action: pan-x pan-y;
-    cursor: grab;
 }
 
 .perfil-fotos::-webkit-scrollbar {
@@ -243,12 +230,43 @@ body:has(#perfil) {
     display: block;
     width: 100%;
     height: 100%;
+    max-width: none;
     object-fit: cover;
     object-position: center;
     user-select: none;
     -webkit-user-select: none;
     -webkit-user-drag: none;
     cursor: zoom-in;
+}
+
+.perfil-expandir {
+    position: absolute;
+    z-index: 6;
+    right: 14px;
+    bottom: 14px;
+    width: 40px;
+    height: 40px;
+    margin: 0;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    background: rgba(10, 10, 12, 0.28);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    color: #fff;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+}
+
+.perfil-expandir svg {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
 .perfil-indicadores {
@@ -276,8 +294,8 @@ body:has(#perfil) {
     width: 6px;
     height: 6px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.48);
-    transition: transform 140ms ease, background-color 140ms ease;
+    background: rgba(255, 255, 255, 0.5);
+    transition: transform 150ms ease, background-color 150ms ease;
 }
 
 .perfil-indicadores button.ativo span {
@@ -288,13 +306,13 @@ body:has(#perfil) {
 .perfil-contador {
     position: absolute;
     z-index: 6;
-    left: 14px;
-    bottom: 14px;
+    left: 16px;
+    bottom: 16px;
     min-height: 32px;
     padding: 0 11px;
     border-radius: 999px;
     border: 1px solid rgba(255, 255, 255, 0.16);
-    background: rgba(12, 12, 14, 0.28);
+    background: rgba(10, 10, 12, 0.28);
     -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
     color: #fff;
@@ -306,56 +324,46 @@ body:has(#perfil) {
     gap: 7px;
 }
 
-.perfil-contador-barra {
-    width: 12px;
+.perfil-contador-separador {
+    width: 10px;
     height: 1px;
-    background: rgba(255, 255, 255, 0.45);
+    background: rgba(255, 255, 255, 0.4);
 }
 
-.perfil-navegacao,
-.perfil-expandir {
+.perfil-navegacao {
     position: absolute;
     z-index: 7;
+    top: 50%;
     width: 40px;
     height: 40px;
     margin: 0;
     padding: 0;
-    border: 1px solid rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.18);
     border-radius: 50%;
-    background: rgba(12, 12, 14, 0.28);
+    background: rgba(10, 10, 12, 0.26);
     -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
     color: #fff;
+    transform: translateY(-50%);
     display: grid;
     place-items: center;
     cursor: pointer;
 }
 
-.perfil-navegacao {
-    top: 50%;
-    transform: translateY(-50%);
-}
-
 .perfil-anterior {
-    left: 12px;
+    left: 14px;
 }
 
 .perfil-seguinte {
-    right: 12px;
-}
-
-.perfil-expandir {
     right: 14px;
-    bottom: 14px;
 }
 
-.perfil-navegacao svg,
-.perfil-expandir svg {
-    width: 18px;
-    height: 18px;
+.perfil-navegacao svg {
+    width: 19px;
+    height: 19px;
     fill: none;
     stroke: currentColor;
-    stroke-width: 1.9;
+    stroke-width: 2;
     stroke-linecap: round;
     stroke-linejoin: round;
 }
@@ -366,179 +374,155 @@ body:has(#perfil) {
 
 .perfil-identidade {
     position: relative;
-    z-index: 4;
-    width: min(82%, 470px);
-    margin-top: -42px;
-    margin-left: auto;
-    padding: 22px 20px 20px;
-    border: 1px solid rgba(23, 23, 26, 0.08);
-    border-radius: 30px 24px 34px 34px;
-    background: rgba(255, 255, 255, 0.84);
-    -webkit-backdrop-filter: blur(18px);
-    backdrop-filter: blur(18px);
-    box-shadow: 0 20px 40px rgba(20, 20, 24, 0.08);
+    z-index: 8;
+    width: min(88%, 430px);
+    margin-top: -74px;
+    margin-left: 18px;
+    padding: 18px 20px 20px;
+    border: 1px solid rgba(23, 23, 25, 0.08);
+    border-radius: 28px 28px 42px 28px;
+    background: rgba(255, 255, 255, 0.82);
+    -webkit-backdrop-filter: blur(22px);
+    backdrop-filter: blur(22px);
+    box-shadow: 0 20px 44px rgba(22, 22, 24, 0.08);
 }
 
-.perfil-identidade::before {
+.perfil-identidade::after {
     content: "";
     position: absolute;
-    top: -16px;
-    right: 24px;
-    width: 64px;
-    height: 64px;
-    border-radius: 22px 46px 22px 26px;
-    background: linear-gradient(145deg, rgba(169, 189, 231, 0.20), rgba(210, 199, 238, 0.24));
-    z-index: -1;
+    right: 16px;
+    bottom: 14px;
+    width: 56px;
+    height: 56px;
+    border-radius: 22px 22px 22px 50%;
+    background: linear-gradient(145deg, rgba(156, 184, 229, 0.18), rgba(205, 192, 239, 0.24));
+    pointer-events: none;
 }
 
-.perfil-identidade-topo {
-    display: flex;
+.perfil-identidade-kicker {
+    display: inline-flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 12px;
+    gap: 8px;
     margin-bottom: 12px;
 }
 
-.perfil-label {
-    display: inline-flex;
-    align-items: center;
-    min-height: 26px;
-    padding: 0 10px;
+.perfil-identidade-kicker span {
+    width: 22px;
+    height: 3px;
     border-radius: 999px;
-    background: rgba(232, 209, 139, 0.22);
-    color: #6f6649;
+    background: linear-gradient(90deg, var(--perfil-azul), var(--perfil-roxo), var(--perfil-vermelho));
+}
+
+.perfil-identidade-kicker small {
+    color: #868892;
     font-size: 11px;
-    font-weight: 760;
+    font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
 }
 
-.perfil-idade {
-    color: #5f77a1;
-    font-size: 20px;
-    font-weight: 680;
-    line-height: 1;
-}
-
-.perfil-identidade h1 {
+.perfil-identidade-nome h1 {
     margin: 0;
-    color: var(--c-preto);
-    font-size: clamp(42px, 10.2vw, 62px);
+    color: var(--perfil-preto);
+    font-size: clamp(40px, 10.2vw, 58px);
     font-weight: 790;
-    line-height: 0.93;
+    line-height: 0.94;
     letter-spacing: -0.055em;
     overflow-wrap: anywhere;
 }
 
-.perfil-assinatura {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 16px;
+.perfil-identidade-nome p {
+    margin: 10px 0 0;
+    color: #55759f;
+    font-size: 20px;
+    font-weight: 650;
+    line-height: 1;
 }
 
-.perfil-assinatura span:nth-child(1) {
-    width: 22px;
-    height: 3px;
-    border-radius: 999px;
-    background: var(--c-azul);
+.perfil-bio-card {
+    position: relative;
+    width: min(92%, 520px);
+    margin: 18px 0 0 auto;
+    padding: 24px 22px 22px;
+    border: 1px solid rgba(23, 23, 25, 0.07);
+    border-radius: 26px 34px 26px 34px;
+    background: rgba(255, 255, 255, 0.62);
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+    box-shadow: 0 16px 36px rgba(22, 22, 24, 0.04);
 }
 
-.perfil-assinatura span:nth-child(2) {
-    width: 8px;
-    height: 3px;
-    border-radius: 999px;
-    background: var(--c-roxo);
+.perfil-bio-ornamento {
+    position: absolute;
+    top: -14px;
+    right: 22px;
+    width: 68px;
+    height: 68px;
+    border-radius: 24px 50% 24px 50%;
+    background: linear-gradient(145deg, rgba(241, 210, 122, 0.28), rgba(241, 210, 122, 0.04));
+    pointer-events: none;
 }
 
-.perfil-assinatura span:nth-child(3) {
-    width: 14px;
-    height: 3px;
-    border-radius: 999px;
-    background: var(--c-vermelho);
-}
-
-.perfil-bio {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 14px;
-    align-items: start;
-    margin-top: 22px;
-    padding: 20px 18px;
-    border: 1px solid rgba(23, 23, 26, 0.06);
-    border-radius: 24px 34px 24px 34px;
-    background: rgba(255, 255, 255, 0.56);
-    -webkit-backdrop-filter: blur(14px);
-    backdrop-filter: blur(14px);
-}
-
-.perfil-bio-quote {
-    color: #e0bf61;
-    font-size: 56px;
-    line-height: 0.78;
-    font-weight: 700;
-}
-
-.perfil-bio-conteudo h2 {
-    margin: 0 0 8px;
-    color: var(--c-preto);
+.perfil-bio-card h2 {
+    margin: 0 0 10px;
+    color: var(--perfil-preto);
     font-size: 13px;
     font-weight: 760;
     letter-spacing: 0.08em;
     text-transform: uppercase;
 }
 
-.perfil-bio-conteudo p {
+.perfil-bio-card p {
     margin: 0;
-    color: #303138;
-    font-size: 17px;
+    color: #33353b;
+    font-size: clamp(17px, 4.5vw, 21px);
     font-weight: 500;
-    line-height: 1.55;
-    letter-spacing: -0.02em;
+    line-height: 1.52;
+    letter-spacing: -0.022em;
     white-space: pre-line;
     overflow-wrap: anywhere;
 }
 
 .perfil-interesses {
     margin-top: 34px;
-    padding-top: 28px;
-    border-top: 1px solid var(--c-linha);
+    padding-top: 26px;
+    border-top: 1px solid var(--perfil-linha);
 }
 
 .perfil-seccao-topo {
     margin-bottom: 20px;
 }
 
-.perfil-seccao-heading {
+.perfil-seccao-titulo {
     display: flex;
     align-items: center;
     gap: 10px;
 }
 
-.perfil-seccao-traco {
-    width: 18px;
-    height: 3px;
-    border-radius: 999px;
-    background: linear-gradient(90deg, var(--c-azul), var(--c-roxo));
+.perfil-seccao-ponto {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, var(--perfil-azul), var(--perfil-roxo));
 }
 
 .perfil-seccao-topo h2 {
     margin: 0;
-    color: var(--c-preto);
-    font-size: clamp(28px, 7vw, 38px);
-    font-weight: 790;
+    color: var(--perfil-preto);
+    font-size: clamp(26px, 6.8vw, 34px);
+    font-weight: 780;
     line-height: 1;
     letter-spacing: -0.045em;
 }
 
 .perfil-seccao-topo p {
     margin: 10px 0 0;
-    color: var(--c-texto-suave);
+    color: var(--perfil-suave);
     font-size: 14px;
     line-height: 1.45;
 }
 
-.perfil-grelha-gostos {
+.perfil-interesses-lista {
     margin: 0;
     padding: 0;
     list-style: none;
@@ -547,83 +531,87 @@ body:has(#perfil) {
     gap: 10px;
 }
 
-.gosto-card {
+.perfil-interesse {
     position: relative;
-    min-height: 88px;
-    padding: 14px;
-    border: 1px solid rgba(23, 23, 26, 0.07);
-    background: rgba(255, 255, 255, 0.74);
-    box-shadow: 0 10px 26px rgba(18, 18, 22, 0.03);
+    min-height: 82px;
+    padding: 15px 15px 16px;
+    border: 1px solid rgba(23, 23, 25, 0.075);
+    background: rgba(255, 255, 255, 0.72);
+    box-shadow: 0 8px 22px rgba(20, 20, 24, 0.03);
     overflow: hidden;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
 }
 
-.gosto-card::after {
+.perfil-interesse::after {
     content: "";
     position: absolute;
-    top: -8px;
-    right: -8px;
+    top: -10px;
+    right: -10px;
     width: 52px;
     height: 52px;
-    opacity: 0.5;
+    border-radius: 50%;
+    opacity: 0.4;
 }
 
-.gosto-card--1 {
-    border-radius: 22px 18px 28px 18px;
+.perfil-interesse--1 {
+    border-radius: 22px 22px 30px 22px;
 }
-.gosto-card--1::after {
-    background: var(--c-amarelo-suave);
-    border-radius: 0 18px 0 30px;
+.perfil-interesse--1::after {
+    background: var(--perfil-amarelo-2);
 }
 
-.gosto-card--2 {
+.perfil-interesse--2 {
+    border-radius: 28px 18px 28px 18px;
+}
+.perfil-interesse--2::after {
+    background: #dce8f8;
+}
+
+.perfil-interesse--3 {
     border-radius: 18px 28px 18px 28px;
 }
-.gosto-card--2::after {
-    background: #e1e9f8;
-    border-radius: 0 28px 0 28px;
+.perfil-interesse--3::after {
+    background: #dff1e0;
 }
 
-.gosto-card--3 {
-    border-radius: 26px 20px 20px 30px;
+.perfil-interesse--4 {
+    border-radius: 30px 20px 22px 20px;
 }
-.gosto-card--3::after {
-    background: #e2efe0;
-    border-radius: 0 20px 0 28px;
-}
-
-.gosto-card--4 {
-    border-radius: 20px 30px 24px 20px;
-}
-.gosto-card--4::after {
-    background: #ebdff7;
-    border-radius: 0 30px 0 22px;
+.perfil-interesse--4::after {
+    background: #ebdefa;
 }
 
-.gosto-card--5 {
-    border-radius: 28px 18px 22px 26px;
+.perfil-interesse--5 {
+    border-radius: 20px 30px 20px 30px;
 }
-.gosto-card--5::after {
-    background: #f3e0e6;
-    border-radius: 0 18px 0 26px;
+.perfil-interesse--5::after {
+    background: #f8e0e8;
 }
 
-.gosto-indice {
+.perfil-interesse--6 {
+    border-radius: 26px 26px 18px 32px;
+}
+.perfil-interesse--6::after {
+    background: #e8eed5;
+}
+
+.perfil-interesse-numero {
     position: relative;
     z-index: 2;
-    color: #969aa4;
+    color: #9a9da7;
     font-size: 10px;
-    font-weight: 760;
+    font-weight: 750;
     font-variant-numeric: tabular-nums;
     letter-spacing: 0.05em;
 }
 
-.gosto-nome {
+.perfil-interesse-nome {
     position: relative;
     z-index: 2;
-    color: #222328;
+    min-width: 0;
+    color: #23252a;
     font-size: 16px;
     font-weight: 700;
     line-height: 1.12;
@@ -631,7 +619,7 @@ body:has(#perfil) {
     overflow-wrap: anywhere;
 }
 
-.perfil-acoes {
+.perfil-acao {
     height: 0;
 }
 
@@ -642,11 +630,12 @@ body:has(#perfil) {
     bottom: calc(var(--menu-principal-height, 58px) + var(--menu-principal-bottom, 18px) + env(safe-area-inset-bottom, 0px) + 18px);
     min-width: 118px;
     min-height: 54px;
+    margin: 0;
     padding: 0 10px 0 20px;
     border: 0;
     border-radius: 999px;
-    background: #17181b;
-    box-shadow: 0 16px 36px rgba(17, 17, 20, 0.22);
+    background: #171719;
+    box-shadow: 0 16px 36px rgba(17, 17, 20, 0.2);
     color: #fff;
     font: inherit;
     cursor: pointer;
@@ -654,7 +643,7 @@ body:has(#perfil) {
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    transition: transform 150ms ease, opacity 150ms ease;
+    transition: transform 150ms ease, opacity 150ms ease, background-color 150ms ease;
     -webkit-tap-highlight-color: transparent;
 }
 
@@ -669,7 +658,7 @@ body:has(#perfil) {
 
 .perfil-hey-texto {
     font-size: 15px;
-    font-weight: 740;
+    font-weight: 730;
     letter-spacing: -0.025em;
 }
 
@@ -690,17 +679,22 @@ body:has(#perfil) {
     stroke-width: 1.8;
     stroke-linecap: round;
     stroke-linejoin: round;
+    transition: transform 150ms ease;
+}
+
+.perfil-hey:hover:not(:disabled) svg {
+    transform: translateX(2px);
 }
 
 .perfil-hey.enviado {
-    background: #2a815c;
+    background: #27845a;
 }
 
 .perfil-hey.a-enviar svg {
-    animation: setaHey 800ms ease-in-out infinite alternate;
+    animation: perfilEnviar 800ms ease-in-out infinite alternate;
 }
 
-@keyframes setaHey {
+@keyframes perfilEnviar {
     from {
         transform: translateX(0);
     }
@@ -717,7 +711,7 @@ body:has(#perfil) {
     visibility: hidden;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 220ms ease, visibility 220ms ease;
+    transition: opacity 230ms ease, visibility 230ms ease;
 }
 
 .perfil-modal.ativo {
@@ -729,7 +723,7 @@ body:has(#perfil) {
 .perfil-modal-fundo {
     position: absolute;
     inset: 0;
-    background: rgba(10, 10, 13, 0.88);
+    background: rgba(12, 12, 15, 0.88);
     -webkit-backdrop-filter: blur(18px);
     backdrop-filter: blur(18px);
 }
@@ -749,53 +743,77 @@ body:has(#perfil) {
 
 .perfil-modal-imagem {
     display: block;
+    width: auto;
+    height: auto;
     max-width: 100%;
     max-height: 100%;
-    border-radius: 26px;
+    border-radius: 28px;
     object-fit: contain;
     box-shadow: 0 30px 80px rgba(0, 0, 0, 0.34);
     pointer-events: auto;
     user-select: none;
-    transform: scale(0.82) translateY(16px);
+    transform: scale(0.78) translateY(16px);
     opacity: 0;
     transition:
-        transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
-        opacity 220ms ease;
+        transform 430ms cubic-bezier(0.22, 1, 0.36, 1),
+        opacity 230ms ease,
+        border-radius 430ms ease;
 }
 
 .perfil-modal.ativo .perfil-modal-imagem {
     transform: scale(1) translateY(0);
     opacity: 1;
+    border-radius: 18px;
 }
 
-.perfil-modal-fechar,
-.perfil-modal-navegacao {
+.perfil-modal-fechar {
     position: absolute;
     z-index: 5;
+    top: max(18px, env(safe-area-inset-top, 0px));
+    right: 18px;
     width: 44px;
     height: 44px;
     margin: 0;
     padding: 0;
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.13);
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.09);
     -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
     color: #fff;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+}
+
+.perfil-modal-fechar svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+}
+
+.perfil-modal-navegacao {
+    position: absolute;
+    z-index: 4;
+    top: 50%;
+    width: 46px;
+    height: 46px;
+    margin: 0;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.13);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.09);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    color: #fff;
+    transform: translateY(-50%);
     display: grid;
     place-items: center;
     cursor: pointer;
     pointer-events: auto;
-}
-
-.perfil-modal-fechar {
-    top: max(18px, env(safe-area-inset-top, 0px));
-    right: 18px;
-}
-
-.perfil-modal-navegacao {
-    top: 50%;
-    transform: translateY(-50%);
 }
 
 .perfil-modal-anterior {
@@ -806,13 +824,12 @@ body:has(#perfil) {
     right: 16px;
 }
 
-.perfil-modal-fechar svg,
 .perfil-modal-navegacao svg {
-    width: 20px;
-    height: 20px;
+    width: 21px;
+    height: 21px;
     fill: none;
     stroke: currentColor;
-    stroke-width: 1.9;
+    stroke-width: 2;
     stroke-linecap: round;
     stroke-linejoin: round;
 }
@@ -828,9 +845,9 @@ body:has(#perfil) {
     left: 50%;
     min-height: 32px;
     padding: 0 12px;
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.07);
     color: rgba(255, 255, 255, 0.88);
     transform: translateX(-50%);
     font-size: 10px;
@@ -841,58 +858,46 @@ body:has(#perfil) {
     gap: 6px;
 }
 
+/* tablet / desktop */
 @media (min-width: 820px) {
     .perfil-shell {
-        width: min(calc(100% - 70px), 920px);
+        width: min(calc(100% - 70px), 980px);
         padding:
-            max(26px, env(safe-area-inset-top, 0px))
+            max(28px, env(safe-area-inset-top, 0px))
             0
-            calc(var(--menu-principal-height, 58px) + var(--menu-principal-bottom, 18px) + env(safe-area-inset-bottom, 0px) + 70px);
-    }
-
-    .perfil-topbar {
-        margin-bottom: 24px;
-    }
-
-    .perfil-foto-acento {
-        width: 180px;
-        height: 210px;
-        left: 10px;
-        top: 34px;
-        border-radius: 34px 80px 34px 34px;
+            calc(var(--menu-principal-height, 58px) + var(--menu-principal-bottom, 18px) + env(safe-area-inset-bottom, 0px) + 66px);
     }
 
     .perfil-galeria {
-        width: min(62%, 470px);
-        height: clamp(540px, 68dvh, 700px);
-        border-radius: 40px 40px 110px 40px;
+        height: clamp(560px, 72dvh, 760px);
+        border-radius: 38px 38px 140px 38px;
     }
 
     .perfil-identidade {
-        width: min(54%, 420px);
-        margin-top: -72px;
-        margin-right: 30px;
-        padding: 26px 24px 24px;
-        border-radius: 34px 26px 38px 38px;
+        width: min(62%, 460px);
+        margin-top: -110px;
+        margin-left: 34px;
+        padding: 24px 26px 25px;
+        border-radius: 30px 30px 48px 30px;
     }
 
-    .perfil-identidade h1 {
-        font-size: clamp(56px, 5.5vw, 76px);
+    .perfil-identidade-nome h1 {
+        font-size: clamp(54px, 6.3vw, 82px);
     }
 
-    .perfil-idade {
+    .perfil-identidade-nome p {
         font-size: 24px;
+        margin-top: 14px;
     }
 
-    .perfil-bio {
-        max-width: 560px;
-        margin-top: 28px;
-        margin-left: auto;
-        padding: 24px 22px;
+    .perfil-bio-card {
+        width: min(64%, 560px);
+        margin-top: 22px;
+        padding: 28px 28px 26px;
     }
 
-    .perfil-bio-conteudo p {
-        font-size: 19px;
+    .perfil-bio-card p {
+        font-size: clamp(19px, 2vw, 24px);
     }
 
     .perfil-interesses {
@@ -901,25 +906,25 @@ body:has(#perfil) {
     }
 
     .perfil-seccao-topo h2 {
-        font-size: 42px;
+        font-size: 40px;
     }
 
-    .perfil-grelha-gostos {
+    .perfil-interesses-lista {
         grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 14px;
     }
 
-    .gosto-card {
-        min-height: 96px;
-        padding: 16px;
+    .perfil-interesse {
+        min-height: 94px;
+        padding: 18px;
     }
 
-    .gosto-nome {
-        font-size: 17px;
+    .perfil-interesse-nome {
+        font-size: 18px;
     }
 
     .perfil-hey {
-        right: max(24px, calc((100vw - 920px) / 2));
+        right: max(24px, calc((100vw - 980px) / 2));
     }
 
     .perfil-modal-conteudo {
@@ -929,67 +934,72 @@ body:has(#perfil) {
 
 @media (min-width: 1180px) {
     .perfil-shell {
-        width: min(calc(100% - 120px), 1040px);
+        width: min(calc(100% - 110px), 1080px);
     }
 
     .perfil-galeria {
-        width: 480px;
-        height: 710px;
+        height: clamp(620px, 76dvh, 820px);
     }
 
     .perfil-identidade {
         width: 430px;
-        margin-right: 40px;
+        margin-top: -120px;
+        margin-left: 44px;
     }
 
-    .perfil-grelha-gostos {
+    .perfil-bio-card {
+        width: 500px;
+    }
+
+    .perfil-interesses-lista {
         grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 
     .perfil-hey {
-        right: max(28px, calc((100vw - 1040px) / 2));
+        right: max(28px, calc((100vw - 1080px) / 2));
     }
 }
 
-@media (max-width: 380px) {
+@media (max-width: 360px) {
     .perfil-shell {
-        padding-left: 12px;
         padding-right: 12px;
+        padding-left: 12px;
     }
 
     .perfil-galeria {
-        width: 90%;
-        height: clamp(390px, 56svh, 540px);
+        height: clamp(390px, 58svh, 540px);
     }
 
     .perfil-identidade {
-        width: 86%;
-        padding: 18px 16px;
+        width: 90%;
+        margin-top: -64px;
+        margin-left: 12px;
+        padding: 16px 16px 17px;
     }
 
-    .perfil-identidade h1 {
-        font-size: 38px;
+    .perfil-identidade-nome h1 {
+        font-size: 36px;
     }
 
-    .perfil-bio {
-        grid-template-columns: 1fr;
-        gap: 6px;
+    .perfil-bio-card {
+        width: 95%;
+        padding: 20px 18px;
     }
 
-    .perfil-bio-quote {
-        font-size: 42px;
+    .perfil-bio-card p {
+        font-size: 16px;
     }
 
-    .perfil-grelha-gostos {
+    .perfil-interesses-lista {
         gap: 8px;
     }
 
-    .gosto-card {
-        min-height: 78px;
-        padding: 12px;
+    .perfil-interesse {
+        min-height: 76px;
+        padding: 13px;
     }
 
-    .gosto-nome {
+    .perfil-interesse-nome {
         font-size: 14px;
     }
 }
@@ -1023,14 +1033,20 @@ body:has(#perfil) {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .perfil-fotos,
+    .perfil-fotos {
+        scroll-behavior: auto;
+    }
+
     .perfil-modal,
     .perfil-modal-imagem,
     .perfil-editar,
+    .perfil-indicadores button span,
     .perfil-hey,
-    .perfil-indicadores button span {
-        transition: none !important;
-        animation: none !important;
-        scroll-behavior: auto !important;
+    .perfil-hey svg {
+        transition: none;
+    }
+
+    .perfil-hey.a-enviar svg {
+        animation: none;
     }
 }

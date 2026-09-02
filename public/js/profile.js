@@ -9,8 +9,14 @@
         return;
     }
 
-    var slides = Array.prototype.slice.call(faixa.querySelectorAll('.perfil-slide'));
-    var indicadores = Array.prototype.slice.call(document.querySelectorAll('#perfil-indicadores button'));
+    var slides = Array.prototype.slice.call(
+        faixa.querySelectorAll('.perfil-slide')
+    );
+
+    var indicadores = Array.prototype.slice.call(
+        document.querySelectorAll('#perfil-indicadores button')
+    );
+
     var anterior = document.getElementById('perfil-anterior');
     var seguinte = document.getElementById('perfil-seguinte');
     var contadorAtual = document.getElementById('perfil-contador-atual');
@@ -25,17 +31,17 @@
 
     var indiceAtual = 0;
     var frameScroll = null;
-    var resizeObserver = null;
+    var observadorTamanho = null;
 
-    var dragging = false;
-    var moved = false;
-    var startX = 0;
-    var startScroll = 0;
+    var ratoAtivo = false;
+    var ratoMoveu = false;
+    var ratoInicioX = 0;
+    var scrollInicio = 0;
 
     var modalAberto = false;
-    var modalTimer = null;
+    var temporizadorFecharModal = null;
 
-    if (!slides.length) {
+    if (slides.length === 0) {
         return;
     }
 
@@ -43,51 +49,58 @@
         return Math.max(0, Math.min(indice, slides.length - 1));
     }
 
-    function formatarNumero(n) {
-        return n < 10 ? '0' + n : String(n);
+    function formatarNumero(numero) {
+        return numero < 10 ? '0' + numero : String(numero);
     }
 
-    function prefersReducedMotion() {
+    function prefereMovimentoReduzido() {
         return Boolean(
             window.matchMedia &&
             window.matchMedia('(prefers-reduced-motion: reduce)').matches
         );
     }
 
-    function getSlideImage(indice) {
+    function obterImagemSlide(indice) {
         indice = limitarIndice(indice);
         return slides[indice] ? slides[indice].querySelector('img') : null;
     }
 
-    function getNearestIndex() {
+    function indiceMaisProximo() {
         var centro = faixa.scrollLeft + faixa.clientWidth / 2;
-        var bestIndex = 0;
-        var bestDistance = Infinity;
+        var melhorIndice = 0;
+        var menorDistancia = Infinity;
 
-        slides.forEach(function (slide, i) {
-            var slideCenter = slide.offsetLeft + slide.offsetWidth / 2;
-            var distance = Math.abs(slideCenter - centro);
+        slides.forEach(function (slide, indice) {
+            var centroSlide = slide.offsetLeft + slide.offsetWidth / 2;
+            var distancia = Math.abs(centroSlide - centro);
 
-            if (distance < bestDistance) {
-                bestDistance = distance;
-                bestIndex = i;
+            if (distancia < menorDistancia) {
+                menorDistancia = distancia;
+                melhorIndice = indice;
             }
         });
 
-        return bestIndex;
+        return melhorIndice;
     }
 
-    function atualizarUI(indice) {
+    function atualizarInterface(indice) {
         indiceAtual = limitarIndice(indice);
 
-        slides.forEach(function (slide, i) {
-            slide.setAttribute('aria-hidden', i === indiceAtual ? 'false' : 'true');
+        slides.forEach(function (slide, posicao) {
+            slide.setAttribute(
+                'aria-hidden',
+                posicao === indiceAtual ? 'false' : 'true'
+            );
         });
 
-        indicadores.forEach(function (button, i) {
-            var active = i === indiceAtual;
-            button.classList.toggle('ativo', active);
-            button.setAttribute('aria-current', active ? 'true' : 'false');
+        indicadores.forEach(function (indicador, posicao) {
+            var ativo = posicao === indiceAtual;
+
+            indicador.classList.toggle('ativo', ativo);
+            indicador.setAttribute(
+                'aria-current',
+                ativo ? 'true' : 'false'
+            );
         });
 
         if (contadorAtual) {
@@ -107,38 +120,44 @@
         }
     }
 
-    function goToSlide(indice, smooth) {
+    function mostrarFoto(indice, suave) {
         indice = limitarIndice(indice);
 
         faixa.scrollTo({
             left: slides[indice].offsetLeft,
-            behavior: smooth === false || prefersReducedMotion() ? 'auto' : 'smooth'
+            behavior:
+                suave === false || prefereMovimentoReduzido()
+                    ? 'auto'
+                    : 'smooth'
         });
 
-        atualizarUI(indice);
+        atualizarInterface(indice);
     }
 
-    function bindImageFallback(img) {
-        var tries = 0;
+    function corrigirFoto(imagem) {
+        var tentativa = 0;
 
-        img.addEventListener('error', function () {
-            tries += 1;
+        imagem.addEventListener('error', function () {
+            tentativa += 1;
 
-            var fallback = img.dataset.fallback;
-            var def = img.dataset.default;
+            var fallback = imagem.dataset.fallback;
+            var padrao = imagem.dataset.default;
 
-            if (tries === 1 && fallback) {
-                img.src = fallback;
+            if (tentativa === 1 && fallback) {
+                imagem.src = fallback;
                 return;
             }
 
-            if (def && img.src !== new URL(def, window.location.href).href) {
-                img.src = def;
+            if (
+                padrao &&
+                imagem.src !== new URL(padrao, window.location.href).href
+            ) {
+                imagem.src = padrao;
             }
         });
     }
 
-    faixa.querySelectorAll('img').forEach(bindImageFallback);
+    faixa.querySelectorAll('img').forEach(corrigirFoto);
 
     function atualizarModal(indice) {
         if (!modal || !modalImagem) {
@@ -147,13 +166,14 @@
 
         indice = limitarIndice(indice);
 
-        var image = getSlideImage(indice);
-        if (!image) {
+        var imagem = obterImagemSlide(indice);
+
+        if (!imagem) {
             return;
         }
 
-        modalImagem.src = image.currentSrc || image.src;
-        modalImagem.alt = image.alt || '';
+        modalImagem.src = imagem.currentSrc || imagem.src;
+        modalImagem.alt = imagem.alt || '';
 
         if (modalContadorAtual) {
             modalContadorAtual.textContent = formatarNumero(indice + 1);
@@ -168,21 +188,23 @@
         }
     }
 
-    function abrirModalFoto(indice) {
+    function abrirModal(indice) {
         if (!modal || !modalImagem) {
             return;
         }
 
-        if (modalTimer !== null) {
-            window.clearTimeout(modalTimer);
-            modalTimer = null;
+        if (temporizadorFecharModal !== null) {
+            window.clearTimeout(temporizadorFecharModal);
+            temporizadorFecharModal = null;
         }
 
         indice = limitarIndice(indice);
-        goToSlide(indice, false);
+
+        mostrarFoto(indice, false);
         atualizarModal(indice);
 
         modalAberto = true;
+
         modal.setAttribute('aria-hidden', 'false');
         perfil.classList.add('modal-aberto');
 
@@ -195,11 +217,11 @@
         if (modalFechar) {
             window.setTimeout(function () {
                 modalFechar.focus({ preventScroll: true });
-            }, 50);
+            }, 40);
         }
     }
 
-    function fecharModalFoto() {
+    function fecharModal() {
         if (!modal || !modalAberto) {
             return;
         }
@@ -208,171 +230,179 @@
         modal.classList.remove('ativo');
         perfil.classList.remove('modal-aberto');
 
-        modalTimer = window.setTimeout(function () {
-            modalTimer = null;
+        temporizadorFecharModal = window.setTimeout(function () {
+            temporizadorFecharModal = null;
             modal.setAttribute('aria-hidden', 'true');
+
             if (modalImagem) {
                 modalImagem.src = '';
             }
+
             galeria.focus({ preventScroll: true });
-        }, prefersReducedMotion() ? 0 : 230);
+        }, prefereMovimentoReduzido() ? 0 : 240);
     }
 
-    function updateModalSlide(indice) {
+    function mostrarFotoModal(indice) {
         indice = limitarIndice(indice);
-        goToSlide(indice, false);
+        mostrarFoto(indice, false);
         atualizarModal(indice);
     }
 
     if (abrirBotao) {
         abrirBotao.addEventListener('click', function () {
-            abrirModalFoto(indiceAtual);
+            abrirModal(indiceAtual);
         });
     }
 
     if (modalFechar) {
-        modalFechar.addEventListener('click', fecharModalFoto);
+        modalFechar.addEventListener('click', fecharModal);
     }
 
     if (modalAnterior) {
         modalAnterior.addEventListener('click', function () {
-            updateModalSlide(indiceAtual - 1);
+            mostrarFotoModal(indiceAtual - 1);
         });
     }
 
     if (modalSeguinte) {
         modalSeguinte.addEventListener('click', function () {
-            updateModalSlide(indiceAtual + 1);
+            mostrarFotoModal(indiceAtual + 1);
         });
     }
 
     if (modal) {
-        modal.addEventListener('click', function (event) {
-            if (event.target && event.target.hasAttribute('data-fechar-modal')) {
-                fecharModalFoto();
+        modal.addEventListener('click', function (evento) {
+            if (evento.target && evento.target.hasAttribute('data-fechar-modal')) {
+                fecharModal();
             }
         });
     }
 
-    faixa.addEventListener('scroll', function () {
-        if (frameScroll !== null) {
-            return;
-        }
+    faixa.addEventListener(
+        'scroll',
+        function () {
+            if (frameScroll !== null) {
+                return;
+            }
 
-        frameScroll = window.requestAnimationFrame(function () {
-            frameScroll = null;
-            atualizarUI(getNearestIndex());
-        });
-    }, { passive: true });
+            frameScroll = window.requestAnimationFrame(function () {
+                frameScroll = null;
+                atualizarInterface(indiceMaisProximo());
+            });
+        },
+        { passive: true }
+    );
 
-    indicadores.forEach(function (button) {
-        button.addEventListener('click', function (event) {
-            event.stopPropagation();
-            goToSlide(Number(button.dataset.indice));
+    indicadores.forEach(function (indicador) {
+        indicador.addEventListener('click', function (evento) {
+            evento.stopPropagation();
+            mostrarFoto(Number(indicador.dataset.indice));
         });
     });
 
     if (anterior) {
-        anterior.addEventListener('click', function (event) {
-            event.stopPropagation();
-            goToSlide(indiceAtual - 1);
+        anterior.addEventListener('click', function (evento) {
+            evento.stopPropagation();
+            mostrarFoto(indiceAtual - 1);
         });
     }
 
     if (seguinte) {
-        seguinte.addEventListener('click', function (event) {
-            event.stopPropagation();
-            goToSlide(indiceAtual + 1);
+        seguinte.addEventListener('click', function (evento) {
+            evento.stopPropagation();
+            mostrarFoto(indiceAtual + 1);
         });
     }
 
-    faixa.addEventListener('pointerdown', function (event) {
-        if (event.pointerType !== 'mouse' || event.button !== 0) {
+    faixa.addEventListener('pointerdown', function (evento) {
+        if (evento.pointerType !== 'mouse' || evento.button !== 0) {
             return;
         }
 
-        dragging = true;
-        moved = false;
-        startX = event.clientX;
-        startScroll = faixa.scrollLeft;
+        ratoAtivo = true;
+        ratoMoveu = false;
+        ratoInicioX = evento.clientX;
+        scrollInicio = faixa.scrollLeft;
 
         faixa.classList.add('a-arrastar');
-        faixa.setPointerCapture(event.pointerId);
+        faixa.setPointerCapture(evento.pointerId);
     });
 
-    faixa.addEventListener('pointermove', function (event) {
-        if (!dragging) {
+    faixa.addEventListener('pointermove', function (evento) {
+        if (!ratoAtivo) {
             return;
         }
 
-        var distance = event.clientX - startX;
+        var distancia = evento.clientX - ratoInicioX;
 
-        if (Math.abs(distance) > 4) {
-            moved = true;
+        if (Math.abs(distancia) > 4) {
+            ratoMoveu = true;
         }
 
-        faixa.scrollLeft = startScroll - distance;
-        event.preventDefault();
+        faixa.scrollLeft = scrollInicio - distancia;
+        evento.preventDefault();
     });
 
-    function endDrag(event) {
-        if (!dragging) {
+    function terminarArrasto(evento) {
+        if (!ratoAtivo) {
             return;
         }
 
-        dragging = false;
+        ratoAtivo = false;
         faixa.classList.remove('a-arrastar');
 
-        if (faixa.hasPointerCapture(event.pointerId)) {
-            faixa.releasePointerCapture(event.pointerId);
+        if (faixa.hasPointerCapture(evento.pointerId)) {
+            faixa.releasePointerCapture(evento.pointerId);
         }
 
-        goToSlide(getNearestIndex());
+        mostrarFoto(indiceMaisProximo());
 
         window.setTimeout(function () {
-            moved = false;
+            ratoMoveu = false;
         }, 20);
     }
 
-    faixa.addEventListener('pointerup', endDrag);
-    faixa.addEventListener('pointercancel', endDrag);
+    faixa.addEventListener('pointerup', terminarArrasto);
+    faixa.addEventListener('pointercancel', terminarArrasto);
 
-    faixa.addEventListener('click', function (event) {
-        if (moved) {
-            event.preventDefault();
+    faixa.addEventListener('click', function (evento) {
+        if (ratoMoveu) {
+            evento.preventDefault();
             return;
         }
 
-        var image = event.target.closest('.perfil-slide img');
-        if (!image) {
+        var imagem = evento.target.closest('.perfil-slide img');
+
+        if (!imagem) {
             return;
         }
 
-        var slide = image.closest('.perfil-slide');
+        var slide = imagem.closest('.perfil-slide');
+
         if (!slide) {
             return;
         }
 
-        abrirModalFoto(Number(slide.dataset.indice));
+        abrirModal(Number(slide.dataset.indice));
     });
 
-    function onKeyDown(event) {
+    function aoPremirTecla(evento) {
         if (modalAberto) {
-            if (event.key === 'Escape') {
-                event.preventDefault();
-                fecharModalFoto();
+            if (evento.key === 'Escape') {
+                evento.preventDefault();
+                fecharModal();
                 return;
             }
 
-            if (event.key === 'ArrowLeft') {
-                event.preventDefault();
-                updateModalSlide(indiceAtual - 1);
+            if (evento.key === 'ArrowLeft') {
+                evento.preventDefault();
+                mostrarFotoModal(indiceAtual - 1);
                 return;
             }
 
-            if (event.key === 'ArrowRight') {
-                event.preventDefault();
-                updateModalSlide(indiceAtual + 1);
+            if (evento.key === 'ArrowRight') {
+                evento.preventDefault();
+                mostrarFotoModal(indiceAtual + 1);
                 return;
             }
 
@@ -383,65 +413,65 @@
             return;
         }
 
-        if (event.key === 'ArrowLeft') {
-            event.preventDefault();
-            goToSlide(indiceAtual - 1);
+        if (evento.key === 'ArrowLeft') {
+            evento.preventDefault();
+            mostrarFoto(indiceAtual - 1);
         }
 
-        if (event.key === 'ArrowRight') {
-            event.preventDefault();
-            goToSlide(indiceAtual + 1);
+        if (evento.key === 'ArrowRight') {
+            evento.preventDefault();
+            mostrarFoto(indiceAtual + 1);
         }
 
-        if (event.key === 'Home') {
-            event.preventDefault();
-            goToSlide(0);
+        if (evento.key === 'Home') {
+            evento.preventDefault();
+            mostrarFoto(0);
         }
 
-        if (event.key === 'End') {
-            event.preventDefault();
-            goToSlide(slides.length - 1);
+        if (evento.key === 'End') {
+            evento.preventDefault();
+            mostrarFoto(slides.length - 1);
         }
     }
 
-    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('keydown', aoPremirTecla);
 
-    function onResize() {
-        goToSlide(indiceAtual, false);
+    function aoRedimensionar() {
+        mostrarFoto(indiceAtual, false);
     }
 
     if ('ResizeObserver' in window) {
-        resizeObserver = new window.ResizeObserver(onResize);
-        resizeObserver.observe(faixa);
+        observadorTamanho = new window.ResizeObserver(aoRedimensionar);
+        observadorTamanho.observe(faixa);
     } else {
-        window.addEventListener('resize', onResize, { passive: true });
+        window.addEventListener('resize', aoRedimensionar, { passive: true });
     }
 
-    function teardown() {
+    function desativarPagina() {
         if (frameScroll !== null) {
             window.cancelAnimationFrame(frameScroll);
             frameScroll = null;
         }
 
-        if (modalTimer !== null) {
-            window.clearTimeout(modalTimer);
-            modalTimer = null;
+        if (temporizadorFecharModal !== null) {
+            window.clearTimeout(temporizadorFecharModal);
+            temporizadorFecharModal = null;
         }
 
-        if (resizeObserver) {
-            resizeObserver.disconnect();
-            resizeObserver = null;
+        if (observadorTamanho) {
+            observadorTamanho.disconnect();
+            observadorTamanho = null;
         } else {
-            window.removeEventListener('resize', onResize);
+            window.removeEventListener('resize', aoRedimensionar);
         }
 
-        document.removeEventListener('keydown', onKeyDown);
-        document.removeEventListener('margot:page-leave', teardown);
+        document.removeEventListener('keydown', aoPremirTecla);
+        document.removeEventListener('margot:page-leave', desativarPagina);
     }
 
-    document.addEventListener('margot:page-leave', teardown);
+    document.addEventListener('margot:page-leave', desativarPagina);
 
-    atualizarUI(0);
+    atualizarInterface(0);
 })(window, document);
 
 /* =========================================================
@@ -460,62 +490,67 @@
     var etiqueta = botao.querySelector('.perfil-hey-texto');
     var estadoAcessivel = document.getElementById('perfil-hey-estado');
 
-    var resetTimer = null;
-    var confirmTimer = null;
-    var sending = false;
+    var temporizadorReposicao = null;
+    var temporizadorConfirmacao = null;
+    var aEnviar = false;
 
     var textoInicial = etiqueta ? etiqueta.textContent : 'Hey';
 
-    function sameTarget(event) {
-        var detail = event && event.detail ? event.detail : {};
-        return String(detail.destinatario_id || '') === String(botao.dataset.destinatarioId || '');
+    function detalheCorresponde(evento) {
+        var detalhe = evento && evento.detail ? evento.detail : {};
+
+        return (
+            String(detalhe.destinatario_id || '') ===
+            String(botao.dataset.destinatarioId || '')
+        );
     }
 
-    function setLabel(text) {
+    function alterarEtiqueta(texto) {
         if (etiqueta) {
-            etiqueta.textContent = text;
+            etiqueta.textContent = texto;
         } else {
-            botao.textContent = text;
+            botao.textContent = texto;
         }
     }
 
-    function announce(text) {
+    function anunciar(texto) {
         if (estadoAcessivel) {
-            estadoAcessivel.textContent = text;
+            estadoAcessivel.textContent = texto;
         }
     }
 
-    function clearConfirmTimer() {
-        if (confirmTimer === null) {
+    function limparTemporizadorConfirmacao() {
+        if (temporizadorConfirmacao === null) {
             return;
         }
 
-        window.clearTimeout(confirmTimer);
-        confirmTimer = null;
+        window.clearTimeout(temporizadorConfirmacao);
+        temporizadorConfirmacao = null;
     }
 
-    function resetButton() {
-        clearConfirmTimer();
+    function reporBotao() {
+        limparTemporizadorConfirmacao();
 
-        sending = false;
+        aEnviar = false;
         botao.disabled = false;
         botao.removeAttribute('aria-busy');
         botao.classList.remove('a-enviar', 'enviado');
-        setLabel(textoInicial);
+
+        alterarEtiqueta(textoInicial);
     }
 
-    function showTemporaryMessage(text, type) {
-        announce(text);
+    function mostrarMensagem(texto, tipo) {
+        anunciar(texto);
 
         if (typeof window.mostrarMensagemTemporaria === 'function') {
-            window.mostrarMensagemTemporaria(text, type || 'erro');
+            window.mostrarMensagemTemporaria(texto, tipo || 'erro');
         }
     }
 
-    function sendHey() {
+    function enviarHey() {
         var destinatarioId = botao.dataset.destinatarioId;
 
-        if (sending || !destinatarioId) {
+        if (aEnviar || !destinatarioId) {
             return;
         }
 
@@ -524,91 +559,95 @@
             typeof window.AppWebSocket.isConnected !== 'function' ||
             !window.AppWebSocket.isConnected()
         ) {
-            if (window.AppWebSocket && typeof window.AppWebSocket.connect === 'function') {
+            if (
+                window.AppWebSocket &&
+                typeof window.AppWebSocket.connect === 'function'
+            ) {
                 window.AppWebSocket.connect();
             }
 
-            showTemporaryMessage('A ligação está a ser restabelecida.', 'erro');
+            mostrarMensagem('A ligação está a ser restabelecida.', 'erro');
             return;
         }
 
-        sending = true;
+        aEnviar = true;
         botao.disabled = true;
         botao.setAttribute('aria-busy', 'true');
         botao.classList.add('a-enviar');
 
-        setLabel('A enviar…');
-        announce('A enviar o Hey.');
+        alterarEtiqueta('A enviar…');
+        anunciar('A enviar o Hey.');
 
-        var sent = window.AppWebSocket.send({
+        var enviado = window.AppWebSocket.send({
             type: 'notify',
             destinatario_id: destinatarioId
         });
 
-        if (!sent) {
-            resetButton();
-            showTemporaryMessage('Não foi possível enviar o Hey.', 'erro');
+        if (!enviado) {
+            reporBotao();
+            mostrarMensagem('Não foi possível enviar o Hey.', 'erro');
             return;
         }
 
-        confirmTimer = window.setTimeout(function () {
-            confirmTimer = null;
-            resetButton();
-            announce('Não foi recebida confirmação do envio. Podes tentar novamente.');
+        temporizadorConfirmacao = window.setTimeout(function () {
+            temporizadorConfirmacao = null;
+            reporBotao();
+
+            anunciar('Não foi recebida confirmação do envio. Podes tentar novamente.');
         }, 8000);
     }
 
-    function onHeySent(event) {
-        if (!sameTarget(event)) {
+    function aoEnviarHey(evento) {
+        if (!detalheCorresponde(evento)) {
             return;
         }
 
-        clearConfirmTimer();
+        limparTemporizadorConfirmacao();
 
-        sending = false;
+        aEnviar = false;
         botao.disabled = true;
         botao.removeAttribute('aria-busy');
         botao.classList.remove('a-enviar');
         botao.classList.add('enviado');
 
-        setLabel('Hey enviado');
-        announce('Hey enviado com sucesso.');
+        alterarEtiqueta('Hey enviado');
+        anunciar('Hey enviado com sucesso.');
 
-        if (resetTimer !== null) {
-            window.clearTimeout(resetTimer);
+        if (temporizadorReposicao !== null) {
+            window.clearTimeout(temporizadorReposicao);
         }
 
-        resetTimer = window.setTimeout(function () {
-            resetTimer = null;
-            resetButton();
+        temporizadorReposicao = window.setTimeout(function () {
+            temporizadorReposicao = null;
+            reporBotao();
         }, 1600);
     }
 
-    function onHeyError(event) {
-        if (!sameTarget(event)) {
+    function aoFalharHey(evento) {
+        if (!detalheCorresponde(evento)) {
             return;
         }
 
-        resetButton();
-        showTemporaryMessage('Não foi possível enviar o Hey.', 'erro');
+        reporBotao();
+        mostrarMensagem('Não foi possível enviar o Hey.', 'erro');
     }
 
-    function teardown() {
-        if (resetTimer !== null) {
-            window.clearTimeout(resetTimer);
-            resetTimer = null;
+    function desativarPagina() {
+        if (temporizadorReposicao !== null) {
+            window.clearTimeout(temporizadorReposicao);
+            temporizadorReposicao = null;
         }
 
-        clearConfirmTimer();
+        limparTemporizadorConfirmacao();
 
-        botao.removeEventListener('click', sendHey);
-        window.removeEventListener('app:hey-enviado', onHeySent);
-        window.removeEventListener('app:hey-erro', onHeyError);
-        document.removeEventListener('margot:page-leave', teardown);
+        botao.removeEventListener('click', enviarHey);
+        window.removeEventListener('app:hey-enviado', aoEnviarHey);
+        window.removeEventListener('app:hey-erro', aoFalharHey);
+        document.removeEventListener('margot:page-leave', desativarPagina);
     }
 
-    botao.addEventListener('click', sendHey);
-    window.addEventListener('app:hey-enviado', onHeySent);
-    window.addEventListener('app:hey-erro', onHeyError);
-    document.addEventListener('margot:page-leave', teardown);
+    botao.addEventListener('click', enviarHey);
+    window.addEventListener('app:hey-enviado', aoEnviarHey);
+    window.addEventListener('app:hey-erro', aoFalharHey);
+    document.addEventListener('margot:page-leave', desativarPagina);
 })(window, document);
