@@ -192,9 +192,7 @@ img {
     overflow:
         hidden;
 
-    border:
-        1px solid
-        rgba(20, 20, 24, 0.045);
+    border: none;
 
     border-bottom:
         0;
@@ -205,8 +203,8 @@ img {
      * do mini-menu original.
      */
     border-radius:
-        72px
-        72px
+        75px
+        75px
         0
         0;
 
@@ -281,10 +279,10 @@ img {
 
 .mini-menu > div#barra {
     width:
-        104px;
+        114px;
 
     height:
-        4px;
+        3px;
 
     margin-top:
         8px;
@@ -293,7 +291,7 @@ img {
         999px;
 
     background:
-        rgba(23, 23, 27, 0.16);
+        rgba(23, 23, 27, 0.12);
 }
 
 
