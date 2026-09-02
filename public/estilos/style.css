@@ -44,10 +44,9 @@ body {
 
 /*
  * A Home mantém uma pequena tonalidade Margot,
- * mas agora está muito mais próxima do branco.
+ * mas está muito próxima do branco.
  *
- * Isto deixa os pontos do canvas voltarem
- * a destacar-se.
+ * Isto deixa os pontos do canvas destacarem-se.
  */
 body:has(#gridCanvas) {
     background:
@@ -169,12 +168,6 @@ img {
 
 /* =========================================================
    MINI MENU
-
-   Meio-termo:
-   - não tão redondo como antes;
-   - não tão "glass" como a versão nova;
-   - essencialmente branco;
-   - mantém alguma personalidade.
    ========================================================= */
 
 .mini-menu {
@@ -206,9 +199,14 @@ img {
     border-bottom:
         0;
 
+    /*
+     * Curvas bastante maiores.
+     * Volta a aproximar-se da personalidade
+     * do mini-menu original.
+     */
     border-radius:
-        52px
-        52px
+        72px
+        72px
         0
         0;
 
@@ -289,7 +287,7 @@ img {
         4px;
 
     margin-top:
-        7px;
+        8px;
 
     border-radius:
         999px;
@@ -355,14 +353,14 @@ img {
 .mini-menu > header > a > img {
     width:
         min(
-            35vw,
-            148px
+            39vw,
+            164px
         );
 
     height:
         min(
-            35vw,
-            148px
+            39vw,
+            164px
         );
 
     border:
@@ -379,8 +377,8 @@ img {
         #ecebed;
 
     box-shadow:
-        0 8px 23px
-        rgba(25, 22, 30, 0.10);
+        0 9px 25px
+        rgba(25, 22, 30, 0.11);
 }
 
 
@@ -390,7 +388,7 @@ img {
 
 .mini-menu > header > h1 {
     margin:
-        11px
+        12px
         0
         0;
 
@@ -405,16 +403,16 @@ img {
         sans-serif;
 
     font-size:
-        1.5rem;
+        1.65rem;
 
     font-weight:
-        740;
+        750;
 
     line-height:
-        1.05;
+        1.04;
 
     letter-spacing:
-        -0.03em;
+        -0.035em;
 }
 
 
@@ -483,22 +481,22 @@ img {
         auto;
 
     height:
-        50px;
+        58px;
 
     min-width:
-        118px;
+        148px;
 
     min-height:
-        50px;
+        58px;
 
     margin:
-        13px
+        15px
         auto
-        14px;
+        15px;
 
     padding:
         0
-        25px;
+        32px;
 
     border:
         0;
@@ -513,8 +511,8 @@ img {
         #fff7ee;
 
     box-shadow:
-        0 8px 18px
-        rgba(225, 35, 70, 0.20);
+        0 10px 22px
+        rgba(225, 35, 70, 0.22);
 
     font-family:
         -apple-system,
@@ -524,13 +522,13 @@ img {
         sans-serif;
 
     font-size:
-        18px;
+        21px;
 
     font-weight:
         760;
 
     letter-spacing:
-        -0.025em;
+        -0.035em;
 
     line-height:
         1;
@@ -589,8 +587,8 @@ img {
         var(--margot-vermelho-escuro);
 
     box-shadow:
-        0 5px 13px
-        rgba(225, 35, 70, 0.18);
+        0 6px 15px
+        rgba(225, 35, 70, 0.19);
 }
 
 
@@ -617,7 +615,7 @@ img {
 
 /*
  * No perfil, profile.css continua a ter
- * as regras mais específicas para o Hey.
+ * regras mais específicas para o Hey.
  */
 .mini-menu.perfil-proprio #enviar-hey,
 .mini-menu.perfil-proprio .mini-menu-mensagem {
@@ -1512,11 +1510,6 @@ body.margot-a-navegar
     }
 
 
-    /*
-     * Mini-menu de uma pessoa.
-     * Em tablet mantém mais presença,
-     * mas deixa de ocupar a largura inteira.
-     */
     .mini-menu {
         left:
             calc(
@@ -1540,8 +1533,8 @@ body.margot-a-navegar
             );
 
         border-radius:
-            42px
-            42px
+            62px
+            62px
             0
             0;
     }
@@ -1555,10 +1548,36 @@ body.margot-a-navegar
 
     .mini-menu > header > a > img {
         width:
-            150px;
+            172px;
 
         height:
-            150px;
+            172px;
+    }
+
+
+    .mini-menu > header > h1 {
+        font-size:
+            1.78rem;
+    }
+
+
+    #enviar-hey,
+    #enviar-hey-perfil {
+        min-width:
+            158px;
+
+        height:
+            60px;
+
+        min-height:
+            60px;
+
+        padding:
+            0
+            34px;
+
+        font-size:
+            22px;
     }
 
 
