@@ -3,11 +3,7 @@
 {% block title %}{{ membro.nome }} | Margot{% endblock %}
 
 {% block styles %}
-<link
-    rel="stylesheet"
-    href="{{ doc_root }}estilos/profile.css?v=18"
-    data-margot-page-style
->
+<link rel="stylesheet" href="{{ doc_root }}estilos/profile.css?v=19" data-margot-page-style>
 {% endblock %}
 
 {% block content %}
@@ -15,242 +11,179 @@
 {% set total_fotos = fotos|length %}
 {% set total_slides = total_fotos > 0 ? total_fotos : 1 %}
 {% set perfil_proprio = membro.id == session.id %}
-{% set tem_bio = membro.bio|default('') %}
 
-<main
-    id="perfil"
-    class="{{ perfil_proprio ? 'perfil--proprio' : 'perfil--visitante' }}"
->
-    <div class="perfil-ambiente" aria-hidden="true">
-        <span class="perfil-ambiente-luz perfil-ambiente-luz--1"></span>
-        <span class="perfil-ambiente-luz perfil-ambiente-luz--2"></span>
+<main id="perfil" class="{{ perfil_proprio ? 'perfil--proprio' : 'perfil--visitante' }}">
+    <div class="perfil-bg" aria-hidden="true">
+        <span class="perfil-bg-orb perfil-bg-orb--1"></span>
+        <span class="perfil-bg-orb perfil-bg-orb--2"></span>
+        <span class="perfil-bg-orb perfil-bg-orb--3"></span>
     </div>
 
     <div class="perfil-shell">
 
-        {% if perfil_proprio %}
-            <a
-                href="{{ doc_root }}settings"
-                class="editar-perfil"
-                aria-label="Editar perfil"
-            >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M4 20h4l11-11a2.8 2.8 0 0 0-4-4L4 16v4Z"></path>
-                    <path d="m13.5 6.5 4 4"></path>
-                </svg>
-
-                <span>Editar</span>
-            </a>
-        {% endif %}
-
         <section class="perfil-hero">
 
-            <div class="perfil-visual">
-
-                <div
-                    class="perfil-bloco-cor"
-                    aria-hidden="true"
-                ></div>
-
-                <section
-                    id="perfil-galeria"
-                    class="perfil-galeria"
-                    aria-label="Fotografias de {{ membro.nome }}"
-                    tabindex="0"
-                >
-                    <div
-                        id="perfil-fotos"
-                        class="perfil-fotos"
+            <div class="perfil-hero-topo">
+                {% if perfil_proprio %}
+                    <a
+                        href="{{ doc_root }}settings"
+                        class="perfil-editar"
+                        aria-label="Editar perfil"
                     >
-                        {% if total_fotos > 0 %}
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M4 20h4l11-11a2.75 2.75 0 0 0-3.89-3.89L4 16v4Z"></path>
+                            <path d="m13.5 6.5 4 4"></path>
+                        </svg>
+                        <span>Editar</span>
+                    </a>
+                {% endif %}
+            </div>
 
-                            {% for foto in fotos %}
-                                <figure
-                                    id="perfil-foto-{{ loop.index0 }}"
-                                    class="perfil-slide"
-                                    data-indice="{{ loop.index0 }}"
-                                    aria-hidden="{{ loop.first ? 'false' : 'true' }}"
-                                >
-                                    <img
-                                        src="{{ doc_root }}imagens/fotos-perfil-originais/{{ foto.nome_arquivo }}"
-                                        data-fallback="{{ doc_root }}imagens/fotos-perfil/{{ foto.nome_arquivo }}"
-                                        data-default="{{ doc_root }}imagens/fotos-perfil/default.webp"
-                                        alt="Fotografia {{ loop.index }} de {{ membro.nome }}"
-                                        loading="{{ loop.first ? 'eager' : 'lazy' }}"
-                                        fetchpriority="{{ loop.first ? 'high' : 'auto' }}"
-                                        draggable="false"
-                                    >
-                                </figure>
-                            {% endfor %}
-
-                        {% else %}
-
+            <section
+                id="perfil-galeria"
+                class="perfil-galeria"
+                aria-label="Fotografias de {{ membro.nome }}"
+                tabindex="0"
+            >
+                <div id="perfil-fotos" class="perfil-fotos">
+                    {% if total_fotos > 0 %}
+                        {% for foto in fotos %}
                             <figure
-                                id="perfil-foto-0"
+                                id="perfil-foto-{{ loop.index0 }}"
                                 class="perfil-slide"
-                                data-indice="0"
-                                aria-hidden="false"
+                                data-indice="{{ loop.index0 }}"
+                                aria-hidden="{{ loop.first ? 'false' : 'true' }}"
                             >
                                 <img
-                                    src="{{ doc_root }}imagens/fotos-perfil/default.webp"
+                                    src="{{ doc_root }}imagens/fotos-perfil-originais/{{ foto.nome_arquivo }}"
+                                    data-fallback="{{ doc_root }}imagens/fotos-perfil/{{ foto.nome_arquivo }}"
                                     data-default="{{ doc_root }}imagens/fotos-perfil/default.webp"
-                                    alt="{{ membro.nome }} ainda não adicionou fotografias"
-                                    loading="eager"
-                                    fetchpriority="high"
+                                    alt="Fotografia {{ loop.index }} de {{ membro.nome }}"
+                                    loading="{{ loop.first ? 'eager' : 'lazy' }}"
+                                    fetchpriority="{{ loop.first ? 'high' : 'auto' }}"
                                     draggable="false"
                                 >
                             </figure>
-
-                        {% endif %}
-                    </div>
-
-                    <div
-                        class="perfil-expandir"
-                        aria-hidden="true"
-                    >
-                        <svg viewBox="0 0 24 24">
-                            <path d="M8 3H3v5"></path>
-                            <path d="m3 3 6 6"></path>
-
-                            <path d="M16 21h5v-5"></path>
-                            <path d="m21 21-6-6"></path>
-                        </svg>
-                    </div>
-
-                    {% if total_slides > 1 %}
-
-                        <div
-                            id="perfil-indicadores"
-                            class="perfil-indicadores"
-                            aria-label="Escolher fotografia"
+                        {% endfor %}
+                    {% else %}
+                        <figure
+                            id="perfil-foto-0"
+                            class="perfil-slide"
+                            data-indice="0"
+                            aria-hidden="false"
                         >
-                            {% for indice in 0..(total_slides - 1) %}
-                                <button
-                                    type="button"
-                                    class="{{ loop.first ? 'ativo' : '' }}"
-                                    data-indice="{{ indice }}"
-                                    aria-label="Ver fotografia {{ indice + 1 }} de {{ total_slides }}"
-                                    aria-current="{{ loop.first ? 'true' : 'false' }}"
-                                >
-                                    <span aria-hidden="true"></span>
-                                </button>
-                            {% endfor %}
-                        </div>
-
-                        <div
-                            class="perfil-contador"
-                            aria-hidden="true"
-                        >
-                            <span id="perfil-contador-atual">01</span>
-
-                            <span class="perfil-contador-linha"></span>
-
-                            <span>
-                                {{ total_slides < 10
-                                    ? '0' ~ total_slides
-                                    : total_slides
-                                }}
-                            </span>
-                        </div>
-
-                        <button
-                            type="button"
-                            id="perfil-anterior"
-                            class="perfil-navegacao perfil-anterior"
-                            aria-label="Fotografia anterior"
-                        >
-                            <svg viewBox="0 0 24 24" aria-hidden="true">
-                                <path d="M15 5l-7 7 7 7"></path>
-                            </svg>
-                        </button>
-
-                        <button
-                            type="button"
-                            id="perfil-seguinte"
-                            class="perfil-navegacao perfil-seguinte"
-                            aria-label="Fotografia seguinte"
-                        >
-                            <svg viewBox="0 0 24 24" aria-hidden="true">
-                                <path d="M9 5l7 7-7 7"></path>
-                            </svg>
-                        </button>
-
+                            <img
+                                src="{{ doc_root }}imagens/fotos-perfil/default.webp"
+                                data-default="{{ doc_root }}imagens/fotos-perfil/default.webp"
+                                alt="{{ membro.nome }} ainda não adicionou fotografias"
+                                loading="eager"
+                                fetchpriority="high"
+                                draggable="false"
+                            >
+                        </figure>
                     {% endif %}
-                </section>
-            </div>
-
-            <header class="perfil-identidade">
-
-                <div class="perfil-nome-area">
-                    <h1>
-                        {{ membro.nome }}
-                    </h1>
-
-                    <span class="perfil-idade">
-                        {{ idade }}
-                    </span>
                 </div>
 
-                <div
-                    class="perfil-identidade-detalhe"
-                    aria-hidden="true"
+                <button
+                    type="button"
+                    class="perfil-expandir"
+                    id="perfil-expandir"
+                    aria-label="Abrir fotografia em ecrã inteiro"
                 >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M8 3H3v5"></path>
+                        <path d="m3 3 6 6"></path>
+                        <path d="M16 21h5v-5"></path>
+                        <path d="m21 21-6-6"></path>
+                    </svg>
+                </button>
+
+                {% if total_slides > 1 %}
+                    <div
+                        id="perfil-indicadores"
+                        class="perfil-indicadores"
+                        aria-label="Escolher fotografia"
+                    >
+                        {% for indice in 0..(total_slides - 1) %}
+                            <button
+                                type="button"
+                                class="{{ loop.first ? 'ativo' : '' }}"
+                                data-indice="{{ indice }}"
+                                aria-label="Ver fotografia {{ indice + 1 }} de {{ total_slides }}"
+                                aria-current="{{ loop.first ? 'true' : 'false' }}"
+                            >
+                                <span></span>
+                            </button>
+                        {% endfor %}
+                    </div>
+
+                    <div class="perfil-contador" aria-hidden="true">
+                        <span id="perfil-contador-atual">01</span>
+                        <span class="perfil-contador-separador"></span>
+                        <span>{{ total_slides < 10 ? '0' ~ total_slides : total_slides }}</span>
+                    </div>
+
+                    <button
+                        type="button"
+                        id="perfil-anterior"
+                        class="perfil-navegacao perfil-anterior"
+                        aria-label="Fotografia anterior"
+                    >
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M15 5l-7 7 7 7"></path>
+                        </svg>
+                    </button>
+
+                    <button
+                        type="button"
+                        id="perfil-seguinte"
+                        class="perfil-navegacao perfil-seguinte"
+                        aria-label="Fotografia seguinte"
+                    >
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </button>
+                {% endif %}
+            </section>
+
+            <section class="perfil-identidade">
+                <div class="perfil-identidade-kicker">
                     <span></span>
+                    <small>Perfil</small>
                 </div>
 
-                {% if tem_bio %}
-                    <div class="perfil-bio">
-                        <span
-                            class="perfil-bio-aspas"
-                            aria-hidden="true"
-                        >
-                            “
-                        </span>
+                <div class="perfil-identidade-nome">
+                    <h1>{{ membro.nome }}</h1>
+                    <p>{{ idade }}</p>
+                </div>
+            </section>
 
-                        <p>
-                            {{ membro.bio }}
-                        </p>
-                    </div>
-                {% endif %}
-
-            </header>
+            {% if membro.bio|default('') %}
+                <section class="perfil-bio-card">
+                    <div class="perfil-bio-ornamento" aria-hidden="true"></div>
+                    <h2>Sobre</h2>
+                    <p>{{ membro.bio }}</p>
+                </section>
+            {% endif %}
         </section>
 
         {% if primeiro_gosto %}
-            <section
-                id="adicional"
-                class="perfil-interesses"
-                aria-labelledby="perfil-interesses-titulo"
-            >
-                <header class="perfil-interesses-cabecalho">
-                    <div>
-                        <h2 id="perfil-interesses-titulo">
-                            Interesses
-                        </h2>
-
-                        <span
-                            class="perfil-interesses-linha"
-                            aria-hidden="true"
-                        ></span>
+            <section class="perfil-interesses" id="adicional">
+                <header class="perfil-seccao-topo">
+                    <div class="perfil-seccao-titulo">
+                        <span class="perfil-seccao-ponto"></span>
+                        <h2>Interesses</h2>
                     </div>
+
+                    <p>O que define esta pessoa.</p>
                 </header>
 
                 <ul class="perfil-interesses-lista">
-
                     {% for gosto in membro.gostos %}
-                        <li
-                            class="perfil-interesse perfil-interesse--{{ (loop.index0 % 4) + 1 }}"
-                        >
-                            <span
-                                class="perfil-interesse-marca"
-                                aria-hidden="true"
-                            ></span>
-
+                        <li class="perfil-interesse perfil-interesse--{{ (loop.index0 % 6) + 1 }}">
                             <span class="perfil-interesse-numero">
-                                {{ loop.index < 10
-                                    ? '0' ~ loop.index
-                                    : loop.index
-                                }}
+                                {{ loop.index < 10 ? '0' ~ loop.index : loop.index }}
                             </span>
 
                             <span class="perfil-interesse-nome">
@@ -258,28 +191,21 @@
                             </span>
                         </li>
                     {% endfor %}
-
                 </ul>
             </section>
         {% endif %}
 
-        {% if not perfil_proprio %}
+        {% if membro.id != session.id %}
             <section class="perfil-acao">
                 <button
                     type="button"
                     class="perfil-hey"
                     id="enviar-hey-perfil"
                     data-destinatario-id="{{ membro.id }}"
-                    aria-describedby="perfil-hey-estado"
                 >
-                    <span class="perfil-hey-label">
-                        Hey
-                    </span>
+                    <span class="perfil-hey-texto">Hey</span>
 
-                    <span
-                        class="perfil-hey-seta"
-                        aria-hidden="true"
-                    >
+                    <span class="perfil-hey-icone" aria-hidden="true">
                         <svg viewBox="0 0 24 24">
                             <path d="M5 12h13"></path>
                             <path d="m13 6 6 6-6 6"></path>
@@ -306,10 +232,7 @@
         aria-modal="true"
         aria-label="Fotografia ampliada"
     >
-        <div
-            class="perfil-modal-fundo"
-            data-fechar-modal
-        ></div>
+        <div class="perfil-modal-fundo" data-fechar-modal></div>
 
         <button
             type="button"
@@ -324,7 +247,6 @@
         </button>
 
         <div class="perfil-modal-conteudo">
-
             <img
                 id="perfil-modal-imagem"
                 class="perfil-modal-imagem"
@@ -334,7 +256,6 @@
             >
 
             {% if total_slides > 1 %}
-
                 <button
                     type="button"
                     id="perfil-modal-anterior"
@@ -357,26 +278,12 @@
                     </svg>
                 </button>
 
-                <div
-                    class="perfil-modal-contador"
-                    aria-hidden="true"
-                >
-                    <span id="perfil-modal-contador-atual">
-                        01
-                    </span>
-
+                <div class="perfil-modal-contador" aria-hidden="true">
+                    <span id="perfil-modal-contador-atual">01</span>
                     <span>/</span>
-
-                    <span>
-                        {{ total_slides < 10
-                            ? '0' ~ total_slides
-                            : total_slides
-                        }}
-                    </span>
+                    <span>{{ total_slides < 10 ? '0' ~ total_slides : total_slides }}</span>
                 </div>
-
             {% endif %}
-
         </div>
     </div>
 </main>
@@ -384,11 +291,10 @@
 <script>
 window.membroId = {{ session.id|json_encode|raw }};
 window.perfilMembroId = {{ membro.id|json_encode|raw }};
-
 window.webSocketUrl = window.location.protocol === 'https:'
     ? 'wss://' + window.location.host + '/ws/'
     : 'ws://' + window.location.hostname + ':8080';
 </script>
 
-<script src="{{ doc_root }}js/profile.js?v=10"></script>
+<script src="{{ doc_root }}js/profile.js?v=11"></script>
 {% endblock %}
