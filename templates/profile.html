@@ -5,7 +5,7 @@
 {% block styles %}
 <link
     rel="stylesheet"
-    href="{{ doc_root }}estilos/profile.css?v=41"
+    href="{{ doc_root }}estilos/profile.css?v=42"
     data-margot-page-style
 >
 {% endblock %}
@@ -298,6 +298,7 @@
                     </span>
 
                     {% if not perfil_proprio %}
+
                         <button
                             type="button"
                             class="perfil-hey"
@@ -316,6 +317,20 @@
                             aria-live="polite"
                             aria-atomic="true"
                         ></p>
+
+                    {% else %}
+
+                        <button
+                            type="button"
+                            class="perfil-hey perfil-hey--preview"
+                            tabindex="-1"
+                            aria-hidden="true"
+                        >
+                            <span class="perfil-hey-label">
+                                Hey
+                            </span>
+                        </button>
+
                     {% endif %}
 
                 </div>
@@ -428,27 +443,12 @@
         aria-label="Fotografia ampliada"
         hidden
     >
+        <div class="perfil-lightbox-fundo"></div>
+
         <div
-            class="perfil-lightbox-fundo"
-            data-fechar-lightbox
-        ></div>
-
-        <button
-            type="button"
-            id="perfil-lightbox-fechar"
-            class="perfil-lightbox-fechar"
-            aria-label="Fechar fotografia"
+            id="perfil-lightbox-stage"
+            class="perfil-lightbox-stage"
         >
-            <svg
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-            >
-                <path d="M6 6l12 12"></path>
-                <path d="M18 6 6 18"></path>
-            </svg>
-        </button>
-
-        <div class="perfil-lightbox-stage">
 
             <div
                 id="perfil-lightbox-media"
@@ -461,6 +461,11 @@
                     alt=""
                     draggable="false"
                 >
+
+                <span
+                    class="perfil-lightbox-moldura"
+                    aria-hidden="true"
+                ></span>
             </div>
 
             <span
@@ -536,6 +541,22 @@
             {% endif %}
 
         </div>
+
+        <button
+            type="button"
+            id="perfil-lightbox-fechar"
+            class="perfil-lightbox-fechar"
+            aria-label="Fechar fotografia"
+        >
+            <svg
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+            >
+                <path d="M6 6l12 12"></path>
+                <path d="M18 6 6 18"></path>
+            </svg>
+        </button>
+
     </div>
 </main>
 
@@ -548,5 +569,5 @@ window.webSocketUrl = window.location.protocol === 'https:'
     : 'ws://' + window.location.hostname + ':8080';
 </script>
 
-<script src="{{ doc_root }}js/profile.js?v=41"></script>
+<script src="{{ doc_root }}js/profile.js?v=42"></script>
 {% endblock %}

@@ -288,10 +288,6 @@ body.perfil-modal-aberta {
 }
 
 
-/* =========================================================
-   MARCA
-   ========================================================= */
-
 .perfil-marca-abstrata {
     width: 37px;
     height: 29px;
@@ -416,10 +412,6 @@ body.perfil-modal-aberta {
 }
 
 
-/* =========================================================
-   FOTO
-   ========================================================= */
-
 .perfil-foto-area {
     position: relative;
 
@@ -530,7 +522,8 @@ body.perfil-modal-aberta {
 
     outline: none;
 
-    box-shadow: var(--perfil-sombra-forte);
+    box-shadow:
+        var(--perfil-sombra-forte);
 
     border-radius: 0 !important;
 
@@ -540,7 +533,8 @@ body.perfil-modal-aberta {
     clip-path:
         url(#perfilIslandClip);
 
-    transform-origin: 50% 50%;
+    transform-origin:
+        50% 50%;
 
     animation:
         perfil-ilha-flutuar
@@ -692,7 +686,8 @@ body.perfil-modal-aberta {
     top: 18px;
     left: 50%;
 
-    transform: translateX(-50%);
+    transform:
+        translateX(-50%);
 
     display: flex;
     align-items: center;
@@ -832,7 +827,7 @@ body.perfil-modal-aberta {
 
 
 /* =========================================================
-   SETAS GALERIA
+   SETAS
    ========================================================= */
 
 .perfil-nav {
@@ -937,7 +932,8 @@ body.perfil-modal-aberta {
     -webkit-backdrop-filter: blur(21px);
     backdrop-filter: blur(21px);
 
-    box-shadow: var(--perfil-sombra);
+    box-shadow:
+        var(--perfil-sombra);
 }
 
 
@@ -963,7 +959,8 @@ body.perfil-modal-aberta {
             rgba(207, 196, 239, 0.72)
         );
 
-    transform: rotate(10deg);
+    transform:
+        rotate(10deg);
 
     pointer-events: none;
 }
@@ -977,7 +974,8 @@ body.perfil-modal-aberta {
 
     margin: 0;
 
-    color: var(--perfil-preto);
+    color:
+        var(--perfil-preto);
 
     font-family:
         Georgia,
@@ -1002,7 +1000,7 @@ body.perfil-modal-aberta {
 
 
 /* =========================================================
-   RODAPÉ IDENTIDADE
+   IDADE + HEY
    ========================================================= */
 
 .perfil-identidade-rodape {
@@ -1044,7 +1042,7 @@ body.perfil-modal-aberta {
 
 
 /* =========================================================
-   HEY — DENTRO DO CARTÃO
+   HEY
    ========================================================= */
 
 .perfil-hey {
@@ -1065,7 +1063,8 @@ body.perfil-modal-aberta {
 
     color: #ffffff;
 
-    background: var(--perfil-preto);
+    background:
+        var(--perfil-preto);
 
     box-shadow:
         0 9px 22px rgba(17, 16, 21, 0.15);
@@ -1088,17 +1087,20 @@ body.perfil-modal-aberta {
 
 
 .perfil-hey:active:not(:disabled) {
-    transform: scale(0.95);
-}
-
-
-.perfil-hey:disabled {
-    opacity: 0.72;
+    transform:
+        scale(0.95);
 }
 
 
 .perfil-hey.enviado {
     background: #28815c;
+}
+
+
+.perfil-hey--preview {
+    pointer-events: none;
+
+    opacity: 1;
 }
 
 
@@ -1108,7 +1110,8 @@ body.perfil-modal-aberta {
 
     line-height: 1;
 
-    letter-spacing: -0.025em;
+    letter-spacing:
+        -0.025em;
 }
 
 
@@ -1164,21 +1167,24 @@ body.perfil-modal-aberta {
 .perfil-assinatura span:nth-child(1) {
     width: 23px;
 
-    background: var(--perfil-azul);
+    background:
+        var(--perfil-azul);
 }
 
 
 .perfil-assinatura span:nth-child(2) {
     width: 11px;
 
-    background: var(--perfil-roxo);
+    background:
+        var(--perfil-roxo);
 }
 
 
 .perfil-assinatura span:nth-child(3) {
     width: 7px;
 
-    background: var(--perfil-vermelho);
+    background:
+        var(--perfil-vermelho);
 }
 
 
@@ -1203,10 +1209,14 @@ body.perfil-modal-aberta {
     background:
         rgba(255, 255, 255, 0.76);
 
-    -webkit-backdrop-filter: blur(18px);
-    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter:
+        blur(18px);
 
-    box-shadow: var(--perfil-sombra);
+    backdrop-filter:
+        blur(18px);
+
+    box-shadow:
+        var(--perfil-sombra);
 }
 
 
@@ -1256,12 +1266,14 @@ body.perfil-modal-aberta {
 
 
 .perfil-seccao-icone--roxo {
-    background: var(--perfil-roxo-suave);
+    background:
+        var(--perfil-roxo-suave);
 }
 
 
 .perfil-seccao-icone--amarelo {
-    background: var(--perfil-amarelo-suave);
+    background:
+        var(--perfil-amarelo-suave);
 }
 
 
@@ -1271,7 +1283,8 @@ body.perfil-modal-aberta {
 
     fill: none;
 
-    stroke: var(--perfil-preto);
+    stroke:
+        var(--perfil-preto);
 
     stroke-width: 1.75;
     stroke-linecap: round;
@@ -1282,7 +1295,8 @@ body.perfil-modal-aberta {
 .perfil-seccao h2 {
     margin: 0;
 
-    color: var(--perfil-preto);
+    color:
+        var(--perfil-preto);
 
     font-family:
         Georgia,
@@ -1294,7 +1308,8 @@ body.perfil-modal-aberta {
 
     line-height: 1;
 
-    letter-spacing: -0.03em;
+    letter-spacing:
+        -0.03em;
 }
 
 
@@ -1318,7 +1333,8 @@ body.perfil-modal-aberta {
 
     line-height: 1.55;
 
-    letter-spacing: -0.018em;
+    letter-spacing:
+        -0.018em;
 
     white-space: pre-line;
 
@@ -1490,9 +1506,11 @@ body.perfil-modal-aberta {
 
     line-height: 1;
 
-    letter-spacing: 0.07em;
+    letter-spacing:
+        0.07em;
 
-    font-variant-numeric: tabular-nums;
+    font-variant-numeric:
+        tabular-nums;
 }
 
 
@@ -1509,9 +1527,11 @@ body.perfil-modal-aberta {
 
     line-height: 1.22;
 
-    letter-spacing: -0.018em;
+    letter-spacing:
+        -0.018em;
 
-    overflow-wrap: anywhere;
+    overflow-wrap:
+        anywhere;
 }
 
 
@@ -1532,8 +1552,8 @@ body.perfil-modal-aberta {
     pointer-events: none;
 
     transition:
-        opacity 260ms ease,
-        visibility 260ms ease;
+        opacity 300ms ease,
+        visibility 300ms ease;
 }
 
 
@@ -1555,10 +1575,13 @@ body.perfil-modal-aberta {
     inset: 0;
 
     background:
-        rgba(12, 11, 16, 0.88);
+        rgba(12, 11, 16, 0.90);
 
-    -webkit-backdrop-filter: blur(20px);
-    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter:
+        blur(20px);
+
+    backdrop-filter:
+        blur(20px);
 }
 
 
@@ -1574,12 +1597,18 @@ body.perfil-modal-aberta {
     padding:
         max(
             68px,
-            calc(env(safe-area-inset-top, 0px) + 52px)
+            calc(
+                env(safe-area-inset-top, 0px) +
+                50px
+            )
         )
-        13px
+        18px
         max(
-            38px,
-            calc(env(safe-area-inset-bottom, 0px) + 28px)
+            45px,
+            calc(
+                env(safe-area-inset-bottom, 0px) +
+                30px
+            )
         );
 
     display: flex;
@@ -1587,41 +1616,39 @@ body.perfil-modal-aberta {
     justify-content: center;
 
     overflow: hidden;
+
+    cursor: zoom-out;
 }
 
 
 /* =========================================================
-   MEDIA
+   FOTO ABERTA
    ========================================================= */
 
 .perfil-lightbox-media {
     position: relative;
-    z-index: 3;
+    z-index: 4;
 
-    width:
-        min(
-            94vw,
-            780px
-        );
-
-    height:
-        min(
-            80vh,
-            920px
-        );
+    width: min(92vw, 880px);
+    height: min(80dvh, 900px);
 
     overflow: hidden;
 
     background: #111115;
 
-    box-shadow:
-        0 40px 105px rgba(0, 0, 0, 0.38);
+    border-radius: 0 !important;
 
     -webkit-clip-path:
         url(#perfilLightboxClip);
 
     clip-path:
         url(#perfilLightboxClip);
+
+    box-shadow:
+        0
+        40px
+        110px
+        rgba(0, 0, 0, 0.46);
 
     transform:
         translate(
@@ -1635,22 +1662,20 @@ body.perfil-modal-aberta {
 
     transform-origin: center;
 
-    filter:
-        saturate(0.90)
-        brightness(0.95);
-
     will-change:
-        transform,
-        filter;
+        transform;
 
     transition:
         transform
-        760ms
-        cubic-bezier(0.16, 1, 0.30, 1),
+        790ms
+        cubic-bezier(
+            0.16,
+            1,
+            0.30,
+            1
+        );
 
-        filter
-        500ms
-        ease;
+    cursor: default;
 }
 
 
@@ -1658,38 +1683,47 @@ body.perfil-modal-aberta {
 .perfil-lightbox-media {
     transform:
         translate(0, 0)
-        scale(1, 1);
-
-    filter:
-        saturate(1)
-        brightness(1);
+        scale(1);
 }
 
 
 /* =========================================================
-   IMAGEM LIGHTBOX
+   IMAGEM COMPLETA
    ========================================================= */
 
 .perfil-lightbox-imagem {
+    position: relative;
+    z-index: 1;
+
     display: block;
 
     width: 100%;
     height: 100%;
 
-    object-fit: cover;
+    object-fit: contain;
     object-position: center;
+
+    background: #111115;
+
+    border: 0;
+    border-radius: 0 !important;
 
     user-select: none;
 
     -webkit-user-select: none;
     -webkit-user-drag: none;
 
-    transform: scale(1.045);
+    transform: scale(1.025);
 
     transition:
         transform
-        900ms
-        cubic-bezier(0.16, 1, 0.30, 1);
+        850ms
+        cubic-bezier(
+            0.16,
+            1,
+            0.30,
+            1
+        );
 }
 
 
@@ -1700,7 +1734,39 @@ body.perfil-modal-aberta {
 
 
 /* =========================================================
-   TINTA
+   MOLDURA RETA
+   ========================================================= */
+
+.perfil-lightbox-moldura {
+    position: absolute;
+    z-index: 2;
+
+    inset: 0;
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.24);
+
+    pointer-events: none;
+
+    opacity: 0;
+
+    transition:
+        opacity
+        300ms
+        ease
+        480ms;
+}
+
+
+.perfil-lightbox.is-open
+.perfil-lightbox-moldura {
+    opacity: 1;
+}
+
+
+/* =========================================================
+   TINTA DA TRANSIÇÃO
    ========================================================= */
 
 .perfil-tinta {
@@ -1713,14 +1779,19 @@ body.perfil-modal-aberta {
 
     border-radius: 50%;
 
-    transform:
-        scale(0.02);
+    transform: scale(0.02);
+
+    pointer-events: none;
 
     transition:
         transform
-        800ms
-        cubic-bezier(0.16, 1, 0.30, 1),
-
+        780ms
+        cubic-bezier(
+            0.16,
+            1,
+            0.30,
+            1
+        ),
         opacity
         260ms
         ease;
@@ -1741,16 +1812,16 @@ body.perfil-modal-aberta {
     height: 245px;
 
     background:
-        rgba(244, 220, 146, 0.12);
+        rgba(244, 220, 146, 0.11);
 
-    transform-origin: 70% 60%;
+    transform-origin:
+        70% 60%;
 }
 
 
 .perfil-lightbox.is-open
 .perfil-tinta--1 {
-    transform:
-        scale(1.25);
+    transform: scale(1.25);
 }
 
 
@@ -1762,16 +1833,16 @@ body.perfil-modal-aberta {
     height: 300px;
 
     background:
-        rgba(207, 196, 239, 0.13);
+        rgba(207, 196, 239, 0.12);
 
-    transform-origin: 15% 55%;
+    transform-origin:
+        15% 55%;
 }
 
 
 .perfil-lightbox.is-open
 .perfil-tinta--2 {
-    transform:
-        scale(1.18);
+    transform: scale(1.18);
 }
 
 
@@ -1783,16 +1854,16 @@ body.perfil-modal-aberta {
     height: 245px;
 
     background:
-        rgba(143, 178, 232, 0.10);
+        rgba(143, 178, 232, 0.09);
 
-    transform-origin: 75% 15%;
+    transform-origin:
+        75% 15%;
 }
 
 
 .perfil-lightbox.is-open
 .perfil-tinta--3 {
-    transform:
-        scale(1.20);
+    transform: scale(1.20);
 }
 
 
@@ -1804,26 +1875,26 @@ body.perfil-modal-aberta {
     height: 230px;
 
     background:
-        rgba(239, 199, 190, 0.12);
+        rgba(239, 199, 190, 0.11);
 
-    transform-origin: 30% 20%;
+    transform-origin:
+        30% 20%;
 }
 
 
 .perfil-lightbox.is-open
 .perfil-tinta--4 {
-    transform:
-        scale(1.15);
+    transform: scale(1.15);
 }
 
 
 /* =========================================================
-   FECHAR
+   X
    ========================================================= */
 
 .perfil-lightbox-fechar {
     position: absolute;
-    z-index: 8;
+    z-index: 10;
 
     top:
         max(
@@ -1840,7 +1911,8 @@ body.perfil-modal-aberta {
     padding: 0;
 
     border:
-        1px solid rgba(255, 255, 255, 0.14);
+        1px solid
+        rgba(255, 255, 255, 0.14);
 
     border-radius: 50%;
 
@@ -1849,8 +1921,11 @@ body.perfil-modal-aberta {
     background:
         rgba(255, 255, 255, 0.09);
 
-    -webkit-backdrop-filter: blur(13px);
-    backdrop-filter: blur(13px);
+    -webkit-backdrop-filter:
+        blur(13px);
+
+    backdrop-filter:
+        blur(13px);
 
     display: grid;
     place-items: center;
@@ -1865,7 +1940,8 @@ body.perfil-modal-aberta {
 
     fill: none;
 
-    stroke: currentColor;
+    stroke:
+        currentColor;
 
     stroke-width: 1.9;
     stroke-linecap: round;
@@ -1874,12 +1950,12 @@ body.perfil-modal-aberta {
 
 
 /* =========================================================
-   LIGHTBOX SETAS
+   SETAS LIGHTBOX
    ========================================================= */
 
 .perfil-lightbox-nav {
     position: absolute;
-    z-index: 8;
+    z-index: 9;
 
     top: 50%;
 
@@ -1890,7 +1966,8 @@ body.perfil-modal-aberta {
     padding: 0;
 
     border:
-        1px solid rgba(255, 255, 255, 0.14);
+        1px solid
+        rgba(255, 255, 255, 0.14);
 
     border-radius: 50%;
 
@@ -1899,10 +1976,14 @@ body.perfil-modal-aberta {
     background:
         rgba(255, 255, 255, 0.09);
 
-    -webkit-backdrop-filter: blur(13px);
-    backdrop-filter: blur(13px);
+    -webkit-backdrop-filter:
+        blur(13px);
 
-    transform: translateY(-50%);
+    backdrop-filter:
+        blur(13px);
+
+    transform:
+        translateY(-50%);
 
     display: grid;
     place-items: center;
@@ -1927,7 +2008,8 @@ body.perfil-modal-aberta {
 
     fill: none;
 
-    stroke: currentColor;
+    stroke:
+        currentColor;
 
     stroke-width: 2;
     stroke-linecap: round;
@@ -1946,7 +2028,7 @@ body.perfil-modal-aberta {
 
 .perfil-lightbox-contador {
     position: absolute;
-    z-index: 8;
+    z-index: 9;
 
     left: 50%;
 
@@ -1961,7 +2043,8 @@ body.perfil-modal-aberta {
     padding: 0 12px;
 
     border:
-        1px solid rgba(255, 255, 255, 0.14);
+        1px solid
+        rgba(255, 255, 255, 0.14);
 
     border-radius: 999px;
 
@@ -1970,15 +2053,20 @@ body.perfil-modal-aberta {
     background:
         rgba(255, 255, 255, 0.09);
 
-    -webkit-backdrop-filter: blur(13px);
-    backdrop-filter: blur(13px);
+    -webkit-backdrop-filter:
+        blur(13px);
 
-    transform: translateX(-50%);
+    backdrop-filter:
+        blur(13px);
+
+    transform:
+        translateX(-50%);
 
     font-size: 10px;
     font-weight: 730;
 
-    font-variant-numeric: tabular-nums;
+    font-variant-numeric:
+        tabular-nums;
 
     display: flex;
     align-items: center;
@@ -1988,7 +2076,7 @@ body.perfil-modal-aberta {
 
 
 /* =========================================================
-   PEQUENOS
+   MOBILE PEQUENO
    ========================================================= */
 
 @media (max-width: 370px) {
@@ -2035,8 +2123,7 @@ body.perfil-modal-aberta {
         height: 40px;
 
         padding:
-            0
-            16px;
+            0 16px;
     }
 
 
@@ -2066,6 +2153,12 @@ body.perfil-modal-aberta {
 
     .perfil-gosto-nome {
         font-size: 13px;
+    }
+
+
+    .perfil-lightbox-stage {
+        padding-right: 10px;
+        padding-left: 10px;
     }
 
 }
@@ -2127,11 +2220,6 @@ body.perfil-modal-aberta {
                 8vw,
                 82px
             );
-    }
-
-
-    .perfil-identidade-rodape {
-        margin-top: 18px;
     }
 
 
@@ -2205,12 +2293,12 @@ body.perfil-modal-aberta {
     .perfil-lightbox,
     .perfil-lightbox-media,
     .perfil-lightbox-imagem,
+    .perfil-lightbox-moldura,
     .perfil-tinta,
     .perfil-editar,
     .perfil-hey,
     .perfil-indicadores button span {
         animation: none !important;
-
         transition: none !important;
     }
 
