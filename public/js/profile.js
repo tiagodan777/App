@@ -288,14 +288,6 @@
         );
     }
 
-    /*
-     * O arrasto manual só é necessário
-     * quando se usa rato.
-     *
-     * No toque, o scroll nativo é mais
-     * fluido no iOS e no Android.
-     */
-
     faixa.addEventListener(
         'pointerdown',
         function (evento) {
@@ -538,7 +530,7 @@
     var textoInicial =
         etiqueta
             ? etiqueta.textContent
-            : 'Enviar Hey';
+            : 'Hey';
 
     function detalheCorresponde(evento) {
         var detalhe =
