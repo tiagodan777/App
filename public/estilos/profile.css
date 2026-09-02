@@ -2,7 +2,7 @@
 
 
 :root {
-    --perfil-fundo: #f8f6f2;
+    --perfil-fundo: #f7f5f0;
 
     --perfil-preto: #17171b;
     --perfil-texto: #303038;
@@ -12,7 +12,7 @@
         rgba(24, 22, 28, 0.075);
 
     --perfil-amarelo: #f4dc92;
-    --perfil-amarelo-suave: #fff1c8;
+    --perfil-amarelo-suave: #eeeadd;
 
     --perfil-rosa: #efc7be;
     --perfil-rosa-suave: #fae4de;
