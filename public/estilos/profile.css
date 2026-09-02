@@ -2,9 +2,8 @@
 
 
 /* =========================================================
-   PERFIL — MARGOT
+   BASE
    ========================================================= */
-
 
 html:has(#perfil),
 body:has(#perfil) {
@@ -17,8 +16,9 @@ body:has(#perfil) {
 
     overflow: hidden !important;
 
-    background: #f8f8fa;
+    background: #f7f7fa;
 }
+
 
 body:has(#perfil) {
     position: relative !important;
@@ -34,15 +34,15 @@ body:has(#perfil) {
 
 
 #perfil {
-    --perfil-vermelho: #e12346;
-    --perfil-azul: #78b6ff;
-    --perfil-roxo: #9676ff;
-    --perfil-verde: #7ddac3;
+    --perfil-preto: #141416;
+    --perfil-texto: #29292e;
+    --perfil-cinza: #87878f;
+    --perfil-linha: rgba(20, 20, 22, 0.09);
 
-    --perfil-preto: #18181c;
-    --perfil-texto: #29292f;
-    --perfil-cinza: #85858e;
-    --perfil-linha: rgba(24, 24, 28, 0.09);
+    --perfil-vermelho: #e12346;
+    --perfil-roxo: #7866ff;
+    --perfil-azul: #69aef7;
+    --perfil-verde: #69d1b2;
 
     position: relative;
 
@@ -64,7 +64,7 @@ body:has(#perfil) {
     background:
         linear-gradient(
             180deg,
-            #fafafd 0%,
+            #fbfbfd 0%,
             #f6f6f9 100%
         );
 
@@ -82,7 +82,6 @@ body:has(#perfil) {
 /* =========================================================
    ACESSIBILIDADE
    ========================================================= */
-
 
 .sr-only {
     position: absolute !important;
@@ -104,11 +103,10 @@ body:has(#perfil) {
 
 
 /* =========================================================
-   FUNDO
+   AMBIENTE
    ========================================================= */
 
-
-.perfil-fundo {
+.perfil-ambiente {
     position: absolute;
     z-index: 0;
 
@@ -120,99 +118,69 @@ body:has(#perfil) {
 }
 
 
-.perfil-fundo-pontos {
+.perfil-ambiente-ponto {
     position: absolute;
-
-    background-image:
-        radial-gradient(
-            circle,
-            rgba(122, 146, 255, 0.65) 1px,
-            transparent 1.3px
-        );
-
-    background-size:
-        16px
-        16px;
-
-    opacity: 0.55;
-}
-
-
-.perfil-fundo-pontos--a {
-    top: 50px;
-    right: -65px;
-
-    width: 270px;
-    height: 310px;
-
-    transform: rotate(-6deg);
-
-    -webkit-mask-image:
-        radial-gradient(
-            ellipse at center,
-            #000 0%,
-            rgba(0, 0, 0, 0.8) 38%,
-            transparent 76%
-        );
-
-    mask-image:
-        radial-gradient(
-            ellipse at center,
-            #000 0%,
-            rgba(0, 0, 0, 0.8) 38%,
-            transparent 76%
-        );
-}
-
-
-.perfil-fundo-pontos--b {
-    top: 650px;
-    left: -100px;
-
-    width: 280px;
-    height: 320px;
-
-    opacity: 0.28;
-
-    -webkit-mask-image:
-        radial-gradient(
-            ellipse at center,
-            #000,
-            transparent 72%
-        );
-
-    mask-image:
-        radial-gradient(
-            ellipse at center,
-            #000,
-            transparent 72%
-        );
-}
-
-
-.perfil-fundo-orbita {
-    position: absolute;
-
-    border:
-        1px solid
-        rgba(116, 96, 255, 0.07);
 
     border-radius: 50%;
 }
 
 
-.perfil-fundo-orbita--a {
-    top: 195px;
-    right: -105px;
+.perfil-ambiente-ponto--1 {
+    top: 115px;
+    left: 18px;
 
-    width: 240px;
-    height: 240px;
+    width: 6px;
+    height: 6px;
+
+    background: var(--perfil-vermelho);
 }
 
 
-.perfil-fundo-orbita--b {
-    top: 225px;
-    right: -76px;
+.perfil-ambiente-ponto--2 {
+    top: 340px;
+    right: 17px;
+
+    width: 5px;
+    height: 5px;
+
+    background: var(--perfil-roxo);
+}
+
+
+.perfil-ambiente-ponto--3 {
+    top: 660px;
+    left: 32px;
+
+    width: 4px;
+    height: 4px;
+
+    background: var(--perfil-azul);
+}
+
+
+.perfil-ambiente-linha {
+    position: absolute;
+
+    border:
+        1px solid
+        rgba(111, 102, 255, 0.05);
+
+    border-radius: 50%;
+}
+
+
+.perfil-ambiente-linha--1 {
+    top: 185px;
+    right: -110px;
+
+    width: 210px;
+    height: 210px;
+}
+
+
+.perfil-ambiente-linha--2 {
+    top: 720px;
+    left: -90px;
 
     width: 180px;
     height: 180px;
@@ -220,114 +188,27 @@ body:has(#perfil) {
 
 
 /* =========================================================
-   TOPO
+   SHELL
    ========================================================= */
 
-
-.perfil-topo {
+.perfil-shell {
     position: relative;
-    z-index: 20;
+    z-index: 2;
 
-    min-height:
-        calc(
-            62px +
-            env(safe-area-inset-top, 0px)
-        );
+    width: 100%;
 
     padding:
         max(
-            15px,
+            18px,
             env(safe-area-inset-top, 0px)
         )
-        18px
-        10px;
-
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-
-    gap: 16px;
-}
-
-
-.perfil-topo-esquerda {
-    min-width: 0;
-
-    display: flex;
-    align-items: center;
-
-    gap: 9px;
-}
-
-
-.perfil-topo-nome {
-    color: var(--perfil-preto);
-
-    font-size: 14px;
-    font-weight: 760;
-
-    line-height: 1;
-
-    letter-spacing: -0.025em;
-}
-
-
-/* =========================================================
-   PEQUENO SÍMBOLO MARGOT
-   ========================================================= */
-
-
-.perfil-simbolo {
-    position: relative;
-
-    width: 27px;
-    height: 27px;
-
-    display: block;
-
-    flex: 0 0 27px;
-}
-
-
-.perfil-simbolo i {
-    position: absolute;
-
-    width: 5px;
-    height: 5px;
-
-    border-radius: 50%;
-}
-
-
-.perfil-simbolo i:nth-child(1) {
-    top: 2px;
-    left: 11px;
-
-    background: var(--perfil-roxo);
-}
-
-
-.perfil-simbolo i:nth-child(2) {
-    top: 11px;
-    left: 2px;
-
-    background: var(--perfil-azul);
-}
-
-
-.perfil-simbolo i:nth-child(3) {
-    top: 11px;
-    left: 11px;
-
-    background: var(--perfil-vermelho);
-}
-
-
-.perfil-simbolo i:nth-child(4) {
-    top: 20px;
-    left: 11px;
-
-    background: var(--perfil-verde);
+        14px
+        calc(
+            var(--menu-principal-height, 58px) +
+            var(--menu-principal-bottom, 18px) +
+            env(safe-area-inset-bottom, 0px) +
+            70px
+        );
 }
 
 
@@ -335,43 +216,48 @@ body:has(#perfil) {
    EDITAR
    ========================================================= */
 
-
 .editar-perfil {
-    min-height: 38px;
+    position: absolute;
+    z-index: 20;
 
-    padding:
-        0
-        13px;
+    top:
+        max(
+            18px,
+            env(safe-area-inset-top, 0px)
+        );
+
+    right: 19px;
+
+    width: 42px;
+    height: 42px;
+
+    margin: 0;
+    padding: 0;
 
     border:
         1px solid
-        rgba(24, 24, 28, 0.09);
+        rgba(20, 20, 22, 0.08);
 
-    border-radius: 999px;
+    border-radius: 50%;
 
     color: var(--perfil-preto);
 
     background:
-        rgba(255, 255, 255, 0.72);
+        rgba(255, 255, 255, 0.9);
 
-    -webkit-backdrop-filter:
-        blur(12px);
+    box-shadow:
+        0
+        8px
+        28px
+        rgba(20, 20, 25, 0.07);
 
-    backdrop-filter:
-        blur(12px);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
 
     text-decoration: none;
 
-    font-size: 12px;
-    font-weight: 720;
-
-    line-height: 1;
-
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-
-    gap: 7px;
+    display: grid;
+    place-items: center;
 
     -webkit-tap-highlight-color: transparent;
 
@@ -382,8 +268,8 @@ body:has(#perfil) {
 
 
 .editar-perfil svg {
-    width: 15px;
-    height: 15px;
+    width: 18px;
+    height: 18px;
 
     fill: none;
 
@@ -395,43 +281,151 @@ body:has(#perfil) {
 
 
 .editar-perfil:active {
-    transform:
-        scale(0.97);
+    transform: scale(0.94);
 }
 
 
 /* =========================================================
-   LAYOUT
+   POSTER
    ========================================================= */
 
-
-.perfil-layout {
+.perfil-poster {
     position: relative;
-    z-index: 2;
 
-    width: 100%;
+    display: grid;
+
+    grid-template-columns:
+        73px
+        minmax(0, 1fr);
+
+    align-items: stretch;
+
+    gap: 8px;
+}
+
+
+/* =========================================================
+   COLUNA DE IDENTIDADE
+   ========================================================= */
+
+.perfil-coluna-identidade {
+    position: relative;
+
+    min-height: 0;
 
     padding:
-        2px
-        14px
-        calc(
-            var(--menu-principal-height, 58px) +
-            var(--menu-principal-bottom, 18px) +
-            env(safe-area-inset-bottom, 0px) +
-            34px
-        );
+        6px
+        0
+        4px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 
-/* =========================================================
-   APRESENTAÇÃO
-   ========================================================= */
+.perfil-numero {
+    width: 42px;
+    height: 42px;
+
+    margin-bottom: 15px;
+
+    border:
+        1px solid
+        rgba(20, 20, 22, 0.09);
+
+    border-radius: 50%;
+
+    background: #ffffff;
+
+    display: grid;
+    place-items: center;
+
+    box-shadow:
+        0
+        5px
+        16px
+        rgba(20, 20, 25, 0.04);
+}
 
 
-.perfil-apresentacao {
-    position: relative;
+.perfil-numero span {
+    color: var(--perfil-preto);
+
+    font-size: 12px;
+    font-weight: 760;
+
+    line-height: 1;
+}
+
+
+.perfil-coluna-identidade h1 {
+    margin:
+        0
+        auto;
 
     min-width: 0;
+
+    color: var(--perfil-preto);
+
+    font-size:
+        clamp(
+            29px,
+            8.6vw,
+            42px
+        );
+
+    font-weight: 810;
+
+    line-height: 0.91;
+
+    letter-spacing: -0.055em;
+
+    writing-mode: vertical-rl;
+
+    transform: rotate(180deg);
+
+    overflow-wrap: normal;
+
+    white-space: normal;
+}
+
+
+.perfil-assinatura {
+    margin-top: auto;
+    padding-top: 15px;
+
+    display: flex;
+    flex-direction: column;
+
+    align-items: center;
+
+    gap: 5px;
+}
+
+
+.perfil-assinatura span {
+    display: block;
+
+    width: 4px;
+    height: 4px;
+
+    border-radius: 50%;
+}
+
+
+.perfil-assinatura span:nth-child(1) {
+    background: var(--perfil-roxo);
+}
+
+
+.perfil-assinatura span:nth-child(2) {
+    background: var(--perfil-vermelho);
+}
+
+
+.perfil-assinatura span:nth-child(3) {
+    background: var(--perfil-azul);
 }
 
 
@@ -439,18 +433,16 @@ body:has(#perfil) {
    GALERIA
    ========================================================= */
 
-
 .perfil-galeria {
     position: relative;
-    z-index: 2;
 
     width: 100%;
 
     height:
         clamp(
-            350px,
-            51svh,
-            520px
+            430px,
+            63svh,
+            620px
         );
 
     min-width: 0;
@@ -458,55 +450,45 @@ body:has(#perfil) {
     overflow: hidden;
 
     border-radius:
-        26px;
+        4px
+        31px
+        31px
+        31px;
 
     outline: none;
 
-    background: #202024;
+    background: #1d1d20;
 
     box-shadow:
         0
         24px
-        65px
-        rgba(20, 20, 28, 0.14);
+        60px
+        rgba(18, 18, 23, 0.14);
 
     isolation: isolate;
 }
 
 
-.perfil-galeria::before {
+.perfil-galeria::after {
     content: "";
 
     position: absolute;
     z-index: 3;
 
-    inset:
-        57%
-        0
-        0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+
+    height: 110px;
 
     pointer-events: none;
 
     background:
         linear-gradient(
-            to bottom,
-            transparent,
-            rgba(10, 10, 12, 0.24)
+            to top,
+            rgba(8, 8, 10, 0.23),
+            transparent
         );
-}
-
-
-.perfil-galeria:focus-visible {
-    box-shadow:
-        0
-        0
-        0
-        4px
-        rgba(116, 96, 255, 0.15),
-        0
-        24px
-        65px
-        rgba(20, 20, 28, 0.14);
 }
 
 
@@ -523,27 +505,18 @@ body:has(#perfil) {
     display: flex;
     flex-flow: row nowrap;
 
-    scroll-snap-type:
-        x
-        mandatory;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
 
-    scroll-behavior:
-        smooth;
+    overscroll-behavior-x: contain;
 
-    overscroll-behavior-x:
-        contain;
-
-    scrollbar-width:
-        none;
+    scrollbar-width: none;
 
     cursor: grab;
 
-    touch-action:
-        pan-x
-        pan-y;
+    touch-action: pan-x pan-y;
 
-    -webkit-overflow-scrolling:
-        touch;
+    -webkit-overflow-scrolling: touch;
 }
 
 
@@ -555,11 +528,8 @@ body:has(#perfil) {
 .perfil-fotos.a-arrastar {
     cursor: grabbing;
 
-    scroll-snap-type:
-        none;
-
-    scroll-behavior:
-        auto;
+    scroll-snap-type: none;
+    scroll-behavior: auto;
 }
 
 
@@ -567,22 +537,16 @@ body:has(#perfil) {
     width: 100%;
     height: 100%;
 
-    flex:
-        0
-        0
-        100%;
+    flex: 0 0 100%;
 
     margin: 0;
 
     overflow: hidden;
 
-    background: #202024;
+    background: #1d1d20;
 
-    scroll-snap-align:
-        start;
-
-    scroll-snap-stop:
-        always;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
 }
 
 
@@ -612,28 +576,23 @@ body:has(#perfil) {
    INDICADORES
    ========================================================= */
 
-
 .perfil-indicadores {
     position: absolute;
     z-index: 6;
 
-    top: 14px;
-    left: 50%;
-
-    transform:
-        translateX(-50%);
+    top: 15px;
+    left: 15px;
 
     display: flex;
     align-items: center;
-    justify-content: center;
 
-    gap: 6px;
+    gap: 5px;
 }
 
 
 .perfil-indicadores button {
-    width: 18px;
-    height: 18px;
+    width: 17px;
+    height: 17px;
 
     margin: 0;
     padding: 5px;
@@ -655,27 +614,23 @@ body:has(#perfil) {
     border-radius: 50%;
 
     background:
-        rgba(255, 255, 255, 0.5);
-
-    box-shadow:
-        0
-        1px
-        3px
-        rgba(0, 0, 0, 0.12);
+        rgba(
+            255,
+            255,
+            255,
+            0.48
+        );
 
     transition:
-        width 170ms ease,
-        border-radius 170ms ease,
-        background-color 170ms ease;
+        transform 150ms ease,
+        background-color 150ms ease;
 }
 
 
 .perfil-indicadores button.ativo span {
-    width: 14px;
-
-    border-radius: 999px;
-
     background: #ffffff;
+
+    transform: scale(1.45);
 }
 
 
@@ -683,15 +638,14 @@ body:has(#perfil) {
    CONTADOR
    ========================================================= */
 
-
 .perfil-contador {
     position: absolute;
     z-index: 6;
 
-    right: 15px;
+    right: 16px;
     bottom: 15px;
 
-    min-height: 30px;
+    min-height: 29px;
 
     padding:
         0
@@ -699,49 +653,40 @@ body:has(#perfil) {
 
     border:
         1px solid
-        rgba(255, 255, 255, 0.18);
+        rgba(255, 255, 255, 0.17);
 
     border-radius: 999px;
 
-    color: rgba(255, 255, 255, 0.95);
+    color: #ffffff;
 
     background:
-        rgba(15, 15, 18, 0.28);
+        rgba(
+            12,
+            12,
+            14,
+            0.27
+        );
 
-    -webkit-backdrop-filter:
-        blur(14px);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
 
-    backdrop-filter:
-        blur(14px);
-
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 700;
 
-    font-variant-numeric:
-        tabular-nums;
+    font-variant-numeric: tabular-nums;
 
-    letter-spacing: 0.04em;
+    letter-spacing: 0.07em;
 
     display: flex;
     align-items: center;
 
-    gap: 7px;
-}
-
-
-.perfil-contador-linha {
-    width: 12px;
-    height: 1px;
-
-    background:
-        rgba(255, 255, 255, 0.45);
+    gap: 5px;
 }
 
 
 /* =========================================================
-   SETAS
+   NAVEGAÇÃO DA FOTO
    ========================================================= */
-
 
 .perfil-navegacao {
     position: absolute;
@@ -749,37 +694,37 @@ body:has(#perfil) {
 
     top: 50%;
 
-    width: 40px;
-    height: 40px;
+    width: 39px;
+    height: 39px;
 
     margin: 0;
     padding: 0;
 
     border:
         1px solid
-        rgba(255, 255, 255, 0.2);
+        rgba(255, 255, 255, 0.22);
 
     border-radius: 50%;
 
     color: #ffffff;
 
     background:
-        rgba(15, 15, 18, 0.25);
+        rgba(
+            12,
+            12,
+            14,
+            0.23
+        );
 
-    transform:
-        translateY(-50%);
+    transform: translateY(-50%);
 
-    -webkit-backdrop-filter:
-        blur(12px);
-
-    backdrop-filter:
-        blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
 
     cursor: pointer;
 
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: grid;
+    place-items: center;
 
     transition:
         transform 140ms ease,
@@ -824,197 +769,16 @@ body:has(#perfil) {
 
 
 /* =========================================================
-   IDENTIDADE
-   ========================================================= */
-
-
-.perfil-identidade {
-    position: relative;
-    z-index: 4;
-
-    width:
-        calc(100% - 22px);
-
-    margin:
-        -39px
-        11px
-        0;
-
-    padding:
-        55px
-        16px
-        23px;
-
-    border-radius:
-        0
-        0
-        27px
-        27px;
-
-    background:
-        rgba(255, 255, 255, 0.95);
-
-    box-shadow:
-        0
-        12px
-        35px
-        rgba(20, 20, 28, 0.045);
-
-    -webkit-backdrop-filter:
-        blur(18px);
-
-    backdrop-filter:
-        blur(18px);
-}
-
-
-.perfil-identidade-principal {
-    min-width: 0;
-
-    display: flex;
-    align-items: flex-end;
-
-    gap: 11px;
-}
-
-
-.perfil-identidade h1 {
-    min-width: 0;
-
-    margin: 0;
-
-    color: var(--perfil-preto);
-
-    font-size:
-        clamp(
-            34px,
-            10.5vw,
-            49px
-        );
-
-    font-weight: 800;
-
-    line-height: 0.95;
-
-    letter-spacing: -0.055em;
-
-    overflow-wrap: anywhere;
-}
-
-
-.perfil-idade {
-    position: relative;
-
-    margin-bottom: 4px;
-
-    color: #919199;
-
-    font-size: 15px;
-    font-weight: 620;
-
-    line-height: 1;
-}
-
-
-.perfil-identidade-assinatura {
-    height: 7px;
-
-    margin-top: 19px;
-
-    display: flex;
-    align-items: center;
-
-    gap: 5px;
-}
-
-
-.perfil-identidade-assinatura span {
-    display: block;
-
-    height: 3px;
-
-    border-radius: 999px;
-}
-
-
-.perfil-identidade-assinatura span:nth-child(1) {
-    width: 27px;
-
-    background: var(--perfil-roxo);
-}
-
-
-.perfil-identidade-assinatura span:nth-child(2) {
-    width: 8px;
-
-    background: var(--perfil-azul);
-}
-
-
-.perfil-identidade-assinatura span:nth-child(3) {
-    width: 5px;
-
-    background: var(--perfil-vermelho);
-}
-
-
-/* =========================================================
    CONTEÚDO
    ========================================================= */
-
 
 .perfil-conteudo {
     min-width: 0;
 
     padding:
-        11px
+        32px
         6px
         0;
-}
-
-
-/* =========================================================
-   TÍTULOS
-   ========================================================= */
-
-
-.perfil-titulo-linha {
-    margin-bottom: 19px;
-
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-
-    gap: 18px;
-}
-
-
-.perfil-titulo-linha h2 {
-    margin: 0;
-
-    color: #777780;
-
-    font-size: 10px;
-    font-weight: 790;
-
-    line-height: 1;
-
-    letter-spacing: 0.15em;
-
-    text-transform: uppercase;
-}
-
-
-.perfil-titulo-numero {
-    color: #b5b5bc;
-
-    font-size: 9px;
-    font-weight: 690;
-
-    font-variant-numeric:
-        tabular-nums;
-
-    letter-spacing: 0.08em;
 }
 
 
@@ -1022,12 +786,16 @@ body:has(#perfil) {
    SOBRE
    ========================================================= */
 
-
 .perfil-sobre {
-    padding:
-        29px
-        7px
-        32px;
+    display: grid;
+
+    grid-template-columns:
+        42px
+        minmax(0, 1fr);
+
+    gap: 10px;
+
+    padding-bottom: 37px;
 
     border-bottom:
         1px solid
@@ -1035,42 +803,77 @@ body:has(#perfil) {
 }
 
 
-.perfil-sobre > p {
-    max-width: 610px;
+.perfil-seccao-marcador {
+    padding-top: 4px;
 
+    color: #adadb4;
+
+    font-size: 9px;
+    font-weight: 720;
+
+    line-height: 1;
+
+    letter-spacing: 0.07em;
+
+    font-variant-numeric: tabular-nums;
+}
+
+
+.perfil-sobre-conteudo h2,
+.perfil-interesses-cabecalho h2 {
     margin: 0;
 
-    color: #242429;
+    color: #8a8a92;
+
+    font-size: 9px;
+    font-weight: 780;
+
+    line-height: 1;
+
+    letter-spacing: 0.16em;
+
+    text-transform: uppercase;
+}
+
+
+.perfil-sobre-conteudo > p {
+    max-width: 630px;
+
+    margin:
+        17px
+        0
+        0;
+
+    color: #222227;
 
     font-size:
         clamp(
-            19px,
-            5.2vw,
-            25px
+            21px,
+            5.8vw,
+            28px
         );
 
-    font-weight: 470;
+    font-weight: 460;
 
-    line-height: 1.4;
+    line-height: 1.37;
 
-    letter-spacing: -0.027em;
-
-    white-space: pre-line;
+    letter-spacing: -0.03em;
 
     overflow-wrap: anywhere;
+
+    white-space: pre-line;
 }
 
 
 /* =========================================================
-   INTERESSES — CAMPO MARGOT
+   INTERESSES
    ========================================================= */
 
-
-.perfil-gostos {
+.perfil-interesses {
     padding:
-        30px
-        7px
-        34px;
+        31px
+        0
+        39px;
 
     border-bottom:
         1px solid
@@ -1078,114 +881,110 @@ body:has(#perfil) {
 }
 
 
-.perfil-gostos-campo {
+.perfil-interesses-cabecalho {
+    display: grid;
+
+    grid-template-columns:
+        42px
+        minmax(0, 1fr);
+
+    align-items: center;
+
+    gap: 10px;
+
+    margin:
+        0
+        0
+        20px
+        0;
+}
+
+
+/* =========================================================
+   PALCO DOS INTERESSES
+   ========================================================= */
+
+.perfil-interesses-palco {
     position: relative;
 
-    min-height: 240px;
+    min-height: 260px;
 
     overflow: hidden;
 
-    border:
-        1px solid
-        rgba(24, 24, 28, 0.055);
-
-    border-radius: 25px;
+    border-radius:
+        4px
+        28px
+        28px
+        28px;
 
     background:
-        rgba(255, 255, 255, 0.63);
+        linear-gradient(
+            145deg,
+            rgba(255, 255, 255, 0.96),
+            rgba(247, 247, 251, 0.88)
+        );
+
+    box-shadow:
+        inset
+        0
+        0
+        0
+        1px
+        rgba(20, 20, 22, 0.055);
 
     isolation: isolate;
 }
 
 
-.perfil-gostos-pontos {
+.perfil-interesses-pontos {
     position: absolute;
     z-index: 0;
 
     inset: 0;
 
-    opacity: 0.36;
+    opacity: 0.25;
 
     pointer-events: none;
 
     background-image:
         radial-gradient(
             circle,
-            rgba(112, 122, 255, 0.72) 1px,
-            transparent 1.25px
+            rgba(113, 110, 235, 0.75) 1px,
+            transparent 1.35px
         );
 
     background-size:
-        18px
-        18px;
+        17px
+        17px;
 
     -webkit-mask-image:
         radial-gradient(
             ellipse at center,
             #000 0%,
-            rgba(0, 0, 0, 0.7) 45%,
-            transparent 96%
+            rgba(0, 0, 0, 0.65) 40%,
+            transparent 92%
         );
 
     mask-image:
         radial-gradient(
             ellipse at center,
             #000 0%,
-            rgba(0, 0, 0, 0.7) 45%,
-            transparent 96%
+            rgba(0, 0, 0, 0.65) 40%,
+            transparent 92%
         );
 }
 
 
-.perfil-gostos-campo::before,
-.perfil-gostos-campo::after {
-    content: "";
-
-    position: absolute;
-    z-index: 0;
-
-    border-radius: 50%;
-
-    pointer-events: none;
-}
-
-
-.perfil-gostos-campo::before {
-    top: 35px;
-    right: 29px;
-
-    width: 82px;
-    height: 82px;
-
-    border:
-        1px solid
-        rgba(116, 96, 255, 0.06);
-}
-
-
-.perfil-gostos-campo::after {
-    bottom: -35px;
-    left: 35px;
-
-    width: 118px;
-    height: 118px;
-
-    border:
-        1px solid
-        rgba(104, 176, 255, 0.065);
-}
-
-
-.perfil-gostos-campo ul {
+.perfil-interesses-palco ul {
     position: relative;
     z-index: 2;
 
-    min-height: 240px;
+    min-height: 260px;
 
     margin: 0;
     padding:
-        25px
-        22px;
+        29px
+        24px;
 
     list-style: none;
 
@@ -1199,12 +998,12 @@ body:has(#perfil) {
 
     align-content: center;
 
-    column-gap: 18px;
-    row-gap: 20px;
+    column-gap: 15px;
+    row-gap: 25px;
 }
 
 
-.perfil-gosto {
+.perfil-interesse {
     min-width: 0;
 
     display: flex;
@@ -1214,246 +1013,191 @@ body:has(#perfil) {
 }
 
 
-.perfil-gosto:nth-child(even) {
+.perfil-interesse:nth-child(even) {
     justify-self: end;
 }
 
 
-.perfil-gosto--1 {
-    transform:
-        translateX(3px);
+.perfil-interesse--1 {
+    transform: translate(3px, -5px);
 }
 
 
-.perfil-gosto--2 {
-    transform:
-        translateY(13px);
+.perfil-interesse--2 {
+    transform: translate(-4px, 9px);
 }
 
 
-.perfil-gosto--3 {
-    transform:
-        translateX(18px);
+.perfil-interesse--3 {
+    transform: translate(21px, 5px);
 }
 
 
-.perfil-gosto--4 {
-    transform:
-        translate(-8px, 5px);
+.perfil-interesse--4 {
+    transform: translate(-13px, -3px);
 }
 
 
-.perfil-gosto--5 {
-    transform:
-        translate(3px, 7px);
+.perfil-interesse--5 {
+    transform: translate(5px, 8px);
 }
 
 
-.perfil-gosto--6 {
-    transform:
-        translate(-14px, -3px);
+.perfil-interesse--6 {
+    transform: translate(-17px, 5px);
 }
 
 
-.perfil-gosto-ponto {
-    width: 5px;
-    height: 5px;
+.perfil-interesse--7 {
+    transform: translate(15px, -3px);
+}
 
-    flex:
-        0
-        0
-        5px;
+
+.perfil-interesse--8 {
+    transform: translate(-7px, 7px);
+}
+
+
+.perfil-interesse-ponto {
+    width: 6px;
+    height: 6px;
+
+    flex: 0 0 6px;
 
     border-radius: 50%;
 
-    background:
-        var(--perfil-roxo);
+    background: var(--perfil-roxo);
 
     box-shadow:
         0
         0
         0
         4px
-        rgba(150, 118, 255, 0.08);
+        rgba(120, 102, 255, 0.08);
 }
 
 
-.perfil-gosto:nth-child(3n + 2)
-.perfil-gosto-ponto {
-    background:
-        var(--perfil-azul);
+.perfil-interesse:nth-child(3n + 2)
+.perfil-interesse-ponto {
+    background: var(--perfil-azul);
 
     box-shadow:
         0
         0
         0
         4px
-        rgba(120, 182, 255, 0.1);
+        rgba(105, 174, 247, 0.09);
 }
 
 
-.perfil-gosto:nth-child(3n)
-.perfil-gosto-ponto {
-    background:
-        var(--perfil-vermelho);
+.perfil-interesse:nth-child(3n)
+.perfil-interesse-ponto {
+    background: var(--perfil-vermelho);
 
     box-shadow:
         0
         0
         0
         4px
-        rgba(225, 35, 70, 0.075);
+        rgba(225, 35, 70, 0.07);
 }
 
 
-.perfil-gosto-texto {
+.perfil-interesse > span:last-child {
     min-width: 0;
 
-    color: #29292f;
+    color: #28282d;
 
     font-size:
         clamp(
             14px,
-            4vw,
+            4.1vw,
             17px
         );
 
     font-weight: 630;
 
-    line-height: 1.15;
+    line-height: 1.14;
 
-    letter-spacing: -0.025em;
+    letter-spacing: -0.02em;
 
     overflow-wrap: anywhere;
 }
 
 
 /* =========================================================
-   AÇÃO HEY
+   HEY
    ========================================================= */
-
 
 .perfil-acao {
-    position: relative;
-
     padding:
-        30px
-        7px
-        5px;
+        34px
+        0
+        0;
+}
 
-    display: grid;
 
-    grid-template-columns:
-        auto
-        minmax(0, 1fr);
+.perfil-acao-linha {
+    height: 21px;
 
+    margin-bottom: 13px;
+
+    display: flex;
     align-items: center;
-
-    gap: 15px;
 }
 
 
-.perfil-acao-marca {
-    position: relative;
-
-    width: 46px;
-    height: 46px;
-
-    flex:
-        0
-        0
-        46px;
-}
-
-
-.perfil-acao-marca span {
-    position: absolute;
-
-    border:
-        1px solid
-        rgba(116, 96, 255, 0.12);
-
-    border-radius: 50%;
-}
-
-
-.perfil-acao-marca span:nth-child(1) {
-    inset: 17px;
-}
-
-
-.perfil-acao-marca span:nth-child(2) {
-    inset: 10px;
-}
-
-
-.perfil-acao-marca span:nth-child(3) {
-    inset: 3px;
-
-    border-color:
-        rgba(116, 96, 255, 0.06);
-}
-
-
-.perfil-acao-marca::after {
+.perfil-acao-linha::before {
     content: "";
 
-    position: absolute;
-
-    top: 50%;
-    left: 50%;
-
-    width: 6px;
-    height: 6px;
+    width: 7px;
+    height: 7px;
 
     border-radius: 50%;
 
-    background:
-        var(--perfil-vermelho);
-
-    transform:
-        translate(-50%, -50%);
-
-    box-shadow:
-        0
-        0
-        0
-        4px
-        rgba(225, 35, 70, 0.08);
+    background: var(--perfil-vermelho);
 }
 
 
-/* =========================================================
-   BOTÃO HEY
-   ========================================================= */
+.perfil-acao-linha span {
+    width: 54px;
+    height: 1px;
+
+    margin-left: 8px;
+
+    background:
+        rgba(20, 20, 22, 0.14);
+}
 
 
 .perfil-hey {
     width: 100%;
-    min-height: 56px;
+    min-height: 68px;
 
     margin: 0;
-
     padding:
         0
-        10px
+        12px
         0
-        20px;
+        23px;
 
     border: 0;
 
-    border-radius: 18px;
+    border-radius:
+        4px
+        22px
+        22px
+        22px;
 
     color: #ffffff;
 
-    background:
-        var(--perfil-preto);
+    background: var(--perfil-preto);
 
     box-shadow:
         0
-        10px
-        28px
-        rgba(20, 20, 25, 0.13);
+        14px
+        34px
+        rgba(20, 20, 25, 0.14);
 
     font: inherit;
 
@@ -1463,10 +1207,9 @@ body:has(#perfil) {
     align-items: center;
     justify-content: space-between;
 
-    gap: 16px;
+    gap: 18px;
 
-    -webkit-tap-highlight-color:
-        transparent;
+    -webkit-tap-highlight-color: transparent;
 
     transition:
         transform 150ms ease,
@@ -1476,28 +1219,30 @@ body:has(#perfil) {
 
 
 .perfil-hey-label {
-    font-size: 16px;
+    font-size: 20px;
     font-weight: 760;
 
     line-height: 1;
 
-    letter-spacing: -0.025em;
+    letter-spacing: -0.035em;
 }
 
 
-.perfil-hey-icone {
-    width: 38px;
-    height: 38px;
+.perfil-hey-seta {
+    width: 44px;
+    height: 44px;
 
-    flex:
-        0
-        0
-        38px;
+    flex: 0 0 44px;
 
-    border-radius: 13px;
+    border-radius: 15px;
 
     background:
-        rgba(255, 255, 255, 0.1);
+        rgba(
+            255,
+            255,
+            255,
+            0.09
+        );
 
     display: grid;
     place-items: center;
@@ -1505,8 +1250,8 @@ body:has(#perfil) {
 
 
 .perfil-hey svg {
-    width: 19px;
-    height: 19px;
+    width: 20px;
+    height: 20px;
 
     fill: none;
 
@@ -1522,15 +1267,13 @@ body:has(#perfil) {
 
 
 .perfil-hey:hover:not(:disabled)
-.perfil-hey-icone svg {
-    transform:
-        translateX(3px);
+.perfil-hey-seta svg {
+    transform: translateX(3px);
 }
 
 
 .perfil-hey:active:not(:disabled) {
-    transform:
-        scale(0.985);
+    transform: scale(0.985);
 }
 
 
@@ -1542,7 +1285,7 @@ body:has(#perfil) {
 
 
 .perfil-hey.a-enviar
-.perfil-hey-icone svg {
+.perfil-hey-seta svg {
     animation:
         perfil-seta-espera
         850ms
@@ -1553,20 +1296,17 @@ body:has(#perfil) {
 
 
 .perfil-hey.enviado {
-    background:
-        #28845b;
+    background: #27845a;
 }
 
 
 @keyframes perfil-seta-espera {
     from {
-        transform:
-            translateX(0);
+        transform: translateX(0);
     }
 
     to {
-        transform:
-            translateX(4px);
+        transform: translateX(4px);
     }
 }
 
@@ -1574,7 +1314,6 @@ body:has(#perfil) {
 /* =========================================================
    TOUCH
    ========================================================= */
-
 
 @media (pointer: coarse) {
     .perfil-navegacao {
@@ -1588,39 +1327,36 @@ body:has(#perfil) {
 
 
 /* =========================================================
-   ECRÃS ESTREITOS
+   ECRÃS MUITO ESTREITOS
    ========================================================= */
 
-
 @media (max-width: 370px) {
-    .perfil-layout {
-        padding-right: 10px;
-        padding-left: 10px;
+    .perfil-shell {
+        padding-right: 9px;
+        padding-left: 9px;
     }
 
-    .perfil-identidade {
-        width:
-            calc(100% - 14px);
-
-        margin-right: 7px;
-        margin-left: 7px;
-
-        padding-right: 14px;
-        padding-left: 14px;
+    .perfil-poster {
+        grid-template-columns:
+            61px
+            minmax(0, 1fr);
     }
 
-    .perfil-identidade h1 {
-        font-size: 33px;
+    .perfil-coluna-identidade h1 {
+        font-size: 27px;
     }
 
-    .perfil-gostos-campo ul {
-        padding-right: 15px;
-        padding-left: 15px;
-
-        column-gap: 9px;
+    .perfil-numero {
+        width: 37px;
+        height: 37px;
     }
 
-    .perfil-gosto-texto {
+    .perfil-interesses-palco ul {
+        padding-right: 16px;
+        padding-left: 16px;
+    }
+
+    .perfil-interesse > span:last-child {
         font-size: 13px;
     }
 }
@@ -1630,24 +1366,14 @@ body:has(#perfil) {
    ECRÃS BAIXOS
    ========================================================= */
 
-
 @media (max-height: 700px) and (max-width: 819px) {
     .perfil-galeria {
         height:
             clamp(
-                310px,
-                45svh,
-                380px
+                355px,
+                54svh,
+                440px
             );
-    }
-
-    .perfil-identidade {
-        padding-top: 52px;
-    }
-
-    .perfil-sobre {
-        padding-top: 25px;
-        padding-bottom: 28px;
     }
 }
 
@@ -1656,34 +1382,11 @@ body:has(#perfil) {
    TABLET / DESKTOP
    ========================================================= */
 
-
 @media (min-width: 820px) {
-    .perfil-topo {
+    .perfil-shell {
         width:
             min(
-                calc(100% - 64px),
-                1060px
-            );
-
-        margin:
-            0
-            auto;
-
-        padding-top:
-            max(
-                27px,
-                env(safe-area-inset-top, 0px)
-            );
-
-        padding-right: 0;
-        padding-left: 0;
-    }
-
-
-    .perfil-layout {
-        width:
-            min(
-                calc(100% - 64px),
+                calc(100% - 70px),
                 1060px
             );
 
@@ -1692,144 +1395,161 @@ body:has(#perfil) {
             auto;
 
         padding:
-            12px
+            max(
+                32px,
+                env(safe-area-inset-top, 0px)
+            )
             0
             calc(
                 var(--menu-principal-height, 58px) +
                 var(--menu-principal-bottom, 18px) +
                 env(safe-area-inset-bottom, 0px) +
-                44px
+                55px
             );
 
         display: grid;
 
         grid-template-columns:
-            minmax(360px, 0.92fr)
-            minmax(380px, 1.08fr);
+            minmax(390px, 0.95fr)
+            minmax(390px, 1.05fr);
 
         align-items: start;
 
-        gap: 54px;
+        gap: 65px;
     }
 
 
-    .perfil-apresentacao {
+    .editar-perfil {
+        top:
+            max(
+                32px,
+                env(safe-area-inset-top, 0px)
+            );
+
+        right: 0;
+    }
+
+
+    .perfil-poster {
         position: sticky;
 
         top:
             max(
-                22px,
+                25px,
                 env(safe-area-inset-top, 0px)
             );
+
+        grid-template-columns:
+            91px
+            minmax(0, 1fr);
+
+        gap: 10px;
     }
 
 
     .perfil-galeria {
         height:
             clamp(
-                520px,
-                68dvh,
-                690px
+                540px,
+                70dvh,
+                720px
             );
-
-        border-radius: 34px;
-    }
-
-
-    .perfil-identidade {
-        width:
-            calc(100% - 28px);
-
-        margin:
-            -45px
-            14px
-            0;
-
-        padding:
-            65px
-            25px
-            28px;
 
         border-radius:
-            0
-            0
-            32px
-            32px;
+            5px
+            38px
+            38px
+            38px;
     }
 
 
-    .perfil-identidade h1 {
+    .perfil-coluna-identidade h1 {
         font-size:
             clamp(
-                42px,
-                4.4vw,
-                62px
+                38px,
+                4.1vw,
+                55px
             );
     }
 
 
-    .perfil-idade {
-        margin-bottom: 6px;
+    .perfil-numero {
+        width: 48px;
+        height: 48px;
+    }
 
-        font-size: 16px;
+
+    .perfil-numero span {
+        font-size: 13px;
     }
 
 
     .perfil-conteudo {
         padding:
-            45px
+            76px
             0
             0;
     }
 
 
-    .perfil-sobre,
-    .perfil-gostos {
-        padding-right: 0;
-        padding-left: 0;
+    .perfil-sobre {
+        grid-template-columns:
+            52px
+            minmax(0, 1fr);
     }
 
 
-    .perfil-sobre > p {
+    .perfil-interesses-cabecalho {
+        grid-template-columns:
+            52px
+            minmax(0, 1fr);
+    }
+
+
+    .perfil-sobre-conteudo > p {
         font-size:
             clamp(
-                22px,
+                23px,
                 2.4vw,
-                30px
+                31px
             );
     }
 
 
-    .perfil-gostos-campo {
-        min-height: 305px;
+    .perfil-interesses-palco {
+        min-height: 310px;
 
-        border-radius: 30px;
+        border-radius:
+            5px
+            32px
+            32px
+            32px;
     }
 
 
-    .perfil-gostos-campo ul {
-        min-height: 305px;
+    .perfil-interesses-palco ul {
+        min-height: 310px;
 
         padding:
             38px
             34px;
 
-        column-gap: 26px;
-        row-gap: 28px;
+        column-gap: 27px;
+        row-gap: 31px;
     }
 
 
-    .perfil-gosto-texto {
+    .perfil-interesse > span:last-child {
         font-size: 17px;
     }
 
 
     .perfil-acao {
-        max-width: 400px;
+        width: 350px;
 
         margin-left: auto;
 
-        padding-top: 38px;
+        padding-top: 40px;
     }
 }
 
@@ -1838,37 +1558,31 @@ body:has(#perfil) {
    DESKTOP GRANDE
    ========================================================= */
 
-
 @media (min-width: 1180px) {
-    .perfil-topo,
-    .perfil-layout {
+    .perfil-shell {
         width:
             min(
-                calc(100% - 100px),
-                1140px
+                calc(100% - 110px),
+                1150px
             );
-    }
 
-
-    .perfil-layout {
         grid-template-columns:
-            470px
+            500px
             minmax(0, 1fr);
 
-        gap: 72px;
+        gap: 82px;
     }
 
 
-    .perfil-identidade {
-        padding:
-            68px
-            28px
-            30px;
+    .perfil-poster {
+        grid-template-columns:
+            100px
+            minmax(0, 1fr);
     }
 
 
-    .perfil-identidade h1 {
-        font-size: 59px;
+    .perfil-coluna-identidade h1 {
+        font-size: 52px;
     }
 }
 
@@ -1876,7 +1590,6 @@ body:has(#perfil) {
 /* =========================================================
    PWA
    ========================================================= */
-
 
 @media all and (display-mode: standalone) {
     html:has(#perfil),
@@ -1899,11 +1612,9 @@ body:has(#perfil) {
         overflow-x: hidden !important;
         overflow-y: auto !important;
 
-        -webkit-overflow-scrolling:
-            touch;
+        -webkit-overflow-scrolling: touch;
 
-        overscroll-behavior-y:
-            auto !important;
+        overscroll-behavior-y: auto !important;
     }
 }
 
@@ -1912,24 +1623,21 @@ body:has(#perfil) {
    MOVIMENTO REDUZIDO
    ========================================================= */
 
-
 @media (prefers-reduced-motion: reduce) {
     .perfil-fotos {
-        scroll-behavior:
-            auto;
+        scroll-behavior: auto;
     }
 
+    .perfil-navegacao,
     .perfil-hey,
     .perfil-hey svg,
     .editar-perfil,
     .perfil-indicadores button span {
-        transition:
-            none;
+        transition: none;
     }
 
     .perfil-hey.a-enviar
-    .perfil-hey-icone svg {
-        animation:
-            none;
+    .perfil-hey-seta svg {
+        animation: none;
     }
 }

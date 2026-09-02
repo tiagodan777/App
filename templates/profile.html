@@ -5,7 +5,7 @@
 {% block styles %}
 <link
     rel="stylesheet"
-    href="{{ doc_root }}estilos/profile.css?v=16"
+    href="{{ doc_root }}estilos/profile.css?v=17"
     data-margot-page-style
 >
 {% endblock %}
@@ -21,27 +21,16 @@
     id="perfil"
     class="{{ perfil_proprio ? 'perfil--proprio' : 'perfil--visitante' }}"
 >
-    <div class="perfil-fundo" aria-hidden="true">
-        <div class="perfil-fundo-pontos perfil-fundo-pontos--a"></div>
-        <div class="perfil-fundo-pontos perfil-fundo-pontos--b"></div>
+    <div class="perfil-ambiente" aria-hidden="true">
+        <span class="perfil-ambiente-ponto perfil-ambiente-ponto--1"></span>
+        <span class="perfil-ambiente-ponto perfil-ambiente-ponto--2"></span>
+        <span class="perfil-ambiente-ponto perfil-ambiente-ponto--3"></span>
 
-        <span class="perfil-fundo-orbita perfil-fundo-orbita--a"></span>
-        <span class="perfil-fundo-orbita perfil-fundo-orbita--b"></span>
+        <span class="perfil-ambiente-linha perfil-ambiente-linha--1"></span>
+        <span class="perfil-ambiente-linha perfil-ambiente-linha--2"></span>
     </div>
 
-    <header class="perfil-topo">
-        <div class="perfil-topo-esquerda">
-            <span class="perfil-simbolo" aria-hidden="true">
-                <i></i>
-                <i></i>
-                <i></i>
-                <i></i>
-            </span>
-
-            <span class="perfil-topo-nome">
-                Margot
-            </span>
-        </div>
+    <div class="perfil-shell">
 
         {% if perfil_proprio %}
             <a
@@ -59,14 +48,30 @@
                     <circle cx="16" cy="7" r="2"></circle>
                     <circle cx="8" cy="17" r="2"></circle>
                 </svg>
-
-                <span>Editar</span>
             </a>
         {% endif %}
-    </header>
 
-    <div class="perfil-layout">
-        <section class="perfil-apresentacao">
+        <section class="perfil-poster">
+
+            <aside class="perfil-coluna-identidade">
+                <div class="perfil-numero">
+                    <span>{{ idade }}</span>
+                </div>
+
+                <h1>
+                    {{ membro.nome }}
+                </h1>
+
+                <div
+                    class="perfil-assinatura"
+                    aria-hidden="true"
+                >
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </aside>
+
             <section
                 id="perfil-galeria"
                 class="perfil-galeria"
@@ -140,7 +145,7 @@
                     >
                         <span id="perfil-contador-atual">01</span>
 
-                        <span class="perfil-contador-linha"></span>
+                        <span>/</span>
 
                         <span>
                             {{ total_slides < 10
@@ -173,98 +178,70 @@
                     </button>
                 {% endif %}
             </section>
-
-            <header class="perfil-identidade">
-                <div class="perfil-identidade-principal">
-                    <h1>
-                        {{ membro.nome }}
-                    </h1>
-
-                    <span class="perfil-idade">
-                        {{ idade }}
-                    </span>
-                </div>
-
-                <div
-                    class="perfil-identidade-assinatura"
-                    aria-hidden="true"
-                >
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </div>
-            </header>
         </section>
 
         <article class="perfil-conteudo">
+
             {% if tem_bio %}
-                <section
-                    class="perfil-sobre"
-                    aria-labelledby="perfil-sobre-titulo"
-                >
-                    <div class="perfil-titulo-linha">
-                        <h2 id="perfil-sobre-titulo">
-                            Sobre
-                        </h2>
+                <section class="perfil-sobre">
+                    <span class="perfil-seccao-marcador">
+                        01
+                    </span>
 
-                        <span class="perfil-titulo-numero">
-                            01
-                        </span>
+                    <div class="perfil-sobre-conteudo">
+                        <h2>Sobre</h2>
+
+                        <p>
+                            {{ membro.bio }}
+                        </p>
                     </div>
-
-                    <p>
-                        {{ membro.bio }}
-                    </p>
                 </section>
             {% endif %}
 
             {% if primeiro_gosto %}
                 <section
                     id="adicional"
-                    class="perfil-gostos"
-                    aria-labelledby="perfil-gostos-titulo"
+                    class="perfil-interesses"
                 >
-                    <div class="perfil-titulo-linha">
-                        <h2 id="perfil-gostos-titulo">
-                            Interesses
-                        </h2>
-
-                        <span class="perfil-titulo-numero">
+                    <header class="perfil-interesses-cabecalho">
+                        <span class="perfil-seccao-marcador">
                             {{ tem_bio ? '02' : '01' }}
                         </span>
-                    </div>
 
-                    <div class="perfil-gostos-campo">
+                        <h2>Interesses</h2>
+                    </header>
+
+                    <div class="perfil-interesses-palco">
+
                         <div
-                            class="perfil-gostos-pontos"
+                            class="perfil-interesses-pontos"
                             aria-hidden="true"
                         ></div>
 
                         <ul>
                             {% for gosto in membro.gostos %}
                                 <li
-                                    class="perfil-gosto perfil-gosto--{{ (loop.index0 % 6) + 1 }}"
+                                    class="perfil-interesse perfil-interesse--{{ (loop.index0 % 8) + 1 }}"
                                 >
-                                    <span class="perfil-gosto-ponto"></span>
+                                    <span
+                                        class="perfil-interesse-ponto"
+                                        aria-hidden="true"
+                                    ></span>
 
-                                    <span class="perfil-gosto-texto">
+                                    <span>
                                         {{ gosto['nome'] }}
                                     </span>
                                 </li>
                             {% endfor %}
                         </ul>
+
                     </div>
                 </section>
             {% endif %}
 
             {% if not perfil_proprio %}
                 <section class="perfil-acao">
-                    <div
-                        class="perfil-acao-marca"
-                        aria-hidden="true"
-                    >
-                        <span></span>
-                        <span></span>
+                    <div class="perfil-acao-linha">
                         <span></span>
                     </div>
 
@@ -280,7 +257,7 @@
                         </span>
 
                         <span
-                            class="perfil-hey-icone"
+                            class="perfil-hey-seta"
                             aria-hidden="true"
                         >
                             <svg viewBox="0 0 24 24">
@@ -298,6 +275,7 @@
                     ></p>
                 </section>
             {% endif %}
+
         </article>
     </div>
 </main>
@@ -311,5 +289,5 @@ window.webSocketUrl = window.location.protocol === 'https:'
     : 'ws://' + window.location.hostname + ':8080';
 </script>
 
-<script src="{{ doc_root }}js/profile.js?v=10"></script>
+<script src="{{ doc_root }}js/profile.js?v=9"></script>
 {% endblock %}
