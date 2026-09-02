@@ -1,1159 +1,355 @@
 (function (window, document) {
     'use strict';
 
+    var perfil = document.getElementById('perfil');
+    var galeria = document.getElementById('perfil-galeria');
+    var faixa = document.getElementById('perfil-fotos');
 
-    var perfil =
-        document.getElementById(
-            'perfil'
-        );
-
-
-    var galeria =
-        document.getElementById(
-            'perfil-galeria'
-        );
-
-
-    var faixa =
-        document.getElementById(
-            'perfil-fotos'
-        );
-
-
-    if (
-        !perfil ||
-        !galeria ||
-        !faixa
-    ) {
+    if (!perfil || !galeria || !faixa) {
         return;
     }
 
+    var slides = Array.prototype.slice.call(
+        faixa.querySelectorAll('.perfil-slide')
+    );
 
-    var slides =
-        Array.prototype.slice.call(
-            faixa.querySelectorAll(
-                '.perfil-slide'
-            )
-        );
+    if (!slides.length) {
+        return;
+    }
 
+    var indicadores = Array.prototype.slice.call(
+        document.querySelectorAll('#perfil-indicadores button')
+    );
 
-    var indicadores =
-        Array.prototype.slice.call(
-            document.querySelectorAll(
-                '#perfil-indicadores button'
-            )
-        );
+    var botaoAnterior = document.getElementById('perfil-anterior');
+    var botaoSeguinte = document.getElementById('perfil-seguinte');
+    var contadorAtual = document.getElementById('perfil-contador-atual');
 
-
-    var anterior =
-        document.getElementById(
-            'perfil-anterior'
-        );
-
-
-    var seguinte =
-        document.getElementById(
-            'perfil-seguinte'
-        );
-
-
-    var contadorAtual =
-        document.getElementById(
-            'perfil-contador-atual'
-        );
-
-
-    var expandir =
-        document.getElementById(
-            'perfil-expandir'
-        );
-
-
-    var modal =
-        document.getElementById(
-            'perfil-modal'
-        );
-
-
-    var modalImagem =
-        document.getElementById(
-            'perfil-modal-imagem'
-        );
-
-
-    var modalFechar =
-        document.getElementById(
-            'perfil-modal-fechar'
-        );
-
-
-    var modalAnterior =
-        document.getElementById(
-            'perfil-modal-anterior'
-        );
-
-
-    var modalSeguinte =
-        document.getElementById(
-            'perfil-modal-seguinte'
-        );
-
-
-    var modalContadorAtual =
-        document.getElementById(
-            'perfil-modal-contador-atual'
-        );
-
+    var lightbox = document.getElementById('perfil-lightbox');
+    var lightboxMedia = document.getElementById('perfil-lightbox-media');
+    var lightboxImagem = document.getElementById('perfil-lightbox-imagem');
+    var lightboxFechar = document.getElementById('perfil-lightbox-fechar');
+    var lightboxAnterior = document.getElementById('perfil-lightbox-anterior');
+    var lightboxSeguinte = document.getElementById('perfil-lightbox-seguinte');
+    var lightboxContadorAtual = document.getElementById('perfil-lightbox-contador-atual');
 
     var indiceAtual = 0;
-
-    var frameScroll = null;
-
-    var observadorTamanho = null;
-
-
-    var ratoAtivo = false;
-
-    var ratoMoveu = false;
-
-    var ratoInicioX = 0;
-
-    var scrollInicio = 0;
-
-
     var modalAberto = false;
-
-    var temporizadorModal = null;
-
-
-    if (slides.length === 0) {
-        return;
-    }
-
+    var rafScroll = null;
 
     function limitarIndice(indice) {
-        return Math.max(
-            0,
-            Math.min(
-                indice,
-                slides.length - 1
-            )
-        );
+        return Math.max(0, Math.min(indice, slides.length - 1));
     }
-
 
     function formatarNumero(numero) {
-        return numero < 10
-            ? '0' + numero
-            : String(numero);
+        return numero < 10 ? '0' + numero : String(numero);
     }
 
+    function atualizarFallbacks() {
+        faixa.querySelectorAll('img').forEach(function (imagem) {
+            imagem.addEventListener('error', function () {
+                var fallback = imagem.dataset.fallback || '';
+                var padrao = imagem.dataset.default || '';
 
-    function prefereMovimentoReduzido() {
-        return Boolean(
-            window.matchMedia &&
-            window.matchMedia(
-                '(prefers-reduced-motion: reduce)'
-            ).matches
-        );
-    }
-
-
-    function obterImagem(indice) {
-        indice =
-            limitarIndice(indice);
-
-
-        return slides[indice]
-            ? slides[indice]
-                .querySelector('img')
-            : null;
-    }
-
-
-    function indiceMaisProximo() {
-        var centro =
-            faixa.scrollLeft +
-            faixa.clientWidth / 2;
-
-
-        var melhorIndice = 0;
-
-        var menorDistancia =
-            Infinity;
-
-
-        slides.forEach(
-            function (
-                slide,
-                indice
-            ) {
-                var centroSlide =
-                    slide.offsetLeft +
-                    slide.offsetWidth / 2;
-
-
-                var distancia =
-                    Math.abs(
-                        centroSlide -
-                        centro
-                    );
-
-
-                if (
-                    distancia <
-                    menorDistancia
-                ) {
-                    menorDistancia =
-                        distancia;
-
-                    melhorIndice =
-                        indice;
-                }
-            }
-        );
-
-
-        return melhorIndice;
-    }
-
-
-    function atualizarInterface(indice) {
-        indiceAtual =
-            limitarIndice(indice);
-
-
-        slides.forEach(
-            function (
-                slide,
-                posicao
-            ) {
-                slide.setAttribute(
-                    'aria-hidden',
-                    posicao === indiceAtual
-                        ? 'false'
-                        : 'true'
-                );
-            }
-        );
-
-
-        indicadores.forEach(
-            function (
-                indicador,
-                posicao
-            ) {
-                var ativo =
-                    posicao ===
-                    indiceAtual;
-
-
-                indicador.classList.toggle(
-                    'ativo',
-                    ativo
-                );
-
-
-                indicador.setAttribute(
-                    'aria-current',
-                    ativo
-                        ? 'true'
-                        : 'false'
-                );
-            }
-        );
-
-
-        if (contadorAtual) {
-            contadorAtual.textContent =
-                formatarNumero(
-                    indiceAtual + 1
-                );
-        }
-
-
-        if (anterior) {
-            anterior.disabled =
-                indiceAtual === 0;
-        }
-
-
-        if (seguinte) {
-            seguinte.disabled =
-                indiceAtual ===
-                slides.length - 1;
-        }
-
-
-        if (modalAberto) {
-            atualizarModal(
-                indiceAtual
-            );
-        }
-    }
-
-
-    function mostrarFoto(
-        indice,
-        suave
-    ) {
-        indice =
-            limitarIndice(indice);
-
-
-        faixa.scrollTo({
-            left:
-                slides[indice]
-                    .offsetLeft,
-
-            behavior:
-                suave === false ||
-                prefereMovimentoReduzido()
-                    ? 'auto'
-                    : 'smooth'
-        });
-
-
-        atualizarInterface(
-            indice
-        );
-    }
-
-
-    function corrigirImagem(imagem) {
-        var tentativa = 0;
-
-
-        imagem.addEventListener(
-            'error',
-            function () {
-                tentativa += 1;
-
-
-                var fallback =
-                    imagem.dataset
-                        .fallback;
-
-
-                var padrao =
-                    imagem.dataset
-                        .default;
-
-
-                if (
-                    tentativa === 1 &&
-                    fallback
-                ) {
-                    imagem.src =
-                        fallback;
-
+                if (fallback && imagem.src.indexOf(fallback) === -1) {
+                    imagem.src = fallback;
                     return;
                 }
 
-
-                if (
-                    padrao &&
-                    imagem.src !==
-                        new URL(
-                            padrao,
-                            window.location.href
-                        ).href
-                ) {
-                    imagem.src =
-                        padrao;
+                if (padrao) {
+                    imagem.src = padrao;
                 }
-            }
-        );
+            });
+        });
     }
 
+    function atualizarUI(indice) {
+        indiceAtual = limitarIndice(indice);
 
-    faixa
-        .querySelectorAll('img')
-        .forEach(
-            corrigirImagem
-        );
+        slides.forEach(function (slide, i) {
+            slide.setAttribute('aria-hidden', i === indiceAtual ? 'false' : 'true');
+        });
 
+        indicadores.forEach(function (botao, i) {
+            var ativo = i === indiceAtual;
+            botao.classList.toggle('ativo', ativo);
+            botao.setAttribute('aria-current', ativo ? 'true' : 'false');
+        });
 
-    /* =====================================================
-       MODAL
-       ===================================================== */
+        if (contadorAtual) {
+            contadorAtual.textContent = formatarNumero(indiceAtual + 1);
+        }
 
+        if (botaoAnterior) {
+            botaoAnterior.disabled = indiceAtual === 0;
+        }
 
-    function atualizarModal(indice) {
-        if (
-            !modal ||
-            !modalImagem
-        ) {
+        if (botaoSeguinte) {
+            botaoSeguinte.disabled = indiceAtual === slides.length - 1;
+        }
+
+        if (modalAberto) {
+            atualizarLightboxSlide(indiceAtual);
+        }
+    }
+
+    function mostrarFoto(indice, suave) {
+        indice = limitarIndice(indice);
+
+        faixa.scrollTo({
+            left: slides[indice].offsetLeft,
+            behavior: suave === false ? 'auto' : 'smooth'
+        });
+
+        atualizarUI(indice);
+    }
+
+    function obterIndiceMaisProximo() {
+        var largura = faixa.clientWidth || 1;
+        return limitarIndice(Math.round(faixa.scrollLeft / largura));
+    }
+
+    function aoScrollFaixa() {
+        if (rafScroll !== null) {
             return;
         }
 
+        rafScroll = window.requestAnimationFrame(function () {
+            rafScroll = null;
+            atualizarUI(obterIndiceMaisProximo());
+        });
+    }
 
-        indice =
-            limitarIndice(indice);
+    function atualizarLightboxSlide(indice) {
+        if (!lightboxImagem) {
+            return;
+        }
 
+        indice = limitarIndice(indice);
 
-        var imagem =
-            obterImagem(
-                indice
-            );
-
-
+        var imagem = slides[indice].querySelector('img');
         if (!imagem) {
             return;
         }
 
+        lightboxImagem.src = imagem.currentSrc || imagem.src;
+        lightboxImagem.alt = imagem.alt || '';
 
-        modalImagem.src =
-            imagem.currentSrc ||
-            imagem.src;
-
-
-        modalImagem.alt =
-            imagem.alt || '';
-
-
-        if (
-            modalContadorAtual
-        ) {
-            modalContadorAtual
-                .textContent =
-                formatarNumero(
-                    indice + 1
-                );
+        if (lightboxContadorAtual) {
+            lightboxContadorAtual.textContent = formatarNumero(indice + 1);
         }
 
-
-        if (modalAnterior) {
-            modalAnterior.disabled =
-                indice === 0;
+        if (lightboxAnterior) {
+            lightboxAnterior.disabled = indice === 0;
         }
 
-
-        if (modalSeguinte) {
-            modalSeguinte.disabled =
-                indice ===
-                slides.length - 1;
+        if (lightboxSeguinte) {
+            lightboxSeguinte.disabled = indice === slides.length - 1;
         }
     }
 
-
-    function abrirModal(indice) {
-        if (
-            !modal ||
-            !modalImagem
-        ) {
+    function aplicarTransformacaoInicial() {
+        if (!lightboxMedia) {
             return;
         }
 
+        var origem = galeria.getBoundingClientRect();
+        var destino = lightboxMedia.getBoundingClientRect();
 
-        if (
-            temporizadorModal !==
-            null
-        ) {
-            window.clearTimeout(
-                temporizadorModal
-            );
+        var scaleX = origem.width / destino.width;
+        var scaleY = origem.height / destino.height;
 
+        var origemCentroX = origem.left + (origem.width / 2);
+        var origemCentroY = origem.top + (origem.height / 2);
 
-            temporizadorModal =
-                null;
-        }
+        var destinoCentroX = destino.left + (destino.width / 2);
+        var destinoCentroY = destino.top + (destino.height / 2);
 
+        var deltaX = origemCentroX - destinoCentroX;
+        var deltaY = origemCentroY - destinoCentroY;
 
-        indice =
-            limitarIndice(indice);
-
-
-        mostrarFoto(
-            indice,
-            false
-        );
-
-
-        atualizarModal(
-            indice
-        );
-
-
-        modalAberto =
-            true;
-
-
-        modal.setAttribute(
-            'aria-hidden',
-            'false'
-        );
-
-
-        perfil.classList.add(
-            'modal-aberto'
-        );
-
-
-        window.requestAnimationFrame(
-            function () {
-                window
-                    .requestAnimationFrame(
-                        function () {
-                            modal.classList.add(
-                                'ativo'
-                            );
-                        }
-                    );
-            }
-        );
-
-
-        if (modalFechar) {
-            window.setTimeout(
-                function () {
-                    modalFechar.focus({
-                        preventScroll:
-                            true
-                    });
-                },
-                40
-            );
-        }
+        lightboxMedia.style.setProperty('--from-x', deltaX + 'px');
+        lightboxMedia.style.setProperty('--from-y', deltaY + 'px');
+        lightboxMedia.style.setProperty('--from-scale-x', scaleX);
+        lightboxMedia.style.setProperty('--from-scale-y', scaleY);
     }
 
-
-    function fecharModal() {
-        if (
-            !modal ||
-            !modalAberto
-        ) {
+    function abrirLightbox(indice) {
+        if (!lightbox || !lightboxMedia) {
             return;
         }
 
+        indice = limitarIndice(indice);
+        atualizarUI(indice);
+        atualizarLightboxSlide(indice);
 
-        modalAberto =
-            false;
+        lightbox.hidden = false;
+        lightbox.setAttribute('aria-hidden', 'false');
+        lightbox.classList.add('is-mounted');
 
+        document.documentElement.classList.add('perfil-modal-aberta');
+        document.body.classList.add('perfil-modal-aberta');
 
-        modal.classList.remove(
-            'ativo'
-        );
+        modalAberto = true;
 
+        window.requestAnimationFrame(function () {
+            aplicarTransformacaoInicial();
 
-        perfil.classList.remove(
-            'modal-aberto'
-        );
-
-
-        temporizadorModal =
-            window.setTimeout(
-                function () {
-                    temporizadorModal =
-                        null;
-
-
-                    modal.setAttribute(
-                        'aria-hidden',
-                        'true'
-                    );
-
-
-                    if (modalImagem) {
-                        modalImagem.src =
-                            '';
-                    }
-
-
-                    galeria.focus({
-                        preventScroll:
-                            true
-                    });
-                },
-                prefereMovimentoReduzido()
-                    ? 0
-                    : 230
-            );
+            window.requestAnimationFrame(function () {
+                lightbox.classList.add('is-open');
+            });
+        });
     }
 
-
-    function mostrarFotoModal(indice) {
-        indice =
-            limitarIndice(indice);
-
-
-        mostrarFoto(
-            indice,
-            false
-        );
-
-
-        atualizarModal(
-            indice
-        );
-    }
-
-
-    if (expandir) {
-        expandir.addEventListener(
-            'click',
-            function (evento) {
-                evento.stopPropagation();
-
-
-                abrirModal(
-                    indiceAtual
-                );
-            }
-        );
-    }
-
-
-    if (modalFechar) {
-        modalFechar.addEventListener(
-            'click',
-            fecharModal
-        );
-    }
-
-
-    if (modalAnterior) {
-        modalAnterior.addEventListener(
-            'click',
-            function () {
-                mostrarFotoModal(
-                    indiceAtual - 1
-                );
-            }
-        );
-    }
-
-
-    if (modalSeguinte) {
-        modalSeguinte.addEventListener(
-            'click',
-            function () {
-                mostrarFotoModal(
-                    indiceAtual + 1
-                );
-            }
-        );
-    }
-
-
-    if (modal) {
-        modal.addEventListener(
-            'click',
-            function (evento) {
-                if (
-                    evento.target &&
-                    evento.target.hasAttribute(
-                        'data-fechar-modal'
-                    )
-                ) {
-                    fecharModal();
-                }
-            }
-        );
-    }
-
-
-    /* =====================================================
-       SCROLL
-       ===================================================== */
-
-
-    faixa.addEventListener(
-        'scroll',
-        function () {
-            if (
-                frameScroll !== null
-            ) {
-                return;
-            }
-
-
-            frameScroll =
-                window
-                    .requestAnimationFrame(
-                        function () {
-                            frameScroll =
-                                null;
-
-
-                            atualizarInterface(
-                                indiceMaisProximo()
-                            );
-                        }
-                    );
-        },
-        {
-            passive: true
+    function fecharLightbox() {
+        if (!lightbox || !lightboxMedia || !modalAberto) {
+            return;
         }
-    );
 
+        aplicarTransformacaoInicial();
+        lightbox.classList.remove('is-open');
+        modalAberto = false;
 
-    /* =====================================================
-       INDICADORES
-       ===================================================== */
-
-
-    indicadores.forEach(
-        function (indicador) {
-            indicador.addEventListener(
-                'click',
-                function (evento) {
-                    evento.stopPropagation();
-
-
-                    mostrarFoto(
-                        Number(
-                            indicador.dataset
-                                .indice
-                        )
-                    );
-                }
-            );
-        }
-    );
-
-
-    /* =====================================================
-       SETAS
-       ===================================================== */
-
-
-    if (anterior) {
-        anterior.addEventListener(
-            'click',
-            function (evento) {
-                evento.stopPropagation();
-
-
-                mostrarFoto(
-                    indiceAtual - 1
-                );
-            }
-        );
+        window.setTimeout(function () {
+            lightbox.classList.remove('is-mounted');
+            lightbox.hidden = true;
+            lightbox.setAttribute('aria-hidden', 'true');
+            document.documentElement.classList.remove('perfil-modal-aberta');
+            document.body.classList.remove('perfil-modal-aberta');
+            galeria.focus({ preventScroll: true });
+        }, 660);
     }
 
-
-    if (seguinte) {
-        seguinte.addEventListener(
-            'click',
-            function (evento) {
-                evento.stopPropagation();
-
-
-                mostrarFoto(
-                    indiceAtual + 1
-                );
-            }
-        );
+    function irParaAnterior() {
+        mostrarFoto(indiceAtual - 1);
     }
 
+    function irParaSeguinte() {
+        mostrarFoto(indiceAtual + 1);
+    }
 
-    /* =====================================================
-       ARRASTO COM RATO
-       ===================================================== */
+    indicadores.forEach(function (indicador) {
+        indicador.addEventListener('click', function () {
+            var indice = Number(indicador.dataset.indice || 0);
+            mostrarFoto(indice);
+        });
+    });
 
+    if (botaoAnterior) {
+        botaoAnterior.addEventListener('click', irParaAnterior);
+    }
 
-    faixa.addEventListener(
-        'pointerdown',
-        function (evento) {
-            if (
-                evento.pointerType !==
-                    'mouse' ||
-                evento.button !== 0
-            ) {
-                return;
-            }
+    if (botaoSeguinte) {
+        botaoSeguinte.addEventListener('click', irParaSeguinte);
+    }
 
+    faixa.addEventListener('scroll', aoScrollFaixa, { passive: true });
 
-            ratoAtivo =
-                true;
-
-
-            ratoMoveu =
-                false;
-
-
-            ratoInicioX =
-                evento.clientX;
-
-
-            scrollInicio =
-                faixa.scrollLeft;
-
-
-            faixa.classList.add(
-                'a-arrastar'
-            );
-
-
-            faixa.setPointerCapture(
-                evento.pointerId
-            );
+    faixa.addEventListener('click', function (evento) {
+        var imagem = evento.target.closest('.perfil-slide img');
+        if (!imagem) {
+            return;
         }
-    );
 
+        var slide = imagem.closest('.perfil-slide');
+        if (!slide) {
+            return;
+        }
 
-    faixa.addEventListener(
-        'pointermove',
-        function (evento) {
-            if (!ratoAtivo) {
-                return;
+        abrirLightbox(Number(slide.dataset.indice || 0));
+    });
+
+    if (lightboxFechar) {
+        lightboxFechar.addEventListener('click', fecharLightbox);
+    }
+
+    if (lightbox) {
+        lightbox.addEventListener('click', function (evento) {
+            if (evento.target && evento.target.hasAttribute('data-fechar-modal')) {
+                fecharLightbox();
             }
+        });
+    }
 
+    if (lightboxAnterior) {
+        lightboxAnterior.addEventListener('click', function () {
+            var novoIndice = limitarIndice(indiceAtual - 1);
+            mostrarFoto(novoIndice, false);
+            atualizarLightboxSlide(novoIndice);
+        });
+    }
 
-            var distancia =
-                evento.clientX -
-                ratoInicioX;
+    if (lightboxSeguinte) {
+        lightboxSeguinte.addEventListener('click', function () {
+            var novoIndice = limitarIndice(indiceAtual + 1);
+            mostrarFoto(novoIndice, false);
+            atualizarLightboxSlide(novoIndice);
+        });
+    }
 
-
-            if (
-                Math.abs(distancia) >
-                4
-            ) {
-                ratoMoveu =
-                    true;
-            }
-
-
-            faixa.scrollLeft =
-                scrollInicio -
-                distancia;
-
-
+    galeria.addEventListener('keydown', function (evento) {
+        if (evento.key === 'ArrowLeft') {
             evento.preventDefault();
+            irParaAnterior();
         }
-    );
 
+        if (evento.key === 'ArrowRight') {
+            evento.preventDefault();
+            irParaSeguinte();
+        }
 
-    function terminarArrasto(evento) {
-        if (!ratoAtivo) {
+        if (evento.key === 'Enter' || evento.key === ' ') {
+            evento.preventDefault();
+            abrirLightbox(indiceAtual);
+        }
+    });
+
+    document.addEventListener('keydown', function (evento) {
+        if (!modalAberto) {
             return;
         }
 
-
-        ratoAtivo =
-            false;
-
-
-        faixa.classList.remove(
-            'a-arrastar'
-        );
-
-
-        if (
-            faixa.hasPointerCapture(
-                evento.pointerId
-            )
-        ) {
-            faixa.releasePointerCapture(
-                evento.pointerId
-            );
+        if (evento.key === 'Escape') {
+            evento.preventDefault();
+            fecharLightbox();
         }
 
-
-        mostrarFoto(
-            indiceMaisProximo()
-        );
-
-
-        window.setTimeout(
-            function () {
-                ratoMoveu =
-                    false;
-            },
-            20
-        );
-    }
-
-
-    faixa.addEventListener(
-        'pointerup',
-        terminarArrasto
-    );
-
-
-    faixa.addEventListener(
-        'pointercancel',
-        terminarArrasto
-    );
-
-
-    /* =====================================================
-       CLICK NA FOTO
-       ===================================================== */
-
-
-    faixa.addEventListener(
-        'click',
-        function (evento) {
-            if (ratoMoveu) {
-                evento.preventDefault();
-
-                return;
+        if (evento.key === 'ArrowLeft') {
+            evento.preventDefault();
+            if (indiceAtual > 0) {
+                mostrarFoto(indiceAtual - 1, false);
+                atualizarLightboxSlide(indiceAtual);
             }
-
-
-            var imagem =
-                evento.target.closest(
-                    '.perfil-slide img'
-                );
-
-
-            if (!imagem) {
-                return;
-            }
-
-
-            var slide =
-                imagem.closest(
-                    '.perfil-slide'
-                );
-
-
-            if (!slide) {
-                return;
-            }
-
-
-            abrirModal(
-                Number(
-                    slide.dataset.indice
-                )
-            );
         }
-    );
 
+        if (evento.key === 'ArrowRight') {
+            evento.preventDefault();
+            if (indiceAtual < slides.length - 1) {
+                mostrarFoto(indiceAtual + 1, false);
+                atualizarLightboxSlide(indiceAtual);
+            }
+        }
+    });
 
-    /* =====================================================
-       TECLADO
-       ===================================================== */
+    window.addEventListener('resize', function () {
+        mostrarFoto(indiceAtual, false);
 
-
-    function aoPremirTecla(evento) {
         if (modalAberto) {
-
-            if (
-                evento.key ===
-                'Escape'
-            ) {
-                evento.preventDefault();
-
-                fecharModal();
-
-                return;
-            }
-
-
-            if (
-                evento.key ===
-                'ArrowLeft'
-            ) {
-                evento.preventDefault();
-
-                mostrarFotoModal(
-                    indiceAtual - 1
-                );
-
-                return;
-            }
-
-
-            if (
-                evento.key ===
-                'ArrowRight'
-            ) {
-                evento.preventDefault();
-
-                mostrarFotoModal(
-                    indiceAtual + 1
-                );
-
-                return;
-            }
-
-
-            return;
+            aplicarTransformacaoInicial();
+            window.requestAnimationFrame(function () {
+                if (lightbox.classList.contains('is-open')) {
+                    lightboxMedia.style.setProperty('--from-x', '0px');
+                    lightboxMedia.style.setProperty('--from-y', '0px');
+                    lightboxMedia.style.setProperty('--from-scale-x', '1');
+                    lightboxMedia.style.setProperty('--from-scale-y', '1');
+                }
+            });
         }
+    });
 
-
-        if (
-            document.activeElement !==
-            galeria
-        ) {
-            return;
-        }
-
-
-        if (
-            evento.key ===
-            'ArrowLeft'
-        ) {
-            evento.preventDefault();
-
-            mostrarFoto(
-                indiceAtual - 1
-            );
-        }
-
-
-        if (
-            evento.key ===
-            'ArrowRight'
-        ) {
-            evento.preventDefault();
-
-            mostrarFoto(
-                indiceAtual + 1
-            );
-        }
-
-
-        if (
-            evento.key ===
-            'Home'
-        ) {
-            evento.preventDefault();
-
-            mostrarFoto(
-                0
-            );
-        }
-
-
-        if (
-            evento.key ===
-            'End'
-        ) {
-            evento.preventDefault();
-
-            mostrarFoto(
-                slides.length - 1
-            );
-        }
-    }
-
-
-    document.addEventListener(
-        'keydown',
-        aoPremirTecla
-    );
-
-
-    /* =====================================================
-       RESIZE
-       ===================================================== */
-
-
-    function aoRedimensionar() {
-        mostrarFoto(
-            indiceAtual,
-            false
-        );
-    }
-
-
-    if (
-        'ResizeObserver' in window
-    ) {
-        observadorTamanho =
-            new window
-                .ResizeObserver(
-                    aoRedimensionar
-                );
-
-
-        observadorTamanho.observe(
-            faixa
-        );
-    } else {
-        window.addEventListener(
-            'resize',
-            aoRedimensionar,
-            {
-                passive: true
-            }
-        );
-    }
-
-
-    /* =====================================================
-       SAÍDA DA PÁGINA
-       ===================================================== */
-
-
-    function desativarPagina() {
-        if (
-            frameScroll !==
-            null
-        ) {
-            window
-                .cancelAnimationFrame(
-                    frameScroll
-                );
-
-
-            frameScroll =
-                null;
-        }
-
-
-        if (
-            temporizadorModal !==
-            null
-        ) {
-            window.clearTimeout(
-                temporizadorModal
-            );
-
-
-            temporizadorModal =
-                null;
-        }
-
-
-        if (
-            observadorTamanho
-        ) {
-            observadorTamanho
-                .disconnect();
-
-
-            observadorTamanho =
-                null;
-        } else {
-            window.removeEventListener(
-                'resize',
-                aoRedimensionar
-            );
-        }
-
-
-        document.removeEventListener(
-            'keydown',
-            aoPremirTecla
-        );
-
-
-        document.removeEventListener(
-            'margot:page-leave',
-            desativarPagina
-        );
-    }
-
-
-    document.addEventListener(
-        'margot:page-leave',
-        desativarPagina
-    );
-
-
-    atualizarInterface(
-        0
-    );
-
+    atualizarFallbacks();
+    atualizarUI(0);
 })(window, document);
-
-
 
 
 /* =========================================================
@@ -1163,430 +359,141 @@
 (function (window, document) {
     'use strict';
 
-
-    var botao =
-        document.getElementById(
-            'enviar-hey-perfil'
-        );
-
+    var botao = document.getElementById('enviar-hey-perfil');
 
     if (!botao) {
         return;
     }
 
+    var texto = botao.querySelector('.perfil-hey-texto');
+    var estadoAcessivel = document.getElementById('perfil-hey-estado');
 
-    var etiqueta =
-        botao.querySelector(
-            '.perfil-hey-label'
-        );
+    var textoInicial = texto ? texto.textContent : 'Hey';
+    var emEnvio = false;
+    var timeoutConfirmacao = null;
+    var timeoutReposicao = null;
 
-
-    var estadoAcessivel =
-        document.getElementById(
-            'perfil-hey-estado'
-        );
-
-
-    var temporizadorReposicao =
-        null;
-
-
-    var temporizadorConfirmacao =
-        null;
-
-
-    var aEnviar =
-        false;
-
-
-    var textoInicial =
-        etiqueta
-            ? etiqueta.textContent
-            : 'Hey';
-
-
-    function detalheCorresponde(
-        evento
-    ) {
-        var detalhe =
-            evento &&
-            evento.detail
-                ? evento.detail
-                : {};
-
-
-        return (
-            String(
-                detalhe.destinatario_id ||
-                ''
-            ) ===
-            String(
-                botao.dataset
-                    .destinatarioId ||
-                ''
-            )
-        );
-    }
-
-
-    function alterarEtiqueta(texto) {
-        if (etiqueta) {
-            etiqueta.textContent =
-                texto;
-        } else {
-            botao.textContent =
-                texto;
+    function atualizarTexto(valor) {
+        if (texto) {
+            texto.textContent = valor;
         }
     }
 
-
-    function anunciar(texto) {
+    function anunciar(valor) {
         if (estadoAcessivel) {
-            estadoAcessivel.textContent =
-                texto;
+            estadoAcessivel.textContent = valor;
         }
     }
-
-
-    function limparTemporizadorConfirmacao() {
-        if (
-            temporizadorConfirmacao ===
-            null
-        ) {
-            return;
-        }
-
-
-        window.clearTimeout(
-            temporizadorConfirmacao
-        );
-
-
-        temporizadorConfirmacao =
-            null;
-    }
-
 
     function reporBotao() {
-        limparTemporizadorConfirmacao();
-
-
-        aEnviar =
-            false;
-
-
-        botao.disabled =
-            false;
-
-
-        botao.removeAttribute(
-            'aria-busy'
-        );
-
-
-        botao.classList.remove(
-            'a-enviar',
-            'enviado'
-        );
-
-
-        alterarEtiqueta(
-            textoInicial
-        );
+        emEnvio = false;
+        botao.disabled = false;
+        botao.classList.remove('a-enviar', 'enviado');
+        botao.removeAttribute('aria-busy');
+        atualizarTexto(textoInicial);
     }
 
+    function mostrarMensagem(textoMensagem, tipo) {
+        anunciar(textoMensagem);
 
-    function mostrarMensagem(
-        texto,
-        tipo
-    ) {
-        anunciar(texto);
-
-
-        if (
-            typeof window
-                .mostrarMensagemTemporaria ===
-            'function'
-        ) {
-            window
-                .mostrarMensagemTemporaria(
-                    texto,
-                    tipo || 'erro'
-                );
+        if (typeof window.mostrarMensagemTemporaria === 'function') {
+            window.mostrarMensagemTemporaria(textoMensagem, tipo || 'erro');
         }
     }
 
+    function idsCoincidem(evento) {
+        var detalhe = evento && evento.detail ? evento.detail : {};
+        return String(detalhe.destinatario_id || '') === String(botao.dataset.destinatarioId || '');
+    }
 
     function enviarHey() {
-        var destinatarioId =
-            botao.dataset
-                .destinatarioId;
+        var destinatarioId = botao.dataset.destinatarioId;
 
-
-        if (
-            aEnviar ||
-            !destinatarioId
-        ) {
+        if (!destinatarioId || emEnvio) {
             return;
         }
-
 
         if (
             !window.AppWebSocket ||
-            typeof window
-                .AppWebSocket
-                .isConnected !==
-                'function' ||
-            !window.AppWebSocket
-                .isConnected()
+            typeof window.AppWebSocket.isConnected !== 'function' ||
+            !window.AppWebSocket.isConnected()
         ) {
-            if (
-                window.AppWebSocket &&
-                typeof window
-                    .AppWebSocket
-                    .connect ===
-                    'function'
-            ) {
-                window.AppWebSocket
-                    .connect();
+            if (window.AppWebSocket && typeof window.AppWebSocket.connect === 'function') {
+                window.AppWebSocket.connect();
             }
 
-
-            mostrarMensagem(
-                'A ligação está a ser restabelecida.',
-                'erro'
-            );
-
-
+            mostrarMensagem('A ligação está a ser restabelecida.', 'erro');
             return;
         }
 
+        emEnvio = true;
+        botao.disabled = true;
+        botao.classList.add('a-enviar');
+        botao.setAttribute('aria-busy', 'true');
+        atualizarTexto('A enviar…');
+        anunciar('A enviar Hey.');
 
-        aEnviar =
-            true;
-
-
-        botao.disabled =
-            true;
-
-
-        botao.setAttribute(
-            'aria-busy',
-            'true'
-        );
-
-
-        botao.classList.add(
-            'a-enviar'
-        );
-
-
-        alterarEtiqueta(
-            'A enviar…'
-        );
-
-
-        anunciar(
-            'A enviar o Hey.'
-        );
-
-
-        var enviado =
-            window.AppWebSocket.send({
-                type: 'notify',
-
-                destinatario_id:
-                    destinatarioId
-            });
-
+        var enviado = window.AppWebSocket.send({
+            type: 'notify',
+            destinatario_id: destinatarioId
+        });
 
         if (!enviado) {
             reporBotao();
-
-
-            mostrarMensagem(
-                'Não foi possível enviar o Hey.',
-                'erro'
-            );
-
-
+            mostrarMensagem('Não foi possível enviar o Hey.', 'erro');
             return;
         }
 
-
-        temporizadorConfirmacao =
-            window.setTimeout(
-                function () {
-                    temporizadorConfirmacao =
-                        null;
-
-
-                    reporBotao();
-
-
-                    anunciar(
-                        'Não foi recebida confirmação do envio. Podes tentar novamente.'
-                    );
-                },
-                8000
-            );
+        timeoutConfirmacao = window.setTimeout(function () {
+            timeoutConfirmacao = null;
+            reporBotao();
+            mostrarMensagem('Não foi recebida confirmação. Podes tentar outra vez.', 'erro');
+        }, 8000);
     }
 
-
-    function aoEnviarHey(evento) {
-        if (
-            !detalheCorresponde(
-                evento
-            )
-        ) {
+    function heyEnviado(evento) {
+        if (!idsCoincidem(evento)) {
             return;
         }
 
-
-        limparTemporizadorConfirmacao();
-
-
-        aEnviar =
-            false;
-
-
-        botao.disabled =
-            true;
-
-
-        botao.removeAttribute(
-            'aria-busy'
-        );
-
-
-        botao.classList.remove(
-            'a-enviar'
-        );
-
-
-        botao.classList.add(
-            'enviado'
-        );
-
-
-        alterarEtiqueta(
-            'Hey enviado'
-        );
-
-
-        anunciar(
-            'Hey enviado com sucesso.'
-        );
-
-
-        if (
-            temporizadorReposicao !==
-            null
-        ) {
-            window.clearTimeout(
-                temporizadorReposicao
-            );
+        if (timeoutConfirmacao) {
+            window.clearTimeout(timeoutConfirmacao);
+            timeoutConfirmacao = null;
         }
 
+        emEnvio = false;
+        botao.disabled = true;
+        botao.classList.remove('a-enviar');
+        botao.classList.add('enviado');
+        botao.removeAttribute('aria-busy');
+        atualizarTexto('Hey enviado');
+        anunciar('Hey enviado com sucesso.');
 
-        temporizadorReposicao =
-            window.setTimeout(
-                function () {
-                    temporizadorReposicao =
-                        null;
+        if (timeoutReposicao) {
+            window.clearTimeout(timeoutReposicao);
+        }
 
-
-                    reporBotao();
-                },
-                1600
-            );
+        timeoutReposicao = window.setTimeout(function () {
+            timeoutReposicao = null;
+            reporBotao();
+        }, 1600);
     }
 
-
-    function aoFalharHey(evento) {
-        if (
-            !detalheCorresponde(
-                evento
-            )
-        ) {
+    function heyErro(evento) {
+        if (!idsCoincidem(evento)) {
             return;
         }
 
+        if (timeoutConfirmacao) {
+            window.clearTimeout(timeoutConfirmacao);
+            timeoutConfirmacao = null;
+        }
 
         reporBotao();
-
-
-        mostrarMensagem(
-            'Não foi possível enviar o Hey.',
-            'erro'
-        );
+        mostrarMensagem('Não foi possível enviar o Hey.', 'erro');
     }
 
-
-    function desativarPagina() {
-        if (
-            temporizadorReposicao !==
-            null
-        ) {
-            window.clearTimeout(
-                temporizadorReposicao
-            );
-
-
-            temporizadorReposicao =
-                null;
-        }
-
-
-        limparTemporizadorConfirmacao();
-
-
-        botao.removeEventListener(
-            'click',
-            enviarHey
-        );
-
-
-        window.removeEventListener(
-            'app:hey-enviado',
-            aoEnviarHey
-        );
-
-
-        window.removeEventListener(
-            'app:hey-erro',
-            aoFalharHey
-        );
-
-
-        document.removeEventListener(
-            'margot:page-leave',
-            desativarPagina
-        );
-    }
-
-
-    botao.addEventListener(
-        'click',
-        enviarHey
-    );
-
-
-    window.addEventListener(
-        'app:hey-enviado',
-        aoEnviarHey
-    );
-
-
-    window.addEventListener(
-        'app:hey-erro',
-        aoFalharHey
-    );
-
-
-    document.addEventListener(
-        'margot:page-leave',
-        desativarPagina
-    );
-
+    botao.addEventListener('click', enviarHey);
+    window.addEventListener('app:hey-enviado', heyEnviado);
+    window.addEventListener('app:hey-erro', heyErro);
 })(window, document);
