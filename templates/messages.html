@@ -1,82 +1,138 @@
 {% extends 'layout.html' %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ doc_root }}estilos/messages.css?v=2" data-margot-page-style>
+<link
+    rel="stylesheet"
+    href="{{ doc_root }}estilos/messages.css?v=3"
+    data-margot-page-style
+>
 {% endblock %}
 
 {% block content %}
 <main id="mensagens-pagina" class="mensagens-pagina">
-    <header class="mensagens-cabecalho">
-        <p>Margot</p>
-        <h1>Mensagens</h1>
-    </header>
 
-    <section
-        id="conversas-lista"
-        class="conversas-lista"
-        aria-live="polite"
+    <div
+        class="mensagens-fundo"
+        aria-hidden="true"
     >
-        {% for conversa in conversas %}
-            <a
-                href="{{ conversa.chat_url }}"
-                class="conversa-item"
-                data-membro-id="{{ conversa.outro_id }}"
-                data-mensagem-id="{{ conversa.id }}"
-                data-membro-nome="{{ conversa.outro_nome }}"
+        <span class="mensagens-fundo-forma mensagens-fundo-forma--1"></span>
+        <span class="mensagens-fundo-forma mensagens-fundo-forma--2"></span>
+        <span class="mensagens-fundo-forma mensagens-fundo-forma--3"></span>
+    </div>
+
+    <div class="mensagens-conteudo">
+
+        <header class="mensagens-cabecalho">
+
+            <div
+                class="mensagens-marca-abstrata"
+                aria-hidden="true"
             >
-                <img
-                    src="{{ conversa.outro_foto_url }}"
-                    alt="Fotografia de {{ conversa.outro_nome }}"
-                    onerror="this.onerror=null;this.src='{{ doc_root }}imagens/fotos-perfil/default.webp';"
-                    draggable="false"
+                <span class="mensagens-marca-abstrata--1"></span>
+                <span class="mensagens-marca-abstrata--2"></span>
+            </div>
+
+            <div class="mensagens-titulo">
+                <h1>
+                    Mensagens
+                </h1>
+
+                <div
+                    class="mensagens-assinatura"
+                    aria-hidden="true"
+                >
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+
+        </header>
+
+        <section
+            id="conversas-lista"
+            class="conversas-lista"
+            aria-live="polite"
+        >
+            {% for conversa in conversas %}
+
+                <a
+                    href="{{ conversa.chat_url }}"
+                    class="conversa-item"
+                    data-membro-id="{{ conversa.outro_id }}"
+                    data-mensagem-id="{{ conversa.id }}"
+                    data-membro-nome="{{ conversa.outro_nome }}"
                 >
 
-                <span class="conversa-conteudo">
-                    <strong>{{ conversa.outro_nome }}</strong>
-
-                    <span class="conversa-resumo">
-                        {{ conversa.resumo }}
+                    <span class="conversa-foto-caixa">
+                        <img
+                            src="{{ conversa.outro_foto_url }}"
+                            alt="Fotografia de {{ conversa.outro_nome }}"
+                            onerror="this.onerror=null;this.src='{{ doc_root }}imagens/fotos-perfil/default.webp';"
+                            draggable="false"
+                        >
                     </span>
-                </span>
 
-                <span class="conversa-meta">
-                    <time
-                        datetime="{{ conversa.criada_em }}"
-                        data-data-mensagem="{{ conversa.criada_em }}"
-                    ></time>
+                    <span class="conversa-conteudo">
 
-                    <span
-                        class="conversa-nao-lidas"
-                        {{ conversa.nao_lidas == 0 ? 'hidden' : '' }}
-                    >
-                        {{ conversa.nao_lidas }}
+                        <strong>
+                            {{ conversa.outro_nome }}
+                        </strong>
+
+                        <span class="conversa-resumo">
+                            {{ conversa.resumo }}
+                        </span>
+
                     </span>
-                </span>
-            </a>
-        {% else %}
-            <div
-                id="conversas-vazio"
-                class="conversas-vazio"
-            >
-                <span>💬</span>
 
-                <h2>
-                    Ainda não há conversas
-                </h2>
+                    <span class="conversa-meta">
 
-                <p>
-                    Abre uma pessoa no ecrã inicial e envia a primeira mensagem.
-                </p>
-            </div>
-        {% endfor %}
-    </section>
+                        <time
+                            datetime="{{ conversa.criada_em }}"
+                            data-data-mensagem="{{ conversa.criada_em }}"
+                        ></time>
 
-    <p
-        id="conversas-erro"
-        class="conversas-erro"
-        role="alert"
-        hidden
-    ></p>
+                        <span
+                            class="conversa-nao-lidas"
+                            {{ conversa.nao_lidas == 0 ? 'hidden' : '' }}
+                        >
+                            {{ conversa.nao_lidas }}
+                        </span>
+
+                    </span>
+
+                </a>
+
+            {% else %}
+
+                <div
+                    id="conversas-vazio"
+                    class="conversas-vazio"
+                >
+                    <span class="conversas-vazio-icone">
+                        💬
+                    </span>
+
+                    <h2>
+                        Ainda não há conversas
+                    </h2>
+
+                    <p>
+                        Abre uma pessoa no ecrã inicial e envia a primeira mensagem.
+                    </p>
+                </div>
+
+            {% endfor %}
+        </section>
+
+        <p
+            id="conversas-erro"
+            class="conversas-erro"
+            role="alert"
+            hidden
+        ></p>
+
+    </div>
 
     <dialog
         id="conversa-acoes"
@@ -84,12 +140,20 @@
         aria-labelledby="conversa-acoes-titulo"
     >
         <div class="conversa-acoes-caixa">
+
+            <span
+                class="conversa-acoes-mancha"
+                aria-hidden="true"
+            ></span>
+
             <div class="conversa-acoes-cabecalho">
+
                 <strong id="conversa-acoes-titulo">
                     Conversa
                 </strong>
 
                 <span id="conversa-acoes-nome"></span>
+
             </div>
 
             <button
@@ -97,7 +161,9 @@
                 id="conversa-bloquear"
                 class="conversa-acao conversa-acao-perigosa"
             >
-                <strong>Bloquear utilizador</strong>
+                <strong>
+                    Bloquear utilizador
+                </strong>
 
                 <span>
                     Deixam de se ver e de poder conversar.
@@ -109,7 +175,9 @@
                 id="conversa-eliminar"
                 class="conversa-acao conversa-acao-perigosa"
             >
-                <strong>Eliminar conversa</strong>
+                <strong>
+                    Eliminar conversa
+                </strong>
 
                 <span>
                     Remove o histórico apenas para ti.
@@ -123,8 +191,10 @@
             >
                 Cancelar
             </button>
+
         </div>
     </dialog>
+
 </main>
 
 <script>
