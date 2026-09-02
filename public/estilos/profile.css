@@ -829,32 +829,35 @@ body.perfil-modal-aberta {
 
 /* =========================================================
    INDICADORES
-
-   AGORA FICAM EM BAIXO DA FOTO.
    ========================================================= */
 
 .perfil-indicadores {
     position: absolute;
     z-index: 8;
 
-    /*
-        Importante:
-        não existe qualquer "top" aqui.
-    */
-    top: auto !important;
+    top:
+        auto !important;
 
-    bottom: 28px;
+    bottom:
+        28px;
 
-    left: 50%;
+    left:
+        50%;
 
     transform:
         translateX(-50%);
 
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display:
+        flex;
 
-    gap: 3px;
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    gap:
+        3px;
 
     pointer-events:
         auto;
@@ -862,19 +865,29 @@ body.perfil-modal-aberta {
 
 
 .perfil-indicadores button {
-    width: 13px;
-    height: 13px;
+    width:
+        13px;
 
-    margin: 0;
-    padding: 4px;
+    height:
+        13px;
 
-    border: 0;
+    margin:
+        0;
+
+    padding:
+        4px;
+
+    border:
+        0;
 
     background:
         transparent;
 
-    display: grid;
-    place-items: center;
+    display:
+        grid;
+
+    place-items:
+        center;
 
     cursor:
         pointer;
@@ -885,10 +898,14 @@ body.perfil-modal-aberta {
 
 
 .perfil-indicadores button span {
-    display: block;
+    display:
+        block;
 
-    width: 3.5px;
-    height: 3.5px;
+    width:
+        3.5px;
+
+    height:
+        3.5px;
 
     flex:
         0 0 auto;
@@ -908,10 +925,20 @@ body.perfil-modal-aberta {
     transition:
         width
         180ms
-        cubic-bezier(0.22, 1, 0.36, 1),
+        cubic-bezier(
+            0.22,
+            1,
+            0.36,
+            1
+        ),
         transform
         180ms
-        cubic-bezier(0.22, 1, 0.36, 1),
+        cubic-bezier(
+            0.22,
+            1,
+            0.36,
+            1
+        ),
         background-color
         180ms
         ease,
@@ -922,8 +949,11 @@ body.perfil-modal-aberta {
 
 
 .perfil-indicadores button.ativo span {
-    width: 10px;
-    height: 3.5px;
+    width:
+        10px;
+
+    height:
+        3.5px;
 
     background:
         #ffffff;
@@ -953,7 +983,8 @@ body.perfil-modal-aberta {
     min-height: 34px;
 
     padding:
-        0 11px;
+        0
+        11px;
 
     border:
         1px solid
@@ -980,10 +1011,14 @@ body.perfil-modal-aberta {
     font-variant-numeric:
         tabular-nums;
 
-    display: flex;
-    align-items: center;
+    display:
+        flex;
 
-    gap: 4px;
+    align-items:
+        center;
+
+    gap:
+        4px;
 }
 
 
@@ -1020,8 +1055,11 @@ body.perfil-modal-aberta {
     backdrop-filter:
         blur(12px);
 
-    display: grid;
-    place-items: center;
+    display:
+        grid;
+
+    place-items:
+        center;
 
     pointer-events:
         none;
@@ -1081,8 +1119,11 @@ body.perfil-modal-aberta {
     transform:
         translateY(-50%);
 
-    display: grid;
-    place-items: center;
+    display:
+        grid;
+
+    place-items:
+        center;
 
     cursor:
         pointer;
@@ -1143,9 +1184,13 @@ body.perfil-modal-aberta {
     position: relative;
     z-index: 5;
 
+    /*
+        Mais largo do que antes, mas continua
+        a deixar uma pequena margem à esquerda.
+    */
     width:
         calc(
-            100% - 28px
+            100% - 8px
         );
 
     margin:
@@ -1159,7 +1204,8 @@ body.perfil-modal-aberta {
         19px
         21px;
 
-    overflow: hidden;
+    overflow:
+        hidden;
 
     border:
         1px solid
@@ -1219,9 +1265,17 @@ body.perfil-modal-aberta {
     position: relative;
     z-index: 2;
 
-    max-width: 94%;
+    width:
+        100%;
 
-    margin: 0;
+    max-width:
+        100%;
+
+    margin:
+        0;
+
+    overflow:
+        hidden;
 
     color:
         var(--perfil-preto);
@@ -1231,22 +1285,34 @@ body.perfil-modal-aberta {
         "Times New Roman",
         serif;
 
+    /*
+        Ligeiramente menor para primeiro + último nome
+        terem muito mais probabilidade de caber juntos.
+    */
     font-size:
         clamp(
-            40px,
-            12vw,
-            68px
+            34px,
+            9.4vw,
+            58px
         );
 
-    font-weight: 700;
+    font-weight:
+        700;
 
-    line-height: 0.95;
+    line-height:
+        0.98;
 
     letter-spacing:
-        -0.05em;
+        -0.045em;
+
+    white-space:
+        nowrap;
 
     overflow-wrap:
-        anywhere;
+        normal;
+
+    text-overflow:
+        ellipsis;
 }
 
 
@@ -1263,10 +1329,15 @@ body.perfil-modal-aberta {
     margin-top: 15px;
 
     display: flex;
-    align-items: center;
-    justify-content: space-between;
 
-    gap: 14px;
+    align-items:
+        center;
+
+    justify-content:
+        space-between;
+
+    gap:
+        14px;
 }
 
 
@@ -1275,7 +1346,8 @@ body.perfil-modal-aberta {
     min-height: 31px;
 
     padding:
-        0 12px;
+        0
+        12px;
 
     border-radius:
         999px;
@@ -1289,9 +1361,14 @@ body.perfil-modal-aberta {
     font-size: 14px;
     font-weight: 790;
 
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    display:
+        inline-flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
 }
 
 
@@ -1482,17 +1559,23 @@ body.perfil-modal-aberta {
 
     margin-top: 13px;
 
-    display: flex;
-    align-items: center;
+    display:
+        flex;
 
-    gap: 6px;
+    align-items:
+        center;
+
+    gap:
+        6px;
 }
 
 
 .perfil-assinatura span {
-    display: block;
+    display:
+        block;
 
-    height: 3px;
+    height:
+        3px;
 
     border-radius:
         999px;
@@ -1500,7 +1583,8 @@ body.perfil-modal-aberta {
 
 
 .perfil-assinatura span:nth-child(1) {
-    width: 23px;
+    width:
+        23px;
 
     background:
         var(--perfil-azul);
@@ -1508,7 +1592,8 @@ body.perfil-modal-aberta {
 
 
 .perfil-assinatura span:nth-child(2) {
-    width: 11px;
+    width:
+        11px;
 
     background:
         var(--perfil-roxo);
@@ -1516,7 +1601,8 @@ body.perfil-modal-aberta {
 
 
 .perfil-assinatura span:nth-child(3) {
-    width: 7px;
+    width:
+        7px;
 
     background:
         var(--perfil-vermelho);
@@ -1532,7 +1618,8 @@ body.perfil-modal-aberta {
 
     width: 100%;
 
-    margin-top: 17px;
+    margin-top:
+        17px;
 
     padding:
         21px
@@ -1579,18 +1666,26 @@ body.perfil-modal-aberta {
    ========================================================= */
 
 .perfil-seccao-topo {
-    margin-bottom: 15px;
+    margin-bottom:
+        15px;
 
-    display: flex;
-    align-items: center;
+    display:
+        flex;
 
-    gap: 11px;
+    align-items:
+        center;
+
+    gap:
+        11px;
 }
 
 
 .perfil-seccao-icone {
-    width: 41px;
-    height: 41px;
+    width:
+        41px;
+
+    height:
+        41px;
 
     flex:
         0 0 auto;
@@ -1598,8 +1693,11 @@ body.perfil-modal-aberta {
     border-radius:
         14px;
 
-    display: grid;
-    place-items: center;
+    display:
+        grid;
+
+    place-items:
+        center;
 }
 
 
@@ -1616,22 +1714,32 @@ body.perfil-modal-aberta {
 
 
 .perfil-seccao-icone svg {
-    width: 20px;
-    height: 20px;
+    width:
+        20px;
 
-    fill: none;
+    height:
+        20px;
+
+    fill:
+        none;
 
     stroke:
         var(--perfil-preto);
 
-    stroke-width: 1.75;
-    stroke-linecap: round;
-    stroke-linejoin: round;
+    stroke-width:
+        1.75;
+
+    stroke-linecap:
+        round;
+
+    stroke-linejoin:
+        round;
 }
 
 
 .perfil-seccao h2 {
-    margin: 0;
+    margin:
+        0;
 
     color:
         var(--perfil-preto);
@@ -1641,10 +1749,14 @@ body.perfil-modal-aberta {
         "Times New Roman",
         serif;
 
-    font-size: 26px;
-    font-weight: 700;
+    font-size:
+        26px;
 
-    line-height: 1;
+    font-weight:
+        700;
+
+    line-height:
+        1;
 
     letter-spacing:
         -0.03em;
@@ -1656,7 +1768,8 @@ body.perfil-modal-aberta {
    ========================================================= */
 
 .perfil-sobre p {
-    margin: 0;
+    margin:
+        0;
 
     color:
         #34323a;
@@ -1668,9 +1781,11 @@ body.perfil-modal-aberta {
             21px
         );
 
-    font-weight: 470;
+    font-weight:
+        470;
 
-    line-height: 1.55;
+    line-height:
+        1.55;
 
     letter-spacing:
         -0.018em;
@@ -1688,12 +1803,17 @@ body.perfil-modal-aberta {
    ========================================================= */
 
 .perfil-interesses-grid {
-    margin: 0;
-    padding: 0;
+    margin:
+        0;
 
-    list-style: none;
+    padding:
+        0;
 
-    display: grid;
+    list-style:
+        none;
+
+    display:
+        grid;
 
     grid-template-columns:
         repeat(
@@ -1704,21 +1824,27 @@ body.perfil-modal-aberta {
             )
         );
 
-    gap: 9px;
+    gap:
+        9px;
 }
 
 
 .perfil-gosto {
-    position: relative;
+    position:
+        relative;
 
-    min-width: 0;
-    min-height: 68px;
+    min-width:
+        0;
+
+    min-height:
+        68px;
 
     padding:
         12px
         13px;
 
-    overflow: hidden;
+    overflow:
+        hidden;
 
     border:
         1px solid
@@ -1727,24 +1853,38 @@ body.perfil-modal-aberta {
     background:
         rgba(255, 255, 255, 0.74);
 
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+    display:
+        flex;
 
-    gap: 6px;
+    flex-direction:
+        column;
+
+    justify-content:
+        center;
+
+    gap:
+        6px;
 }
 
 
 .perfil-gosto::after {
-    content: "";
+    content:
+        "";
 
-    position: absolute;
+    position:
+        absolute;
 
-    right: -13px;
-    bottom: -15px;
+    right:
+        -13px;
 
-    width: 48px;
-    height: 48px;
+    bottom:
+        -15px;
+
+    width:
+        48px;
+
+    height:
+        48px;
 
     border-radius:
         50%;
@@ -1827,16 +1967,23 @@ body.perfil-modal-aberta {
 
 
 .perfil-gosto-numero {
-    position: relative;
-    z-index: 2;
+    position:
+        relative;
+
+    z-index:
+        2;
 
     color:
         #9b97a1;
 
-    font-size: 9px;
-    font-weight: 750;
+    font-size:
+        9px;
 
-    line-height: 1;
+    font-weight:
+        750;
+
+    line-height:
+        1;
 
     letter-spacing:
         0.07em;
@@ -1847,18 +1994,26 @@ body.perfil-modal-aberta {
 
 
 .perfil-gosto-nome {
-    position: relative;
-    z-index: 2;
+    position:
+        relative;
 
-    min-width: 0;
+    z-index:
+        2;
+
+    min-width:
+        0;
 
     color:
         #26242b;
 
-    font-size: 14px;
-    font-weight: 690;
+    font-size:
+        14px;
 
-    line-height: 1.22;
+    font-weight:
+        690;
+
+    line-height:
+        1.22;
 
     letter-spacing:
         -0.018em;
@@ -1873,10 +2028,14 @@ body.perfil-modal-aberta {
    ========================================================= */
 
 .perfil-lightbox {
-    position: fixed;
-    z-index: 5000;
+    position:
+        fixed;
 
-    inset: 0;
+    z-index:
+        5000;
+
+    inset:
+        0;
 
     visibility:
         hidden;
@@ -1913,9 +2072,11 @@ body.perfil-modal-aberta {
 
 
 .perfil-lightbox-fundo {
-    position: absolute;
+    position:
+        absolute;
 
-    inset: 0;
+    inset:
+        0;
 
     background:
         rgba(12, 11, 16, 0.90);
@@ -1929,9 +2090,11 @@ body.perfil-modal-aberta {
 
 
 .perfil-lightbox-stage {
-    position: absolute;
+    position:
+        absolute;
 
-    inset: 0;
+    inset:
+        0;
 
     padding:
         max(
@@ -1956,9 +2119,14 @@ body.perfil-modal-aberta {
             )
         );
 
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
 
     overflow:
         hidden;
@@ -1973,8 +2141,11 @@ body.perfil-modal-aberta {
    ========================================================= */
 
 .perfil-lightbox-media {
-    position: relative;
-    z-index: 4;
+    position:
+        relative;
+
+    z-index:
+        4;
 
     width:
         min(
@@ -2064,13 +2235,20 @@ body.perfil-modal-aberta {
 
 
 .perfil-lightbox-imagem {
-    position: relative;
-    z-index: 1;
+    position:
+        relative;
 
-    display: block;
+    z-index:
+        1;
 
-    width: 100%;
-    height: 100%;
+    display:
+        block;
+
+    width:
+        100%;
+
+    height:
+        100%;
 
     object-fit:
         contain;
@@ -2103,7 +2281,9 @@ body.perfil-modal-aberta {
         scale(1.025);
 
     transition:
-        opacity 150ms ease,
+        opacity
+        150ms
+        ease,
         transform
         850ms
         cubic-bezier(
@@ -2132,10 +2312,14 @@ body.perfil-modal-aberta {
 
 
 .perfil-lightbox-moldura {
-    position: absolute;
-    z-index: 2;
+    position:
+        absolute;
 
-    inset: 0;
+    z-index:
+        2;
+
+    inset:
+        0;
 
     border:
         1px solid
@@ -2167,8 +2351,11 @@ body.perfil-modal-aberta {
    ========================================================= */
 
 .perfil-tinta {
-    position: absolute;
-    z-index: 2;
+    position:
+        absolute;
+
+    z-index:
+        2;
 
     display:
         block;
@@ -2208,11 +2395,17 @@ body.perfil-modal-aberta {
 
 
 .perfil-tinta--1 {
-    top: 2%;
-    left: -6%;
+    top:
+        2%;
 
-    width: 260px;
-    height: 245px;
+    left:
+        -6%;
+
+    width:
+        260px;
+
+    height:
+        245px;
 
     background:
         rgba(244, 220, 146, 0.11);
@@ -2230,11 +2423,17 @@ body.perfil-modal-aberta {
 
 
 .perfil-tinta--2 {
-    top: 13%;
-    right: -9%;
+    top:
+        13%;
 
-    width: 250px;
-    height: 300px;
+    right:
+        -9%;
+
+    width:
+        250px;
+
+    height:
+        300px;
 
     background:
         rgba(207, 196, 239, 0.12);
@@ -2252,11 +2451,17 @@ body.perfil-modal-aberta {
 
 
 .perfil-tinta--3 {
-    bottom: -7%;
-    left: -7%;
+    bottom:
+        -7%;
 
-    width: 290px;
-    height: 245px;
+    left:
+        -7%;
+
+    width:
+        290px;
+
+    height:
+        245px;
 
     background:
         rgba(143, 178, 232, 0.09);
@@ -2274,11 +2479,17 @@ body.perfil-modal-aberta {
 
 
 .perfil-tinta--4 {
-    right: 1%;
-    bottom: -8%;
+    right:
+        1%;
 
-    width: 230px;
-    height: 230px;
+    bottom:
+        -8%;
+
+    width:
+        230px;
+
+    height:
+        230px;
 
     background:
         rgba(239, 199, 190, 0.11);
@@ -2301,11 +2512,17 @@ body.perfil-modal-aberta {
 
 .perfil-lightbox-fechar,
 .perfil-lightbox-nav {
-    width: 45px;
-    height: 45px;
+    width:
+        45px;
 
-    margin: 0;
-    padding: 0;
+    height:
+        45px;
+
+    margin:
+        0;
+
+    padding:
+        0;
 
     border:
         1px solid
@@ -2326,8 +2543,11 @@ body.perfil-modal-aberta {
     backdrop-filter:
         blur(13px);
 
-    display: grid;
-    place-items: center;
+    display:
+        grid;
+
+    place-items:
+        center;
 
     cursor:
         pointer;
@@ -2335,8 +2555,11 @@ body.perfil-modal-aberta {
 
 
 .perfil-lightbox-fechar {
-    position: absolute;
-    z-index: 10;
+    position:
+        absolute;
+
+    z-index:
+        10;
 
     top:
         max(
@@ -2353,8 +2576,11 @@ body.perfil-modal-aberta {
 
 
 .perfil-lightbox-nav {
-    position: absolute;
-    z-index: 9;
+    position:
+        absolute;
+
+    z-index:
+        9;
 
     top:
         50%;
@@ -2378,17 +2604,26 @@ body.perfil-modal-aberta {
 
 .perfil-lightbox-fechar svg,
 .perfil-lightbox-nav svg {
-    width: 20px;
-    height: 20px;
+    width:
+        20px;
 
-    fill: none;
+    height:
+        20px;
+
+    fill:
+        none;
 
     stroke:
         currentColor;
 
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
+    stroke-width:
+        2;
+
+    stroke-linecap:
+        round;
+
+    stroke-linejoin:
+        round;
 }
 
 
@@ -2399,8 +2634,11 @@ body.perfil-modal-aberta {
 
 
 .perfil-lightbox-contador {
-    position: absolute;
-    z-index: 9;
+    position:
+        absolute;
+
+    z-index:
+        9;
 
     left:
         50%;
@@ -2533,7 +2771,7 @@ body.perfil-modal-aberta {
     .perfil-identidade {
         width:
             calc(
-                100% - 19px
+                100% - 6px
             );
 
         padding:
@@ -2546,9 +2784,9 @@ body.perfil-modal-aberta {
     .perfil-identidade h1 {
         font-size:
             clamp(
-                36px,
-                12vw,
-                52px
+                31px,
+                9.1vw,
+                46px
             );
     }
 
@@ -2655,8 +2893,8 @@ body.perfil-modal-aberta {
     .perfil-identidade {
         width:
             min(
-                80%,
-                610px
+                88%,
+                675px
             );
 
         padding:
@@ -2669,9 +2907,9 @@ body.perfil-modal-aberta {
     .perfil-identidade h1 {
         font-size:
             clamp(
-                58px,
-                8vw,
-                82px
+                48px,
+                6.8vw,
+                70px
             );
     }
 
@@ -2742,7 +2980,7 @@ body.perfil-modal-aberta {
 
     .perfil-identidade {
         width:
-            620px;
+            680px;
     }
 
 }

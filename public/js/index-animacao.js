@@ -23,18 +23,21 @@
     const spacing = 19.5;
 
     /*
-     * Mesma família cromática usada
-     * no novo perfil e na página de mensagens.
+     * Pontos fortes/saturados.
+     *
+     * O fundo é que fica quase branco.
+     * Assim a animação volta a ter contraste.
      */
-    const colorYellow = [244, 220, 146];
-    const colorBlue = [143, 178, 232];
-    const colorPurple = [207, 196, 239];
+    const colorYellow = [255, 215, 0];
+    const colorBlue = [0, 100, 255];
+    const colorPurple = [138, 43, 226];
 
     /*
+     * Vermelho Margot:
      * #e12346
-     * Vermelho Margot.
      */
     const colorRed = [225, 35, 70];
+
 
     function resize() {
         if (!ativo) return;
@@ -105,6 +108,7 @@
         createGrid();
     }
 
+
     function scheduleResize() {
         if (!ativo) return;
 
@@ -122,6 +126,7 @@
                 resize
             );
     }
+
 
     function createGrid() {
         points = [];
@@ -167,6 +172,7 @@
         }
     }
 
+
     function lerp(
         a,
         b,
@@ -181,6 +187,7 @@
             t
         );
     }
+
 
     function clamp(
         v,
@@ -200,12 +207,17 @@
             );
     }
 
+
     /*
-     * Antes:
-     * amarelo -> azul -> roxo
+     * Gradiente:
      *
-     * Agora:
-     * amarelo -> azul -> roxo -> vermelho Margot
+     * amarelo
+     *   ↓
+     * azul
+     *   ↓
+     * roxo
+     *   ↓
+     * vermelho Margot
      */
     function getGradientColorRGB(
         t
@@ -296,6 +308,7 @@
         );
     }
 
+
     function draw(
         now
     ) {
@@ -383,6 +396,7 @@
 
         const edgeSoftnessInv =
             1 / 60;
+
 
         for (
             let i = 0;
@@ -559,6 +573,7 @@
             );
     }
 
+
     window.addEventListener(
         'resize',
         scheduleResize,
@@ -568,6 +583,7 @@
         }
     );
 
+
     window.addEventListener(
         'orientationchange',
         scheduleResize,
@@ -576,6 +592,7 @@
                 true
         }
     );
+
 
     if (
         'ResizeObserver' in
@@ -591,12 +608,14 @@
         );
     }
 
+
     resize();
 
     animationFrame =
         requestAnimationFrame(
             draw
         );
+
 
     function desativarPagina() {
         ativo =
@@ -641,6 +660,7 @@
             desativarPagina
         );
     }
+
 
     document.addEventListener(
         'margot:page-leave',
