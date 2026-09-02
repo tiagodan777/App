@@ -3,13 +3,16 @@
 {% block styles %}
 <link
     rel="stylesheet"
-    href="{{ doc_root }}estilos/messages.css?v=3"
+    href="{{ doc_root }}estilos/messages.css?v=4"
     data-margot-page-style
 >
 {% endblock %}
 
 {% block content %}
-<main id="mensagens-pagina" class="mensagens-pagina">
+<main
+    id="mensagens-pagina"
+    class="mensagens-pagina"
+>
 
     <div
         class="mensagens-fundo"
@@ -17,7 +20,6 @@
     >
         <span class="mensagens-fundo-forma mensagens-fundo-forma--1"></span>
         <span class="mensagens-fundo-forma mensagens-fundo-forma--2"></span>
-        <span class="mensagens-fundo-forma mensagens-fundo-forma--3"></span>
     </div>
 
     <div class="mensagens-conteudo">
@@ -25,27 +27,17 @@
         <header class="mensagens-cabecalho">
 
             <div
-                class="mensagens-marca-abstrata"
+                class="mensagens-marca"
                 aria-hidden="true"
             >
-                <span class="mensagens-marca-abstrata--1"></span>
-                <span class="mensagens-marca-abstrata--2"></span>
+                <span class="mensagens-marca-linha mensagens-marca-linha--1"></span>
+                <span class="mensagens-marca-linha mensagens-marca-linha--2"></span>
+                <span class="mensagens-marca-linha mensagens-marca-linha--3"></span>
             </div>
 
-            <div class="mensagens-titulo">
-                <h1>
-                    Mensagens
-                </h1>
-
-                <div
-                    class="mensagens-assinatura"
-                    aria-hidden="true"
-                >
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </div>
-            </div>
+            <h1>
+                Mensagens
+            </h1>
 
         </header>
 
@@ -109,8 +101,22 @@
                     id="conversas-vazio"
                     class="conversas-vazio"
                 >
-                    <span class="conversas-vazio-icone">
-                        💬
+
+                    <span
+                        class="conversas-vazio-icone"
+                        aria-hidden="true"
+                    >
+                        <svg
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                d="M5.4 17.4 4 21l4.2-1.7c1.15.46 2.42.7 3.8.7 4.97 0 9-3.58 9-8s-4.03-8-9-8-9 3.58-9 8c0 2.08.89 3.98 2.4 5.4Z"
+                            ></path>
+
+                            <path
+                                d="M8 12h.01M12 12h.01M16 12h.01"
+                            ></path>
+                        </svg>
                     </span>
 
                     <h2>
@@ -118,8 +124,9 @@
                     </h2>
 
                     <p>
-                        Abre uma pessoa no ecrã inicial e envia a primeira mensagem.
+                        Quando começares uma conversa, ela aparece aqui.
                     </p>
+
                 </div>
 
             {% endfor %}
@@ -139,12 +146,8 @@
         class="conversa-acoes"
         aria-labelledby="conversa-acoes-titulo"
     >
-        <div class="conversa-acoes-caixa">
 
-            <span
-                class="conversa-acoes-mancha"
-                aria-hidden="true"
-            ></span>
+        <div class="conversa-acoes-caixa">
 
             <div class="conversa-acoes-cabecalho">
 
@@ -193,6 +196,7 @@
             </button>
 
         </div>
+
     </dialog>
 
 </main>
