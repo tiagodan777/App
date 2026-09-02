@@ -137,7 +137,9 @@
        ESTADO
        ===================================================== */
 
-    var indiceAtual = 0;
+    var indiceAtual =
+        0;
+
 
     var lightboxAberto =
         false;
@@ -159,6 +161,10 @@
         null;
 
 
+    var temporizadorSplash =
+        null;
+
+
     var pointerAtivo =
         false;
 
@@ -176,7 +182,7 @@
 
 
     /* =====================================================
-       PATHS
+       PATH ORIGINAL
        ===================================================== */
 
     var PATH_ILHA = [
@@ -223,6 +229,67 @@
         0.075, 0.235
     ];
 
+
+    /* =====================================================
+       PATH SPLASH
+
+       É deliberadamente mais deformado do que a forma final.
+       Faz a abertura parecer uma mancha que se espalha antes
+       de estabilizar.
+       ===================================================== */
+
+    var PATH_SPLASH = [
+        0.010, 0.125,
+
+        0.000, 0.035,
+        0.075, 0.010,
+        0.195, 0.025,
+
+        0.285, -0.005,
+        0.400, 0.035,
+        0.510, 0.008,
+
+        0.650, -0.010,
+        0.795, 0.015,
+        0.915, 0.075,
+
+        1.000, 0.115,
+        0.975, 0.255,
+        1.000, 0.370,
+
+        1.020, 0.510,
+        0.975, 0.620,
+        1.000, 0.735,
+
+        0.975, 0.875,
+        0.865, 0.930,
+        0.755, 0.940,
+
+        0.650, 1.010,
+        0.525, 0.970,
+        0.420, 0.995,
+
+        0.300, 1.015,
+        0.200, 0.955,
+        0.115, 0.945,
+
+        0.015, 0.920,
+        -0.010, 0.820,
+        0.010, 0.705,
+
+        -0.020, 0.595,
+        0.015, 0.500,
+        -0.005, 0.390,
+
+        -0.020, 0.275,
+        0.030, 0.215,
+        0.010, 0.125
+    ];
+
+
+    /* =====================================================
+       PATH ABERTO
+       ===================================================== */
 
     var PATH_ABERTO = [
         0.025, 0.155,
@@ -332,7 +399,7 @@
 
 
     /* =====================================================
-       PATH SVG
+       CRIAR PATH
        ===================================================== */
 
     function criarPath(valores) {
@@ -426,6 +493,10 @@
     }
 
 
+    /* =====================================================
+       CANCELAR PATH
+       ===================================================== */
+
     function cancelarAnimacaoPath() {
         if (
             animacaoPathFrame !==
@@ -439,20 +510,44 @@
             animacaoPathFrame =
                 null;
         }
+
+
+        if (
+            temporizadorSplash !==
+            null
+        ) {
+            window.clearTimeout(
+                temporizadorSplash
+            );
+
+
+            temporizadorSplash =
+                null;
+        }
     }
 
+
+    /* =====================================================
+       INTERPOLAR PATH
+       ===================================================== */
 
     function animarPath(
         origem,
         destino,
-        duracao
+        duracao,
+        callback
     ) {
         if (!lightboxPath) {
+            if (
+                typeof callback ===
+                'function'
+            ) {
+                callback();
+            }
+
+
             return;
         }
-
-
-        cancelarAnimacaoPath();
 
 
         if (
@@ -460,13 +555,33 @@
         ) {
             lightboxPath.setAttribute(
                 'd',
-                criarPath(
-                    destino
-                )
+                criarPath(destino)
             );
 
 
+            if (
+                typeof callback ===
+                'function'
+            ) {
+                callback();
+            }
+
+
             return;
+        }
+
+
+        if (
+            animacaoPathFrame !==
+            null
+        ) {
+            window.cancelAnimationFrame(
+                animacaoPathFrame
+            );
+
+
+            animacaoPathFrame =
+                null;
         }
 
 
@@ -474,17 +589,12 @@
             window.performance.now();
 
 
-        function easeOutExpo(t) {
-            if (t >= 1) {
-                return 1;
-            }
-
-
+        function easing(t) {
             return (
                 1 -
                 Math.pow(
-                    2,
-                    -10 * t
+                    1 - t,
+                    4
                 )
             );
         }
@@ -503,9 +613,7 @@
 
 
             var suavizado =
-                easeOutExpo(
-                    progresso
-                );
+                easing(progresso);
 
 
             var atual =
@@ -528,9 +636,7 @@
 
             lightboxPath.setAttribute(
                 'd',
-                criarPath(
-                    atual
-                )
+                criarPath(atual)
             );
 
 
@@ -549,10 +655,16 @@
 
                 lightboxPath.setAttribute(
                     'd',
-                    criarPath(
-                        destino
-                    )
+                    criarPath(destino)
                 );
+
+
+                if (
+                    typeof callback ===
+                    'function'
+                ) {
+                    callback();
+                }
             }
         }
 
@@ -565,12 +677,69 @@
 
 
     /* =====================================================
-       FALLBACK DE IMAGEM
+       ANIMAÇÃO ABERTURA
+
+       1. ilha -> splash
+       2. splash -> forma aberta
        ===================================================== */
 
-    function prepararFallback(
-        imagem
-    ) {
+    function animarAberturaPath() {
+        cancelarAnimacaoPath();
+
+
+        animarPath(
+            PATH_ILHA,
+            PATH_SPLASH,
+            390,
+            function () {
+                temporizadorSplash =
+                    window.setTimeout(
+                        function () {
+                            temporizadorSplash =
+                                null;
+
+
+                            animarPath(
+                                PATH_SPLASH,
+                                PATH_ABERTO,
+                                360
+                            );
+                        },
+                        18
+                    );
+            }
+        );
+    }
+
+
+    /* =====================================================
+       ANIMAÇÃO FECHO
+       ===================================================== */
+
+    function animarFechoPath() {
+        cancelarAnimacaoPath();
+
+
+        animarPath(
+            PATH_ABERTO,
+            PATH_SPLASH,
+            240,
+            function () {
+                animarPath(
+                    PATH_SPLASH,
+                    PATH_ILHA,
+                    380
+                );
+            }
+        );
+    }
+
+
+    /* =====================================================
+       FALLBACK
+       ===================================================== */
+
+    function prepararFallback(imagem) {
         imagem.addEventListener(
             'error',
             function () {
@@ -587,9 +756,7 @@
 
                 imagem.dataset
                     .fallbackTentativas =
-                    String(
-                        tentativas
-                    );
+                    String(tentativas);
 
 
                 var fallback =
@@ -634,7 +801,7 @@
 
 
     /* =====================================================
-       UI GALERIA
+       UI
        ===================================================== */
 
     function atualizarUI(indice) {
@@ -712,6 +879,10 @@
     }
 
 
+    /* =====================================================
+       MOSTRAR FOTO
+       ===================================================== */
+
     function mostrarFoto(
         indice,
         suave
@@ -735,9 +906,7 @@
         });
 
 
-        atualizarUI(
-            indice
-        );
+        atualizarUI(indice);
     }
 
 
@@ -745,9 +914,7 @@
        LIGHTBOX FOTO
        ===================================================== */
 
-    function atualizarLightboxFoto(
-        indice
-    ) {
+    function atualizarLightboxFoto(indice) {
         if (!lightboxImagem) {
             return;
         }
@@ -758,9 +925,7 @@
 
 
         var imagem =
-            obterImagem(
-                indice
-            );
+            obterImagem(indice);
 
 
         if (!imagem) {
@@ -803,7 +968,7 @@
 
 
     /* =====================================================
-       TRANSFORMAÇÃO DE ORIGEM
+       ORIGEM
        ===================================================== */
 
     function calcularTransformacaoOrigem() {
@@ -873,41 +1038,33 @@
             destino.height;
 
 
-        lightboxMedia.style
-            .setProperty(
-                '--perfil-origem-x',
-                deltaX + 'px'
-            );
+        lightboxMedia.style.setProperty(
+            '--perfil-origem-x',
+            deltaX + 'px'
+        );
 
 
-        lightboxMedia.style
-            .setProperty(
-                '--perfil-origem-y',
-                deltaY + 'px'
-            );
+        lightboxMedia.style.setProperty(
+            '--perfil-origem-y',
+            deltaY + 'px'
+        );
 
 
-        lightboxMedia.style
-            .setProperty(
-                '--perfil-origem-scale-x',
-                String(
-                    scaleX
-                )
-            );
+        lightboxMedia.style.setProperty(
+            '--perfil-origem-scale-x',
+            String(scaleX)
+        );
 
 
-        lightboxMedia.style
-            .setProperty(
-                '--perfil-origem-scale-y',
-                String(
-                    scaleY
-                )
-            );
+        lightboxMedia.style.setProperty(
+            '--perfil-origem-scale-y',
+            String(scaleY)
+        );
     }
 
 
     /* =====================================================
-       ABRIR LIGHTBOX
+       ABRIR
        ===================================================== */
 
     function abrirLightbox(indice) {
@@ -938,22 +1095,16 @@
             limitarIndice(indice);
 
 
-        atualizarUI(
-            indice
-        );
+        atualizarUI(indice);
 
 
-        atualizarLightboxFoto(
-            indice
-        );
+        atualizarLightboxFoto(indice);
 
 
         if (lightboxPath) {
             lightboxPath.setAttribute(
                 'd',
-                criarPath(
-                    PATH_ILHA
-                )
+                criarPath(PATH_ILHA)
             );
         }
 
@@ -1001,11 +1152,7 @@
                         );
 
 
-                        animarPath(
-                            PATH_ILHA,
-                            PATH_ABERTO,
-                            680
-                        );
+                        animarAberturaPath();
                     }
                 );
             }
@@ -1016,18 +1163,17 @@
             window.setTimeout(
                 function () {
                     lightboxFechar.focus({
-                        preventScroll:
-                            true
+                        preventScroll: true
                     });
                 },
-                70
+                80
             );
         }
     }
 
 
     /* =====================================================
-       FECHAR LIGHTBOX
+       FECHAR
        ===================================================== */
 
     function fecharLightbox() {
@@ -1042,11 +1188,7 @@
         calcularTransformacaoOrigem();
 
 
-        animarPath(
-            PATH_ABERTO,
-            PATH_ILHA,
-            620
-        );
+        animarFechoPath();
 
 
         lightbox.classList.remove(
@@ -1063,6 +1205,9 @@
                 function () {
                     temporizadorFecho =
                         null;
+
+
+                    cancelarAnimacaoPath();
 
 
                     lightbox.classList.remove(
@@ -1101,27 +1246,24 @@
                     if (lightboxPath) {
                         lightboxPath.setAttribute(
                             'd',
-                            criarPath(
-                                PATH_ILHA
-                            )
+                            criarPath(PATH_ILHA)
                         );
                     }
 
 
                     galeria.focus({
-                        preventScroll:
-                            true
+                        preventScroll: true
                     });
                 },
                 prefereMovimentoReduzido()
                     ? 0
-                    : 690
+                    : 790
             );
     }
 
 
     /* =====================================================
-       LIGHTBOX NAVEGAÇÃO
+       NAVEGAÇÃO LIGHTBOX
        ===================================================== */
 
     function lightboxFotoAnterior() {
@@ -1156,7 +1298,7 @@
 
 
     /* =====================================================
-       SCROLL DA GALERIA
+       SCROLL GALERIA
        ===================================================== */
 
     faixa.addEventListener(
@@ -1249,7 +1391,7 @@
 
 
     /* =====================================================
-       DETETAR SWIPE VS TOQUE
+       TOQUE VS SWIPE
        ===================================================== */
 
     faixa.addEventListener(
@@ -1350,7 +1492,7 @@
 
 
     /* =====================================================
-       TOQUE NA FOTO
+       ABRIR FOTO
        ===================================================== */
 
     faixa.addEventListener(
@@ -1395,7 +1537,7 @@
 
 
     /* =====================================================
-       FECHAR LIGHTBOX
+       FECHAR
        ===================================================== */
 
     if (lightboxFechar) {
@@ -1424,7 +1566,7 @@
 
 
     /* =====================================================
-       SETAS LIGHTBOX
+       LIGHTBOX SETAS
        ===================================================== */
 
     if (lightboxAnterior) {
@@ -1543,9 +1685,7 @@
             evento.preventDefault();
 
 
-            mostrarFoto(
-                0
-            );
+            mostrarFoto(0);
 
 
             return;
@@ -1569,10 +1709,8 @@
 
 
         if (
-            evento.key ===
-                'Enter' ||
-            evento.key ===
-                ' '
+            evento.key === 'Enter' ||
+            evento.key === ' '
         ) {
             evento.preventDefault();
 
@@ -1712,13 +1850,7 @@
     );
 
 
-    /* =====================================================
-       INICIALIZAÇÃO
-       ===================================================== */
-
-    atualizarUI(
-        0
-    );
+    atualizarUI(0);
 
 })(window, document);
 
@@ -1774,13 +1906,7 @@
             : 'Hey';
 
 
-    /* =====================================================
-       HELPERS
-       ===================================================== */
-
-    function detalheCorresponde(
-        evento
-    ) {
+    function detalheCorresponde(evento) {
         var detalhe =
             evento &&
             evento.detail
@@ -1803,9 +1929,7 @@
     }
 
 
-    function alterarEtiqueta(
-        texto
-    ) {
+    function alterarEtiqueta(texto) {
         if (etiqueta) {
             etiqueta.textContent =
                 texto;
@@ -1816,9 +1940,7 @@
     }
 
 
-    function anunciar(
-        texto
-    ) {
+    function anunciar(texto) {
         if (estadoAcessivel) {
             estadoAcessivel
                 .textContent =
@@ -1879,9 +2001,7 @@
         texto,
         tipo
     ) {
-        anunciar(
-            texto
-        );
+        anunciar(texto);
 
 
         if (
@@ -1897,10 +2017,6 @@
         }
     }
 
-
-    /* =====================================================
-       ENVIAR
-       ===================================================== */
 
     function enviarHey() {
         var destinatarioId =
@@ -1978,8 +2094,7 @@
 
         var enviado =
             window.AppWebSocket.send({
-                type:
-                    'notify',
+                type: 'notify',
 
                 destinatario_id:
                     destinatarioId
@@ -2019,13 +2134,7 @@
     }
 
 
-    /* =====================================================
-       SUCESSO
-       ===================================================== */
-
-    function aoEnviarHey(
-        evento
-    ) {
+    function aoEnviarHey(evento) {
         if (
             !detalheCorresponde(
                 evento
@@ -2062,7 +2171,7 @@
 
 
         alterarEtiqueta(
-            'Hey enviado'
+            'Enviado'
         );
 
 
@@ -2095,13 +2204,7 @@
     }
 
 
-    /* =====================================================
-       ERRO
-       ===================================================== */
-
-    function aoFalharHey(
-        evento
-    ) {
+    function aoFalharHey(evento) {
         if (
             !detalheCorresponde(
                 evento
@@ -2120,10 +2223,6 @@
         );
     }
 
-
-    /* =====================================================
-       CLEANUP
-       ===================================================== */
 
     function desativarPagina() {
         if (
@@ -2167,10 +2266,6 @@
         );
     }
 
-
-    /* =====================================================
-       EVENTOS
-       ===================================================== */
 
     botao.addEventListener(
         'click',

@@ -5,7 +5,7 @@
 {% block styles %}
 <link
     rel="stylesheet"
-    href="{{ doc_root }}estilos/profile.css?v=40"
+    href="{{ doc_root }}estilos/profile.css?v=41"
     data-margot-page-style
 >
 {% endblock %}
@@ -16,13 +16,6 @@
 {% set total_slides = total_fotos > 0 ? total_fotos : 1 %}
 {% set perfil_proprio = membro.id == session.id %}
 
-<!--
-    Formas vetoriais utilizadas para recortar a fotografia.
-
-    São clip-paths reais em SVG, não border-radius.
-    O path do lightbox é alterado pelo JavaScript durante
-    a animação de abertura/fecho.
--->
 <svg
     class="perfil-svg-defs"
     width="0"
@@ -294,15 +287,38 @@
                     aria-hidden="true"
                 ></span>
 
-                <div class="perfil-identidade-meta">
-                    <span class="perfil-idade">
-                        {{ idade }}
-                    </span>
-                </div>
-
                 <h1>
                     {{ membro.nome }}
                 </h1>
+
+                <div class="perfil-identidade-rodape">
+
+                    <span class="perfil-idade">
+                        {{ idade }}
+                    </span>
+
+                    {% if not perfil_proprio %}
+                        <button
+                            type="button"
+                            class="perfil-hey"
+                            id="enviar-hey-perfil"
+                            data-destinatario-id="{{ membro.id }}"
+                            aria-describedby="perfil-hey-estado"
+                        >
+                            <span class="perfil-hey-label">
+                                Hey
+                            </span>
+                        </button>
+
+                        <p
+                            id="perfil-hey-estado"
+                            class="sr-only"
+                            aria-live="polite"
+                            aria-atomic="true"
+                        ></p>
+                    {% endif %}
+
+                </div>
 
                 <div
                     class="perfil-assinatura"
@@ -397,41 +413,6 @@
                     {% endfor %}
 
                 </ul>
-            </section>
-
-        {% endif %}
-
-        {% if not perfil_proprio %}
-
-            <section class="perfil-acao">
-                <button
-                    type="button"
-                    class="perfil-hey"
-                    id="enviar-hey-perfil"
-                    data-destinatario-id="{{ membro.id }}"
-                    aria-describedby="perfil-hey-estado"
-                >
-                    <span class="perfil-hey-label">
-                        Hey
-                    </span>
-
-                    <span
-                        class="perfil-hey-icone"
-                        aria-hidden="true"
-                    >
-                        <svg viewBox="0 0 24 24">
-                            <path d="M5 12h13"></path>
-                            <path d="m13 6 6 6-6 6"></path>
-                        </svg>
-                    </span>
-                </button>
-
-                <p
-                    id="perfil-hey-estado"
-                    class="sr-only"
-                    aria-live="polite"
-                    aria-atomic="true"
-                ></p>
             </section>
 
         {% endif %}
@@ -567,5 +548,5 @@ window.webSocketUrl = window.location.protocol === 'https:'
     : 'ws://' + window.location.hostname + ':8080';
 </script>
 
-<script src="{{ doc_root }}js/profile.js?v=40"></script>
+<script src="{{ doc_root }}js/profile.js?v=41"></script>
 {% endblock %}
