@@ -37,8 +37,7 @@
    SCROLL
    ========================================================= */
 
-html:has(#perfil),
-body:has(#perfil) {
+html:has(#perfil) {
     width: 100% !important;
 
     height: auto !important;
@@ -50,22 +49,47 @@ body:has(#perfil) {
     overflow-x: hidden !important;
     overflow-y: auto !important;
 
-    background: var(--perfil-fundo);
+    overscroll-behavior-x: none !important;
+    overscroll-behavior-y: auto !important;
+
+    background:
+        var(--perfil-fundo);
 }
 
 
 body:has(#perfil) {
     position: relative !important;
 
+    width: 100% !important;
+
+    height: auto !important;
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+
+    /*
+        Mantém o comportamento elástico / rubber banding
+        vertical onde o sistema o disponibiliza.
+    */
+    overscroll-behavior-x: none !important;
     overscroll-behavior-y: auto !important;
 
     -webkit-overflow-scrolling: touch;
+
+    background:
+        var(--perfil-fundo);
 }
 
 
 html.perfil-modal-aberta,
 body.perfil-modal-aberta {
     overflow: hidden !important;
+    overscroll-behavior: none !important;
 }
 
 
@@ -95,7 +119,13 @@ body.perfil-modal-aberta {
 
     overflow: visible !important;
 
-    color: var(--perfil-texto);
+    /*
+        Não bloqueamos verticalmente a página.
+    */
+    overscroll-behavior-y: auto;
+
+    color:
+        var(--perfil-texto);
 
     background:
         radial-gradient(
@@ -121,6 +151,10 @@ body.perfil-modal-aberta {
 }
 
 
+/* =========================================================
+   SVG
+   ========================================================= */
+
 .perfil-svg-defs {
     position: absolute;
 
@@ -133,6 +167,10 @@ body.perfil-modal-aberta {
 }
 
 
+/* =========================================================
+   ACESSIBILIDADE
+   ========================================================= */
+
 .sr-only {
     position: absolute !important;
 
@@ -144,7 +182,13 @@ body.perfil-modal-aberta {
 
     overflow: hidden !important;
 
-    clip: rect(0, 0, 0, 0) !important;
+    clip:
+        rect(
+            0,
+            0,
+            0,
+            0
+        ) !important;
 
     white-space: nowrap !important;
 
@@ -195,9 +239,11 @@ body.perfil-modal-aberta {
             rgba(207, 196, 239, 0.24)
         );
 
-    filter: blur(4px);
+    filter:
+        blur(4px);
 
-    transform: rotate(-9deg);
+    transform:
+        rotate(-9deg);
 }
 
 
@@ -219,7 +265,8 @@ body.perfil-modal-aberta {
             rgba(143, 178, 232, 0.16)
         );
 
-    filter: blur(3px);
+    filter:
+        blur(3px);
 }
 
 
@@ -237,7 +284,8 @@ body.perfil-modal-aberta {
     background:
         rgba(207, 196, 239, 0.18);
 
-    filter: blur(3px);
+    filter:
+        blur(3px);
 }
 
 
@@ -249,19 +297,40 @@ body.perfil-modal-aberta {
     position: relative;
     z-index: 2;
 
-    width: min(100%, 860px);
+    width:
+        min(
+            100%,
+            860px
+        );
 
     min-height: 100%;
 
-    margin: 0 auto;
+    margin:
+        0
+        auto;
 
     padding:
-        max(18px, env(safe-area-inset-top, 0px))
+        max(
+            18px,
+            env(
+                safe-area-inset-top,
+                0px
+            )
+        )
         14px
         calc(
-            var(--menu-principal-height, 58px) +
-            var(--menu-principal-bottom, 18px) +
-            env(safe-area-inset-bottom, 0px) +
+            var(
+                --menu-principal-height,
+                58px
+            ) +
+            var(
+                --menu-principal-bottom,
+                18px
+            ) +
+            env(
+                safe-area-inset-bottom,
+                0px
+            ) +
             75px
         );
 }
@@ -282,11 +351,15 @@ body.perfil-modal-aberta {
 }
 
 
+/* =========================================================
+   MARCA ABSTRATA
+   ========================================================= */
+
 .perfil-marca-abstrata {
+    position: relative;
+
     width: 37px;
     height: 29px;
-
-    position: relative;
 }
 
 
@@ -315,7 +388,8 @@ body.perfil-modal-aberta {
             #efaea2
         );
 
-    transform: rotate(9deg);
+    transform:
+        rotate(9deg);
 }
 
 
@@ -328,7 +402,8 @@ body.perfil-modal-aberta {
 
     border-radius: 50%;
 
-    background: var(--perfil-roxo);
+    background:
+        var(--perfil-roxo);
 }
 
 
@@ -339,20 +414,27 @@ body.perfil-modal-aberta {
 .perfil-editar {
     min-height: 43px;
 
-    padding: 0 16px;
+    padding:
+        0
+        16px;
 
     border:
-        1px solid rgba(22, 21, 25, 0.08);
+        1px solid
+        rgba(22, 21, 25, 0.08);
 
     border-radius: 999px;
 
-    color: var(--perfil-preto);
+    color:
+        var(--perfil-preto);
 
     background:
         rgba(255, 255, 255, 0.75);
 
-    -webkit-backdrop-filter: blur(15px);
-    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter:
+        blur(15px);
+
+    backdrop-filter:
+        blur(15px);
 
     text-decoration: none;
 
@@ -366,18 +448,27 @@ body.perfil-modal-aberta {
     gap: 8px;
 
     box-shadow:
-        0 7px 24px rgba(25, 22, 30, 0.03);
+        0
+        7px
+        24px
+        rgba(25, 22, 30, 0.03);
 
     transition:
-        transform 150ms ease,
-        background-color 150ms ease;
+        transform
+        150ms
+        ease,
+        background-color
+        150ms
+        ease;
 
-    -webkit-tap-highlight-color: transparent;
+    -webkit-tap-highlight-color:
+        transparent;
 }
 
 
 .perfil-editar:active {
-    transform: scale(0.96);
+    transform:
+        scale(0.96);
 }
 
 
@@ -387,7 +478,8 @@ body.perfil-modal-aberta {
 
     fill: none;
 
-    stroke: currentColor;
+    stroke:
+        currentColor;
 
     stroke-width: 1.8;
     stroke-linecap: round;
@@ -405,6 +497,10 @@ body.perfil-modal-aberta {
     margin-bottom: 26px;
 }
 
+
+/* =========================================================
+   FOTO
+   ========================================================= */
 
 .perfil-foto-area {
     position: relative;
@@ -449,7 +545,8 @@ body.perfil-modal-aberta {
             rgba(246, 219, 139, 0.24)
         );
 
-    transform: rotate(-7deg);
+    transform:
+        rotate(-7deg);
 }
 
 
@@ -471,7 +568,8 @@ body.perfil-modal-aberta {
             rgba(239, 199, 190, 0.34)
         );
 
-    transform: rotate(13deg);
+    transform:
+        rotate(13deg);
 }
 
 
@@ -489,7 +587,8 @@ body.perfil-modal-aberta {
     background:
         rgba(239, 199, 190, 0.55);
 
-    transform: rotate(-11deg);
+    transform:
+        rotate(-11deg);
 }
 
 
@@ -513,20 +612,19 @@ body.perfil-modal-aberta {
     overflow: hidden;
 
     /*
-        Antes era #16161a.
-
-        Agora é transparente para que, mesmo durante algum
-        frame de transição, nunca apareça uma "meia-lua"
-        preta atrás da imagem.
+        Transparente para nunca existir aquele fundo preto
+        visível nas extremidades da forma.
     */
-    background: transparent;
+    background:
+        transparent;
 
     outline: none;
 
     box-shadow:
         var(--perfil-sombra-forte);
 
-    border-radius: 0 !important;
+    border-radius:
+        0 !important;
 
     -webkit-clip-path:
         url(#perfilIslandClip);
@@ -534,7 +632,9 @@ body.perfil-modal-aberta {
     clip-path:
         url(#perfilIslandClip);
 
-    transform-origin: 50% 50%;
+    transform-origin:
+        50%
+        50%;
 
     animation:
         perfil-ilha-flutuar
@@ -542,7 +642,8 @@ body.perfil-modal-aberta {
         ease-in-out
         infinite;
 
-    isolation: isolate;
+    isolation:
+        isolate;
 }
 
 
@@ -620,28 +721,46 @@ body.perfil-modal-aberta {
     display: flex;
     flex-flow: row nowrap;
 
-    scroll-snap-type: x mandatory;
+    scroll-snap-type:
+        x
+        mandatory;
 
-    scroll-behavior: auto;
+    scroll-behavior:
+        auto;
 
-    overscroll-behavior-x: contain;
+    /*
+        Contém apenas o overscroll horizontal da galeria.
+        O vertical continua livre para a página.
+    */
+    overscroll-behavior-x:
+        contain;
 
-    scrollbar-width: none;
+    overscroll-behavior-y:
+        auto;
 
-    -webkit-overflow-scrolling: touch;
+    scrollbar-width:
+        none;
 
-    touch-action: pan-y;
+    -webkit-overflow-scrolling:
+        touch;
 
-    cursor: grab;
+    touch-action:
+        pan-y;
 
-    background: transparent;
+    cursor:
+        grab;
+
+    background:
+        transparent;
 }
 
 
 .perfil-fotos.a-arrastar {
-    scroll-snap-type: none;
+    scroll-snap-type:
+        none;
 
-    cursor: grabbing;
+    cursor:
+        grabbing;
 }
 
 
@@ -660,28 +779,31 @@ body.perfil-modal-aberta {
     width: 100%;
     height: 100%;
 
-    flex: 0 0 100%;
+    flex:
+        0
+        0
+        100%;
 
     margin: 0;
 
     overflow: hidden;
 
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
+    scroll-snap-align:
+        start;
 
-    background: transparent;
+    scroll-snap-stop:
+        always;
+
+    background:
+        transparent;
 }
 
 
 /* =========================================================
    FOTO PRINCIPAL
 
-   A imagem é propositadamente 108% do slide.
-
-   Isso cria um zoom de aproximadamente 8% e garante
-   que nunca se veja o fundo nas extremidades da forma,
-   mesmo com imagens estreitas ou pequenos erros de
-   arredondamento/subpíxeis durante o swipe.
+   108% garante uma pequena margem de zoom para nunca
+   aparecer fundo nas curvas da forma.
    ========================================================= */
 
 .perfil-slide img {
@@ -697,88 +819,158 @@ body.perfil-modal-aberta {
 
     max-width: none;
 
-    object-fit: cover;
-    object-position: center center;
+    object-fit:
+        cover;
 
-    background: transparent;
+    object-position:
+        center center;
 
-    cursor: zoom-in;
+    background:
+        transparent;
 
-    user-select: none;
+    cursor:
+        zoom-in;
 
-    -webkit-user-select: none;
-    -webkit-user-drag: none;
+    user-select:
+        none;
 
-    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select:
+        none;
 
-    will-change: transform;
+    -webkit-user-drag:
+        none;
 
-    transform: translateZ(0);
+    -webkit-tap-highlight-color:
+        transparent;
 
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
+    will-change:
+        transform;
+
+    transform:
+        translateZ(0);
+
+    backface-visibility:
+        hidden;
+
+    -webkit-backface-visibility:
+        hidden;
 }
 
 
 /* =========================================================
-   INDICADORES
+   INDICADORES DAS FOTOS
+
+   Mais abaixo e mais pequenos.
    ========================================================= */
 
 .perfil-indicadores {
     position: absolute;
-    z-index: 7;
+    z-index: 8;
 
-    top: 18px;
+    /*
+        Antes estavam muito próximos da curva superior.
+        48px coloca-os numa zona estável da fotografia.
+    */
+    top: 48px;
+
     left: 50%;
 
-    transform: translateX(-50%);
+    transform:
+        translateX(-50%);
 
     display: flex;
     align-items: center;
+    justify-content: center;
 
-    gap: 7px;
+    gap: 4px;
+
+    pointer-events:
+        auto;
 }
 
 
 .perfil-indicadores button {
-    width: 20px;
-    height: 20px;
+    width: 14px;
+    height: 14px;
 
     margin: 0;
-    padding: 7px;
+
+    /*
+        O ponto é pequeno, mas mantém alguma área
+        de toque à volta.
+    */
+    padding: 5px;
 
     border: 0;
 
-    background: transparent;
+    background:
+        transparent;
 
     display: grid;
     place-items: center;
 
-    cursor: pointer;
+    cursor:
+        pointer;
+
+    -webkit-tap-highlight-color:
+        transparent;
 }
 
 
 .perfil-indicadores button span {
-    width: 6px;
-    height: 6px;
-
     display: block;
 
-    border-radius: 999px;
+    width: 4px;
+    height: 4px;
+
+    flex:
+        0
+        0
+        auto;
+
+    border-radius:
+        999px;
 
     background:
-        rgba(255, 255, 255, 0.50);
+        rgba(255, 255, 255, 0.70);
+
+    box-shadow:
+        0
+        1px
+        5px
+        rgba(0, 0, 0, 0.15);
 
     transition:
-        transform 180ms ease,
-        background-color 180ms ease;
+        width
+        180ms
+        cubic-bezier(0.22, 1, 0.36, 1),
+        transform
+        180ms
+        cubic-bezier(0.22, 1, 0.36, 1),
+        background-color
+        180ms
+        ease,
+        opacity
+        180ms
+        ease;
 }
 
 
 .perfil-indicadores button.ativo span {
-    background: #ffffff;
+    width: 11px;
+    height: 4px;
 
-    transform: scale(1.48);
+    background:
+        #ffffff;
+
+    transform:
+        scale(1);
+
+    box-shadow:
+        0
+        1px
+        6px
+        rgba(0, 0, 0, 0.17);
 }
 
 
@@ -795,25 +987,34 @@ body.perfil-modal-aberta {
 
     min-height: 34px;
 
-    padding: 0 11px;
+    padding:
+        0
+        11px;
 
     border:
-        1px solid rgba(255, 255, 255, 0.16);
+        1px solid
+        rgba(255, 255, 255, 0.16);
 
-    border-radius: 999px;
+    border-radius:
+        999px;
 
-    color: #ffffff;
+    color:
+        #ffffff;
 
     background:
         rgba(10, 10, 14, 0.30);
 
-    -webkit-backdrop-filter: blur(12px);
-    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter:
+        blur(12px);
+
+    backdrop-filter:
+        blur(12px);
 
     font-size: 10px;
     font-weight: 730;
 
-    font-variant-numeric: tabular-nums;
+    font-variant-numeric:
+        tabular-nums;
 
     display: flex;
     align-items: center;
@@ -837,22 +1038,28 @@ body.perfil-modal-aberta {
     height: 37px;
 
     border:
-        1px solid rgba(255, 255, 255, 0.17);
+        1px solid
+        rgba(255, 255, 255, 0.17);
 
     border-radius: 50%;
 
-    color: #ffffff;
+    color:
+        #ffffff;
 
     background:
         rgba(10, 10, 14, 0.27);
 
-    -webkit-backdrop-filter: blur(12px);
-    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter:
+        blur(12px);
+
+    backdrop-filter:
+        blur(12px);
 
     display: grid;
     place-items: center;
 
-    pointer-events: none;
+    pointer-events:
+        none;
 }
 
 
@@ -862,7 +1069,8 @@ body.perfil-modal-aberta {
 
     fill: none;
 
-    stroke: currentColor;
+    stroke:
+        currentColor;
 
     stroke-width: 1.8;
     stroke-linecap: round;
@@ -887,28 +1095,39 @@ body.perfil-modal-aberta {
     padding: 0;
 
     border:
-        1px solid rgba(255, 255, 255, 0.16);
+        1px solid
+        rgba(255, 255, 255, 0.16);
 
     border-radius: 50%;
 
-    color: #ffffff;
+    color:
+        #ffffff;
 
     background:
         rgba(10, 10, 14, 0.26);
 
-    -webkit-backdrop-filter: blur(12px);
-    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter:
+        blur(12px);
 
-    transform: translateY(-50%);
+    backdrop-filter:
+        blur(12px);
+
+    transform:
+        translateY(-50%);
 
     display: grid;
     place-items: center;
 
-    cursor: pointer;
+    cursor:
+        pointer;
 
     transition:
-        background-color 160ms ease,
-        transform 160ms ease;
+        background-color
+        160ms
+        ease,
+        transform
+        160ms
+        ease;
 }
 
 
@@ -935,7 +1154,8 @@ body.perfil-modal-aberta {
 
     fill: none;
 
-    stroke: currentColor;
+    stroke:
+        currentColor;
 
     stroke-width: 2.1;
     stroke-linecap: round;
@@ -944,7 +1164,8 @@ body.perfil-modal-aberta {
 
 
 .perfil-nav:disabled {
-    visibility: hidden;
+    visibility:
+        hidden;
 }
 
 
@@ -957,7 +1178,9 @@ body.perfil-modal-aberta {
     z-index: 5;
 
     width:
-        calc(100% - 28px);
+        calc(
+            100% - 28px
+        );
 
     margin:
         0
@@ -973,7 +1196,8 @@ body.perfil-modal-aberta {
     overflow: hidden;
 
     border:
-        1px solid rgba(22, 21, 25, 0.055);
+        1px solid
+        rgba(22, 21, 25, 0.055);
 
     border-radius:
         30px
@@ -984,8 +1208,11 @@ body.perfil-modal-aberta {
     background:
         rgba(255, 255, 255, 0.88);
 
-    -webkit-backdrop-filter: blur(21px);
-    backdrop-filter: blur(21px);
+    -webkit-backdrop-filter:
+        blur(21px);
+
+    backdrop-filter:
+        blur(21px);
 
     box-shadow:
         var(--perfil-sombra);
@@ -1014,9 +1241,11 @@ body.perfil-modal-aberta {
             rgba(207, 196, 239, 0.72)
         );
 
-    transform: rotate(10deg);
+    transform:
+        rotate(10deg);
 
-    pointer-events: none;
+    pointer-events:
+        none;
 }
 
 
@@ -1028,7 +1257,8 @@ body.perfil-modal-aberta {
 
     margin: 0;
 
-    color: var(--perfil-preto);
+    color:
+        var(--perfil-preto);
 
     font-family:
         Georgia,
@@ -1046,9 +1276,11 @@ body.perfil-modal-aberta {
 
     line-height: 0.95;
 
-    letter-spacing: -0.05em;
+    letter-spacing:
+        -0.05em;
 
-    overflow-wrap: anywhere;
+    overflow-wrap:
+        anywhere;
 }
 
 
@@ -1076,11 +1308,15 @@ body.perfil-modal-aberta {
     min-width: 46px;
     min-height: 31px;
 
-    padding: 0 12px;
+    padding:
+        0
+        12px;
 
-    border-radius: 999px;
+    border-radius:
+        999px;
 
-    color: #54461f;
+    color:
+        #54461f;
 
     background:
         var(--perfil-amarelo-suave);
@@ -1103,31 +1339,47 @@ body.perfil-modal-aberta {
     position: relative !important;
     z-index: 4 !important;
 
-    flex: 0 0 auto !important;
+    flex:
+        0
+        0
+        auto !important;
 
-    width: auto !important;
-    height: 42px !important;
+    width:
+        auto !important;
 
-    min-width: 84px !important;
-    min-height: 42px !important;
+    height:
+        42px !important;
 
-    max-width: none !important;
-    max-height: none !important;
+    min-width:
+        84px !important;
 
-    margin: 0 !important;
+    min-height:
+        42px !important;
+
+    max-width:
+        none !important;
+
+    max-height:
+        none !important;
+
+    margin:
+        0 !important;
 
     padding:
         0
         19px !important;
 
-    border: 0 !important;
+    border:
+        0 !important;
 
-    border-radius: 999px !important;
+    border-radius:
+        999px !important;
 
     background:
         var(--perfil-vermelho) !important;
 
-    color: #fff7ee !important;
+    color:
+        #fff7ee !important;
 
     box-shadow:
         0
@@ -1142,33 +1394,55 @@ body.perfil-modal-aberta {
         Arial,
         sans-serif !important;
 
-    font-size: 17px !important;
-    font-weight: 760 !important;
+    font-size:
+        17px !important;
 
-    line-height: 1 !important;
+    font-weight:
+        760 !important;
+
+    line-height:
+        1 !important;
 
     letter-spacing:
         -0.025em !important;
 
-    appearance: none !important;
-    -webkit-appearance: none !important;
+    appearance:
+        none !important;
 
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
+    -webkit-appearance:
+        none !important;
 
-    cursor: pointer !important;
+    display:
+        inline-flex !important;
 
-    touch-action: manipulation !important;
+    align-items:
+        center !important;
+
+    justify-content:
+        center !important;
+
+    cursor:
+        pointer !important;
+
+    touch-action:
+        manipulation !important;
 
     -webkit-tap-highlight-color:
         transparent !important;
 
     transition:
-        transform 150ms ease,
-        background-color 150ms ease,
-        box-shadow 150ms ease,
-        opacity 150ms ease !important;
+        transform
+        150ms
+        ease,
+        background-color
+        150ms
+        ease,
+        box-shadow
+        150ms
+        ease,
+        opacity
+        150ms
+        ease !important;
 }
 
 
@@ -1196,17 +1470,23 @@ body.perfil-modal-aberta {
 
 
 #perfil .perfil-hey--preview {
-    pointer-events: none !important;
+    pointer-events:
+        none !important;
 
-    opacity: 1 !important;
+    opacity:
+        1 !important;
 }
 
 
 #perfil .perfil-hey-label {
-    font-size: 17px !important;
-    font-weight: 760 !important;
+    font-size:
+        17px !important;
 
-    line-height: 1 !important;
+    font-weight:
+        760 !important;
+
+    line-height:
+        1 !important;
 
     letter-spacing:
         -0.025em !important;
@@ -1260,28 +1540,32 @@ body.perfil-modal-aberta {
 
     height: 3px;
 
-    border-radius: 999px;
+    border-radius:
+        999px;
 }
 
 
 .perfil-assinatura span:nth-child(1) {
     width: 23px;
 
-    background: var(--perfil-azul);
+    background:
+        var(--perfil-azul);
 }
 
 
 .perfil-assinatura span:nth-child(2) {
     width: 11px;
 
-    background: var(--perfil-roxo);
+    background:
+        var(--perfil-roxo);
 }
 
 
 .perfil-assinatura span:nth-child(3) {
     width: 7px;
 
-    background: var(--perfil-vermelho);
+    background:
+        var(--perfil-vermelho);
 }
 
 
@@ -1301,13 +1585,17 @@ body.perfil-modal-aberta {
         17px;
 
     border:
-        1px solid rgba(22, 21, 25, 0.055);
+        1px solid
+        rgba(22, 21, 25, 0.055);
 
     background:
         rgba(255, 255, 255, 0.76);
 
-    -webkit-backdrop-filter: blur(18px);
-    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter:
+        blur(18px);
+
+    backdrop-filter:
+        blur(18px);
 
     box-shadow:
         var(--perfil-sombra);
@@ -1332,6 +1620,10 @@ body.perfil-modal-aberta {
 }
 
 
+/* =========================================================
+   TOPO DAS SECÇÕES
+   ========================================================= */
+
 .perfil-seccao-topo {
     margin-bottom: 15px;
 
@@ -1346,7 +1638,10 @@ body.perfil-modal-aberta {
     width: 41px;
     height: 41px;
 
-    flex: 0 0 auto;
+    flex:
+        0
+        0
+        auto;
 
     border-radius: 14px;
 
@@ -1403,10 +1698,15 @@ body.perfil-modal-aberta {
 }
 
 
+/* =========================================================
+   SOBRE
+   ========================================================= */
+
 .perfil-sobre p {
     margin: 0;
 
-    color: #34323a;
+    color:
+        #34323a;
 
     font-size:
         clamp(
@@ -1422,9 +1722,11 @@ body.perfil-modal-aberta {
     letter-spacing:
         -0.018em;
 
-    white-space: pre-line;
+    white-space:
+        pre-line;
 
-    overflow-wrap: anywhere;
+    overflow-wrap:
+        anywhere;
 }
 
 
@@ -1443,7 +1745,10 @@ body.perfil-modal-aberta {
     grid-template-columns:
         repeat(
             2,
-            minmax(0, 1fr)
+            minmax(
+                0,
+                1fr
+            )
         );
 
     gap: 9px;
@@ -1456,12 +1761,15 @@ body.perfil-modal-aberta {
     min-width: 0;
     min-height: 68px;
 
-    padding: 12px 13px;
+    padding:
+        12px
+        13px;
 
     overflow: hidden;
 
     border:
-        1px solid rgba(22, 21, 25, 0.065);
+        1px solid
+        rgba(22, 21, 25, 0.065);
 
     background:
         rgba(255, 255, 255, 0.74);
@@ -1585,7 +1893,8 @@ body.perfil-modal-aberta {
     position: relative;
     z-index: 2;
 
-    color: #9b97a1;
+    color:
+        #9b97a1;
 
     font-size: 9px;
     font-weight: 750;
@@ -1606,7 +1915,8 @@ body.perfil-modal-aberta {
 
     min-width: 0;
 
-    color: #26242b;
+    color:
+        #26242b;
 
     font-size: 14px;
     font-weight: 690;
@@ -1638,8 +1948,12 @@ body.perfil-modal-aberta {
     pointer-events: none;
 
     transition:
-        opacity 300ms ease,
-        visibility 300ms ease;
+        opacity
+        300ms
+        ease,
+        visibility
+        300ms
+        ease;
 }
 
 
@@ -1663,10 +1977,17 @@ body.perfil-modal-aberta {
     background:
         rgba(12, 11, 16, 0.90);
 
-    -webkit-backdrop-filter: blur(20px);
-    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter:
+        blur(20px);
+
+    backdrop-filter:
+        blur(20px);
 }
 
+
+/* =========================================================
+   STAGE
+   ========================================================= */
 
 .perfil-lightbox-stage {
     position: absolute;
@@ -1677,7 +1998,10 @@ body.perfil-modal-aberta {
         max(
             68px,
             calc(
-                env(safe-area-inset-top, 0px) +
+                env(
+                    safe-area-inset-top,
+                    0px
+                ) +
                 50px
             )
         )
@@ -1685,7 +2009,10 @@ body.perfil-modal-aberta {
         max(
             45px,
             calc(
-                env(safe-area-inset-bottom, 0px) +
+                env(
+                    safe-area-inset-bottom,
+                    0px
+                ) +
                 30px
             )
         );
@@ -1696,9 +2023,14 @@ body.perfil-modal-aberta {
 
     overflow: hidden;
 
-    cursor: zoom-out;
+    cursor:
+        zoom-out;
 }
 
+
+/* =========================================================
+   FOTO ABERTA
+   ========================================================= */
 
 .perfil-lightbox-media {
     position: relative;
@@ -1718,9 +2050,11 @@ body.perfil-modal-aberta {
 
     overflow: hidden;
 
-    background: transparent;
+    background:
+        transparent;
 
-    border-radius: 0 !important;
+    border-radius:
+        0 !important;
 
     -webkit-clip-path:
         url(#perfilLightboxClip);
@@ -1736,15 +2070,28 @@ body.perfil-modal-aberta {
 
     transform:
         translate(
-            var(--perfil-origem-x, 0px),
-            var(--perfil-origem-y, 0px)
+            var(
+                --perfil-origem-x,
+                0px
+            ),
+            var(
+                --perfil-origem-y,
+                0px
+            )
         )
         scale(
-            var(--perfil-origem-scale-x, 1),
-            var(--perfil-origem-scale-y, 1)
+            var(
+                --perfil-origem-scale-x,
+                1
+            ),
+            var(
+                --perfil-origem-scale-y,
+                1
+            )
         );
 
-    transform-origin: center;
+    transform-origin:
+        center;
 
     will-change:
         transform;
@@ -1759,24 +2106,24 @@ body.perfil-modal-aberta {
             1
         );
 
-    cursor: default;
+    cursor:
+        default;
 }
 
 
 .perfil-lightbox.is-open
 .perfil-lightbox-media {
     transform:
-        translate(0, 0)
+        translate(
+            0,
+            0
+        )
         scale(1);
 }
 
 
 /* =========================================================
-   FOTO ABERTA
-
-   Aqui NÃO há zoom.
-
-   A fotografia aberta continua sempre completa.
+   IMAGEM COMPLETA NO LIGHTBOX
    ========================================================= */
 
 .perfil-lightbox-imagem {
@@ -1788,25 +2135,38 @@ body.perfil-modal-aberta {
     width: 100%;
     height: 100%;
 
-    object-fit: contain;
-    object-position: center;
+    object-fit:
+        contain;
 
-    background: transparent;
+    object-position:
+        center;
+
+    background:
+        transparent;
 
     border: 0;
-    border-radius: 0 !important;
+
+    border-radius:
+        0 !important;
 
     opacity: 1;
 
-    user-select: none;
+    user-select:
+        none;
 
-    -webkit-user-select: none;
-    -webkit-user-drag: none;
+    -webkit-user-select:
+        none;
 
-    transform: scale(1.025);
+    -webkit-user-drag:
+        none;
+
+    transform:
+        scale(1.025);
 
     transition:
-        opacity 150ms ease,
+        opacity
+        150ms
+        ease,
         transform
         850ms
         cubic-bezier(
@@ -1833,6 +2193,10 @@ body.perfil-modal-aberta {
 }
 
 
+/* =========================================================
+   MOLDURA LIGHTBOX
+   ========================================================= */
+
 .perfil-lightbox-moldura {
     position: absolute;
     z-index: 2;
@@ -1840,9 +2204,11 @@ body.perfil-modal-aberta {
     inset: 0;
 
     border:
-        1px solid rgba(255, 255, 255, 0.24);
+        1px solid
+        rgba(255, 255, 255, 0.24);
 
-    pointer-events: none;
+    pointer-events:
+        none;
 
     opacity: 0;
 
@@ -1877,7 +2243,8 @@ body.perfil-modal-aberta {
     transform:
         scale(0.02);
 
-    pointer-events: none;
+    pointer-events:
+        none;
 
     transition:
         transform
@@ -1911,7 +2278,8 @@ body.perfil-modal-aberta {
         rgba(244, 220, 146, 0.11);
 
     transform-origin:
-        70% 60%;
+        70%
+        60%;
 }
 
 
@@ -1933,7 +2301,8 @@ body.perfil-modal-aberta {
         rgba(207, 196, 239, 0.12);
 
     transform-origin:
-        15% 55%;
+        15%
+        55%;
 }
 
 
@@ -1955,7 +2324,8 @@ body.perfil-modal-aberta {
         rgba(143, 178, 232, 0.09);
 
     transform-origin:
-        75% 15%;
+        75%
+        15%;
 }
 
 
@@ -1977,7 +2347,8 @@ body.perfil-modal-aberta {
         rgba(239, 199, 190, 0.11);
 
     transform-origin:
-        30% 20%;
+        30%
+        20%;
 }
 
 
@@ -1989,7 +2360,7 @@ body.perfil-modal-aberta {
 
 
 /* =========================================================
-   LIGHTBOX CONTROLOS
+   CONTROLOS DO LIGHTBOX
    ========================================================= */
 
 .perfil-lightbox-fechar,
@@ -2001,22 +2372,28 @@ body.perfil-modal-aberta {
     padding: 0;
 
     border:
-        1px solid rgba(255, 255, 255, 0.14);
+        1px solid
+        rgba(255, 255, 255, 0.14);
 
     border-radius: 50%;
 
-    color: #ffffff;
+    color:
+        #ffffff;
 
     background:
         rgba(255, 255, 255, 0.09);
 
-    -webkit-backdrop-filter: blur(13px);
-    backdrop-filter: blur(13px);
+    -webkit-backdrop-filter:
+        blur(13px);
+
+    backdrop-filter:
+        blur(13px);
 
     display: grid;
     place-items: center;
 
-    cursor: pointer;
+    cursor:
+        pointer;
 }
 
 
@@ -2027,7 +2404,10 @@ body.perfil-modal-aberta {
     top:
         max(
             17px,
-            env(safe-area-inset-top, 0px)
+            env(
+                safe-area-inset-top,
+                0px
+            )
         );
 
     right: 17px;
@@ -2062,7 +2442,8 @@ body.perfil-modal-aberta {
 
     fill: none;
 
-    stroke: currentColor;
+    stroke:
+        currentColor;
 
     stroke-width: 2;
     stroke-linecap: round;
@@ -2071,9 +2452,14 @@ body.perfil-modal-aberta {
 
 
 .perfil-lightbox-nav:disabled {
-    visibility: hidden;
+    visibility:
+        hidden;
 }
 
+
+/* =========================================================
+   CONTADOR LIGHTBOX
+   ========================================================= */
 
 .perfil-lightbox-contador {
     position: absolute;
@@ -2084,20 +2470,27 @@ body.perfil-modal-aberta {
     bottom:
         max(
             17px,
-            env(safe-area-inset-bottom, 0px)
+            env(
+                safe-area-inset-bottom,
+                0px
+            )
         );
 
     min-height: 35px;
 
     padding:
-        0 12px;
+        0
+        12px;
 
     border:
-        1px solid rgba(255, 255, 255, 0.14);
+        1px solid
+        rgba(255, 255, 255, 0.14);
 
-    border-radius: 999px;
+    border-radius:
+        999px;
 
-    color: #ffffff;
+    color:
+        #ffffff;
 
     background:
         rgba(255, 255, 255, 0.09);
@@ -2125,7 +2518,7 @@ body.perfil-modal-aberta {
 
 
 /* =========================================================
-   PEQUENO
+   MOBILE PEQUENO
    ========================================================= */
 
 @media (max-width: 370px) {
@@ -2146,9 +2539,42 @@ body.perfil-modal-aberta {
     }
 
 
+    /*
+        Em ecrãs pequenos descemos ainda ligeiramente
+        os indicadores, porque a curva fica mais apertada.
+    */
+    .perfil-indicadores {
+        top: 46px;
+
+        gap: 3px;
+    }
+
+
+    .perfil-indicadores button {
+        width: 13px;
+        height: 13px;
+
+        padding: 4px;
+    }
+
+
+    .perfil-indicadores button span {
+        width: 3.5px;
+        height: 3.5px;
+    }
+
+
+    .perfil-indicadores button.ativo span {
+        width: 10px;
+        height: 3.5px;
+    }
+
+
     .perfil-identidade {
         width:
-            calc(100% - 19px);
+            calc(
+                100% - 19px
+            );
 
         padding:
             20px
@@ -2179,7 +2605,8 @@ body.perfil-modal-aberta {
             40px !important;
 
         padding:
-            0 16px !important;
+            0
+            16px !important;
     }
 
 
@@ -2250,6 +2677,11 @@ body.perfil-modal-aberta {
     }
 
 
+    .perfil-indicadores {
+        top: 54px;
+    }
+
+
     .perfil-identidade {
         width:
             min(
@@ -2285,7 +2717,10 @@ body.perfil-modal-aberta {
         grid-template-columns:
             repeat(
                 3,
-                minmax(0, 1fr)
+                minmax(
+                    0,
+                    1fr
+                )
             );
 
         gap: 11px;
@@ -2349,8 +2784,11 @@ body.perfil-modal-aberta {
     .perfil-editar,
     .perfil-hey,
     .perfil-indicadores button span {
-        animation: none !important;
-        transition: none !important;
+        animation:
+            none !important;
+
+        transition:
+            none !important;
     }
 
 }
