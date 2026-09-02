@@ -2,10 +2,6 @@
     'use strict';
 
 
-    /* =====================================================
-       LIMPEZA DE ESTADO
-       ===================================================== */
-
     document.documentElement.classList.remove(
         'perfil-modal-aberta'
     );
@@ -14,10 +10,6 @@
         'perfil-modal-aberta'
     );
 
-
-    /* =====================================================
-       ELEMENTOS
-       ===================================================== */
 
     var perfil =
         document.getElementById(
@@ -91,6 +83,12 @@
         );
 
 
+    var lightboxStage =
+        document.getElementById(
+            'perfil-lightbox-stage'
+        );
+
+
     var lightboxMedia =
         document.getElementById(
             'perfil-lightbox-media'
@@ -132,10 +130,6 @@
             'perfil-lightbox-contador-atual'
         );
 
-
-    /* =====================================================
-       ESTADO
-       ===================================================== */
 
     var indiceAtual =
         0;
@@ -182,7 +176,7 @@
 
 
     /* =====================================================
-       PATH ORIGINAL
+       FORMA INICIAL
        ===================================================== */
 
     var PATH_ILHA = [
@@ -231,118 +225,108 @@
 
 
     /* =====================================================
-       PATH SPLASH
-
-       É deliberadamente mais deformado do que a forma final.
-       Faz a abertura parecer uma mancha que se espalha antes
-       de estabilizar.
+       SPLASH
        ===================================================== */
 
     var PATH_SPLASH = [
-        0.010, 0.125,
+        0.008, 0.115,
 
         0.000, 0.035,
-        0.075, 0.010,
-        0.195, 0.025,
+        0.070, 0.008,
+        0.195, 0.020,
 
-        0.285, -0.005,
-        0.400, 0.035,
-        0.510, 0.008,
+        0.290, 0.000,
+        0.405, 0.025,
+        0.515, 0.008,
 
-        0.650, -0.010,
-        0.795, 0.015,
-        0.915, 0.075,
+        0.655, 0.000,
+        0.800, 0.018,
+        0.925, 0.070,
 
-        1.000, 0.115,
-        0.975, 0.255,
-        1.000, 0.370,
+        0.995, 0.115,
+        0.985, 0.250,
+        0.998, 0.365,
 
-        1.020, 0.510,
-        0.975, 0.620,
-        1.000, 0.735,
+        1.000, 0.500,
+        0.985, 0.620,
+        0.997, 0.735,
 
-        0.975, 0.875,
-        0.865, 0.930,
-        0.755, 0.940,
+        0.985, 0.870,
+        0.875, 0.935,
+        0.755, 0.950,
 
-        0.650, 1.010,
-        0.525, 0.970,
-        0.420, 0.995,
+        0.655, 0.995,
+        0.530, 0.975,
+        0.420, 0.992,
 
-        0.300, 1.015,
-        0.200, 0.955,
-        0.115, 0.945,
+        0.300, 0.998,
+        0.200, 0.965,
+        0.105, 0.950,
 
-        0.015, 0.920,
-        -0.010, 0.820,
-        0.010, 0.705,
+        0.020, 0.920,
+        0.005, 0.820,
+        0.015, 0.705,
 
-        -0.020, 0.595,
-        0.015, 0.500,
-        -0.005, 0.390,
+        0.002, 0.600,
+        0.018, 0.500,
+        0.005, 0.390,
 
-        -0.020, 0.275,
-        0.030, 0.215,
-        0.010, 0.125
+        0.002, 0.275,
+        0.025, 0.205,
+        0.008, 0.115
     ];
 
 
     /* =====================================================
-       PATH ABERTO
+       RETÂNGULO FINAL
+
+       Sem arredondamentos.
        ===================================================== */
 
-    var PATH_ABERTO = [
-        0.025, 0.155,
+    var PATH_RECT = [
+        0.000, 0.000,
 
-        0.020, 0.065,
-        0.095, 0.020,
-        0.205, 0.035,
+        0.080, 0.000,
+        0.170, 0.000,
+        0.250, 0.000,
 
-        0.315, 0.000,
-        0.415, 0.045,
-        0.520, 0.025,
+        0.330, 0.000,
+        0.420, 0.000,
+        0.500, 0.000,
 
-        0.650, 0.005,
-        0.790, 0.040,
-        0.885, 0.105,
+        0.580, 0.000,
+        0.670, 0.000,
+        0.750, 0.000,
 
-        0.980, 0.165,
-        0.955, 0.285,
-        0.985, 0.390,
+        0.830, 0.000,
+        0.920, 0.000,
+        1.000, 0.000,
 
-        1.000, 0.515,
-        0.960, 0.620,
-        0.975, 0.715,
+        1.000, 0.160,
+        1.000, 0.330,
+        1.000, 0.500,
 
-        0.950, 0.845,
-        0.855, 0.905,
-        0.745, 0.920,
+        1.000, 0.670,
+        1.000, 0.840,
+        1.000, 1.000,
 
-        0.645, 0.990,
-        0.535, 0.945,
-        0.430, 0.975,
+        0.890, 1.000,
+        0.770, 1.000,
+        0.660, 1.000,
 
-        0.315, 0.995,
-        0.235, 0.940,
-        0.145, 0.925,
+        0.550, 1.000,
+        0.440, 1.000,
+        0.330, 1.000,
 
-        0.045, 0.900,
-        0.020, 0.810,
-        0.035, 0.705,
+        0.220, 1.000,
+        0.110, 1.000,
+        0.000, 1.000,
 
-        0.000, 0.605,
-        0.035, 0.505,
-        0.015, 0.405,
-
-        0.000, 0.305,
-        0.050, 0.245,
-        0.025, 0.155
+        0.000, 0.660,
+        0.000, 0.330,
+        0.000, 0.000
     ];
 
-
-    /* =====================================================
-       UTILITÁRIOS
-       ===================================================== */
 
     function limitarIndice(indice) {
         return Math.max(
@@ -378,8 +362,7 @@
 
 
         return slides[indice]
-            ? slides[indice]
-                .querySelector('img')
+            ? slides[indice].querySelector('img')
             : null;
     }
 
@@ -399,7 +382,7 @@
 
 
     /* =====================================================
-       CRIAR PATH
+       PATH
        ===================================================== */
 
     function criarPath(valores) {
@@ -493,10 +476,6 @@
     }
 
 
-    /* =====================================================
-       CANCELAR PATH
-       ===================================================== */
-
     function cancelarAnimacaoPath() {
         if (
             animacaoPathFrame !==
@@ -526,10 +505,6 @@
         }
     }
 
-
-    /* =====================================================
-       INTERPOLAR PATH
-       ===================================================== */
 
     function animarPath(
         origem,
@@ -676,13 +651,6 @@
     }
 
 
-    /* =====================================================
-       ANIMAÇÃO ABERTURA
-
-       1. ilha -> splash
-       2. splash -> forma aberta
-       ===================================================== */
-
     function animarAberturaPath() {
         cancelarAnimacaoPath();
 
@@ -690,7 +658,7 @@
         animarPath(
             PATH_ILHA,
             PATH_SPLASH,
-            390,
+            360,
             function () {
                 temporizadorSplash =
                     window.setTimeout(
@@ -701,34 +669,30 @@
 
                             animarPath(
                                 PATH_SPLASH,
-                                PATH_ABERTO,
-                                360
+                                PATH_RECT,
+                                410
                             );
                         },
-                        18
+                        10
                     );
             }
         );
     }
 
 
-    /* =====================================================
-       ANIMAÇÃO FECHO
-       ===================================================== */
-
     function animarFechoPath() {
         cancelarAnimacaoPath();
 
 
         animarPath(
-            PATH_ABERTO,
+            PATH_RECT,
             PATH_SPLASH,
-            240,
+            260,
             function () {
                 animarPath(
                     PATH_SPLASH,
                     PATH_ILHA,
-                    380
+                    390
                 );
             }
         );
@@ -879,10 +843,6 @@
     }
 
 
-    /* =====================================================
-       MOSTRAR FOTO
-       ===================================================== */
-
     function mostrarFoto(
         indice,
         suave
@@ -911,7 +871,77 @@
 
 
     /* =====================================================
-       LIGHTBOX FOTO
+       TAMANHO REAL DA FOTO
+       ===================================================== */
+
+    function ajustarLightboxAoAspecto(
+        larguraNatural,
+        alturaNatural
+    ) {
+        if (
+            !lightboxMedia ||
+            !larguraNatural ||
+            !alturaNatural
+        ) {
+            return;
+        }
+
+
+        var larguraMaxima =
+            Math.min(
+                window.innerWidth *
+                    0.92,
+                880
+            );
+
+
+        var alturaMaxima =
+            Math.min(
+                window.innerHeight *
+                    0.80,
+                920
+            );
+
+
+        var proporcao =
+            Math.min(
+                larguraMaxima /
+                    larguraNatural,
+
+                alturaMaxima /
+                    alturaNatural
+            );
+
+
+        var largura =
+            larguraNatural *
+            proporcao;
+
+
+        var altura =
+            alturaNatural *
+            proporcao;
+
+
+        lightboxMedia.style.width =
+            Math.max(
+                120,
+                largura
+            ) +
+            'px';
+
+
+        lightboxMedia.style.height =
+            Math.max(
+                120,
+                altura
+            ) +
+            'px';
+    }
+
+
+    /* =====================================================
+       FOTO LIGHTBOX
        ===================================================== */
 
     function atualizarLightboxFoto(indice) {
@@ -930,6 +960,17 @@
 
         if (!imagem) {
             return;
+        }
+
+
+        if (
+            imagem.naturalWidth &&
+            imagem.naturalHeight
+        ) {
+            ajustarLightboxAoAspecto(
+                imagem.naturalWidth,
+                imagem.naturalHeight
+            );
         }
 
 
@@ -968,7 +1009,7 @@
 
 
     /* =====================================================
-       ORIGEM
+       TRANSFORMAÇÃO
        ===================================================== */
 
     function calcularTransformacaoOrigem() {
@@ -1098,13 +1139,17 @@
         atualizarUI(indice);
 
 
-        atualizarLightboxFoto(indice);
+        atualizarLightboxFoto(
+            indice
+        );
 
 
         if (lightboxPath) {
             lightboxPath.setAttribute(
                 'd',
-                criarPath(PATH_ILHA)
+                criarPath(
+                    PATH_ILHA
+                )
             );
         }
 
@@ -1246,7 +1291,9 @@
                     if (lightboxPath) {
                         lightboxPath.setAttribute(
                             'd',
-                            criarPath(PATH_ILHA)
+                            criarPath(
+                                PATH_ILHA
+                            )
                         );
                     }
 
@@ -1257,13 +1304,13 @@
                 },
                 prefereMovimentoReduzido()
                     ? 0
-                    : 790
+                    : 830
             );
     }
 
 
     /* =====================================================
-       NAVEGAÇÃO LIGHTBOX
+       NAVEGAR LIGHTBOX
        ===================================================== */
 
     function lightboxFotoAnterior() {
@@ -1491,10 +1538,6 @@
     );
 
 
-    /* =====================================================
-       ABRIR FOTO
-       ===================================================== */
-
     faixa.addEventListener(
         'click',
         function (evento) {
@@ -1537,42 +1580,79 @@
 
 
     /* =====================================================
-       FECHAR
+       CLICAR FORA DA FOTO FECHA
+
+       Qualquer toque no lightbox que não seja:
+       - na própria fotografia;
+       - nas setas;
+       - no X;
+       fecha a imagem.
        ===================================================== */
-
-    if (lightboxFechar) {
-        lightboxFechar.addEventListener(
-            'click',
-            fecharLightbox
-        );
-    }
-
 
     if (lightbox) {
         lightbox.addEventListener(
             'click',
             function (evento) {
+                if (!lightboxAberto) {
+                    return;
+                }
+
+
                 if (
-                    evento.target &&
-                    evento.target.hasAttribute(
-                        'data-fechar-lightbox'
+                    evento.target.closest(
+                        '.perfil-lightbox-media'
                     )
                 ) {
-                    fecharLightbox();
+                    return;
                 }
+
+
+                if (
+                    evento.target.closest(
+                        '.perfil-lightbox-nav'
+                    )
+                ) {
+                    return;
+                }
+
+
+                if (
+                    evento.target.closest(
+                        '.perfil-lightbox-fechar'
+                    )
+                ) {
+                    return;
+                }
+
+
+                fecharLightbox();
             }
         );
     }
 
 
-    /* =====================================================
-       LIGHTBOX SETAS
-       ===================================================== */
+    if (lightboxFechar) {
+        lightboxFechar.addEventListener(
+            'click',
+            function (evento) {
+                evento.stopPropagation();
+
+
+                fecharLightbox();
+            }
+        );
+    }
+
 
     if (lightboxAnterior) {
         lightboxAnterior.addEventListener(
             'click',
-            lightboxFotoAnterior
+            function (evento) {
+                evento.stopPropagation();
+
+
+                lightboxFotoAnterior();
+            }
         );
     }
 
@@ -1580,7 +1660,12 @@
     if (lightboxSeguinte) {
         lightboxSeguinte.addEventListener(
             'click',
-            lightboxFotoSeguinte
+            function (evento) {
+                evento.stopPropagation();
+
+
+                lightboxFotoSeguinte();
+            }
         );
     }
 
@@ -1709,8 +1794,10 @@
 
 
         if (
-            evento.key === 'Enter' ||
-            evento.key === ' '
+            evento.key ===
+                'Enter' ||
+            evento.key ===
+                ' '
         ) {
             evento.preventDefault();
 
@@ -1740,6 +1827,11 @@
 
 
         if (lightboxAberto) {
+            atualizarLightboxFoto(
+                indiceAtual
+            );
+
+
             calcularTransformacaoOrigem();
         }
     }
@@ -1805,7 +1897,9 @@
         }
 
 
-        if (observadorTamanho) {
+        if (
+            observadorTamanho
+        ) {
             observadorTamanho.disconnect();
 
 
@@ -1853,8 +1947,6 @@
     atualizarUI(0);
 
 })(window, document);
-
-
 
 
 /* =========================================================
@@ -1933,17 +2025,15 @@
         if (etiqueta) {
             etiqueta.textContent =
                 texto;
-        } else {
-            botao.textContent =
-                texto;
         }
     }
 
 
     function anunciar(texto) {
-        if (estadoAcessivel) {
+        if (
             estadoAcessivel
-                .textContent =
+        ) {
+            estadoAcessivel.textContent =
                 texto;
         }
     }
@@ -2048,8 +2138,7 @@
                     .connect ===
                     'function'
             ) {
-                window.AppWebSocket
-                    .connect();
+                window.AppWebSocket.connect();
             }
 
 
