@@ -25,97 +25,6 @@
         rel="stylesheet"
         href="{{ doc_root }}estilos/login.css?v=3"
     >
-
-    <!--
-        PRÉ-AQUECIMENTO DO CREATE ACCOUNT
-
-        A página seguinte começa a ser preparada enquanto
-        o utilizador ainda está no login.
-
-        O CSS e o JS mais importantes são carregados
-        antecipadamente para a primeira transição não ter
-        o pequeno soluço que existia a frio.
-    -->
-
-    <link
-        rel="prefetch"
-        href="{{ doc_root }}create-account"
-    >
-
-    <link
-        rel="preload"
-        href="{{ doc_root }}estilos/create-account.css?v=13"
-        as="style"
-        fetchpriority="low"
-    >
-
-    <link
-        rel="preload"
-        href="{{ doc_root }}js/create-account-navegacao.js?v=15"
-        as="script"
-        fetchpriority="low"
-    >
-
-    <link
-        rel="prefetch"
-        href="{{ doc_root }}estilos/create-account-permissoes.css?v=2"
-        as="style"
-    >
-
-    <link
-        rel="prefetch"
-        href="{{ doc_root }}estilos/create-account-editor.css?v=2"
-        as="style"
-    >
-
-    <link
-        rel="prefetch"
-        href="{{ doc_root }}estilos/create-account-legal.css?v=2"
-        as="style"
-    >
-
-    <link
-        rel="prefetch"
-        href="{{ doc_root }}js/preferencias.js?v=2"
-        as="script"
-    >
-
-    <link
-        rel="prefetch"
-        href="{{ doc_root }}js/create-account-fotos.js?v=7"
-        as="script"
-    >
-
-    <link
-        rel="prefetch"
-        href="{{ doc_root }}js/create-account-permissoes.js?v=5"
-        as="script"
-    >
-
-    <link
-        rel="prefetch"
-        href="{{ doc_root }}js/create-account-autocompletar.js?v=4"
-        as="script"
-    >
-
-    <!--
-        Chrome/Chromium moderno pode ainda preparar a própria
-        navegação em background. Browsers que não suportem
-        speculationrules simplesmente ignoram este bloco.
-    -->
-    <script type="speculationrules">
-    {
-        "prefetch": [
-            {
-                "source": "list",
-                "urls": [
-                    {{ (doc_root ~ 'create-account')|json_encode|raw }}
-                ],
-                "eagerness": "eager"
-            }
-        ]
-    }
-    </script>
 </head>
 
 <body>
@@ -181,6 +90,9 @@
                     id="utilizador"
                     value="{{ utilizador|e('html_attr') }}"
                     autocomplete="username"
+                    autocapitalize="none"
+                    autocorrect="off"
+                    spellcheck="false"
                     {% if mensagem_erro %}
                         aria-describedby="login-erro"
                         aria-invalid="true"
@@ -263,9 +175,113 @@
         </a>
     </aside>
 
-    <script src="{{ doc_root }}js/jquery-4.0.0.js"></script>
-    <script src="{{ doc_root }}js/csrf.js?v=1"></script>
-    <script src="{{ doc_root }}js/login.js"></script>
-    <script src="{{ doc_root }}js/navegacao-documento.js?v=1"></script>
+    <script src="{{ doc_root }}js/login.js?v=2"></script>
+    <script src="{{ doc_root }}js/navegacao-documento.js?v=2"></script>
+
+    <script>
+        (function () {
+            'use strict';
+
+            var iniciado = false;
+
+            var recursos = [
+                {
+                    href: {{ (doc_root ~ 'create-account')|json_encode|raw }},
+                    as: ''
+                },
+                {
+                    href: {{ (doc_root ~ 'estilos/create-account.css?v=13')|json_encode|raw }},
+                    as: 'style'
+                },
+                {
+                    href: {{ (doc_root ~ 'js/create-account-navegacao.js?v=15')|json_encode|raw }},
+                    as: 'script'
+                },
+                {
+                    href: {{ (doc_root ~ 'estilos/create-account-permissoes.css?v=2')|json_encode|raw }},
+                    as: 'style'
+                },
+                {
+                    href: {{ (doc_root ~ 'estilos/create-account-editor.css?v=2')|json_encode|raw }},
+                    as: 'style'
+                },
+                {
+                    href: {{ (doc_root ~ 'estilos/create-account-legal.css?v=2')|json_encode|raw }},
+                    as: 'style'
+                },
+                {
+                    href: {{ (doc_root ~ 'js/preferencias.js?v=2')|json_encode|raw }},
+                    as: 'script'
+                },
+                {
+                    href: {{ (doc_root ~ 'js/create-account-fotos.js?v=7')|json_encode|raw }},
+                    as: 'script'
+                },
+                {
+                    href: {{ (doc_root ~ 'js/create-account-permissoes.js?v=5')|json_encode|raw }},
+                    as: 'script'
+                },
+                {
+                    href: {{ (doc_root ~ 'js/create-account-autocompletar.js?v=4')|json_encode|raw }},
+                    as: 'script'
+                }
+            ];
+
+            function preAquecerCriarConta() {
+                if (iniciado) {
+                    return;
+                }
+
+                iniciado = true;
+
+                recursos.forEach(function (recurso) {
+                    var link = document.createElement('link');
+
+                    link.rel = 'prefetch';
+                    link.href = recurso.href;
+
+                    if (recurso.as) {
+                        link.as = recurso.as;
+                    }
+
+                    if ('fetchPriority' in link) {
+                        link.fetchPriority = 'low';
+                    }
+
+                    document.head.appendChild(link);
+                });
+            }
+
+            function agendarPreAquecimento() {
+                if ('requestIdleCallback' in window) {
+                    window.requestIdleCallback(
+                        preAquecerCriarConta,
+                        {
+                            timeout: 2500
+                        }
+                    );
+
+                    return;
+                }
+
+                window.setTimeout(
+                    preAquecerCriarConta,
+                    1200
+                );
+            }
+
+            if (document.readyState === 'complete') {
+                agendarPreAquecimento();
+            } else {
+                window.addEventListener(
+                    'load',
+                    agendarPreAquecimento,
+                    {
+                        once: true
+                    }
+                );
+            }
+        })();
+    </script>
 </body>
 </html>
