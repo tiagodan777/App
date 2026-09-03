@@ -214,6 +214,27 @@ final class PushNotification
         );
     }
 
+    public function enqueueNearbyPeople(
+        string $recipientId,
+        int $nearbyCount
+    ): int {
+        $recipientId = $this->validMemberId($recipientId);
+        $nearbyCount = max(3, min(999, $nearbyCount));
+
+        return $this->enqueue(
+            $recipientId,
+            'nearby',
+            'Há ' . $nearbyCount . ' pessoas com a Margot aqui perto 👀',
+            'Abre a app e manda-lhes um Hey.',
+            '/',
+            [
+                'type' => 'nearby',
+                'nearby_count' => (string) $nearbyCount
+            ],
+            'nearby:' . $recipientId . ':' . bin2hex(random_bytes(8))
+        );
+    }
+
     public function enqueueMessage(
         string $senderId,
         string $recipientId,
@@ -285,6 +306,7 @@ final class PushNotification
              WHERE estado = 'processing'
              AND bloqueado_em < DATE_SUB(UTC_TIMESTAMP(6), INTERVAL 5 MINUTE)"
         );
+
         $statement->execute();
 
         return $statement->rowCount();
@@ -321,7 +343,9 @@ final class PushNotification
                  LIMIT 1
                  FOR UPDATE"
             );
+
             $statement->execute();
+
             $job = $statement->fetch(PDO::FETCH_ASSOC);
 
             if (!$job) {
@@ -330,6 +354,7 @@ final class PushNotification
             }
 
             $attempts = (int) $job['tentativas'] + 1;
+
             $update = $this->db->prepare(
                 "UPDATE push_fila
                  SET estado = 'processing',
@@ -337,6 +362,7 @@ final class PushNotification
                      bloqueado_em = UTC_TIMESTAMP(6)
                  WHERE id = :id"
             );
+
             $update->execute([
                 'attempts' => $attempts,
                 'id' => (int) $job['id']
@@ -348,6 +374,7 @@ final class PushNotification
             $job['dispositivo_id'] = (int) $job['dispositivo_id'];
             $job['tentativas'] = $attempts;
             $job['dados'] = $this->decodeData((string) $job['dados_json']);
+
             unset($job['dados_json']);
 
             return $job;
@@ -364,8 +391,7 @@ final class PushNotification
         int $jobId,
         int $deviceId,
         ?string $environment = null
-    ): void
-    {
+    ): void {
         if ($environment !== null) {
             $environment = $this->validEnvironment($environment);
         }
@@ -381,7 +407,10 @@ final class PushNotification
                      ultimo_erro = NULL
                  WHERE id = :id"
             );
-            $statement->execute(['id' => $jobId]);
+
+            $statement->execute([
+                'id' => $jobId
+            ]);
 
             $environmentSql = $environment === null
                 ? ''
@@ -396,7 +425,10 @@ final class PushNotification
                      atualizado_em = UTC_TIMESTAMP(6)
                  WHERE id = :id'
             );
-            $deviceParameters = ['id' => $deviceId];
+
+            $deviceParameters = [
+                'id' => $deviceId
+            ];
 
             if ($environment !== null) {
                 $deviceParameters['environment'] = $environment;
@@ -420,15 +452,31 @@ final class PushNotification
         string $errorCode,
         bool $permanent
     ): void {
-        $errorCode = mb_substr(trim($errorCode), 0, 190);
-        $attemptsStatement = $this->db->prepare(
-            'SELECT tentativas FROM push_fila WHERE id = :id LIMIT 1'
+        $errorCode = mb_substr(
+            trim($errorCode),
+            0,
+            190
         );
-        $attemptsStatement->execute(['id' => $jobId]);
+
+        $attemptsStatement = $this->db->prepare(
+            'SELECT tentativas
+             FROM push_fila
+             WHERE id = :id
+             LIMIT 1'
+        );
+
+        $attemptsStatement->execute([
+            'id' => $jobId
+        ]);
+
         $attempts = (int) $attemptsStatement->fetchColumn();
         $finished = $permanent || $attempts >= self::MAX_ATTEMPTS;
         $retrySeconds = $this->retryDelay($attempts);
-        $nextRetry = gmdate('Y-m-d H:i:s', time() + $retrySeconds);
+
+        $nextRetry = gmdate(
+            'Y-m-d H:i:s',
+            time() + $retrySeconds
+        );
 
         $this->db->beginTransaction();
 
@@ -444,9 +492,12 @@ final class PushNotification
                      END
                  WHERE id = :id"
             );
+
             $statement->execute([
                 'status' => $finished ? 'failed' : 'queued',
-                'error' => $errorCode !== '' ? $errorCode : 'push_error',
+                'error' => $errorCode !== ''
+                    ? $errorCode
+                    : 'push_error',
                 'finished' => $finished ? 1 : 0,
                 'next_retry' => $nextRetry,
                 'id' => $jobId
@@ -457,12 +508,18 @@ final class PushNotification
                  SET falhas_consecutivas = falhas_consecutivas + 1,
                      ultima_falha_em = UTC_TIMESTAMP(6),
                      ultimo_erro = :error,
-                     ativo = CASE WHEN :permanent = 1 THEN 0 ELSE ativo END,
+                     ativo = CASE
+                         WHEN :permanent = 1 THEN 0
+                         ELSE ativo
+                     END,
                      atualizado_em = UTC_TIMESTAMP(6)
                  WHERE id = :id'
             );
+
             $device->execute([
-                'error' => $errorCode !== '' ? $errorCode : 'push_error',
+                'error' => $errorCode !== ''
+                    ? $errorCode
+                    : 'push_error',
                 'permanent' => $permanent ? 1 : 0,
                 'id' => $deviceId
             ]);
@@ -479,13 +536,49 @@ final class PushNotification
 
     public function isDeliverable(array $job): bool
     {
+        $type = (string) ($job['tipo'] ?? '');
+
         try {
             $recipientId = $this->validMemberId(
                 (string) ($job['membro_id'] ?? '')
             );
-            $data = is_array($job['dados'] ?? null)
-                ? $job['dados']
-                : [];
+        } catch (InvalidArgumentException) {
+            return false;
+        }
+
+        /*
+         * O alerta de proximidade só é útil enquanto a Margot continua
+         * efetivamente fora do ecrã.
+         *
+         * A fila pode demorar alguns segundos a ser processada.
+         * Se entretanto o utilizador abriu a app ou o grupo deixou de ter
+         * pelo menos 3 pessoas, cancelamos o push antes de o enviar.
+         */
+        if ($type === 'nearby') {
+            $member = $this->db->prepare(
+                'SELECT 1
+                 FROM membros AS m
+                 INNER JOIN estado_app_membro AS ea
+                    ON ea.membro_id = m.id
+                 WHERE m.id = :recipient_id
+                 AND ea.em_background = 1
+                 AND ea.alerta_proximidade_ativo = 1
+                 AND ea.total_proximidade >= 3
+                 LIMIT 1'
+            );
+
+            $member->execute([
+                'recipient_id' => $recipientId
+            ]);
+
+            return (bool) $member->fetchColumn();
+        }
+
+        $data = is_array($job['dados'] ?? null)
+            ? $job['dados']
+            : [];
+
+        try {
             $senderId = $this->validMemberId(
                 (string) ($data['from_member_id'] ?? '')
             );
@@ -503,6 +596,7 @@ final class PushNotification
              WHERE id = :sender_id
              OR id = :recipient_id'
         );
+
         $members->execute([
             'sender_id' => $senderId,
             'recipient_id' => $recipientId
@@ -524,6 +618,7 @@ final class PushNotification
              )
              LIMIT 1'
         );
+
         $blocked->execute([
             'sender_1' => $senderId,
             'recipient_1' => $recipientId,
@@ -535,15 +630,16 @@ final class PushNotification
             return false;
         }
 
-        $type = (string) ($job['tipo'] ?? '');
-
         if ($type === 'hey') {
             $notificationId = filter_var(
                 $data['notification_id'] ?? null,
                 FILTER_VALIDATE_INT
             );
 
-            if ($notificationId === false || $notificationId < 1) {
+            if (
+                $notificationId === false ||
+                $notificationId < 1
+            ) {
                 return false;
             }
 
@@ -564,7 +660,10 @@ final class PushNotification
                 FILTER_VALIDATE_INT
             );
 
-            if ($notificationId === false || $notificationId < 1) {
+            if (
+                $notificationId === false ||
+                $notificationId < 1
+            ) {
                 return false;
             }
 
@@ -590,9 +689,16 @@ final class PushNotification
         return (bool) $statement->fetchColumn();
     }
 
-    public function markCancelled(int $jobId, string $reason): void
-    {
-        $reason = mb_substr(trim($reason), 0, 190);
+    public function markCancelled(
+        int $jobId,
+        string $reason
+    ): void {
+        $reason = mb_substr(
+            trim($reason),
+            0,
+            190
+        );
+
         $statement = $this->db->prepare(
             "UPDATE push_fila
              SET estado = 'cancelled',
@@ -600,8 +706,11 @@ final class PushNotification
                  ultimo_erro = :reason
              WHERE id = :id"
         );
+
         $statement->execute([
-            'reason' => $reason !== '' ? $reason : 'cancelled',
+            'reason' => $reason !== ''
+                ? $reason
+                : 'cancelled',
             'id' => $jobId
         ]);
     }
@@ -612,17 +721,26 @@ final class PushNotification
             "DELETE FROM push_fila
              WHERE (
                  estado = 'sent'
-                 AND enviado_em < DATE_SUB(UTC_TIMESTAMP(6), INTERVAL 7 DAY)
+                 AND enviado_em < DATE_SUB(
+                     UTC_TIMESTAMP(6),
+                     INTERVAL 7 DAY
+                 )
              ) OR (
                  estado IN ('failed', 'cancelled')
-                 AND criado_em < DATE_SUB(UTC_TIMESTAMP(6), INTERVAL 30 DAY)
+                 AND criado_em < DATE_SUB(
+                     UTC_TIMESTAMP(6),
+                     INTERVAL 30 DAY
+                 )
              )"
         );
 
         $this->db->exec(
             "DELETE FROM push_dispositivos
              WHERE ativo = 0
-             AND atualizado_em < DATE_SUB(UTC_TIMESTAMP(6), INTERVAL 90 DAY)"
+             AND atualizado_em < DATE_SUB(
+                 UTC_TIMESTAMP(6),
+                 INTERVAL 90 DAY
+             )"
         );
     }
 
@@ -640,7 +758,11 @@ final class PushNotification
         $title = $this->normaliseRequiredText($title, 120);
         $body = $this->normaliseRequiredText($body, 240);
         $url = $this->validInternalUrl($url);
-        $uniqueKey = $this->normaliseRequiredText($uniqueKey, 190);
+        $uniqueKey = $this->normaliseRequiredText(
+            $uniqueKey,
+            190
+        );
+
         $json = json_encode(
             $this->normaliseData($data),
             JSON_UNESCAPED_UNICODE |
@@ -683,6 +805,7 @@ final class PushNotification
                 UTC_TIMESTAMP(6)
              )"
         );
+
         $queued = 0;
 
         foreach ($devices as $deviceId) {
@@ -696,21 +819,26 @@ final class PushNotification
                 'data' => $json,
                 'unique_key' => $uniqueKey
             ]);
+
             $queued += $statement->rowCount();
         }
 
         return $queued;
     }
 
-    private function activeDeviceIds(string $memberId): array
-    {
+    private function activeDeviceIds(
+        string $memberId
+    ): array {
         $statement = $this->db->prepare(
             'SELECT id
              FROM push_dispositivos
              WHERE membro_id = :member_id
              AND ativo = 1'
         );
-        $statement->execute(['member_id' => $memberId]);
+
+        $statement->execute([
+            'member_id' => $memberId
+        ]);
 
         return array_map(
             static fn (mixed $id): int => (int) $id,
@@ -721,13 +849,20 @@ final class PushNotification
     /**
      * @return array{name: string, photo: string}
      */
-    private function memberPreview(string $memberId): array
-    {
+    private function memberPreview(
+        string $memberId
+    ): array {
         $statement = $this->db->prepare(
             "SELECT
                 COALESCE(
                     NULLIF(
-                        TRIM(CONCAT(primeiro_nome, ' ', ultimo_nome)),
+                        TRIM(
+                            CONCAT(
+                                primeiro_nome,
+                                ' ',
+                                ultimo_nome
+                            )
+                        ),
                         ''
                     ),
                     'Alguém'
@@ -753,10 +888,16 @@ final class PushNotification
              WHERE membros.id = :id
              LIMIT 1"
         );
-        $statement->execute(['id' => $memberId]);
+
+        $statement->execute([
+            'id' => $memberId
+        ]);
+
         $member = $statement->fetch(PDO::FETCH_ASSOC);
         $name = trim((string) ($member['nome'] ?? ''));
-        $photo = basename(trim((string) ($member['foto'] ?? '')));
+        $photo = basename(
+            trim((string) ($member['foto'] ?? ''))
+        );
 
         if ($name === '') {
             $name = 'Alguém';
@@ -768,12 +909,14 @@ final class PushNotification
 
         return [
             'name' => mb_substr($name, 0, 100),
-            'photo' => '/imagens/fotos-perfil/' . rawurlencode($photo)
+            'photo' => '/imagens/fotos-perfil/' .
+                rawurlencode($photo)
         ];
     }
 
-    private function deviceIdByTokenHash(string $tokenHash): ?int
-    {
+    private function deviceIdByTokenHash(
+        string $tokenHash
+    ): ?int {
         $statement = $this->db->prepare(
             'SELECT id
              FROM push_dispositivos
@@ -781,10 +924,16 @@ final class PushNotification
              LIMIT 1
              FOR UPDATE'
         );
-        $statement->execute(['token_hash' => $tokenHash]);
+
+        $statement->execute([
+            'token_hash' => $tokenHash
+        ]);
+
         $id = $statement->fetchColumn();
 
-        return $id === false ? null : (int) $id;
+        return $id === false
+            ? null
+            : (int) $id;
     }
 
     private function deviceIdByInstallation(
@@ -799,25 +948,35 @@ final class PushNotification
              LIMIT 1
              FOR UPDATE'
         );
+
         $statement->execute([
             'platform' => $platform,
             'installation_id' => $installationId
         ]);
+
         $id = $statement->fetchColumn();
 
-        return $id === false ? null : (int) $id;
+        return $id === false
+            ? null
+            : (int) $id;
     }
 
-    private function deleteDevice(int $deviceId): void
-    {
+    private function deleteDevice(
+        int $deviceId
+    ): void {
         $statement = $this->db->prepare(
-            'DELETE FROM push_dispositivos WHERE id = :id'
+            'DELETE FROM push_dispositivos
+             WHERE id = :id'
         );
-        $statement->execute(['id' => $deviceId]);
+
+        $statement->execute([
+            'id' => $deviceId
+        ]);
     }
 
-    private function cancelQueuedForInactiveDevices(string $memberId): void
-    {
+    private function cancelQueuedForInactiveDevices(
+        string $memberId
+    ): void {
         $statement = $this->db->prepare(
             "UPDATE push_fila AS q
              INNER JOIN push_dispositivos AS d
@@ -829,12 +988,18 @@ final class PushNotification
              AND d.ativo = 0
              AND q.estado IN ('queued', 'processing')"
         );
-        $statement->execute(['member_id' => $memberId]);
+
+        $statement->execute([
+            'member_id' => $memberId
+        ]);
     }
 
-    private function validMemberId(string $memberId): string
-    {
-        $memberId = strtolower(trim($memberId));
+    private function validMemberId(
+        string $memberId
+    ): string {
+        $memberId = strtolower(
+            trim($memberId)
+        );
 
         if (
             preg_match(
@@ -842,42 +1007,71 @@ final class PushNotification
                 $memberId
             ) !== 1
         ) {
-            throw new InvalidArgumentException('Membro inválido.');
+            throw new InvalidArgumentException(
+                'Membro inválido.'
+            );
         }
 
         return $memberId;
     }
 
-    private function validPlatform(string $platform): string
-    {
-        $platform = strtolower(trim($platform));
+    private function validPlatform(
+        string $platform
+    ): string {
+        $platform = strtolower(
+            trim($platform)
+        );
 
-        if (!in_array($platform, ['ios', 'android'], true)) {
-            throw new InvalidArgumentException('Plataforma inválida.');
+        if (
+            !in_array(
+                $platform,
+                ['ios', 'android'],
+                true
+            )
+        ) {
+            throw new InvalidArgumentException(
+                'Plataforma inválida.'
+            );
         }
 
         return $platform;
     }
 
-    private function validToken(string $token, string $platform): string
-    {
+    private function validToken(
+        string $token,
+        string $platform
+    ): string {
         $token = trim($token);
+
         $valid = $platform === 'ios'
-            ? preg_match('/^[a-fA-F0-9]{32,256}$/', $token) === 1
+            ? preg_match(
+                '/^[a-fA-F0-9]{32,256}$/',
+                $token
+            ) === 1
             : strlen($token) >= 20 &&
                 strlen($token) <= 4096 &&
-                preg_match('/^[\x21-\x7E]+$/', $token) === 1;
+                preg_match(
+                    '/^[\x21-\x7E]+$/',
+                    $token
+                ) === 1;
 
         if (!$valid) {
-            throw new InvalidArgumentException('Token push inválido.');
+            throw new InvalidArgumentException(
+                'Token push inválido.'
+            );
         }
 
-        return $platform === 'ios' ? strtolower($token) : $token;
+        return $platform === 'ios'
+            ? strtolower($token)
+            : $token;
     }
 
-    private function validInstallationId(string $installationId): string
-    {
-        $installationId = strtolower(trim($installationId));
+    private function validInstallationId(
+        string $installationId
+    ): string {
+        $installationId = strtolower(
+            trim($installationId)
+        );
 
         if (
             preg_match(
@@ -885,108 +1079,182 @@ final class PushNotification
                 $installationId
             ) !== 1
         ) {
-            throw new InvalidArgumentException('Instalação inválida.');
+            throw new InvalidArgumentException(
+                'Instalação inválida.'
+            );
         }
 
         return $installationId;
     }
 
-    private function validHash(string $hash, string $message): string
-    {
-        $hash = strtolower(trim($hash));
+    private function validHash(
+        string $hash,
+        string $message
+    ): string {
+        $hash = strtolower(
+            trim($hash)
+        );
 
-        if (preg_match('/^[a-f0-9]{64}$/', $hash) !== 1) {
-            throw new InvalidArgumentException($message);
+        if (
+            preg_match(
+                '/^[a-f0-9]{64}$/',
+                $hash
+            ) !== 1
+        ) {
+            throw new InvalidArgumentException(
+                $message
+            );
         }
 
         return $hash;
     }
 
-    private function validEnvironment(string $environment): string
-    {
-        $environment = strtolower(trim($environment));
+    private function validEnvironment(
+        string $environment
+    ): string {
+        $environment = strtolower(
+            trim($environment)
+        );
 
-        if (!in_array($environment, ['sandbox', 'production'], true)) {
-            throw new InvalidArgumentException('Ambiente APNs inválido.');
+        if (
+            !in_array(
+                $environment,
+                ['sandbox', 'production'],
+                true
+            )
+        ) {
+            throw new InvalidArgumentException(
+                'Ambiente APNs inválido.'
+            );
         }
 
         return $environment;
     }
 
-    private function validInternalUrl(string $url): string
-    {
+    private function validInternalUrl(
+        string $url
+    ): string {
         $url = trim($url);
 
         if (
             $url === '' ||
             !str_starts_with($url, '/') ||
             str_starts_with($url, '//') ||
-            preg_match('/[\x00-\x1F\x7F]/', $url) === 1 ||
+            preg_match(
+                '/[\x00-\x1F\x7F]/',
+                $url
+            ) === 1 ||
             strlen($url) > 500
         ) {
-            throw new InvalidArgumentException('Destino do push inválido.');
+            throw new InvalidArgumentException(
+                'Destino do push inválido.'
+            );
         }
 
         return $url;
     }
 
-    private function normaliseRequiredText(string $value, int $max): string
-    {
-        $value = trim(preg_replace('/\s+/u', ' ', $value) ?? '');
+    private function normaliseRequiredText(
+        string $value,
+        int $max
+    ): string {
+        $value = trim(
+            preg_replace(
+                '/\s+/u',
+                ' ',
+                $value
+            ) ?? ''
+        );
 
         if ($value === '') {
-            throw new InvalidArgumentException('Texto do push inválido.');
+            throw new InvalidArgumentException(
+                'Texto do push inválido.'
+            );
         }
 
-        return mb_substr($value, 0, $max);
+        return mb_substr(
+            $value,
+            0,
+            $max
+        );
     }
 
-    private function normaliseOptionalText(?string $value, int $max): ?string
-    {
+    private function normaliseOptionalText(
+        ?string $value,
+        int $max
+    ): ?string {
         if ($value === null) {
             return null;
         }
 
         $value = trim($value);
 
-        return $value === '' ? null : mb_substr($value, 0, $max);
+        return $value === ''
+            ? null
+            : mb_substr(
+                $value,
+                0,
+                $max
+            );
     }
 
-    private function normaliseData(array $data): array
-    {
+    private function normaliseData(
+        array $data
+    ): array {
         $normalised = [];
 
         foreach ($data as $key => $value) {
-            $key = trim((string) $key);
+            $key = trim(
+                (string) $key
+            );
 
             if (
                 $key === '' ||
                 strlen($key) > 64 ||
-                preg_match('/^[a-zA-Z0-9_]+$/', $key) !== 1 ||
-                (!is_scalar($value) && $value !== null)
+                preg_match(
+                    '/^[a-zA-Z0-9_]+$/',
+                    $key
+                ) !== 1 ||
+                (
+                    !is_scalar($value) &&
+                    $value !== null
+                )
             ) {
                 continue;
             }
 
-            $normalised[$key] = mb_substr((string) $value, 0, 500);
+            $normalised[$key] = mb_substr(
+                (string) $value,
+                0,
+                500
+            );
         }
 
         return $normalised;
     }
 
-    private function decodeData(string $json): array
-    {
+    private function decodeData(
+        string $json
+    ): array {
         try {
-            $data = json_decode($json, true, 16, JSON_THROW_ON_ERROR);
+            $data = json_decode(
+                $json,
+                true,
+                16,
+                JSON_THROW_ON_ERROR
+            );
         } catch (\JsonException) {
             return [];
         }
 
-        return is_array($data) ? $this->normaliseData($data) : [];
+        return is_array($data)
+            ? $this->normaliseData($data)
+            : [];
     }
 
-    private function retryDelay(int $attempts): int
-    {
+    private function retryDelay(
+        int $attempts
+    ): int {
         return match ($attempts) {
             1 => 15,
             2 => 60,
