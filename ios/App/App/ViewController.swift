@@ -10,61 +10,8 @@ class ViewController: CAPBridgeViewController {
     override func capacitorDidLoad() {
         super.capacitorDidLoad()
 
-        /*
-         * TESTE DE DIAGNÓSTICO — COLD START
-         *
-         * O BackgroundLocationPlugin fica temporariamente
-         * desativado neste build.
-         *
-         * Queremos confirmar se o trabalho que o plugin faz
-         * durante load() está a bloquear a main thread no
-         * primeiro arranque da aplicação.
-         *
-         * NÃO deixar assim na versão final.
-         *
-         * Depois do teste voltamos a ativar:
-         *
-         * bridge?.registerPluginInstance(
-         *     BackgroundLocationPlugin()
-         * )
-         */
-
-        configurarScrollNativo()
+        bridge?.registerPluginInstance(BackgroundLocationPlugin())
         configurarGestosNavegacao()
-    }
-
-    private func configurarScrollNativo() {
-        guard let webView = webView else { return }
-
-        let scrollView = webView.scrollView
-
-        /*
-         Permite o rubber banding nativo do iOS.
-         */
-
-        scrollView.bounces = true
-
-        /*
-         Faz com que exista bounce vertical mesmo quando,
-         por alguma razão, a página não ultrapassa muito
-         a altura visível do ecrã.
-         */
-
-        scrollView.alwaysBounceVertical = true
-
-        /*
-         Não queremos rubber banding horizontal no WebView,
-         porque a Margot já tem os seus próprios swipes.
-         */
-
-        scrollView.alwaysBounceHorizontal = false
-
-        /*
-         Ajuda o iOS a distinguir movimentos principalmente
-         verticais dos horizontais.
-         */
-
-        scrollView.isDirectionalLockEnabled = true
     }
 
     private func configurarGestosNavegacao() {
@@ -84,10 +31,7 @@ class ViewController: CAPBridgeViewController {
             gesto.cancelsTouchesInView = true
 
             view.addGestureRecognizer(gesto)
-
-            webView.scrollView.panGestureRecognizer.require(
-                toFail: gesto
-            )
+            webView.scrollView.panGestureRecognizer.require(toFail: gesto)
 
             gestoVoltar = gesto
         }
@@ -104,28 +48,17 @@ class ViewController: CAPBridgeViewController {
             gesto.cancelsTouchesInView = true
 
             view.addGestureRecognizer(gesto)
-
-            webView.scrollView.panGestureRecognizer.require(
-                toFail: gesto
-            )
+            webView.scrollView.panGestureRecognizer.require(toFail: gesto)
 
             gestoAvancar = gesto
         }
     }
 
-    @objc private func tratarSwipe(
-        _ gesto: UIScreenEdgePanGestureRecognizer
-    ) {
-        guard
-            gesto.state == .ended,
-            let webView = webView
-        else {
-            return
-        }
+    @objc private func tratarSwipe(_ gesto: UIScreenEdgePanGestureRecognizer) {
+        guard gesto.state == .ended, let webView = webView else { return }
 
         let distancia = gesto.translation(in: view)
         let velocidade = gesto.velocity(in: view)
-
         let voltar = gesto.edges == .left
 
         let distanciaOK = voltar
@@ -136,43 +69,21 @@ class ViewController: CAPBridgeViewController {
             ? velocidade.x > 300
             : velocidade.x < -300
 
-        guard distanciaOK || velocidadeOK else {
-            return
-        }
+        guard distanciaOK || velocidadeOK else { return }
 
-        let comando = voltar
-            ? "history.back();"
-            : "history.forward();"
+        let comando = voltar ? "history.back();" : "history.forward();"
 
         let javascript = """
         (function () {
-            if (
-                document.body.classList.contains(
-                    'margot-mini-menu-aberto'
-                )
-            ) return false;
-
-            if (
-                document.body.classList.contains(
-                    'heys-abertos'
-                )
-            ) return false;
-
-            if (
-                document.querySelector(
-                    'dialog[open]'
-                )
-            ) return false;
+            if (document.body.classList.contains('margot-mini-menu-aberto')) return false;
+            if (document.body.classList.contains('heys-abertos')) return false;
+            if (document.querySelector('dialog[open]')) return false;
 
             \(comando)
-
             return true;
         })();
         """
 
-        webView.evaluateJavaScript(
-            javascript,
-            completionHandler: nil
-        )
+        webView.evaluateJavaScript(javascript, completionHandler: nil)
     }
 }
