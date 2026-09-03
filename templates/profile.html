@@ -5,7 +5,7 @@
 {% block styles %}
 <link
     rel="stylesheet"
-    href="{{ doc_root }}estilos/profile.css?v=43"
+    href="{{ doc_root }}estilos/profile.css?v=44"
     data-margot-page-style
 >
 {% endblock %}
@@ -299,20 +299,53 @@
 
                     {% if not perfil_proprio %}
 
-                        <button
-                            type="button"
-                            class="perfil-hey"
-                            id="enviar-hey-perfil"
-                            data-destinatario-id="{{ membro.id }}"
-                            aria-describedby="perfil-hey-estado"
-                        >
-                            <span class="perfil-hey-label">
-                                Hey
-                            </span>
-                        </button>
+                        <div class="perfil-acoes">
+                            <button
+                                type="button"
+                                class="perfil-hey"
+                                id="enviar-hey-perfil"
+                                data-destinatario-id="{{ membro.id }}"
+                                aria-describedby="perfil-hey-estado"
+                            >
+                                <span class="perfil-hey-label">
+                                    Hey
+                                </span>
+                            </button>
+
+                            <button
+                                type="button"
+                                class="perfil-conectar{% if ligados %} ligado{% endif %}"
+                                id="conectar-perfil"
+                                data-destinatario-id="{{ membro.id }}"
+                                data-ligado="{{ ligados ? '1' : '0' }}"
+                                aria-describedby="perfil-conectar-estado"
+                                aria-pressed="{{ ligados ? 'true' : 'false' }}"
+                                {% if ligados %}disabled{% endif %}
+                            >
+                                <span class="perfil-conectar-icone" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" focusable="false">
+                                        <path d="M8.7 12.9 11 15.2l4.8-5.1"></path>
+                                        <path d="M7.7 6.8a3.3 3.3 0 1 1 6.6 0"></path>
+                                        <path d="M5.5 18.4c.5-3.2 2.7-5.1 5.5-5.1"></path>
+                                        <path d="M15.8 14.4h4.4M18 12.2v4.4"></path>
+                                    </svg>
+                                </span>
+
+                                <span class="perfil-conectar-label">
+                                    {{ ligados ? 'Ligados' : 'Conectar' }}
+                                </span>
+                            </button>
+                        </div>
 
                         <p
                             id="perfil-hey-estado"
+                            class="sr-only"
+                            aria-live="polite"
+                            aria-atomic="true"
+                        ></p>
+
+                        <p
+                            id="perfil-conectar-estado"
                             class="sr-only"
                             aria-live="polite"
                             aria-atomic="true"
@@ -556,5 +589,5 @@ window.webSocketUrl = window.location.protocol === 'https:'
     : 'ws://' + window.location.hostname + ':8080';
 </script>
 
-<script src="{{ doc_root }}js/profile.js?v=43"></script>
+<script src="{{ doc_root }}js/profile.js?v=44"></script>
 {% endblock %}
