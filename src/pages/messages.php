@@ -887,6 +887,173 @@ function guardarReacaoMensagem(
     return obterReacoesMensagem($db, $mensagemId);
 }
 
+function prepararTabelaMensagensApagadas(
+    $db
+): void {
+    static $preparada = false;
+
+    if ($preparada) {
+        return;
+    }
+
+    $db->runSQL(
+        'CREATE TABLE IF NOT EXISTS mensagens_apagadas (
+            mensagem_id BIGINT UNSIGNED NOT NULL,
+            emissor_id VARCHAR(64) NOT NULL,
+            destinatario_id VARCHAR(64) NOT NULL,
+            apagada_em DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+
+            PRIMARY KEY (mensagem_id),
+            KEY idx_mensagens_apagadas_emissor (emissor_id),
+            KEY idx_mensagens_apagadas_destinatario (destinatario_id),
+            KEY idx_mensagens_apagadas_data (apagada_em)
+        )
+        ENGINE=InnoDB
+        DEFAULT CHARSET=utf8mb4
+        COLLATE=utf8mb4_unicode_ci'
+    );
+
+    $preparada = true;
+}
+
+function apagarMensagemEnviada(
+    $db,
+    int $mensagemId,
+    string $membroId,
+    string $outroId
+): array|false {
+    $mensagem = $db->runSQL(
+        'SELECT
+            id,
+            emissor_id,
+            destinatario_id,
+            ficheiro_nome
+         FROM mensagens_chat
+         WHERE id = :mensagem
+         AND (
+             (
+                 emissor_id = :eu1
+                 AND destinatario_id = :outro1
+             )
+             OR (
+                 emissor_id = :outro2
+                 AND destinatario_id = :eu2
+             )
+         )
+         LIMIT 1',
+        [
+            'mensagem' => $mensagemId,
+            'eu1' => $membroId,
+            'outro1' => $outroId,
+            'outro2' => $outroId,
+            'eu2' => $membroId
+        ]
+    )->fetch();
+
+    if (!$mensagem) {
+        return false;
+    }
+
+    if (
+        (string) ($mensagem['emissor_id'] ?? '') !==
+        $membroId
+    ) {
+        throw new InvalidArgumentException(
+            'Só podes apagar mensagens que enviaste.'
+        );
+    }
+
+    prepararTabelaReacoesMensagens($db);
+    prepararTabelaMensagensApagadas($db);
+
+    $ficheiro = basename(
+        trim(
+            (string) (
+                $mensagem['ficheiro_nome']
+                ?? ''
+            )
+        )
+    );
+
+    $db->beginTransaction();
+
+    try {
+        $db->runSQL(
+            'INSERT INTO mensagens_apagadas (
+                mensagem_id,
+                emissor_id,
+                destinatario_id,
+                apagada_em
+             ) VALUES (
+                :mensagem,
+                :emissor,
+                :destinatario,
+                NOW(6)
+             )
+             ON DUPLICATE KEY UPDATE
+                emissor_id = VALUES(emissor_id),
+                destinatario_id = VALUES(destinatario_id),
+                apagada_em = NOW(6)',
+            [
+                'mensagem' => $mensagemId,
+                'emissor' => $membroId,
+                'destinatario' => $outroId
+            ]
+        );
+
+        $db->runSQL(
+            'DELETE FROM mensagens_reacoes
+             WHERE mensagem_id = :mensagem',
+            [
+                'mensagem' => $mensagemId
+            ]
+        );
+
+        $eliminada = $db->runSQL(
+            'DELETE FROM mensagens_chat
+             WHERE id = :mensagem
+             AND emissor_id = :emissor
+             AND destinatario_id = :destinatario',
+            [
+                'mensagem' => $mensagemId,
+                'emissor' => $membroId,
+                'destinatario' => $outroId
+            ]
+        );
+
+        if ($eliminada->rowCount() !== 1) {
+            throw new RuntimeException(
+                'A mensagem já não existe.'
+            );
+        }
+
+        $db->commit();
+    } catch (Throwable $erro) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+
+        throw $erro;
+    }
+
+    if ($ficheiro !== '') {
+        $caminho =
+            APP_ROOT .
+            '/public/media/mensagens/' .
+            $ficheiro;
+
+        if (is_file($caminho)) {
+            @unlink($caminho);
+        }
+    }
+
+    return [
+        'id' => $mensagemId,
+        'emissor_id' => $membroId,
+        'destinatario_id' => $outroId
+    ];
+}
+
 function sqlMensagemBase(): string
 {
     return "
@@ -1516,10 +1683,7 @@ function obterConversas(
     usort(
         $conversas,
         static fn(array $a, array $b): int =>
-            strcmp(
-                (string) ($b['criada_em'] ?? ''),
-                (string) ($a['criada_em'] ?? '')
-            )
+            strcmp((string) ($b['criada_em'] ?? ''), (string) ($a['criada_em'] ?? ''))
     );
 
     return array_slice($conversas, 0, 100);
@@ -2175,6 +2339,76 @@ try {
                         $db,
                         $membroId
                     )
+            ]);
+        }
+
+        if (
+            $acao ===
+            'delete_message'
+        ) {
+            if (
+                !$conversaExistente &&
+                !$ligados
+            ) {
+                responderConversaIndisponivel(
+                    $twig,
+                    true
+                );
+            }
+
+            $mensagemId = filter_var(
+                $_POST['message_id'] ?? null,
+                FILTER_VALIDATE_INT
+            );
+
+            if (
+                $mensagemId === false ||
+                $mensagemId < 1
+            ) {
+                responderMensagensJson(
+                    [
+                        'success' => false,
+                        'message' => 'A mensagem não é válida.'
+                    ],
+                    422
+                );
+            }
+
+            try {
+                $apagada = apagarMensagemEnviada(
+                    $db,
+                    (int) $mensagemId,
+                    $membroId,
+                    $outroId
+                );
+            } catch (InvalidArgumentException $erro) {
+                responderMensagensJson(
+                    [
+                        'success' => false,
+                        'message' => $erro->getMessage()
+                    ],
+                    403
+                );
+            }
+
+            if (!$apagada) {
+                responderMensagensJson(
+                    [
+                        'success' => false,
+                        'message' => 'A mensagem já não existe.'
+                    ],
+                    404
+                );
+            }
+
+            responderMensagensJson([
+                'success' => true,
+                'deleted' => true,
+                'message_id' => (int) $mensagemId,
+                'unread_count' => contarMensagensNaoLidas(
+                    $db,
+                    $membroId
+                )
             ]);
         }
 

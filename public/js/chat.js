@@ -60,7 +60,7 @@
     var ativo = true;
     var aFixarNoFim = true;
 
-    var LONG_PRESS_REACAO_MS = 2000;
+    var LONG_PRESS_REACAO_MS = 650;
     var DOUBLE_TAP_REACAO_MS = 330;
     var gestoReacao = null;
     var ultimoTapReacao = {
@@ -1551,6 +1551,157 @@
         }
     }
 
+    function removerMensagemDoChat(
+        mensagemId,
+        animar
+    ) {
+        var $artigo =
+            artigoMensagemPorId(
+                mensagemId
+            );
+
+        if (!$artigo.length) {
+            return;
+        }
+
+        if (animar === false) {
+            $artigo.remove();
+            return;
+        }
+
+        $artigo.css({
+            transition:
+                'opacity 160ms ease, transform 180ms ease',
+            opacity:
+                '0',
+            transform:
+                'scale(.96)'
+        });
+
+        window.setTimeout(
+            function () {
+                $artigo.remove();
+            },
+            190
+        );
+    }
+
+    async function apagarMensagem(
+        mensagemId
+    ) {
+        mensagemId =
+            Number(
+                mensagemId
+            ) || 0;
+
+        if (!mensagemId) {
+            return;
+        }
+
+        var $artigo =
+            artigoMensagemPorId(
+                mensagemId
+            );
+
+        if (
+            !$artigo.length ||
+            String(
+                $artigo.attr('data-emissor-id') ||
+                ''
+            ) !== String(window.membroId || '')
+        ) {
+            return;
+        }
+
+        try {
+            var corpo =
+                new URLSearchParams();
+
+            corpo.set(
+                'action',
+                'delete_message'
+            );
+
+            corpo.set(
+                'message_id',
+                String(mensagemId)
+            );
+
+            var resposta =
+                await fetch(
+                    conversaUrl(),
+                    {
+                        method:
+                            'POST',
+
+                        credentials:
+                            'same-origin',
+
+                        cache:
+                            'no-store',
+
+                        headers: {
+                            Accept:
+                                'application/json',
+
+                            'Content-Type':
+                                'application/x-www-form-urlencoded;charset=UTF-8'
+                        },
+
+                        body:
+                            corpo.toString()
+                    }
+                );
+
+            var dados =
+                await resposta.json();
+
+            if (
+                !resposta.ok ||
+                !dados.success
+            ) {
+                throw new Error(
+                    dados.message ||
+                    'Não foi possível apagar a mensagem.'
+                );
+            }
+
+            removerMensagemDoChat(
+                mensagemId,
+                true
+            );
+
+            if (
+                window.AppWebSocket &&
+                typeof window.AppWebSocket.send ===
+                    'function'
+            ) {
+                window.AppWebSocket.send({
+                    type:
+                        'chat_delete',
+
+                    message_id:
+                        mensagemId
+                });
+            }
+        } catch (erro) {
+            console.error(
+                erro
+            );
+
+            if (
+                typeof window.mostrarMensagemTemporaria ===
+                'function'
+            ) {
+                window.mostrarMensagemTemporaria(
+                    erro.message ||
+                    'Não foi possível apagar a mensagem.',
+                    'erro'
+                );
+            }
+        }
+    }
+
     function fecharMenuReacoes() {
         if (!$menuReacoes || !$menuReacoes.length) {
             return;
@@ -1591,6 +1742,17 @@
                 );
             });
 
+        $menuReacoes.append(
+            $('<button>', {
+                type: 'button',
+                class: 'chat-menu-reacao chat-menu-apagar',
+                'data-action': 'delete',
+                'aria-label': 'Apagar mensagem',
+                text: '🗑️',
+                hidden: true
+            })
+        );
+
         $('body').append($menuReacoes);
 
         return $menuReacoes;
@@ -1610,8 +1772,21 @@
         }
 
         var $menu = garantirMenuReacoes();
+        var minhaMensagem =
+            String(
+                $artigo.attr('data-emissor-id') ||
+                ''
+            ) === String(window.membroId || '');
+
+        $menu
+            .find('[data-action="delete"]')
+            .prop('hidden', !minhaMensagem);
+
         var rect = $artigo[0].getBoundingClientRect();
-        var largura = Math.min(326, window.innerWidth - 24);
+        var largura = Math.min(
+            minhaMensagem ? 364 : 326,
+            window.innerWidth - 24
+        );
         var esquerda = Math.max(
             12,
             Math.min(
@@ -2737,11 +2912,25 @@
                 $menuReacoes.attr('data-mensagem-id')
             ) || 0;
 
+            if (!mensagemId) {
+                return;
+            }
+
+            var acao = String(
+                $botao.attr('data-action') || ''
+            );
+
+            if (acao === 'delete') {
+                fecharMenuReacoes();
+                apagarMensagem(mensagemId);
+                return;
+            }
+
             var emoji = String(
                 $botao.attr('data-emoji') || ''
             );
 
-            if (!mensagemId || !emoji) {
+            if (!emoji) {
                 return;
             }
 
@@ -2931,6 +3120,15 @@
         ) || 0;
 
         if (!mensagemId) {
+            return;
+        }
+
+        if (detalhe.deleted === true) {
+            removerMensagemDoChat(
+                mensagemId,
+                true
+            );
+
             return;
         }
 
