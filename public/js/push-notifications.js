@@ -280,6 +280,10 @@
                 return '';
             }
 
+            if (url.pathname === '/') {
+                return '/' + url.search;
+            }
+
             var uuid =
                 '[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}';
 
@@ -654,26 +658,12 @@
         return success;
     }
 
-    async function prepareAndroidChannel(
-        push
-    ) {
-        if (
-            platform() !== 'android' ||
-            typeof push.createChannel !==
-                'function'
-        ) {
-            return;
-        }
-
-        await push.createChannel({
-            id: CHANNEL_ID,
-            name: 'Atividade da Margot',
-            description:
-                'Heys e novas mensagens',
-            importance: 4,
-            visibility: 1,
-            vibration: true
-        });
+    async function prepareAndroidChannel() {
+        /*
+         * Os canais Android são criados nativamente em MainActivity.
+         * Assim cada tipo pode ter o seu próprio padrão de vibração.
+         */
+        return;
     }
 
     async function prepareListeners(push) {

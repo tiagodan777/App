@@ -25,6 +25,7 @@
     var lastKnownLocation = null;
     var photoRemovalTimers = Object.create(null);
     var latestPeople = [];
+    var profileAccessTokens = Object.create(null);
     var notifiedMessageIds = new Set();
     var notifiedMessageOrder = [];
 
@@ -40,6 +41,41 @@
     var LOCATION_ERROR_COOLDOWN = 30000;
     var LOCATION_STARTUP_GRACE = 60000;
     var MAX_NOTIFIED_MESSAGE_IDS = 200;
+
+
+    function atualizarTokensAcessoPerfil(pessoas) {
+        var novos = Object.create(null);
+
+        if (Array.isArray(pessoas)) {
+            pessoas.forEach(function (pessoa) {
+                if (!pessoa) return;
+
+                var id = String(
+                    pessoa.membro_id ||
+                    pessoa.id ||
+                    ''
+                ).trim();
+
+                var token = String(
+                    pessoa.profile_access_token ||
+                    ''
+                ).trim();
+
+                if (id && /^[a-f0-9]{64}$/i.test(token)) {
+                    novos[id] = token;
+                }
+            });
+        }
+
+        profileAccessTokens = novos;
+    }
+
+    function obterTokenAcessoPerfil(membroId) {
+        return String(
+            profileAccessTokens[String(membroId || '').trim()] ||
+            ''
+        );
+    }
 
     function rememberNotifiedMessage(messageId) {
         messageId = Number(messageId) || 0;
@@ -701,7 +737,7 @@
                 function (error) {
                     if (
                         generation !==
-                        locationWatchGeneration
+                            locationWatchGeneration
                     ) {
                         return;
                     }
@@ -1661,6 +1697,12 @@
                 break;
 
             case 'state':
+                atualizarTokensAcessoPerfil(
+                    Array.isArray(data.people)
+                        ? data.people
+                        : []
+                );
+
                 if (
                     document.getElementById(
                         'gridCanvas'
@@ -1729,6 +1771,33 @@
 
                 break;
 
+            case 'connection_waiting':
+                window.dispatchEvent(
+                    new CustomEvent(
+                        'app:connection-waiting',
+                        { detail: data }
+                    )
+                );
+                break;
+
+            case 'connection_created':
+                window.dispatchEvent(
+                    new CustomEvent(
+                        'app:connection-created',
+                        { detail: data }
+                    )
+                );
+                break;
+
+            case 'connection_error':
+                window.dispatchEvent(
+                    new CustomEvent(
+                        'app:connection-error',
+                        { detail: data }
+                    )
+                );
+                break;
+
             case 'chat_message':
                 window.dispatchEvent(
                     new CustomEvent(
@@ -1781,6 +1850,19 @@
                         );
                     }
                 }
+
+                break;
+
+            case 'chat_reaction':
+                window.dispatchEvent(
+                    new CustomEvent(
+                        'app:chat-reaction',
+                        {
+                            detail:
+                                data
+                        }
+                    )
+                );
 
                 break;
 
@@ -2440,8 +2522,7 @@
             String(
                 mensagem.emissor_nome ||
                 'Alguém'
-            ).trim() ||
-            'Alguém';
+            );
 
         var resumo =
             String(
@@ -2451,9 +2532,14 @@
 
         var foto =
             String(
-                mensagem
-                    .emissor_foto_url ||
+                mensagem.emissor_foto_url ||
                 '/imagens/fotos-perfil/default.webp'
+            );
+
+        var emissorId =
+            String(
+                mensagem.emissor_id ||
+                ''
             );
 
         var conversaUrl =
@@ -2466,79 +2552,171 @@
             ) +
             '/' +
             encodeURIComponent(
-                mensagem.emissor_id
+                emissorId
             );
 
         if (!resumo) {
             resumo =
-                mensagem.tipo ===
-                    'imagem'
+                mensagem.tipo === 'imagem'
                     ? 'Enviou-te uma fotografia.'
                     : 'Enviou-te um vídeo.';
         }
 
-        var $avisos =
-            $(
-                '#mensagens-avisos'
-            );
+        /*
+         * Heys e mensagens usam a mesma pilha. Assim nunca ficam dois
+         * contentores diferentes a ocupar exatamente o mesmo espaço no topo.
+         */
+        var $avisos = $('#heys-avisos');
 
         if (!$avisos.length) {
-            $avisos =
-                $('<div>', {
-                    id:
-                        'mensagens-avisos',
-
-                    class:
-                        'mensagens-avisos',
-
-                    'aria-live':
-                        'polite',
-
-                    'aria-atomic':
-                        'true'
-                }).appendTo(
-                    'body'
-                );
+            $avisos = $('#mensagens-avisos');
         }
 
+        if (!$avisos.length) {
+            $avisos = $('<div>', {
+                id: 'mensagens-avisos',
+                class: 'mensagens-avisos',
+                'aria-live': 'polite',
+                'aria-atomic': 'true'
+            }).appendTo('body');
+        }
+
+        var seletorExistente =
+            '.mensagem-aviso[data-emissor-id="' +
+            emissorId.replace(/"/g, '') +
+            '"]';
+
         var $aviso =
-            $('<a>', {
-                class:
-                    'mensagem-aviso',
+            $avisos.find(seletorExistente).first();
 
-                href:
-                    conversaUrl,
+        var quantidade = 1;
 
-                'aria-label':
-                    'Abrir conversa com ' +
+        function removerAviso(imediato) {
+            if (!$aviso || !$aviso.length) {
+                return;
+            }
+
+            var timer = Number(
+                $aviso.data('removerTimer') ||
+                0
+            );
+
+            if (timer) {
+                window.clearTimeout(timer);
+                $aviso.removeData('removerTimer');
+            }
+
+            $aviso
+                .addClass('a-sair')
+                .removeClass('visivel');
+
+            if (imediato) {
+                $aviso.remove();
+                return;
+            }
+
+            window.setTimeout(
+                function () {
+                    $aviso.remove();
+
+                    if (
+                        $avisos.attr('id') === 'mensagens-avisos' &&
+                        !$avisos.children().length
+                    ) {
+                        $avisos.remove();
+                    }
+                },
+                230
+            );
+        }
+
+        if ($aviso.length) {
+            quantidade =
+                Number(
+                    $aviso.attr('data-quantidade')
+                ) ||
+                1;
+
+            quantidade += 1;
+
+            var timerAnterior = Number(
+                $aviso.data('removerTimer') ||
+                0
+            );
+
+            if (timerAnterior) {
+                window.clearTimeout(timerAnterior);
+            }
+
+            $aviso
+                .removeClass('a-sair')
+                .addClass('visivel')
+                .attr('data-quantidade', String(quantidade));
+
+            $aviso
+                .find('.mensagem-aviso-corpo strong')
+                .text(
+                    quantidade +
+                    ' novas mensagens de ' +
                     nome
+                );
+
+            $aviso
+                .find('.mensagem-aviso-corpo > span')
+                .text(resumo);
+
+            $aviso.attr(
+                'aria-label',
+                quantidade +
+                ' novas mensagens de ' +
+                nome +
+                '. ' +
+                resumo
+            );
+        } else {
+            /* Máximo de três cartões no topo. O mais antigo sai primeiro. */
+            var $itens =
+                $avisos.children(
+                    '.mensagem-aviso, .hey-aviso'
+                );
+
+            while ($itens.length >= 3) {
+                $itens.first().remove();
+
+                $itens =
+                    $avisos.children(
+                        '.mensagem-aviso, .hey-aviso'
+                    );
+            }
+
+            $aviso = $('<a>', {
+                class: 'mensagem-aviso',
+                href: conversaUrl,
+                'data-emissor-id': emissorId,
+                'data-quantidade': '1',
+                'aria-label':
+                    'Nova mensagem de ' +
+                    nome +
+                    '. ' +
+                    resumo
             });
 
-        var $imagem =
-            $('<img>', {
-                class:
-                    'mensagem-aviso-foto',
-
-                src:
-                    foto,
-
-                alt:
-                    ''
+            var $imagem = $('<img>', {
+                class: 'mensagem-aviso-foto',
+                src: foto,
+                alt: ''
             }).on(
                 'error',
                 function () {
-                    this.onerror =
-                        null;
+                    this.onerror = null;
 
                     this.src =
                         '/imagens/fotos-perfil/default.webp';
                 }
             );
 
-        var $corpo =
-            $('<span>', {
-                class:
-                    'mensagem-aviso-corpo'
+            var $corpo = $('<span>', {
+                class: 'mensagem-aviso-corpo'
             }).append(
                 $('<strong>').text(
                     'Nova mensagem de ' +
@@ -2550,59 +2728,218 @@
                 )
             );
 
-        $aviso.append(
-            $imagem,
-            $corpo
-        );
-
-        $avisos.append(
-            $aviso
-        );
-
-        window.requestAnimationFrame(
-            function () {
-                $aviso.addClass(
-                    'visivel'
-                );
-            }
-        );
-
-        var removerTimer =
-            window.setTimeout(
-                removerAviso,
-                5200
+            $aviso.append(
+                $imagem,
+                $corpo
             );
 
-        $aviso.on(
-            'click',
-            function () {
-                window.clearTimeout(
-                    removerTimer
-                );
-            }
-        );
-
-        function removerAviso() {
-            $aviso.removeClass(
-                'visivel'
+            $avisos.append(
+                $aviso
             );
 
-            window.setTimeout(
-                function () {
-                    $aviso.remove();
+            var gesto = null;
+
+            $aviso.on(
+                'pointerdown',
+                function (evento) {
+                    var original =
+                        evento.originalEvent ||
+                        evento;
 
                     if (
-                        !$avisos
-                            .children()
-                            .length
+                        original.pointerType ===
+                            'mouse' &&
+                        original.button !==
+                            0
                     ) {
-                        $avisos
-                            .remove();
+                        return;
                     }
-                },
-                260
+
+                    gesto = {
+                        id:
+                            original.pointerId,
+
+                        y:
+                            original.clientY,
+
+                        x:
+                            original.clientX,
+
+                        inicio:
+                            performance.now()
+                    };
+                }
+            );
+
+            $aviso.on(
+                'pointermove',
+                function (evento) {
+                    if (!gesto) {
+                        return;
+                    }
+
+                    var original =
+                        evento.originalEvent ||
+                        evento;
+
+                    if (
+                        original.pointerId !==
+                            undefined &&
+                        gesto.id !==
+                            undefined &&
+                        original.pointerId !==
+                            gesto.id
+                    ) {
+                        return;
+                    }
+
+                    var dy =
+                        original.clientY -
+                        gesto.y;
+
+                    if (dy < 0) {
+                        var deslocamento =
+                            Math.max(
+                                -105,
+                                dy
+                            );
+
+                        $aviso.css({
+                            transition:
+                                'none',
+
+                            transform:
+                                'translateY(' +
+                                deslocamento +
+                                'px) scale(.985)',
+
+                            opacity:
+                                Math.max(
+                                    0.18,
+                                    1 -
+                                    Math.abs(
+                                        deslocamento
+                                    ) /
+                                    110
+                                )
+                        });
+                    }
+                }
+            );
+
+            $aviso.on(
+                'pointerup pointercancel',
+                function (evento) {
+                    if (!gesto) {
+                        return;
+                    }
+
+                    var original =
+                        evento.originalEvent ||
+                        evento;
+
+                    var dy =
+                        original.clientY -
+                        gesto.y;
+
+                    var duracao =
+                        Math.max(
+                            1,
+                            performance.now() -
+                            gesto.inicio
+                        );
+
+                    var velocidade =
+                        dy /
+                        duracao;
+
+                    var fechar =
+                        dy <= -34 ||
+                        velocidade <=
+                            -0.42;
+
+                    $aviso.css({
+                        transition:
+                            '',
+
+                        transform:
+                            '',
+
+                        opacity:
+                            ''
+                    });
+
+                    if (fechar) {
+                        $aviso.data(
+                            'swiped',
+                            true
+                        );
+
+                        evento.preventDefault();
+
+                        removerAviso(
+                            false
+                        );
+                    }
+
+                    gesto =
+                        null;
+                }
+            );
+
+            $aviso.on(
+                'click',
+                function (evento) {
+                    if (
+                        $aviso.data(
+                            'swiped'
+                        )
+                    ) {
+                        evento.preventDefault();
+
+                        $aviso.removeData(
+                            'swiped'
+                        );
+
+                        return;
+                    }
+
+                    var timer =
+                        Number(
+                            $aviso.data(
+                                'removerTimer'
+                            ) ||
+                            0
+                        );
+
+                    if (timer) {
+                        window.clearTimeout(
+                            timer
+                        );
+                    }
+                }
+            );
+
+            window.requestAnimationFrame(
+                function () {
+                    $aviso.addClass(
+                        'visivel'
+                    );
+                }
             );
         }
+
+        $aviso.data(
+            'removerTimer',
+            window.setTimeout(
+                function () {
+                    removerAviso(
+                        false
+                    );
+                },
+                3600
+            )
+        );
 
         return resumo;
     }
@@ -2849,18 +3186,48 @@
         isInvisible:
             modoInvisivelEstaAtivo,
 
+        profileAccessToken:
+            obterTokenAcessoPerfil,
+
         refreshMap:
             function () {
                 if (
-                    document.getElementById(
+                    !document.getElementById(
                         'gridCanvas'
                     )
                 ) {
-                    atualizarPessoasNoMapa(
-                        podeMostrarPessoasNoMapa()
-                            ? latestPeople
-                            : []
-                    );
+                    return;
+                }
+
+                /*
+                 * Ao regressar de Perfil/Mensagens, a página principal é
+                 * recriada pelo navegador interno, mas o WebSocket continua
+                 * vivo. Primeiro repomos imediatamente o último estado que já
+                 * temos em memória; depois pedimos ao servidor um estado novo
+                 * sem obrigar o utilizador a ligar/desligar o modo invisível.
+                 */
+                atualizarPessoasNoMapa(
+                    podeMostrarPessoasNoMapa()
+                        ? latestPeople
+                        : []
+                );
+
+                if (!authenticated) {
+                    return;
+                }
+
+                sendPresenceState();
+
+                if (
+                    !window.disableLocationTracking &&
+                    document.visibilityState ===
+                        'visible'
+                ) {
+                    if (
+                        !sendLastKnownLocation()
+                    ) {
+                        requestCurrentLocation();
+                    }
                 }
             },
 
@@ -2905,6 +3272,7 @@
                 !androidLocationPermissionConfirmed
             ) {
                 limparMapaLocal();
+
                 return;
             }
 
@@ -2926,6 +3294,41 @@
             startLocationTracking();
             startLocationRefresh();
             requestCurrentLocation();
+        }
+    );
+
+    document.addEventListener(
+        'margot:page-ready',
+        function () {
+            if (
+                !document.getElementById(
+                    'gridCanvas'
+                ) ||
+                !window.AppWebSocket
+            ) {
+                return;
+            }
+
+            window.AppWebSocket
+                .refreshMap();
+
+            /*
+             * Uma segunda passagem, já depois do primeiro layout do canvas,
+             * evita o caso em que as fotografias eram criadas antes de a
+             * página principal ter as dimensões finais.
+             */
+            window.requestAnimationFrame(
+                function () {
+                    if (
+                        document.getElementById(
+                            'gridCanvas'
+                        )
+                    ) {
+                        window.AppWebSocket
+                            .refreshMap();
+                    }
+                }
+            );
         }
     );
 
@@ -2958,6 +3361,7 @@
                     .isConnected()
             ) {
                 connect();
+
                 return;
             }
 
@@ -2980,6 +3384,7 @@
                     .isConnected()
             ) {
                 connect();
+
                 return;
             }
 

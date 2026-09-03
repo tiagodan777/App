@@ -2798,3 +2798,442 @@
     );
 
 })(window, document);
+
+
+/* CONEXÃO DE PROXIMIDADE */
+(function (window, document) {
+    'use strict';
+
+    var botao =
+        document.getElementById(
+            'conectar-perfil'
+        );
+
+    if (!botao) {
+        return;
+    }
+
+    var label =
+        botao.querySelector(
+            '.perfil-conectar-label'
+        );
+
+    var estado =
+        document.getElementById(
+            'perfil-conectar-estado'
+        );
+
+    var temporizador =
+        null;
+
+    var aEsperar =
+        false;
+
+    function destinatarioId() {
+        return String(
+            botao.dataset
+                .destinatarioId ||
+            ''
+        ).trim();
+    }
+
+    function corresponde(evento) {
+        var detalhe =
+            evento &&
+            evento.detail
+                ? evento.detail
+                : {};
+
+        var outro =
+            String(
+                detalhe.other_member_id ||
+                detalhe.outro_id ||
+                detalhe.destinatario_id ||
+                ''
+            ).trim();
+
+        return (
+            outro !== '' &&
+            outro === destinatarioId()
+        );
+    }
+
+    function anunciar(texto) {
+        if (estado) {
+            estado.textContent =
+                texto || '';
+        }
+    }
+
+    function mostrarErro(texto) {
+        anunciar(texto);
+
+        if (
+            typeof window
+                .mostrarMensagemTemporaria ===
+                'function'
+        ) {
+            window.mostrarMensagemTemporaria(
+                texto,
+                'erro'
+            );
+        }
+    }
+
+    function limparEspera() {
+        if (
+            temporizador !==
+            null
+        ) {
+            window.clearTimeout(
+                temporizador
+            );
+
+            temporizador =
+                null;
+        }
+
+        aEsperar =
+            false;
+
+        if (
+            botao.dataset.ligado !==
+            '1'
+        ) {
+            botao.disabled =
+                false;
+
+            botao.classList.remove(
+                'a-espera'
+            );
+
+            if (label) {
+                label.textContent =
+                    'Conectar';
+            }
+
+            botao.setAttribute(
+                'aria-pressed',
+                'false'
+            );
+        }
+    }
+
+    function marcarLigado() {
+        if (
+            temporizador !==
+            null
+        ) {
+            window.clearTimeout(
+                temporizador
+            );
+
+            temporizador =
+                null;
+        }
+
+        aEsperar =
+            false;
+
+        botao.dataset.ligado =
+            '1';
+
+        botao.disabled =
+            true;
+
+        botao.classList.remove(
+            'a-espera'
+        );
+
+        botao.classList.add(
+            'ligado'
+        );
+
+        botao.setAttribute(
+            'aria-pressed',
+            'true'
+        );
+
+        if (label) {
+            label.textContent =
+                'Ligados';
+        }
+
+        anunciar(
+            'Agora estão ligados na Margot. Podem conversar mesmo quando já não estão perto.'
+        );
+    }
+
+    function celebrar(nome) {
+        if (
+            document.querySelector(
+                '.perfil-conexao-celebracao'
+            )
+        ) {
+            return;
+        }
+
+        var camada =
+            document.createElement(
+                'div'
+            );
+
+        camada.className =
+            'perfil-conexao-celebracao';
+
+        camada.setAttribute(
+            'aria-hidden',
+            'true'
+        );
+
+        var mensagem =
+            document.createElement(
+                'div'
+            );
+
+        mensagem.className =
+            'perfil-conexao-celebracao-mensagem';
+
+        mensagem.textContent =
+            nome
+                ? 'Tu e ' +
+                    nome +
+                    ' estão ligados'
+                : 'Agora estão ligados';
+
+        camada.appendChild(
+            mensagem
+        );
+
+        document.body.appendChild(
+            camada
+        );
+
+        window.setTimeout(
+            function () {
+                if (
+                    camada.parentNode
+                ) {
+                    camada.parentNode
+                        .removeChild(
+                            camada
+                        );
+                }
+            },
+            1450
+        );
+    }
+
+    function tentarConectar() {
+        if (
+            aEsperar ||
+            botao.dataset.ligado ===
+                '1'
+        ) {
+            return;
+        }
+
+        var outroId =
+            destinatarioId();
+
+        if (!outroId) {
+            return;
+        }
+
+        if (
+            !window.AppWebSocket ||
+            typeof window
+                .AppWebSocket
+                .isConnected !==
+                'function' ||
+            !window.AppWebSocket
+                .isConnected()
+        ) {
+            if (
+                window.AppWebSocket &&
+                typeof window
+                    .AppWebSocket
+                    .connect ===
+                    'function'
+            ) {
+                window.AppWebSocket
+                    .connect();
+            }
+
+            mostrarErro(
+                'A ligação está a ser restabelecida. Tenta novamente daqui a um instante.'
+            );
+
+            return;
+        }
+
+        var enviado =
+            window.AppWebSocket.send({
+                type:
+                    'connection_attempt',
+
+                destinatario_id:
+                    outroId
+            });
+
+        if (!enviado) {
+            mostrarErro(
+                'Não foi possível tentar a ligação.'
+            );
+
+            return;
+        }
+
+        aEsperar =
+            true;
+
+        botao.disabled =
+            true;
+
+        botao.classList.add(
+            'a-espera'
+        );
+
+        if (label) {
+            label.textContent =
+                'Agora…';
+        }
+
+        anunciar(
+            'A outra pessoa tem um instante para tocar em Conectar.'
+        );
+
+        temporizador =
+            window.setTimeout(
+                limparEspera,
+                1800
+            );
+    }
+
+    function aoAguardar(evento) {
+        if (
+            !corresponde(
+                evento
+            )
+        ) {
+            return;
+        }
+
+        anunciar(
+            'A outra pessoa tem um instante para tocar em Conectar.'
+        );
+    }
+
+    function aoConectar(evento) {
+        if (
+            !corresponde(
+                evento
+            )
+        ) {
+            return;
+        }
+
+        var detalhe =
+            evento.detail ||
+            {};
+
+        var jaLigados =
+            !!detalhe
+                .already_connected;
+
+        marcarLigado();
+
+        if (!jaLigados) {
+            celebrar(
+                String(
+                    detalhe.other_name ||
+                    ''
+                ).trim()
+            );
+        }
+    }
+
+    function aoErro(evento) {
+        if (
+            !corresponde(
+                evento
+            )
+        ) {
+            return;
+        }
+
+        var detalhe =
+            evento.detail ||
+            {};
+
+        limparEspera();
+
+        mostrarErro(
+            String(
+                detalhe.message ||
+                'Não foi possível criar a ligação.'
+            )
+        );
+    }
+
+    function sair() {
+        if (
+            temporizador !==
+            null
+        ) {
+            window.clearTimeout(
+                temporizador
+            );
+        }
+
+        botao.removeEventListener(
+            'click',
+            tentarConectar
+        );
+
+        window.removeEventListener(
+            'app:connection-waiting',
+            aoAguardar
+        );
+
+        window.removeEventListener(
+            'app:connection-created',
+            aoConectar
+        );
+
+        window.removeEventListener(
+            'app:connection-error',
+            aoErro
+        );
+
+        document.removeEventListener(
+            'margot:page-leave',
+            sair
+        );
+    }
+
+    botao.addEventListener(
+        'click',
+        tentarConectar
+    );
+
+    window.addEventListener(
+        'app:connection-waiting',
+        aoAguardar
+    );
+
+    window.addEventListener(
+        'app:connection-created',
+        aoConectar
+    );
+
+    window.addEventListener(
+        'app:connection-error',
+        aoErro
+    );
+
+    document.addEventListener(
+        'margot:page-leave',
+        sair
+    );
+})(window, document);

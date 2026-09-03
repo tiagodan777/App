@@ -570,7 +570,271 @@
         );
     }
 
-    function mostrarAviso(opcoes) {
+    function removerAvisoTopo(
+        aviso,
+        imediato
+    ) {
+        if (
+            !aviso ||
+            !aviso.isConnected
+        ) {
+            return;
+        }
+
+        var timer =
+            Number(
+                aviso.dataset
+                    .removerTimer ||
+                0
+            );
+
+        if (timer) {
+            window.clearTimeout(
+                timer
+            );
+
+            aviso.dataset.removerTimer =
+                '';
+        }
+
+        aviso.classList.add(
+            'a-sair'
+        );
+
+        aviso.classList.remove(
+            'visivel'
+        );
+
+        if (imediato) {
+            aviso.remove();
+            return;
+        }
+
+        window.setTimeout(
+            function () {
+                aviso.remove();
+            },
+            230
+        );
+    }
+
+    function limitarAvisosTopo() {
+        if (!avisos) {
+            return;
+        }
+
+        var itens =
+            Array.from(
+                avisos.querySelectorAll(
+                    '.hey-aviso, .mensagem-aviso'
+                )
+            );
+
+        while (
+            itens.length >= 3
+        ) {
+            var primeiro =
+                itens.shift();
+
+            removerAvisoTopo(
+                primeiro,
+                true
+            );
+        }
+    }
+
+    function ativarSwipeAviso(
+        aviso
+    ) {
+        if (!aviso) {
+            return;
+        }
+
+        var gesto =
+            null;
+
+        aviso.addEventListener(
+            'pointerdown',
+            function (evento) {
+                if (
+                    evento.pointerType ===
+                        'mouse' &&
+                    evento.button !==
+                        0
+                ) {
+                    return;
+                }
+
+                gesto = {
+                    id:
+                        evento.pointerId,
+
+                    x:
+                        evento.clientX,
+
+                    y:
+                        evento.clientY,
+
+                    inicio:
+                        performance.now(),
+
+                    arrastou:
+                        false
+                };
+
+                try {
+                    aviso.setPointerCapture(
+                        evento.pointerId
+                    );
+                } catch (_) {}
+            }
+        );
+
+        aviso.addEventListener(
+            'pointermove',
+            function (evento) {
+                if (
+                    !gesto ||
+                    evento.pointerId !==
+                        gesto.id
+                ) {
+                    return;
+                }
+
+                var dx =
+                    evento.clientX -
+                    gesto.x;
+
+                var dy =
+                    evento.clientY -
+                    gesto.y;
+
+                if (
+                    Math.abs(dy) > 5 ||
+                    Math.abs(dx) > 8
+                ) {
+                    gesto.arrastou =
+                        true;
+                }
+
+                if (dy < 0) {
+                    var deslocamento =
+                        Math.max(
+                            -105,
+                            dy
+                        );
+
+                    var opacidade =
+                        Math.max(
+                            0.18,
+                            1 -
+                                Math.abs(
+                                    deslocamento
+                                ) /
+                                110
+                        );
+
+                    aviso.style.transition =
+                        'none';
+
+                    aviso.style.transform =
+                        'translateY(' +
+                        deslocamento +
+                        'px) scale(0.985)';
+
+                    aviso.style.opacity =
+                        String(
+                            opacidade
+                        );
+                }
+            }
+        );
+
+        function terminarSwipe(
+            evento
+        ) {
+            if (
+                !gesto ||
+                evento.pointerId !==
+                    gesto.id
+            ) {
+                return;
+            }
+
+            var dy =
+                evento.clientY -
+                gesto.y;
+
+            var duracao =
+                Math.max(
+                    1,
+                    performance.now() -
+                        gesto.inicio
+                );
+
+            var velocidade =
+                dy /
+                duracao;
+
+            var deveFechar =
+                dy <= -34 ||
+                velocidade <= -0.42;
+
+            aviso.style.transition =
+                '';
+
+            aviso.style.transform =
+                '';
+
+            aviso.style.opacity =
+                '';
+
+            if (deveFechar) {
+                aviso.dataset.swiped =
+                    '1';
+
+                evento.preventDefault();
+
+                removerAvisoTopo(
+                    aviso,
+                    false
+                );
+            }
+
+            gesto =
+                null;
+        }
+
+        aviso.addEventListener(
+            'pointerup',
+            terminarSwipe
+        );
+
+        aviso.addEventListener(
+            'pointercancel',
+            terminarSwipe
+        );
+
+        aviso.addEventListener(
+            'click',
+            function (evento) {
+                if (
+                    aviso.dataset.swiped ===
+                    '1'
+                ) {
+                    evento.preventDefault();
+                    evento.stopPropagation();
+
+                    aviso.dataset.swiped =
+                        '';
+                }
+            }
+        );
+    }
+
+    function mostrarAviso(
+        opcoes
+    ) {
         if (!avisos) {
             return;
         }
@@ -578,15 +842,32 @@
         var dados =
             Object.assign(
                 {
-                    titulo: 'Hey',
-                    mensagem: '',
-                    foto: '',
-                    url: '',
-                    tipo: 'hey',
-                    duracao: 4800
+                    titulo:
+                        'Hey',
+
+                    mensagem:
+                        '',
+
+                    foto:
+                        '',
+
+                    url:
+                        '',
+
+                    tipo:
+                        'hey',
+
+                    icone:
+                        '',
+
+                    duracao:
+                        3800
                 },
-                opcoes || {}
+                opcoes ||
+                    {}
             );
+
+        limitarAvisosTopo();
 
         var aviso =
             criarElemento(
@@ -621,6 +902,16 @@
             'status'
         );
 
+        aviso.setAttribute(
+            'aria-label',
+            [
+                dados.titulo,
+                dados.mensagem
+            ]
+                .filter(Boolean)
+                .join('. ')
+        );
+
         if (dados.foto) {
             var foto =
                 criarElemento(
@@ -633,21 +924,32 @@
                 dados.foto
             );
 
-            foto.alt = '';
+            foto.alt =
+                '';
 
             aviso.appendChild(
                 foto
             );
         } else {
+            var conteudoSimbolo =
+                dados.tipo ===
+                    'erro'
+                    ? '!'
+                    : '👋';
+
+            if (
+                dados.icone ===
+                'seta-cima'
+            ) {
+                conteudoSimbolo =
+                    '↑';
+            }
+
             var simbolo =
                 criarElemento(
                     'span',
                     'hey-aviso-simbolo',
-
-                    dados.tipo ===
-                        'erro'
-                        ? '!'
-                        : '👋'
+                    conteudoSimbolo
                 );
 
             aviso.appendChild(
@@ -683,6 +985,10 @@
             aviso
         );
 
+        ativarSwipeAviso(
+            aviso
+        );
+
         window.requestAnimationFrame(
             function () {
                 aviso.classList.add(
@@ -691,21 +997,27 @@
             }
         );
 
-        window.setTimeout(
-            function () {
-                aviso.classList.remove(
-                    'visivel'
-                );
+        var duracao =
+            Math.max(
+                1200,
+                Number(
+                    dados.duracao
+                ) ||
+                3800
+            );
 
+        aviso.dataset.removerTimer =
+            String(
                 window.setTimeout(
                     function () {
-                        aviso.remove();
+                        removerAvisoTopo(
+                            aviso,
+                            false
+                        );
                     },
-                    260
-                );
-            },
-            dados.duracao
-        );
+                    duracao
+                )
+            );
     }
 
     async function mostrarNotificacaoSistema(
@@ -729,10 +1041,13 @@
         }
 
         var opcoes = {
-            body: mensagem,
+            body:
+                mensagem,
 
             icon:
-                urlFoto(foto),
+                urlFoto(
+                    foto
+                ),
 
             badge:
                 urlFoto(
@@ -743,7 +1058,8 @@
                 'hey-recebido-' +
                 Date.now(),
 
-            renotify: true,
+            renotify:
+                true,
 
             data: {
                 url:
@@ -976,7 +1292,8 @@
                 );
 
             if (!resposta.ok) {
-                var detalhe = '';
+                var detalhe =
+                    '';
 
                 try {
                     var erroHttp =
@@ -991,7 +1308,8 @@
                 } catch (
                     ignorar
                 ) {
-                    detalhe = '';
+                    detalhe =
+                        '';
                 }
 
                 throw new Error(
@@ -1158,7 +1476,8 @@
         );
 
         Object.entries(
-            valores || {}
+            valores ||
+                {}
         ).forEach(
             function (
                 entrada
@@ -1208,7 +1527,8 @@
         } catch (
             ignorar
         ) {
-            dados = null;
+            dados =
+                null;
         }
 
         if (
@@ -2034,7 +2354,8 @@
         'app:hey-recebido',
         function (evento) {
             var dados =
-                evento.detail || {};
+                evento.detail ||
+                {};
 
             var id =
                 numero(
@@ -2085,7 +2406,10 @@
                     ),
 
                 url:
-                    perfil
+                    perfil,
+
+                tipo:
+                    'recebido'
             });
 
             mostrarNotificacaoSistema(
@@ -2121,7 +2445,8 @@
         'app:hey-enviado',
         function (evento) {
             var dados =
-                evento.detail || {};
+                evento.detail ||
+                {};
 
             var miniMenu =
                 document.querySelector(
@@ -2142,45 +2467,22 @@
                 ) ||
                 'A outra pessoa';
 
-            var foto =
-                texto(
-                    dados
-                        .destinatario_foto
-                ) ||
-                texto(
-                    miniMenu
-                        ?.querySelector(
-                            'header img'
-                        )
-                        ?.currentSrc
-                ) ||
-                texto(
-                    miniMenu
-                        ?.querySelector(
-                            'header img'
-                        )
-                        ?.src
-                );
-
             mostrarAviso({
                 titulo:
-                    'Hey enviado',
+                    nome +
+                    ' recebeu o teu Hey',
 
                 mensagem:
-                    texto(
-                        dados.message
-                    ) ||
-                    nome +
-                    ' recebeu o teu Hey.',
-
-                foto:
-                    foto,
+                    '',
 
                 tipo:
-                    'sucesso',
+                    'enviado',
+
+                icone:
+                    'seta-cima',
 
                 duracao:
-                    2600
+                    2200
             });
 
             window.setTimeout(
@@ -2261,7 +2563,9 @@
         };
 
     registarServiceWorker();
+
     prepararPedidoPermissao();
+
     obterNotificacoes(
         false
     );

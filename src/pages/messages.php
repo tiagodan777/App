@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Validate\Validate;
+use App\CMS\MemberConnection;
 
 const MENSAGEM_TEXTO_MAXIMO = 2000;
 const MENSAGEM_IMAGEM_MAXIMA = 15 * 1024 * 1024;
@@ -379,6 +380,69 @@ function validarTokenProximidadeMensagens(
     )->fetchColumn();
 }
 
+function membrosEstaoLigadosMensagens(
+    $db,
+    string $primeiroMembroId,
+    string $segundoMembroId
+): bool {
+    return (new MemberConnection($db))->areConnected(
+        $primeiroMembroId,
+        $segundoMembroId
+    );
+}
+
+function outraPessoaJaRespondeuMensagens(
+    $db,
+    string $membroId,
+    string $outroId
+): bool {
+    $respondeuMensagem = (bool) $db->runSQL(
+        'SELECT 1
+         FROM mensagens_chat
+         WHERE emissor_id = :outro
+         AND destinatario_id = :eu
+         LIMIT 1',
+        [
+            'outro' => $outroId,
+            'eu' => $membroId
+        ]
+    )->fetchColumn();
+
+    if ($respondeuMensagem) {
+        return true;
+    }
+
+    return (bool) $db->runSQL(
+        "SELECT 1
+         FROM notificacao
+         WHERE tipo = 'hey'
+         AND emissor_id = :outro
+         AND destinatario_id = :eu
+         LIMIT 1",
+        [
+            'outro' => $outroId,
+            'eu' => $membroId
+        ]
+    )->fetchColumn();
+}
+
+function contarMensagensEnviadasAntesResposta(
+    $db,
+    string $membroId,
+    string $outroId
+): int {
+    return (int) $db->runSQL(
+        'SELECT COUNT(*)
+         FROM mensagens_chat
+         WHERE emissor_id = :eu
+         AND destinatario_id = :outro',
+        [
+            'eu' => $membroId,
+            'outro' => $outroId
+        ]
+    )->fetchColumn();
+}
+
 function obterContextoConversaMensagens(
     $db,
     string $membroId,
@@ -473,6 +537,13 @@ function obterContextoConversaMensagens(
 
         'conversa_existente' =>
             existeConversaMensagens(
+                $db,
+                $membroId,
+                $outroId
+            ),
+
+        'ligados' =>
+            membrosEstaoLigadosMensagens(
                 $db,
                 $membroId,
                 $outroId
@@ -584,6 +655,236 @@ function obterMembroChat(
     );
 
     return $membro;
+}
+
+function prepararTabelaReacoesMensagens(
+    $db
+): void {
+    static $preparada = false;
+
+    if ($preparada) {
+        return;
+    }
+
+    $db->runSQL(
+        'CREATE TABLE IF NOT EXISTS mensagens_reacoes (
+            mensagem_id BIGINT UNSIGNED NOT NULL,
+            membro_id VARCHAR(64) NOT NULL,
+            emoji VARCHAR(16) NOT NULL,
+            atualizada_em DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
+                ON UPDATE CURRENT_TIMESTAMP(6),
+
+            PRIMARY KEY (mensagem_id, membro_id),
+            KEY idx_mensagens_reacoes_membro (membro_id),
+            KEY idx_mensagens_reacoes_atualizada (atualizada_em)
+        )
+        ENGINE=InnoDB
+        DEFAULT CHARSET=utf8mb4
+        COLLATE=utf8mb4_unicode_ci'
+    );
+
+    $preparada = true;
+}
+
+function emojisPermitidosMensagens(): array
+{
+    return [
+        '❤️',
+        '😂',
+        '😮',
+        '😢',
+        '😍',
+        '🔥'
+    ];
+}
+
+function mensagemPertenceConversa(
+    $db,
+    int $mensagemId,
+    string $membroId,
+    string $outroId
+): bool {
+    return (bool) $db->runSQL(
+        'SELECT 1
+         FROM mensagens_chat
+         WHERE id = :mensagem
+         AND (
+             (
+                 emissor_id = :eu1
+                 AND destinatario_id = :outro1
+             )
+             OR (
+                 emissor_id = :outro2
+                 AND destinatario_id = :eu2
+             )
+         )
+         LIMIT 1',
+        [
+            'mensagem' => $mensagemId,
+            'eu1' => $membroId,
+            'outro1' => $outroId,
+            'outro2' => $outroId,
+            'eu2' => $membroId
+        ]
+    )->fetchColumn();
+}
+
+function obterReacoesMensagem(
+    $db,
+    int $mensagemId
+): array {
+    prepararTabelaReacoesMensagens($db);
+
+    $linhas = $db->runSQL(
+        'SELECT membro_id, emoji
+         FROM mensagens_reacoes
+         WHERE mensagem_id = :mensagem
+         ORDER BY atualizada_em ASC, membro_id ASC',
+        [
+            'mensagem' => $mensagemId
+        ]
+    )->fetchAll();
+
+    return array_values(
+        array_map(
+            static fn(array $linha): array => [
+                'member_id' => (string) ($linha['membro_id'] ?? ''),
+                'emoji' => (string) ($linha['emoji'] ?? '')
+            ],
+            $linhas
+        )
+    );
+}
+
+function anexarReacoesMensagens(
+    $db,
+    array $mensagens
+): array {
+    prepararTabelaReacoesMensagens($db);
+
+    if ($mensagens === []) {
+        return [];
+    }
+
+    $ids = [];
+
+    foreach ($mensagens as $mensagem) {
+        $id = (int) ($mensagem['id'] ?? 0);
+
+        if ($id > 0) {
+            $ids[$id] = true;
+        }
+    }
+
+    if ($ids === []) {
+        return $mensagens;
+    }
+
+    $parametros = [];
+    $marcadores = [];
+
+    foreach (array_keys($ids) as $indice => $id) {
+        $chave = 'reacao_id_' . $indice;
+        $marcadores[] = ':' . $chave;
+        $parametros[$chave] = (int) $id;
+    }
+
+    $linhas = $db->runSQL(
+        'SELECT mensagem_id, membro_id, emoji
+         FROM mensagens_reacoes
+         WHERE mensagem_id IN (' . implode(', ', $marcadores) . ')
+         ORDER BY mensagem_id ASC, atualizada_em ASC, membro_id ASC',
+        $parametros
+    )->fetchAll();
+
+    $porMensagem = [];
+
+    foreach ($linhas as $linha) {
+        $mensagemId = (int) ($linha['mensagem_id'] ?? 0);
+
+        if ($mensagemId <= 0) {
+            continue;
+        }
+
+        $porMensagem[$mensagemId] ??= [];
+        $porMensagem[$mensagemId][] = [
+            'member_id' => (string) ($linha['membro_id'] ?? ''),
+            'emoji' => (string) ($linha['emoji'] ?? '')
+        ];
+    }
+
+    foreach ($mensagens as &$mensagem) {
+        $mensagemId = (int) ($mensagem['id'] ?? 0);
+        $mensagem['reactions'] = $porMensagem[$mensagemId] ?? [];
+    }
+    unset($mensagem);
+
+    return $mensagens;
+}
+
+function guardarReacaoMensagem(
+    $db,
+    int $mensagemId,
+    string $membroId,
+    string $emoji,
+    bool $alternar
+): array {
+    prepararTabelaReacoesMensagens($db);
+
+    if (!in_array($emoji, emojisPermitidosMensagens(), true)) {
+        throw new InvalidArgumentException('Reação inválida.');
+    }
+
+    $existente = (string) (
+        $db->runSQL(
+            'SELECT emoji
+             FROM mensagens_reacoes
+             WHERE mensagem_id = :mensagem
+             AND membro_id = :membro
+             LIMIT 1',
+            [
+                'mensagem' => $mensagemId,
+                'membro' => $membroId
+            ]
+        )->fetchColumn()
+        ?: ''
+    );
+
+    if ($alternar && $existente === $emoji) {
+        $db->runSQL(
+            'DELETE FROM mensagens_reacoes
+             WHERE mensagem_id = :mensagem
+             AND membro_id = :membro',
+            [
+                'mensagem' => $mensagemId,
+                'membro' => $membroId
+            ]
+        );
+    } else {
+        $db->runSQL(
+            'INSERT INTO mensagens_reacoes (
+                mensagem_id,
+                membro_id,
+                emoji,
+                atualizada_em
+             ) VALUES (
+                :mensagem,
+                :membro,
+                :emoji,
+                NOW(6)
+             )
+             ON DUPLICATE KEY UPDATE
+                emoji = VALUES(emoji),
+                atualizada_em = NOW(6)',
+            [
+                'mensagem' => $mensagemId,
+                'membro' => $membroId,
+                'emoji' => $emoji
+            ]
+        );
+    }
+
+    return obterReacoesMensagem($db, $mensagemId);
 }
 
 function sqlMensagemBase(): string
@@ -752,12 +1053,21 @@ function obterMensagem(
             ]
         )->fetch();
 
-    return $mensagem
-        ? prepararMensagem(
-            $mensagem,
-            $membroId
-        )
-        : false;
+    if (!$mensagem) {
+        return false;
+    }
+
+    $preparada = prepararMensagem(
+        $mensagem,
+        $membroId
+    );
+
+    $comReacoes = anexarReacoesMensagens(
+        $db,
+        [$preparada]
+    );
+
+    return $comReacoes[0] ?? $preparada;
 }
 
 function obterHistorico(
@@ -846,7 +1156,7 @@ function obterHistorico(
             );
     }
 
-    return array_map(
+    $preparadas = array_map(
         static fn(
             array $mensagem
         ): array =>
@@ -857,1411 +1167,10 @@ function obterHistorico(
 
         $mensagens
     );
-}
 
-function obterConversas(
-    $db,
-    string $membroId
-): array {
-    prepararTabelaConversasOcultas(
-        $db
-    );
-
-    $membro =
-        obterMembroBaseMensagens(
-            $db,
-            $membroId
-        );
-
-    if (
-        !$membro
-    ) {
-        return [];
-    }
-
-    $faixaEtaria =
-        obterFaixaEtariaMensagens(
-            (string) (
-                $membro['nascimento']
-                ?? ''
-            )
-        );
-
-    if (
-        $faixaEtaria ===
-        null
-    ) {
-        return [];
-    }
-
-    $condicaoFaixaEtaria =
-        condicaoSqlFaixaEtariaMensagens(
-            $faixaEtaria,
-            'p'
-        );
-
-    $sql =
-        "SELECT
-            ultima.id,
-            ultima.emissor_id,
-            ultima.destinatario_id,
-            ultima.texto,
-            ultima.tipo,
-            ultima.criada_em,
-
-            conversa.outro_id,
-
-            CONCAT(
-                p.primeiro_nome,
-                ' ',
-                p.ultimo_nome
-            ) AS outro_nome,
-
-            COALESCE(
-                (
-                    SELECT
-                        fp.nome_arquivo
-                    FROM fotos_perfil fp
-                    WHERE
-                        fp.membro_id
-                            COLLATE utf8mb4_unicode_ci =
-                        p.id
-                            COLLATE utf8mb4_unicode_ci
-                    AND (
-                        fp.status = 'completo'
-                        OR fp.status IS NULL
-                    )
-                    ORDER BY
-                        fp.ordem IS NULL ASC,
-                        fp.ordem ASC,
-                        fp.id ASC
-                    LIMIT 1
-                ),
-                'default.webp'
-            ) AS outro_foto,
-
-            (
-                SELECT COUNT(*)
-                FROM mensagens_chat nao_lida
-                WHERE
-                    nao_lida.emissor_id =
-                        conversa.outro_id
-                AND nao_lida.destinatario_id =
-                        :eu4
-                AND nao_lida.lida = 0
-                AND nao_lida.id >
-                    COALESCE(
-                        ocultada.ocultar_ate_id,
-                        0
-                    )
-            ) AS nao_lidas
-
-        FROM (
-            SELECT
-                participacao.outro_id,
-                MAX(participacao.id) AS ultima_id
-
-            FROM (
-                SELECT
-                    id,
-                    destinatario_id AS outro_id
-                FROM mensagens_chat
-                WHERE emissor_id = :eu1
-
-                UNION ALL
-
-                SELECT
-                    id,
-                    emissor_id AS outro_id
-                FROM mensagens_chat
-                WHERE destinatario_id = :eu2
-            ) participacao
-
-            GROUP BY
-                participacao.outro_id
-        ) conversa
-
-        INNER JOIN mensagens_chat ultima
-            ON ultima.id =
-                conversa.ultima_id
-
-        INNER JOIN membros p
-            ON p.id
-                COLLATE utf8mb4_unicode_ci =
-               conversa.outro_id
-                COLLATE utf8mb4_unicode_ci
-
-        LEFT JOIN mensagens_conversas_ocultas ocultada
-            ON ocultada.membro_id =
-                :eu7
-            AND ocultada.outro_id
-                COLLATE utf8mb4_unicode_ci =
-                conversa.outro_id
-                COLLATE utf8mb4_unicode_ci
-
-        WHERE {$condicaoFaixaEtaria}
-
-        AND ultima.id >
-            COALESCE(
-                ocultada.ocultar_ate_id,
-                0
-            )
-
-        AND NOT EXISTS (
-            SELECT 1
-
-            FROM bloqueados b
-
-            WHERE (
-                b.pessoa_bloqueou_id =
-                    :eu5
-
-                AND b.pessoa_bloqueada_id
-                    COLLATE utf8mb4_unicode_ci =
-                    conversa.outro_id
-                    COLLATE utf8mb4_unicode_ci
-            )
-
-            OR (
-                b.pessoa_bloqueou_id
-                    COLLATE utf8mb4_unicode_ci =
-                    conversa.outro_id
-                    COLLATE utf8mb4_unicode_ci
-
-                AND b.pessoa_bloqueada_id =
-                    :eu6
-            )
-        )
-
-        ORDER BY
-            ultima.id DESC
-
-        LIMIT 100";
-
-    $linhas =
-        $db->runSQL(
-            $sql,
-            [
-                'eu1' =>
-                    $membroId,
-
-                'eu2' =>
-                    $membroId,
-
-                'eu4' =>
-                    $membroId,
-
-                'eu5' =>
-                    $membroId,
-
-                'eu6' =>
-                    $membroId,
-
-                'eu7' =>
-                    $membroId
-            ]
-        )->fetchAll();
-
-    return array_map(
-        static function (
-            array $linha
-        ) use (
-            $membroId
-        ): array {
-            $foto =
-                basename(
-                    trim(
-                        (string) $linha['outro_foto']
-                    )
-                )
-                ?: 'default.webp';
-
-            $texto =
-                trim(
-                    (string) (
-                        $linha['texto']
-                        ?? ''
-                    )
-                );
-
-            if (
-                $texto ===
-                ''
-            ) {
-                $texto =
-                    match (
-                        $linha['tipo']
-                    ) {
-                        'imagem' =>
-                            'Fotografia',
-
-                        'video' =>
-                            'Vídeo',
-
-                        default =>
-                            'Mensagem'
-                    };
-            }
-
-            if (
-                (string) $linha['emissor_id'] ===
-                $membroId
-            ) {
-                $texto =
-                    'Tu: ' .
-                    $texto;
-            }
-
-            return [
-                'id' =>
-                    (int) $linha['id'],
-
-                'outro_id' =>
-                    (string) $linha['outro_id'],
-
-                'outro_nome' =>
-                    (string) $linha['outro_nome'],
-
-                'outro_foto_url' =>
-                    DOC_ROOT .
-                    'imagens/fotos-perfil/' .
-                    rawurlencode(
-                        $foto
-                    ),
-
-                'chat_url' =>
-                    DOC_ROOT .
-                    'messages/' .
-                    rawurlencode(
-                        (string) $linha['outro_id']
-                    ),
-
-                'perfil_url' =>
-                    DOC_ROOT .
-                    'profile/' .
-                    rawurlencode(
-                        (string) $linha['outro_id']
-                    ),
-
-                'resumo' =>
-                    $texto,
-
-                'criada_em' =>
-                    (string) $linha['criada_em'],
-
-                'nao_lidas' =>
-                    (int) $linha['nao_lidas']
-            ];
-        },
-
-        $linhas
+    return anexarReacoesMensagens(
+        $db,
+        $preparadas
     );
 }
 
-function contarMensagensNaoLidas(
-    $db,
-    string $membroId
-): int {
-    prepararTabelaConversasOcultas(
-        $db
-    );
-
-    $membro =
-        obterMembroBaseMensagens(
-            $db,
-            $membroId
-        );
-
-    if (
-        !$membro
-    ) {
-        return 0;
-    }
-
-    $faixaEtaria =
-        obterFaixaEtariaMensagens(
-            (string) (
-                $membro['nascimento']
-                ?? ''
-            )
-        );
-
-    if (
-        $faixaEtaria ===
-        null
-    ) {
-        return 0;
-    }
-
-    $condicaoFaixaEtaria =
-        condicaoSqlFaixaEtariaMensagens(
-            $faixaEtaria,
-            'em'
-        );
-
-    return (int) $db->runSQL(
-        "SELECT COUNT(*)
-
-         FROM mensagens_chat msg
-
-         INNER JOIN membros em
-             ON em.id
-                COLLATE utf8mb4_unicode_ci =
-                msg.emissor_id
-                COLLATE utf8mb4_unicode_ci
-
-         WHERE
-             msg.destinatario_id = :id
-
-         AND msg.lida = 0
-
-         AND {$condicaoFaixaEtaria}
-
-         AND msg.id >
-             COALESCE(
-                 (
-                     SELECT
-                         ocultada.ocultar_ate_id
-
-                     FROM mensagens_conversas_ocultas ocultada
-
-                     WHERE
-                         ocultada.membro_id =
-                             :eu3
-
-                     AND ocultada.outro_id
-                         COLLATE utf8mb4_unicode_ci =
-                         msg.emissor_id
-                         COLLATE utf8mb4_unicode_ci
-
-                     LIMIT 1
-                 ),
-                 0
-             )
-
-         AND NOT EXISTS (
-             SELECT 1
-
-             FROM bloqueados b
-
-             WHERE (
-                 b.pessoa_bloqueou_id =
-                     :eu1
-
-                 AND b.pessoa_bloqueada_id
-                     COLLATE utf8mb4_unicode_ci =
-                     msg.emissor_id
-                     COLLATE utf8mb4_unicode_ci
-             )
-
-             OR (
-                 b.pessoa_bloqueou_id
-                     COLLATE utf8mb4_unicode_ci =
-                     msg.emissor_id
-                     COLLATE utf8mb4_unicode_ci
-
-                 AND b.pessoa_bloqueada_id =
-                     :eu2
-             )
-         )",
-        [
-            'id' =>
-                $membroId,
-
-            'eu1' =>
-                $membroId,
-
-            'eu2' =>
-                $membroId,
-
-            'eu3' =>
-                $membroId
-        ]
-    )->fetchColumn();
-}
-
-function converterImagemIphoneParaWebp(
-    string $origem,
-    string $destino
-): void {
-    if (
-        !class_exists(
-            Imagick::class
-        )
-    ) {
-        throw new RuntimeException(
-            'O servidor não consegue converter fotografias HEIC/HEIF.'
-        );
-    }
-
-    $imagem =
-        null;
-
-    try {
-        $imagem =
-            new Imagick(
-                $origem
-            );
-
-        if (
-            $imagem->getNumberImages() >
-            1
-        ) {
-            $imagem->setIteratorIndex(
-                0
-            );
-        }
-
-        $imagem->autoOrient();
-
-        $imagem->transformImageColorspace(
-            Imagick::COLORSPACE_SRGB
-        );
-
-        if (
-            $imagem->getImageWidth() >
-                2400 ||
-            $imagem->getImageHeight() >
-                2400
-        ) {
-            $imagem->thumbnailImage(
-                2400,
-                2400,
-                true,
-                true
-            );
-        }
-
-        $imagem->setImageFormat(
-            'webp'
-        );
-
-        $imagem->setImageCompressionQuality(
-            86
-        );
-
-        $imagem->stripImage();
-
-        if (
-            !$imagem->writeImage(
-                $destino
-            )
-        ) {
-            throw new RuntimeException(
-                'Não foi possível converter a fotografia.'
-            );
-        }
-    } catch (
-        Throwable $erro
-    ) {
-        if (
-            is_file(
-                $destino
-            )
-        ) {
-            @unlink(
-                $destino
-            );
-        }
-
-        throw new RuntimeException(
-            'Não foi possível converter a fotografia HEIC/HEIF.',
-            0,
-            $erro
-        );
-    } finally {
-        if (
-            $imagem instanceof
-            Imagick
-        ) {
-            $imagem->clear();
-            $imagem->destroy();
-        }
-    }
-}
-
-function guardarMediaMensagem(
-    array $ficheiro
-): array {
-    $erro =
-        (int) (
-            $ficheiro['error']
-            ?? UPLOAD_ERR_NO_FILE
-        );
-
-    if (
-        $erro ===
-        UPLOAD_ERR_NO_FILE
-    ) {
-        return [];
-    }
-
-    if (
-        $erro !==
-        UPLOAD_ERR_OK
-    ) {
-        throw new RuntimeException(
-            'O ficheiro não foi enviado completamente.'
-        );
-    }
-
-    $temporario =
-        (string) (
-            $ficheiro['tmp_name']
-            ?? ''
-        );
-
-    $tamanho =
-        (int) (
-            $ficheiro['size']
-            ?? 0
-        );
-
-    if (
-        $temporario ===
-            '' ||
-        !is_uploaded_file(
-            $temporario
-        )
-    ) {
-        throw new RuntimeException(
-            'O ficheiro recebido não é válido.'
-        );
-    }
-
-    $mime =
-        (
-            new finfo(
-                FILEINFO_MIME_TYPE
-            )
-        )->file(
-            $temporario
-        );
-
-    $tipos = [
-        'image/jpeg' =>
-            ['imagem', 'jpg'],
-
-        'image/png' =>
-            ['imagem', 'png'],
-
-        'image/webp' =>
-            ['imagem', 'webp'],
-
-        'image/gif' =>
-            ['imagem', 'gif'],
-
-        'image/avif' =>
-            ['imagem', 'avif'],
-
-        'image/heic' =>
-            ['imagem', 'heic'],
-
-        'image/heif' =>
-            ['imagem', 'heif'],
-
-        'video/mp4' =>
-            ['video', 'mp4'],
-
-        'video/webm' =>
-            ['video', 'webm'],
-
-        'video/quicktime' =>
-            ['video', 'mov'],
-
-        'video/x-m4v' =>
-            ['video', 'm4v']
-    ];
-
-    if (
-        !is_string(
-            $mime
-        ) ||
-        !isset(
-            $tipos[$mime]
-        )
-    ) {
-        throw new RuntimeException(
-            'Só podes enviar fotografias ou vídeos.'
-        );
-    }
-
-    [
-        $tipo,
-        $extensao
-    ] =
-        $tipos[$mime];
-
-    $limite =
-        $tipo ===
-        'imagem'
-            ? MENSAGEM_IMAGEM_MAXIMA
-            : MENSAGEM_VIDEO_MAXIMO;
-
-    if (
-        $tamanho <=
-            0 ||
-        $tamanho >
-            $limite
-    ) {
-        throw new RuntimeException(
-            $tipo ===
-            'imagem'
-                ? 'A fotografia pode ter no máximo 15 MB.'
-                : 'O vídeo pode ter no máximo 100 MB.'
-        );
-    }
-
-    $pasta =
-        APP_ROOT .
-        '/public/media/mensagens/';
-
-    if (
-        !is_dir(
-            $pasta
-        ) &&
-        !mkdir(
-            $pasta,
-            0775,
-            true
-        ) &&
-        !is_dir(
-            $pasta
-        )
-    ) {
-        throw new RuntimeException(
-            'Não foi possível preparar a pasta das mensagens.'
-        );
-    }
-
-    $imagemIphone =
-        $mime ===
-            'image/heic' ||
-        $mime ===
-            'image/heif';
-
-    if (
-        $imagemIphone
-    ) {
-        $extensao =
-            'webp';
-
-        $mime =
-            'image/webp';
-    }
-
-    $nome =
-        bin2hex(
-            random_bytes(
-                20
-            )
-        ) .
-        '.' .
-        $extensao;
-
-    $destino =
-        $pasta .
-        $nome;
-
-    if (
-        $imagemIphone
-    ) {
-        converterImagemIphoneParaWebp(
-            $temporario,
-            $destino
-        );
-
-        $tamanho =
-            (int) filesize(
-                $destino
-            );
-    } elseif (
-        !move_uploaded_file(
-            $temporario,
-            $destino
-        )
-    ) {
-        throw new RuntimeException(
-            'Não foi possível guardar o ficheiro.'
-        );
-    }
-
-    @chmod(
-        $destino,
-        0664
-    );
-
-    return [
-        'tipo' =>
-            $tipo,
-
-        'nome' =>
-            $nome,
-
-        'mime' =>
-            $mime,
-
-        'tamanho' =>
-            $tamanho,
-
-        'caminho' =>
-            $destino
-    ];
-}
-
-$membroId =
-    trim(
-        (string) (
-            $session->id
-            ?? ''
-        )
-    );
-
-$outroId =
-    trim(
-        (string) (
-            $id
-            ?? ''
-        )
-    );
-
-$api =
-    trim(
-        (string) (
-            $_GET['api']
-            ?? ''
-        )
-    );
-
-$metodo =
-    strtoupper(
-        (string) (
-            $_SERVER['REQUEST_METHOD']
-            ?? 'GET'
-        )
-    );
-
-if (
-    $membroId ===
-    ''
-) {
-    if (
-        $api !==
-            '' ||
-        $metodo ===
-            'POST'
-    ) {
-        responderMensagensJson(
-            [
-                'success' =>
-                    false,
-
-                'message' =>
-                    'A sessão terminou.'
-            ],
-            401
-        );
-    }
-
-    header(
-        'Location: ' .
-        DOC_ROOT .
-        'login'
-    );
-
-    exit;
-}
-
-try {
-    prepararTabelaConversasOcultas(
-        $db
-    );
-
-    if (
-        $metodo ===
-        'POST'
-    ) {
-        $acao =
-            trim(
-                (string) (
-                    $_POST['action']
-                    ?? 'send'
-                )
-            );
-
-        $contexto =
-            obterContextoConversaMensagens(
-                $db,
-                $membroId,
-                $outroId
-            );
-
-        if (
-            !$contexto
-        ) {
-            responderConversaIndisponivel(
-                $twig,
-                true
-            );
-        }
-
-        $membroId =
-            (string) $contexto['membro_id'];
-
-        $outroId =
-            (string) $contexto['outro_id'];
-
-        $conversaExistente =
-            (bool) $contexto['conversa_existente'];
-
-        if (
-            $acao ===
-            'mark_read'
-        ) {
-            if (
-                !$conversaExistente
-            ) {
-                responderConversaIndisponivel(
-                    $twig,
-                    true
-                );
-            }
-
-            $db->runSQL(
-                'UPDATE mensagens_chat
-
-                 SET
-                     lida = 1,
-                     lida_em =
-                         COALESCE(
-                             lida_em,
-                             NOW(6)
-                         )
-
-                 WHERE
-                     emissor_id = :outro
-
-                 AND destinatario_id = :eu
-
-                 AND lida = 0',
-                [
-                    'outro' =>
-                        $outroId,
-
-                    'eu' =>
-                        $membroId
-                ]
-            );
-
-            responderMensagensJson([
-                'success' =>
-                    true,
-
-                'unread_count' =>
-                    contarMensagensNaoLidas(
-                        $db,
-                        $membroId
-                    )
-            ]);
-        }
-
-        if (
-            $acao ===
-            'delete_conversation'
-        ) {
-            if (
-                !$conversaExistente
-            ) {
-                responderConversaIndisponivel(
-                    $twig,
-                    true
-                );
-            }
-
-            $ocultadaAte =
-                ocultarConversaMensagens(
-                    $db,
-                    $membroId,
-                    $outroId
-                );
-
-            responderMensagensJson([
-                'success' =>
-                    true,
-
-                'deleted' =>
-                    true,
-
-                'hidden_until_id' =>
-                    $ocultadaAte,
-
-                'unread_count' =>
-                    contarMensagensNaoLidas(
-                        $db,
-                        $membroId
-                    )
-            ]);
-        }
-
-        if (
-            $acao !==
-            'send'
-        ) {
-            responderMensagensJson(
-                [
-                    'success' =>
-                        false,
-
-                    'message' =>
-                        'Ação inválida.'
-                ],
-                422
-            );
-        }
-
-        if (
-            !$conversaExistente &&
-            !validarTokenProximidadeMensagens(
-                $db,
-                $membroId,
-                $outroId,
-                (string) (
-                    $_POST[
-                        'profile_access_token'
-                    ]
-                    ?? ''
-                )
-            )
-        ) {
-            responderConversaIndisponivel(
-                $twig,
-                true
-            );
-        }
-
-        $texto =
-            trim(
-                (string) (
-                    $_POST['mensagem']
-                    ?? $_POST['texto']
-                    ?? ''
-                )
-            );
-
-        if (
-            mb_strlen(
-                $texto
-            ) >
-            MENSAGEM_TEXTO_MAXIMO
-        ) {
-            responderMensagensJson(
-                [
-                    'success' =>
-                        false,
-
-                    'message' =>
-                        'A mensagem pode ter no máximo 2000 caracteres.'
-                ],
-                422
-            );
-        }
-
-        $media =
-            guardarMediaMensagem(
-                $_FILES['media']
-                ?? []
-            );
-
-        if (
-            $texto ===
-                '' &&
-            $media ===
-                []
-        ) {
-            responderMensagensJson(
-                [
-                    'success' =>
-                        false,
-
-                    'message' =>
-                        'Escreve uma mensagem ou escolhe um ficheiro.'
-                ],
-                422
-            );
-        }
-
-        $tipo =
-            $media['tipo']
-            ?? 'texto';
-
-        $parametros = [
-            'emissor' =>
-                $membroId,
-
-            'destinatario' =>
-                $outroId,
-
-            'texto' =>
-                $texto ===
-                ''
-                    ? null
-                    : $texto,
-
-            'tipo' =>
-                $tipo,
-
-            'ficheiro' =>
-                $media['nome']
-                ?? null,
-
-            'mime' =>
-                $media['mime']
-                ?? null,
-
-            'tamanho' =>
-                $media['tamanho']
-                ?? null
-        ];
-
-        try {
-            $db->runSQL(
-                'INSERT INTO mensagens_chat (
-                    emissor_id,
-                    destinatario_id,
-                    texto,
-                    tipo,
-                    ficheiro_nome,
-                    ficheiro_mime,
-                    ficheiro_tamanho,
-                    lida,
-                    criada_em
-                ) VALUES (
-                    :emissor,
-                    :destinatario,
-                    :texto,
-                    :tipo,
-                    :ficheiro,
-                    :mime,
-                    :tamanho,
-                    0,
-                    NOW(6)
-                )',
-                $parametros
-            );
-
-            $mensagemId =
-                (int) $db
-                    ->runSQL(
-                        'SELECT LAST_INSERT_ID()'
-                    )
-                    ->fetchColumn();
-        } catch (
-            Throwable $erro
-        ) {
-            if (
-                isset(
-                    $media['caminho']
-                ) &&
-                is_file(
-                    $media['caminho']
-                )
-            ) {
-                @unlink(
-                    $media['caminho']
-                );
-            }
-
-            throw $erro;
-        }
-
-        try {
-            $cms
-                ->getPushNotification()
-                ->enqueueMessage(
-                    $membroId,
-                    $outroId,
-                    $mensagemId
-                );
-        } catch (
-            Throwable $erroPush
-        ) {
-            error_log(
-                '[messages-push] ' .
-                $erroPush
-                    ->getMessage()
-            );
-        }
-
-        $mensagem =
-            obterMensagem(
-                $db,
-                $mensagemId,
-                $membroId
-            );
-
-        responderMensagensJson(
-            [
-                'success' =>
-                    true,
-
-                'message' =>
-                    $mensagem
-            ],
-            201
-        );
-    }
-
-    if (
-        $metodo !==
-        'GET'
-    ) {
-        header(
-            'Allow: GET, POST'
-        );
-
-        responderMensagensJson(
-            [
-                'success' =>
-                    false,
-
-                'message' =>
-                    'Método não permitido.'
-            ],
-            405
-        );
-    }
-
-    if (
-        $api ===
-        'conversations'
-    ) {
-        responderMensagensJson([
-            'success' =>
-                true,
-
-            'conversations' =>
-                obterConversas(
-                    $db,
-                    $membroId
-                ),
-
-            'unread_count' =>
-                contarMensagensNaoLidas(
-                    $db,
-                    $membroId
-                )
-        ]);
-    }
-
-    if (
-        $api ===
-        'history'
-    ) {
-        $contexto =
-            obterContextoConversaMensagens(
-                $db,
-                $membroId,
-                $outroId
-            );
-
-        if (
-            !$contexto ||
-            !(bool) $contexto[
-                'conversa_existente'
-            ]
-        ) {
-            responderConversaIndisponivel(
-                $twig,
-                true
-            );
-        }
-
-        $membroId =
-            (string) $contexto[
-                'membro_id'
-            ];
-
-        $outroId =
-            (string) $contexto[
-                'outro_id'
-            ];
-
-        $depoisDe =
-            max(
-                0,
-                (int) (
-                    $_GET['after_id']
-                    ?? 0
-                )
-            );
-
-        responderMensagensJson([
-            'success' =>
-                true,
-
-            'messages' =>
-                obterHistorico(
-                    $db,
-                    $membroId,
-                    $outroId,
-                    $depoisDe
-                )
-        ]);
-    }
-
-    if (
-        $outroId ===
-        ''
-    ) {
-        echo $twig->render(
-            'messages.html',
-            [
-                'membro_id' =>
-                    $membroId,
-
-                'conversas' =>
-                    obterConversas(
-                        $db,
-                        $membroId
-                    ),
-
-                'mensagens_nao_lidas' =>
-                    contarMensagensNaoLidas(
-                        $db,
-                        $membroId
-                    )
-            ]
-        );
-
-        exit;
-    }
-
-    $contexto =
-        obterContextoConversaMensagens(
-            $db,
-            $membroId,
-            $outroId
-        );
-
-    if (
-        !$contexto ||
-        !(bool) $contexto[
-            'conversa_existente'
-        ]
-    ) {
-        responderConversaIndisponivel(
-            $twig
-        );
-    }
-
-    $membroId =
-        (string) $contexto[
-            'membro_id'
-        ];
-
-    $outroId =
-        (string) $contexto[
-            'outro_id'
-        ];
-
-    $outro =
-        obterMembroChat(
-            $db,
-            $outroId
-        );
-
-    if (
-        !$outro
-    ) {
-        responderConversaIndisponivel(
-            $twig
-        );
-    }
-
-    $db->runSQL(
-        'UPDATE mensagens_chat
-
-         SET
-             lida = 1,
-             lida_em =
-                 COALESCE(
-                     lida_em,
-                     NOW(6)
-                 )
-
-         WHERE
-             emissor_id = :outro
-
-         AND destinatario_id = :eu
-
-         AND lida = 0',
-        [
-            'outro' =>
-                $outroId,
-
-            'eu' =>
-                $membroId
-        ]
-    );
-
-    echo $twig->render(
-        'chat.html',
-        [
-            'membro_id' =>
-                $membroId,
-
-            'outro' =>
-                $outro,
-
-            'mensagens' =>
-                obterHistorico(
-                    $db,
-                    $membroId,
-                    $outroId
-                ),
-
-            'mensagens_nao_lidas' =>
-                contarMensagensNaoLidas(
-                    $db,
-                    $membroId
-                )
-        ]
-    );
-} catch (
-    Throwable $erro
-) {
-    error_log(
-        '[messages] ' .
-        $erro->getMessage()
-    );
-
-    if (
-        $api !==
-            '' ||
-        $metodo ===
-            'POST'
-    ) {
-        responderMensagensJson(
-            [
-                'success' =>
-                    false,
-
-                'message' =>
-                    'Não foi possível processar as mensagens.'
-            ],
-            500
-        );
-    }
-
-    http_response_code(
-        500
-    );
-
-    echo $twig->render(
-        'error-page.html',
-        [
-            'message' =>
-                'Não foi possível abrir as mensagens.'
-        ]
-    );
-}
