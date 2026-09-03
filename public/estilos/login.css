@@ -450,18 +450,3 @@ html {
     background-image: none !important;
 }
 
-/* TESTE TEMPORÁRIO iOS */
-* {
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-}
-
-input {
-    transition: none !important;
-    animation: none !important;
-}
-
-body,
-html {
-    background-image: none !important;
-}

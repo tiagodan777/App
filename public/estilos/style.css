@@ -3,7 +3,21 @@
 :root {
     --menu-principal-bottom: max(18px, env(safe-area-inset-bottom, 0px));
     --menu-principal-height: 56px;
+
+    --margot-fundo: #fdfcf9;
+    --margot-preto: #17171b;
+    --margot-vermelho: #e12346;
+    --margot-vermelho-escuro: #c91d3e;
+
+    --margot-amarelo: #f4dc92;
+    --margot-azul: #8fb2e8;
+    --margot-roxo: #cfc4ef;
 }
+
+
+/* =========================================================
+   BASE
+   ========================================================= */
 
 * {
     box-sizing: border-box;
@@ -11,166 +25,373 @@
     font-size: 1em;
 }
 
+
 html,
 body {
     width: 100%;
     height: 100%;
     min-height: 100%;
+
     margin: 0;
     padding: 0;
+
     overflow: hidden;
-    background-color: #ffffff;
+
+    background-color:
+        var(--margot-fundo);
 }
+
+
+/*
+ * A Home mantém uma pequena tonalidade Margot,
+ * mas está muito próxima do branco.
+ *
+ * Isto deixa os pontos do canvas destacarem-se.
+ */
+body:has(#gridCanvas) {
+    background:
+        radial-gradient(
+            circle at 92% 12%,
+            rgba(207, 196, 239, 0.055),
+            transparent 29%
+        ),
+        radial-gradient(
+            circle at 5% 78%,
+            rgba(244, 220, 146, 0.04),
+            transparent 31%
+        ),
+        #fdfcf9;
+}
+
+
+/* =========================================================
+   CANVAS
+   ========================================================= */
 
 #gridCanvas {
     position: fixed;
+
     top: 0;
     left: 0;
+
     display: block;
+
     width: 100vw;
     height: 100vh;
+
     pointer-events: none;
 }
+
+
+/* =========================================================
+   IMAGENS
+   ========================================================= */
 
 img {
     width: 60px;
     height: 60px;
+
     border-radius: 50%;
 }
+
+
+/* =========================================================
+   PESSOAS NO ECRÃ PRINCIPAL
+   ========================================================= */
 
 .foto {
     position: absolute !important;
+
     top: 0 !important;
     left: 0 !important;
+
     z-index: 10;
-    transform: translate(-50%, -50%);
-    transform-origin: center center;
-    cursor: pointer;
-    touch-action: manipulation;
-    will-change: transform, opacity;
+
+    transform:
+        translate(-50%, -50%);
+
+    transform-origin:
+        center center;
+
+    cursor:
+        pointer;
+
+    touch-action:
+        manipulation;
+
+    border:
+        1.5px solid
+        rgba(255, 255, 255, 0.90);
+
+    background:
+        #ecebed;
+
+    box-shadow:
+        0 5px 15px
+        rgba(25, 22, 30, 0.09);
+
+    will-change:
+        transform,
+        opacity;
 }
+
+
+/* =========================================================
+   BACKDROP
+   ========================================================= */
 
 .back-drop {
     position: relative;
+
     bottom: -100%;
+
     z-index: 900;
+
     width: 100vw;
     height: 100vh;
-    background-color: rgba(0, 0, 0, 0.4);
+
+    background-color:
+        rgba(0, 0, 0, 0.4);
+
     display: flex;
-    flex-flow: column nowrap;
-    justify-content: flex-end;
-    align-items: center;
+
+    flex-flow:
+        column nowrap;
+
+    justify-content:
+        flex-end;
+
+    align-items:
+        center;
 }
+
+
+/* =========================================================
+   MINI MENU
+   ========================================================= */
 
 .mini-menu {
-    position: fixed !important;
-    left: 0;
-    bottom: 0;
-    z-index: 1000;
-    width: 100vw;
-    height: 72vh;
-    border-radius: 75px 75px 0 0;
-    background-color: #ffffff;
-    box-shadow:
-        0 1px 2px rgba(0, 0, 0, 0.1),
-        0 6px 18px rgba(0, 0, 0, 0.2),
-        0 14px 32px rgba(0, 0, 0, 0.3);
-    transform: translate3d(
-        0,
-        calc(100% + 96px + env(safe-area-inset-bottom, 0px)),
+    position:
+        fixed !important;
+
+    left:
+        0;
+
+    bottom:
+        0;
+
+    z-index:
+        1000;
+
+    width:
+        100vw;
+
+    height:
+        72vh;
+
+    overflow:
+        hidden;
+
+    border: none;
+
+    border-bottom:
+        0;
+
+    /*
+     * Curvas bastante maiores.
+     * Volta a aproximar-se da personalidade
+     * do mini-menu original.
+     */
+    border-radius:
+        75px
+        75px
         0
-    );
-    touch-action: none;
-    display: flex;
-    flex-flow: column nowrap;
-    justify-content: flex-start;
-    align-items: center;
-    will-change: transform;
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
+        0;
+
+    background:
+        rgba(255, 255, 255, 0.975);
+
+    -webkit-backdrop-filter:
+        blur(12px);
+
+    backdrop-filter:
+        blur(12px);
+
+    box-shadow:
+        0 -1px 0
+        rgba(255, 255, 255, 0.75),
+
+        0 -8px 28px
+        rgba(20, 18, 25, 0.11),
+
+        0 -22px 55px
+        rgba(20, 18, 25, 0.055);
+
+    transform:
+        translate3d(
+            0,
+            calc(
+                100% +
+                96px +
+                env(
+                    safe-area-inset-bottom,
+                    0px
+                )
+            ),
+            0
+        );
+
+    touch-action:
+        none;
+
+    display:
+        flex;
+
+    flex-flow:
+        column nowrap;
+
+    justify-content:
+        flex-start;
+
+    align-items:
+        center;
+
+    will-change:
+        transform;
+
+    -webkit-backface-visibility:
+        hidden;
+
+    backface-visibility:
+        hidden;
 }
+
 
 .mini-menu[aria-hidden="true"] {
-    pointer-events: none;
+    pointer-events:
+        none;
 }
+
+
+/* =========================================================
+   BARRA DO MINI MENU
+   ========================================================= */
 
 .mini-menu > div#barra {
-    width: 30vw;
-    height: 3.5px;
-    margin-top: 3px;
-    border-radius: 35px;
-    background-color: #e4e4e4;
+    width:
+        114px;
+
+    height:
+        3px;
+
+    margin-top:
+        8px;
+
+    border-radius:
+        999px;
+
+    background:
+        rgba(23, 23, 27, 0.12);
 }
+
+
+/* =========================================================
+   CABEÇALHO DO MINI MENU
+   ========================================================= */
 
 .mini-menu > header {
-    position: relative;
-    margin-top: 18px;
-    display: flex;
-    flex-flow: column nowrap;
-    justify-content: space-evenly;
-    align-items: center;
+    position:
+        relative;
+
+    width:
+        100%;
+
+    margin-top:
+        18px;
+
+    display:
+        flex;
+
+    flex-flow:
+        column nowrap;
+
+    justify-content:
+        space-evenly;
+
+    align-items:
+        center;
 }
+
 
 .mini-menu > header > a {
-    color: #000000;
-    text-decoration: none;
-    display: flex;
-    flex-flow: column nowrap;
-    justify-content: space-evenly;
-    align-items: center;
+    color:
+        #000000;
+
+    text-decoration:
+        none;
+
+    display:
+        flex;
+
+    flex-flow:
+        column nowrap;
+
+    justify-content:
+        space-evenly;
+
+    align-items:
+        center;
 }
+
+
+/* =========================================================
+   FOTOGRAFIA MINI MENU
+   ========================================================= */
 
 .mini-menu > header > a > img {
-    width: 35vw;
-    height: 35vw;
-    border-radius: 50%;
+    width:
+        min(
+            39vw,
+            164px
+        );
+
+    height:
+        min(
+            39vw,
+            164px
+        );
+
+    border:
+        2px solid
+        rgba(255, 255, 255, 0.96);
+
+    border-radius:
+        50%;
+
+    object-fit:
+        cover;
+
+    background:
+        #ecebed;
+
+    box-shadow:
+        0 9px 25px
+        rgba(25, 22, 30, 0.11);
 }
+
+
+/* =========================================================
+   NOME
+   ========================================================= */
 
 .mini-menu > header > h1 {
-    font-size: 1.5em;
-}
+    margin:
+        12px
+        0
+        0;
 
-.mini-menu > header > span {
-    position: absolute;
-    top: 10px;
-    left: 90%;
-}
-
-.mini-menu > div {
-    width: 70vw;
-    height: 70vw;
-    border-radius: 50%;
-    background-color: red;
-    display: flex;
-    flex-flow: row nowrap;
-    justify-content: center;
-    align-items: center;
-}
-
-.mini-menu > div > p {
-    color: #ffffff;
-    font-size: 3em;
-    font-weight: bold;
-}
-
-/* Hey — Mini Menu + Perfil */
-
-#enviar-hey,
-#enviar-hey-perfil {
-    width: 168px;
-    height: 168px;
-    min-width: 168px;
-    min-height: 168px;
-
-    margin: 10px auto 18px;
-    padding: 0;
-
-    border: 0;
-    border-radius: 50%;
-
-    background: #e12346;
-    color: #fff7ee;
+    color:
+        var(--margot-preto);
 
     font-family:
         -apple-system,
@@ -179,240 +400,714 @@ img {
         Arial,
         sans-serif;
 
-    font-size: 2.48rem;
-    font-weight: 750;
-    letter-spacing: -0.07em;
-    line-height: 1;
+    font-size:
+        1.65rem;
 
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    font-weight:
+        750;
 
-    appearance: none;
-    -webkit-appearance: none;
+    line-height:
+        1.04;
 
-    cursor: pointer;
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
-
-    transition:
-        transform 160ms cubic-bezier(.2,.8,.2,1),
-        background-color 160ms ease,
-        opacity 160ms ease;
+    letter-spacing:
+        -0.035em;
 }
 
-#enviar-hey:active:not(:disabled),
-#enviar-hey-perfil:active:not(:disabled) {
-    transform: scale(0.94);
-    background: #9f001b;
+
+.mini-menu > header > span {
+    position:
+        absolute;
+
+    top:
+        10px;
+
+    left:
+        90%;
 }
 
-#enviar-hey:focus-visible,
-#enviar-hey-perfil:focus-visible {
-    outline: 3px solid rgba(182, 0, 32, 0.22);
-    outline-offset: 5px;
+
+/* =========================================================
+   ELEMENTOS LEGADOS
+   ========================================================= */
+
+.mini-menu > div {
+    width:
+        70vw;
+
+    height:
+        70vw;
+
+    border-radius:
+        50%;
+
+    background-color:
+        red;
+
+    display:
+        flex;
+
+    flex-flow:
+        row nowrap;
+
+    justify-content:
+        center;
+
+    align-items:
+        center;
 }
 
-#enviar-hey:disabled,
-#enviar-hey-perfil:disabled {
-    opacity: 0.45;
-    cursor: default;
+
+.mini-menu > div > p {
+    color:
+        #ffffff;
+
+    font-size:
+        3em;
+
+    font-weight:
+        bold;
 }
 
-.mini-menu.perfil-proprio #enviar-hey,
-.mini-menu.perfil-proprio .mini-menu-mensagem {
-    display: none !important;
-}
 
-.mini-menu > form {
-    width: 100%;
-    margin-top: 25px;
+/* =========================================================
+   HEY — MINI MENU + PERFIL
+   ========================================================= */
 
-    display: flex;
-    flex-flow: row nowrap;
-    justify-content: center;
-    align-items: center;
-}
+#enviar-hey,
+#enviar-hey-perfil {
+    width:
+        auto;
 
-.mini-menu > form > input#mensagem {
-    width: 65%;
+    height:
+        58px;
 
-    margin-right: 5px;
-    padding: 10px;
+    min-width:
+        148px;
 
-    border: 1px solid #dddddd;
-    border-radius: 35px;
+    min-height:
+        58px;
 
-    font-size: 1em;
-}
+    margin:
+        15px
+        auto
+        15px;
 
-.mini-menu > form > input[type="submit"] {
-    padding: 10px;
+    padding:
+        0
+        32px;
 
-    border: none;
-    border-radius: 35px;
+    border:
+        0;
 
-    background-color: rgb(0, 136, 255);
-    color: #ffffff;
+    border-radius:
+        999px;
 
-    font-size: 0.85em;
-    font-weight: bold;
-}
+    background:
+        var(--margot-vermelho);
 
-/* Menu principal */
-
-#menuPrincipal {
-    position: fixed !important;
-    top: auto !important;
-    right: 5% !important;
-    bottom: var(--menu-principal-bottom) !important;
-    left: 5% !important;
-
-    z-index: 1100 !important;
-
-    width: 90% !important;
-    height: var(--menu-principal-height) !important;
-    min-height: var(--menu-principal-height) !important;
-    max-height: var(--menu-principal-height) !important;
-
-    margin: 0 !important;
-    padding: 0 !important;
-
-    opacity: 1;
-
-    transform: none !important;
-    filter: none !important;
-    perspective: none !important;
-    isolation: auto !important;
-    contain: none !important;
-
-    transition: opacity 300ms cubic-bezier(.2,.8,.2,1);
-
-    /*
-     * IMPORTANTE:
-     * não usar will-change aqui.
-     * Criava uma compositing layer que
-     * impedia o backdrop-filter do filho
-     * de desfocar corretamente o mapa.
-     */
-    will-change: auto;
-}
-
-body.margot-mini-menu-aberto #menuPrincipal {
-    opacity: 0;
-    pointer-events: none;
-}
-
-body.margot-mini-menu-aberto #menuPrincipal {
-    opacity: 0;
-    pointer-events: none;
-}
-
-/*
- * Quando o mini-menu sobe,
- * o menu principal desaparece suavemente.
- *
- * A classe é retirada quando o mini-menu fecha,
- * portanto o menu reaparece também em 300 ms.
- */
-
-body.margot-mini-menu-aberto #menuPrincipal {
-    opacity: 0;
-    pointer-events: none;
-}
-
-#menuPrincipal > nav {
-    width: 100% !important;
-    height: 100% !important;
-
-    margin: 0 !important;
-    padding: 0 !important;
-
-    display: flex;
-    flex-flow: row nowrap;
-    justify-content: center;
-    align-items: center;
-}
-
-#menuPrincipal > nav > ul {
-    width: 95% !important;
-    height: 100% !important;
-    min-height: 100% !important;
-    max-height: 100% !important;
-
-    margin: 0 !important;
-    padding: 8px 10px;
-
-    list-style: none;
-
-    border: 1px solid rgba(255, 255, 255, 0.28);
-    border-radius: 35px;
-
-    background-color: rgba(0, 0, 0, 0.1);
-
-    -webkit-backdrop-filter: blur(2px);
-    backdrop-filter: blur(2px);
+    color:
+        #fff7ee;
 
     box-shadow:
-        0 6px 24px rgba(0, 0, 0, 0.08),
-        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        0 10px 22px
+        rgba(225, 35, 70, 0.22);
 
-    display: flex;
-    flex-flow: row nowrap;
-    justify-content: space-between;
-    align-items: center;
-    gap: 4px;
-}
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Helvetica Neue",
+        Arial,
+        sans-serif;
 
-#menuPrincipal > nav > ul > li {
-    min-width: 0;
+    font-size:
+        21px;
 
-    flex: 1 1 0;
+    font-weight:
+        760;
 
-    display: flex;
-    flex-flow: row nowrap;
-    justify-content: center;
-    align-items: center;
-}
+    letter-spacing:
+        -0.035em;
 
-#menuPrincipal > nav > ul > li > a,
-#menuPrincipal .menu-principal-botao {
-    position: relative;
+    line-height:
+        1;
 
-    width: 100%;
-    min-width: 0;
+    display:
+        flex;
 
-    height: 40px;
+    align-items:
+        center;
 
-    margin: 0;
+    justify-content:
+        center;
 
-    padding: 7px 0;
+    appearance:
+        none;
 
-    border: 0;
-    border-radius: 35px;
+    -webkit-appearance:
+        none;
 
-    background: transparent;
+    cursor:
+        pointer;
 
-    color: #000000;
-
-    text-decoration: none;
-
-    cursor: pointer;
-
-    touch-action: manipulation;
+    touch-action:
+        manipulation;
 
     -webkit-tap-highlight-color:
         transparent;
 
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    transition:
+        transform
+        160ms
+        cubic-bezier(
+            .2,
+            .8,
+            .2,
+            1
+        ),
+        background-color
+        160ms
+        ease,
+        box-shadow
+        160ms
+        ease,
+        opacity
+        160ms
+        ease;
 }
+
+
+#enviar-hey:active:not(:disabled),
+#enviar-hey-perfil:active:not(:disabled) {
+    transform:
+        scale(0.94);
+
+    background:
+        var(--margot-vermelho-escuro);
+
+    box-shadow:
+        0 6px 15px
+        rgba(225, 35, 70, 0.19);
+}
+
+
+#enviar-hey:focus-visible,
+#enviar-hey-perfil:focus-visible {
+    outline:
+        3px solid
+        rgba(225, 35, 70, 0.18);
+
+    outline-offset:
+        4px;
+}
+
+
+#enviar-hey:disabled,
+#enviar-hey-perfil:disabled {
+    opacity:
+        0.45;
+
+    cursor:
+        default;
+}
+
+
+/*
+ * No perfil, profile.css continua a ter
+ * regras mais específicas para o Hey.
+ */
+.mini-menu.perfil-proprio #enviar-hey,
+.mini-menu.perfil-proprio .mini-menu-mensagem {
+    display:
+        none !important;
+}
+
+
+/* =========================================================
+   FORMULÁRIO DE MENSAGEM
+   ========================================================= */
+
+.mini-menu > form {
+    width:
+        min(
+            calc(
+                100% -
+                30px
+            ),
+            540px
+        );
+
+    margin-top:
+        10px;
+
+    display:
+        flex;
+
+    flex-flow:
+        row nowrap;
+
+    justify-content:
+        center;
+
+    align-items:
+        center;
+
+    gap:
+        7px;
+}
+
+
+/* =========================================================
+   ANEXO
+   ========================================================= */
+
+.mini-menu form .mini-menu-anexo {
+    flex:
+        0
+        0
+        42px;
+
+    width:
+        42px;
+
+    height:
+        42px;
+
+    border:
+        0;
+
+    border-radius:
+        50%;
+
+    background:
+        #f0eff2;
+
+    color:
+        #29272d;
+
+    font-size:
+        24px;
+
+    font-weight:
+        500;
+
+    line-height:
+        42px;
+
+    text-align:
+        center;
+
+    cursor:
+        pointer;
+}
+
+
+.mini-menu form .mini-menu-anexo.selecionado {
+    background:
+        #e7f7ef;
+
+    color:
+        #168753;
+
+    font-size:
+        18px;
+}
+
+
+/* =========================================================
+   INPUT DA MENSAGEM
+   ========================================================= */
+
+.mini-menu > form > input#mensagem {
+    min-width:
+        0;
+
+    flex:
+        1;
+
+    width:
+        auto;
+
+    height:
+        43px;
+
+    margin:
+        0;
+
+    padding:
+        0
+        14px;
+
+    border:
+        1px solid
+        #dddddf;
+
+    border-radius:
+        999px;
+
+    outline:
+        none;
+
+    background:
+        #ffffff;
+
+    color:
+        var(--margot-preto);
+
+    font-size:
+        0.95rem;
+
+    transition:
+        border-color
+        150ms
+        ease,
+        box-shadow
+        150ms
+        ease;
+}
+
+
+.mini-menu > form > input#mensagem:focus {
+    border-color:
+        rgba(225, 35, 70, 0.32);
+
+    box-shadow:
+        0 0 0 3px
+        rgba(225, 35, 70, 0.06);
+}
+
+
+/* =========================================================
+   ENVIAR MENSAGEM
+   ========================================================= */
+
+.mini-menu > form > input[type="submit"] {
+    min-height:
+        43px;
+
+    padding:
+        0
+        16px;
+
+    border:
+        0;
+
+    border-radius:
+        999px;
+
+    background:
+        var(--margot-vermelho);
+
+    color:
+        #ffffff;
+
+    font-size:
+        0.84rem;
+
+    font-weight:
+        750;
+
+    cursor:
+        pointer;
+
+    touch-action:
+        manipulation;
+
+    -webkit-tap-highlight-color:
+        transparent;
+
+    transition:
+        background-color
+        130ms
+        ease,
+        transform
+        130ms
+        ease;
+}
+
+
+.mini-menu > form > input[type="submit"]:active {
+    background:
+        var(--margot-vermelho-escuro);
+
+    transform:
+        scale(0.96);
+}
+
+
+/* =========================================================
+   MENU PRINCIPAL
+   ========================================================= */
+
+#menuPrincipal {
+    position:
+        fixed !important;
+
+    top:
+        auto !important;
+
+    right:
+        5% !important;
+
+    bottom:
+        var(
+            --menu-principal-bottom
+        ) !important;
+
+    left:
+        5% !important;
+
+    z-index:
+        1100 !important;
+
+    width:
+        90% !important;
+
+    height:
+        var(
+            --menu-principal-height
+        ) !important;
+
+    min-height:
+        var(
+            --menu-principal-height
+        ) !important;
+
+    max-height:
+        var(
+            --menu-principal-height
+        ) !important;
+
+    margin:
+        0 !important;
+
+    padding:
+        0 !important;
+
+    opacity:
+        1;
+
+    transform:
+        none !important;
+
+    filter:
+        none !important;
+
+    perspective:
+        none !important;
+
+    isolation:
+        auto !important;
+
+    contain:
+        none !important;
+
+    transition:
+        opacity
+        300ms
+        cubic-bezier(
+            .2,
+            .8,
+            .2,
+            1
+        );
+
+    /*
+     * Não usar will-change aqui.
+     * Criava uma compositing layer que
+     * impedia o backdrop-filter do filho
+     * de desfocar corretamente o mapa.
+     */
+    will-change:
+        auto;
+}
+
+
+body.margot-mini-menu-aberto #menuPrincipal {
+    opacity:
+        0;
+
+    pointer-events:
+        none;
+}
+
+
+/* =========================================================
+   CONTEÚDO DO MENU PRINCIPAL
+   ========================================================= */
+
+#menuPrincipal > nav {
+    width:
+        100% !important;
+
+    height:
+        100% !important;
+
+    margin:
+        0 !important;
+
+    padding:
+        0 !important;
+
+    display:
+        flex;
+
+    flex-flow:
+        row nowrap;
+
+    justify-content:
+        center;
+
+    align-items:
+        center;
+}
+
+
+#menuPrincipal > nav > ul {
+    width:
+        95% !important;
+
+    height:
+        100% !important;
+
+    min-height:
+        100% !important;
+
+    max-height:
+        100% !important;
+
+    margin:
+        0 !important;
+
+    padding:
+        8px
+        10px;
+
+    list-style:
+        none;
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.28);
+
+    border-radius:
+        35px;
+
+    background-color:
+        rgba(0, 0, 0, 0.1);
+
+    -webkit-backdrop-filter:
+        blur(2px);
+
+    backdrop-filter:
+        blur(2px);
+
+    box-shadow:
+        0 6px 24px
+        rgba(0, 0, 0, 0.08),
+
+        inset
+        0 1px 0
+        rgba(255, 255, 255, 0.1);
+
+    display:
+        flex;
+
+    flex-flow:
+        row nowrap;
+
+    justify-content:
+        space-between;
+
+    align-items:
+        center;
+
+    gap:
+        4px;
+}
+
+
+#menuPrincipal > nav > ul > li {
+    min-width:
+        0;
+
+    flex:
+        1 1 0;
+
+    display:
+        flex;
+
+    flex-flow:
+        row nowrap;
+
+    justify-content:
+        center;
+
+    align-items:
+        center;
+}
+
+
+#menuPrincipal > nav > ul > li > a,
+#menuPrincipal .menu-principal-botao {
+    position:
+        relative;
+
+    width:
+        100%;
+
+    min-width:
+        0;
+
+    height:
+        40px;
+
+    margin:
+        0;
+
+    padding:
+        7px
+        0;
+
+    border:
+        0;
+
+    border-radius:
+        35px;
+
+    background:
+        transparent;
+
+    color:
+        #000000;
+
+    text-decoration:
+        none;
+
+    cursor:
+        pointer;
+
+    touch-action:
+        manipulation;
+
+    -webkit-tap-highlight-color:
+        transparent;
+
+    display:
+        flex;
+
+    justify-content:
+        center;
+
+    align-items:
+        center;
+}
+
 
 #menuPrincipal > nav > ul > li > a.active {
     background-color:
         rgba(255, 255, 255, 0.5);
 }
+
 
 #menuPrincipal > nav > ul > li > a:focus-visible,
 #menuPrincipal .menu-principal-botao:focus-visible {
@@ -420,72 +1115,113 @@ body.margot-mini-menu-aberto #menuPrincipal {
         2px solid
         rgba(0, 100, 255, 0.75);
 
-    outline-offset: 2px;
+    outline-offset:
+        2px;
 }
+
 
 #menuPrincipal > nav > ul > li > a > img {
-    width: 26px;
-    height: 26px;
+    width:
+        26px;
 
-    border-radius: 50%;
+    height:
+        26px;
 
-    object-fit: contain;
+    border-radius:
+        50%;
+
+    object-fit:
+        contain;
 }
 
-/* Botão de modo invisível */
+
+/* =========================================================
+   MODO INVISÍVEL
+   ========================================================= */
 
 #alternar-invisivel {
     transition:
-        background-color 160ms ease,
-        color 160ms ease,
-        box-shadow 160ms ease,
-        transform 120ms ease;
+        background-color
+        160ms
+        ease,
+        color
+        160ms
+        ease,
+        box-shadow
+        160ms
+        ease,
+        transform
+        120ms
+        ease;
 }
+
 
 #alternar-invisivel:active {
-    transform: scale(0.94);
+    transform:
+        scale(0.94);
 }
+
 
 .menu-invisivel-imagem {
-    display: block;
+    display:
+        block;
 
-    width: 26px;
-    height: 26px;
+    width:
+        26px;
 
-    border-radius: 0;
+    height:
+        26px;
 
-    object-fit: contain;
+    border-radius:
+        0;
 
-    pointer-events: none;
+    object-fit:
+        contain;
 
-    user-select: none;
+    pointer-events:
+        none;
 
-    -webkit-user-drag: none;
+    user-select:
+        none;
+
+    -webkit-user-drag:
+        none;
 
     transition:
-        opacity 160ms ease,
-        filter 160ms ease;
+        opacity
+        160ms
+        ease,
+        filter
+        160ms
+        ease;
 }
 
+
 .menu-invisivel-imagem-invisivel {
-    display: none;
+    display:
+        none;
 }
+
 
 #alternar-invisivel[data-invisivel="true"]
 .menu-invisivel-imagem-visivel,
 html[data-margot-invisivel="true"]
 #alternar-invisivel
 .menu-invisivel-imagem-visivel {
-    display: none;
+    display:
+        none;
 }
+
 
 #alternar-invisivel[data-invisivel="true"]
 .menu-invisivel-imagem-invisivel,
 html[data-margot-invisivel="true"]
 #alternar-invisivel
 .menu-invisivel-imagem-invisivel {
-    display: block;
+    display:
+        block;
 }
+
 
 #alternar-invisivel[data-invisivel="true"],
 html[data-margot-invisivel="true"]
@@ -493,7 +1229,8 @@ html[data-margot-invisivel="true"]
     background-color:
         rgba(24, 24, 28, 0.84);
 
-    color: #ffffff;
+    color:
+        #ffffff;
 
     box-shadow:
         inset
@@ -503,6 +1240,7 @@ html[data-margot-invisivel="true"]
         0 2px 8px
         rgba(0, 0, 0, 0.12);
 }
+
 
 #alternar-invisivel[data-invisivel="true"]
 .menu-invisivel-imagem,
@@ -514,48 +1252,68 @@ html[data-margot-invisivel="true"]
         invert(1);
 }
 
+
 #alternar-invisivel[
     data-localizacao-desativada="true"
 ]:not(
     [data-invisivel="true"]
 ) {
-    opacity: 0.62;
+    opacity:
+        0.62;
 }
+
+
+/* =========================================================
+   ACESSIBILIDADE
+   ========================================================= */
 
 .texto-apenas-leitor {
-    position: absolute !important;
+    position:
+        absolute !important;
 
-    width: 1px !important;
-    height: 1px !important;
+    width:
+        1px !important;
 
-    margin: -1px !important;
+    height:
+        1px !important;
 
-    padding: 0 !important;
+    margin:
+        -1px !important;
 
-    overflow: hidden !important;
+    padding:
+        0 !important;
 
-    border: 0 !important;
+    overflow:
+        hidden !important;
+
+    border:
+        0 !important;
 
     clip:
-        rect(0, 0, 0, 0)
+        rect(
+            0,
+            0,
+            0,
+            0
+        )
         !important;
 
-    white-space: nowrap !important;
+    white-space:
+        nowrap !important;
 }
 
-/*
- * PWA no iOS:
- * - a Home mantém o ecrã fixo controlado pelo canvas;
- * - Perfil e Mensagens fazem scroll apenas no main;
- * - o menu continua fixed nas três páginas.
- */
+
+/* =========================================================
+   PWA / STANDALONE
+   ========================================================= */
 
 @media all and (display-mode: standalone) {
 
     html:has(#gridCanvas),
     html:has(#perfil),
     html:has(#mensagens-pagina) {
-        width: 100%;
+        width:
+            100%;
 
         height:
             calc(
@@ -580,28 +1338,38 @@ html[data-margot-invisivel="true"]
             !important;
     }
 
+
     body:has(#gridCanvas),
     body:has(#perfil),
     body:has(#mensagens-pagina) {
-        position: relative !important;
+        position:
+            relative !important;
 
-        width: 100%;
-        height: 100%;
+        width:
+            100%;
 
-        min-height: 0 !important;
+        height:
+            100%;
+
+        min-height:
+            0 !important;
 
         overflow:
             hidden
             !important;
     }
 
+
     body:has(#gridCanvas) #gridCanvas {
         position:
             absolute
             !important;
 
-        top: 0;
-        left: 0;
+        top:
+            0;
+
+        left:
+            0;
 
         width:
             100vw
@@ -612,19 +1380,25 @@ html[data-margot-invisivel="true"]
             !important;
     }
 
+
     body:has(#gridCanvas) .mini-menu {
         position:
             absolute
             !important;
     }
 
+
     body:has(#perfil) #perfil,
     body:has(#mensagens-pagina)
     #mensagens-pagina {
-        width: 100%;
-        height: 100%;
+        width:
+            100%;
 
-        min-height: 0 !important;
+        height:
+            100%;
+
+        min-height:
+            0 !important;
 
         overflow-x:
             hidden
@@ -640,12 +1414,22 @@ html[data-margot-invisivel="true"]
         overscroll-behavior-y:
             contain;
     }
+
 }
 
+
+/* =========================================================
+   NAVEGAÇÃO ENTRE PÁGINAS
+   ========================================================= */
+
 [data-margot-pagina] {
-    width: 100%;
-    height: 100%;
+    width:
+        100%;
+
+    height:
+        100%;
 }
+
 
 body.margot-a-navegar {
     overflow:
@@ -653,22 +1437,30 @@ body.margot-a-navegar {
         !important;
 }
 
+
 body.margot-a-navegar
 > [data-margot-pagina] {
     position:
         fixed
         !important;
 
-    inset: 0;
+    inset:
+        0;
 
-    z-index: 1050;
+    z-index:
+        1050;
 
-    width: 100%;
-    height: 100%;
+    width:
+        100%;
 
-    overflow: hidden;
+    height:
+        100%;
 
-    background-color: #ffffff;
+    overflow:
+        hidden;
+
+    background-color:
+        #fdfcf9;
 
     will-change:
         transform,
@@ -681,25 +1473,26 @@ body.margot-a-navegar
         hidden;
 }
 
+
 /* =========================================================
    TABLET / ECRÃS LARGOS
    ========================================================= */
 
 @media (min-width: 768px) {
 
-    /*
-     * Menu principal
-     *
-     * No iPhone continua a ocupar 90%.
-     * Em iPad deixa de crescer indefinidamente.
-     */
     #menuPrincipal {
-        right: auto !important;
-        left: 50% !important;
+        right:
+            auto !important;
+
+        left:
+            50% !important;
 
         width:
             min(
-                calc(100% - 48px),
+                calc(
+                    100% -
+                    48px
+                ),
                 760px
             ) !important;
 
@@ -708,19 +1501,13 @@ body.margot-a-navegar
             !important;
     }
 
+
     #menuPrincipal > nav > ul {
-        width: 100% !important;
+        width:
+            100% !important;
     }
 
-    /*
-     * Mini-menu de uma pessoa.
-     *
-     * Em iPhone continua bottom-sheet a 100%.
-     * Num tablet passa a ser um painel centrado.
-     *
-     * Não usamos transform para o centrar porque
-     * o JS já utiliza transform para abrir/fechar.
-     */
+
     .mini-menu {
         left:
             calc(
@@ -728,7 +1515,8 @@ body.margot-a-navegar
                 300px
             ) !important;
 
-        width: 600px;
+        width:
+            600px;
 
         max-width:
             calc(
@@ -743,45 +1531,91 @@ body.margot-a-navegar
             );
 
         border-radius:
-            38px
-            38px
+            62px
+            62px
             0
             0;
     }
 
+
     .mini-menu > div#barra {
-        width: 120px;
+        width:
+            120px;
     }
 
+
     .mini-menu > header > a > img {
-        width: 150px;
-        height: 150px;
+        width:
+            172px;
+
+        height:
+            172px;
     }
+
+
+    .mini-menu > header > h1 {
+        font-size:
+            1.78rem;
+    }
+
+
+    #enviar-hey,
+    #enviar-hey-perfil {
+        min-width:
+            158px;
+
+        height:
+            60px;
+
+        min-height:
+            60px;
+
+        padding:
+            0
+            34px;
+
+        font-size:
+            22px;
+    }
+
 
     .mini-menu > form {
         width:
             min(
-                100% - 48px,
+                calc(
+                    100% -
+                    48px
+                ),
                 520px
             );
     }
 
+
     .mini-menu > form > input#mensagem {
-        flex: 1;
-        width: auto;
+        flex:
+            1;
+
+        width:
+            auto;
     }
+
 }
 
 
 /*
- * Para larguras entre 768 e 648-ish o cálculo de 300px
- * continuaria seguro, mas mantemos esta regra para o
- * painel nunca tocar nas margens.
+ * Mantida por compatibilidade com o CSS anterior.
  */
 @media (min-width: 768px) and (max-width: 648px) {
+
     .mini-menu {
-        right: 24px !important;
-        left: 24px !important;
-        width: auto;
+        right:
+            24px !important;
+
+        left:
+            24px !important;
+
+        width:
+            auto;
     }
+
 }
