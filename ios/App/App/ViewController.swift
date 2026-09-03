@@ -11,6 +11,7 @@ class ViewController: CAPBridgeViewController {
         super.capacitorDidLoad()
 
         bridge?.registerPluginInstance(BackgroundLocationPlugin())
+        bridge?.registerPluginInstance(MargotHapticsPlugin())
         configurarGestosNavegacao()
     }
 
@@ -85,5 +86,77 @@ class ViewController: CAPBridgeViewController {
         """
 
         webView.evaluateJavaScript(javascript, completionHandler: nil)
+    }
+}
+
+@objc(MargotHapticsPlugin)
+public final class MargotHapticsPlugin: CAPPlugin, CAPBridgedPlugin {
+
+    public let identifier = "MargotHapticsPlugin"
+    public let jsName = "MargotHaptics"
+
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "play", returnType: CAPPluginReturnPromise)
+    ]
+
+    @objc public func play(_ call: CAPPluginCall) {
+        let type = call.getString("type") ?? "messageReceived"
+
+        DispatchQueue.main.async { [weak self] in
+            self?.playPattern(type)
+            call.resolve()
+        }
+    }
+
+    private func playPattern(_ type: String) {
+        switch type {
+        case "heySent":
+            impact(.light, intensity: 0.65)
+
+        case "heyReceived":
+            impact(.rigid, intensity: 0.9)
+
+            after(0.10) { [weak self] in
+                self?.impact(.medium, intensity: 0.78)
+            }
+
+        case "connection":
+            let generator = UINotificationFeedbackGenerator()
+
+            generator.prepare()
+            generator.notificationOccurred(.success)
+
+            after(0.14) { [weak self] in
+                self?.impact(.heavy, intensity: 0.82)
+            }
+
+        default:
+            impact(.medium, intensity: 0.72)
+        }
+    }
+
+    private func impact(
+        _ style: UIImpactFeedbackGenerator.FeedbackStyle,
+        intensity: CGFloat
+    ) {
+        let generator = UIImpactFeedbackGenerator(style: style)
+
+        generator.prepare()
+
+        if #available(iOS 13.0, *) {
+            generator.impactOccurred(intensity: intensity)
+        } else {
+            generator.impactOccurred()
+        }
+    }
+
+    private func after(
+        _ delay: TimeInterval,
+        action: @escaping () -> Void
+    ) {
+        DispatchQueue.main.asyncAfter(
+            deadline: .now() + delay,
+            execute: action
+        )
     }
 }

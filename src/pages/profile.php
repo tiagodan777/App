@@ -5,48 +5,123 @@ declare(strict_types=1);
 function responderPerfilIndisponivel($twig): never
 {
     http_response_code(404);
-    header('Cache-Control: no-store, no-cache, must-revalidate');
-    header('Pragma: no-cache');
-    header('X-Robots-Tag: noindex, nofollow');
-    header('Referrer-Policy: no-referrer');
 
-    echo $twig->render('error-page.html', [
-        'page_title' => 'Perfil indisponível',
-        'heading' => 'Perfil indisponível',
-        'message' => 'Não foi possível abrir este perfil.'
-    ]);
+    header(
+        'Cache-Control: no-store, no-cache, must-revalidate'
+    );
+
+    header(
+        'Pragma: no-cache'
+    );
+
+    header(
+        'X-Robots-Tag: noindex, nofollow'
+    );
+
+    header(
+        'Referrer-Policy: no-referrer'
+    );
+
+    echo $twig->render(
+        'error-page.html',
+        [
+            'page_title' =>
+                'Perfil indisponível',
+
+            'heading' =>
+                'Perfil indisponível',
+
+            'message' =>
+                'Não foi possível abrir este perfil.'
+        ]
+    );
 
     exit;
 }
 
-require_login($session);
+require_login(
+    $session
+);
 
-header('Cache-Control: no-store, no-cache, must-revalidate');
-header('Pragma: no-cache');
-header('X-Robots-Tag: noindex, nofollow');
-header('Referrer-Policy: no-referrer');
+header(
+    'Cache-Control: no-store, no-cache, must-revalidate'
+);
+
+header(
+    'Pragma: no-cache'
+);
+
+header(
+    'X-Robots-Tag: noindex, nofollow'
+);
+
+header(
+    'Referrer-Policy: no-referrer'
+);
 
 if (
-    strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET')) !==
+    strtoupper(
+        (string) (
+            $_SERVER[
+                'REQUEST_METHOD'
+            ] ??
+            'GET'
+        )
+    ) !==
     'GET'
 ) {
-    header('Allow: GET');
-    http_response_code(405);
+    header(
+        'Allow: GET'
+    );
+
+    http_response_code(
+        405
+    );
+
     exit;
 }
 
-$viewerId = trim((string) ($session->id ?? ''));
-$profileId = trim((string) ($id ?? ''));
-$profileAccess = $cms->getProfileAccess();
+$viewerId =
+    trim(
+        (string) (
+            $session->id ??
+            ''
+        )
+    );
 
-if (!$profileAccess->canView($viewerId, $profileId)) {
-    responderPerfilIndisponivel($twig);
+$profileId =
+    trim(
+        (string) (
+            $id ??
+            ''
+        )
+    );
+
+$profileAccess =
+    $cms->getProfileAccess();
+
+if (
+    !$profileAccess->canView(
+        $viewerId,
+        $profileId
+    )
+) {
+    responderPerfilIndisponivel(
+        $twig
+    );
 }
 
-$member = $cms->getMember()->get($profileId);
+$member =
+    $cms
+        ->getMember()
+        ->get(
+            $profileId
+        );
 
 if (!$member) {
-    responderPerfilIndisponivel($twig);
+    responderPerfilIndisponivel(
+        $twig
+    );
 }
 
 unset(
@@ -56,18 +131,57 @@ unset(
 );
 
 try {
-    $age = calcularIdade(
-        (string) ($member['nascimento'] ?? '')
-    );
+    $age =
+        calcularIdade(
+            (string) (
+                $member[
+                    'nascimento'
+                ] ??
+                ''
+            )
+        );
 } catch (Throwable) {
-    responderPerfilIndisponivel($twig);
+    responderPerfilIndisponivel(
+        $twig
+    );
 }
 
-echo $twig->render('profile.html', [
-    'membro' => $member,
-    'primeiro_gosto' => trim(
-        (string) ($member['gostos'][0]['nome'] ?? '')
-    ),
-    'idade' => $age,
-    'id' => $profileId
-]);
+$connected =
+    $viewerId !==
+    $profileId
+        ? $cms
+            ->getMemberConnection()
+            ->areConnected(
+                $viewerId,
+                $profileId
+            )
+        : false;
+
+echo $twig->render(
+    'profile.html',
+    [
+        'membro' =>
+            $member,
+
+        'primeiro_gosto' =>
+            trim(
+                (string) (
+                    $member[
+                        'gostos'
+                    ][0][
+                        'nome'
+                    ] ??
+                    ''
+                )
+            ),
+
+        'idade' =>
+            $age,
+
+        'id' =>
+            $profileId,
+
+        'ligados' =>
+            $connected
+    ]
+);

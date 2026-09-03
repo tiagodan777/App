@@ -59,7 +59,11 @@ final class ProfileAccess
             return false;
         }
 
-        return $this->haveConversation($viewerId, $profileId)
+        return (new MemberConnection($this->db))->areConnected(
+            $viewerId,
+            $profileId
+        )
+            || $this->haveConversation($viewerId, $profileId)
             || $this->haveVisibleHey($viewerId, $profileId)
             || $this->hasProximityPass($viewerId, $profileId);
     }
@@ -179,7 +183,10 @@ final class ProfileAccess
 
     private function profilePurpose(string $viewerId): string
     {
-        return 'profile:' . substr(hash('sha256', $viewerId), 0, 24);
+        return 'profile:' . substr(
+            hash('sha256', $viewerId),
+            0,
+            24
+        );
     }
-
 }

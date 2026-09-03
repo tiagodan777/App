@@ -1,64 +1,106 @@
 (function (window, navigator) {
     'use strict';
 
-    // Muda apenas para false se quiseres desligar esta funcionalidade.
-    var VIBRACAO_HEY_ATIVA = true;
+    var processados = new Set();
+    var ordem = [];
+    var MAX_PROCESSADOS = 300;
 
-    // Duas vibrações curtas e uma mais longa.
-    // Duração total aproximada: 1,44 segundos.
-    var PADRAO_VIBRACAO_HEY = [
-        250,
-        120,
-        250,
-        120,
-        700
-    ];
-
-    var notificacoesProcessadas = new Set();
+    var PADROES_WEB = Object.freeze({
+        heySent: [38],
+        heyReceived: [68, 58, 150],
+        messageReceived: [105],
+        connection: [62, 46, 80, 54, 190]
+    });
 
     function notificacoesDesativadas() {
         return window.disableNotifications === true;
     }
 
-    function vibrarHey(evento) {
-        if (
-            !VIBRACAO_HEY_ATIVA ||
-            notificacoesDesativadas() ||
-            typeof navigator.vibrate !== 'function'
-        ) {
+    function chaveProcessamento(tipo, detalhe) {
+        detalhe = detalhe || {};
+
+        if (tipo === 'connection') {
+            return tipo + ':' + String(
+                detalhe.other_member_id ||
+                detalhe.outro_id ||
+                ''
+            );
+        }
+
+        return tipo + ':' + String(
+            detalhe.notification_id ||
+            detalhe.message_id ||
+            (detalhe.message && detalhe.message.id) ||
+            ''
+        );
+    }
+
+    function aceitar(tipo, detalhe) {
+        var chave = chaveProcessamento(tipo, detalhe);
+
+        if (chave === tipo + ':') {
+            return true;
+        }
+
+        if (processados.has(chave)) {
+            return false;
+        }
+
+        processados.add(chave);
+        ordem.push(chave);
+
+        while (ordem.length > MAX_PROCESSADOS) {
+            processados.delete(ordem.shift());
+        }
+
+        return true;
+    }
+
+    function pluginNativo() {
+        return window.Capacitor &&
+            window.Capacitor.Plugins &&
+            window.Capacitor.Plugins.MargotHaptics
+            ? window.Capacitor.Plugins.MargotHaptics
+            : null;
+    }
+
+    function tocar(tipo, detalhe) {
+        if (notificacoesDesativadas() || !aceitar(tipo, detalhe)) {
             return;
         }
 
-        var detalhe = evento && evento.detail
-            ? evento.detail
-            : {};
+        var plugin = pluginNativo();
 
-        var id = String(
-            detalhe.notification_id || ''
-        ).trim();
+        if (plugin && typeof plugin.play === 'function') {
+            try {
+                Promise.resolve(
+                    plugin.play({ type: tipo })
+                ).catch(function () {
+                    tocarFallback(tipo);
+                });
 
-        if (
-            id &&
-            notificacoesProcessadas.has(id)
-        ) {
-            return;
+                return;
+            } catch (erro) {
+                tocarFallback(tipo);
+                return;
+            }
         }
 
-        if (id) {
-            notificacoesProcessadas.add(id);
+        tocarFallback(tipo);
+    }
 
-            window.setTimeout(function () {
-                notificacoesProcessadas.delete(id);
-            }, 10 * 60 * 1000);
+    function tocarFallback(tipo) {
+        if (typeof navigator.vibrate !== 'function') {
+            return;
         }
 
         try {
             navigator.vibrate(
-                PADRAO_VIBRACAO_HEY.slice()
+                (PADROES_WEB[tipo] || PADROES_WEB.messageReceived).slice()
             );
         } catch (erro) {
             console.warn(
-                'Não foi possível ativar a vibração do Hey.',
+                'Não foi possível reproduzir a háptica da Margot.',
                 erro
             );
         }
@@ -66,17 +108,73 @@
 
     window.addEventListener(
         'app:hey-recebido',
-        vibrarHey
+        function (evento) {
+            tocar(
+                'heyReceived',
+                evento.detail || {}
+            );
+        }
     );
 
-    window.MargotHeyVibracao = Object.freeze({
-        ativa: VIBRACAO_HEY_ATIVA,
+    window.addEventListener(
+        'app:hey-enviado',
+        function (evento) {
+            tocar(
+                'heySent',
+                evento.detail || {}
+            );
+        }
+    );
 
-        padrao: PADRAO_VIBRACAO_HEY.slice(),
+    window.addEventListener(
+        'app:chat-message',
+        function (evento) {
+            var detalhe = evento.detail || {};
+            var mensagem = detalhe.message || {};
 
-        cancelar: function () {
             if (
-                typeof navigator.vibrate === 'function'
+                String(mensagem.destinatario_id || '') ===
+                String(window.membroId || '')
+            ) {
+                tocar(
+                    'messageReceived',
+                    detalhe
+                );
+            }
+        }
+    );
+
+    window.addEventListener(
+        'app:chat-push-recebido',
+        function (evento) {
+            tocar(
+                'messageReceived',
+                evento.detail || {}
+            );
+        }
+    );
+
+    window.addEventListener(
+        'app:connection-created',
+        function (evento) {
+            var detalhe = evento.detail || {};
+
+            if (!detalhe.already_connected) {
+                tocar(
+                    'connection',
+                    detalhe
+                );
+            }
+        }
+    );
+
+    window.MargotHaptics = Object.freeze({
+        play: tocar,
+
+        cancel: function () {
+            if (
+                typeof navigator.vibrate ===
+                'function'
             ) {
                 navigator.vibrate(0);
             }

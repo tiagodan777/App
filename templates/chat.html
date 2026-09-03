@@ -1,7 +1,7 @@
 {% extends 'layout.html' %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ doc_root }}estilos/chat.css?v=17" data-margot-page-style>
+<link rel="stylesheet" href="{{ doc_root }}estilos/chat.css?v=18" data-margot-page-style>
 {% endblock %}
 
 {% block content %}
@@ -86,6 +86,19 @@
                             {% endif %}
                         </footer>
                     </div>
+
+                    <div
+                        class="chat-reacoes"
+                        aria-label="Reações à mensagem"
+                        {% if mensagem.reactions is empty %}hidden{% endif %}
+                    >
+                        {% for reacao in mensagem.reactions %}
+                            <span
+                                class="chat-reacao{{ reacao.member_id == membro_id ? ' minha-reacao' : '' }}"
+                                data-emoji="{{ reacao.emoji }}"
+                            >{{ reacao.emoji }}</span>
+                        {% endfor %}
+                    </div>
                 </article>
             {% endfor %}
         </div>
@@ -99,6 +112,7 @@
         enctype="multipart/form-data"
     >
         <input type="hidden" name="action" value="send">
+        <input type="hidden" name="profile_access_token" id="chat-profile-access-token" value="">
 
         <div
             id="chat-media-preview"
@@ -160,12 +174,11 @@
 window.membroId = {{ membro_id|json_encode|raw }};
 window.chatMembroId = {{ outro.id|json_encode|raw }};
 window.messagesUrl = {{ (doc_root ~ 'messages')|json_encode|raw }};
-window.disableLocationTracking = true;
 
 window.webSocketUrl = window.location.protocol === 'https:'
     ? 'wss://' + window.location.host + '/ws/'
     : 'ws://' + window.location.hostname + ':8080';
 </script>
 
-<script src="{{ doc_root }}js/chat.js?v=13"></script>
+<script src="{{ doc_root }}js/chat.js?v=15"></script>
 {% endblock %}

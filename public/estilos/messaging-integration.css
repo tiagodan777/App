@@ -440,3 +440,22 @@
         transition: none;
     }
 }
+
+/* AVISOS NO TOPO: LIMITE VISUAL, AUTO-DISMISS E SWIPE PARA CIMA */
+
+.mensagem-aviso,
+.hey-aviso {
+    touch-action: none;
+    will-change: transform, opacity;
+}
+
+.mensagem-aviso.a-sair,
+.hey-aviso.a-sair {
+    opacity: 0 !important;
+    transform: translateY(-34px) scale(0.96) !important;
+}
+
+.mensagens-avisos,
+.heys-avisos {
+    gap: 7px;
+}

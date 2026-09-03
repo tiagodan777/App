@@ -14,7 +14,7 @@ final class AuthenticatedWebSocket implements MessageComponentInterface
 {
     private const AUTENTICACAO_MAXIMA_ESPERA_SEGUNDOS = 8.0;
     private const MENSAGEM_MAXIMA_BYTES = 65536;
-    private const INTERVALO_HEY_SEGUNDOS = 120;
+    private const INTERVALO_HEY_SEGUNDOS = 60;
 
     private MessageComponentInterface $aplicacao;
     private $pdoFactory;
