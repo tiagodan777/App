@@ -9,7 +9,7 @@
         heySent: [38],
         heyReceived: [68, 58, 150],
         messageReceived: [105],
-        connection: [62, 46, 80, 54, 190]
+        connection: [82, 42, 105, 48, 220]
     });
 
     function notificacoesDesativadas() {
@@ -78,7 +78,6 @@
                 ).catch(function () {
                     tocarFallback(tipo);
                 });
-
                 return;
             } catch (erro) {
                 tocarFallback(tipo);
@@ -129,12 +128,19 @@
     window.addEventListener(
         'app:chat-message',
         function (evento) {
-            var detalhe = evento.detail || {};
-            var mensagem = detalhe.message || {};
+            var detalhe =
+                evento.detail || {};
+
+            var mensagem =
+                detalhe.message || {};
 
             if (
-                String(mensagem.destinatario_id || '') ===
-                String(window.membroId || '')
+                String(
+                    mensagem.destinatario_id || ''
+                ) ===
+                String(
+                    window.membroId || ''
+                )
             ) {
                 tocar(
                     'messageReceived',
@@ -157,9 +163,12 @@
     window.addEventListener(
         'app:connection-created',
         function (evento) {
-            var detalhe = evento.detail || {};
+            var detalhe =
+                evento.detail || {};
 
-            if (!detalhe.already_connected) {
+            if (
+                !detalhe.already_connected
+            ) {
                 tocar(
                     'connection',
                     detalhe
@@ -168,16 +177,22 @@
         }
     );
 
-    window.MargotHaptics = Object.freeze({
-        play: tocar,
+    window.MargotHaptics =
+        Object.freeze({
+            play:
+                tocar,
 
-        cancel: function () {
-            if (
-                typeof navigator.vibrate ===
-                'function'
-            ) {
-                navigator.vibrate(0);
-            }
-        }
-    });
-})(window, navigator);
+            cancel:
+                function () {
+                    if (
+                        typeof navigator.vibrate ===
+                        'function'
+                    ) {
+                        navigator.vibrate(0);
+                    }
+                }
+        });
+})(
+    window,
+    navigator
+);

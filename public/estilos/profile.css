@@ -1456,12 +1456,7 @@ body.perfil-modal-aberta {
     cursor: pointer;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
-    transition:
-        transform 150ms ease,
-        background-color 180ms ease,
-        color 180ms ease,
-        border-color 180ms ease,
-        box-shadow 180ms ease;
+    transition: transform 150ms ease, background-color 180ms ease, color 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
 }
 
 #perfil .perfil-conectar:active:not(:disabled) {
@@ -1482,7 +1477,16 @@ body.perfil-modal-aberta {
     background: #29251f;
     color: #fffaf0;
     box-shadow: 0 9px 24px rgba(41, 37, 31, 0.18);
-    cursor: default;
+    cursor: pointer;
+}
+
+#perfil .perfil-conectar.ligado:active:not(:disabled) {
+    transform: scale(0.96);
+}
+
+#perfil .perfil-conectar.a-desligar {
+    opacity: 0.72;
+    cursor: wait;
 }
 
 .perfil-conectar-icone {
@@ -1520,6 +1524,8 @@ body.perfil-modal-aberta {
     }
 }
 
+/* CELEBRAÇÃO DA LIGAÇÃO */
+
 .perfil-conexao-celebracao {
     position: fixed;
     inset: 0;
@@ -1529,7 +1535,7 @@ body.perfil-modal-aberta {
     place-items: center;
     overflow: hidden;
     background: rgba(255, 249, 235, 0.12);
-    animation: perfil-conexao-fundo 1300ms ease both;
+    animation: perfil-conexao-fundo 2600ms ease both;
 }
 
 .perfil-conexao-celebracao::before,
@@ -1547,13 +1553,13 @@ body.perfil-modal-aberta {
 .perfil-conexao-celebracao::before {
     left: calc(50% - 170px);
     background: var(--perfil-vermelho);
-    animation: perfil-conexao-esquerda 900ms cubic-bezier(.2, .85, .25, 1.05) both;
+    animation: perfil-conexao-esquerda 1550ms cubic-bezier(.16, .82, .22, 1.04) both;
 }
 
 .perfil-conexao-celebracao::after {
     right: calc(50% - 170px);
     background: #ffd55f;
-    animation: perfil-conexao-direita 900ms cubic-bezier(.2, .85, .25, 1.05) both;
+    animation: perfil-conexao-direita 1550ms cubic-bezier(.16, .82, .22, 1.04) both;
 }
 
 .perfil-conexao-celebracao-mensagem {
@@ -1568,7 +1574,7 @@ body.perfil-modal-aberta {
     font-size: 15px;
     font-weight: 790;
     letter-spacing: -0.02em;
-    animation: perfil-conexao-texto 1100ms 180ms ease both;
+    animation: perfil-conexao-texto 1750ms 420ms ease both;
 }
 
 @keyframes perfil-conexao-esquerda {
@@ -1577,7 +1583,7 @@ body.perfil-modal-aberta {
         opacity: 0;
     }
 
-    65% {
+    72% {
         transform: translateX(118px) scale(1.04);
         opacity: 1;
     }
@@ -1594,7 +1600,7 @@ body.perfil-modal-aberta {
         opacity: 0;
     }
 
-    65% {
+    72% {
         transform: translateX(-118px) scale(1.04);
         opacity: 1;
     }
@@ -1607,7 +1613,7 @@ body.perfil-modal-aberta {
 
 @keyframes perfil-conexao-texto {
     0%,
-    45% {
+    38% {
         transform: translateY(14px) scale(0.94);
         opacity: 0;
     }
@@ -1623,8 +1629,8 @@ body.perfil-modal-aberta {
         opacity: 0;
     }
 
-    15%,
-    75% {
+    12%,
+    82% {
         opacity: 1;
     }
 

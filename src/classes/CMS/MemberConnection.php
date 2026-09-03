@@ -72,6 +72,30 @@ final class MemberConnection
         return true;
     }
 
+    public function disconnect(string $firstId, string $secondId): bool
+    {
+        [$firstId, $secondId] = $this->normalisePair($firstId, $secondId);
+
+        if ($firstId === '' || $secondId === '' || hash_equals($firstId, $secondId)) {
+            return false;
+        }
+
+        $this->ensureSchema();
+
+        $statement = $this->db->prepare(
+            'DELETE FROM ligacoes_membros
+             WHERE membro_a_id = :a
+             AND membro_b_id = :b'
+        );
+
+        $statement->execute([
+            'a' => $firstId,
+            'b' => $secondId
+        ]);
+
+        return $statement->rowCount() > 0;
+    }
+
     public function connectionsFor(string $memberId): array
     {
         $memberId = trim($memberId);

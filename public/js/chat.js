@@ -1334,161 +1334,100 @@
             return;
         }
 
-        var agrupadas =
-            Object.create(null);
+        var agrupadas = Object.create(null);
 
-        reacoes.forEach(
-            function (reacao) {
-                if (
-                    !agrupadas[
-                        reacao.emoji
-                    ]
-                ) {
-                    agrupadas[
-                        reacao.emoji
-                    ] = {
-                        emoji:
-                            reacao.emoji,
-
-                        count:
-                            0,
-
-                        minha:
-                            false
-                    };
-                }
-
-                agrupadas[
-                    reacao.emoji
-                ].count +=
-                    1;
-
-                if (
-                    reacao.member_id ===
-                    String(
-                        window.membroId ||
-                        ''
-                    )
-                ) {
-                    agrupadas[
-                        reacao.emoji
-                    ].minha =
-                        true;
-                }
+        reacoes.forEach(function (reacao) {
+            if (!agrupadas[reacao.emoji]) {
+                agrupadas[reacao.emoji] = {
+                    emoji: reacao.emoji,
+                    count: 0,
+                    minha: false
+                };
             }
-        );
 
-        Object.keys(
-            agrupadas
-        ).forEach(
-            function (
-                emoji
+            agrupadas[reacao.emoji].count += 1;
+
+            if (
+                reacao.member_id ===
+                String(window.membroId || '')
             ) {
-                var grupo =
-                    agrupadas[
-                        emoji
-                    ];
+                agrupadas[reacao.emoji].minha = true;
+            }
+        });
 
-                var $reacao =
-                    $('<span>', {
-                        class:
-                            'chat-reacao' +
-                            (
-                                grupo.minha
-                                    ? ' minha-reacao'
-                                    : ''
-                            ),
+        Object.keys(agrupadas).forEach(
+            function (emoji) {
+                var grupo = agrupadas[emoji];
 
-                        'data-emoji':
-                            grupo.emoji,
+                var $reacao = $('<span>', {
+                    class:
+                        'chat-reacao' +
+                        (
+                            grupo.minha
+                                ? ' minha-reacao'
+                                : ''
+                        ),
 
-                        text:
-                            grupo.emoji +
-                            (
-                                grupo.count >
-                                    1
-                                    ? ' ' +
-                                        grupo.count
-                                    : ''
-                            )
-                    });
+                    'data-emoji':
+                        grupo.emoji,
 
-                $zona.append(
-                    $reacao
-                );
+                    text:
+                        grupo.emoji +
+                        (
+                            grupo.count > 1
+                                ? ' ' + grupo.count
+                                : ''
+                        )
+                });
+
+                $zona.append($reacao);
             }
         );
 
-        $zona.prop(
-            'hidden',
-            false
-        );
+        $zona.prop('hidden', false);
     }
 
-    function artigoMensagemPorId(
-        mensagemId
-    ) {
+    function artigoMensagemPorId(mensagemId) {
         return $conteudo.find(
             '.chat-mensagem[data-mensagem-id="' +
-            String(
-                Number(
-                    mensagemId
-                ) ||
-                0
-            ) +
+            String(Number(mensagemId) || 0) +
             '"]'
         );
     }
 
-    function animarCoracaoMensagem(
-        mensagemId
-    ) {
-        var $artigo =
-            artigoMensagemPorId(
-                mensagemId
-            );
+    function animarCoracaoMensagem(mensagemId) {
+        var $artigo = artigoMensagemPorId(mensagemId);
 
-        if (
-            !$artigo.length
-        ) {
+        if (!$artigo.length) {
             return;
         }
 
         $artigo
-            .find(
-                '.chat-coracao-feedback'
-            )
+            .find('.chat-coracao-feedback')
             .remove();
 
-        var $coracao =
-            $('<span>', {
-                class:
-                    'chat-coracao-feedback',
+        var $coracao = $('<span>', {
+            class:
+                'chat-coracao-feedback',
 
-                text:
-                    '❤️',
+            text:
+                '❤️',
 
-                'aria-hidden':
-                    'true'
-            });
+            'aria-hidden':
+                'true'
+        });
 
-        $artigo.append(
-            $coracao
-        );
+        $artigo.append($coracao);
 
         window.requestAnimationFrame(
             function () {
-                $coracao.addClass(
-                    'visivel'
-                );
+                $coracao.addClass('visivel');
             }
         );
 
         window.setTimeout(
             function () {
-                $coracao.removeClass(
-                    'visivel'
-                );
+                $coracao.removeClass('visivel');
 
                 window.setTimeout(
                     function () {
@@ -1501,9 +1440,7 @@
         );
     }
 
-    function obterMinhaReacao(
-        $artigo
-    ) {
+    function obterMinhaReacao($artigo) {
         var $reacao =
             $artigo
                 .find(
@@ -1512,9 +1449,7 @@
                 .first();
 
         return String(
-            $reacao.attr(
-                'data-emoji'
-            ) ||
+            $reacao.attr('data-emoji') ||
             ''
         );
     }
@@ -1524,86 +1459,42 @@
         emoji,
         alternar
     ) {
-        mensagemId =
-            Number(
-                mensagemId
-            ) ||
-            0;
+        mensagemId = Number(mensagemId) || 0;
+        emoji = String(emoji || '');
 
-        emoji =
-            String(
-                emoji ||
-                ''
-            );
-
-        if (
-            !mensagemId ||
-            !emoji
-        ) {
+        if (!mensagemId || !emoji) {
             return;
         }
 
         try {
-            var corpo =
-                new URLSearchParams();
+            var corpo = new URLSearchParams();
 
-            corpo.set(
-                'action',
-                'react'
-            );
-
-            corpo.set(
-                'message_id',
-                String(
-                    mensagemId
-                )
-            );
-
-            corpo.set(
-                'emoji',
-                emoji
-            );
-
+            corpo.set('action', 'react');
+            corpo.set('message_id', String(mensagemId));
+            corpo.set('emoji', emoji);
             corpo.set(
                 'toggle',
-                alternar
-                    ? '1'
-                    : '0'
+                alternar ? '1' : '0'
             );
 
-            var resposta =
-                await fetch(
-                    conversaUrl(),
-                    {
-                        method:
-                            'POST',
+            var resposta = await fetch(
+                conversaUrl(),
+                {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    cache: 'no-store',
+                    headers: {
+                        Accept: 'application/json',
+                        'Content-Type':
+                            'application/x-www-form-urlencoded;charset=UTF-8'
+                    },
+                    body: corpo.toString()
+                }
+            );
 
-                        credentials:
-                            'same-origin',
+            var dados = await resposta.json();
 
-                        cache:
-                            'no-store',
-
-                        headers: {
-                            Accept:
-                                'application/json',
-
-                            'Content-Type':
-                                'application/x-www-form-urlencoded;charset=UTF-8'
-                        },
-
-                        body:
-                            corpo.toString()
-                    }
-                );
-
-            var dados =
-                await resposta.json();
-
-            if (
-                !resposta.ok ||
-                !dados.success
-            ) {
+            if (!resposta.ok || !dados.success) {
                 throw new Error(
                     dados.message ||
                     'Não foi possível reagir à mensagem.'
@@ -1611,49 +1502,45 @@
             }
 
             renderizarReacoesMensagem(
-                artigoMensagemPorId(
-                    mensagemId
-                ),
-                dados.reactions ||
-                []
+                artigoMensagemPorId(mensagemId),
+                dados.reactions || []
             );
 
-            if (
-                emoji ===
-                    '❤️' &&
-                !alternar
-            ) {
-                animarCoracaoMensagem(
-                    mensagemId
-                );
+            var ficouComCoracao = (dados.reactions || []).some(
+                function (reacao) {
+                    return (
+                        String(
+                            reacao &&
+                            (
+                                reacao.member_id ||
+                                reacao.membro_id
+                            ) ||
+                            ''
+                        ) === String(window.membroId || '') &&
+                        String(reacao && reacao.emoji || '') === '❤️'
+                    );
+                }
+            );
+
+            if (emoji === '❤️' && ficouComCoracao) {
+                animarCoracaoMensagem(mensagemId);
             }
 
             if (
                 window.AppWebSocket &&
-                typeof window
-                    .AppWebSocket
-                    .send ===
-                    'function'
+                typeof window.AppWebSocket.send === 'function'
             ) {
                 window.AppWebSocket.send({
-                    type:
-                        'chat_reaction',
-
-                    message_id:
-                        mensagemId
+                    type: 'chat_reaction',
+                    message_id: mensagemId
                 });
             }
-        } catch (
-            erro
-        ) {
-            console.error(
-                erro
-            );
+        } catch (erro) {
+            console.error(erro);
 
             if (
-                typeof window
-                    .mostrarMensagemTemporaria ===
-                    'function'
+                typeof window.mostrarMensagemTemporaria ===
+                'function'
             ) {
                 window.mostrarMensagemTemporaria(
                     erro.message ||
@@ -1665,279 +1552,137 @@
     }
 
     function fecharMenuReacoes() {
-        if (
-            !$menuReacoes ||
-            !$menuReacoes.length
-        ) {
+        if (!$menuReacoes || !$menuReacoes.length) {
             return;
         }
 
-        $menuReacoes.removeClass(
-            'visivel'
-        );
-
-        $menuReacoes.attr(
-            'aria-hidden',
-            'true'
-        );
-
-        $menuReacoes.removeAttr(
-            'data-mensagem-id'
-        );
+        $menuReacoes.removeClass('visivel');
+        $menuReacoes.attr('aria-hidden', 'true');
+        $menuReacoes.removeAttr('data-mensagem-id');
     }
 
     function garantirMenuReacoes() {
         if (
             $menuReacoes &&
             $menuReacoes.length &&
-            $menuReacoes[0]
-                .isConnected
+            $menuReacoes[0].isConnected
         ) {
             return $menuReacoes;
         }
 
-        $menuReacoes =
-            $('<div>', {
-                id:
-                    'chat-menu-reacoes',
+        $menuReacoes = $('<div>', {
+            id: 'chat-menu-reacoes',
+            class: 'chat-menu-reacoes',
+            role: 'menu',
+            'aria-label': 'Reagir à mensagem',
+            'aria-hidden': 'true'
+        });
 
-                class:
-                    'chat-menu-reacoes',
-
-                role:
-                    'menu',
-
-                'aria-label':
-                    'Reagir à mensagem',
-
-                'aria-hidden':
-                    'true'
-            });
-
-        [
-            '❤️',
-            '😂',
-            '😮',
-            '😢',
-            '😍',
-            '🔥'
-        ].forEach(
-            function (
-                emoji
-            ) {
+        ['❤️', '😂', '😮', '😢', '😍', '🔥']
+            .forEach(function (emoji) {
                 $menuReacoes.append(
                     $('<button>', {
-                        type:
-                            'button',
-
-                        class:
-                            'chat-menu-reacao',
-
-                        'data-emoji':
-                            emoji,
-
-                        'aria-label':
-                            'Reagir com ' +
-                            emoji,
-
-                        text:
-                            emoji
+                        type: 'button',
+                        class: 'chat-menu-reacao',
+                        'data-emoji': emoji,
+                        'aria-label': 'Reagir com ' + emoji,
+                        text: emoji
                     })
                 );
-            }
-        );
+            });
 
-        $('body').append(
-            $menuReacoes
-        );
+        $('body').append($menuReacoes);
 
         return $menuReacoes;
     }
 
-    function abrirMenuReacoes(
-        $artigo
-    ) {
-        if (
-            !$artigo ||
-            !$artigo.length
-        ) {
+    function abrirMenuReacoes($artigo) {
+        if (!$artigo || !$artigo.length) {
             return;
         }
 
-        var mensagemId =
-            Number(
-                $artigo.attr(
-                    'data-mensagem-id'
-                )
-            ) ||
-            0;
+        var mensagemId = Number(
+            $artigo.attr('data-mensagem-id')
+        ) || 0;
 
-        if (
-            !mensagemId
-        ) {
+        if (!mensagemId) {
             return;
         }
 
-        var $menu =
-            garantirMenuReacoes();
-
-        var rect =
-            $artigo[0]
-                .getBoundingClientRect();
-
-        var largura =
+        var $menu = garantirMenuReacoes();
+        var rect = $artigo[0].getBoundingClientRect();
+        var largura = Math.min(326, window.innerWidth - 24);
+        var esquerda = Math.max(
+            12,
             Math.min(
-                326,
-                window.innerWidth -
-                24
-            );
-
-        var esquerda =
-            Math.max(
-                12,
-                Math.min(
-                    window.innerWidth -
-                    largura -
-                    12,
-
-                    rect.left +
-                    rect.width /
-                    2 -
-                    largura /
-                    2
-                )
-            );
+                window.innerWidth - largura - 12,
+                rect.left + rect.width / 2 - largura / 2
+            )
+        );
 
         $menu.css({
-            width:
-                largura +
-                'px',
-
-            left:
-                esquerda +
-                'px',
-
-            top:
-                '0px'
+            width: largura + 'px',
+            left: esquerda + 'px',
+            top: '0px'
         });
 
         $menu.attr(
             'data-mensagem-id',
-            String(
-                mensagemId
-            )
+            String(mensagemId)
         );
 
-        var minhaReacao =
-            obterMinhaReacao(
-                $artigo
-            );
+        var minhaReacao = obterMinhaReacao($artigo);
 
         $menu
-            .find(
-                '.chat-menu-reacao'
-            )
-            .each(
-                function () {
-                    $(this).toggleClass(
-                        'ativa',
-
-                        String(
-                            $(this).attr(
-                                'data-emoji'
-                            )
-                        ) ===
+            .find('.chat-menu-reacao')
+            .each(function () {
+                $(this).toggleClass(
+                    'ativa',
+                    String($(this).attr('data-emoji')) ===
                         minhaReacao
-                    );
-                }
-            );
-
-        $menu.addClass(
-            'medir'
-        );
-
-        var altura =
-            $menu.outerHeight() ||
-            58;
-
-        var topo =
-            rect.top -
-            altura -
-            10;
-
-        if (
-            topo <
-            12
-        ) {
-            topo =
-                Math.min(
-                    window.innerHeight -
-                    altura -
-                    12,
-
-                    rect.bottom +
-                    10
                 );
+            });
+
+        $menu.addClass('medir');
+
+        var altura = $menu.outerHeight() || 58;
+        var topo = rect.top - altura - 10;
+
+        if (topo < 12) {
+            topo = Math.min(
+                window.innerHeight - altura - 12,
+                rect.bottom + 10
+            );
         }
 
-        $menu.css(
-            'top',
-            Math.max(
-                12,
-                topo
-            ) +
-            'px'
-        );
+        $menu.css('top', Math.max(12, topo) + 'px');
+        $menu.removeClass('medir');
 
-        $menu.removeClass(
-            'medir'
-        );
-
-        window.requestAnimationFrame(
-            function () {
-                $menu
-                    .attr(
-                        'aria-hidden',
-                        'false'
-                    )
-                    .addClass(
-                        'visivel'
-                    );
-            }
-        );
+        window.requestAnimationFrame(function () {
+            $menu
+                .attr('aria-hidden', 'false')
+                .addClass('visivel');
+        });
     }
 
     function cancelarGestoReacao() {
-        if (
-            !gestoReacao
-        ) {
+        if (!gestoReacao) {
             return;
         }
 
-        if (
-            gestoReacao.timer
-        ) {
-            window.clearTimeout(
-                gestoReacao.timer
-            );
+        if (gestoReacao.timer) {
+            window.clearTimeout(gestoReacao.timer);
         }
 
-        gestoReacao =
-            null;
+        gestoReacao = null;
     }
 
-    function iniciarGestoReacao(
-        evento
-    ) {
-        var original =
-            evento.originalEvent ||
-            evento;
+    function iniciarGestoReacao(evento) {
+        var original = evento.originalEvent || evento;
 
         if (
-            original.pointerType ===
-                'mouse' &&
-            original.button !==
-                0
+            original.pointerType === 'mouse' &&
+            original.button !== 0
         ) {
             return;
         }
@@ -1950,224 +1695,153 @@
             return;
         }
 
-        var $artigo =
-            $(evento.currentTarget)
-                .closest(
-                    '.chat-mensagem'
-                );
+        var $artigo = $(evento.currentTarget).closest(
+            '.chat-mensagem'
+        );
 
-        var mensagemId =
-            Number(
-                $artigo.attr(
-                    'data-mensagem-id'
-                )
-            ) ||
-            0;
+        var mensagemId = Number(
+            $artigo.attr('data-mensagem-id')
+        ) || 0;
 
-        if (
-            !mensagemId
-        ) {
+        if (!mensagemId) {
             return;
         }
 
         cancelarGestoReacao();
 
         gestoReacao = {
-            pointerId:
-                original.pointerId,
-
-            mensagemId:
-                mensagemId,
-
-            $artigo:
-                $artigo,
-
-            inicioX:
-                Number(
-                    original.clientX
-                ) ||
-                0,
-
-            inicioY:
-                Number(
-                    original.clientY
-                ) ||
-                0,
-
-            moveu:
-                false,
-
-            longo:
-                false,
-
-            timer:
-                null
+            pointerId: original.pointerId,
+            $alvoPointer: $(evento.currentTarget),
+            mensagemId: mensagemId,
+            $artigo: $artigo,
+            inicioX: Number(original.clientX) || 0,
+            inicioY: Number(original.clientY) || 0,
+            moveu: false,
+            longo: false,
+            timer: null
         };
 
-        gestoReacao.timer =
-            window.setTimeout(
-                function () {
-                    if (
-                        !gestoReacao ||
-                        gestoReacao.moveu
-                    ) {
-                        return;
-                    }
+        if (
+            original.pointerId !== undefined &&
+            evento.currentTarget &&
+            typeof evento.currentTarget.setPointerCapture === 'function'
+        ) {
+            try {
+                evento.currentTarget.setPointerCapture(original.pointerId);
+            } catch (erro) {
+                /* O Safari pode recusar a captura do ponteiro. */
+            }
+        }
 
-                    gestoReacao.longo =
-                        true;
+        gestoReacao.timer = window.setTimeout(
+            function () {
+                if (!gestoReacao || gestoReacao.moveu) {
+                    return;
+                }
 
-                    abrirMenuReacoes(
-                        gestoReacao.$artigo
-                    );
+                gestoReacao.longo = true;
+                abrirMenuReacoes(gestoReacao.$artigo);
 
-                    if (
-                        window.MargotHaptics &&
-                        typeof window
-                            .MargotHaptics
-                            .play ===
-                            'function'
-                    ) {
-                        window.MargotHaptics.play(
-                            'messageReceived'
-                        );
-                    }
-                },
-                LONG_PRESS_REACAO_MS
-            );
+                if (
+                    window.MargotHaptics &&
+                    typeof window.MargotHaptics.play === 'function'
+                ) {
+                    window.MargotHaptics.play('messageReceived');
+                }
+            },
+            LONG_PRESS_REACAO_MS
+        );
     }
 
-    function moverGestoReacao(
-        evento
-    ) {
+    function moverGestoReacao(evento) {
+        if (!gestoReacao) {
+            return;
+        }
+
+        var original = evento.originalEvent || evento;
+
         if (
-            !gestoReacao
+            original.pointerId !== undefined &&
+            gestoReacao.pointerId !== undefined &&
+            original.pointerId !== gestoReacao.pointerId
         ) {
             return;
         }
 
-        var original =
-            evento.originalEvent ||
-            evento;
+        var dx = (Number(original.clientX) || 0) - gestoReacao.inicioX;
+        var dy = (Number(original.clientY) || 0) - gestoReacao.inicioY;
 
-        if (
-            original.pointerId !==
-                undefined &&
-            gestoReacao.pointerId !==
-                undefined &&
-            original.pointerId !==
-                gestoReacao.pointerId
-        ) {
-            return;
-        }
+        if (Math.hypot(dx, dy) > 28) {
+            gestoReacao.moveu = true;
 
-        var dx =
-            (
-                Number(
-                    original.clientX
-                ) ||
-                0
-            ) -
-            gestoReacao.inicioX;
-
-        var dy =
-            (
-                Number(
-                    original.clientY
-                ) ||
-                0
-            ) -
-            gestoReacao.inicioY;
-
-        if (
-            Math.hypot(
-                dx,
-                dy
-            ) >
-            12
-        ) {
-            gestoReacao.moveu =
-                true;
-
-            if (
-                gestoReacao.timer
-            ) {
-                window.clearTimeout(
-                    gestoReacao.timer
-                );
-
-                gestoReacao.timer =
-                    null;
+            if (gestoReacao.timer) {
+                window.clearTimeout(gestoReacao.timer);
+                gestoReacao.timer = null;
             }
         }
     }
 
-    function terminarGestoReacao(
-        evento
-    ) {
+    function terminarGestoReacao(evento) {
+        if (!gestoReacao) {
+            return;
+        }
+
+        var original = evento.originalEvent || evento;
+
         if (
-            !gestoReacao
+            original.pointerId !== undefined &&
+            gestoReacao.pointerId !== undefined &&
+            original.pointerId !== gestoReacao.pointerId
         ) {
             return;
         }
 
-        var original =
-            evento.originalEvent ||
-            evento;
+        var gesto = gestoReacao;
 
         if (
-            original.pointerId !==
-                undefined &&
-            gestoReacao.pointerId !==
-                undefined &&
-            original.pointerId !==
-                gestoReacao.pointerId
+            gesto.$alvoPointer &&
+            gesto.$alvoPointer.length &&
+            original.pointerId !== undefined &&
+            typeof gesto.$alvoPointer[0].releasePointerCapture === 'function'
         ) {
-            return;
+            try {
+                if (
+                    typeof gesto.$alvoPointer[0].hasPointerCapture !== 'function' ||
+                    gesto.$alvoPointer[0].hasPointerCapture(original.pointerId)
+                ) {
+                    gesto.$alvoPointer[0].releasePointerCapture(original.pointerId);
+                }
+            } catch (erro) {
+                /* O ponteiro pode já ter sido libertado. */
+            }
         }
-
-        var gesto =
-            gestoReacao;
 
         cancelarGestoReacao();
 
-        if (
-            gesto.moveu ||
-            gesto.longo
-        ) {
+        if (gesto.moveu || gesto.longo) {
             return;
         }
 
-        var agora =
-            Date.now();
+        var agora = Date.now();
 
         if (
-            ultimoTapReacao.id ===
-                gesto.mensagemId &&
-            agora -
-                ultimoTapReacao.instante <=
-                DOUBLE_TAP_REACAO_MS
+            ultimoTapReacao.id === gesto.mensagemId &&
+            agora - ultimoTapReacao.instante <= DOUBLE_TAP_REACAO_MS
         ) {
-            ultimoTapReacao.id =
-                0;
-
-            ultimoTapReacao.instante =
-                0;
+            ultimoTapReacao.id = 0;
+            ultimoTapReacao.instante = 0;
 
             enviarReacao(
                 gesto.mensagemId,
                 '❤️',
-                false
+                true
             );
 
             return;
         }
 
-        ultimoTapReacao.id =
-            gesto.mensagemId;
-
-        ultimoTapReacao.instante =
-            agora;
+        ultimoTapReacao.id = gesto.mensagemId;
+        ultimoTapReacao.instante = agora;
     }
 
     function criarMensagem(
@@ -2324,8 +1998,7 @@
 
         renderizarReacoesMensagem(
             $artigo,
-            mensagem.reactions ||
-            []
+            mensagem.reactions || []
         );
 
         return $artigo;
@@ -2604,46 +2277,22 @@
     }
 
     function prepararDadosEnvio() {
-        var dados =
-            new FormData(
-                $form[0]
-            );
-
-        var token =
-            '';
+        var dados = new FormData($form[0]);
+        var token = '';
 
         if (
             window.AppWebSocket &&
-            typeof window
-                .AppWebSocket
-                .profileAccessToken ===
-                'function'
+            typeof window.AppWebSocket.profileAccessToken === 'function'
         ) {
-            token =
-                window.AppWebSocket
-                    .profileAccessToken(
-                        window.chatMembroId
-                    );
-        }
-
-        dados.set(
-            'profile_access_token',
-            token ||
-            ''
-        );
-
-        var inputToken =
-            document.getElementById(
-                'chat-profile-access-token'
+            token = window.AppWebSocket.profileAccessToken(
+                window.chatMembroId
             );
-
-        if (
-            inputToken
-        ) {
-            inputToken.value =
-                token ||
-                '';
         }
+
+        dados.set('profile_access_token', token || '');
+
+        var inputToken = document.getElementById('chat-profile-access-token');
+        if (inputToken) inputToken.value = token || '';
 
         return dados;
     }
@@ -3044,6 +2693,14 @@
     );
 
     $mensagens.on(
+        'contextmenu' + NS,
+        '.chat-balao',
+        function (evento) {
+            evento.preventDefault();
+        }
+    );
+
+    $mensagens.on(
         'pointermove' + NS,
         '.chat-balao',
         moverGestoReacao
@@ -3062,12 +2719,8 @@
             if (
                 $menuReacoes &&
                 $menuReacoes.length &&
-                !$menuReacoes.is(
-                    evento.target
-                ) &&
-                !$menuReacoes.has(
-                    evento.target
-                ).length
+                !$menuReacoes.is(evento.target) &&
+                !$menuReacoes.has(evento.target).length
             ) {
                 fecharMenuReacoes();
             }
@@ -3078,40 +2731,22 @@
         'click' + NS,
         '.chat-menu-reacao',
         function () {
-            var $botao =
-                $(this);
+            var $botao = $(this);
+            var mensagemId = Number(
+                $menuReacoes &&
+                $menuReacoes.attr('data-mensagem-id')
+            ) || 0;
 
-            var mensagemId =
-                Number(
-                    $menuReacoes &&
-                    $menuReacoes.attr(
-                        'data-mensagem-id'
-                    )
-                ) ||
-                0;
+            var emoji = String(
+                $botao.attr('data-emoji') || ''
+            );
 
-            var emoji =
-                String(
-                    $botao.attr(
-                        'data-emoji'
-                    ) ||
-                    ''
-                );
-
-            if (
-                !mensagemId ||
-                !emoji
-            ) {
+            if (!mensagemId || !emoji) {
                 return;
             }
 
             fecharMenuReacoes();
-
-            enviarReacao(
-                mensagemId,
-                emoji,
-                true
-            );
+            enviarReacao(mensagemId, emoji, true);
         }
     );
 
@@ -3289,31 +2924,19 @@
         );
     }
 
-    function aoReceberReacao(
-        evento
-    ) {
-        var detalhe =
-            evento.detail ||
-            {};
+    function aoReceberReacao(evento) {
+        var detalhe = evento.detail || {};
+        var mensagemId = Number(
+            detalhe.message_id
+        ) || 0;
 
-        var mensagemId =
-            Number(
-                detalhe.message_id
-            ) ||
-            0;
-
-        if (
-            !mensagemId
-        ) {
+        if (!mensagemId) {
             return;
         }
 
         renderizarReacoesMensagem(
-            artigoMensagemPorId(
-                mensagemId
-            ),
-            detalhe.reactions ||
-            []
+            artigoMensagemPorId(mensagemId),
+            detalhe.reactions || []
         );
     }
 
@@ -3357,9 +2980,7 @@
         );
 
     atualizarEstadoEnviar();
-
     prepararTecladoNativo();
-
     marcarComoLidas();
 
     /*
@@ -3447,14 +3068,9 @@
 
         cancelarGestoReacao();
 
-        if (
-            $menuReacoes &&
-            $menuReacoes.length
-        ) {
+        if ($menuReacoes && $menuReacoes.length) {
             $menuReacoes.remove();
-
-            $menuReacoes =
-                null;
+            $menuReacoes = null;
         }
 
         $form.off(

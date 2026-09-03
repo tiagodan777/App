@@ -16,8 +16,8 @@
     <link rel="stylesheet" href="{{ doc_root }}estilos/style.css?v=16">
 
     {% if session.id %}
-        <link rel="stylesheet" href="{{ doc_root }}estilos/index-notificacoes.css?v=6">
-        <link rel="stylesheet" href="{{ doc_root }}estilos/messaging-integration.css?v=8">
+        <link rel="stylesheet" href="{{ doc_root }}estilos/index-notificacoes.css?v=8">
+        <link rel="stylesheet" href="{{ doc_root }}estilos/messaging-integration.css?v=9">
     {% endif %}
 
     {% block styles %}{% endblock %}
@@ -33,7 +33,7 @@
         <script src="{{ doc_root }}js/preferencias.js?v=2"></script>
     {% endif %}
 
-    <script src="{{ doc_root }}js/push-notifications.js?v=2"></script>
+    <script src="{{ doc_root }}js/push-notifications.js?v=3"></script>
 
     <div data-margot-pagina>
         {% block content %}{% endblock %}
@@ -291,10 +291,10 @@
                 : 'ws://' + window.location.hostname + ':8080';
         </script>
 
-        <script src="{{ doc_root }}js/hey-vibracao.js?v=1"></script>
-        <script src="{{ doc_root }}js/index-notificacoes.js?v=8"></script>
+        <script src="{{ doc_root }}js/hey-vibracao.js?v=3"></script>
+        <script src="{{ doc_root }}js/index-notificacoes.js?v=10"></script>
         <script src="{{ doc_root }}js/background-location.js?v=6"></script>
-        <script src="{{ doc_root }}js/websocket.js?v=19"></script>
+        <script src="{{ doc_root }}js/websocket.js?v=22"></script>
         <script src="{{ doc_root }}js/menu-invisivel.js?v=3"></script>
         <script src="{{ doc_root }}js/javascript-geral.js?v=5"></script>
     {% endif %}

@@ -5,7 +5,7 @@
 {% block styles %}
 <link
     rel="stylesheet"
-    href="{{ doc_root }}estilos/profile.css?v=44"
+    href="{{ doc_root }}estilos/profile.css?v=45"
     data-margot-page-style
 >
 {% endblock %}
@@ -320,10 +320,16 @@
                                 data-ligado="{{ ligados ? '1' : '0' }}"
                                 aria-describedby="perfil-conectar-estado"
                                 aria-pressed="{{ ligados ? 'true' : 'false' }}"
-                                {% if ligados %}disabled{% endif %}
+                                aria-label="{{ ligados ? 'Desconectar de ' ~ membro.nome : 'Conectar com ' ~ membro.nome }}"
                             >
-                                <span class="perfil-conectar-icone" aria-hidden="true">
-                                    <svg viewBox="0 0 24 24" focusable="false">
+                                <span
+                                    class="perfil-conectar-icone"
+                                    aria-hidden="true"
+                                >
+                                    <svg
+                                        viewBox="0 0 24 24"
+                                        focusable="false"
+                                    >
                                         <path d="M8.7 12.9 11 15.2l4.8-5.1"></path>
                                         <path d="M7.7 6.8a3.3 3.3 0 1 1 6.6 0"></path>
                                         <path d="M5.5 18.4c.5-3.2 2.7-5.1 5.5-5.1"></path>
@@ -332,7 +338,7 @@
                                 </span>
 
                                 <span class="perfil-conectar-label">
-                                    {{ ligados ? 'Ligados' : 'Conectar' }}
+                                    {{ ligados ? 'Desconectar' : 'Conectar' }}
                                 </span>
                             </button>
                         </div>
@@ -349,7 +355,11 @@
                             class="sr-only"
                             aria-live="polite"
                             aria-atomic="true"
-                        ></p>
+                        >
+                            {% if ligados %}
+                                Estão ligados na Margot.
+                            {% endif %}
+                        </p>
 
                     {% endif %}
 
@@ -589,5 +599,5 @@ window.webSocketUrl = window.location.protocol === 'https:'
     : 'ws://' + window.location.hostname + ':8080';
 </script>
 
-<script src="{{ doc_root }}js/profile.js?v=44"></script>
+<script src="{{ doc_root }}js/profile.js?v=45"></script>
 {% endblock %}

@@ -1,4 +1,3 @@
-
 @charset "UTF-8";
 
 :root {
@@ -483,7 +482,7 @@ body.margot-chat-teclado-fallback
 
 .chat-menu-reacoes {
     position: fixed;
-    z-index: 420;
+    z-index: 6000;
     height: 58px;
     padding: 6px;
     border: 1px solid rgba(0, 0, 0, 0.08);
@@ -505,6 +504,10 @@ body.margot-chat-teclado-fallback
     align-items: center;
     justify-content: space-between;
     gap: 2px;
+    isolation: isolate;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
 }
 
 .chat-menu-reacoes.medir {

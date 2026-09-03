@@ -1,7 +1,7 @@
 {% extends 'layout.html' %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ doc_root }}estilos/chat.css?v=18" data-margot-page-style>
+<link rel="stylesheet" href="{{ doc_root }}estilos/chat.css?v=19" data-margot-page-style>
 {% endblock %}
 
 {% block content %}
@@ -180,5 +180,5 @@ window.webSocketUrl = window.location.protocol === 'https:'
     : 'ws://' + window.location.hostname + ':8080';
 </script>
 
-<script src="{{ doc_root }}js/chat.js?v=15"></script>
+<script src="{{ doc_root }}js/chat.js?v=16"></script>
 {% endblock %}

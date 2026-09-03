@@ -2801,6 +2801,7 @@
 
 
 /* CONEXÃO DE PROXIMIDADE */
+
 (function (window, document) {
     'use strict';
 
@@ -2823,24 +2824,24 @@
             'perfil-conectar-estado'
         );
 
-    var temporizador =
-        null;
-
-    var aEsperar =
-        false;
+    var temporizador = null;
+    var aEsperar = false;
+    var aDesligar = false;
 
     function destinatarioId() {
         return String(
-            botao.dataset
-                .destinatarioId ||
+            botao.dataset.destinatarioId ||
             ''
         ).trim();
     }
 
+    function estaLigado() {
+        return botao.dataset.ligado === '1';
+    }
+
     function corresponde(evento) {
         var detalhe =
-            evento &&
-            evento.detail
+            evento && evento.detail
                 ? evento.detail
                 : {};
 
@@ -2880,7 +2881,7 @@
         }
     }
 
-    function limparEspera() {
+    function limparTemporizador() {
         if (
             temporizador !==
             null
@@ -2892,57 +2893,66 @@
             temporizador =
                 null;
         }
+    }
 
-        aEsperar =
+    function aplicarEstadoDesligado() {
+        limparTemporizador();
+
+        aEsperar = false;
+        aDesligar = false;
+
+        botao.dataset.ligado =
+            '0';
+
+        botao.disabled =
             false;
 
-        if (
-            botao.dataset.ligado !==
-            '1'
-        ) {
-            botao.disabled =
-                false;
+        botao.classList.remove(
+            'a-espera',
+            'a-desligar',
+            'ligado'
+        );
 
-            botao.classList.remove(
-                'a-espera'
-            );
+        botao.setAttribute(
+            'aria-pressed',
+            'false'
+        );
 
-            if (label) {
-                label.textContent =
-                    'Conectar';
-            }
+        if (label) {
+            label.textContent =
+                'Conectar';
+        }
+    }
 
-            botao.setAttribute(
-                'aria-pressed',
-                'false'
-            );
+    function limparEspera() {
+        limparTemporizador();
+
+        aEsperar = false;
+
+        if (!estaLigado()) {
+            aplicarEstadoDesligado();
         }
     }
 
     function marcarLigado() {
-        if (
-            temporizador !==
-            null
-        ) {
-            window.clearTimeout(
-                temporizador
-            );
+        limparTemporizador();
 
-            temporizador =
-                null;
-        }
-
-        aEsperar =
-            false;
+        aEsperar = false;
+        aDesligar = false;
 
         botao.dataset.ligado =
             '1';
 
+        /*
+         * Continua clicável para a pessoa poder
+         * remover a ligação quando quiser.
+         */
         botao.disabled =
-            true;
+            false;
 
         botao.classList.remove(
-            'a-espera'
+            'a-espera',
+            'a-desligar'
         );
 
         botao.classList.add(
@@ -2956,11 +2966,11 @@
 
         if (label) {
             label.textContent =
-                'Ligados';
+                'Desconectar';
         }
 
         anunciar(
-            'Agora estão ligados na Margot. Podem conversar mesmo quando já não estão perto.'
+            'Estão ligados na Margot. Podem conversar mesmo quando já não estão perto.'
         );
     }
 
@@ -3009,6 +3019,11 @@
             camada
         );
 
+        /*
+         * Antes desaparecia em ~1,45 s.
+         * Mantemos a celebração no ecrã tempo suficiente
+         * para ser percebida sem parecer um flash.
+         */
         window.setTimeout(
             function () {
                 if (
@@ -3020,15 +3035,46 @@
                         );
                 }
             },
-            1450
+            2850
         );
+    }
+
+    function garantirWebSocket() {
+        if (
+            window.AppWebSocket &&
+            typeof window
+                .AppWebSocket
+                .isConnected ===
+                'function' &&
+            window.AppWebSocket
+                .isConnected()
+        ) {
+            return true;
+        }
+
+        if (
+            window.AppWebSocket &&
+            typeof window
+                .AppWebSocket
+                .connect ===
+                'function'
+        ) {
+            window.AppWebSocket
+                .connect();
+        }
+
+        mostrarErro(
+            'A ligação está a ser restabelecida. Tenta novamente daqui a um instante.'
+        );
+
+        return false;
     }
 
     function tentarConectar() {
         if (
             aEsperar ||
-            botao.dataset.ligado ===
-                '1'
+            aDesligar ||
+            estaLigado()
         ) {
             return;
         }
@@ -3040,30 +3086,7 @@
             return;
         }
 
-        if (
-            !window.AppWebSocket ||
-            typeof window
-                .AppWebSocket
-                .isConnected !==
-                'function' ||
-            !window.AppWebSocket
-                .isConnected()
-        ) {
-            if (
-                window.AppWebSocket &&
-                typeof window
-                    .AppWebSocket
-                    .connect ===
-                    'function'
-            ) {
-                window.AppWebSocket
-                    .connect();
-            }
-
-            mostrarErro(
-                'A ligação está a ser restabelecida. Tenta novamente daqui a um instante.'
-            );
-
+        if (!garantirWebSocket()) {
             return;
         }
 
@@ -3084,8 +3107,7 @@
             return;
         }
 
-        aEsperar =
-            true;
+        aEsperar = true;
 
         botao.disabled =
             true;
@@ -3110,12 +3132,91 @@
             );
     }
 
-    function aoAguardar(evento) {
+    function desconectar() {
         if (
-            !corresponde(
-                evento
-            )
+            aEsperar ||
+            aDesligar ||
+            !estaLigado()
         ) {
+            return;
+        }
+
+        var outroId =
+            destinatarioId();
+
+        if (!outroId) {
+            return;
+        }
+
+        if (!garantirWebSocket()) {
+            return;
+        }
+
+        aDesligar = true;
+
+        botao.disabled =
+            true;
+
+        botao.classList.add(
+            'a-desligar'
+        );
+
+        if (label) {
+            label.textContent =
+                'A desligar…';
+        }
+
+        var enviado =
+            window.AppWebSocket.send({
+                type:
+                    'connection_disconnect',
+
+                destinatario_id:
+                    outroId
+            });
+
+        if (!enviado) {
+            aDesligar = false;
+            marcarLigado();
+
+            mostrarErro(
+                'Não foi possível remover a ligação.'
+            );
+
+            return;
+        }
+
+        limparTemporizador();
+
+        temporizador =
+            window.setTimeout(
+                function () {
+                    if (!aDesligar) {
+                        return;
+                    }
+
+                    aDesligar = false;
+                    marcarLigado();
+
+                    mostrarErro(
+                        'Não foi recebida confirmação. Tenta novamente.'
+                    );
+                },
+                8000
+            );
+    }
+
+    function aoClicar() {
+        if (estaLigado()) {
+            desconectar();
+            return;
+        }
+
+        tentarConectar();
+    }
+
+    function aoAguardar(evento) {
+        if (!corresponde(evento)) {
             return;
         }
 
@@ -3125,21 +3226,15 @@
     }
 
     function aoConectar(evento) {
-        if (
-            !corresponde(
-                evento
-            )
-        ) {
+        if (!corresponde(evento)) {
             return;
         }
 
         var detalhe =
-            evento.detail ||
-            {};
+            evento.detail || {};
 
         var jaLigados =
-            !!detalhe
-                .already_connected;
+            !!detalhe.already_connected;
 
         marcarLigado();
 
@@ -3153,42 +3248,47 @@
         }
     }
 
+    function aoDesconectar(evento) {
+        if (!corresponde(evento)) {
+            return;
+        }
+
+        aplicarEstadoDesligado();
+
+        anunciar(
+            'A ligação foi removida.'
+        );
+    }
+
     function aoErro(evento) {
-        if (
-            !corresponde(
-                evento
-            )
-        ) {
+        if (!corresponde(evento)) {
             return;
         }
 
         var detalhe =
-            evento.detail ||
-            {};
+            evento.detail || {};
 
-        limparEspera();
+        if (estaLigado()) {
+            aDesligar = false;
+            marcarLigado();
+        } else {
+            limparEspera();
+        }
 
         mostrarErro(
             String(
                 detalhe.message ||
-                'Não foi possível criar a ligação.'
+                'Não foi possível atualizar a ligação.'
             )
         );
     }
 
     function sair() {
-        if (
-            temporizador !==
-            null
-        ) {
-            window.clearTimeout(
-                temporizador
-            );
-        }
+        limparTemporizador();
 
         botao.removeEventListener(
             'click',
-            tentarConectar
+            aoClicar
         );
 
         window.removeEventListener(
@@ -3202,6 +3302,11 @@
         );
 
         window.removeEventListener(
+            'app:connection-removed',
+            aoDesconectar
+        );
+
+        window.removeEventListener(
             'app:connection-error',
             aoErro
         );
@@ -3212,9 +3317,15 @@
         );
     }
 
+    if (estaLigado()) {
+        marcarLigado();
+    } else {
+        aplicarEstadoDesligado();
+    }
+
     botao.addEventListener(
         'click',
-        tentarConectar
+        aoClicar
     );
 
     window.addEventListener(
@@ -3225,6 +3336,11 @@
     window.addEventListener(
         'app:connection-created',
         aoConectar
+    );
+
+    window.addEventListener(
+        'app:connection-removed',
+        aoDesconectar
     );
 
     window.addEventListener(

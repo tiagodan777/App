@@ -1789,6 +1789,15 @@
                 );
                 break;
 
+            case 'connection_removed':
+                window.dispatchEvent(
+                    new CustomEvent(
+                        'app:connection-removed',
+                        { detail: data }
+                    )
+                );
+                break;
+
             case 'connection_error':
                 window.dispatchEvent(
                     new CustomEvent(
@@ -2682,7 +2691,6 @@
 
             while ($itens.length >= 3) {
                 $itens.first().remove();
-
                 $itens =
                     $avisos.children(
                         '.mensagem-aviso, .hey-aviso'
@@ -2709,7 +2717,6 @@
                 'error',
                 function () {
                     this.onerror = null;
-
                     this.src =
                         '/imagens/fotos-perfil/default.webp';
                 }
@@ -2723,9 +2730,7 @@
                     nome
                 ),
 
-                $('<span>').text(
-                    resumo
-                )
+                $('<span>').text(resumo)
             );
 
             $aviso.append(
@@ -2733,9 +2738,7 @@
                 $corpo
             );
 
-            $avisos.append(
-                $aviso
-            );
+            $avisos.append($aviso);
 
             var gesto = null;
 
@@ -2747,26 +2750,17 @@
                         evento;
 
                     if (
-                        original.pointerType ===
-                            'mouse' &&
-                        original.button !==
-                            0
+                        original.pointerType === 'mouse' &&
+                        original.button !== 0
                     ) {
                         return;
                     }
 
                     gesto = {
-                        id:
-                            original.pointerId,
-
-                        y:
-                            original.clientY,
-
-                        x:
-                            original.clientX,
-
-                        inicio:
-                            performance.now()
+                        id: original.pointerId,
+                        y: original.clientY,
+                        x: original.clientX,
+                        inicio: performance.now()
                     };
                 }
             );
@@ -2783,44 +2777,28 @@
                         evento;
 
                     if (
-                        original.pointerId !==
-                            undefined &&
-                        gesto.id !==
-                            undefined &&
-                        original.pointerId !==
-                            gesto.id
+                        original.pointerId !== undefined &&
+                        gesto.id !== undefined &&
+                        original.pointerId !== gesto.id
                     ) {
                         return;
                     }
 
-                    var dy =
-                        original.clientY -
-                        gesto.y;
+                    var dy = original.clientY - gesto.y;
 
                     if (dy < 0) {
-                        var deslocamento =
-                            Math.max(
-                                -105,
-                                dy
-                            );
+                        var deslocamento = Math.max(-105, dy);
 
                         $aviso.css({
-                            transition:
-                                'none',
-
+                            transition: 'none',
                             transform:
                                 'translateY(' +
                                 deslocamento +
                                 'px) scale(.985)',
-
                             opacity:
                                 Math.max(
                                     0.18,
-                                    1 -
-                                    Math.abs(
-                                        deslocamento
-                                    ) /
-                                    110
+                                    1 - Math.abs(deslocamento) / 110
                                 )
                         });
                     }
@@ -2838,93 +2816,55 @@
                         evento.originalEvent ||
                         evento;
 
-                    var dy =
-                        original.clientY -
-                        gesto.y;
-
-                    var duracao =
-                        Math.max(
-                            1,
-                            performance.now() -
-                            gesto.inicio
-                        );
-
-                    var velocidade =
-                        dy /
-                        duracao;
-
+                    var dy = original.clientY - gesto.y;
+                    var duracao = Math.max(
+                        1,
+                        performance.now() - gesto.inicio
+                    );
+                    var velocidade = dy / duracao;
                     var fechar =
                         dy <= -34 ||
-                        velocidade <=
-                            -0.42;
+                        velocidade <= -0.42;
 
                     $aviso.css({
-                        transition:
-                            '',
-
-                        transform:
-                            '',
-
-                        opacity:
-                            ''
+                        transition: '',
+                        transform: '',
+                        opacity: ''
                     });
 
                     if (fechar) {
-                        $aviso.data(
-                            'swiped',
-                            true
-                        );
-
+                        $aviso.data('swiped', true);
                         evento.preventDefault();
-
-                        removerAviso(
-                            false
-                        );
+                        removerAviso(false);
                     }
 
-                    gesto =
-                        null;
+                    gesto = null;
                 }
             );
 
             $aviso.on(
                 'click',
                 function (evento) {
-                    if (
-                        $aviso.data(
-                            'swiped'
-                        )
-                    ) {
+                    if ($aviso.data('swiped')) {
                         evento.preventDefault();
-
-                        $aviso.removeData(
-                            'swiped'
-                        );
-
+                        $aviso.removeData('swiped');
                         return;
                     }
 
-                    var timer =
-                        Number(
-                            $aviso.data(
-                                'removerTimer'
-                            ) ||
-                            0
-                        );
+                    var timer = Number(
+                        $aviso.data('removerTimer') ||
+                        0
+                    );
 
                     if (timer) {
-                        window.clearTimeout(
-                            timer
-                        );
+                        window.clearTimeout(timer);
                     }
                 }
             );
 
             window.requestAnimationFrame(
                 function () {
-                    $aviso.addClass(
-                        'visivel'
-                    );
+                    $aviso.addClass('visivel');
                 }
             );
         }
@@ -2933,9 +2873,7 @@
             'removerTimer',
             window.setTimeout(
                 function () {
-                    removerAviso(
-                        false
-                    );
+                    removerAviso(false);
                 },
                 3600
             )
@@ -3220,12 +3158,9 @@
 
                 if (
                     !window.disableLocationTracking &&
-                    document.visibilityState ===
-                        'visible'
+                    document.visibilityState === 'visible'
                 ) {
-                    if (
-                        !sendLastKnownLocation()
-                    ) {
+                    if (!sendLastKnownLocation()) {
                         requestCurrentLocation();
                     }
                 }
@@ -3272,7 +3207,6 @@
                 !androidLocationPermissionConfirmed
             ) {
                 limparMapaLocal();
-
                 return;
             }
 
@@ -3309,8 +3243,7 @@
                 return;
             }
 
-            window.AppWebSocket
-                .refreshMap();
+            window.AppWebSocket.refreshMap();
 
             /*
              * Uma segunda passagem, já depois do primeiro layout do canvas,
@@ -3324,8 +3257,7 @@
                             'gridCanvas'
                         )
                     ) {
-                        window.AppWebSocket
-                            .refreshMap();
+                        window.AppWebSocket.refreshMap();
                     }
                 }
             );
@@ -3361,7 +3293,6 @@
                     .isConnected()
             ) {
                 connect();
-
                 return;
             }
 
@@ -3384,7 +3315,6 @@
                     .isConnected()
             ) {
                 connect();
-
                 return;
             }
 
