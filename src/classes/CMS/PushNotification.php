@@ -335,7 +335,7 @@ final class PushNotification
                  FROM push_fila AS q
                  INNER JOIN push_dispositivos AS d
                     ON d.id = q.dispositivo_id
-                   AND d.membro_id = q.membro_id
+                   AND d.membro_id COLLATE utf8mb4_unicode_ci = q.membro_id COLLATE utf8mb4_unicode_ci
                  WHERE q.estado = 'queued'
                  AND q.proxima_tentativa_em <= UTC_TIMESTAMP(6)
                  AND d.ativo = 1
@@ -559,7 +559,7 @@ final class PushNotification
                 'SELECT 1
                  FROM membros AS m
                  INNER JOIN estado_app_membro AS ea
-                    ON ea.membro_id = m.id
+                    ON ea.membro_id COLLATE utf8mb4_unicode_ci = m.id COLLATE utf8mb4_unicode_ci
                  WHERE m.id = :recipient_id
                  AND ea.em_background = 1
                  AND ea.alerta_proximidade_ativo = 1
@@ -871,7 +871,7 @@ final class PushNotification
                     (
                         SELECT fp.nome_arquivo
                         FROM fotos_perfil AS fp
-                        WHERE fp.membro_id = membros.id
+                        WHERE fp.membro_id COLLATE utf8mb4_unicode_ci = membros.id COLLATE utf8mb4_unicode_ci
                         AND (
                             fp.status = 'completo'
                             OR fp.status IS NULL

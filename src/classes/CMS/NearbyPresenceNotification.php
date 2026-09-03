@@ -8,9 +8,10 @@ use PDO;
 
 final class NearbyPresenceNotification
 {
-    private const RADIUS_METRES = 40000.0;
+    private const RADIUS_METRES = 100.0;
     private const LOCATION_MAX_AGE_SECONDS = 180;
     private const MINIMUM_NEARBY_PEOPLE = 3;
+    private const NOTIFICATION_COOLDOWN_SECONDS = 3600;
 
     private PDO $db;
     private PushNotification $push;
@@ -150,6 +151,11 @@ final class NearbyPresenceNotification
             return;
         }
 
+        /*
+         * Só uma atualização concorrente pode transformar o estado 0 -> 1.
+         * Assim, se várias pessoas entrarem no raio praticamente ao mesmo
+         * tempo, não enfileiramos várias notificações iguais.
+         */
         $claim = $this->db->prepare(
             'UPDATE estado_app_membro
              SET alerta_proximidade_ativo = 1,
@@ -157,7 +163,14 @@ final class NearbyPresenceNotification
                  atualizado_em = UTC_TIMESTAMP(6)
              WHERE membro_id = :member_id
              AND em_background = 1
-             AND alerta_proximidade_ativo = 0'
+             AND alerta_proximidade_ativo = 0
+             AND (
+                 ultima_notificacao_proximidade_em IS NULL
+                 OR ultima_notificacao_proximidade_em <= DATE_SUB(
+                     UTC_TIMESTAMP(6),
+                     INTERVAL ' . self::NOTIFICATION_COOLDOWN_SECONDS . ' SECOND
+                 )
+             )'
         );
 
         $claim->execute([
@@ -192,10 +205,18 @@ final class NearbyPresenceNotification
             return;
         }
 
+        /*
+         * Sem dispositivo push ativo não "consumimos" esta oportunidade.
+         * Se o utilizador voltar a ter push registado enquanto continua em
+         * background, uma atualização posterior pode tentar novamente.
+         */
         $this->resetAlert($memberId, $nearbyCount);
     }
 
     /**
+     * Reavalia apenas utilizadores em background que possam ter sido
+     * afetados pela posição anterior ou nova do membro que acabou de mudar.
+     *
      * @param array{latitude: float, longitude: float}|null $oldPosition
      * @param array{latitude: float, longitude: float}|null $newPosition
      */
@@ -264,11 +285,9 @@ final class NearbyPresenceNotification
             'SELECT lm.latitude, lm.longitude
              FROM estado_app_membro AS ea
              INNER JOIN localizacao_membro AS lm
-                ON lm.membro_id COLLATE utf8mb4_unicode_ci =
-                   ea.membro_id COLLATE utf8mb4_unicode_ci
+                ON lm.membro_id COLLATE utf8mb4_unicode_ci = ea.membro_id COLLATE utf8mb4_unicode_ci
              INNER JOIN membros AS m
-                ON m.id COLLATE utf8mb4_unicode_ci =
-                   ea.membro_id COLLATE utf8mb4_unicode_ci
+                ON m.id COLLATE utf8mb4_unicode_ci = ea.membro_id COLLATE utf8mb4_unicode_ci
              WHERE ea.membro_id = :member_id
              AND ea.em_background = 1
              AND lm.localizacao_ativa = 1
@@ -309,19 +328,17 @@ final class NearbyPresenceNotification
     {
         $latitude = (float) $position['latitude'];
         $longitude = (float) $position['longitude'];
-
-        [$latitudeDelta, $longitudeDelta] =
-            $this->boundingBoxDeltas($latitude);
+        $latitudeDelta = 0.0018;
+        $cosine = max(0.05, abs(cos(deg2rad($latitude))));
+        $longitudeDelta = 0.0018 / $cosine;
 
         $statement = $this->db->prepare(
             'SELECT ea.membro_id
              FROM estado_app_membro AS ea
              INNER JOIN localizacao_membro AS lm
-                ON lm.membro_id COLLATE utf8mb4_unicode_ci =
-                   ea.membro_id COLLATE utf8mb4_unicode_ci
+                ON lm.membro_id COLLATE utf8mb4_unicode_ci = ea.membro_id COLLATE utf8mb4_unicode_ci
              INNER JOIN membros AS m
-                ON m.id COLLATE utf8mb4_unicode_ci =
-                   ea.membro_id COLLATE utf8mb4_unicode_ci
+                ON m.id COLLATE utf8mb4_unicode_ci = ea.membro_id COLLATE utf8mb4_unicode_ci
              WHERE ea.em_background = 1
              AND lm.localizacao_ativa = 1
              AND lm.visivel = 1
@@ -363,17 +380,16 @@ final class NearbyPresenceNotification
         float $latitude,
         float $longitude
     ): int {
-        [$latitudeDelta, $longitudeDelta] =
-            $this->boundingBoxDeltas($latitude);
+        $latitudeDelta = 0.0018;
+        $cosine = max(0.05, abs(cos(deg2rad($latitude))));
+        $longitudeDelta = 0.0018 / $cosine;
 
         $statement = $this->db->prepare(
             'SELECT lm.membro_id, lm.latitude, lm.longitude
              FROM localizacao_membro AS lm
              INNER JOIN membros AS m
-                ON m.id COLLATE utf8mb4_unicode_ci =
-                   lm.membro_id COLLATE utf8mb4_unicode_ci
-             WHERE lm.membro_id COLLATE utf8mb4_unicode_ci <>
-                   :member_id COLLATE utf8mb4_unicode_ci
+                ON m.id COLLATE utf8mb4_unicode_ci = lm.membro_id COLLATE utf8mb4_unicode_ci
+             WHERE lm.membro_id <> :member_id
              AND lm.localizacao_ativa = 1
              AND lm.visivel = 1
              AND lm.latitude IS NOT NULL
@@ -391,15 +407,11 @@ final class NearbyPresenceNotification
                  SELECT 1
                  FROM bloqueados AS b
                  WHERE (
-                     b.pessoa_bloqueou_id COLLATE utf8mb4_unicode_ci =
-                         :member_block_1 COLLATE utf8mb4_unicode_ci
-                     AND b.pessoa_bloqueada_id COLLATE utf8mb4_unicode_ci =
-                         lm.membro_id COLLATE utf8mb4_unicode_ci
+                     b.pessoa_bloqueou_id = :member_block_1
+                     AND b.pessoa_bloqueada_id COLLATE utf8mb4_unicode_ci = lm.membro_id COLLATE utf8mb4_unicode_ci
                  ) OR (
-                     b.pessoa_bloqueou_id COLLATE utf8mb4_unicode_ci =
-                         lm.membro_id COLLATE utf8mb4_unicode_ci
-                     AND b.pessoa_bloqueada_id COLLATE utf8mb4_unicode_ci =
-                         :member_block_2 COLLATE utf8mb4_unicode_ci
+                     b.pessoa_bloqueou_id COLLATE utf8mb4_unicode_ci = lm.membro_id COLLATE utf8mb4_unicode_ci
+                     AND b.pessoa_bloqueada_id = :member_block_2
                  )
              )'
         );
@@ -482,37 +494,6 @@ final class NearbyPresenceNotification
         return (int) $statement->fetchColumn() === 1;
     }
 
-    /**
-     * @return array{0: float, 1: float}
-     */
-    private function boundingBoxDeltas(float $latitude): array
-    {
-        /*
-         * Primeiro fazemos um bounding box barato na BD e depois confirmamos
-         * a distância real com Haversine.
-         *
-         * O bounding box é calculado automaticamente a partir do raio para
-         * podermos usar 40 km nos testes e mais tarde voltar a 100-150 m.
-         */
-        $metresPerDegreeLatitude = 111320.0;
-
-        $latitudeDelta =
-            (self::RADIUS_METRES / $metresPerDegreeLatitude) * 1.02;
-
-        $cosine = max(
-            0.05,
-            abs(cos(deg2rad($latitude)))
-        );
-
-        $longitudeDelta =
-            $latitudeDelta / $cosine;
-
-        return [
-            $latitudeDelta,
-            $longitudeDelta
-        ];
-    }
-
     private function validPosition(?array $position): bool
     {
         if ($position === null) {
@@ -537,41 +518,20 @@ final class NearbyPresenceNotification
         float $longitude2
     ): float {
         $earthRadius = 6371000.0;
-
         $lat1 = deg2rad($latitude1);
         $lat2 = deg2rad($latitude2);
+        $deltaLat = deg2rad($latitude2 - $latitude1);
+        $deltaLon = deg2rad($longitude2 - $longitude1);
 
-        $deltaLat =
-            deg2rad(
-                $latitude2 - $latitude1
-            );
-
-        $deltaLon =
-            deg2rad(
-                $longitude2 - $longitude1
-            );
-
-        $a =
-            sin($deltaLat / 2) ** 2 +
-            cos($lat1) *
-            cos($lat2) *
+        $a = sin($deltaLat / 2) ** 2 +
+            cos($lat1) * cos($lat2) *
             sin($deltaLon / 2) ** 2;
 
-        $a =
-            min(
-                1.0,
-                max(
-                    0.0,
-                    $a
-                )
-            );
+        $a = min(1.0, max(0.0, $a));
 
-        return
-            $earthRadius *
-            2 *
-            atan2(
-                sqrt($a),
-                sqrt(1 - $a)
-            );
+        return $earthRadius * 2 * atan2(
+            sqrt($a),
+            sqrt(1 - $a)
+        );
     }
 }
