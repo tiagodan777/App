@@ -68,6 +68,17 @@ function normalizarBooleanoBackgroundLocation(
     return $padrao;
 }
 
+function estadoAppBackgroundLocation(mixed $valor): ?bool
+{
+    $estado = strtolower(trim((string) $valor));
+
+    return match ($estado) {
+        'background' => true,
+        'foreground' => false,
+        default => null
+    };
+}
+
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
     header('Allow: POST');
 
@@ -127,6 +138,22 @@ if ($token === '') {
     ], 401);
 }
 
+$stateOnly = normalizarBooleanoBackgroundLocation(
+    $dados['state_only'] ?? false,
+    false
+);
+
+$appEmBackground = estadoAppBackgroundLocation(
+    $dados['app_state'] ?? null
+);
+
+if ($stateOnly && $appEmBackground === null) {
+    responderJsonBackgroundLocation([
+        'success' => false,
+        'message' => 'Estado da aplicação inválido.'
+    ], 400);
+}
+
 $localizacaoAtiva = normalizarBooleanoBackgroundLocation(
     $dados['active'] ?? true,
     true
@@ -141,7 +168,7 @@ $latitude = null;
 $longitude = null;
 $precisao = null;
 
-if ($localizacaoAtiva && $visivel) {
+if (!$stateOnly && $localizacaoAtiva && $visivel) {
     if (
         !isset($dados['latitude'], $dados['longitude']) ||
         !is_numeric($dados['latitude']) ||
@@ -192,14 +219,79 @@ try {
         ], 401);
     }
 
+    $membroId = (string) $membroId;
+    $nearby = $cms->getNearbyPresenceNotification();
+
+    if ($appEmBackground !== null) {
+        try {
+            $nearby->syncAppState(
+                $membroId,
+                $appEmBackground
+            );
+        } catch (Throwable $erroEstado) {
+            error_log(
+                '[background-location-app-state] ' .
+                $erroEstado->getMessage()
+            );
+        }
+    }
+
+    if ($stateOnly) {
+        if ($appEmBackground === true) {
+            try {
+                $nearby->evaluateMember($membroId);
+            } catch (Throwable $erroProximidade) {
+                error_log(
+                    '[background-location-nearby] ' .
+                    $erroProximidade->getMessage()
+                );
+            }
+        }
+
+        responderJsonBackgroundLocation([
+            'success' => true
+        ]);
+    }
+
+    $posicaoAnterior = null;
+
+    try {
+        $posicaoAnterior = $nearby->locationSnapshot($membroId);
+    } catch (Throwable $erroSnapshot) {
+        error_log(
+            '[background-location-snapshot-before] ' .
+            $erroSnapshot->getMessage()
+        );
+    }
+
     $cms->getLocation()->saveBackground(
-        (string) $membroId,
+        $membroId,
         $latitude,
         $longitude,
         $precisao,
         $localizacaoAtiva,
         $visivel
     );
+
+    try {
+        $posicaoNova = $nearby->locationSnapshot($membroId);
+
+        $nearby->processLocationChange(
+            $membroId,
+            $posicaoAnterior,
+            $posicaoNova
+        );
+    } catch (Throwable $erroProximidade) {
+        /*
+         * A localização é funcionalidade principal. Uma falha isolada no
+         * alerta de proximidade nunca deve fazer o cliente pensar que a
+         * atualização da posição falhou.
+         */
+        error_log(
+            '[background-location-nearby] ' .
+            $erroProximidade->getMessage()
+        );
+    }
 
     responderJsonBackgroundLocation([
         'success' => true

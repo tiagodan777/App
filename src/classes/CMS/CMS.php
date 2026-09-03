@@ -15,8 +15,10 @@ class CMS {
     private $image = null;
     private $location = null;
     private $profileAccess = null;
+    private $memberConnection = null;
     private $pushNotification = null;
     private $pushProvider = null;
+    private $nearbyPresenceNotification = null;
     private array $pushConfig = [];
 
     public function __construct($dsn, $username, $password, array $pushConfig = [])
@@ -112,6 +114,13 @@ class CMS {
         return $this->profileAccess;
     }
 
+    public function getMemberConnection() {
+        if ($this->memberConnection === null) {
+            $this->memberConnection = new MemberConnection($this->db);
+        }
+        return $this->memberConnection;
+    }
+
     public function getPushNotification() {
         if ($this->pushNotification === null) {
             $this->pushNotification = new PushNotification($this->db);
@@ -124,6 +133,16 @@ class CMS {
             $this->pushProvider = new PushProvider($this->pushConfig);
         }
         return $this->pushProvider;
+    }
+
+    public function getNearbyPresenceNotification() {
+        if ($this->nearbyPresenceNotification === null) {
+            $this->nearbyPresenceNotification = new NearbyPresenceNotification(
+                $this->db,
+                $this->getPushNotification()
+            );
+        }
+        return $this->nearbyPresenceNotification;
     }
 
     public function getDatabase() {
