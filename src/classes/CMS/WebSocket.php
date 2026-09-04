@@ -13,7 +13,6 @@ use React\EventLoop\TimerInterface;
 
 class WebSocket implements MessageComponentInterface
 {
-    private const RAIO_MAXIMO_METROS = 40000;
     /* O iOS envia eventos de movimento/visita, não pings exatos por minuto. */
     private const LOCALIZACAO_MAXIMA_IDADE_SEGUNDOS = 180;
     private const LOCALIZACOES_PERSISTIDAS_CACHE_SEGUNDOS = 5;
@@ -1712,7 +1711,7 @@ class WebSocket implements MessageComponentInterface
                         $outraLocalizacao['longitude']
                     );
 
-                    if ($distancia > self::RAIO_MAXIMO_METROS) continue;
+                    if ($distancia > ProximityConfig::RADIUS_METRES) continue;
 
                     $tokenAcessoPerfil = $this->obterTokenAcessoPerfil(
                         $membroId,
@@ -1730,7 +1729,7 @@ class WebSocket implements MessageComponentInterface
 
             $this->enviar($client, [
                 'type' => 'state',
-                'radius_m' => self::RAIO_MAXIMO_METROS,
+                'radius_m' => ProximityConfig::RADIUS_METRES,
                 'map_presence' => $ligacaoVisivel,
                 'location_filter_active' => $minhaLocalizacaoValida,
                 'people' => $pessoasVisiveis
@@ -1946,7 +1945,7 @@ class WebSocket implements MessageComponentInterface
             $primeira['longitude'],
             $segunda['latitude'],
             $segunda['longitude']
-        ) <= self::RAIO_MAXIMO_METROS;
+        ) <= ProximityConfig::RADIUS_METRES;
     }
 
     private function localizacaoEstaValida(?array $localizacao, int $agora): bool

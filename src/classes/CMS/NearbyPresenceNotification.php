@@ -8,7 +8,6 @@ use PDO;
 
 final class NearbyPresenceNotification
 {
-    private const RADIUS_METRES = 100.0;
     private const LOCATION_MAX_AGE_SECONDS = 180;
     private const MINIMUM_NEARBY_PEOPLE = 3;
     private const NOTIFICATION_COOLDOWN_SECONDS = 3600;
@@ -328,9 +327,8 @@ final class NearbyPresenceNotification
     {
         $latitude = (float) $position['latitude'];
         $longitude = (float) $position['longitude'];
-        $latitudeDelta = 0.0018;
-        $cosine = max(0.05, abs(cos(deg2rad($latitude))));
-        $longitudeDelta = 0.0018 / $cosine;
+        [$latitudeDelta, $longitudeDelta] =
+            ProximityConfig::boundingBoxDeltas($latitude);
 
         $statement = $this->db->prepare(
             'SELECT ea.membro_id
@@ -380,9 +378,8 @@ final class NearbyPresenceNotification
         float $latitude,
         float $longitude
     ): int {
-        $latitudeDelta = 0.0018;
-        $cosine = max(0.05, abs(cos(deg2rad($latitude))));
-        $longitudeDelta = 0.0018 / $cosine;
+        [$latitudeDelta, $longitudeDelta] =
+            ProximityConfig::boundingBoxDeltas($latitude);
 
         $statement = $this->db->prepare(
             'SELECT lm.membro_id, lm.latitude, lm.longitude
@@ -438,7 +435,7 @@ final class NearbyPresenceNotification
                     $longitude,
                     $otherLatitude,
                     $otherLongitude
-                ) <= self::RADIUS_METRES
+                ) <= ProximityConfig::RADIUS_METRES
             ) {
                 $count += 1;
             }
