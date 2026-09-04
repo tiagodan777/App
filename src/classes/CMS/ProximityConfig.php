@@ -16,7 +16,7 @@ final class ProximityConfig
      * 100.0 = 100 metros
      * 150.0 = 150 metros
      */
-    public const RADIUS_METRES = 100;
+    public const RADIUS_METRES = 40000;
 
     /**
      * Calcula automaticamente o bounding box necessário
