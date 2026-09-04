@@ -9,8 +9,8 @@ use PDO;
 final class NearbyPresenceNotification
 {
     private const LOCATION_MAX_AGE_SECONDS = 180;
-    private const MINIMUM_NEARBY_PEOPLE = 3;
-    private const NOTIFICATION_COOLDOWN_SECONDS = 3600;
+    private const MINIMUM_NEARBY_PEOPLE = 7;
+    private const NOTIFICATION_COOLDOWN_SECONDS = 86400;
 
     private PDO $db;
     private PushNotification $push;
