@@ -12,7 +12,9 @@
 
 {% block content %}
 {% set fotos = membro.fotos|default([]) %}
-{% set total_fotos = fotos|length %}
+{% set primeira_foto_nome = fotos[0].nome_arquivo|default('') %}
+{% set sem_foto = fotos|length == 0 or (fotos|length == 1 and primeira_foto_nome == 'default.webp') %}
+{% set total_fotos = sem_foto ? 0 : fotos|length %}
 {% set total_slides = total_fotos > 0 ? total_fotos : 1 %}
 {% set perfil_proprio = membro.id == session.id %}
 
@@ -173,7 +175,6 @@
                             {% endfor %}
 
                         {% else %}
-
                             <figure
                                 id="perfil-foto-0"
                                 class="perfil-slide perfil-slide--sem-foto"
@@ -181,8 +182,8 @@
                                 aria-hidden="false"
                             >
                                 <img
-                                    src="/imagens/fotos-perfil/default.webp"
-                                    data-default="/imagens/fotos-perfil/default.webp"
+                                    src="{{ doc_root }}imagens/fotos-perfil/default.webp"
+                                    data-default="{{ doc_root }}imagens/fotos-perfil/default.webp"
                                     alt="{{ membro.nome }} ainda não adicionou fotografias"
                                     loading="eager"
                                     fetchpriority="high"
