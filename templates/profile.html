@@ -5,7 +5,7 @@
 {% block styles %}
 <link
     rel="stylesheet"
-    href="{{ doc_root }}estilos/profile.css?v=45"
+    href="{{ doc_root }}estilos/profile.css?v=46"
     data-margot-page-style
 >
 {% endblock %}
@@ -163,7 +163,7 @@
                                     <img
                                         src="{{ doc_root }}imagens/fotos-perfil-originais/{{ foto.nome_arquivo }}"
                                         data-fallback="{{ doc_root }}imagens/fotos-perfil/{{ foto.nome_arquivo }}"
-                                        data-default="{{ doc_root }}imagens/fotos-perfil/default.webp"
+                                        data-default="/imagens/fotos-perfil/default.webp"
                                         alt="Fotografia {{ loop.index }} de {{ membro.nome }}"
                                         loading="{{ loop.first ? 'eager' : 'lazy' }}"
                                         fetchpriority="{{ loop.first ? 'high' : 'auto' }}"
@@ -176,13 +176,13 @@
 
                             <figure
                                 id="perfil-foto-0"
-                                class="perfil-slide"
+                                class="perfil-slide perfil-slide--sem-foto"
                                 data-indice="0"
                                 aria-hidden="false"
                             >
                                 <img
-                                    src="{{ doc_root }}imagens/fotos-perfil/default.webp"
-                                    data-default="{{ doc_root }}imagens/fotos-perfil/default.webp"
+                                    src="/imagens/fotos-perfil/default.webp"
+                                    data-default="/imagens/fotos-perfil/default.webp"
                                     alt="{{ membro.nome }} ainda não adicionou fotografias"
                                     loading="eager"
                                     fetchpriority="high"
@@ -263,18 +263,20 @@
 
                     {% endif %}
 
-                    <span
-                        class="perfil-expandir"
-                        aria-hidden="true"
-                    >
-                        <svg viewBox="0 0 24 24">
-                            <path d="M8 3H3v5"></path>
-                            <path d="m3 3 6 6"></path>
+                    {% if total_fotos > 0 %}
+                        <span
+                            class="perfil-expandir"
+                            aria-hidden="true"
+                        >
+                            <svg viewBox="0 0 24 24">
+                                <path d="M8 3H3v5"></path>
+                                <path d="m3 3 6 6"></path>
 
-                            <path d="M16 21h5v-5"></path>
-                            <path d="m21 21-6-6"></path>
-                        </svg>
-                    </span>
+                                <path d="M16 21h5v-5"></path>
+                                <path d="m21 21-6-6"></path>
+                            </svg>
+                        </span>
+                    {% endif %}
 
                 </section>
 
@@ -600,4 +602,5 @@ window.webSocketUrl = window.location.protocol === 'https:'
 </script>
 
 <script src="{{ doc_root }}js/profile.js?v=45"></script>
+<script src="/js/profile-rubber-band.js?v=2"></script>
 {% endblock %}
