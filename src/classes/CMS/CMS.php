@@ -19,6 +19,7 @@ class CMS {
     private $pushNotification = null;
     private $pushProvider = null;
     private $nearbyPresenceNotification = null;
+    private $todayStatus = null;
     private array $pushConfig = [];
 
     public function __construct($dsn, $username, $password, array $pushConfig = [])
@@ -143,6 +144,21 @@ class CMS {
             );
         }
         return $this->nearbyPresenceNotification;
+    }
+
+    public function getTodayStatus()
+    {
+        if (
+            $this->todayStatus ===
+            null
+        ) {
+            $this->todayStatus =
+                new TodayStatus(
+                    $this->db
+                );
+        }
+
+        return $this->todayStatus;
     }
 
     public function getDatabase() {
