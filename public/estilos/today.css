@@ -4,159 +4,195 @@
     --hoje-preto: #19191d;
     --hoje-texto: #343239;
     --hoje-suave: #77727d;
-    --hoje-linha: rgba(24, 22, 28, 0.085);
-    --hoje-fundo: #fffefe;
-    --hoje-fundo-suave: #f6f4f7;
     --hoje-vermelho: #e12346;
     --hoje-teclado: 0px;
 
-    --hoje-nuvem:
-        rgba(255, 255, 255, 0.965);
+    --hoje-glass-bg:
+        radial-gradient(
+            circle at 22% 10%,
+            rgba(255, 255, 255, 0.96),
+            rgba(255, 255, 255, 0.42) 34%,
+            transparent 58%
+        ),
+        linear-gradient(
+            145deg,
+            rgba(255, 255, 255, 0.78),
+            rgba(247, 246, 250, 0.54)
+        );
+
+    --hoje-glass-border: rgba(255, 255, 255, 0.78);
+
+    --hoje-glass-shadow:
+        0 16px 34px rgba(20, 17, 25, 0.13),
+        inset 0 1px 0 rgba(255, 255, 255, 0.94),
+        inset 0 -1px 0 rgba(84, 77, 95, 0.07);
 }
 
 
 /* =========================================================
-   MINI-MENU
+   MINI-MENU — NUVEM LIQUID GLASS
    ========================================================= */
 
 #mini-menu-hoje {
-    position: relative;
+    position: absolute;
+    z-index: 16;
 
-    width:
-        min(
-            calc(100% - 48px),
-            410px
-        );
+    top: clamp(78px, 11vh, 108px);
+    left: max(10px, env(safe-area-inset-left, 0px));
 
+    width: clamp(132px, 37vw, 158px);
+    height: auto;
     min-height: 0;
 
-    margin:
-        18px
-        auto
-        2px;
+    margin: 0;
+    padding: 12px 12px 11px;
 
-    padding:
-        16px
-        17px
-        15px;
-
-    border:
-        1px solid
-        rgba(
-            29,
-            25,
-            34,
-            0.055
-        );
+    border: 1px solid var(--hoje-glass-border);
 
     border-radius:
         31px
-        37px
-        32px
-        40px;
+        35px
+        33px
+        38px;
 
-    background:
-        var(--hoje-nuvem);
+    background: var(--hoje-glass-bg);
+
+    -webkit-backdrop-filter:
+        blur(22px)
+        saturate(185%);
+
+    backdrop-filter:
+        blur(22px)
+        saturate(185%);
+
+    box-shadow:
+        var(--hoje-glass-shadow);
 
     color:
         var(--hoje-texto);
 
-    box-shadow:
-        0 12px 33px
-        rgba(
-            27,
-            22,
-            31,
-            0.075
-        );
+    display: block;
 
-    overflow:
-        visible;
+    overflow: visible;
 
-    isolation:
-        isolate;
+    isolation: isolate;
 }
 
 
 /*
- * Pequenas bolhas que fazem a nota parecer
- * um pensamento vindo da fotografia.
+ * Parte superior da nuvem.
  */
 
 #mini-menu-hoje::before {
     content: "";
 
-    position:
-        absolute;
+    position: absolute;
+    z-index: -1;
 
-    z-index:
-        -1;
+    top: -11px;
+    left: 22px;
 
-    top:
-        -11px;
+    width: 46px;
+    height: 30px;
 
-    left:
-        34px;
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.68);
 
-    width:
-        19px;
+    border-bottom: 0;
 
-    height:
-        19px;
-
-    border-radius:
-        50%;
+    border-radius: 50%;
 
     background:
-        var(--hoje-nuvem);
+        var(--hoje-glass-bg);
+
+    -webkit-backdrop-filter:
+        blur(22px)
+        saturate(185%);
+
+    backdrop-filter:
+        blur(22px)
+        saturate(185%);
 
     box-shadow:
-        -13px -13px 0 -5px
-        var(--hoje-nuvem);
+        33px 4px 0 -8px
+        rgba(255, 255, 255, 0.58),
+
+        inset 0 1px 0
+        rgba(255, 255, 255, 0.8);
+}
+
+
+/*
+ * Duas bolhinhas em direção à fotografia.
+ */
+
+#mini-menu-hoje::after {
+    content: "";
+
+    position: absolute;
+    z-index: -1;
+
+    right: -13px;
+    top: 56%;
+
+    width: 11px;
+    height: 11px;
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.76);
+
+    border-radius: 50%;
+
+    background:
+        rgba(255, 255, 255, 0.78);
+
+    -webkit-backdrop-filter:
+        blur(12px)
+        saturate(170%);
+
+    backdrop-filter:
+        blur(12px)
+        saturate(170%);
+
+    box-shadow:
+        13px 10px 0 -3px
+        rgba(255, 255, 255, 0.73),
+
+        1px 4px 10px
+        rgba(21, 18, 25, 0.08);
 }
 
 
 #mini-menu-hoje[hidden] {
-    display:
-        none !important;
+    display: none !important;
 }
 
 
-/* =========================================================
-   CABEÇALHO "HOJE"
-   ========================================================= */
-
 .mini-menu-hoje-topo,
 .perfil-hoje-topo {
-    display:
-        flex;
+    display: flex;
+    align-items: center;
 
-    align-items:
-        center;
+    gap: 6px;
 
-    gap:
-        7px;
-
-    margin-bottom:
-        7px;
+    margin:
+        0
+        0
+        6px;
 
     color:
-        #847e88;
+        rgba(69, 64, 75, 0.62);
 
-    font-size:
-        9px;
+    font-size: 8px;
+    font-weight: 820;
 
-    font-weight:
-        800;
+    line-height: 1;
 
-    line-height:
-        1;
+    letter-spacing: 0.09em;
 
-    letter-spacing:
-        0.095em;
-
-    text-transform:
-        uppercase;
+    text-transform: uppercase;
 }
 
 
@@ -164,354 +200,339 @@
 .perfil-hoje-topo::before {
     content: "";
 
-    width:
-        7px;
+    width: 6px;
+    height: 6px;
 
-    height:
-        7px;
+    flex: 0 0 6px;
 
-    flex:
-        0 0 7px;
-
-    border-radius:
-        50%;
+    border-radius: 50%;
 
     background:
         var(--hoje-vermelho);
 
     box-shadow:
-        0 0 0 4px
-        rgba(
-            225,
-            35,
-            70,
-            0.075
-        );
+        0 0 0 3px
+        rgba(225, 35, 70, 0.09);
 }
 
 
-/* =========================================================
-   NOTA NO MINI-MENU
-   ========================================================= */
-
 #mini-menu-hoje [data-hoje-nota] {
-    display:
-        -webkit-box;
+    display: -webkit-box;
 
-    margin:
-        0;
+    margin: 0;
 
-    color:
-        #202024;
+    color: #232127;
 
-    font-size:
-        14px;
+    font-size: 11.5px;
+    font-weight: 670;
 
-    font-weight:
-        650;
+    line-height: 1.27;
 
-    line-height:
-        1.35;
+    overflow: hidden;
+    overflow-wrap: anywhere;
 
-    overflow:
-        hidden;
-
-    overflow-wrap:
-        anywhere;
-
-    -webkit-box-orient:
-        vertical;
-
-    -webkit-line-clamp:
-        3;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
 }
 
 
 #mini-menu-hoje [data-hoje-roupa] {
-    margin-top:
-        12px;
+    margin-top: 8px;
 }
 
+
+/*
+ * A nuvem agora é absoluta.
+ * Não deve empurrar o Hey.
+ */
 
 .mini-menu:has(
     #mini-menu-hoje:not([hidden])
 )
 #enviar-hey {
-    margin-top:
-        12px;
+    margin-top: 15px;
 }
 
 
 /* =========================================================
-   ROUPA — ÍCONES GRANDES
+   ROUPA — MINI APP ICONS
    ========================================================= */
 
 .hoje-chips {
-    display:
-        flex;
+    display: flex;
+    flex-wrap: wrap;
 
-    flex-wrap:
-        wrap;
+    align-items: center;
 
-    align-items:
-        stretch;
-
-    gap:
-        8px;
+    gap: 6px;
 }
 
 
 .hoje-chip {
-    position:
-        relative;
+    position: relative;
 
-    min-height:
-        48px;
+    min-height: 46px;
 
     padding:
-        7px
-        11px
-        7px
-        9px;
+        6px
+        9px
+        6px
+        7px;
 
     border:
         1px solid
-        rgba(
-            30,
-            27,
-            34,
-            0.06
-        );
+        rgba(255, 255, 255, 0.78);
 
-    border-radius:
-        17px;
+    border-radius: 16px;
 
     background:
-        rgba(
-            247,
-            245,
-            248,
-            0.88
+        radial-gradient(
+            circle at 28% 14%,
+            rgba(255, 255, 255, 0.98),
+            rgba(255, 255, 255, 0.45) 42%,
+            transparent 68%
+        ),
+        linear-gradient(
+            145deg,
+            rgba(255, 255, 255, 0.76),
+            rgba(232, 229, 239, 0.52)
         );
 
-    color:
-        #46424b;
+    -webkit-backdrop-filter:
+        blur(15px)
+        saturate(170%);
 
-    display:
-        inline-grid;
+    backdrop-filter:
+        blur(15px)
+        saturate(170%);
+
+    box-shadow:
+        0 6px 13px
+        rgba(26, 22, 31, 0.09),
+
+        inset 0 1px 0
+        rgba(255, 255, 255, 0.96),
+
+        inset 0 -1px 0
+        rgba(83, 76, 93, 0.08);
+
+    color: #47424c;
+
+    display: inline-grid;
 
     grid-template-columns:
         auto
         auto
         minmax(0, 1fr);
 
-    align-items:
-        center;
+    align-items: center;
 
-    gap:
-        6px;
+    gap: 5px;
 
-    font-size:
-        10px;
+    font-size: 9.5px;
+    font-weight: 720;
 
-    font-weight:
-        720;
+    line-height: 1.05;
 
-    line-height:
-        1.05;
-
-    white-space:
-        nowrap;
+    white-space: nowrap;
 }
 
-
-/*
- * ESTE É UM DOS PONTOS PRINCIPAIS:
- * o ícone deixa de ser minúsculo.
- */
 
 .hoje-chip-icone {
-    display:
-        block;
+    display: block;
 
-    min-width:
-        27px;
+    min-width: 29px;
 
-    font-size:
-        25px;
+    font-size: 27px;
 
-    line-height:
-        1;
+    line-height: 1;
 
-    text-align:
-        center;
+    text-align: center;
+
+    filter:
+        drop-shadow(
+            0
+            2px
+            2px
+            rgba(35, 30, 40, 0.08)
+        );
 }
 
-
-/*
- * Bolinha da cor.
- */
 
 .hoje-chip-cor,
 .hoje-peca-cor,
 .hoje-roupa-selecionada-cor {
-    width:
-        10px;
+    width: 10px;
+    height: 10px;
 
-    height:
-        10px;
-
-    flex:
-        0 0 10px;
+    flex: 0 0 10px;
 
     border:
         1px solid
-        rgba(
-            20,
-            19,
-            23,
-            0.14
-        );
+        rgba(20, 19, 23, 0.14);
 
-    border-radius:
-        50%;
+    border-radius: 50%;
 
     box-shadow:
+        0 1px 3px
+        rgba(20, 18, 23, 0.14),
+
         inset 0 0 0 0.5px
-        rgba(
-            255,
-            255,
-            255,
-            0.5
-        );
+        rgba(255, 255, 255, 0.6);
 }
 
 
 .hoje-chip-texto {
-    overflow:
-        hidden;
-
-    text-overflow:
-        ellipsis;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 
 /*
- * No mini-menu continuam um pouco mais pequenos,
- * mas claramente legíveis.
+ * NA NUVEM:
+ *
+ * cada peça passa a parecer
+ * um pequeno ícone de app.
  */
 
-.hoje-chip--compacto {
-    min-height:
-        43px;
+#mini-menu-hoje .hoje-chip,
+.perfil-hoje-balao .hoje-chip {
+    width: 42px;
+    height: 44px;
 
-    padding:
-        6px
-        9px
-        6px
-        8px;
+    min-height: 44px;
 
-    border-radius:
-        15px;
+    padding: 0;
 
-    font-size:
-        9.5px;
+    display: grid;
+    place-items: center;
+
+    border-radius: 14px;
 }
 
 
-.hoje-chip--compacto
-.hoje-chip-icone {
-    min-width:
-        24px;
+#mini-menu-hoje .hoje-chip-icone,
+.perfil-hoje-balao .hoje-chip-icone {
+    min-width: 0;
 
-    font-size:
-        22px;
+    font-size: 29px;
+}
+
+
+#mini-menu-hoje .hoje-chip-cor,
+.perfil-hoje-balao .hoje-chip-cor {
+    position: absolute;
+
+    top: 5px;
+    right: 5px;
+
+    width: 9px;
+    height: 9px;
+}
+
+
+/*
+ * Dentro da nuvem não mostramos
+ * "T-shirt · branco".
+ *
+ * Fica visual:
+ *
+ * 👕  👖  👟
+ */
+
+#mini-menu-hoje .hoje-chip-texto,
+.perfil-hoje-balao .hoje-chip-texto {
+    position: absolute !important;
+
+    width: 1px !important;
+    height: 1px !important;
+
+    margin: -1px !important;
+    padding: 0 !important;
+
+    overflow: hidden !important;
+
+    clip:
+        rect(
+            0,
+            0,
+            0,
+            0
+        ) !important;
+
+    white-space: nowrap !important;
+
+    border: 0 !important;
 }
 
 
 /* =========================================================
-   PERFIL
+   PERFIL — BOTÃO +
+   EM BAIXO À DIREITA
    ========================================================= */
 
-
-/*
- * Botão +
- */
-
 .perfil-hoje-adicionar {
-    position:
-        absolute;
+    position: absolute;
 
-    z-index:
-        20;
+    z-index: 20;
 
-    top:
-        68px;
+    top: auto;
 
-    right:
-        20px;
+    right: 18px;
+    bottom: 47px;
 
-    width:
-        48px;
+    width: 48px;
+    height: 48px;
 
-    height:
-        48px;
-
-    margin:
-        0;
-
-    padding:
-        0;
+    margin: 0;
+    padding: 0;
 
     border:
-        3px solid
-        rgba(
-            255,
-            255,
-            255,
-            0.94
-        );
+        1px solid
+        rgba(255, 255, 255, 0.86);
 
-    border-radius:
-        50%;
+    border-radius: 50%;
 
     background:
-        rgba(
-            255,
-            255,
-            255,
-            0.97
-        );
-
-    color:
-        #202024;
-
-    box-shadow:
-        0 10px 28px
-        rgba(
-            18,
-            16,
-            22,
-            0.18
+        radial-gradient(
+            circle at 30% 16%,
+            rgba(255, 255, 255, 0.98),
+            rgba(255, 255, 255, 0.53) 42%,
+            transparent 68%
+        ),
+        linear-gradient(
+            145deg,
+            rgba(255, 255, 255, 0.76),
+            rgba(239, 237, 243, 0.62)
         );
 
     -webkit-backdrop-filter:
-        blur(16px);
+        blur(18px)
+        saturate(185%);
 
     backdrop-filter:
-        blur(16px);
+        blur(18px)
+        saturate(185%);
 
-    display:
-        grid;
+    box-shadow:
+        0 11px 26px
+        rgba(20, 17, 24, 0.16),
 
-    place-items:
-        center;
+        inset 0 1px 0
+        rgba(255, 255, 255, 0.96),
 
-    cursor:
-        pointer;
+        inset 0 -1px 0
+        rgba(75, 68, 84, 0.08);
 
-    touch-action:
-        manipulation;
+    color: #252329;
+
+    display: grid;
+
+    place-items: center;
+
+    cursor: pointer;
+
+    touch-action: manipulation;
 
     -webkit-tap-highlight-color:
         transparent;
@@ -521,15 +542,11 @@
         150ms
         cubic-bezier(.2,.8,.2,1),
 
-        background-color
-        150ms
-        ease,
-
-        color
-        150ms
-        ease,
-
         box-shadow
+        150ms
+        ease,
+
+        background-color
         150ms
         ease;
 }
@@ -539,32 +556,38 @@
     transform:
         translateY(-1px);
 
-    font-size:
-        29px;
+    font-size: 30px;
 
-    font-weight:
-        420;
+    font-weight: 420;
 
-    line-height:
-        1;
+    line-height: 1;
 }
 
 
 .perfil-hoje-adicionar.ativo {
-    background:
-        var(--hoje-vermelho);
+    color: #fff;
 
-    color:
-        #fff;
+    background:
+        radial-gradient(
+            circle at 30% 16%,
+            rgba(255, 255, 255, 0.45),
+            transparent 42%
+        ),
+        linear-gradient(
+            145deg,
+            rgba(238, 68, 98, 0.91),
+            rgba(210, 24, 59, 0.87)
+        );
 
     box-shadow:
-        0 11px 30px
-        rgba(
-            225,
-            35,
-            70,
-            0.25
-        );
+        0 12px 28px
+        rgba(225, 35, 70, 0.26),
+
+        inset 0 1px 0
+        rgba(255, 255, 255, 0.58),
+
+        inset 0 -1px 0
+        rgba(115, 11, 32, 0.12);
 }
 
 
@@ -575,223 +598,165 @@
 
 
 /* =========================================================
-   NUVEM / PENSAMENTO DO PERFIL
+   PERFIL — NUVEM PEQUENA À ESQUERDA
    ========================================================= */
 
-/*
- * Agora a nota fica NA PARTE DE CIMA da fotografia.
- *
- * Em vez de ser uma caixa que "cai" para baixo,
- * parece um pensamento que está a sair da pessoa.
- */
-
 .perfil-hoje-balao {
-    position:
-        absolute;
+    position: absolute;
 
-    z-index:
-        16;
+    z-index: 16;
 
-    top:
-        30px;
+    top: 102px;
+    left: -2px;
 
-    left:
-        25px;
+    right: auto;
+    bottom: auto;
 
-    right:
-        78px;
-
-    bottom:
-        auto;
-
-    width:
-        auto;
+    width: 164px;
 
     max-width:
-        370px;
+        min(
+            164px,
+            calc(100% - 96px)
+        );
 
-    min-height:
-        72px;
+    min-height: 0;
 
     padding:
-        19px
-        19px
-        17px;
+        13px
+        12px
+        12px;
 
     border:
         1px solid
-        rgba(
-            29,
-            25,
-            34,
-            0.05
-        );
-
-    /*
-     * Assimétrico de propósito.
-     * Não quero que pareça um card de UI.
-     */
+        var(--hoje-glass-border);
 
     border-radius:
-        43px
-        50px
-        39px
-        47px
-        /
-        40px
-        46px
-        43px
-        50px;
+        33px
+        38px
+        34px
+        40px;
 
     background:
-        var(--hoje-nuvem);
+        var(--hoje-glass-bg);
 
     -webkit-backdrop-filter:
-        blur(19px);
+        blur(24px)
+        saturate(190%);
 
     backdrop-filter:
-        blur(19px);
+        blur(24px)
+        saturate(190%);
 
     box-shadow:
-        0 17px 42px
-        rgba(
-            18,
-            15,
-            21,
-            0.14
-        );
+        var(--hoje-glass-shadow);
 
     color:
         var(--hoje-texto);
 
-    /*
-     * IMPORTANTÍSSIMO:
-     * retiramos o translateX antigo.
-     */
+    transform: none;
 
-    transform:
-        none;
+    isolation: isolate;
 
-    isolation:
-        isolate;
-
-    overflow:
-        visible;
+    overflow: visible;
 }
 
 
 /*
- * Lóbulos na parte superior da nuvem.
- *
- * Isto é o que faz deixar de parecer
- * simplesmente um retângulo redondo.
+ * Lóbulo da nuvem.
  */
 
 .perfil-hoje-balao::before {
     content: "";
 
-    position:
-        absolute;
+    position: absolute;
 
-    z-index:
-        -1;
+    z-index: -1;
 
-    top:
-        -17px;
+    top: -13px;
+    left: 25px;
 
-    left:
-        36px;
+    width: 54px;
+    height: 33px;
 
-    width:
-        60px;
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.7);
 
-    height:
-        43px;
+    border-bottom: 0;
 
-    border-radius:
-        50%;
+    border-radius: 50%;
 
     background:
-        var(--hoje-nuvem);
+        var(--hoje-glass-bg);
+
+    -webkit-backdrop-filter:
+        blur(24px)
+        saturate(190%);
+
+    backdrop-filter:
+        blur(24px)
+        saturate(190%);
 
     box-shadow:
+        38px 3px 0 -9px
+        rgba(255, 255, 255, 0.58),
 
-        49px -8px 0 -1px
-        var(--hoje-nuvem),
-
-        100px -1px 0 -7px
-        var(--hoje-nuvem),
-
-        142px 7px 0 -12px
-        var(--hoje-nuvem);
+        inset 0 1px 0
+        rgba(255, 255, 255, 0.82);
 }
 
 
 /*
- * As duas bolinhas de pensamento.
- *
- * A nuvem está em cima.
- * As bolinhas descem em direção à pessoa.
+ * Bolhas em direção à pessoa.
  */
 
 .perfil-hoje-balao::after {
     content: "";
 
-    position:
-        absolute;
+    position: absolute;
 
-    left:
-        45px;
+    z-index: -1;
 
-    bottom:
-        -16px;
+    right: -13px;
+    bottom: 18px;
 
-    width:
-        14px;
+    width: 11px;
+    height: 11px;
 
-    height:
-        14px;
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.78);
 
-    border-radius:
-        50%;
+    border-radius: 50%;
 
     background:
-        rgba(
-            255,
-            255,
-            255,
-            0.97
-        );
+        rgba(255, 255, 255, 0.8);
+
+    -webkit-backdrop-filter:
+        blur(12px)
+        saturate(170%);
+
+    backdrop-filter:
+        blur(12px)
+        saturate(170%);
 
     box-shadow:
+        13px 9px 0 -3px
+        rgba(255, 255, 255, 0.73),
 
-        -14px 18px 0 -4px
-        rgba(
-            255,
-            255,
-            255,
-            0.97
-        ),
-
-        0 4px 12px
-        rgba(
-            25,
-            21,
-            29,
-            0.07
-        );
+        1px 4px 10px
+        rgba(21, 18, 25, 0.08);
 }
 
 
 .perfil-hoje-balao[data-editable="0"] {
-    pointer-events:
-        none;
+    pointer-events: none;
 }
 
 
 .perfil-hoje-balao[data-editable="1"] {
-    cursor:
-        pointer;
+    cursor: pointer;
 
     -webkit-tap-highlight-color:
         transparent;
@@ -810,93 +775,32 @@
 
 
 .perfil-hoje-balao[hidden] {
-    display:
-        none !important;
+    display: none !important;
 }
 
 
-/* =========================================================
-   TEXTO DENTRO DA NUVEM
-   ========================================================= */
+.perfil-hoje-balao [data-hoje-nota] {
+    display: -webkit-box;
 
-.perfil-hoje-balao
-[data-hoje-nota] {
-    display:
-        -webkit-box;
+    margin: 0;
 
-    margin:
-        0;
+    color: #232127;
 
-    color:
-        #202024;
+    font-size: 11.5px;
+    font-weight: 680;
 
-    font-size:
-        15px;
+    line-height: 1.28;
 
-    font-weight:
-        650;
+    overflow: hidden;
+    overflow-wrap: anywhere;
 
-    line-height:
-        1.35;
-
-    overflow:
-        hidden;
-
-    overflow-wrap:
-        anywhere;
-
-    -webkit-box-orient:
-        vertical;
-
-    -webkit-line-clamp:
-        3;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
 }
 
 
-.perfil-hoje-balao
-[data-hoje-roupa] {
-    margin-top:
-        12px;
-}
-
-
-/*
- * Dentro do perfil os ícones são ainda maiores.
- */
-
-.perfil-hoje-balao
-.hoje-chip {
-    min-height:
-        52px;
-
-    padding:
-        7px
-        11px
-        7px
-        9px;
-}
-
-
-.perfil-hoje-balao
-.hoje-chip-icone {
-    min-width:
-        30px;
-
-    font-size:
-        27px;
-}
-
-
-.perfil-hoje-balao
-.hoje-chip-cor {
-    width:
-        11px;
-
-    height:
-        11px;
-
-    flex-basis:
-        11px;
+.perfil-hoje-balao [data-hoje-roupa] {
+    margin-top: 8px;
 }
 
 
@@ -906,86 +810,59 @@
 
 html.hoje-editor-aberto,
 body.hoje-editor-aberto {
-    overflow:
-        hidden !important;
+    overflow: hidden !important;
 
     overscroll-behavior:
         none !important;
 }
 
 
-body.hoje-editor-aberto
-#perfil {
-    overflow:
-        hidden !important;
+body.hoje-editor-aberto #perfil {
+    overflow: hidden !important;
 }
 
 
 .hoje-editor {
-    position:
-        fixed;
+    position: fixed;
 
-    z-index:
-        6000;
+    z-index: 6000;
 
-    inset:
-        0;
+    inset: 0;
 
-    display:
-        flex;
+    display: flex;
 
-    align-items:
-        flex-end;
+    align-items: flex-end;
 
-    justify-content:
-        center;
+    justify-content: center;
 
-    pointer-events:
-        none;
+    pointer-events: none;
 }
 
 
 .hoje-editor[hidden] {
-    display:
-        none !important;
+    display: none !important;
 }
 
 
 .hoje-editor-fundo {
-    position:
-        absolute;
+    position: absolute;
 
-    inset:
-        0;
+    inset: 0;
 
-    width:
-        100%;
+    width: 100%;
+    height: 100%;
 
-    height:
-        100%;
+    margin: 0;
+    padding: 0;
 
-    margin:
-        0;
-
-    padding:
-        0;
-
-    border:
-        0;
+    border: 0;
 
     background:
-        rgba(
-            15,
-            13,
-            18,
-            0.32
-        );
+        rgba(15, 13, 18, 0.32);
 
-    opacity:
-        0;
+    opacity: 0;
 
-    cursor:
-        default;
+    cursor: default;
 
     transition:
         opacity
@@ -995,11 +872,9 @@ body.hoje-editor-aberto
 
 
 .hoje-editor-sheet {
-    position:
-        relative;
+    position: relative;
 
-    z-index:
-        2;
+    z-index: 2;
 
     width:
         min(
@@ -1029,15 +904,9 @@ body.hoje-editor-aberto
 
     border:
         1px solid
-        rgba(
-            26,
-            23,
-            30,
-            0.075
-        );
+        rgba(255, 255, 255, 0.72);
 
-    border-bottom:
-        0;
+    border-bottom: 0;
 
     border-radius:
         30px
@@ -1046,30 +915,30 @@ body.hoje-editor-aberto
         0;
 
     background:
-        rgba(
-            255,
-            254,
-            255,
-            0.985
-        );
+        radial-gradient(
+            circle at 28% 0%,
+            rgba(255, 255, 255, 0.98),
+            rgba(255, 255, 255, 0.6) 30%,
+            transparent 58%
+        ),
+        rgba(250, 249, 252, 0.9);
 
     -webkit-backdrop-filter:
-        blur(24px);
+        blur(26px)
+        saturate(180%);
 
     backdrop-filter:
-        blur(24px);
+        blur(26px)
+        saturate(180%);
 
     box-shadow:
         0 -24px 70px
-        rgba(
-            18,
-            15,
-            22,
-            0.20
-        );
+        rgba(18, 15, 22, 0.20),
 
-    overflow:
-        auto;
+        inset 0 1px 0
+        rgba(255, 255, 255, 0.94);
+
+    overflow: auto;
 
     overscroll-behavior:
         contain;
@@ -1088,12 +957,7 @@ body.hoje-editor-aberto
     transition:
         transform
         260ms
-        cubic-bezier(
-            .22,
-            1,
-            .36,
-            1
-        ),
+        cubic-bezier(.22,1,.36,1),
 
         margin-bottom
         180ms
@@ -1102,128 +966,103 @@ body.hoje-editor-aberto
 
 
 .hoje-editor.aberto {
-    pointer-events:
-        auto;
+    pointer-events: auto;
 }
 
 
-.hoje-editor.aberto
-.hoje-editor-fundo {
-    opacity:
-        1;
+.hoje-editor.aberto .hoje-editor-fundo {
+    opacity: 1;
 }
 
 
-.hoje-editor.aberto
-.hoje-editor-sheet {
+.hoje-editor.aberto .hoje-editor-sheet {
     transform:
         translateY(0);
 }
 
 
 .hoje-editor-barra {
-    width:
-        42px;
-
-    height:
-        4px;
+    width: 42px;
+    height: 4px;
 
     margin:
         0
         auto
         9px;
 
-    border-radius:
-        999px;
+    border-radius: 999px;
 
     background:
-        rgba(
-            30,
-            28,
-            33,
-            0.13
-        );
+        rgba(30, 28, 33, 0.13);
 }
 
 
 .hoje-editor-cabecalho {
-    min-height:
-        45px;
+    min-height: 45px;
 
-    display:
-        grid;
+    display: grid;
 
     grid-template-columns:
         44px
         1fr
         44px;
 
-    align-items:
-        center;
+    align-items: center;
 
-    gap:
-        4px;
+    gap: 4px;
 }
 
 
 .hoje-editor-cabecalho h2 {
-    margin:
-        0;
+    margin: 0;
 
     color:
         var(--hoje-preto);
 
-    font-size:
-        19px;
+    font-size: 19px;
 
-    font-weight:
-        790;
+    font-weight: 790;
 
-    line-height:
-        1.1;
+    line-height: 1.1;
 
-    letter-spacing:
-        -0.035em;
+    letter-spacing: -0.035em;
 
-    text-align:
-        center;
+    text-align: center;
 }
 
 
 .hoje-editor-fechar,
 .hoje-editor-voltar {
-    width:
-        40px;
+    width: 40px;
+    height: 40px;
 
-    height:
-        40px;
-
-    margin:
-        0;
-
-    padding:
-        0;
+    margin: 0;
+    padding: 0;
 
     border:
-        0;
+        1px solid
+        rgba(255, 255, 255, 0.72);
 
-    border-radius:
-        50%;
+    border-radius: 50%;
 
     background:
-        #f2f0f3;
+        rgba(243, 241, 245, 0.74);
 
-    color:
-        #29272d;
+    -webkit-backdrop-filter:
+        blur(15px)
+        saturate(170%);
 
-    display:
-        grid;
+    backdrop-filter:
+        blur(15px)
+        saturate(170%);
 
-    place-items:
-        center;
+    color: #29272d;
 
-    cursor:
-        pointer;
+    display: grid;
+
+    place-items: center;
+
+    cursor: pointer;
 
     -webkit-tap-highlight-color:
         transparent;
@@ -1231,41 +1070,31 @@ body.hoje-editor-aberto
 
 
 .hoje-editor-voltar {
-    font-size:
-        28px;
+    font-size: 28px;
 
-    font-weight:
-        420;
+    font-weight: 420;
 
-    line-height:
-        1;
+    line-height: 1;
 }
 
 
 .hoje-editor-fechar {
-    grid-column:
-        3;
+    grid-column: 3;
 
-    font-size:
-        23px;
+    font-size: 23px;
 
-    font-weight:
-        420;
+    font-weight: 420;
 
-    line-height:
-        1;
+    line-height: 1;
 }
 
 
 .hoje-editor-voltar[hidden] {
-    display:
-        block !important;
+    display: block !important;
 
-    visibility:
-        hidden;
+    visibility: hidden;
 
-    pointer-events:
-        none;
+    pointer-events: none;
 }
 
 
@@ -1278,20 +1107,15 @@ body.hoje-editor-aberto
 
 
 .hoje-editor-intro strong {
-    display:
-        block;
+    display: block;
 
-    margin-bottom:
-        3px;
+    margin-bottom: 3px;
 
-    color:
-        #29272d;
+    color: #29272d;
 
-    font-size:
-        15px;
+    font-size: 15px;
 
-    font-weight:
-        750;
+    font-weight: 750;
 }
 
 
@@ -1299,39 +1123,30 @@ body.hoje-editor-aberto
     color:
         var(--hoje-suave);
 
-    font-size:
-        12px;
+    font-size: 12px;
 
-    line-height:
-        1.35;
+    line-height: 1.35;
 }
 
 
 /* =========================================================
-   INPUT DA NOTA
+   INPUT NOTA
    ========================================================= */
 
 .hoje-nota-wrap {
-    position:
-        relative;
+    position: relative;
 }
 
 
 #hoje-nota-input {
-    display:
-        block;
+    display: block;
 
-    width:
-        100%;
+    width: 100%;
 
-    min-height:
-        118px;
+    min-height: 118px;
+    max-height: 200px;
 
-    max-height:
-        200px;
-
-    margin:
-        0;
+    margin: 0;
 
     padding:
         15px
@@ -1340,39 +1155,40 @@ body.hoje-editor-aberto
 
     border:
         1px solid
-        rgba(
-            28,
-            25,
-            32,
-            0.09
-        );
+        rgba(255, 255, 255, 0.75);
 
-    border-radius:
-        21px;
+    border-radius: 21px;
 
-    outline:
-        none;
+    outline: none;
 
-    resize:
-        none;
+    resize: none;
 
     background:
-        #f7f5f8;
+        rgba(246, 244, 248, 0.72);
 
-    color:
-        #222126;
+    -webkit-backdrop-filter:
+        blur(13px)
+        saturate(165%);
 
-    font:
-        inherit;
+    backdrop-filter:
+        blur(13px)
+        saturate(165%);
 
-    font-size:
-        16px;
+    box-shadow:
+        inset 0 1px 0
+        rgba(255, 255, 255, 0.87),
 
-    font-weight:
-        560;
+        inset 0 -1px 0
+        rgba(80, 72, 91, 0.04);
 
-    line-height:
-        1.4;
+    color: #222126;
+
+    font: inherit;
+
+    font-size: 16px;
+    font-weight: 560;
+
+    line-height: 1.4;
 
     caret-color:
         var(--hoje-vermelho);
@@ -1393,52 +1209,36 @@ body.hoje-editor-aberto
 
 
 #hoje-nota-input::placeholder {
-    color:
-        #a39fa8;
+    color: #a39fa8;
 }
 
 
 #hoje-nota-input:focus {
     border-color:
-        rgba(
-            225,
-            35,
-            70,
-            0.22
-        );
+        rgba(255, 255, 255, 0.94);
 
     background:
-        #fff;
+        rgba(255, 255, 255, 0.86);
 
     box-shadow:
         0 0 0 4px
-        rgba(
-            225,
-            35,
-            70,
-            0.055
-        );
+        rgba(225, 35, 70, 0.05),
+
+        inset 0 1px 0
+        rgba(255, 255, 255, 0.96);
 }
 
 
 .hoje-nota-contador {
-    position:
-        absolute;
+    position: absolute;
 
-    right:
-        13px;
+    right: 13px;
+    bottom: 10px;
 
-    bottom:
-        10px;
+    color: #9b97a0;
 
-    color:
-        #9b97a0;
-
-    font-size:
-        10px;
-
-    font-weight:
-        700;
+    font-size: 10px;
+    font-weight: 700;
 
     font-variant-numeric:
         tabular-nums;
@@ -1446,15 +1246,13 @@ body.hoje-editor-aberto
 
 
 /* =========================================================
-   OPÇÃO ROUPA
+   BOTÃO ROUPA
    ========================================================= */
 
 .hoje-opcao-roupa {
-    width:
-        100%;
+    width: 100%;
 
-    min-height:
-        68px;
+    min-height: 68px;
 
     margin:
         12px
@@ -1467,41 +1265,51 @@ body.hoje-editor-aberto
 
     border:
         1px solid
-        rgba(
-            28,
-            25,
-            32,
-            0.075
-        );
+        rgba(255, 255, 255, 0.78);
 
-    border-radius:
-        19px;
+    border-radius: 20px;
 
     background:
-        #fff;
+        radial-gradient(
+            circle at 15% 0%,
+            rgba(255, 255, 255, 0.98),
+            rgba(255, 255, 255, 0.48) 36%,
+            transparent 62%
+        ),
+        rgba(248, 247, 250, 0.68);
+
+    -webkit-backdrop-filter:
+        blur(16px)
+        saturate(170%);
+
+    backdrop-filter:
+        blur(16px)
+        saturate(170%);
+
+    box-shadow:
+        0 7px 18px
+        rgba(25, 21, 30, 0.055),
+
+        inset 0 1px 0
+        rgba(255, 255, 255, 0.94);
 
     color:
         var(--hoje-texto);
 
-    display:
-        grid;
+    display: grid;
 
     grid-template-columns:
-        48px
+        50px
         minmax(0,1fr)
         20px;
 
-    align-items:
-        center;
+    align-items: center;
 
-    gap:
-        11px;
+    gap: 11px;
 
-    text-align:
-        left;
+    text-align: left;
 
-    cursor:
-        pointer;
+    cursor: pointer;
 
     -webkit-tap-highlight-color:
         transparent;
@@ -1509,99 +1317,93 @@ body.hoje-editor-aberto
 
 
 .hoje-opcao-roupa-icone {
-    width:
-        48px;
+    width: 50px;
+    height: 50px;
 
-    height:
-        48px;
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.8);
 
-    border-radius:
-        15px;
+    border-radius: 16px;
 
     background:
-        #f3eff7;
+        radial-gradient(
+            circle at 25% 15%,
+            rgba(255, 255, 255, 0.98),
+            rgba(255, 255, 255, 0.43) 45%,
+            transparent 68%
+        ),
+        linear-gradient(
+            145deg,
+            rgba(244, 240, 249, 0.88),
+            rgba(226, 221, 235, 0.62)
+        );
 
-    display:
-        grid;
+    box-shadow:
+        0 6px 14px
+        rgba(25, 21, 30, 0.08),
 
-    place-items:
-        center;
+        inset 0 1px 0
+        rgba(255, 255, 255, 0.95);
 
-    font-size:
-        27px;
+    display: grid;
+
+    place-items: center;
+
+    font-size: 29px;
 }
 
 
 .hoje-opcao-roupa-texto {
-    min-width:
-        0;
+    min-width: 0;
 }
 
 
 .hoje-opcao-roupa-texto strong {
-    display:
-        block;
+    display: block;
 
-    margin-bottom:
-        4px;
+    margin-bottom: 4px;
 
-    color:
-        #29272d;
+    color: #29272d;
 
-    font-size:
-        13px;
+    font-size: 13px;
 
-    font-weight:
-        760;
+    font-weight: 760;
 }
 
 
 #hoje-roupa-resumo {
-    display:
-        block;
+    display: block;
 
-    color:
-        #8b8690;
+    color: #8b8690;
 
-    font-size:
-        11px;
+    font-size: 11px;
+    font-weight: 580;
 
-    font-weight:
-        580;
+    line-height: 1.25;
 
-    line-height:
-        1.25;
+    overflow: hidden;
 
-    overflow:
-        hidden;
+    text-overflow: ellipsis;
 
-    text-overflow:
-        ellipsis;
-
-    white-space:
-        nowrap;
+    white-space: nowrap;
 }
 
 
 .hoje-opcao-roupa.tem-roupa
 #hoje-roupa-resumo {
-    color:
-        #5f5965;
+    color: #5f5965;
 
-    font-weight:
-        650;
+    font-weight: 650;
 }
 
 
 .hoje-opcao-seta {
-    color:
-        #aaa5ae;
+    color: #aaa5ae;
 
-    font-size:
-        24px;
+    font-size: 24px;
 
-    line-height:
-        1;
+    line-height: 1;
 }
 
 
@@ -1610,41 +1412,30 @@ body.hoje-editor-aberto
    ========================================================= */
 
 .hoje-editor-acoes {
-    margin-top:
-        15px;
+    margin-top: 15px;
 
-    display:
-        flex;
+    display: flex;
 
-    align-items:
-        center;
+    align-items: center;
 
-    gap:
-        9px;
+    gap: 9px;
 }
 
 
 .hoje-editor-acoes button {
-    min-height:
-        50px;
+    min-height: 50px;
 
-    margin:
-        0;
+    margin: 0;
 
-    border:
-        0;
+    border: 0;
 
-    border-radius:
-        999px;
+    border-radius: 999px;
 
-    font-size:
-        14px;
+    font-size: 14px;
 
-    font-weight:
-        770;
+    font-weight: 770;
 
-    cursor:
-        pointer;
+    cursor: pointer;
 
     -webkit-tap-highlight-color:
         transparent;
@@ -1652,43 +1443,42 @@ body.hoje-editor-aberto
 
 
 #hoje-apagar {
-    flex:
-        0 0 auto;
+    flex: 0 0 auto;
 
     padding:
         0
         17px;
 
     background:
-        #f3f1f4;
+        rgba(243, 241, 244, 0.8);
 
-    color:
-        #8a3a48;
+    color: #8a3a48;
 }
 
 
 #hoje-guardar {
-    flex:
-        1;
+    flex: 1;
 
     padding:
         0
         22px;
 
     background:
+        radial-gradient(
+            circle at 30% 0%,
+            rgba(255, 255, 255, 0.24),
+            transparent 38%
+        ),
         var(--hoje-vermelho);
 
-    color:
-        #fff;
+    color: #fff;
 
     box-shadow:
         0 9px 22px
-        rgba(
-            225,
-            35,
-            70,
-            0.20
-        );
+        rgba(225, 35, 70, 0.20),
+
+        inset 0 1px 0
+        rgba(255, 255, 255, 0.34);
 }
 
 
@@ -1698,35 +1488,28 @@ body.hoje-editor-aberto
         3px
         0;
 
-    color:
-        #b12840;
+    color: #b12840;
 
-    font-size:
-        12px;
+    font-size: 12px;
+    font-weight: 650;
 
-    font-weight:
-        650;
-
-    line-height:
-        1.35;
+    line-height: 1.35;
 }
 
 
 .hoje-editor.a-guardar {
-    cursor:
-        wait;
+    cursor: wait;
 }
 
 
 .hoje-editor.a-guardar button,
 .hoje-editor.a-guardar textarea {
-    opacity:
-        0.58;
+    opacity: 0.58;
 }
 
 
 /* =========================================================
-   SUBMENU DA ROUPA
+   ROUPA SELECIONADA
    ========================================================= */
 
 .hoje-roupa-ajuda {
@@ -1738,11 +1521,9 @@ body.hoje-editor-aberto
     color:
         var(--hoje-suave);
 
-    font-size:
-        12px;
+    font-size: 12px;
 
-    line-height:
-        1.35;
+    line-height: 1.35;
 }
 
 
@@ -1752,23 +1533,18 @@ body.hoje-editor-aberto
         0
         13px;
 
-    display:
-        flex;
+    display: flex;
 
-    flex-wrap:
-        wrap;
+    flex-wrap: wrap;
 
-    gap:
-        7px;
+    gap: 7px;
 }
 
 
 .hoje-roupa-selecionada-item {
-    min-height:
-        39px;
+    min-height: 40px;
 
-    margin:
-        0;
+    margin: 0;
 
     padding:
         5px
@@ -1776,81 +1552,65 @@ body.hoje-editor-aberto
 
     border:
         1px solid
-        rgba(
-            28,
-            25,
-            32,
-            0.07
-        );
+        rgba(255, 255, 255, 0.78);
 
-    border-radius:
-        999px;
+    border-radius: 999px;
 
     background:
-        #f6f3f7;
+        rgba(246, 243, 247, 0.74);
 
-    color:
-        #4a4650;
+    -webkit-backdrop-filter:
+        blur(13px)
+        saturate(165%);
 
-    display:
-        inline-flex;
+    backdrop-filter:
+        blur(13px)
+        saturate(165%);
 
-    align-items:
-        center;
+    box-shadow:
+        inset 0 1px 0
+        rgba(255, 255, 255, 0.92);
 
-    gap:
-        7px;
+    color: #4a4650;
 
-    font-size:
-        10px;
+    display: inline-flex;
 
-    font-weight:
-        690;
+    align-items: center;
 
-    cursor:
-        pointer;
+    gap: 7px;
+
+    font-size: 10px;
+
+    font-weight: 690;
+
+    cursor: pointer;
 }
 
 
 .hoje-roupa-selecionada-item
 > span:first-child {
-    font-size:
-        20px;
+    font-size: 21px;
 
-    line-height:
-        1;
+    line-height: 1;
 }
 
 
 .hoje-roupa-selecionada-remover {
-    width:
-        19px;
+    width: 19px;
+    height: 19px;
 
-    height:
-        19px;
-
-    border-radius:
-        50%;
+    border-radius: 50%;
 
     background:
-        rgba(
-            30,
-            28,
-            33,
-            0.07
-        );
+        rgba(30, 28, 33, 0.07);
 
-    display:
-        grid;
+    display: grid;
 
-    place-items:
-        center;
+    place-items: center;
 
-    font-size:
-        15px;
+    font-size: 15px;
 
-    line-height:
-        1;
+    line-height: 1;
 }
 
 
@@ -1859,8 +1619,7 @@ body.hoje-editor-aberto
    ========================================================= */
 
 .hoje-pecas-grid {
-    display:
-        grid;
+    display: grid;
 
     grid-template-columns:
         repeat(
@@ -1868,23 +1627,18 @@ body.hoje-editor-aberto
             minmax(0,1fr)
         );
 
-    gap:
-        9px;
+    gap: 9px;
 }
 
 
 .hoje-peca {
-    position:
-        relative;
+    position: relative;
 
-    min-width:
-        0;
+    min-width: 0;
 
-    min-height:
-        92px;
+    min-height: 94px;
 
-    margin:
-        0;
+    margin: 0;
 
     padding:
         10px
@@ -1893,39 +1647,47 @@ body.hoje-editor-aberto
 
     border:
         1px solid
-        rgba(
-            29,
-            26,
-            33,
-            0.075
-        );
+        rgba(255, 255, 255, 0.78);
 
-    border-radius:
-        20px;
+    border-radius: 21px;
 
     background:
-        #f7f5f8;
+        radial-gradient(
+            circle at 25% 10%,
+            rgba(255, 255, 255, 0.96),
+            rgba(255, 255, 255, 0.46) 42%,
+            transparent 68%
+        ),
+        rgba(242, 240, 245, 0.7);
 
-    color:
-        #3d3942;
+    -webkit-backdrop-filter:
+        blur(14px)
+        saturate(165%);
 
-    display:
-        flex;
+    backdrop-filter:
+        blur(14px)
+        saturate(165%);
 
-    flex-direction:
-        column;
+    box-shadow:
+        0 7px 16px
+        rgba(25, 21, 30, 0.06),
 
-    align-items:
-        center;
+        inset 0 1px 0
+        rgba(255, 255, 255, 0.94);
 
-    justify-content:
-        center;
+    color: #3d3942;
 
-    gap:
-        8px;
+    display: flex;
 
-    cursor:
-        pointer;
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 8px;
+
+    cursor: pointer;
 
     -webkit-tap-highlight-color:
         transparent;
@@ -1953,90 +1715,75 @@ body.hoje-editor-aberto
 
 .hoje-peca.selecionada {
     border-color:
-        rgba(
-            225,
-            35,
-            70,
-            0.18
-        );
+        rgba(239, 117, 140, 0.36);
 
     background:
-        #fff6f8;
+        radial-gradient(
+            circle at 25% 10%,
+            rgba(255, 255, 255, 0.97),
+            rgba(255, 240, 244, 0.68) 48%,
+            transparent 72%
+        ),
+        rgba(255, 245, 248, 0.72);
 }
 
 
 .hoje-peca.ativa {
     border-color:
-        rgba(
-            225,
-            35,
-            70,
-            0.34
-        );
+        rgba(225, 35, 70, 0.34);
 
     box-shadow:
         0 0 0 3px
-        rgba(
-            225,
-            35,
-            70,
-            0.055
-        );
+        rgba(225, 35, 70, 0.055),
+
+        0 8px 18px
+        rgba(25, 21, 30, 0.06),
+
+        inset 0 1px 0
+        rgba(255, 255, 255, 0.95);
 }
 
 
-/*
- * Ícones grandes também no seletor.
- */
-
 .hoje-peca-icone {
-    font-size:
-        33px;
+    font-size: 35px;
 
-    line-height:
-        1;
+    line-height: 1;
+
+    filter:
+        drop-shadow(
+            0
+            2px
+            2px
+            rgba(35, 30, 40, 0.08)
+        );
 }
 
 
 .hoje-peca-label {
-    max-width:
-        100%;
+    max-width: 100%;
 
-    font-size:
-        10px;
+    font-size: 10px;
 
-    font-weight:
-        720;
+    font-weight: 720;
 
-    line-height:
-        1.15;
+    line-height: 1.15;
 
-    overflow:
-        hidden;
+    overflow: hidden;
 
-    text-overflow:
-        ellipsis;
+    text-overflow: ellipsis;
 
-    white-space:
-        nowrap;
+    white-space: nowrap;
 }
 
 
 .hoje-peca-cor {
-    position:
-        absolute;
+    position: absolute;
 
-    top:
-        9px;
+    top: 9px;
+    right: 9px;
 
-    right:
-        9px;
-
-    width:
-        12px;
-
-    height:
-        12px;
+    width: 12px;
+    height: 12px;
 }
 
 
@@ -2045,26 +1792,33 @@ body.hoje-editor-aberto
    ========================================================= */
 
 .hoje-cores-area {
-    margin-top:
-        15px;
+    margin-top: 15px;
 
-    padding:
-        14px;
+    padding: 14px;
 
     border:
         1px solid
-        rgba(
-            29,
-            26,
-            33,
-            0.07
-        );
+        rgba(255, 255, 255, 0.78);
 
-    border-radius:
-        21px;
+    border-radius: 22px;
 
     background:
-        #fff;
+        rgba(255, 255, 255, 0.68);
+
+    -webkit-backdrop-filter:
+        blur(16px)
+        saturate(170%);
+
+    backdrop-filter:
+        blur(16px)
+        saturate(170%);
+
+    box-shadow:
+        0 7px 17px
+        rgba(25, 21, 30, 0.05),
+
+        inset 0 1px 0
+        rgba(255, 255, 255, 0.94);
 }
 
 
@@ -2074,20 +1828,16 @@ body.hoje-editor-aberto
         0
         13px;
 
-    color:
-        #37333b;
+    color: #37333b;
 
-    font-size:
-        12px;
+    font-size: 12px;
 
-    font-weight:
-        760;
+    font-weight: 760;
 }
 
 
 .hoje-cores-grid {
-    display:
-        grid;
+    display: grid;
 
     grid-template-columns:
         repeat(
@@ -2102,38 +1852,26 @@ body.hoje-editor-aberto
 
 
 .hoje-cor {
-    min-width:
-        0;
+    min-width: 0;
 
-    margin:
-        0;
+    margin: 0;
+    padding: 0;
 
-    padding:
-        0;
+    border: 0;
 
-    border:
-        0;
+    background: transparent;
 
-    background:
-        transparent;
+    color: #67616c;
 
-    color:
-        #67616c;
+    display: flex;
 
-    display:
-        flex;
+    flex-direction: column;
 
-    flex-direction:
-        column;
+    align-items: center;
 
-    align-items:
-        center;
+    gap: 6px;
 
-    gap:
-        6px;
-
-    cursor:
-        pointer;
+    cursor: pointer;
 
     -webkit-tap-highlight-color:
         transparent;
@@ -2141,88 +1879,59 @@ body.hoje-editor-aberto
 
 
 .hoje-cor-amostra {
-    width:
-        34px;
-
-    height:
-        34px;
+    width: 34px;
+    height: 34px;
 
     border:
         1px solid
-        rgba(
-            25,
-            23,
-            28,
-            0.12
-        );
+        rgba(25, 23, 28, 0.12);
 
-    border-radius:
-        50%;
+    border-radius: 50%;
 
     box-shadow:
         inset 0 0 0 1px
-        rgba(
-            255,
-            255,
-            255,
-            0.35
-        ),
+        rgba(255,255,255,0.35),
 
         0 2px 6px
-        rgba(
-            25,
-            23,
-            28,
-            0.06
-        );
+        rgba(25, 23, 28, 0.06);
 }
 
 
 .hoje-cor.selecionada
 .hoje-cor-amostra {
     box-shadow:
-        0 0 0 3px #fff,
+        0 0 0 3px
+        #fff,
 
         0 0 0 5px
-        rgba(
-            225,
-            35,
-            70,
-            0.45
-        );
+        rgba(225, 35, 70, 0.45),
+
+        0 4px 10px
+        rgba(25, 21, 30, 0.08);
 }
 
 
 .hoje-cor-label {
-    max-width:
-        100%;
+    max-width: 100%;
 
-    font-size:
-        8px;
+    font-size: 8px;
 
-    font-weight:
-        650;
+    font-weight: 650;
 
-    line-height:
-        1.05;
+    line-height: 1.05;
 
-    overflow:
-        hidden;
+    overflow: hidden;
 
-    text-overflow:
-        ellipsis;
+    text-overflow: ellipsis;
 
-    white-space:
-        nowrap;
+    white-space: nowrap;
 }
 
 
 .hoje-roupa-concluir {
-    width:
-        100%;
+    width: 100%;
 
-    min-height:
-        49px;
+    min-height: 49px;
 
     margin:
         15px
@@ -2233,26 +1942,32 @@ body.hoje-editor-aberto
         0
         20px;
 
-    border:
-        0;
+    border: 0;
 
-    border-radius:
-        999px;
+    border-radius: 999px;
 
     background:
+        radial-gradient(
+            circle at 30% 0%,
+            rgba(255, 255, 255, 0.16),
+            transparent 38%
+        ),
         #252329;
 
-    color:
-        #fff;
+    color: #fff;
 
-    font-size:
-        13px;
+    box-shadow:
+        0 8px 18px
+        rgba(24, 21, 28, 0.14),
 
-    font-weight:
-        760;
+        inset 0 1px 0
+        rgba(255, 255, 255, 0.18);
 
-    cursor:
-        pointer;
+    font-size: 13px;
+
+    font-weight: 760;
+
+    cursor: pointer;
 }
 
 
@@ -2261,6 +1976,7 @@ body.hoje-editor-aberto
    ========================================================= */
 
 @media (min-width: 560px) {
+
     .hoje-pecas-grid {
         grid-template-columns:
             repeat(
@@ -2271,17 +1987,25 @@ body.hoje-editor-aberto
 
 
     .perfil-hoje-balao {
+        left: 8px;
+
+        width: 172px;
+
+        max-width: 172px;
+    }
+
+
+    #mini-menu-hoje {
         left:
-            42px;
-
-        right:
-            auto;
-
-        width:
-            min(
-                390px,
-                calc(100% - 130px)
+            max(
+                22px,
+                env(
+                    safe-area-inset-left,
+                    0px
+                )
             );
+
+        width: 158px;
     }
 }
 
@@ -2293,78 +2017,56 @@ body.hoje-editor-aberto
 @media (max-width: 380px) {
 
     #mini-menu-hoje {
-        width:
-            calc(
-                100% -
-                38px
-            );
+        top: 74px;
+        left: 8px;
+
+        width: 128px;
 
         padding:
-            14px
-            14px
-            13px;
+            11px
+            10px
+            10px;
+    }
+
+
+    #mini-menu-hoje .hoje-chip,
+    .perfil-hoje-balao .hoje-chip {
+        width: 39px;
+        height: 41px;
+
+        min-height: 41px;
+    }
+
+
+    #mini-menu-hoje .hoje-chip-icone,
+    .perfil-hoje-balao .hoje-chip-icone {
+        font-size: 27px;
     }
 
 
     .perfil-hoje-adicionar {
-        top:
-            62px;
+        right: 12px;
 
-        right:
-            15px;
+        bottom: 43px;
 
-        width:
-            45px;
-
-        height:
-            45px;
+        width: 46px;
+        height: 46px;
     }
 
 
     .perfil-hoje-balao {
-        top:
-            25px;
+        top: 92px;
 
-        left:
-            18px;
+        left: -3px;
 
-        right:
-            67px;
+        width: 150px;
 
-        padding:
-            17px
-            15px
-            15px;
-    }
-
-
-    .perfil-hoje-balao::before {
-        left:
-            25px;
-
-        transform:
-            scale(0.88);
-
-        transform-origin:
-            left bottom;
-    }
-
-
-    .perfil-hoje-balao
-    .hoje-chip {
-        min-height:
-            47px;
+        max-width: 150px;
 
         padding:
-            6px
-            8px;
-    }
-
-
-    .perfil-hoje-balao
-    .hoje-chip-icone {
-        font-size:
-            24px;
+            12px
+            10px
+            11px;
     }
 
 
@@ -2375,20 +2077,17 @@ body.hoje-editor-aberto
                 minmax(0,1fr)
             );
 
-        gap:
-            7px;
+        gap: 7px;
     }
 
 
     .hoje-peca {
-        min-height:
-            84px;
+        min-height: 86px;
     }
 
 
     .hoje-peca-icone {
-        font-size:
-            29px;
+        font-size: 31px;
     }
 
 
@@ -2409,36 +2108,30 @@ body.hoje-editor-aberto
 @media (max-height: 700px) {
 
     #mini-menu-hoje {
-        margin-top:
-            12px;
-
-        padding:
-            12px
-            14px;
+        top: 66px;
     }
 
 
     #mini-menu-hoje
     [data-hoje-nota] {
-        -webkit-line-clamp:
-            2;
+        font-size: 10.5px;
 
-        font-size:
-            13px;
+        -webkit-line-clamp: 2;
     }
 
 
     #mini-menu-hoje
     .hoje-chip {
-        min-height:
-            39px;
+        width: 38px;
+        height: 40px;
+
+        min-height: 40px;
     }
 
 
     #mini-menu-hoje
     .hoje-chip-icone {
-        font-size:
-            20px;
+        font-size: 26px;
     }
 }
 
