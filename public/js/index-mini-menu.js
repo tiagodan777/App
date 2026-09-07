@@ -8,205 +8,99 @@
         window.desativarIndexMiniMenuMargot();
     }
 
-    var NS =
-        '.margotMiniMenu';
+    var NS = '.margotMiniMenu';
 
-    $(document).off(
-        NS
-    );
+    $(document).off(NS);
 
-    var $miniMenu =
-        $('.mini-menu');
+    var $miniMenu = $('.mini-menu');
 
-    if (
-        !$miniMenu.length
-    ) {
+    if (!$miniMenu.length) {
         return;
     }
 
-    var $anexo =
-        $miniMenu.find(
-            '.mini-menu-anexo'
-        );
+    var $anexo = $miniMenu.find('.mini-menu-anexo');
+    var $botaoHey = $miniMenu.find('#enviar-hey');
+    var $formMensagem = $miniMenu.find('.mini-menu-mensagem');
+    var $inputMensagem = $miniMenu.find('#mensagem');
+    var $media = $miniMenu.find('#mini-menu-media');
+    var $perfil = $miniMenu.find('.mini-menu-perfil');
+    var $maisOpcoes = $('#abrir-acoes-perfil');
+    var $acoes = $('#acoes-perfil');
+    var $acoesPrincipal = $('#acoes-perfil-principal');
+    var $formDenuncia = $('#form-denuncia');
+    var $abrirDenuncia = $('#abrir-denuncia');
+    var $voltarDenuncia = $('#voltar-denuncia');
+    var $bloquearMembro = $('#bloquear-membro');
 
-    var $botaoHey =
-        $miniMenu.find(
-            '#enviar-hey'
-        );
-
-    var $formMensagem =
-        $miniMenu.find(
-            '.mini-menu-mensagem'
-        );
-
-    var $inputMensagem =
-        $miniMenu.find(
-            '#mensagem'
-        );
-
-    var $media =
-        $miniMenu.find(
-            '#mini-menu-media'
-        );
-
-    var $perfil =
-        $miniMenu.find(
-            '.mini-menu-perfil'
-        );
-
-    var $maisOpcoes =
-        $('#abrir-acoes-perfil');
-
-    var $acoes =
-        $('#acoes-perfil');
-
-    var $acoesPrincipal =
-        $('#acoes-perfil-principal');
-
-    var $formDenuncia =
-        $('#form-denuncia');
-
-    var $abrirDenuncia =
-        $('#abrir-denuncia');
-
-    var $voltarDenuncia =
-        $('#voltar-denuncia');
-
-    var $bloquearMembro =
-        $('#bloquear-membro');
-
-    var capacitor =
-        window.Capacitor ||
-        null;
+    var capacitor = window.Capacitor || null;
 
     var teclado =
         capacitor &&
         capacitor.Plugins
-            ? capacitor
-                .Plugins
-                .Keyboard
+            ? capacitor.Plugins.Keyboard
             : null;
 
-    var tecladoListeners =
-        [];
+    var tecladoListeners = [];
+    var aEnviarHey = false;
+    var aEnviarMensagem = false;
+    var aProcessarSeguranca = false;
+    var paginaAtiva = true;
+    var temporizadorHey = null;
+    var temporizadorRestauracao = null;
+    var campoMensagemFocado = false;
+    var tecladoAberto = false;
+    var alturaTeclado = 0;
+    var baseMenuY = null;
+    var deslocamentoMenu = 0;
 
-    var aEnviarHey =
-        false;
-
-    var aEnviarMensagem =
-        false;
-
-    var aProcessarSeguranca =
-        false;
-
-    var paginaAtiva =
-        true;
-
-    var temporizadorHey =
-        null;
-
-    var temporizadorRestauracao =
-        null;
-
-    var campoMensagemFocado =
-        false;
-
-    var tecladoAberto =
-        false;
-
-    var alturaTeclado =
-        0;
-
-    var baseMenuY =
-        null;
-
-    var deslocamentoMenu =
-        0;
-
-    function texto(
-        valor
-    ) {
-        return String(
-            valor ||
-            ''
-        ).trim();
+    function texto(valor) {
+        return String(valor || '').trim();
     }
 
-    function urlFoto(
-        valor
-    ) {
+    function urlFoto(valor) {
         try {
             return new URL(
-                texto(
-                    valor
-                ) ||
+                texto(valor) ||
                 '/imagens/fotos-perfil/default.webp',
-
                 window.location.href
             ).href;
-        } catch (
-            erro
-        ) {
+        } catch (erro) {
             return '/imagens/fotos-perfil/default.webp';
         }
     }
 
-    function membroId(
-        elemento
-    ) {
+    function membroId(elemento) {
         return texto(
-            elemento.getAttribute(
-                'data-membro-id'
-            ) ||
-            elemento.getAttribute(
-                'data-id'
-            ) ||
+            elemento.getAttribute('data-membro-id') ||
+            elemento.getAttribute('data-id') ||
             elemento.id
         );
     }
 
-    function nome(
-        elemento
-    ) {
+    function nome(elemento) {
         return (
             texto(
-                elemento.getAttribute(
-                    'data-nome'
-                ) ||
-                elemento.getAttribute(
-                    'alt'
-                ) ||
-                elemento.getAttribute(
-                    'title'
-                )
+                elemento.getAttribute('data-nome') ||
+                elemento.getAttribute('alt') ||
+                elemento.getAttribute('title')
             ) ||
             'Utilizador'
         );
     }
 
-    function foto(
-        elemento
-    ) {
+    function foto(elemento) {
         return urlFoto(
             elemento.currentSrc ||
             elemento.src ||
-            elemento.getAttribute(
-                'src'
-            )
+            elemento.getAttribute('src')
         );
     }
 
-    function baseUrl(
-        valor,
-        fallback
-    ) {
+    function baseUrl(valor, fallback) {
         return texto(
             valor ||
             fallback
-        ).replace(
-            /\/+$/,
-            ''
-        );
+        ).replace(/\/+$/, '');
     }
 
     function idSelecionado() {
@@ -221,9 +115,7 @@
         return (
             texto(
                 $miniMenu
-                    .find(
-                        'header h1'
-                    )
+                    .find('header h1')
                     .text()
             ) ||
             'esta pessoa'
@@ -233,40 +125,27 @@
     function eIOSNativo() {
         return Boolean(
             capacitor &&
-            typeof capacitor
-                .isNativePlatform ===
-                'function' &&
-            capacitor
-                .isNativePlatform() &&
-            typeof capacitor
-                .getPlatform ===
-                'function' &&
-            capacitor
-                .getPlatform() ===
-                'ios'
+            typeof capacitor.isNativePlatform === 'function' &&
+            capacitor.isNativePlatform() &&
+            typeof capacitor.getPlatform === 'function' &&
+            capacitor.getPlatform() === 'ios'
         );
     }
 
-    function ajustarAlturaMiniMenu(
-        acoesAbertas
-    ) {
+    function ajustarAlturaMiniMenu(acoesAbertas) {
         if (
-            typeof window
-                .definirMiniMenuAcoes ===
+            typeof window.definirMiniMenuAcoes ===
             'function'
         ) {
-            window
-                .definirMiniMenuAcoes(
-                    acoesAbertas
-                );
+            window.definirMiniMenuAcoes(
+                acoesAbertas
+            );
         }
     }
 
     function fecharAcoes() {
         $acoes
-            .removeClass(
-                'aberta'
-            )
+            .removeClass('aberta')
             .attr(
                 'aria-hidden',
                 'true'
@@ -291,24 +170,18 @@
             true
         );
 
-        ajustarAlturaMiniMenu(
-            false
-        );
+        ajustarAlturaMiniMenu(false);
     }
 
     function abrirAcoes() {
         if (
-            $miniMenu.hasClass(
-                'perfil-proprio'
-            ) ||
+            $miniMenu.hasClass('perfil-proprio') ||
             !idSelecionado()
         ) {
             return;
         }
 
-        ajustarAlturaMiniMenu(
-            true
-        );
+        ajustarAlturaMiniMenu(true);
 
         $acoes
             .prop(
@@ -319,9 +192,7 @@
                 'aria-hidden',
                 'false'
             )
-            .addClass(
-                'aberta'
-            );
+            .addClass('aberta');
 
         $maisOpcoes.attr(
             'aria-expanded',
@@ -339,12 +210,8 @@
         );
 
         $acoes
-            .find(
-                '.acoes-perfil-caixa'
-            )
-            .trigger(
-                'focus'
-            );
+            .find('.acoes-perfil-caixa')
+            .trigger('focus');
     }
 
     function abrirFormularioDenuncia() {
@@ -359,14 +226,10 @@
         );
 
         $('#denuncia-motivo')
-            .trigger(
-                'focus'
-            );
+            .trigger('focus');
     }
 
-    function prepararMiniMenu(
-        elemento
-    ) {
+    function prepararMiniMenu(elemento) {
         if (
             !paginaAtiva ||
             !elemento
@@ -374,36 +237,22 @@
             return false;
         }
 
-        var id =
-            membroId(
-                elemento
-            );
+        var id = membroId(elemento);
 
-        if (
-            !id
-        ) {
+        if (!id) {
             return false;
         }
 
-        var membroNome =
-            nome(
-                elemento
-            );
+        var membroNome = nome(elemento);
 
         var souEu =
             id ===
-            texto(
-                window.membroId
-            );
+            texto(window.membroId);
 
         var imagem =
             $miniMenu
-                .find(
-                    'header img'
-                )
-                .get(
-                    0
-                );
+                .find('header img')
+                .get(0);
 
         fecharAcoes();
 
@@ -424,18 +273,12 @@
                 '/profile'
             ) +
             '/' +
-            encodeURIComponent(
-                id
-            )
+            encodeURIComponent(id)
         );
 
         $miniMenu
-            .find(
-                'header h1'
-            )
-            .text(
-                membroNome
-            );
+            .find('header h1')
+            .text(membroNome);
 
         $formMensagem.attr(
             'action',
@@ -444,18 +287,23 @@
                 '/messages'
             ) +
             '/' +
-            encodeURIComponent(
-                id
-            )
+            encodeURIComponent(id)
         );
 
         if (
-            imagem
+            window.MargotToday &&
+            typeof window.MargotToday.showMiniMenuFor ===
+                'function'
         ) {
+            window.MargotToday.showMiniMenuFor(
+                id
+            );
+        }
+
+        if (imagem) {
             imagem.onerror =
                 function () {
-                    this.onerror =
-                        null;
+                    this.onerror = null;
 
                     this.src =
                         urlFoto(
@@ -464,9 +312,7 @@
                 };
 
             imagem.src =
-                foto(
-                    elemento
-                );
+                foto(elemento);
 
             imagem.alt =
                 membroNome;
@@ -475,20 +321,15 @@
         return true;
     }
 
-    function aviso(
-        mensagem,
-        tipo
-    ) {
+    function aviso(mensagem, tipo) {
         if (
-            typeof window
-                .mostrarMensagemTemporaria ===
+            typeof window.mostrarMensagemTemporaria ===
             'function'
         ) {
-            window
-                .mostrarMensagemTemporaria(
-                    mensagem,
-                    tipo
-                );
+            window.mostrarMensagemTemporaria(
+                mensagem,
+                tipo
+            );
         }
     }
 
@@ -504,40 +345,30 @@
             temporizadorRestauracao
         );
 
-        temporizadorRestauracao =
-            null;
+        temporizadorRestauracao = null;
     }
 
     function viewportAltura() {
         return (
             window.innerHeight ||
-            document
-                .documentElement
-                .clientHeight ||
+            document.documentElement.clientHeight ||
             0
         );
     }
 
-    function obterTranslateY(
-        elemento
-    ) {
-        if (
-            !elemento
-        ) {
+    function obterTranslateY(elemento) {
+        if (!elemento) {
             return 0;
         }
 
         var transformacao =
             window
-                .getComputedStyle(
-                    elemento
-                )
+                .getComputedStyle(elemento)
                 .transform;
 
         if (
             !transformacao ||
-            transformacao ===
-                'none'
+            transformacao === 'none'
         ) {
             return 0;
         }
@@ -551,17 +382,13 @@
             return Number(
                 matriz.m42
             ) || 0;
-        } catch (
-            erro
-        ) {
+        } catch (erro) {
             var valores =
                 transformacao.match(
                     /matrix(?:3d)?\(([^)]+)\)/
                 );
 
-            if (
-                !valores
-            ) {
+            if (!valores) {
                 return 0;
             }
 
@@ -569,9 +396,7 @@
                 valores[1]
                     .split(',')
                     .map(
-                        function (
-                            valor
-                        ) {
+                        function (valor) {
                             return Number(
                                 valor.trim()
                             );
@@ -581,8 +406,7 @@
             if (
                 transformacao.indexOf(
                     'matrix3d'
-                ) ===
-                0
+                ) === 0
             ) {
                 return partes[13] || 0;
             }
@@ -593,8 +417,7 @@
 
     function guardarPosicaoNormalMiniMenu() {
         if (
-            baseMenuY !==
-            null ||
+            baseMenuY !== null ||
             !$miniMenu[0]
         ) {
             return;
@@ -609,9 +432,7 @@
     function calcularDeslocamentoMenu(
         novaAlturaTeclado
     ) {
-        if (
-            !$formMensagem[0]
-        ) {
+        if (!$formMensagem[0]) {
             return 0;
         }
 
@@ -624,10 +445,7 @@
                 0
             );
 
-        if (
-            novaAlturaTeclado <
-            80
-        ) {
+        if (novaAlturaTeclado < 80) {
             return 0;
         }
 
@@ -677,10 +495,7 @@
                 0
             );
 
-        if (
-            novaAlturaTeclado <
-            80
-        ) {
+        if (novaAlturaTeclado < 80) {
             return;
         }
 
@@ -731,27 +546,19 @@
     function restaurarMiniMenuDepoisDoTeclado(
         animar
     ) {
-        if (
-            !$miniMenu[0]
-        ) {
+        if (!$miniMenu[0]) {
             return;
         }
 
         cancelarRestauracao();
 
-        tecladoAberto =
-            false;
-
-        alturaTeclado =
-            0;
+        tecladoAberto = false;
+        alturaTeclado = 0;
 
         var destinoY =
             baseMenuY;
 
-        if (
-            destinoY ===
-            null
-        ) {
+        if (destinoY === null) {
             destinoY =
                 $miniMenu[0]
                     .getBoundingClientRect()
@@ -777,8 +584,7 @@
                 'margot-mini-menu-teclado'
             );
 
-        deslocamentoMenu =
-            0;
+        deslocamentoMenu = 0;
 
         temporizadorRestauracao =
             window.setTimeout(
@@ -794,18 +600,15 @@
                     }
 
                     if (
-                        typeof window
-                            .definirMiniMenuAcoes ===
+                        typeof window.definirMiniMenuAcoes ===
                         'function'
                     ) {
-                        window
-                            .definirMiniMenuAcoes(
-                                false
-                            );
+                        window.definirMiniMenuAcoes(
+                            false
+                        );
                     }
 
-                    baseMenuY =
-                        null;
+                    baseMenuY = null;
                 },
                 animar
                     ? 330
@@ -821,16 +624,14 @@
             return;
         }
 
-        campoMensagemFocado =
-            false;
+        campoMensagemFocado = false;
 
         if (
             $inputMensagem[0] &&
             document.activeElement ===
                 $inputMensagem[0]
         ) {
-            $inputMensagem[0]
-                .blur();
+            $inputMensagem[0].blur();
         }
 
         restaurarMiniMenuDepoisDoTeclado(
@@ -850,12 +651,8 @@
         }
     }
 
-    function tecladoVaiAbrir(
-        info
-    ) {
-        if (
-            !campoMensagemFocado
-        ) {
+    function tecladoVaiAbrir(info) {
+        if (!campoMensagemFocado) {
             return;
         }
 
@@ -866,12 +663,8 @@
         );
     }
 
-    function tecladoAbriu(
-        info
-    ) {
-        if (
-            !campoMensagemFocado
-        ) {
+    function tecladoAbriu(info) {
+        if (!campoMensagemFocado) {
             return;
         }
 
@@ -887,9 +680,7 @@
     }
 
     function tecladoVaiFechar() {
-        if (
-            !tecladoAberto
-        ) {
+        if (!tecladoAberto) {
             return;
         }
 
@@ -899,17 +690,10 @@
     }
 
     function tecladoFechou() {
-        tecladoAberto =
-            false;
-
-        alturaTeclado =
-            0;
-
-        campoMensagemFocado =
-            false;
-
-        deslocamentoMenu =
-            0;
+        tecladoAberto = false;
+        alturaTeclado = 0;
+        campoMensagemFocado = false;
+        deslocamentoMenu = 0;
 
         document.body
             .classList
@@ -920,16 +704,13 @@
         if (
             eIOSNativo() &&
             teclado &&
-            typeof teclado
-                .setAccessoryBarVisible ===
+            typeof teclado.setAccessoryBarVisible ===
                 'function'
         ) {
             Promise.resolve(
-                teclado
-                    .setAccessoryBarVisible({
-                        isVisible:
-                            true
-                    })
+                teclado.setAccessoryBarVisible({
+                    isVisible: true
+                })
             ).catch(
                 function () {}
             );
@@ -937,9 +718,7 @@
     }
 
     function alturaTecladoVisualViewport() {
-        if (
-            !window.visualViewport
-        ) {
+        if (!window.visualViewport) {
             return 0;
         }
 
@@ -947,12 +726,8 @@
             0,
             viewportAltura() -
             (
-                window
-                    .visualViewport
-                    .height +
-                window
-                    .visualViewport
-                    .offsetTop
+                window.visualViewport.height +
+                window.visualViewport.offsetTop
             )
         );
     }
@@ -968,17 +743,12 @@
         var altura =
             alturaTecladoVisualViewport();
 
-        if (
-            altura >=
-            80
-        ) {
+        if (altura >= 80) {
             expandirMiniMenuParaTeclado(
                 altura,
                 true
             );
-        } else if (
-            tecladoAberto
-        ) {
+        } else if (tecladoAberto) {
             restaurarMiniMenuDepoisDoTeclado(
                 true
             );
@@ -988,8 +758,7 @@
     async function prepararTecladoNativo() {
         if (
             !teclado ||
-            typeof teclado
-                .addListener !==
+            typeof teclado.addListener !==
                 'function'
         ) {
             return;
@@ -1023,9 +792,7 @@
                     tecladoFechou
                 )
             );
-        } catch (
-            erro
-        ) {
+        } catch (erro) {
             console.warn(
                 'Não foi possível acompanhar o teclado no mini-menu.',
                 erro
@@ -1037,27 +804,20 @@
         var listeners =
             tecladoListeners.slice();
 
-        tecladoListeners =
-            [];
+        tecladoListeners = [];
 
         listeners.forEach(
-            function (
-                listener
-            ) {
+            function (listener) {
                 if (
                     listener &&
-                    typeof listener
-                        .remove ===
+                    typeof listener.remove ===
                         'function'
                 ) {
-                    Promise
-                        .resolve(
-                            listener
-                                .remove()
-                        )
-                        .catch(
-                            function () {}
-                        );
+                    Promise.resolve(
+                        listener.remove()
+                    ).catch(
+                        function () {}
+                    );
                 }
             }
         );
@@ -1090,12 +850,10 @@
         evento.stopPropagation();
 
         if (
-            typeof evento
-                .stopImmediatePropagation ===
+            typeof evento.stopImmediatePropagation ===
                 'function'
         ) {
-            evento
-                .stopImmediatePropagation();
+            evento.stopImmediatePropagation();
         }
 
         esconderTecladoMiniMenu();
@@ -1110,24 +868,20 @@
     $inputMensagem.on(
         'focus' + NS,
         function () {
-            campoMensagemFocado =
-                true;
+            campoMensagemFocado = true;
 
             guardarPosicaoNormalMiniMenu();
 
             if (
                 eIOSNativo() &&
                 teclado &&
-                typeof teclado
-                    .setAccessoryBarVisible ===
+                typeof teclado.setAccessoryBarVisible ===
                     'function'
             ) {
                 Promise.resolve(
-                    teclado
-                        .setAccessoryBarVisible({
-                            isVisible:
-                                false
-                        })
+                    teclado.setAccessoryBarVisible({
+                        isVisible: false
+                    })
                 ).catch(
                     function () {}
                 );
@@ -1147,8 +901,7 @@
     $inputMensagem.on(
         'blur' + NS,
         function () {
-            campoMensagemFocado =
-                false;
+            campoMensagemFocado = false;
 
             if (
                 !teclado &&
@@ -1162,14 +915,11 @@
     );
 
     function libertarHey() {
-        if (
-            !paginaAtiva
-        ) {
+        if (!paginaAtiva) {
             return;
         }
 
-        aEnviarHey =
-            false;
+        aEnviarHey = false;
 
         if (
             temporizadorHey !==
@@ -1179,8 +929,7 @@
                 temporizadorHey
             );
 
-            temporizadorHey =
-                null;
+            temporizadorHey = null;
         }
 
         $botaoHey
@@ -1214,9 +963,7 @@
             campos ||
             {}
         ).forEach(
-            function (
-                chave
-            ) {
+            function (chave) {
                 dados.set(
                     chave,
                     campos[chave]
@@ -1231,14 +978,9 @@
                     '/safety'
                 ),
                 {
-                    method:
-                        'POST',
-
-                    body:
-                        dados,
-
-                    credentials:
-                        'same-origin',
+                    method: 'POST',
+                    body: dados,
+                    credentials: 'same-origin',
 
                     headers: {
                         'Accept':
@@ -1260,9 +1002,7 @@
                 JSON.parse(
                     conteudo
                 );
-        } catch (
-            erro
-        ) {
+        } catch (erro) {
             throw new Error(
                 'O servidor devolveu uma resposta inválida.'
             );
@@ -1281,16 +1021,12 @@
         return resultado;
     }
 
-    function removerPessoaDoMapa(
-        id
-    ) {
+    function removerPessoaDoMapa(id) {
         $('.foto')
             .filter(
                 function () {
                     return (
-                        membroId(
-                            this
-                        ) ===
+                        membroId(this) ===
                         id
                     );
                 }
@@ -1322,26 +1058,20 @@
         ' click' + NS,
         '.foto',
         function () {
-            prepararMiniMenu(
-                this
-            );
+            prepararMiniMenu(this);
         }
     );
 
     $perfil.on(
         'click' + NS,
-        function (
-            evento
-        ) {
+        function (evento) {
             evento.stopImmediatePropagation();
 
             if (
                 evento.defaultPrevented ||
                 (
-                    evento.button !==
-                        undefined &&
-                    evento.button !==
-                        0
+                    evento.button !== undefined &&
+                    evento.button !== 0
                 ) ||
                 evento.metaKey ||
                 evento.ctrlKey ||
@@ -1356,9 +1086,7 @@
                     'href'
                 );
 
-            if (
-                !href
-            ) {
+            if (!href) {
                 return;
             }
 
@@ -1377,9 +1105,7 @@
 
             if (
                 !window.MargotNavigation ||
-                typeof window
-                    .MargotNavigation
-                    .navigate !==
+                typeof window.MargotNavigation.navigate !==
                     'function'
             ) {
                 return;
@@ -1387,26 +1113,19 @@
 
             evento.preventDefault();
 
-            window
-                .MargotNavigation
-                .navigate(
-                    url.href,
-                    {
-                        historico:
-                            'push',
-
-                        direcao:
-                            1
-                    }
-                );
+            window.MargotNavigation.navigate(
+                url.href,
+                {
+                    historico: 'push',
+                    direcao: 1
+                }
+            );
         }
     );
 
     $botaoHey.on(
         'click' + NS,
-        function (
-            evento
-        ) {
+        function (evento) {
             evento.preventDefault();
             evento.stopImmediatePropagation();
 
@@ -1420,9 +1139,7 @@
             var id =
                 idSelecionado();
 
-            if (
-                !id
-            ) {
+            if (!id) {
                 aviso(
                     'Seleciona primeiro uma pessoa.',
                     'erro'
@@ -1433,9 +1150,7 @@
 
             if (
                 !window.AppWebSocket ||
-                !window
-                    .AppWebSocket
-                    .isConnected()
+                !window.AppWebSocket.isConnected()
             ) {
                 aviso(
                     'A ligação está a ser restabelecida.',
@@ -1445,16 +1160,13 @@
                 if (
                     window.AppWebSocket
                 ) {
-                    window
-                        .AppWebSocket
-                        .connect();
+                    window.AppWebSocket.connect();
                 }
 
                 return;
             }
 
-            aEnviarHey =
-                true;
+            aEnviarHey = true;
 
             $botaoHey
                 .prop(
@@ -1467,19 +1179,12 @@
                 );
 
             var enviado =
-                window
-                    .AppWebSocket
-                    .send({
-                        type:
-                            'notify',
+                window.AppWebSocket.send({
+                    type: 'notify',
+                    destinatario_id: id
+                });
 
-                        destinatario_id:
-                            id
-                    });
-
-            if (
-                !enviado
-            ) {
+            if (!enviado) {
                 libertarHey();
 
                 aviso(
@@ -1500,9 +1205,7 @@
 
     $formMensagem.on(
         'submit' + NS,
-        async function (
-            evento
-        ) {
+        async function (evento) {
             evento.preventDefault();
             evento.stopImmediatePropagation();
 
@@ -1525,18 +1228,12 @@
                 );
 
             var dados =
-                new FormData(
-                    this
-                );
+                new FormData(this);
 
             var ficheiro =
-                dados.get(
-                    'media'
-                );
+                dados.get('media');
 
-            if (
-                !id
-            ) {
+            if (!id) {
                 aviso(
                     'Seleciona primeiro uma pessoa.',
                     'erro'
@@ -1552,8 +1249,7 @@
                     )
                 ) &&
                 !(
-                    ficheiro instanceof
-                        File &&
+                    ficheiro instanceof File &&
                     ficheiro.size
                 )
             ) {
@@ -1565,8 +1261,7 @@
                 'send'
             );
 
-            aEnviarMensagem =
-                true;
+            aEnviarMensagem = true;
 
             $botao
                 .prop(
@@ -1585,16 +1280,10 @@
                             '/messages'
                         ) +
                         '/' +
-                        encodeURIComponent(
-                            id
-                        ),
+                        encodeURIComponent(id),
                         {
-                            method:
-                                'POST',
-
-                            body:
-                                dados,
-
+                            method: 'POST',
+                            body: dados,
                             credentials:
                                 'same-origin'
                         }
@@ -1619,9 +1308,7 @@
                     .removeClass(
                         'selecionado'
                     )
-                    .text(
-                        '+'
-                    )
+                    .text('+')
                     .attr(
                         'aria-label',
                         'Adicionar fotografia ou vídeo'
@@ -1634,44 +1321,31 @@
 
                 if (
                     window.AppWebSocket &&
-                    window
-                        .AppWebSocket
-                        .isConnected()
+                    window.AppWebSocket.isConnected()
                 ) {
-                    window
-                        .AppWebSocket
-                        .send({
-                            type:
-                                'chat_publish',
-
-                            message_id:
-                                resultado
-                                    .message
-                                    .id
-                        });
+                    window.AppWebSocket.send({
+                        type: 'chat_publish',
+                        message_id:
+                            resultado
+                                .message
+                                .id
+                    });
                 }
-            } catch (
-                erro
-            ) {
+            } catch (erro) {
                 aviso(
                     erro.message,
                     'erro'
                 );
             } finally {
-                aEnviarMensagem =
-                    false;
+                aEnviarMensagem = false;
 
-                if (
-                    paginaAtiva
-                ) {
+                if (paginaAtiva) {
                     $botao
                         .prop(
                             'disabled',
                             false
                         )
-                        .val(
-                            'Enviar'
-                        );
+                        .val('Enviar');
                 }
             }
         }
@@ -1679,9 +1353,7 @@
 
     $media.on(
         'change' + NS,
-        function (
-            evento
-        ) {
+        function (evento) {
             evento.stopImmediatePropagation();
 
             var ficheiro =
@@ -1691,9 +1363,7 @@
             $anexo
                 .toggleClass(
                     'selecionado',
-                    Boolean(
-                        ficheiro
-                    )
+                    Boolean(ficheiro)
                 )
                 .text(
                     ficheiro
@@ -1712,18 +1382,14 @@
     $maisOpcoes.on(
         'pointerdown' + NS +
         ' pointerup' + NS,
-        function (
-            evento
-        ) {
+        function (evento) {
             evento.stopPropagation();
         }
     );
 
     $maisOpcoes.on(
         'click' + NS,
-        function (
-            evento
-        ) {
+        function (evento) {
             evento.preventDefault();
             evento.stopPropagation();
 
@@ -1736,9 +1402,7 @@
         ' pointermove' + NS +
         ' pointerup' + NS +
         ' pointercancel' + NS,
-        function (
-            evento
-        ) {
+        function (evento) {
             evento.stopPropagation();
         }
     );
@@ -1746,9 +1410,7 @@
     $acoes.on(
         'click' + NS,
         '[data-fechar-acoes]',
-        function (
-            evento
-        ) {
+        function (evento) {
             evento.preventDefault();
 
             fecharAcoes();
@@ -1810,36 +1472,25 @@
                     'block'
                 );
 
-                removerPessoaDoMapa(
-                    id
-                );
+                removerPessoaDoMapa(id);
 
                 if (
                     window.AppWebSocket &&
-                    window
-                        .AppWebSocket
-                        .isConnected()
+                    window.AppWebSocket.isConnected()
                 ) {
-                    window
-                        .AppWebSocket
-                        .send({
-                            type:
-                                'block_refresh',
-
-                            target_id:
-                                id
-                        });
+                    window.AppWebSocket.send({
+                        type: 'block_refresh',
+                        target_id: id
+                    });
                 }
 
                 fecharAcoes();
 
                 if (
-                    typeof window
-                        .fecharMiniMenu ===
+                    typeof window.fecharMiniMenu ===
                     'function'
                 ) {
-                    window
-                        .fecharMiniMenu();
+                    window.fecharMiniMenu();
                 }
 
                 aviso(
@@ -1847,9 +1498,7 @@
                     ' foi bloqueado.',
                     'sucesso'
                 );
-            } catch (
-                erro
-            ) {
+            } catch (erro) {
                 aviso(
                     erro.message,
                     'erro'
@@ -1864,9 +1513,7 @@
 
     $formDenuncia.on(
         'submit' + NS,
-        async function (
-            evento
-        ) {
+        async function (evento) {
             evento.preventDefault();
 
             if (
@@ -1887,9 +1534,7 @@
                         .val()
                 );
 
-            if (
-                !motivo
-            ) {
+            if (!motivo) {
                 aviso(
                     'Escolhe o motivo da denúncia.',
                     'erro'
@@ -1906,11 +1551,8 @@
                 await pedidoSeguranca(
                     'report',
                     {
-                        motivo:
-                            motivo,
-
-                        mensagem:
-                            mensagem
+                        motivo: motivo,
+                        mensagem: mensagem
                     }
                 );
 
@@ -1922,9 +1564,7 @@
                     'Denúncia enviada. Obrigado por nos avisares.',
                     'sucesso'
                 );
-            } catch (
-                erro
-            ) {
+            } catch (erro) {
                 aviso(
                     erro.message,
                     'erro'
@@ -1939,15 +1579,10 @@
 
     $(document).on(
         'keydown' + NS,
-        function (
-            evento
-        ) {
+        function (evento) {
             if (
-                evento.key ===
-                    'Escape' &&
-                !$acoes.prop(
-                    'hidden'
-                )
+                evento.key === 'Escape' &&
+                !$acoes.prop('hidden')
             ) {
                 fecharAcoes();
             }
@@ -1975,40 +1610,31 @@
     if (
         window.visualViewport
     ) {
-        window
-            .visualViewport
-            .addEventListener(
-                'resize',
-                aoAlterarVisualViewport,
-                {
-                    passive:
-                        true
-                }
-            );
+        window.visualViewport.addEventListener(
+            'resize',
+            aoAlterarVisualViewport,
+            {
+                passive: true
+            }
+        );
 
-        window
-            .visualViewport
-            .addEventListener(
-                'scroll',
-                aoAlterarVisualViewport,
-                {
-                    passive:
-                        true
-                }
-            );
+        window.visualViewport.addEventListener(
+            'scroll',
+            aoAlterarVisualViewport,
+            {
+                passive: true
+            }
+        );
     }
 
     prepararTecladoNativo();
 
     function desativarPagina() {
-        if (
-            !paginaAtiva
-        ) {
+        if (!paginaAtiva) {
             return;
         }
 
-        paginaAtiva =
-            false;
+        paginaAtiva = false;
 
         if (
             temporizadorHey !==
@@ -2018,8 +1644,7 @@
                 temporizadorHey
             );
 
-            temporizadorHey =
-                null;
+            temporizadorHey = null;
         }
 
         cancelarRestauracao();
@@ -2032,57 +1657,19 @@
             true
         );
 
-        $(document).off(
-            NS
-        );
-
-        $miniMenu.off(
-            NS
-        );
-
-        $botaoHey.off(
-            NS
-        );
-
-        $formMensagem.off(
-            NS
-        );
-
-        $inputMensagem.off(
-            NS
-        );
-
-        $media.off(
-            NS
-        );
-
-        $perfil.off(
-            NS
-        );
-
-        $maisOpcoes.off(
-            NS
-        );
-
-        $acoes.off(
-            NS
-        );
-
-        $abrirDenuncia.off(
-            NS
-        );
-
-        $voltarDenuncia.off(
-            NS
-        );
-
-        $bloquearMembro.off(
-            NS
-        );
-
-        $formDenuncia.off(
-            NS
-        );
+        $(document).off(NS);
+        $miniMenu.off(NS);
+        $botaoHey.off(NS);
+        $formMensagem.off(NS);
+        $inputMensagem.off(NS);
+        $media.off(NS);
+        $perfil.off(NS);
+        $maisOpcoes.off(NS);
+        $acoes.off(NS);
+        $abrirDenuncia.off(NS);
+        $voltarDenuncia.off(NS);
+        $bloquearMembro.off(NS);
+        $formDenuncia.off(NS);
 
         window.removeEventListener(
             'app:hey-enviado',
@@ -2097,19 +1684,15 @@
         if (
             window.visualViewport
         ) {
-            window
-                .visualViewport
-                .removeEventListener(
-                    'resize',
-                    aoAlterarVisualViewport
-                );
+            window.visualViewport.removeEventListener(
+                'resize',
+                aoAlterarVisualViewport
+            );
 
-            window
-                .visualViewport
-                .removeEventListener(
-                    'scroll',
-                    aoAlterarVisualViewport
-                );
+            window.visualViewport.removeEventListener(
+                'scroll',
+                aoAlterarVisualViewport
+            );
         }
 
         document.removeEventListener(
@@ -2132,16 +1715,14 @@
             window.prepararMiniMenuDaFoto ===
             prepararMiniMenu
         ) {
-            delete window
-                .prepararMiniMenuDaFoto;
+            delete window.prepararMiniMenuDaFoto;
         }
 
         if (
             window.desativarIndexMiniMenuMargot ===
             desativarPagina
         ) {
-            delete window
-                .desativarIndexMiniMenuMargot;
+            delete window.desativarIndexMiniMenuMargot;
         }
     }
 

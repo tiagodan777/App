@@ -1,5 +1,9 @@
 {% extends 'layout.html' %}
 
+{% block styles %}
+<link rel="stylesheet" href="{{ doc_root }}estilos/today.css?v=1" data-margot-page-style>
+{% endblock %}
+
 {% block content %}
     <canvas id="gridCanvas"></canvas>
 
@@ -200,6 +204,25 @@
             </div>
         </section>
 
+        <section
+            id="mini-menu-hoje"
+            class="mini-menu-hoje"
+            aria-hidden="true"
+            hidden
+        >
+            <div class="mini-menu-hoje-topo">
+                Hoje
+            </div>
+
+            <p data-hoje-nota hidden></p>
+
+            <div
+                class="hoje-chips"
+                data-hoje-roupa
+                hidden
+            ></div>
+        </section>
+
         <button
             type="button"
             class="ola"
@@ -327,7 +350,8 @@
     </script>
 
     <script src="{{ doc_root }}js/index-posicao.js?v=13"></script>
-    <script src="{{ doc_root }}js/index-mini-menu.js?v=18"></script>
+    <script src="{{ doc_root }}js/today.js?v=1"></script>
+    <script src="{{ doc_root }}js/index-mini-menu.js?v=19"></script>
     <script src="{{ doc_root }}js/index-animacao.js?v=10"></script>
     <script src="{{ doc_root }}js/index-tap-foto.js?v=13"></script>
 {% endblock %}

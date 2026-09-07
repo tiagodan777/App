@@ -261,6 +261,24 @@ if ($page === 'blocked-users' && $metodo === 'POST') {
     );
 }
 
+if ($page === 'today') {
+    if ($metodo === 'GET') {
+        limitarRota(
+            'today-read',
+            $membroOuSessao,
+            300,
+            5 * 60
+        );
+    } elseif (in_array($metodo, ['POST', 'DELETE'], true)) {
+        limitarRota(
+            'today-write',
+            $membroOuSessao,
+            60,
+            15 * 60
+        );
+    }
+}
+
 $phpPage = APP_ROOT . '/src/pages/' . $page . '.php';
 
 if (!file_exists($phpPage)) {

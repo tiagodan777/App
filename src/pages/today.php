@@ -2,23 +2,14 @@
 
 declare(strict_types=1);
 
-const MARGOT_TODAY_ENABLED = false;
-
 function responderHojeJson(
     array $dados,
     int $status = 200
 ): never {
-    http_response_code(
-        $status
-    );
+    http_response_code($status);
 
-    header(
-        'Content-Type: application/json; charset=UTF-8'
-    );
-
-    header(
-        'Cache-Control: no-store, no-cache, must-revalidate'
-    );
+    header('Content-Type: application/json; charset=UTF-8');
+    header('Cache-Control: no-store, no-cache, must-revalidate');
 
     echo json_encode(
         $dados,
@@ -32,43 +23,29 @@ function responderHojeJson(
 
 function corpoJsonHoje(): array
 {
-    $raw =
-        file_get_contents(
-            'php://input'
-        );
+    $raw = file_get_contents('php://input');
 
-    if (
-        $raw === false ||
-        trim($raw) === ''
-    ) {
+    if ($raw === false || trim($raw) === '') {
         return [];
     }
 
     try {
-        $dados =
-            json_decode(
-                $raw,
-                true,
-                32,
-                JSON_THROW_ON_ERROR
-            );
+        $dados = json_decode(
+            $raw,
+            true,
+            32,
+            JSON_THROW_ON_ERROR
+        );
 
-        return is_array(
-            $dados
-        )
+        return is_array($dados)
             ? $dados
             : [];
 
-    } catch (
-        Throwable
-    ) {
+    } catch (Throwable) {
         responderHojeJson(
             [
-                'success' =>
-                    false,
-
-                'message' =>
-                    'Pedido inválido.'
+                'success' => false,
+                'message' => 'Pedido inválido.'
             ],
             400
         );
@@ -79,24 +56,14 @@ function limitarTextoHoje(
     mixed $valor,
     int $maximo
 ): string {
-    $texto =
-        trim(
-            (string)
-                $valor
-        );
+    $texto = trim((string) $valor);
 
-    if (
-        mb_strlen(
-            $texto
-        ) >
-        $maximo
-    ) {
-        $texto =
-            mb_substr(
-                $texto,
-                0,
-                $maximo
-            );
+    if (mb_strlen($texto) > $maximo) {
+        $texto = mb_substr(
+            $texto,
+            0,
+            $maximo
+        );
     }
 
     return $texto;
@@ -105,11 +72,7 @@ function limitarTextoHoje(
 function normalizarRoupaHoje(
     mixed $valor
 ): array {
-    if (
-        !is_array(
-            $valor
-        )
-    ) {
+    if (!is_array($valor)) {
         return [];
     }
 
@@ -211,132 +174,76 @@ function normalizarRoupaHoje(
     ];
 
     $coresPermitidas = [
-        'white' =>
-            'Branco',
-
-        'black' =>
-            'Preto',
-
-        'grey' =>
-            'Cinzento',
-
-        'blue' =>
-            'Azul',
-
-        'denim' =>
-            'Ganga',
-
-        'red' =>
-            'Vermelho',
-
-        'green' =>
-            'Verde',
-
-        'yellow' =>
-            'Amarelo',
-
-        'pink' =>
-            'Rosa',
-
-        'purple' =>
-            'Roxo',
-
-        'brown' =>
-            'Castanho',
-
-        'beige' =>
-            'Bege',
-
-        'orange' =>
-            'Laranja',
-
-        'multicolor' =>
-            'Multicolor'
+        'white' => 'Branco',
+        'black' => 'Preto',
+        'grey' => 'Cinzento',
+        'blue' => 'Azul',
+        'denim' => 'Ganga',
+        'red' => 'Vermelho',
+        'green' => 'Verde',
+        'yellow' => 'Amarelo',
+        'pink' => 'Rosa',
+        'purple' => 'Roxo',
+        'brown' => 'Castanho',
+        'beige' => 'Bege',
+        'orange' => 'Laranja',
+        'multicolor' => 'Multicolor'
     ];
 
     $resultado = [];
+    $tiposUsados = [];
 
-    foreach (
-        array_slice(
-            $valor,
-            0,
-            5
-        )
-        as
-        $item
-    ) {
-        if (
-            !is_array(
-                $item
+    foreach ($valor as $item) {
+        if (count($resultado) >= 5) {
+            break;
+        }
+
+        if (!is_array($item)) {
+            continue;
+        }
+
+        $tipo = strtolower(
+            trim(
+                (string) (
+                    $item['type']
+                    ?? ''
+                )
             )
+        );
+
+        $cor = strtolower(
+            trim(
+                (string) (
+                    $item['color']
+                    ?? ''
+                )
+            )
+        );
+
+        if (
+            !isset($pecasPermitidas[$tipo]) ||
+            isset($tiposUsados[$tipo])
         ) {
             continue;
         }
 
-        $tipo =
-            strtolower(
-                trim(
-                    (string) (
-                        $item['type']
-                        ?? ''
-                    )
-                )
-            );
-
-        $cor =
-            strtolower(
-                trim(
-                    (string) (
-                        $item['color']
-                        ?? ''
-                    )
-                )
-            );
-
-        if (
-            !isset(
-                $pecasPermitidas[
-                    $tipo
-                ]
-            )
-        ) {
-            continue;
-        }
+        $tiposUsados[$tipo] = true;
 
         if (
             $cor !== '' &&
-            !isset(
-                $coresPermitidas[
-                    $cor
-                ]
-            )
+            !isset($coresPermitidas[$cor])
         ) {
             $cor = '';
         }
 
         $resultado[] = [
-            'type' =>
-                $tipo,
-
-            'icon' =>
-                $pecasPermitidas[
-                    $tipo
-                ]['icon'],
-
-            'label' =>
-                $pecasPermitidas[
-                    $tipo
-                ]['label'],
-
-            'color' =>
-                $cor,
-
-            'color_label' =>
-                $cor !== ''
-                    ? $coresPermitidas[
-                        $cor
-                    ]
-                    : ''
+            'type' => $tipo,
+            'icon' => $pecasPermitidas[$tipo]['icon'],
+            'label' => $pecasPermitidas[$tipo]['label'],
+            'color' => $cor,
+            'color_label' => $cor !== ''
+                ? $coresPermitidas[$cor]
+                : ''
         ];
     }
 
@@ -344,71 +251,46 @@ function normalizarRoupaHoje(
 }
 
 
-require_login(
-    $session
-);
+require_login($session);
 
+$todayEnabled =
+    !defined('MARGOT_TODAY_ENABLED') ||
+    MARGOT_TODAY_ENABLED;
 
-/*
- * IMPORTANTE:
- *
- * Mantemos desligado enquanto
- * a build 5 está em App Review.
- */
-if (
-    !MARGOT_TODAY_ENABLED
-) {
+if (!$todayEnabled) {
     responderHojeJson(
         [
-            'success' =>
-                false,
-
-            'message' =>
-                'Funcionalidade indisponível.'
+            'success' => false,
+            'message' => 'Funcionalidade indisponível.'
         ],
         404
     );
 }
 
+$viewerId = trim(
+    (string) (
+        $session->id
+        ?? ''
+    )
+);
 
-$viewerId =
-    trim(
-        (string) (
-            $session->id
-            ?? ''
-        )
-    );
+$targetId = trim(
+    (string) (
+        $id
+        ?? $viewerId
+    )
+);
 
+$method = strtoupper(
+    (string) (
+        $_SERVER['REQUEST_METHOD']
+        ?? 'GET'
+    )
+);
 
-$targetId =
-    trim(
-        (string) (
-            $id
-            ?? $viewerId
-        )
-    );
+$today = $cms->getTodayStatus();
 
-
-$method =
-    strtoupper(
-        (string) (
-            $_SERVER[
-                'REQUEST_METHOD'
-            ]
-            ?? 'GET'
-        )
-    );
-
-
-$today =
-    $cms
-        ->getTodayStatus();
-
-
-if (
-    $method ===
-    'GET'
-) {
+if ($method === 'GET') {
     if (
         $targetId === '' ||
         !$cms
@@ -420,11 +302,8 @@ if (
     ) {
         responderHojeJson(
             [
-                'success' =>
-                    false,
-
-                'message' =>
-                    'Perfil indisponível.'
+                'success' => false,
+                'message' => 'Perfil indisponível.'
             ],
             404
         );
@@ -432,106 +311,67 @@ if (
 
     responderHojeJson(
         [
-            'success' =>
-                true,
-
-            'today' =>
-                $today->get(
-                    $targetId
-                )
+            'success' => true,
+            'today' => $today->get($targetId)
         ]
     );
 }
 
-
-if (
-    $targetId !==
-    $viewerId
-) {
+if ($targetId !== $viewerId) {
     responderHojeJson(
         [
-            'success' =>
-                false,
-
-            'message' =>
-                'Não podes alterar o estado de outra pessoa.'
+            'success' => false,
+            'message' => 'Não podes alterar o estado de outra pessoa.'
         ],
         403
     );
 }
 
+if ($method === 'POST') {
+    $dados = corpoJsonHoje();
 
-if (
-    $method ===
-    'POST'
-) {
-    $dados =
-        corpoJsonHoje();
-
-    $nota =
-        limitarTextoHoje(
-            $dados['note']
-                ?? '',
-            160
-        );
-
-    $roupa =
-        normalizarRoupaHoje(
-            $dados['clothes']
-                ?? []
-        );
-
-    $estado =
-        $today->save(
-            $viewerId,
-            $nota,
-            $roupa
-        );
-
-    responderHojeJson(
-        [
-            'success' =>
-                true,
-
-            'today' =>
-                $estado
-        ]
+    $nota = limitarTextoHoje(
+        $dados['note']
+            ?? '',
+        160
     );
-}
 
+    $roupa = normalizarRoupaHoje(
+        $dados['clothes']
+            ?? []
+    );
 
-if (
-    $method ===
-    'DELETE'
-) {
-    $today->delete(
-        $viewerId
+    $estado = $today->save(
+        $viewerId,
+        $nota,
+        $roupa
     );
 
     responderHojeJson(
         [
-            'success' =>
-                true,
-
-            'today' =>
-                null
+            'success' => true,
+            'today' => $estado
         ]
     );
 }
 
+if ($method === 'DELETE') {
+    $today->delete($viewerId);
 
-header(
-    'Allow: GET, POST, DELETE'
-);
+    responderHojeJson(
+        [
+            'success' => true,
+            'today' => null
+        ]
+    );
+}
 
+header('Allow: GET, POST, DELETE');
 
 responderHojeJson(
     [
-        'success' =>
-            false,
-
-        'message' =>
-            'Método não permitido.'
+        'success' => false,
+        'message' => 'Método não permitido.'
     ],
     405
 );
