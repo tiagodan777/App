@@ -9,7 +9,11 @@
     --hoje-fundo-suave: #f6f4f7;
     --hoje-vermelho: #e12346;
     --hoje-teclado: 0px;
+
+    --hoje-nuvem:
+        rgba(255, 255, 255, 0.965);
 }
+
 
 /* =========================================================
    MINI-MENU
@@ -17,258 +21,884 @@
 
 #mini-menu-hoje {
     position: relative;
-    width: min(calc(100% - 42px), 430px);
-    min-height: 0;
-    margin: 10px auto 0;
-    padding: 13px 15px 12px;
-    border: 1px solid rgba(26, 23, 30, 0.07);
-    border-radius: 21px;
-    background:
-        linear-gradient(
-            135deg,
-            rgba(255, 255, 255, 0.99),
-            rgba(248, 245, 250, 0.98)
+
+    width:
+        min(
+            calc(100% - 48px),
+            410px
         );
+
+    min-height: 0;
+
+    margin:
+        18px
+        auto
+        2px;
+
+    padding:
+        16px
+        17px
+        15px;
+
+    border:
+        1px solid
+        rgba(
+            29,
+            25,
+            34,
+            0.055
+        );
+
+    border-radius:
+        31px
+        37px
+        32px
+        40px;
+
+    background:
+        var(--hoje-nuvem);
+
+    color:
+        var(--hoje-texto);
+
     box-shadow:
-        0 9px 25px rgba(28, 23, 32, 0.07),
-        inset 0 1px 0 rgba(255, 255, 255, 0.9);
-    color: var(--hoje-texto);
-    overflow: visible;
+        0 12px 33px
+        rgba(
+            27,
+            22,
+            31,
+            0.075
+        );
+
+    overflow:
+        visible;
+
+    isolation:
+        isolate;
 }
+
+
+/*
+ * Pequenas bolhas que fazem a nota parecer
+ * um pensamento vindo da fotografia.
+ */
 
 #mini-menu-hoje::before {
     content: "";
-    position: absolute;
-    top: -7px;
-    left: 50%;
-    width: 14px;
-    height: 14px;
-    background: #fdfcfd;
-    border-top: 1px solid rgba(26, 23, 30, 0.06);
-    border-left: 1px solid rgba(26, 23, 30, 0.06);
-    transform: translateX(-50%) rotate(45deg);
+
+    position:
+        absolute;
+
+    z-index:
+        -1;
+
+    top:
+        -11px;
+
+    left:
+        34px;
+
+    width:
+        19px;
+
+    height:
+        19px;
+
+    border-radius:
+        50%;
+
+    background:
+        var(--hoje-nuvem);
+
+    box-shadow:
+        -13px -13px 0 -5px
+        var(--hoje-nuvem);
 }
 
+
 #mini-menu-hoje[hidden] {
-    display: none !important;
+    display:
+        none !important;
 }
+
+
+/* =========================================================
+   CABEÇALHO "HOJE"
+   ========================================================= */
 
 .mini-menu-hoje-topo,
 .perfil-hoje-topo {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    margin-bottom: 5px;
-    color: #756f79;
-    font-size: 10px;
-    font-weight: 800;
-    line-height: 1;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    gap:
+        7px;
+
+    margin-bottom:
+        7px;
+
+    color:
+        #847e88;
+
+    font-size:
+        9px;
+
+    font-weight:
+        800;
+
+    line-height:
+        1;
+
+    letter-spacing:
+        0.095em;
+
+    text-transform:
+        uppercase;
 }
+
 
 .mini-menu-hoje-topo::before,
 .perfil-hoje-topo::before {
     content: "";
-    width: 7px;
-    height: 7px;
-    flex: 0 0 7px;
-    border-radius: 50%;
-    background: var(--hoje-vermelho);
-    box-shadow: 0 0 0 4px rgba(225, 35, 70, 0.08);
+
+    width:
+        7px;
+
+    height:
+        7px;
+
+    flex:
+        0 0 7px;
+
+    border-radius:
+        50%;
+
+    background:
+        var(--hoje-vermelho);
+
+    box-shadow:
+        0 0 0 4px
+        rgba(
+            225,
+            35,
+            70,
+            0.075
+        );
 }
 
-#mini-menu-hoje [data-hoje-nota] {
-    display: -webkit-box;
-    margin: 0;
-    color: #222126;
-    font-size: 14px;
-    font-weight: 650;
-    line-height: 1.32;
-    overflow: hidden;
-    overflow-wrap: anywhere;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
-}
-
-#mini-menu-hoje [data-hoje-roupa] {
-    margin-top: 9px;
-}
-
-.mini-menu:has(#mini-menu-hoje:not([hidden])) #enviar-hey {
-    margin-top: 11px;
-}
 
 /* =========================================================
-   CHIPS
+   NOTA NO MINI-MENU
+   ========================================================= */
+
+#mini-menu-hoje [data-hoje-nota] {
+    display:
+        -webkit-box;
+
+    margin:
+        0;
+
+    color:
+        #202024;
+
+    font-size:
+        14px;
+
+    font-weight:
+        650;
+
+    line-height:
+        1.35;
+
+    overflow:
+        hidden;
+
+    overflow-wrap:
+        anywhere;
+
+    -webkit-box-orient:
+        vertical;
+
+    -webkit-line-clamp:
+        3;
+}
+
+
+#mini-menu-hoje [data-hoje-roupa] {
+    margin-top:
+        12px;
+}
+
+
+.mini-menu:has(
+    #mini-menu-hoje:not([hidden])
+)
+#enviar-hey {
+    margin-top:
+        12px;
+}
+
+
+/* =========================================================
+   ROUPA — ÍCONES GRANDES
    ========================================================= */
 
 .hoje-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
+    display:
+        flex;
+
+    flex-wrap:
+        wrap;
+
+    align-items:
+        stretch;
+
+    gap:
+        8px;
 }
+
 
 .hoje-chip {
-    min-height: 29px;
-    padding: 4px 9px 4px 7px;
-    border: 1px solid rgba(31, 28, 35, 0.07);
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.74);
-    color: #49454f;
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 10px;
-    font-weight: 720;
-    line-height: 1;
-    white-space: nowrap;
+    position:
+        relative;
+
+    min-height:
+        48px;
+
+    padding:
+        7px
+        11px
+        7px
+        9px;
+
+    border:
+        1px solid
+        rgba(
+            30,
+            27,
+            34,
+            0.06
+        );
+
+    border-radius:
+        17px;
+
+    background:
+        rgba(
+            247,
+            245,
+            248,
+            0.88
+        );
+
+    color:
+        #46424b;
+
+    display:
+        inline-grid;
+
+    grid-template-columns:
+        auto
+        auto
+        minmax(0, 1fr);
+
+    align-items:
+        center;
+
+    gap:
+        6px;
+
+    font-size:
+        10px;
+
+    font-weight:
+        720;
+
+    line-height:
+        1.05;
+
+    white-space:
+        nowrap;
 }
 
-.hoje-chip--compacto {
-    min-height: 26px;
-    padding: 3px 8px 3px 6px;
-    font-size: 9px;
-}
+
+/*
+ * ESTE É UM DOS PONTOS PRINCIPAIS:
+ * o ícone deixa de ser minúsculo.
+ */
 
 .hoje-chip-icone {
-    font-size: 14px;
-    line-height: 1;
+    display:
+        block;
+
+    min-width:
+        27px;
+
+    font-size:
+        25px;
+
+    line-height:
+        1;
+
+    text-align:
+        center;
 }
 
-.hoje-chip--compacto .hoje-chip-icone {
-    font-size: 12px;
-}
+
+/*
+ * Bolinha da cor.
+ */
 
 .hoje-chip-cor,
 .hoje-peca-cor,
 .hoje-roupa-selecionada-cor {
-    width: 8px;
-    height: 8px;
-    flex: 0 0 8px;
-    border: 1px solid rgba(20, 19, 23, 0.13);
-    border-radius: 50%;
-    box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.45);
+    width:
+        10px;
+
+    height:
+        10px;
+
+    flex:
+        0 0 10px;
+
+    border:
+        1px solid
+        rgba(
+            20,
+            19,
+            23,
+            0.14
+        );
+
+    border-radius:
+        50%;
+
+    box-shadow:
+        inset 0 0 0 0.5px
+        rgba(
+            255,
+            255,
+            255,
+            0.5
+        );
 }
+
+
+.hoje-chip-texto {
+    overflow:
+        hidden;
+
+    text-overflow:
+        ellipsis;
+}
+
+
+/*
+ * No mini-menu continuam um pouco mais pequenos,
+ * mas claramente legíveis.
+ */
+
+.hoje-chip--compacto {
+    min-height:
+        43px;
+
+    padding:
+        6px
+        9px
+        6px
+        8px;
+
+    border-radius:
+        15px;
+
+    font-size:
+        9.5px;
+}
+
+
+.hoje-chip--compacto
+.hoje-chip-icone {
+    min-width:
+        24px;
+
+    font-size:
+        22px;
+}
+
 
 /* =========================================================
    PERFIL
    ========================================================= */
 
+
+/*
+ * Botão +
+ */
+
 .perfil-hoje-adicionar {
-    position: absolute;
-    z-index: 14;
-    top: 54px;
-    right: 23px;
-    width: 46px;
-    height: 46px;
-    margin: 0;
-    padding: 0;
-    border: 2px solid rgba(255, 255, 255, 0.92);
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.94);
-    color: #202024;
+    position:
+        absolute;
+
+    z-index:
+        20;
+
+    top:
+        68px;
+
+    right:
+        20px;
+
+    width:
+        48px;
+
+    height:
+        48px;
+
+    margin:
+        0;
+
+    padding:
+        0;
+
+    border:
+        3px solid
+        rgba(
+            255,
+            255,
+            255,
+            0.94
+        );
+
+    border-radius:
+        50%;
+
+    background:
+        rgba(
+            255,
+            255,
+            255,
+            0.97
+        );
+
+    color:
+        #202024;
+
     box-shadow:
-        0 11px 30px rgba(18, 16, 22, 0.18),
-        0 0 0 1px rgba(25, 22, 30, 0.04);
-    -webkit-backdrop-filter: blur(16px);
-    backdrop-filter: blur(16px);
-    display: grid;
-    place-items: center;
-    cursor: pointer;
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
+        0 10px 28px
+        rgba(
+            18,
+            16,
+            22,
+            0.18
+        );
+
+    -webkit-backdrop-filter:
+        blur(16px);
+
+    backdrop-filter:
+        blur(16px);
+
+    display:
+        grid;
+
+    place-items:
+        center;
+
+    cursor:
+        pointer;
+
+    touch-action:
+        manipulation;
+
+    -webkit-tap-highlight-color:
+        transparent;
+
     transition:
-        transform 150ms cubic-bezier(.2,.8,.2,1),
-        background-color 150ms ease,
-        color 150ms ease,
-        box-shadow 150ms ease;
+        transform
+        150ms
+        cubic-bezier(.2,.8,.2,1),
+
+        background-color
+        150ms
+        ease,
+
+        color
+        150ms
+        ease,
+
+        box-shadow
+        150ms
+        ease;
 }
+
 
 .perfil-hoje-adicionar span {
-    transform: translateY(-1px);
-    font-size: 27px;
-    font-weight: 430;
-    line-height: 1;
+    transform:
+        translateY(-1px);
+
+    font-size:
+        29px;
+
+    font-weight:
+        420;
+
+    line-height:
+        1;
 }
+
 
 .perfil-hoje-adicionar.ativo {
-    background: var(--hoje-vermelho);
-    color: #fff;
+    background:
+        var(--hoje-vermelho);
+
+    color:
+        #fff;
+
     box-shadow:
-        0 11px 30px rgba(225, 35, 70, 0.25),
-        0 0 0 1px rgba(225, 35, 70, 0.12);
+        0 11px 30px
+        rgba(
+            225,
+            35,
+            70,
+            0.25
+        );
 }
+
 
 .perfil-hoje-adicionar:active {
-    transform: scale(0.91);
+    transform:
+        scale(0.91);
 }
 
+
+/* =========================================================
+   NUVEM / PENSAMENTO DO PERFIL
+   ========================================================= */
+
+/*
+ * Agora a nota fica NA PARTE DE CIMA da fotografia.
+ *
+ * Em vez de ser uma caixa que "cai" para baixo,
+ * parece um pensamento que está a sair da pessoa.
+ */
+
 .perfil-hoje-balao {
-    position: absolute;
-    z-index: 13;
-    left: 50%;
-    bottom: 72px;
-    width: min(calc(100% - 82px), 350px);
-    padding: 13px 15px 12px;
-    border: 1px solid rgba(30, 26, 35, 0.075);
-    border-radius: 22px;
-    background: rgba(255, 255, 255, 0.94);
-    -webkit-backdrop-filter: blur(17px);
-    backdrop-filter: blur(17px);
+    position:
+        absolute;
+
+    z-index:
+        16;
+
+    top:
+        30px;
+
+    left:
+        25px;
+
+    right:
+        78px;
+
+    bottom:
+        auto;
+
+    width:
+        auto;
+
+    max-width:
+        370px;
+
+    min-height:
+        72px;
+
+    padding:
+        19px
+        19px
+        17px;
+
+    border:
+        1px solid
+        rgba(
+            29,
+            25,
+            34,
+            0.05
+        );
+
+    /*
+     * Assimétrico de propósito.
+     * Não quero que pareça um card de UI.
+     */
+
+    border-radius:
+        43px
+        50px
+        39px
+        47px
+        /
+        40px
+        46px
+        43px
+        50px;
+
+    background:
+        var(--hoje-nuvem);
+
+    -webkit-backdrop-filter:
+        blur(19px);
+
+    backdrop-filter:
+        blur(19px);
+
     box-shadow:
-        0 16px 39px rgba(16, 14, 19, 0.17),
-        inset 0 1px 0 rgba(255, 255, 255, 0.9);
-    color: var(--hoje-texto);
-    transform: translateX(-50%);
+        0 17px 42px
+        rgba(
+            18,
+            15,
+            21,
+            0.14
+        );
+
+    color:
+        var(--hoje-texto);
+
+    /*
+     * IMPORTANTÍSSIMO:
+     * retiramos o translateX antigo.
+     */
+
+    transform:
+        none;
+
+    isolation:
+        isolate;
+
+    overflow:
+        visible;
 }
+
+
+/*
+ * Lóbulos na parte superior da nuvem.
+ *
+ * Isto é o que faz deixar de parecer
+ * simplesmente um retângulo redondo.
+ */
+
+.perfil-hoje-balao::before {
+    content: "";
+
+    position:
+        absolute;
+
+    z-index:
+        -1;
+
+    top:
+        -17px;
+
+    left:
+        36px;
+
+    width:
+        60px;
+
+    height:
+        43px;
+
+    border-radius:
+        50%;
+
+    background:
+        var(--hoje-nuvem);
+
+    box-shadow:
+
+        49px -8px 0 -1px
+        var(--hoje-nuvem),
+
+        100px -1px 0 -7px
+        var(--hoje-nuvem),
+
+        142px 7px 0 -12px
+        var(--hoje-nuvem);
+}
+
+
+/*
+ * As duas bolinhas de pensamento.
+ *
+ * A nuvem está em cima.
+ * As bolinhas descem em direção à pessoa.
+ */
 
 .perfil-hoje-balao::after {
     content: "";
-    position: absolute;
-    left: 28px;
-    bottom: -8px;
-    width: 16px;
-    height: 16px;
-    border-right: 1px solid rgba(30, 26, 35, 0.055);
-    border-bottom: 1px solid rgba(30, 26, 35, 0.055);
-    background: rgba(255, 255, 255, 0.94);
-    transform: rotate(45deg);
+
+    position:
+        absolute;
+
+    left:
+        45px;
+
+    bottom:
+        -16px;
+
+    width:
+        14px;
+
+    height:
+        14px;
+
+    border-radius:
+        50%;
+
+    background:
+        rgba(
+            255,
+            255,
+            255,
+            0.97
+        );
+
+    box-shadow:
+
+        -14px 18px 0 -4px
+        rgba(
+            255,
+            255,
+            255,
+            0.97
+        ),
+
+        0 4px 12px
+        rgba(
+            25,
+            21,
+            29,
+            0.07
+        );
 }
+
 
 .perfil-hoje-balao[data-editable="0"] {
-    pointer-events: none;
+    pointer-events:
+        none;
 }
+
 
 .perfil-hoje-balao[data-editable="1"] {
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
+    cursor:
+        pointer;
+
+    -webkit-tap-highlight-color:
+        transparent;
+
+    transition:
+        transform
+        140ms
+        ease;
 }
+
 
 .perfil-hoje-balao[data-editable="1"]:active {
-    transform: translateX(-50%) scale(0.985);
+    transform:
+        scale(0.975);
 }
+
 
 .perfil-hoje-balao[hidden] {
-    display: none !important;
+    display:
+        none !important;
 }
 
-.perfil-hoje-balao [data-hoje-nota] {
-    display: -webkit-box;
-    margin: 0;
-    color: #222126;
-    font-size: 14px;
-    font-weight: 650;
-    line-height: 1.32;
-    overflow: hidden;
-    overflow-wrap: anywhere;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
+
+/* =========================================================
+   TEXTO DENTRO DA NUVEM
+   ========================================================= */
+
+.perfil-hoje-balao
+[data-hoje-nota] {
+    display:
+        -webkit-box;
+
+    margin:
+        0;
+
+    color:
+        #202024;
+
+    font-size:
+        15px;
+
+    font-weight:
+        650;
+
+    line-height:
+        1.35;
+
+    overflow:
+        hidden;
+
+    overflow-wrap:
+        anywhere;
+
+    -webkit-box-orient:
+        vertical;
+
+    -webkit-line-clamp:
+        3;
 }
 
-.perfil-hoje-balao [data-hoje-roupa] {
-    margin-top: 8px;
+
+.perfil-hoje-balao
+[data-hoje-roupa] {
+    margin-top:
+        12px;
 }
+
+
+/*
+ * Dentro do perfil os ícones são ainda maiores.
+ */
+
+.perfil-hoje-balao
+.hoje-chip {
+    min-height:
+        52px;
+
+    padding:
+        7px
+        11px
+        7px
+        9px;
+}
+
+
+.perfil-hoje-balao
+.hoje-chip-icone {
+    min-width:
+        30px;
+
+    font-size:
+        27px;
+}
+
+
+.perfil-hoje-balao
+.hoje-chip-cor {
+    width:
+        11px;
+
+    height:
+        11px;
+
+    flex-basis:
+        11px;
+}
+
 
 /* =========================================================
    EDITOR
@@ -276,552 +906,1558 @@
 
 html.hoje-editor-aberto,
 body.hoje-editor-aberto {
-    overflow: hidden !important;
-    overscroll-behavior: none !important;
+    overflow:
+        hidden !important;
+
+    overscroll-behavior:
+        none !important;
 }
 
-body.hoje-editor-aberto #perfil {
-    overflow: hidden !important;
+
+body.hoje-editor-aberto
+#perfil {
+    overflow:
+        hidden !important;
 }
+
 
 .hoje-editor {
-    position: fixed;
-    z-index: 6000;
-    inset: 0;
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    pointer-events: none;
+    position:
+        fixed;
+
+    z-index:
+        6000;
+
+    inset:
+        0;
+
+    display:
+        flex;
+
+    align-items:
+        flex-end;
+
+    justify-content:
+        center;
+
+    pointer-events:
+        none;
 }
+
 
 .hoje-editor[hidden] {
-    display: none !important;
+    display:
+        none !important;
 }
+
 
 .hoje-editor-fundo {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    border: 0;
-    background: rgba(15, 13, 18, 0.32);
-    opacity: 0;
-    cursor: default;
-    transition: opacity 220ms ease;
+    position:
+        absolute;
+
+    inset:
+        0;
+
+    width:
+        100%;
+
+    height:
+        100%;
+
+    margin:
+        0;
+
+    padding:
+        0;
+
+    border:
+        0;
+
+    background:
+        rgba(
+            15,
+            13,
+            18,
+            0.32
+        );
+
+    opacity:
+        0;
+
+    cursor:
+        default;
+
+    transition:
+        opacity
+        220ms
+        ease;
 }
 
+
 .hoje-editor-sheet {
-    position: relative;
-    z-index: 2;
-    width: min(100%, 620px);
-    max-height: min(82dvh, 720px);
-    margin-bottom: var(--hoje-teclado);
+    position:
+        relative;
+
+    z-index:
+        2;
+
+    width:
+        min(
+            100%,
+            620px
+        );
+
+    max-height:
+        min(
+            82dvh,
+            720px
+        );
+
+    margin-bottom:
+        var(--hoje-teclado);
+
     padding:
         10px
         16px
-        calc(18px + env(safe-area-inset-bottom, 0px));
-    border: 1px solid rgba(26, 23, 30, 0.075);
-    border-bottom: 0;
-    border-radius: 30px 30px 0 0;
-    background: rgba(255, 254, 255, 0.985);
-    -webkit-backdrop-filter: blur(24px);
-    backdrop-filter: blur(24px);
-    box-shadow: 0 -24px 70px rgba(18, 15, 22, 0.20);
-    overflow: auto;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-    transform: translateY(calc(100% + 36px));
+        calc(
+            18px +
+            env(
+                safe-area-inset-bottom,
+                0px
+            )
+        );
+
+    border:
+        1px solid
+        rgba(
+            26,
+            23,
+            30,
+            0.075
+        );
+
+    border-bottom:
+        0;
+
+    border-radius:
+        30px
+        30px
+        0
+        0;
+
+    background:
+        rgba(
+            255,
+            254,
+            255,
+            0.985
+        );
+
+    -webkit-backdrop-filter:
+        blur(24px);
+
+    backdrop-filter:
+        blur(24px);
+
+    box-shadow:
+        0 -24px 70px
+        rgba(
+            18,
+            15,
+            22,
+            0.20
+        );
+
+    overflow:
+        auto;
+
+    overscroll-behavior:
+        contain;
+
+    -webkit-overflow-scrolling:
+        touch;
+
+    transform:
+        translateY(
+            calc(
+                100% +
+                36px
+            )
+        );
+
     transition:
-        transform 260ms cubic-bezier(.22,1,.36,1),
-        margin-bottom 180ms ease;
+        transform
+        260ms
+        cubic-bezier(
+            .22,
+            1,
+            .36,
+            1
+        ),
+
+        margin-bottom
+        180ms
+        ease;
 }
+
 
 .hoje-editor.aberto {
-    pointer-events: auto;
+    pointer-events:
+        auto;
 }
 
-.hoje-editor.aberto .hoje-editor-fundo {
-    opacity: 1;
+
+.hoje-editor.aberto
+.hoje-editor-fundo {
+    opacity:
+        1;
 }
 
-.hoje-editor.aberto .hoje-editor-sheet {
-    transform: translateY(0);
+
+.hoje-editor.aberto
+.hoje-editor-sheet {
+    transform:
+        translateY(0);
 }
+
 
 .hoje-editor-barra {
-    width: 42px;
-    height: 4px;
-    margin: 0 auto 9px;
-    border-radius: 999px;
-    background: rgba(30, 28, 33, 0.13);
+    width:
+        42px;
+
+    height:
+        4px;
+
+    margin:
+        0
+        auto
+        9px;
+
+    border-radius:
+        999px;
+
+    background:
+        rgba(
+            30,
+            28,
+            33,
+            0.13
+        );
 }
+
 
 .hoje-editor-cabecalho {
-    min-height: 45px;
-    display: grid;
-    grid-template-columns: 44px 1fr 44px;
-    align-items: center;
-    gap: 4px;
+    min-height:
+        45px;
+
+    display:
+        grid;
+
+    grid-template-columns:
+        44px
+        1fr
+        44px;
+
+    align-items:
+        center;
+
+    gap:
+        4px;
 }
 
+
 .hoje-editor-cabecalho h2 {
-    margin: 0;
-    color: var(--hoje-preto);
-    font-size: 19px;
-    font-weight: 790;
-    line-height: 1.1;
-    letter-spacing: -0.035em;
-    text-align: center;
+    margin:
+        0;
+
+    color:
+        var(--hoje-preto);
+
+    font-size:
+        19px;
+
+    font-weight:
+        790;
+
+    line-height:
+        1.1;
+
+    letter-spacing:
+        -0.035em;
+
+    text-align:
+        center;
 }
+
 
 .hoje-editor-fechar,
 .hoje-editor-voltar {
-    width: 40px;
-    height: 40px;
-    margin: 0;
-    padding: 0;
-    border: 0;
-    border-radius: 50%;
-    background: #f2f0f3;
-    color: #29272d;
-    display: grid;
-    place-items: center;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
+    width:
+        40px;
+
+    height:
+        40px;
+
+    margin:
+        0;
+
+    padding:
+        0;
+
+    border:
+        0;
+
+    border-radius:
+        50%;
+
+    background:
+        #f2f0f3;
+
+    color:
+        #29272d;
+
+    display:
+        grid;
+
+    place-items:
+        center;
+
+    cursor:
+        pointer;
+
+    -webkit-tap-highlight-color:
+        transparent;
 }
+
 
 .hoje-editor-voltar {
-    font-size: 28px;
-    font-weight: 420;
-    line-height: 1;
+    font-size:
+        28px;
+
+    font-weight:
+        420;
+
+    line-height:
+        1;
 }
+
 
 .hoje-editor-fechar {
-    grid-column: 3;
-    font-size: 23px;
-    font-weight: 420;
-    line-height: 1;
+    grid-column:
+        3;
+
+    font-size:
+        23px;
+
+    font-weight:
+        420;
+
+    line-height:
+        1;
 }
+
 
 .hoje-editor-voltar[hidden] {
-    display: block !important;
-    visibility: hidden;
-    pointer-events: none;
+    display:
+        block !important;
+
+    visibility:
+        hidden;
+
+    pointer-events:
+        none;
 }
+
 
 .hoje-editor-intro {
-    margin: 7px 3px 14px;
+    margin:
+        7px
+        3px
+        14px;
 }
+
 
 .hoje-editor-intro strong {
-    display: block;
-    margin-bottom: 3px;
-    color: #29272d;
-    font-size: 15px;
-    font-weight: 750;
+    display:
+        block;
+
+    margin-bottom:
+        3px;
+
+    color:
+        #29272d;
+
+    font-size:
+        15px;
+
+    font-weight:
+        750;
 }
+
 
 .hoje-editor-intro span {
-    color: var(--hoje-suave);
-    font-size: 12px;
-    line-height: 1.35;
+    color:
+        var(--hoje-suave);
+
+    font-size:
+        12px;
+
+    line-height:
+        1.35;
 }
+
+
+/* =========================================================
+   INPUT DA NOTA
+   ========================================================= */
 
 .hoje-nota-wrap {
-    position: relative;
+    position:
+        relative;
 }
+
 
 #hoje-nota-input {
-    display: block;
-    width: 100%;
-    min-height: 118px;
-    max-height: 200px;
-    margin: 0;
-    padding: 15px 16px 31px;
-    border: 1px solid rgba(28, 25, 32, 0.09);
-    border-radius: 21px;
-    outline: none;
-    resize: none;
-    background: #f7f5f8;
-    color: #222126;
-    font: inherit;
-    font-size: 16px;
-    font-weight: 560;
-    line-height: 1.4;
-    caret-color: var(--hoje-vermelho);
+    display:
+        block;
+
+    width:
+        100%;
+
+    min-height:
+        118px;
+
+    max-height:
+        200px;
+
+    margin:
+        0;
+
+    padding:
+        15px
+        16px
+        31px;
+
+    border:
+        1px solid
+        rgba(
+            28,
+            25,
+            32,
+            0.09
+        );
+
+    border-radius:
+        21px;
+
+    outline:
+        none;
+
+    resize:
+        none;
+
+    background:
+        #f7f5f8;
+
+    color:
+        #222126;
+
+    font:
+        inherit;
+
+    font-size:
+        16px;
+
+    font-weight:
+        560;
+
+    line-height:
+        1.4;
+
+    caret-color:
+        var(--hoje-vermelho);
+
     transition:
-        border-color 150ms ease,
-        box-shadow 150ms ease,
-        background-color 150ms ease;
+        border-color
+        150ms
+        ease,
+
+        box-shadow
+        150ms
+        ease,
+
+        background-color
+        150ms
+        ease;
 }
+
 
 #hoje-nota-input::placeholder {
-    color: #a39fa8;
+    color:
+        #a39fa8;
 }
+
 
 #hoje-nota-input:focus {
-    border-color: rgba(225, 35, 70, 0.22);
-    background: #fff;
-    box-shadow: 0 0 0 4px rgba(225, 35, 70, 0.055);
+    border-color:
+        rgba(
+            225,
+            35,
+            70,
+            0.22
+        );
+
+    background:
+        #fff;
+
+    box-shadow:
+        0 0 0 4px
+        rgba(
+            225,
+            35,
+            70,
+            0.055
+        );
 }
+
 
 .hoje-nota-contador {
-    position: absolute;
-    right: 13px;
-    bottom: 10px;
-    color: #9b97a0;
-    font-size: 10px;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
+    position:
+        absolute;
+
+    right:
+        13px;
+
+    bottom:
+        10px;
+
+    color:
+        #9b97a0;
+
+    font-size:
+        10px;
+
+    font-weight:
+        700;
+
+    font-variant-numeric:
+        tabular-nums;
 }
+
+
+/* =========================================================
+   OPÇÃO ROUPA
+   ========================================================= */
 
 .hoje-opcao-roupa {
-    width: 100%;
-    min-height: 64px;
-    margin: 12px 0 0;
-    padding: 10px 12px;
-    border: 1px solid rgba(28, 25, 32, 0.075);
-    border-radius: 19px;
-    background: #fff;
-    color: var(--hoje-texto);
-    display: grid;
-    grid-template-columns: 42px minmax(0,1fr) 20px;
-    align-items: center;
-    gap: 10px;
-    text-align: left;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
+    width:
+        100%;
+
+    min-height:
+        68px;
+
+    margin:
+        12px
+        0
+        0;
+
+    padding:
+        10px
+        12px;
+
+    border:
+        1px solid
+        rgba(
+            28,
+            25,
+            32,
+            0.075
+        );
+
+    border-radius:
+        19px;
+
+    background:
+        #fff;
+
+    color:
+        var(--hoje-texto);
+
+    display:
+        grid;
+
+    grid-template-columns:
+        48px
+        minmax(0,1fr)
+        20px;
+
+    align-items:
+        center;
+
+    gap:
+        11px;
+
+    text-align:
+        left;
+
+    cursor:
+        pointer;
+
+    -webkit-tap-highlight-color:
+        transparent;
 }
+
 
 .hoje-opcao-roupa-icone {
-    width: 42px;
-    height: 42px;
-    border-radius: 14px;
-    background: #f3eff7;
-    display: grid;
-    place-items: center;
-    font-size: 22px;
+    width:
+        48px;
+
+    height:
+        48px;
+
+    border-radius:
+        15px;
+
+    background:
+        #f3eff7;
+
+    display:
+        grid;
+
+    place-items:
+        center;
+
+    font-size:
+        27px;
 }
+
 
 .hoje-opcao-roupa-texto {
-    min-width: 0;
+    min-width:
+        0;
 }
+
 
 .hoje-opcao-roupa-texto strong {
-    display: block;
-    margin-bottom: 4px;
-    color: #29272d;
-    font-size: 13px;
-    font-weight: 760;
+    display:
+        block;
+
+    margin-bottom:
+        4px;
+
+    color:
+        #29272d;
+
+    font-size:
+        13px;
+
+    font-weight:
+        760;
 }
+
 
 #hoje-roupa-resumo {
-    display: block;
-    color: #8b8690;
-    font-size: 11px;
-    font-weight: 580;
-    line-height: 1.25;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    display:
+        block;
+
+    color:
+        #8b8690;
+
+    font-size:
+        11px;
+
+    font-weight:
+        580;
+
+    line-height:
+        1.25;
+
+    overflow:
+        hidden;
+
+    text-overflow:
+        ellipsis;
+
+    white-space:
+        nowrap;
 }
 
-.hoje-opcao-roupa.tem-roupa #hoje-roupa-resumo {
-    color: #5f5965;
-    font-weight: 650;
+
+.hoje-opcao-roupa.tem-roupa
+#hoje-roupa-resumo {
+    color:
+        #5f5965;
+
+    font-weight:
+        650;
 }
+
 
 .hoje-opcao-seta {
-    color: #aaa5ae;
-    font-size: 24px;
-    line-height: 1;
+    color:
+        #aaa5ae;
+
+    font-size:
+        24px;
+
+    line-height:
+        1;
 }
+
+
+/* =========================================================
+   AÇÕES
+   ========================================================= */
 
 .hoje-editor-acoes {
-    margin-top: 15px;
-    display: flex;
-    align-items: center;
-    gap: 9px;
+    margin-top:
+        15px;
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    gap:
+        9px;
 }
+
 
 .hoje-editor-acoes button {
-    min-height: 50px;
-    margin: 0;
-    border: 0;
-    border-radius: 999px;
-    font-size: 14px;
-    font-weight: 770;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
+    min-height:
+        50px;
+
+    margin:
+        0;
+
+    border:
+        0;
+
+    border-radius:
+        999px;
+
+    font-size:
+        14px;
+
+    font-weight:
+        770;
+
+    cursor:
+        pointer;
+
+    -webkit-tap-highlight-color:
+        transparent;
 }
+
 
 #hoje-apagar {
-    flex: 0 0 auto;
-    padding: 0 17px;
-    background: #f3f1f4;
-    color: #8a3a48;
+    flex:
+        0 0 auto;
+
+    padding:
+        0
+        17px;
+
+    background:
+        #f3f1f4;
+
+    color:
+        #8a3a48;
 }
+
 
 #hoje-guardar {
-    flex: 1;
-    padding: 0 22px;
-    background: var(--hoje-vermelho);
-    color: #fff;
-    box-shadow: 0 9px 22px rgba(225, 35, 70, 0.20);
+    flex:
+        1;
+
+    padding:
+        0
+        22px;
+
+    background:
+        var(--hoje-vermelho);
+
+    color:
+        #fff;
+
+    box-shadow:
+        0 9px 22px
+        rgba(
+            225,
+            35,
+            70,
+            0.20
+        );
 }
+
 
 .hoje-editor-erro {
-    margin: 10px 3px 0;
-    color: #b12840;
-    font-size: 12px;
-    font-weight: 650;
-    line-height: 1.35;
+    margin:
+        10px
+        3px
+        0;
+
+    color:
+        #b12840;
+
+    font-size:
+        12px;
+
+    font-weight:
+        650;
+
+    line-height:
+        1.35;
 }
 
+
 .hoje-editor.a-guardar {
-    cursor: wait;
+    cursor:
+        wait;
 }
+
 
 .hoje-editor.a-guardar button,
 .hoje-editor.a-guardar textarea {
-    opacity: 0.58;
+    opacity:
+        0.58;
 }
 
+
 /* =========================================================
-   SUBMENU ROUPA
+   SUBMENU DA ROUPA
    ========================================================= */
 
 .hoje-roupa-ajuda {
-    margin: 8px 3px 12px;
-    color: var(--hoje-suave);
-    font-size: 12px;
-    line-height: 1.35;
+    margin:
+        8px
+        3px
+        12px;
+
+    color:
+        var(--hoje-suave);
+
+    font-size:
+        12px;
+
+    line-height:
+        1.35;
 }
+
 
 .hoje-roupa-selecionada {
-    margin: 0 0 13px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 7px;
+    margin:
+        0
+        0
+        13px;
+
+    display:
+        flex;
+
+    flex-wrap:
+        wrap;
+
+    gap:
+        7px;
 }
+
 
 .hoje-roupa-selecionada-item {
-    min-height: 34px;
-    margin: 0;
-    padding: 5px 8px 5px 9px;
-    border: 1px solid rgba(28, 25, 32, 0.07);
-    border-radius: 999px;
-    background: #f6f3f7;
-    color: #4a4650;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 10px;
-    font-weight: 690;
-    cursor: pointer;
+    min-height:
+        39px;
+
+    margin:
+        0;
+
+    padding:
+        5px
+        9px;
+
+    border:
+        1px solid
+        rgba(
+            28,
+            25,
+            32,
+            0.07
+        );
+
+    border-radius:
+        999px;
+
+    background:
+        #f6f3f7;
+
+    color:
+        #4a4650;
+
+    display:
+        inline-flex;
+
+    align-items:
+        center;
+
+    gap:
+        7px;
+
+    font-size:
+        10px;
+
+    font-weight:
+        690;
+
+    cursor:
+        pointer;
 }
+
+
+.hoje-roupa-selecionada-item
+> span:first-child {
+    font-size:
+        20px;
+
+    line-height:
+        1;
+}
+
 
 .hoje-roupa-selecionada-remover {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: rgba(30, 28, 33, 0.07);
-    display: grid;
-    place-items: center;
-    font-size: 15px;
-    line-height: 1;
+    width:
+        19px;
+
+    height:
+        19px;
+
+    border-radius:
+        50%;
+
+    background:
+        rgba(
+            30,
+            28,
+            33,
+            0.07
+        );
+
+    display:
+        grid;
+
+    place-items:
+        center;
+
+    font-size:
+        15px;
+
+    line-height:
+        1;
 }
+
+
+/* =========================================================
+   GRELHA DE PEÇAS
+   ========================================================= */
 
 .hoje-pecas-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0,1fr));
-    gap: 8px;
+    display:
+        grid;
+
+    grid-template-columns:
+        repeat(
+            4,
+            minmax(0,1fr)
+        );
+
+    gap:
+        9px;
 }
+
 
 .hoje-peca {
-    position: relative;
-    min-width: 0;
-    min-height: 76px;
-    margin: 0;
-    padding: 8px 5px;
-    border: 1px solid rgba(29, 26, 33, 0.075);
-    border-radius: 18px;
-    background: #f7f5f8;
-    color: #3d3942;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
+    position:
+        relative;
+
+    min-width:
+        0;
+
+    min-height:
+        92px;
+
+    margin:
+        0;
+
+    padding:
+        10px
+        5px
+        8px;
+
+    border:
+        1px solid
+        rgba(
+            29,
+            26,
+            33,
+            0.075
+        );
+
+    border-radius:
+        20px;
+
+    background:
+        #f7f5f8;
+
+    color:
+        #3d3942;
+
+    display:
+        flex;
+
+    flex-direction:
+        column;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    gap:
+        8px;
+
+    cursor:
+        pointer;
+
+    -webkit-tap-highlight-color:
+        transparent;
+
+    transition:
+        transform
+        120ms
+        ease,
+
+        border-color
+        120ms
+        ease,
+
+        background-color
+        120ms
+        ease;
 }
+
+
+.hoje-peca:active {
+    transform:
+        scale(0.96);
+}
+
 
 .hoje-peca.selecionada {
-    border-color: rgba(225, 35, 70, 0.18);
-    background: #fff6f8;
+    border-color:
+        rgba(
+            225,
+            35,
+            70,
+            0.18
+        );
+
+    background:
+        #fff6f8;
 }
+
 
 .hoje-peca.ativa {
-    border-color: rgba(225, 35, 70, 0.34);
-    box-shadow: 0 0 0 3px rgba(225, 35, 70, 0.055);
+    border-color:
+        rgba(
+            225,
+            35,
+            70,
+            0.34
+        );
+
+    box-shadow:
+        0 0 0 3px
+        rgba(
+            225,
+            35,
+            70,
+            0.055
+        );
 }
+
+
+/*
+ * Ícones grandes também no seletor.
+ */
 
 .hoje-peca-icone {
-    font-size: 24px;
-    line-height: 1;
+    font-size:
+        33px;
+
+    line-height:
+        1;
 }
+
 
 .hoje-peca-label {
-    max-width: 100%;
-    font-size: 9px;
-    font-weight: 700;
-    line-height: 1.15;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    max-width:
+        100%;
+
+    font-size:
+        10px;
+
+    font-weight:
+        720;
+
+    line-height:
+        1.15;
+
+    overflow:
+        hidden;
+
+    text-overflow:
+        ellipsis;
+
+    white-space:
+        nowrap;
 }
+
 
 .hoje-peca-cor {
-    position: absolute;
-    top: 8px;
-    right: 8px;
+    position:
+        absolute;
+
+    top:
+        9px;
+
+    right:
+        9px;
+
+    width:
+        12px;
+
+    height:
+        12px;
 }
+
+
+/* =========================================================
+   CORES
+   ========================================================= */
 
 .hoje-cores-area {
-    margin-top: 15px;
-    padding: 13px;
-    border: 1px solid rgba(29, 26, 33, 0.07);
-    border-radius: 21px;
-    background: #fff;
+    margin-top:
+        15px;
+
+    padding:
+        14px;
+
+    border:
+        1px solid
+        rgba(
+            29,
+            26,
+            33,
+            0.07
+        );
+
+    border-radius:
+        21px;
+
+    background:
+        #fff;
 }
+
 
 .hoje-cores-area h3 {
-    margin: 0 0 11px;
-    color: #37333b;
-    font-size: 12px;
-    font-weight: 760;
+    margin:
+        0
+        0
+        13px;
+
+    color:
+        #37333b;
+
+    font-size:
+        12px;
+
+    font-weight:
+        760;
 }
+
 
 .hoje-cores-grid {
-    display: grid;
-    grid-template-columns: repeat(7, minmax(0,1fr));
-    gap: 8px 5px;
+    display:
+        grid;
+
+    grid-template-columns:
+        repeat(
+            7,
+            minmax(0,1fr)
+        );
+
+    gap:
+        11px
+        6px;
 }
+
 
 .hoje-cor {
-    min-width: 0;
-    margin: 0;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: #67616c;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 5px;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
+    min-width:
+        0;
+
+    margin:
+        0;
+
+    padding:
+        0;
+
+    border:
+        0;
+
+    background:
+        transparent;
+
+    color:
+        #67616c;
+
+    display:
+        flex;
+
+    flex-direction:
+        column;
+
+    align-items:
+        center;
+
+    gap:
+        6px;
+
+    cursor:
+        pointer;
+
+    -webkit-tap-highlight-color:
+        transparent;
 }
+
 
 .hoje-cor-amostra {
-    width: 29px;
-    height: 29px;
-    border: 1px solid rgba(25, 23, 28, 0.12);
-    border-radius: 50%;
+    width:
+        34px;
+
+    height:
+        34px;
+
+    border:
+        1px solid
+        rgba(
+            25,
+            23,
+            28,
+            0.12
+        );
+
+    border-radius:
+        50%;
+
     box-shadow:
-        inset 0 0 0 1px rgba(255,255,255,0.35),
-        0 2px 6px rgba(25, 23, 28, 0.06);
+        inset 0 0 0 1px
+        rgba(
+            255,
+            255,
+            255,
+            0.35
+        ),
+
+        0 2px 6px
+        rgba(
+            25,
+            23,
+            28,
+            0.06
+        );
 }
 
-.hoje-cor.selecionada .hoje-cor-amostra {
+
+.hoje-cor.selecionada
+.hoje-cor-amostra {
     box-shadow:
         0 0 0 3px #fff,
-        0 0 0 5px rgba(225, 35, 70, 0.45);
+
+        0 0 0 5px
+        rgba(
+            225,
+            35,
+            70,
+            0.45
+        );
 }
+
 
 .hoje-cor-label {
-    max-width: 100%;
-    font-size: 7.5px;
-    font-weight: 650;
-    line-height: 1.05;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    max-width:
+        100%;
+
+    font-size:
+        8px;
+
+    font-weight:
+        650;
+
+    line-height:
+        1.05;
+
+    overflow:
+        hidden;
+
+    text-overflow:
+        ellipsis;
+
+    white-space:
+        nowrap;
 }
 
+
 .hoje-roupa-concluir {
-    width: 100%;
-    min-height: 49px;
-    margin: 15px 0 0;
-    padding: 0 20px;
-    border: 0;
-    border-radius: 999px;
-    background: #252329;
-    color: #fff;
-    font-size: 13px;
-    font-weight: 760;
-    cursor: pointer;
+    width:
+        100%;
+
+    min-height:
+        49px;
+
+    margin:
+        15px
+        0
+        0;
+
+    padding:
+        0
+        20px;
+
+    border:
+        0;
+
+    border-radius:
+        999px;
+
+    background:
+        #252329;
+
+    color:
+        #fff;
+
+    font-size:
+        13px;
+
+    font-weight:
+        760;
+
+    cursor:
+        pointer;
 }
+
+
+/* =========================================================
+   TABLET
+   ========================================================= */
 
 @media (min-width: 560px) {
     .hoje-pecas-grid {
-        grid-template-columns: repeat(5, minmax(0,1fr));
-    }
-}
-
-@media (max-width: 380px) {
-    #mini-menu-hoje {
-        width: calc(100% - 34px);
-        padding: 11px 13px;
+        grid-template-columns:
+            repeat(
+                5,
+                minmax(0,1fr)
+            );
     }
 
-    .perfil-hoje-adicionar {
-        top: 49px;
-        right: 18px;
-        width: 43px;
-        height: 43px;
-    }
 
     .perfil-hoje-balao {
-        width: calc(100% - 58px);
-        bottom: 69px;
+        left:
+            42px;
+
+        right:
+            auto;
+
+        width:
+            min(
+                390px,
+                calc(100% - 130px)
+            );
     }
+}
+
+
+/* =========================================================
+   ECRÃS PEQUENOS
+   ========================================================= */
+
+@media (max-width: 380px) {
+
+    #mini-menu-hoje {
+        width:
+            calc(
+                100% -
+                38px
+            );
+
+        padding:
+            14px
+            14px
+            13px;
+    }
+
+
+    .perfil-hoje-adicionar {
+        top:
+            62px;
+
+        right:
+            15px;
+
+        width:
+            45px;
+
+        height:
+            45px;
+    }
+
+
+    .perfil-hoje-balao {
+        top:
+            25px;
+
+        left:
+            18px;
+
+        right:
+            67px;
+
+        padding:
+            17px
+            15px
+            15px;
+    }
+
+
+    .perfil-hoje-balao::before {
+        left:
+            25px;
+
+        transform:
+            scale(0.88);
+
+        transform-origin:
+            left bottom;
+    }
+
+
+    .perfil-hoje-balao
+    .hoje-chip {
+        min-height:
+            47px;
+
+        padding:
+            6px
+            8px;
+    }
+
+
+    .perfil-hoje-balao
+    .hoje-chip-icone {
+        font-size:
+            24px;
+    }
+
 
     .hoje-pecas-grid {
-        grid-template-columns: repeat(4, minmax(0,1fr));
-        gap: 6px;
+        grid-template-columns:
+            repeat(
+                4,
+                minmax(0,1fr)
+            );
+
+        gap:
+            7px;
     }
+
+
+    .hoje-peca {
+        min-height:
+            84px;
+    }
+
+
+    .hoje-peca-icone {
+        font-size:
+            29px;
+    }
+
 
     .hoje-cores-grid {
-        grid-template-columns: repeat(5, minmax(0,1fr));
+        grid-template-columns:
+            repeat(
+                5,
+                minmax(0,1fr)
+            );
     }
 }
+
+
+/* =========================================================
+   ECRÃS BAIXOS
+   ========================================================= */
 
 @media (max-height: 700px) {
+
     #mini-menu-hoje {
-        margin-top: 7px;
-        padding: 10px 12px 9px;
+        margin-top:
+            12px;
+
+        padding:
+            12px
+            14px;
     }
 
-    #mini-menu-hoje [data-hoje-nota] {
-        -webkit-line-clamp: 2;
-        font-size: 13px;
+
+    #mini-menu-hoje
+    [data-hoje-nota] {
+        -webkit-line-clamp:
+            2;
+
+        font-size:
+            13px;
     }
 
-    #mini-menu-hoje .hoje-chip {
-        min-height: 23px;
-        padding-top: 2px;
-        padding-bottom: 2px;
+
+    #mini-menu-hoje
+    .hoje-chip {
+        min-height:
+            39px;
+    }
+
+
+    #mini-menu-hoje
+    .hoje-chip-icone {
+        font-size:
+            20px;
     }
 }
 
-@media (prefers-reduced-motion: reduce) {
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
+@media (
+    prefers-reduced-motion:
+    reduce
+) {
+
     .hoje-editor-fundo,
     .hoje-editor-sheet,
-    .perfil-hoje-adicionar {
-        transition: none !important;
+    .perfil-hoje-adicionar,
+    .perfil-hoje-balao,
+    .hoje-peca {
+        transition:
+            none !important;
     }
 }
