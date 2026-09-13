@@ -1,9 +1,18 @@
 {% extends 'layout.html' %}
+
 {% block title %}{{ membro.nome }} | Margot{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ doc_root }}estilos/profile.css?v=47" data-margot-page-style>
-<link rel="stylesheet" href="{{ doc_root }}estilos/today.css?v=2" data-margot-page-style>
+<link
+    rel="stylesheet"
+    href="{{ doc_root }}estilos/profile.css?v=47"
+    data-margot-page-style
+>
+<link
+    rel="stylesheet"
+    href="{{ doc_root }}estilos/today.css?v=3"
+    data-margot-page-style
+>
 {% endblock %}
 
 {% block content %}
@@ -14,316 +23,740 @@
 {% set total_slides = total_fotos > 0 ? total_fotos : 1 %}
 {% set perfil_proprio = membro.id == session.id %}
 
-<svg class="perfil-svg-defs" width="0" height="0" viewBox="0 0 1 1" aria-hidden="true" focusable="false">
-<defs>
-<clipPath id="perfilIslandClip" clipPathUnits="objectBoundingBox">
-<path id="perfil-ilha-path" d="M 0.075 0.235 C 0.055 0.125, 0.135 0.045, 0.285 0.055 C 0.390 0.010, 0.500 0.070, 0.610 0.050 C 0.750 0.020, 0.875 0.095, 0.915 0.225 C 0.985 0.320, 0.940 0.435, 0.965 0.545 C 0.995 0.675, 0.915 0.775, 0.825 0.835 C 0.755 0.945, 0.620 0.900, 0.515 0.950 C 0.405 0.995, 0.305 0.930, 0.215 0.920 C 0.105 0.910, 0.045 0.820, 0.060 0.700 C 0.015 0.605, 0.070 0.495, 0.045 0.405 C 0.025 0.330, 0.095 0.305, 0.075 0.235 Z"></path>
-</clipPath>
+<svg
+    class="perfil-svg-defs"
+    width="0"
+    height="0"
+    viewBox="0 0 1 1"
+    aria-hidden="true"
+    focusable="false"
+>
+    <defs>
+        <clipPath
+            id="perfilIslandClip"
+            clipPathUnits="objectBoundingBox"
+        >
+            <path
+                id="perfil-ilha-path"
+                d="
+                    M 0.075 0.235
+                    C 0.055 0.125, 0.135 0.045, 0.285 0.055
+                    C 0.390 0.010, 0.500 0.070, 0.610 0.050
+                    C 0.750 0.020, 0.875 0.095, 0.915 0.225
+                    C 0.985 0.320, 0.940 0.435, 0.965 0.545
+                    C 0.995 0.675, 0.915 0.775, 0.825 0.835
+                    C 0.755 0.945, 0.620 0.900, 0.515 0.950
+                    C 0.405 0.995, 0.305 0.930, 0.215 0.920
+                    C 0.105 0.910, 0.045 0.820, 0.060 0.700
+                    C 0.015 0.605, 0.070 0.495, 0.045 0.405
+                    C 0.025 0.330, 0.095 0.305, 0.075 0.235
+                    Z
+                "
+            ></path>
+        </clipPath>
 
-<clipPath id="perfilLightboxClip" clipPathUnits="objectBoundingBox">
-<path id="perfil-lightbox-path" d="M 0.075 0.235 C 0.055 0.125, 0.135 0.045, 0.285 0.055 C 0.390 0.010, 0.500 0.070, 0.610 0.050 C 0.750 0.020, 0.875 0.095, 0.915 0.225 C 0.985 0.320, 0.940 0.435, 0.965 0.545 C 0.995 0.675, 0.915 0.775, 0.825 0.835 C 0.755 0.945, 0.620 0.900, 0.515 0.950 C 0.405 0.995, 0.305 0.930, 0.215 0.920 C 0.105 0.910, 0.045 0.820, 0.060 0.700 C 0.015 0.605, 0.070 0.495, 0.045 0.405 C 0.025 0.330, 0.095 0.305, 0.075 0.235 Z"></path>
-</clipPath>
-</defs>
+        <clipPath
+            id="perfilLightboxClip"
+            clipPathUnits="objectBoundingBox"
+        >
+            <path
+                id="perfil-lightbox-path"
+                d="
+                    M 0.075 0.235
+                    C 0.055 0.125, 0.135 0.045, 0.285 0.055
+                    C 0.390 0.010, 0.500 0.070, 0.610 0.050
+                    C 0.750 0.020, 0.875 0.095, 0.915 0.225
+                    C 0.985 0.320, 0.940 0.435, 0.965 0.545
+                    C 0.995 0.675, 0.915 0.775, 0.825 0.835
+                    C 0.755 0.945, 0.620 0.900, 0.515 0.950
+                    C 0.405 0.995, 0.305 0.930, 0.215 0.920
+                    C 0.105 0.910, 0.045 0.820, 0.060 0.700
+                    C 0.015 0.605, 0.070 0.495, 0.045 0.405
+                    C 0.025 0.330, 0.095 0.305, 0.075 0.235
+                    Z
+                "
+            ></path>
+        </clipPath>
+    </defs>
 </svg>
 
-<main id="perfil" class="{{ perfil_proprio ? 'perfil-proprio' : 'perfil-visitante' }}">
-<div class="perfil-fundo" aria-hidden="true">
-<span class="perfil-fundo-forma perfil-fundo-forma--1"></span>
-<span class="perfil-fundo-forma perfil-fundo-forma--2"></span>
-<span class="perfil-fundo-forma perfil-fundo-forma--3"></span>
-</div>
+<main
+    id="perfil"
+    class="{{ perfil_proprio ? 'perfil-proprio' : 'perfil-visitante' }}"
+>
+    <div
+        class="perfil-fundo"
+        aria-hidden="true"
+    >
+        <span class="perfil-fundo-forma perfil-fundo-forma--1"></span>
+        <span class="perfil-fundo-forma perfil-fundo-forma--2"></span>
+        <span class="perfil-fundo-forma perfil-fundo-forma--3"></span>
+    </div>
 
-<div class="perfil-page">
-<header class="perfil-topo">
-<div class="perfil-marca-abstrata" aria-hidden="true">
-<span class="perfil-marca-abstrata--1"></span>
-<span class="perfil-marca-abstrata--2"></span>
-</div>
+    <div class="perfil-page">
+        <header class="perfil-topo">
+            <div
+                class="perfil-marca-abstrata"
+                aria-hidden="true"
+            >
+                <span class="perfil-marca-abstrata--1"></span>
+                <span class="perfil-marca-abstrata--2"></span>
+            </div>
 
-{% if perfil_proprio %}
-<a href="{{ doc_root }}settings" class="perfil-editar" aria-label="Editar perfil">
-<svg viewBox="0 0 24 24" aria-hidden="true">
-<path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3Z"></path>
-<path d="m13.5 6.5 4 4"></path>
-</svg>
-<span>Editar</span>
-</a>
-{% endif %}
-</header>
+            {% if perfil_proprio %}
+                <a
+                    href="{{ doc_root }}settings"
+                    class="perfil-editar"
+                    aria-label="Editar perfil"
+                >
+                    <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3Z"></path>
+                        <path d="m13.5 6.5 4 4"></path>
+                    </svg>
 
-<section class="perfil-hero">
-<div class="perfil-foto-area">
-<span class="perfil-acento perfil-acento--amarelo" aria-hidden="true"></span>
-<span class="perfil-acento perfil-acento--roxo" aria-hidden="true"></span>
-<span class="perfil-acento perfil-acento--rosa" aria-hidden="true"></span>
+                    <span>
+                        Editar
+                    </span>
+                </a>
+            {% endif %}
+        </header>
 
-<section id="perfil-galeria" class="perfil-galeria" aria-label="Fotografias de {{ membro.nome }}" tabindex="0">
-<div id="perfil-fotos" class="perfil-fotos">
+        <section class="perfil-hero">
+            <div class="perfil-foto-area">
+                <span
+                    class="perfil-acento perfil-acento--amarelo"
+                    aria-hidden="true"
+                ></span>
 
-{% if total_fotos > 0 %}
-{% for foto in fotos %}
-<figure id="perfil-foto-{{ loop.index0 }}" class="perfil-slide" data-indice="{{ loop.index0 }}" aria-hidden="{{ loop.first ? 'false' : 'true' }}">
-<img src="{{ doc_root }}imagens/fotos-perfil-originais/{{ foto.nome_arquivo }}" data-fallback="{{ doc_root }}imagens/fotos-perfil/{{ foto.nome_arquivo }}" data-default="/imagens/fotos-perfil/default.webp" alt="Fotografia {{ loop.index }} de {{ membro.nome }}" loading="{{ loop.first ? 'eager' : 'lazy' }}" fetchpriority="{{ loop.first ? 'high' : 'auto' }}" draggable="false">
-</figure>
-{% endfor %}
-{% else %}
-<figure id="perfil-foto-0" class="perfil-slide perfil-slide--sem-foto" data-indice="0" aria-hidden="false">
-<img src="{{ doc_root }}imagens/fotos-perfil/default.webp" data-default="{{ doc_root }}imagens/fotos-perfil/default.webp" alt="{{ membro.nome }} ainda não adicionou fotografias" loading="eager" fetchpriority="high" draggable="false">
-</figure>
-{% endif %}
+                <span
+                    class="perfil-acento perfil-acento--roxo"
+                    aria-hidden="true"
+                ></span>
 
-</div>
+                <span
+                    class="perfil-acento perfil-acento--rosa"
+                    aria-hidden="true"
+                ></span>
 
-{% if total_slides > 1 %}
-<div id="perfil-indicadores" class="perfil-indicadores" aria-label="Escolher fotografia">
-{% for indice in 0..(total_slides - 1) %}
-<button type="button" class="{{ loop.first ? 'ativo' : '' }}" data-indice="{{ indice }}" aria-label="Ver fotografia {{ indice + 1 }} de {{ total_slides }}" aria-current="{{ loop.first ? 'true' : 'false' }}">
-<span aria-hidden="true"></span>
-</button>
-{% endfor %}
-</div>
+                <section
+                    id="perfil-galeria"
+                    class="perfil-galeria"
+                    aria-label="Fotografias de {{ membro.nome }}"
+                    tabindex="0"
+                >
+                    <div
+                        id="perfil-fotos"
+                        class="perfil-fotos"
+                    >
+                        {% if total_fotos > 0 %}
+                            {% for foto in fotos %}
+                                <figure
+                                    id="perfil-foto-{{ loop.index0 }}"
+                                    class="perfil-slide"
+                                    data-indice="{{ loop.index0 }}"
+                                    aria-hidden="{{ loop.first ? 'false' : 'true' }}"
+                                >
+                                    <img
+                                        src="{{ doc_root }}imagens/fotos-perfil-originais/{{ foto.nome_arquivo }}"
+                                        data-fallback="{{ doc_root }}imagens/fotos-perfil/{{ foto.nome_arquivo }}"
+                                        data-default="/imagens/fotos-perfil/default.webp"
+                                        alt="Fotografia {{ loop.index }} de {{ membro.nome }}"
+                                        loading="{{ loop.first ? 'eager' : 'lazy' }}"
+                                        fetchpriority="{{ loop.first ? 'high' : 'auto' }}"
+                                        draggable="false"
+                                    >
+                                </figure>
+                            {% endfor %}
+                        {% else %}
+                            <figure
+                                id="perfil-foto-0"
+                                class="perfil-slide perfil-slide--sem-foto"
+                                data-indice="0"
+                                aria-hidden="false"
+                            >
+                                <img
+                                    src="{{ doc_root }}imagens/fotos-perfil/default.webp"
+                                    data-default="{{ doc_root }}imagens/fotos-perfil/default.webp"
+                                    alt="{{ membro.nome }} ainda não adicionou fotografias"
+                                    loading="eager"
+                                    fetchpriority="high"
+                                    draggable="false"
+                                >
+                            </figure>
+                        {% endif %}
+                    </div>
 
-<div class="perfil-contador" aria-hidden="true">
-<span id="perfil-contador-atual">01</span>
-<span>/</span>
-<span>{{ total_slides < 10 ? '0' ~ total_slides : total_slides }}</span>
-</div>
+                    {% if total_slides > 1 %}
+                        <div
+                            id="perfil-indicadores"
+                            class="perfil-indicadores"
+                            aria-label="Escolher fotografia"
+                        >
+                            {% for indice in 0..(total_slides - 1) %}
+                                <button
+                                    type="button"
+                                    class="{{ loop.first ? 'ativo' : '' }}"
+                                    data-indice="{{ indice }}"
+                                    aria-label="Ver fotografia {{ indice + 1 }} de {{ total_slides }}"
+                                    aria-current="{{ loop.first ? 'true' : 'false' }}"
+                                >
+                                    <span aria-hidden="true"></span>
+                                </button>
+                            {% endfor %}
+                        </div>
 
-<button type="button" id="perfil-anterior" class="perfil-nav perfil-nav--anterior" aria-label="Fotografia anterior">
-<svg viewBox="0 0 24 24" aria-hidden="true">
-<path d="M15 5l-7 7 7 7"></path>
-</svg>
-</button>
+                        <div
+                            class="perfil-contador"
+                            aria-hidden="true"
+                        >
+                            <span id="perfil-contador-atual">
+                                01
+                            </span>
 
-<button type="button" id="perfil-seguinte" class="perfil-nav perfil-nav--seguinte" aria-label="Fotografia seguinte">
-<svg viewBox="0 0 24 24" aria-hidden="true">
-<path d="M9 5l7 7-7 7"></path>
-</svg>
-</button>
-{% endif %}
+                            <span>/</span>
 
-{% if total_fotos > 0 %}
-<span class="perfil-expandir" aria-hidden="true">
-<svg viewBox="0 0 24 24">
-<path d="M8 3H3v5"></path>
-<path d="m3 3 6 6"></path>
-<path d="M16 21h5v-5"></path>
-<path d="m21 21-6-6"></path>
-</svg>
-</span>
-{% endif %}
-</section>
+                            <span>
+                                {{ total_slides < 10
+                                    ? '0' ~ total_slides
+                                    : total_slides
+                                }}
+                            </span>
+                        </div>
 
-{% if perfil_proprio %}
-<button type="button" id="perfil-hoje-adicionar" class="perfil-hoje-adicionar" aria-label="Adicionar nota ou roupa de hoje">
-<span aria-hidden="true">+</span>
-</button>
-{% endif %}
+                        <button
+                            type="button"
+                            id="perfil-anterior"
+                            class="perfil-nav perfil-nav--anterior"
+                            aria-label="Fotografia anterior"
+                        >
+                            <svg
+                                viewBox="0 0 24 24"
+                                aria-hidden="true"
+                            >
+                                <path d="M15 5l-7 7 7 7"></path>
+                            </svg>
+                        </button>
 
-<div id="perfil-hoje-balao" class="perfil-hoje-balao" data-editable="{{ perfil_proprio ? '1' : '0' }}" aria-hidden="true" {% if perfil_proprio %}role="button" tabindex="0" aria-label="Editar a tua nota e roupa de hoje"{% endif %} hidden>
-<div class="perfil-hoje-topo">Hoje</div>
-<p data-hoje-nota hidden></p>
-<div class="hoje-chips" data-hoje-roupa hidden></div>
-</div>
-</div>
+                        <button
+                            type="button"
+                            id="perfil-seguinte"
+                            class="perfil-nav perfil-nav--seguinte"
+                            aria-label="Fotografia seguinte"
+                        >
+                            <svg
+                                viewBox="0 0 24 24"
+                                aria-hidden="true"
+                            >
+                                <path d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </button>
+                    {% endif %}
 
-<article class="perfil-identidade">
-<span class="perfil-identidade-mancha" aria-hidden="true"></span>
+                    {% if total_fotos > 0 %}
+                        <span
+                            class="perfil-expandir"
+                            aria-hidden="true"
+                        >
+                            <svg viewBox="0 0 24 24">
+                                <path d="M8 3H3v5"></path>
+                                <path d="m3 3 6 6"></path>
+                                <path d="M16 21h5v-5"></path>
+                                <path d="m21 21-6-6"></path>
+                            </svg>
+                        </span>
+                    {% endif %}
+                </section>
 
-<h1>{{ membro.nome }}</h1>
+                {% if perfil_proprio %}
+                    <button
+                        type="button"
+                        id="perfil-hoje-adicionar"
+                        class="perfil-hoje-adicionar"
+                        aria-label="Adicionar nota ou roupa de hoje"
+                    >
+                        <span aria-hidden="true">+</span>
+                    </button>
+                {% endif %}
 
-<div class="perfil-identidade-rodape">
-<span class="perfil-idade">{{ idade }}</span>
+                <div
+                    id="perfil-hoje-balao"
+                    class="perfil-hoje-balao"
+                    data-editable="{{ perfil_proprio ? '1' : '0' }}"
+                    aria-hidden="true"
+                    {% if perfil_proprio %}
+                        role="button"
+                        tabindex="0"
+                        aria-label="Editar a tua nota e roupa de hoje"
+                    {% endif %}
+                    hidden
+                >
+                    <div class="perfil-hoje-topo">
+                        Hoje
+                    </div>
 
-{% if not perfil_proprio %}
-<div class="perfil-acoes">
-<button type="button" class="perfil-hey" id="enviar-hey-perfil" data-destinatario-id="{{ membro.id }}" aria-describedby="perfil-hey-estado">
-<span class="perfil-hey-label">Hey</span>
-</button>
+                    <p data-hoje-nota hidden></p>
 
-<button type="button" class="perfil-conectar{% if ligados %} ligado{% endif %}" id="conectar-perfil" data-destinatario-id="{{ membro.id }}" data-ligado="{{ ligados ? '1' : '0' }}" aria-describedby="perfil-conectar-estado" aria-pressed="{{ ligados ? 'true' : 'false' }}" aria-label="{{ ligados ? 'Desconectar de ' ~ membro.nome : 'Conectar com ' ~ membro.nome }}">
-<span class="perfil-conectar-icone" aria-hidden="true">
-<svg viewBox="0 0 24 24" focusable="false">
-<path d="M8.7 12.9 11 15.2l4.8-5.1"></path>
-<path d="M7.7 6.8a3.3 3.3 0 1 1 6.6 0"></path>
-<path d="M5.5 18.4c.5-3.2 2.7-5.1 5.5-5.1"></path>
-<path d="M15.8 14.4h4.4M18 12.2v4.4"></path>
-</svg>
-</span>
-<span class="perfil-conectar-label">{{ ligados ? 'Desconectar' : 'Conectar' }}</span>
-</button>
-</div>
+                    <div
+                        class="hoje-chips"
+                        data-hoje-roupa
+                        hidden
+                    ></div>
+                </div>
+            </div>
 
-<p id="perfil-hey-estado" class="sr-only" aria-live="polite" aria-atomic="true"></p>
+            <article class="perfil-identidade">
+                <span
+                    class="perfil-identidade-mancha"
+                    aria-hidden="true"
+                ></span>
 
-<p id="perfil-conectar-estado" class="sr-only" aria-live="polite" aria-atomic="true">
-{% if ligados %}
-Estão ligados na Margot.
-{% endif %}
-</p>
-{% endif %}
-</div>
+                <h1>
+                    {{ membro.nome }}
+                </h1>
 
-<div class="perfil-assinatura" aria-hidden="true">
-<span></span>
-<span></span>
-<span></span>
-</div>
-</article>
-</section>
+                <div class="perfil-identidade-rodape">
+                    <span class="perfil-idade">
+                        {{ idade }}
+                    </span>
 
-{% if membro.bio|default('') %}
-<section class="perfil-seccao perfil-sobre" aria-labelledby="perfil-sobre-titulo">
-<header class="perfil-seccao-topo">
-<span class="perfil-seccao-icone perfil-seccao-icone--roxo" aria-hidden="true">
-<svg viewBox="0 0 24 24">
-<circle cx="12" cy="7.5" r="3.2"></circle>
-<path d="M5.5 19c.7-3.7 3-5.5 6.5-5.5s5.8 1.8 6.5 5.5"></path>
-</svg>
-</span>
-<h2 id="perfil-sobre-titulo">Sobre</h2>
-</header>
+                    {% if not perfil_proprio %}
+                        <div class="perfil-acoes">
+                            <button
+                                type="button"
+                                class="perfil-hey"
+                                id="enviar-hey-perfil"
+                                data-destinatario-id="{{ membro.id }}"
+                                aria-describedby="perfil-hey-estado"
+                            >
+                                <span class="perfil-hey-label">
+                                    Hey
+                                </span>
+                            </button>
 
-<p>{{ membro.bio }}</p>
-</section>
-{% endif %}
+                            <button
+                                type="button"
+                                class="perfil-conectar{% if ligados %} ligado{% endif %}"
+                                id="conectar-perfil"
+                                data-destinatario-id="{{ membro.id }}"
+                                data-ligado="{{ ligados ? '1' : '0' }}"
+                                aria-describedby="perfil-conectar-estado"
+                                aria-pressed="{{ ligados ? 'true' : 'false' }}"
+                                aria-label="{{ ligados ? 'Desconectar de ' ~ membro.nome : 'Conectar com ' ~ membro.nome }}"
+                            >
+                                <span
+                                    class="perfil-conectar-icone"
+                                    aria-hidden="true"
+                                >
+                                    <svg
+                                        viewBox="0 0 24 24"
+                                        focusable="false"
+                                    >
+                                        <path d="M8.7 12.9 11 15.2l4.8-5.1"></path>
+                                        <path d="M7.7 6.8a3.3 3.3 0 1 1 6.6 0"></path>
+                                        <path d="M5.5 18.4c.5-3.2 2.7-5.1 5.5-5.1"></path>
+                                        <path d="M15.8 14.4h4.4M18 12.2v4.4"></path>
+                                    </svg>
+                                </span>
 
-{% if primeiro_gosto %}
-<section id="adicional" class="perfil-seccao perfil-interesses" aria-labelledby="perfil-interesses-titulo">
-<header class="perfil-seccao-topo">
-<span class="perfil-seccao-icone perfil-seccao-icone--amarelo" aria-hidden="true">
-<svg viewBox="0 0 24 24">
-<path d="m12 3 2.6 5.2 5.7.8-4.1 4 .95 5.7L12 16l-5.15 2.7.95-5.7-4.1-4 5.7-.8L12 3Z"></path>
-</svg>
-</span>
-<h2 id="perfil-interesses-titulo">Interesses</h2>
-</header>
+                                <span class="perfil-conectar-label">
+                                    {{ ligados ? 'Desconectar' : 'Conectar' }}
+                                </span>
+                            </button>
+                        </div>
 
-<ul class="perfil-interesses-grid">
-{% for gosto in membro.gostos %}
-<li class="perfil-gosto perfil-gosto--{{ (loop.index0 % 6) + 1 }}">
-<span class="perfil-gosto-numero">{{ loop.index < 10 ? '0' ~ loop.index : loop.index }}</span>
-<span class="perfil-gosto-nome">{{ gosto['nome'] }}</span>
-</li>
-{% endfor %}
-</ul>
-</section>
-{% endif %}
+                        <p
+                            id="perfil-hey-estado"
+                            class="sr-only"
+                            aria-live="polite"
+                            aria-atomic="true"
+                        ></p>
 
-</div>
+                        <p
+                            id="perfil-conectar-estado"
+                            class="sr-only"
+                            aria-live="polite"
+                            aria-atomic="true"
+                        >
+                            {% if ligados %}
+                                Estão ligados na Margot.
+                            {% endif %}
+                        </p>
+                    {% endif %}
+                </div>
 
-<div id="perfil-lightbox" class="perfil-lightbox" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Fotografia ampliada" hidden>
-<div class="perfil-lightbox-fundo"></div>
+                <div
+                    class="perfil-assinatura"
+                    aria-hidden="true"
+                >
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </article>
+        </section>
 
-<div id="perfil-lightbox-stage" class="perfil-lightbox-stage">
-<div id="perfil-lightbox-media" class="perfil-lightbox-media">
-<img id="perfil-lightbox-imagem" class="perfil-lightbox-imagem" src="" alt="" draggable="false">
-<span class="perfil-lightbox-moldura" aria-hidden="true"></span>
-</div>
+        {% if membro.bio|default('') %}
+            <section
+                class="perfil-seccao perfil-sobre"
+                aria-labelledby="perfil-sobre-titulo"
+            >
+                <header class="perfil-seccao-topo">
+                    <span
+                        class="perfil-seccao-icone perfil-seccao-icone--roxo"
+                        aria-hidden="true"
+                    >
+                        <svg viewBox="0 0 24 24">
+                            <circle
+                                cx="12"
+                                cy="7.5"
+                                r="3.2"
+                            ></circle>
 
-<span class="perfil-tinta perfil-tinta--1" aria-hidden="true"></span>
-<span class="perfil-tinta perfil-tinta--2" aria-hidden="true"></span>
-<span class="perfil-tinta perfil-tinta--3" aria-hidden="true"></span>
-<span class="perfil-tinta perfil-tinta--4" aria-hidden="true"></span>
+                            <path d="M5.5 19c.7-3.7 3-5.5 6.5-5.5s5.8 1.8 6.5 5.5"></path>
+                        </svg>
+                    </span>
 
-{% if total_slides > 1 %}
-<button type="button" id="perfil-lightbox-anterior" class="perfil-lightbox-nav perfil-lightbox-nav--anterior" aria-label="Fotografia anterior">
-<svg viewBox="0 0 24 24" aria-hidden="true">
-<path d="M15 5l-7 7 7 7"></path>
-</svg>
-</button>
+                    <h2 id="perfil-sobre-titulo">
+                        Sobre
+                    </h2>
+                </header>
 
-<button type="button" id="perfil-lightbox-seguinte" class="perfil-lightbox-nav perfil-lightbox-nav--seguinte" aria-label="Fotografia seguinte">
-<svg viewBox="0 0 24 24" aria-hidden="true">
-<path d="M9 5l7 7-7 7"></path>
-</svg>
-</button>
+                <p>
+                    {{ membro.bio }}
+                </p>
+            </section>
+        {% endif %}
 
-<div class="perfil-lightbox-contador" aria-hidden="true">
-<span id="perfil-lightbox-contador-atual">01</span>
-<span>/</span>
-<span>{{ total_slides < 10 ? '0' ~ total_slides : total_slides }}</span>
-</div>
-{% endif %}
-</div>
+        {% if primeiro_gosto %}
+            <section
+                id="adicional"
+                class="perfil-seccao perfil-interesses"
+                aria-labelledby="perfil-interesses-titulo"
+            >
+                <header class="perfil-seccao-topo">
+                    <span
+                        class="perfil-seccao-icone perfil-seccao-icone--amarelo"
+                        aria-hidden="true"
+                    >
+                        <svg viewBox="0 0 24 24">
+                            <path d="m12 3 2.6 5.2 5.7.8-4.1 4 .95 5.7L12 16l-5.15 2.7.95-5.7-4.1-4 5.7-.8L12 3Z"></path>
+                        </svg>
+                    </span>
 
-<button type="button" id="perfil-lightbox-fechar" class="perfil-lightbox-fechar" aria-label="Fechar fotografia">
-<svg viewBox="0 0 24 24" aria-hidden="true">
-<path d="M6 6l12 12"></path>
-<path d="M18 6 6 18"></path>
-</svg>
-</button>
-</div>
+                    <h2 id="perfil-interesses-titulo">
+                        Interesses
+                    </h2>
+                </header>
+
+                <ul class="perfil-interesses-grid">
+                    {% for gosto in membro.gostos %}
+                        <li
+                            class="perfil-gosto perfil-gosto--{{ (loop.index0 % 6) + 1 }}"
+                        >
+                            <span class="perfil-gosto-numero">
+                                {{ loop.index < 10
+                                    ? '0' ~ loop.index
+                                    : loop.index
+                                }}
+                            </span>
+
+                            <span class="perfil-gosto-nome">
+                                {{ gosto['nome'] }}
+                            </span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </section>
+        {% endif %}
+    </div>
+
+    <div
+        id="perfil-lightbox"
+        class="perfil-lightbox"
+        aria-hidden="true"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Fotografia ampliada"
+        hidden
+    >
+        <div class="perfil-lightbox-fundo"></div>
+
+        <div
+            id="perfil-lightbox-stage"
+            class="perfil-lightbox-stage"
+        >
+            <div
+                id="perfil-lightbox-media"
+                class="perfil-lightbox-media"
+            >
+                <img
+                    id="perfil-lightbox-imagem"
+                    class="perfil-lightbox-imagem"
+                    src=""
+                    alt=""
+                    draggable="false"
+                >
+
+                <span
+                    class="perfil-lightbox-moldura"
+                    aria-hidden="true"
+                ></span>
+            </div>
+
+            <span
+                class="perfil-tinta perfil-tinta--1"
+                aria-hidden="true"
+            ></span>
+
+            <span
+                class="perfil-tinta perfil-tinta--2"
+                aria-hidden="true"
+            ></span>
+
+            <span
+                class="perfil-tinta perfil-tinta--3"
+                aria-hidden="true"
+            ></span>
+
+            <span
+                class="perfil-tinta perfil-tinta--4"
+                aria-hidden="true"
+            ></span>
+
+            {% if total_slides > 1 %}
+                <button
+                    type="button"
+                    id="perfil-lightbox-anterior"
+                    class="perfil-lightbox-nav perfil-lightbox-nav--anterior"
+                    aria-label="Fotografia anterior"
+                >
+                    <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <path d="M15 5l-7 7 7 7"></path>
+                    </svg>
+                </button>
+
+                <button
+                    type="button"
+                    id="perfil-lightbox-seguinte"
+                    class="perfil-lightbox-nav perfil-lightbox-nav--seguinte"
+                    aria-label="Fotografia seguinte"
+                >
+                    <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <path d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </button>
+
+                <div
+                    class="perfil-lightbox-contador"
+                    aria-hidden="true"
+                >
+                    <span id="perfil-lightbox-contador-atual">
+                        01
+                    </span>
+
+                    <span>/</span>
+
+                    <span>
+                        {{ total_slides < 10
+                            ? '0' ~ total_slides
+                            : total_slides
+                        }}
+                    </span>
+                </div>
+            {% endif %}
+        </div>
+
+        <button
+            type="button"
+            id="perfil-lightbox-fechar"
+            class="perfil-lightbox-fechar"
+            aria-label="Fechar fotografia"
+        >
+            <svg
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+            >
+                <path d="M6 6l12 12"></path>
+                <path d="M18 6 6 18"></path>
+            </svg>
+        </button>
+    </div>
 </main>
 
 {% if perfil_proprio %}
-<div id="hoje-editor" class="hoje-editor" aria-hidden="true" hidden>
-<button type="button" class="hoje-editor-fundo" data-hoje-fechar aria-label="Fechar editor"></button>
+<div
+    id="hoje-editor"
+    class="hoje-editor"
+    aria-hidden="true"
+    hidden
+>
+    <button
+        type="button"
+        class="hoje-editor-fundo"
+        data-hoje-fechar
+        aria-label="Fechar editor"
+    ></button>
 
-<section class="hoje-editor-sheet" role="dialog" aria-modal="true" aria-labelledby="hoje-editor-titulo">
-<div class="hoje-editor-barra" aria-hidden="true"></div>
+    <section
+        class="hoje-editor-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="hoje-editor-titulo"
+    >
+        <div class="hoje-editor-barra" aria-hidden="true"></div>
 
-<header class="hoje-editor-cabecalho">
-<button type="button" id="hoje-editor-voltar" class="hoje-editor-voltar" aria-label="Voltar" hidden>‹</button>
-<h2 id="hoje-editor-titulo">Hoje</h2>
-<button type="button" id="hoje-editor-fechar" class="hoje-editor-fechar" aria-label="Fechar">×</button>
-</header>
+        <header class="hoje-editor-cabecalho">
+            <button
+                type="button"
+                id="hoje-editor-voltar"
+                class="hoje-editor-voltar"
+                aria-label="Voltar"
+                hidden
+            >
+                ‹
+            </button>
 
-<div id="hoje-editor-principal" class="hoje-editor-view">
-<p class="hoje-editor-intro">
-<strong>O que queres mostrar hoje?</strong>
-<span>Uma nota rápida, a roupa que tens vestida, ou as duas coisas. Desaparece ao fim de 24 horas.</span>
-</p>
+            <h2 id="hoje-editor-titulo">Hoje</h2>
 
-<div class="hoje-nota-wrap">
-<textarea id="hoje-nota-input" maxlength="160" rows="4" autocomplete="off" autocapitalize="sentences" placeholder="Escreve uma nota…"></textarea>
-<span id="hoje-nota-contador" class="hoje-nota-contador" aria-hidden="true">0/160</span>
-</div>
+            <button
+                type="button"
+                id="hoje-editor-fechar"
+                class="hoje-editor-fechar"
+                aria-label="Fechar"
+            >
+                ×
+            </button>
+        </header>
 
-<button type="button" id="hoje-abrir-roupa" class="hoje-opcao-roupa">
-<span class="hoje-opcao-roupa-icone" aria-hidden="true"></span>
+        <div id="hoje-editor-principal" class="hoje-editor-view">
+            <p class="hoje-editor-intro">
+                <strong>O que queres mostrar hoje?</strong>
+                <span>Uma nota rápida, a roupa que tens vestida, ou as duas coisas. Desaparece ao fim de 24 horas.</span>
+            </p>
 
-<span class="hoje-opcao-roupa-texto">
-<strong>Roupa de hoje</strong>
-<span id="hoje-roupa-resumo">Opcional</span>
-</span>
+            <div class="hoje-nota-wrap">
+                <textarea
+                    id="hoje-nota-input"
+                    maxlength="160"
+                    rows="4"
+                    autocomplete="off"
+                    autocapitalize="sentences"
+                    placeholder="Escreve uma nota…"
+                ></textarea>
 
-<span class="hoje-opcao-seta" aria-hidden="true">›</span>
-</button>
+                <span
+                    id="hoje-nota-contador"
+                    class="hoje-nota-contador"
+                    aria-hidden="true"
+                >0/160</span>
+            </div>
 
-<p id="hoje-editor-erro" class="hoje-editor-erro" role="alert" hidden></p>
+            <button
+                type="button"
+                id="hoje-abrir-roupa"
+                class="hoje-opcao-roupa"
+            >
+                <span
+                    class="hoje-opcao-roupa-icone"
+                    aria-hidden="true"
+                ></span>
 
-<div class="hoje-editor-acoes">
-<button type="button" id="hoje-apagar" hidden>Apagar</button>
-<button type="button" id="hoje-guardar">Partilhar por 24 h</button>
-</div>
-</div>
+                <span class="hoje-opcao-roupa-texto">
+                    <strong>Roupa de hoje</strong>
+                    <span id="hoje-roupa-resumo">Opcional</span>
+                </span>
 
-<div id="hoje-editor-roupa" class="hoje-editor-view" hidden>
-<p class="hoje-roupa-ajuda">
-Escolhe uma peça e depois a cor. Podes adicionar até 5 peças.
-</p>
+                <span
+                    class="hoje-opcao-seta"
+                    aria-hidden="true"
+                >›</span>
+            </button>
 
-<div id="hoje-roupa-selecionada" class="hoje-roupa-selecionada" hidden></div>
+            <p
+                id="hoje-editor-erro"
+                class="hoje-editor-erro"
+                role="alert"
+                hidden
+            ></p>
 
-<div id="hoje-pecas-grid" class="hoje-pecas-grid" aria-label="Peças de roupa"></div>
+            <div class="hoje-editor-acoes">
+                <button
+                    type="button"
+                    id="hoje-apagar"
+                    hidden
+                >
+                    Apagar
+                </button>
 
-<section id="hoje-cores-area" class="hoje-cores-area" hidden>
-<h3 id="hoje-cores-titulo">Cor</h3>
-<div id="hoje-cores-grid" class="hoje-cores-grid" aria-label="Cores"></div>
-</section>
+                <button
+                    type="button"
+                    id="hoje-guardar"
+                >
+                    Partilhar por 24 h
+                </button>
+            </div>
+        </div>
 
-<button type="button" id="hoje-roupa-concluir" class="hoje-roupa-concluir">
-Concluído
-</button>
-</div>
-</section>
+        <div
+            id="hoje-editor-roupa"
+            class="hoje-editor-view"
+            hidden
+        >
+            <p class="hoje-roupa-ajuda">
+                Escolhe uma peça e depois a cor. Podes adicionar até 5 peças.
+            </p>
+
+            <div
+                id="hoje-roupa-selecionada"
+                class="hoje-roupa-selecionada"
+                hidden
+            ></div>
+
+            <div
+                id="hoje-pecas-grid"
+                class="hoje-pecas-grid"
+                aria-label="Peças de roupa"
+            ></div>
+
+            <section
+                id="hoje-cores-area"
+                class="hoje-cores-area"
+                hidden
+            >
+                <h3 id="hoje-cores-titulo">Cor</h3>
+
+                <div
+                    id="hoje-cores-grid"
+                    class="hoje-cores-grid"
+                    aria-label="Cores"
+                ></div>
+            </section>
+
+            <button
+                type="button"
+                id="hoje-roupa-concluir"
+                class="hoje-roupa-concluir"
+            >
+                Concluído
+            </button>
+        </div>
+    </section>
 </div>
 {% endif %}
 
 <script>
 window.membroId = {{ session.id|json_encode|raw }};
 window.perfilMembroId = {{ membro.id|json_encode|raw }};
+
 window.webSocketUrl = window.location.protocol === 'https:'
     ? 'wss://' + window.location.host + '/ws/'
     : 'ws://' + window.location.hostname + ':8080';
