@@ -6,28 +6,10 @@
     --hoje-suave: #77727d;
     --hoje-vermelho: #e12346;
     --hoje-teclado: 0px;
-
-    --hoje-glass-bg:
-        radial-gradient(
-            circle at 22% 10%,
-            rgba(255, 255, 255, 0.96),
-            rgba(255, 255, 255, 0.42) 34%,
-            transparent 58%
-        ),
-        linear-gradient(
-            145deg,
-            rgba(255, 255, 255, 0.78),
-            rgba(247, 246, 250, 0.54)
-        );
-
-    --hoje-glass-border: rgba(255, 255, 255, 0.78);
-
-    --hoje-glass-shadow:
-        0 16px 34px rgba(20, 17, 25, 0.13),
-        inset 0 1px 0 rgba(255, 255, 255, 0.94),
-        inset 0 -1px 0 rgba(84, 77, 95, 0.07);
+    --hoje-glass-bg: radial-gradient(circle at 22% 10%, rgba(255,255,255,.96), rgba(255,255,255,.42) 34%, transparent 58%), linear-gradient(145deg, rgba(255,255,255,.78), rgba(247,246,250,.54));
+    --hoje-glass-border: rgba(255,255,255,.78);
+    --hoje-glass-shadow: 0 16px 34px rgba(20,17,25,.13), inset 0 1px 0 rgba(255,255,255,.94), inset 0 -1px 0 rgba(84,77,95,.07);
 }
-
 
 /* =========================================================
    MINI-MENU — NUVEM LIQUID GLASS
@@ -36,223 +18,107 @@
 #mini-menu-hoje {
     position: absolute;
     z-index: 16;
-
     top: clamp(78px, 11vh, 108px);
     left: max(10px, env(safe-area-inset-left, 0px));
-
     width: clamp(132px, 37vw, 158px);
     height: auto;
     min-height: 0;
-
     margin: 0;
     padding: 12px 12px 11px;
-
     border: 1px solid var(--hoje-glass-border);
-
-    border-radius:
-        31px
-        35px
-        33px
-        38px;
-
+    border-radius: 31px 35px 33px 38px;
     background: var(--hoje-glass-bg);
-
-    -webkit-backdrop-filter:
-        blur(22px)
-        saturate(185%);
-
-    backdrop-filter:
-        blur(22px)
-        saturate(185%);
-
-    box-shadow:
-        var(--hoje-glass-shadow);
-
-    color:
-        var(--hoje-texto);
-
+    -webkit-backdrop-filter: blur(22px) saturate(185%);
+    backdrop-filter: blur(22px) saturate(185%);
+    box-shadow: var(--hoje-glass-shadow);
+    color: var(--hoje-texto);
     display: block;
-
     overflow: visible;
-
     isolation: isolate;
 }
 
-
-/*
- * Parte superior da nuvem.
- */
-
 #mini-menu-hoje::before {
     content: "";
-
     position: absolute;
     z-index: -1;
-
     top: -11px;
     left: 22px;
-
     width: 46px;
     height: 30px;
-
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.68);
-
+    border: 1px solid rgba(255,255,255,.68);
     border-bottom: 0;
-
     border-radius: 50%;
-
-    background:
-        var(--hoje-glass-bg);
-
-    -webkit-backdrop-filter:
-        blur(22px)
-        saturate(185%);
-
-    backdrop-filter:
-        blur(22px)
-        saturate(185%);
-
-    box-shadow:
-        33px 4px 0 -8px
-        rgba(255, 255, 255, 0.58),
-
-        inset 0 1px 0
-        rgba(255, 255, 255, 0.8);
+    background: var(--hoje-glass-bg);
+    -webkit-backdrop-filter: blur(22px) saturate(185%);
+    backdrop-filter: blur(22px) saturate(185%);
+    box-shadow: 33px 4px 0 -8px rgba(255,255,255,.58), inset 0 1px 0 rgba(255,255,255,.8);
 }
-
-
-/*
- * Duas bolhinhas em direção à fotografia.
- */
 
 #mini-menu-hoje::after {
     content: "";
-
     position: absolute;
     z-index: -1;
-
     right: -13px;
     top: 56%;
-
     width: 11px;
     height: 11px;
-
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.76);
-
+    border: 1px solid rgba(255,255,255,.76);
     border-radius: 50%;
-
-    background:
-        rgba(255, 255, 255, 0.78);
-
-    -webkit-backdrop-filter:
-        blur(12px)
-        saturate(170%);
-
-    backdrop-filter:
-        blur(12px)
-        saturate(170%);
-
-    box-shadow:
-        13px 10px 0 -3px
-        rgba(255, 255, 255, 0.73),
-
-        1px 4px 10px
-        rgba(21, 18, 25, 0.08);
+    background: rgba(255,255,255,.78);
+    -webkit-backdrop-filter: blur(12px) saturate(170%);
+    backdrop-filter: blur(12px) saturate(170%);
+    box-shadow: 13px 10px 0 -3px rgba(255,255,255,.73), 1px 4px 10px rgba(21,18,25,.08);
 }
-
 
 #mini-menu-hoje[hidden] {
     display: none !important;
 }
 
-
 .mini-menu-hoje-topo,
 .perfil-hoje-topo {
     display: flex;
     align-items: center;
-
     gap: 6px;
-
-    margin:
-        0
-        0
-        6px;
-
-    color:
-        rgba(69, 64, 75, 0.62);
-
+    margin: 0 0 6px;
+    color: rgba(69,64,75,.62);
     font-size: 8px;
     font-weight: 820;
-
     line-height: 1;
-
-    letter-spacing: 0.09em;
-
+    letter-spacing: .09em;
     text-transform: uppercase;
 }
-
 
 .mini-menu-hoje-topo::before,
 .perfil-hoje-topo::before {
     content: "";
-
     width: 6px;
     height: 6px;
-
     flex: 0 0 6px;
-
     border-radius: 50%;
-
-    background:
-        var(--hoje-vermelho);
-
-    box-shadow:
-        0 0 0 3px
-        rgba(225, 35, 70, 0.09);
+    background: var(--hoje-vermelho);
+    box-shadow: 0 0 0 3px rgba(225,35,70,.09);
 }
-
 
 #mini-menu-hoje [data-hoje-nota] {
     display: -webkit-box;
-
     margin: 0;
-
     color: #232127;
-
     font-size: 11.5px;
     font-weight: 670;
-
     line-height: 1.27;
-
     overflow: hidden;
     overflow-wrap: anywhere;
-
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
 }
-
 
 #mini-menu-hoje [data-hoje-roupa] {
     margin-top: 8px;
 }
 
-
-/*
- * A nuvem agora é absoluta.
- * Não deve empurrar o Hey.
- */
-
-.mini-menu:has(
-    #mini-menu-hoje:not([hidden])
-)
-#enviar-hey {
+.mini-menu:has(#mini-menu-hoje:not([hidden])) #enviar-hey {
     margin-top: 15px;
 }
-
 
 /* =========================================================
    ROUPA — MINI APP ICONS
@@ -261,548 +127,235 @@
 .hoje-chips {
     display: flex;
     flex-wrap: wrap;
-
     align-items: center;
-
     gap: 6px;
 }
 
-
 .hoje-chip {
     position: relative;
-
     min-height: 46px;
-
-    padding:
-        6px
-        9px
-        6px
-        7px;
-
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.78);
-
+    padding: 6px 9px 6px 7px;
+    border: 1px solid rgba(255,255,255,.78);
     border-radius: 16px;
-
-    background:
-        radial-gradient(
-            circle at 28% 14%,
-            rgba(255, 255, 255, 0.98),
-            rgba(255, 255, 255, 0.45) 42%,
-            transparent 68%
-        ),
-        linear-gradient(
-            145deg,
-            rgba(255, 255, 255, 0.76),
-            rgba(232, 229, 239, 0.52)
-        );
-
-    -webkit-backdrop-filter:
-        blur(15px)
-        saturate(170%);
-
-    backdrop-filter:
-        blur(15px)
-        saturate(170%);
-
-    box-shadow:
-        0 6px 13px
-        rgba(26, 22, 31, 0.09),
-
-        inset 0 1px 0
-        rgba(255, 255, 255, 0.96),
-
-        inset 0 -1px 0
-        rgba(83, 76, 93, 0.08);
-
+    background: radial-gradient(circle at 28% 14%, rgba(255,255,255,.98), rgba(255,255,255,.45) 42%, transparent 68%), linear-gradient(145deg, rgba(255,255,255,.76), rgba(232,229,239,.52));
+    -webkit-backdrop-filter: blur(15px) saturate(170%);
+    backdrop-filter: blur(15px) saturate(170%);
+    box-shadow: 0 6px 13px rgba(26,22,31,.09), inset 0 1px 0 rgba(255,255,255,.96), inset 0 -1px 0 rgba(83,76,93,.08);
     color: #47424c;
-
     display: inline-grid;
-
-    grid-template-columns:
-        auto
-        auto
-        minmax(0, 1fr);
-
+    grid-template-columns: auto auto minmax(0,1fr);
     align-items: center;
-
     gap: 5px;
-
     font-size: 9.5px;
     font-weight: 720;
-
     line-height: 1.05;
-
     white-space: nowrap;
 }
 
-
 .hoje-chip-icone {
     display: block;
-
     min-width: 29px;
-
     font-size: 27px;
-
     line-height: 1;
-
     text-align: center;
-
-    filter:
-        drop-shadow(
-            0
-            2px
-            2px
-            rgba(35, 30, 40, 0.08)
-        );
+    filter: drop-shadow(0 2px 2px rgba(35,30,40,.08));
 }
-
 
 .hoje-chip-cor,
 .hoje-peca-cor,
 .hoje-roupa-selecionada-cor {
     width: 10px;
     height: 10px;
-
     flex: 0 0 10px;
-
-    border:
-        1px solid
-        rgba(20, 19, 23, 0.14);
-
+    border: 1px solid rgba(20,19,23,.14);
     border-radius: 50%;
-
-    box-shadow:
-        0 1px 3px
-        rgba(20, 18, 23, 0.14),
-
-        inset 0 0 0 0.5px
-        rgba(255, 255, 255, 0.6);
+    box-shadow: 0 1px 3px rgba(20,18,23,.14), inset 0 0 0 .5px rgba(255,255,255,.6);
 }
-
 
 .hoje-chip-texto {
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-
-/*
- * NA NUVEM:
- *
- * cada peça passa a parecer
- * um pequeno ícone de app.
- */
-
 #mini-menu-hoje .hoje-chip,
 .perfil-hoje-balao .hoje-chip {
     width: 42px;
     height: 44px;
-
     min-height: 44px;
-
     padding: 0;
-
     display: grid;
     place-items: center;
-
     border-radius: 14px;
 }
-
 
 #mini-menu-hoje .hoje-chip-icone,
 .perfil-hoje-balao .hoje-chip-icone {
     min-width: 0;
-
     font-size: 29px;
 }
-
 
 #mini-menu-hoje .hoje-chip-cor,
 .perfil-hoje-balao .hoje-chip-cor {
     position: absolute;
-
     top: 5px;
     right: 5px;
-
     width: 9px;
     height: 9px;
 }
 
-
-/*
- * Dentro da nuvem não mostramos
- * "T-shirt · branco".
- *
- * Fica visual:
- *
- * 👕  👖  👟
- */
-
 #mini-menu-hoje .hoje-chip-texto,
 .perfil-hoje-balao .hoje-chip-texto {
     position: absolute !important;
-
     width: 1px !important;
     height: 1px !important;
-
     margin: -1px !important;
     padding: 0 !important;
-
     overflow: hidden !important;
-
-    clip:
-        rect(
-            0,
-            0,
-            0,
-            0
-        ) !important;
-
+    clip: rect(0,0,0,0) !important;
     white-space: nowrap !important;
-
     border: 0 !important;
 }
 
-
 /* =========================================================
    PERFIL — BOTÃO +
-   EM BAIXO À DIREITA
    ========================================================= */
 
 .perfil-hoje-adicionar {
     position: absolute;
-
     z-index: 20;
-
     top: auto;
-
     right: 18px;
     bottom: 47px;
-
     width: 48px;
     height: 48px;
-
     margin: 0;
     padding: 0;
-
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.86);
-
+    border: 1px solid rgba(255,255,255,.86);
     border-radius: 50%;
-
-    background:
-        radial-gradient(
-            circle at 30% 16%,
-            rgba(255, 255, 255, 0.98),
-            rgba(255, 255, 255, 0.53) 42%,
-            transparent 68%
-        ),
-        linear-gradient(
-            145deg,
-            rgba(255, 255, 255, 0.76),
-            rgba(239, 237, 243, 0.62)
-        );
-
-    -webkit-backdrop-filter:
-        blur(18px)
-        saturate(185%);
-
-    backdrop-filter:
-        blur(18px)
-        saturate(185%);
-
-    box-shadow:
-        0 11px 26px
-        rgba(20, 17, 24, 0.16),
-
-        inset 0 1px 0
-        rgba(255, 255, 255, 0.96),
-
-        inset 0 -1px 0
-        rgba(75, 68, 84, 0.08);
-
+    background: radial-gradient(circle at 30% 16%, rgba(255,255,255,.98), rgba(255,255,255,.53) 42%, transparent 68%), linear-gradient(145deg, rgba(255,255,255,.76), rgba(239,237,243,.62));
+    -webkit-backdrop-filter: blur(18px) saturate(185%);
+    backdrop-filter: blur(18px) saturate(185%);
+    box-shadow: 0 11px 26px rgba(20,17,24,.16), inset 0 1px 0 rgba(255,255,255,.96), inset 0 -1px 0 rgba(75,68,84,.08);
     color: #252329;
-
     display: grid;
-
     place-items: center;
-
     cursor: pointer;
-
     touch-action: manipulation;
-
-    -webkit-tap-highlight-color:
-        transparent;
-
-    transition:
-        transform
-        150ms
-        cubic-bezier(.2,.8,.2,1),
-
-        box-shadow
-        150ms
-        ease,
-
-        background-color
-        150ms
-        ease;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 150ms cubic-bezier(.2,.8,.2,1), box-shadow 150ms ease, background-color 150ms ease;
 }
 
-
 .perfil-hoje-adicionar span {
-    transform:
-        translateY(-1px);
-
+    transform: translateY(-1px);
     font-size: 30px;
-
     font-weight: 420;
-
     line-height: 1;
 }
 
-
 .perfil-hoje-adicionar.ativo {
     color: #fff;
-
-    background:
-        radial-gradient(
-            circle at 30% 16%,
-            rgba(255, 255, 255, 0.45),
-            transparent 42%
-        ),
-        linear-gradient(
-            145deg,
-            rgba(238, 68, 98, 0.91),
-            rgba(210, 24, 59, 0.87)
-        );
-
-    box-shadow:
-        0 12px 28px
-        rgba(225, 35, 70, 0.26),
-
-        inset 0 1px 0
-        rgba(255, 255, 255, 0.58),
-
-        inset 0 -1px 0
-        rgba(115, 11, 32, 0.12);
+    background: radial-gradient(circle at 30% 16%, rgba(255,255,255,.45), transparent 42%), linear-gradient(145deg, rgba(238,68,98,.91), rgba(210,24,59,.87));
+    box-shadow: 0 12px 28px rgba(225,35,70,.26), inset 0 1px 0 rgba(255,255,255,.58), inset 0 -1px 0 rgba(115,11,32,.12);
 }
-
 
 .perfil-hoje-adicionar:active {
-    transform:
-        scale(0.91);
+    transform: scale(.91);
 }
 
-
 /* =========================================================
-   PERFIL — NUVEM PEQUENA À ESQUERDA
+   PERFIL — NUVEM
    ========================================================= */
 
 .perfil-hoje-balao {
     position: absolute;
-
     z-index: 16;
-
     top: 102px;
     left: -2px;
-
     right: auto;
     bottom: auto;
-
     width: 164px;
-
-    max-width:
-        min(
-            164px,
-            calc(100% - 96px)
-        );
-
+    max-width: min(164px, calc(100% - 96px));
     min-height: 0;
-
-    padding:
-        13px
-        12px
-        12px;
-
-    border:
-        1px solid
-        var(--hoje-glass-border);
-
-    border-radius:
-        33px
-        38px
-        34px
-        40px;
-
-    background:
-        var(--hoje-glass-bg);
-
-    -webkit-backdrop-filter:
-        blur(24px)
-        saturate(190%);
-
-    backdrop-filter:
-        blur(24px)
-        saturate(190%);
-
-    box-shadow:
-        var(--hoje-glass-shadow);
-
-    color:
-        var(--hoje-texto);
-
+    padding: 13px 12px 12px;
+    border: 1px solid var(--hoje-glass-border);
+    border-radius: 33px 38px 34px 40px;
+    background: var(--hoje-glass-bg);
+    -webkit-backdrop-filter: blur(24px) saturate(190%);
+    backdrop-filter: blur(24px) saturate(190%);
+    box-shadow: var(--hoje-glass-shadow);
+    color: var(--hoje-texto);
     transform: none;
-
     isolation: isolate;
-
     overflow: visible;
 }
 
-
-/*
- * Lóbulo da nuvem.
- */
-
 .perfil-hoje-balao::before {
     content: "";
-
     position: absolute;
-
     z-index: -1;
-
     top: -13px;
     left: 25px;
-
     width: 54px;
     height: 33px;
-
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.7);
-
+    border: 1px solid rgba(255,255,255,.7);
     border-bottom: 0;
-
     border-radius: 50%;
-
-    background:
-        var(--hoje-glass-bg);
-
-    -webkit-backdrop-filter:
-        blur(24px)
-        saturate(190%);
-
-    backdrop-filter:
-        blur(24px)
-        saturate(190%);
-
-    box-shadow:
-        38px 3px 0 -9px
-        rgba(255, 255, 255, 0.58),
-
-        inset 0 1px 0
-        rgba(255, 255, 255, 0.82);
+    background: var(--hoje-glass-bg);
+    -webkit-backdrop-filter: blur(24px) saturate(190%);
+    backdrop-filter: blur(24px) saturate(190%);
+    box-shadow: 38px 3px 0 -9px rgba(255,255,255,.58), inset 0 1px 0 rgba(255,255,255,.82);
 }
-
-
-/*
- * Bolhas em direção à pessoa.
- */
 
 .perfil-hoje-balao::after {
     content: "";
-
     position: absolute;
-
     z-index: -1;
-
     right: -13px;
     bottom: 18px;
-
     width: 11px;
     height: 11px;
-
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.78);
-
+    border: 1px solid rgba(255,255,255,.78);
     border-radius: 50%;
-
-    background:
-        rgba(255, 255, 255, 0.8);
-
-    -webkit-backdrop-filter:
-        blur(12px)
-        saturate(170%);
-
-    backdrop-filter:
-        blur(12px)
-        saturate(170%);
-
-    box-shadow:
-        13px 9px 0 -3px
-        rgba(255, 255, 255, 0.73),
-
-        1px 4px 10px
-        rgba(21, 18, 25, 0.08);
+    background: rgba(255,255,255,.8);
+    -webkit-backdrop-filter: blur(12px) saturate(170%);
+    backdrop-filter: blur(12px) saturate(170%);
+    box-shadow: 13px 9px 0 -3px rgba(255,255,255,.73), 1px 4px 10px rgba(21,18,25,.08);
 }
-
 
 .perfil-hoje-balao[data-editable="0"] {
     pointer-events: none;
 }
 
-
 .perfil-hoje-balao[data-editable="1"] {
     cursor: pointer;
-
-    -webkit-tap-highlight-color:
-        transparent;
-
-    transition:
-        transform
-        140ms
-        ease;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 140ms ease;
 }
-
 
 .perfil-hoje-balao[data-editable="1"]:active {
-    transform:
-        scale(0.975);
+    transform: scale(.975);
 }
-
 
 .perfil-hoje-balao[hidden] {
     display: none !important;
 }
 
-
 .perfil-hoje-balao [data-hoje-nota] {
     display: -webkit-box;
-
     margin: 0;
-
     color: #232127;
-
     font-size: 11.5px;
     font-weight: 680;
-
     line-height: 1.28;
-
     overflow: hidden;
     overflow-wrap: anywhere;
-
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
 }
 
-
 .perfil-hoje-balao [data-hoje-roupa] {
     margin-top: 8px;
 }
-
 
 /* =========================================================
    EDITOR
@@ -811,323 +364,154 @@
 html.hoje-editor-aberto,
 body.hoje-editor-aberto {
     overflow: hidden !important;
-
-    overscroll-behavior:
-        none !important;
+    overscroll-behavior: none !important;
 }
-
 
 body.hoje-editor-aberto #perfil {
     overflow: hidden !important;
 }
 
-
 .hoje-editor {
     position: fixed;
-
     z-index: 6000;
-
     inset: 0;
-
     display: flex;
-
     align-items: flex-end;
-
     justify-content: center;
-
     pointer-events: none;
 }
-
 
 .hoje-editor[hidden] {
     display: none !important;
 }
 
-
 .hoje-editor-fundo {
     position: absolute;
-
     inset: 0;
-
     width: 100%;
     height: 100%;
-
     margin: 0;
     padding: 0;
-
     border: 0;
-
-    background:
-        rgba(15, 13, 18, 0.32);
-
+    background: rgba(15,13,18,.32);
     opacity: 0;
-
     cursor: default;
-
-    transition:
-        opacity
-        220ms
-        ease;
+    transition: opacity 220ms ease;
 }
-
 
 .hoje-editor-sheet {
     position: relative;
-
     z-index: 2;
-
-    width:
-        min(
-            100%,
-            620px
-        );
-
-    max-height:
-        min(
-            82dvh,
-            720px
-        );
-
-    margin-bottom:
-        var(--hoje-teclado);
-
-    padding:
-        10px
-        16px
-        calc(
-            18px +
-            env(
-                safe-area-inset-bottom,
-                0px
-            )
-        );
-
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.72);
-
+    width: min(100%, 620px);
+    max-height: min(82dvh, 720px);
+    margin-bottom: var(--hoje-teclado);
+    padding: 10px 16px calc(18px + env(safe-area-inset-bottom, 0px));
+    border: 1px solid rgba(255,255,255,.72);
     border-bottom: 0;
-
-    border-radius:
-        30px
-        30px
-        0
-        0;
-
-    background:
-        radial-gradient(
-            circle at 28% 0%,
-            rgba(255, 255, 255, 0.98),
-            rgba(255, 255, 255, 0.6) 30%,
-            transparent 58%
-        ),
-        rgba(250, 249, 252, 0.9);
-
-    -webkit-backdrop-filter:
-        blur(26px)
-        saturate(180%);
-
-    backdrop-filter:
-        blur(26px)
-        saturate(180%);
-
-    box-shadow:
-        0 -24px 70px
-        rgba(18, 15, 22, 0.20),
-
-        inset 0 1px 0
-        rgba(255, 255, 255, 0.94);
-
+    border-radius: 30px 30px 0 0;
+    background: radial-gradient(circle at 28% 0%, rgba(255,255,255,.98), rgba(255,255,255,.6) 30%, transparent 58%), rgba(250,249,252,.9);
+    -webkit-backdrop-filter: blur(26px) saturate(180%);
+    backdrop-filter: blur(26px) saturate(180%);
+    box-shadow: 0 -24px 70px rgba(18,15,22,.2), inset 0 1px 0 rgba(255,255,255,.94);
     overflow: auto;
-
-    overscroll-behavior:
-        contain;
-
-    -webkit-overflow-scrolling:
-        touch;
-
-    transform:
-        translateY(
-            calc(
-                100% +
-                36px
-            )
-        );
-
-    transition:
-        transform
-        260ms
-        cubic-bezier(.22,1,.36,1),
-
-        margin-bottom
-        180ms
-        ease;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    transform: translateY(calc(100% + 36px));
+    transition: transform 260ms cubic-bezier(.22,1,.36,1), margin-bottom 180ms ease;
 }
-
 
 .hoje-editor.aberto {
     pointer-events: auto;
 }
 
-
 .hoje-editor.aberto .hoje-editor-fundo {
     opacity: 1;
 }
 
-
 .hoje-editor.aberto .hoje-editor-sheet {
-    transform:
-        translateY(0);
+    transform: translateY(0);
 }
-
 
 .hoje-editor-barra {
     width: 42px;
     height: 4px;
-
-    margin:
-        0
-        auto
-        9px;
-
+    margin: 0 auto 9px;
     border-radius: 999px;
-
-    background:
-        rgba(30, 28, 33, 0.13);
+    background: rgba(30,28,33,.13);
 }
-
 
 .hoje-editor-cabecalho {
     min-height: 45px;
-
     display: grid;
-
-    grid-template-columns:
-        44px
-        1fr
-        44px;
-
+    grid-template-columns: 44px 1fr 44px;
     align-items: center;
-
     gap: 4px;
 }
 
-
 .hoje-editor-cabecalho h2 {
     margin: 0;
-
-    color:
-        var(--hoje-preto);
-
+    color: var(--hoje-preto);
     font-size: 19px;
-
     font-weight: 790;
-
     line-height: 1.1;
-
-    letter-spacing: -0.035em;
-
+    letter-spacing: -.035em;
     text-align: center;
 }
-
 
 .hoje-editor-fechar,
 .hoje-editor-voltar {
     width: 40px;
     height: 40px;
-
     margin: 0;
     padding: 0;
-
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.72);
-
+    border: 1px solid rgba(255,255,255,.72);
     border-radius: 50%;
-
-    background:
-        rgba(243, 241, 245, 0.74);
-
-    -webkit-backdrop-filter:
-        blur(15px)
-        saturate(170%);
-
-    backdrop-filter:
-        blur(15px)
-        saturate(170%);
-
+    background: rgba(243,241,245,.74);
+    -webkit-backdrop-filter: blur(15px) saturate(170%);
+    backdrop-filter: blur(15px) saturate(170%);
     color: #29272d;
-
     display: grid;
-
     place-items: center;
-
     cursor: pointer;
-
-    -webkit-tap-highlight-color:
-        transparent;
+    -webkit-tap-highlight-color: transparent;
 }
-
 
 .hoje-editor-voltar {
     font-size: 28px;
-
     font-weight: 420;
-
     line-height: 1;
 }
-
 
 .hoje-editor-fechar {
     grid-column: 3;
-
     font-size: 23px;
-
     font-weight: 420;
-
     line-height: 1;
 }
 
-
 .hoje-editor-voltar[hidden] {
     display: block !important;
-
     visibility: hidden;
-
     pointer-events: none;
 }
 
-
 .hoje-editor-intro {
-    margin:
-        7px
-        3px
-        14px;
+    margin: 7px 3px 14px;
 }
-
 
 .hoje-editor-intro strong {
     display: block;
-
     margin-bottom: 3px;
-
     color: #29272d;
-
     font-size: 15px;
-
     font-weight: 750;
 }
 
-
 .hoje-editor-intro span {
-    color:
-        var(--hoje-suave);
-
+    color: var(--hoje-suave);
     font-size: 12px;
-
     line-height: 1.35;
 }
-
 
 /* =========================================================
    INPUT NOTA
@@ -1137,113 +521,49 @@ body.hoje-editor-aberto #perfil {
     position: relative;
 }
 
-
 #hoje-nota-input {
     display: block;
-
     width: 100%;
-
     min-height: 118px;
     max-height: 200px;
-
     margin: 0;
-
-    padding:
-        15px
-        16px
-        31px;
-
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.75);
-
+    padding: 15px 16px 31px;
+    border: 1px solid rgba(255,255,255,.75);
     border-radius: 21px;
-
     outline: none;
-
     resize: none;
-
-    background:
-        rgba(246, 244, 248, 0.72);
-
-    -webkit-backdrop-filter:
-        blur(13px)
-        saturate(165%);
-
-    backdrop-filter:
-        blur(13px)
-        saturate(165%);
-
-    box-shadow:
-        inset 0 1px 0
-        rgba(255, 255, 255, 0.87),
-
-        inset 0 -1px 0
-        rgba(80, 72, 91, 0.04);
-
+    background: rgba(246,244,248,.72);
+    -webkit-backdrop-filter: blur(13px) saturate(165%);
+    backdrop-filter: blur(13px) saturate(165%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.87), inset 0 -1px 0 rgba(80,72,91,.04);
     color: #222126;
-
     font: inherit;
-
     font-size: 16px;
     font-weight: 560;
-
     line-height: 1.4;
-
-    caret-color:
-        var(--hoje-vermelho);
-
-    transition:
-        border-color
-        150ms
-        ease,
-
-        box-shadow
-        150ms
-        ease,
-
-        background-color
-        150ms
-        ease;
+    caret-color: var(--hoje-vermelho);
+    transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
 }
-
 
 #hoje-nota-input::placeholder {
     color: #a39fa8;
 }
 
-
 #hoje-nota-input:focus {
-    border-color:
-        rgba(255, 255, 255, 0.94);
-
-    background:
-        rgba(255, 255, 255, 0.86);
-
-    box-shadow:
-        0 0 0 4px
-        rgba(225, 35, 70, 0.05),
-
-        inset 0 1px 0
-        rgba(255, 255, 255, 0.96);
+    border-color: rgba(255,255,255,.94);
+    background: rgba(255,255,255,.86);
+    box-shadow: 0 0 0 4px rgba(225,35,70,.05), inset 0 1px 0 rgba(255,255,255,.96);
 }
-
 
 .hoje-nota-contador {
     position: absolute;
-
     right: 13px;
     bottom: 10px;
-
     color: #9b97a0;
-
     font-size: 10px;
     font-weight: 700;
-
-    font-variant-numeric:
-        tabular-nums;
+    font-variant-numeric: tabular-nums;
 }
-
 
 /* =========================================================
    BOTÃO ROUPA
@@ -1251,161 +571,70 @@ body.hoje-editor-aberto #perfil {
 
 .hoje-opcao-roupa {
     width: 100%;
-
     min-height: 68px;
-
-    margin:
-        12px
-        0
-        0;
-
-    padding:
-        10px
-        12px;
-
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.78);
-
+    margin: 12px 0 0;
+    padding: 10px 12px;
+    border: 1px solid rgba(255,255,255,.78);
     border-radius: 20px;
-
-    background:
-        radial-gradient(
-            circle at 15% 0%,
-            rgba(255, 255, 255, 0.98),
-            rgba(255, 255, 255, 0.48) 36%,
-            transparent 62%
-        ),
-        rgba(248, 247, 250, 0.68);
-
-    -webkit-backdrop-filter:
-        blur(16px)
-        saturate(170%);
-
-    backdrop-filter:
-        blur(16px)
-        saturate(170%);
-
-    box-shadow:
-        0 7px 18px
-        rgba(25, 21, 30, 0.055),
-
-        inset 0 1px 0
-        rgba(255, 255, 255, 0.94);
-
-    color:
-        var(--hoje-texto);
-
+    background: radial-gradient(circle at 15% 0%, rgba(255,255,255,.98), rgba(255,255,255,.48) 36%, transparent 62%), rgba(248,247,250,.68);
+    -webkit-backdrop-filter: blur(16px) saturate(170%);
+    backdrop-filter: blur(16px) saturate(170%);
+    box-shadow: 0 7px 18px rgba(25,21,30,.055), inset 0 1px 0 rgba(255,255,255,.94);
+    color: var(--hoje-texto);
     display: grid;
-
-    grid-template-columns:
-        50px
-        minmax(0,1fr)
-        20px;
-
+    grid-template-columns: 50px minmax(0,1fr) 20px;
     align-items: center;
-
     gap: 11px;
-
     text-align: left;
-
     cursor: pointer;
-
-    -webkit-tap-highlight-color:
-        transparent;
+    -webkit-tap-highlight-color: transparent;
 }
-
 
 .hoje-opcao-roupa-icone {
     width: 50px;
     height: 50px;
-
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.8);
-
+    border: 1px solid rgba(255,255,255,.8);
     border-radius: 16px;
-
-    background:
-        radial-gradient(
-            circle at 25% 15%,
-            rgba(255, 255, 255, 0.98),
-            rgba(255, 255, 255, 0.43) 45%,
-            transparent 68%
-        ),
-        linear-gradient(
-            145deg,
-            rgba(244, 240, 249, 0.88),
-            rgba(226, 221, 235, 0.62)
-        );
-
-    box-shadow:
-        0 6px 14px
-        rgba(25, 21, 30, 0.08),
-
-        inset 0 1px 0
-        rgba(255, 255, 255, 0.95);
-
+    background: radial-gradient(circle at 25% 15%, rgba(255,255,255,.98), rgba(255,255,255,.43) 45%, transparent 68%), linear-gradient(145deg, rgba(244,240,249,.88), rgba(226,221,235,.62));
+    box-shadow: 0 6px 14px rgba(25,21,30,.08), inset 0 1px 0 rgba(255,255,255,.95);
     display: grid;
-
     place-items: center;
-
     font-size: 29px;
 }
-
 
 .hoje-opcao-roupa-texto {
     min-width: 0;
 }
 
-
 .hoje-opcao-roupa-texto strong {
     display: block;
-
     margin-bottom: 4px;
-
     color: #29272d;
-
     font-size: 13px;
-
     font-weight: 760;
 }
 
-
 #hoje-roupa-resumo {
     display: block;
-
     color: #8b8690;
-
     font-size: 11px;
     font-weight: 580;
-
     line-height: 1.25;
-
     overflow: hidden;
-
     text-overflow: ellipsis;
-
     white-space: nowrap;
 }
 
-
-.hoje-opcao-roupa.tem-roupa
-#hoje-roupa-resumo {
+.hoje-opcao-roupa.tem-roupa #hoje-roupa-resumo {
     color: #5f5965;
-
     font-weight: 650;
 }
 
-
 .hoje-opcao-seta {
     color: #aaa5ae;
-
     font-size: 24px;
-
     line-height: 1;
 }
-
 
 /* =========================================================
    AÇÕES
@@ -1413,206 +642,106 @@ body.hoje-editor-aberto #perfil {
 
 .hoje-editor-acoes {
     margin-top: 15px;
-
     display: flex;
-
     align-items: center;
-
     gap: 9px;
 }
 
-
 .hoje-editor-acoes button {
     min-height: 50px;
-
     margin: 0;
-
     border: 0;
-
     border-radius: 999px;
-
     font-size: 14px;
-
     font-weight: 770;
-
     cursor: pointer;
-
-    -webkit-tap-highlight-color:
-        transparent;
+    -webkit-tap-highlight-color: transparent;
 }
-
 
 #hoje-apagar {
     flex: 0 0 auto;
-
-    padding:
-        0
-        17px;
-
-    background:
-        rgba(243, 241, 244, 0.8);
-
+    padding: 0 17px;
+    background: rgba(243,241,244,.8);
     color: #8a3a48;
 }
 
-
 #hoje-guardar {
     flex: 1;
-
-    padding:
-        0
-        22px;
-
-    background:
-        radial-gradient(
-            circle at 30% 0%,
-            rgba(255, 255, 255, 0.24),
-            transparent 38%
-        ),
-        var(--hoje-vermelho);
-
+    padding: 0 22px;
+    background: radial-gradient(circle at 30% 0%, rgba(255,255,255,.24), transparent 38%), var(--hoje-vermelho);
     color: #fff;
-
-    box-shadow:
-        0 9px 22px
-        rgba(225, 35, 70, 0.20),
-
-        inset 0 1px 0
-        rgba(255, 255, 255, 0.34);
+    box-shadow: 0 9px 22px rgba(225,35,70,.2), inset 0 1px 0 rgba(255,255,255,.34);
 }
-
 
 .hoje-editor-erro {
-    margin:
-        10px
-        3px
-        0;
-
+    margin: 10px 3px 0;
     color: #b12840;
-
     font-size: 12px;
     font-weight: 650;
-
     line-height: 1.35;
 }
-
 
 .hoje-editor.a-guardar {
     cursor: wait;
 }
 
-
 .hoje-editor.a-guardar button,
 .hoje-editor.a-guardar textarea {
-    opacity: 0.58;
+    opacity: .58;
 }
-
 
 /* =========================================================
    ROUPA SELECIONADA
    ========================================================= */
 
 .hoje-roupa-ajuda {
-    margin:
-        8px
-        3px
-        12px;
-
-    color:
-        var(--hoje-suave);
-
+    margin: 8px 3px 12px;
+    color: var(--hoje-suave);
     font-size: 12px;
-
     line-height: 1.35;
 }
 
-
 .hoje-roupa-selecionada {
-    margin:
-        0
-        0
-        13px;
-
+    margin: 0 0 13px;
     display: flex;
-
     flex-wrap: wrap;
-
     gap: 7px;
 }
-
 
 .hoje-roupa-selecionada-item {
     min-height: 40px;
-
     margin: 0;
-
-    padding:
-        5px
-        9px;
-
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.78);
-
+    padding: 5px 9px;
+    border: 1px solid rgba(255,255,255,.78);
     border-radius: 999px;
-
-    background:
-        rgba(246, 243, 247, 0.74);
-
-    -webkit-backdrop-filter:
-        blur(13px)
-        saturate(165%);
-
-    backdrop-filter:
-        blur(13px)
-        saturate(165%);
-
-    box-shadow:
-        inset 0 1px 0
-        rgba(255, 255, 255, 0.92);
-
+    background: rgba(246,243,247,.74);
+    -webkit-backdrop-filter: blur(13px) saturate(165%);
+    backdrop-filter: blur(13px) saturate(165%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.92);
     color: #4a4650;
-
     display: inline-flex;
-
     align-items: center;
-
     gap: 7px;
-
     font-size: 10px;
-
     font-weight: 690;
-
     cursor: pointer;
 }
 
-
-.hoje-roupa-selecionada-item
-> span:first-child {
+.hoje-roupa-selecionada-item > span:first-child {
     font-size: 21px;
-
     line-height: 1;
 }
-
 
 .hoje-roupa-selecionada-remover {
     width: 19px;
     height: 19px;
-
     border-radius: 50%;
-
-    background:
-        rgba(30, 28, 33, 0.07);
-
+    background: rgba(30,28,33,.07);
     display: grid;
-
     place-items: center;
-
     font-size: 15px;
-
     line-height: 1;
 }
-
 
 /* =========================================================
    GRELHA DE PEÇAS
@@ -1620,172 +749,70 @@ body.hoje-editor-aberto #perfil {
 
 .hoje-pecas-grid {
     display: grid;
-
-    grid-template-columns:
-        repeat(
-            4,
-            minmax(0,1fr)
-        );
-
+    grid-template-columns: repeat(4, minmax(0,1fr));
     gap: 9px;
 }
 
-
 .hoje-peca {
     position: relative;
-
     min-width: 0;
-
     min-height: 94px;
-
     margin: 0;
-
-    padding:
-        10px
-        5px
-        8px;
-
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.78);
-
+    padding: 10px 5px 8px;
+    border: 1px solid rgba(255,255,255,.78);
     border-radius: 21px;
-
-    background:
-        radial-gradient(
-            circle at 25% 10%,
-            rgba(255, 255, 255, 0.96),
-            rgba(255, 255, 255, 0.46) 42%,
-            transparent 68%
-        ),
-        rgba(242, 240, 245, 0.7);
-
-    -webkit-backdrop-filter:
-        blur(14px)
-        saturate(165%);
-
-    backdrop-filter:
-        blur(14px)
-        saturate(165%);
-
-    box-shadow:
-        0 7px 16px
-        rgba(25, 21, 30, 0.06),
-
-        inset 0 1px 0
-        rgba(255, 255, 255, 0.94);
-
+    background: radial-gradient(circle at 25% 10%, rgba(255,255,255,.96), rgba(255,255,255,.46) 42%, transparent 68%), rgba(242,240,245,.7);
+    -webkit-backdrop-filter: blur(14px) saturate(165%);
+    backdrop-filter: blur(14px) saturate(165%);
+    box-shadow: 0 7px 16px rgba(25,21,30,.06), inset 0 1px 0 rgba(255,255,255,.94);
     color: #3d3942;
-
     display: flex;
-
     flex-direction: column;
-
     align-items: center;
-
     justify-content: center;
-
     gap: 8px;
-
     cursor: pointer;
-
-    -webkit-tap-highlight-color:
-        transparent;
-
-    transition:
-        transform
-        120ms
-        ease,
-
-        border-color
-        120ms
-        ease,
-
-        background-color
-        120ms
-        ease;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 120ms ease, border-color 120ms ease, background-color 120ms ease;
 }
-
 
 .hoje-peca:active {
-    transform:
-        scale(0.96);
+    transform: scale(.96);
 }
-
 
 .hoje-peca.selecionada {
-    border-color:
-        rgba(239, 117, 140, 0.36);
-
-    background:
-        radial-gradient(
-            circle at 25% 10%,
-            rgba(255, 255, 255, 0.97),
-            rgba(255, 240, 244, 0.68) 48%,
-            transparent 72%
-        ),
-        rgba(255, 245, 248, 0.72);
+    border-color: rgba(239,117,140,.36);
+    background: radial-gradient(circle at 25% 10%, rgba(255,255,255,.97), rgba(255,240,244,.68) 48%, transparent 72%), rgba(255,245,248,.72);
 }
-
 
 .hoje-peca.ativa {
-    border-color:
-        rgba(225, 35, 70, 0.34);
-
-    box-shadow:
-        0 0 0 3px
-        rgba(225, 35, 70, 0.055),
-
-        0 8px 18px
-        rgba(25, 21, 30, 0.06),
-
-        inset 0 1px 0
-        rgba(255, 255, 255, 0.95);
+    border-color: rgba(225,35,70,.34);
+    box-shadow: 0 0 0 3px rgba(225,35,70,.055), 0 8px 18px rgba(25,21,30,.06), inset 0 1px 0 rgba(255,255,255,.95);
 }
-
 
 .hoje-peca-icone {
     font-size: 35px;
-
     line-height: 1;
-
-    filter:
-        drop-shadow(
-            0
-            2px
-            2px
-            rgba(35, 30, 40, 0.08)
-        );
+    filter: drop-shadow(0 2px 2px rgba(35,30,40,.08));
 }
-
 
 .hoje-peca-label {
     max-width: 100%;
-
     font-size: 10px;
-
     font-weight: 720;
-
     line-height: 1.15;
-
     overflow: hidden;
-
     text-overflow: ellipsis;
-
     white-space: nowrap;
 }
 
-
 .hoje-peca-cor {
     position: absolute;
-
     top: 9px;
     right: 9px;
-
     width: 12px;
     height: 12px;
 }
-
 
 /* =========================================================
    CORES
@@ -1793,364 +820,579 @@ body.hoje-editor-aberto #perfil {
 
 .hoje-cores-area {
     margin-top: 15px;
-
     padding: 14px;
-
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.78);
-
+    border: 1px solid rgba(255,255,255,.78);
     border-radius: 22px;
-
-    background:
-        rgba(255, 255, 255, 0.68);
-
-    -webkit-backdrop-filter:
-        blur(16px)
-        saturate(170%);
-
-    backdrop-filter:
-        blur(16px)
-        saturate(170%);
-
-    box-shadow:
-        0 7px 17px
-        rgba(25, 21, 30, 0.05),
-
-        inset 0 1px 0
-        rgba(255, 255, 255, 0.94);
+    background: rgba(255,255,255,.68);
+    -webkit-backdrop-filter: blur(16px) saturate(170%);
+    backdrop-filter: blur(16px) saturate(170%);
+    box-shadow: 0 7px 17px rgba(25,21,30,.05), inset 0 1px 0 rgba(255,255,255,.94);
 }
 
-
 .hoje-cores-area h3 {
-    margin:
-        0
-        0
-        13px;
-
+    margin: 0 0 13px;
     color: #37333b;
-
     font-size: 12px;
-
     font-weight: 760;
 }
 
-
 .hoje-cores-grid {
     display: grid;
-
-    grid-template-columns:
-        repeat(
-            7,
-            minmax(0,1fr)
-        );
-
-    gap:
-        11px
-        6px;
+    grid-template-columns: repeat(7, minmax(0,1fr));
+    gap: 11px 6px;
 }
-
 
 .hoje-cor {
     min-width: 0;
-
     margin: 0;
     padding: 0;
-
     border: 0;
-
     background: transparent;
-
     color: #67616c;
-
     display: flex;
-
     flex-direction: column;
-
     align-items: center;
-
     gap: 6px;
-
     cursor: pointer;
-
-    -webkit-tap-highlight-color:
-        transparent;
+    -webkit-tap-highlight-color: transparent;
 }
-
 
 .hoje-cor-amostra {
     width: 34px;
     height: 34px;
-
-    border:
-        1px solid
-        rgba(25, 23, 28, 0.12);
-
+    border: 1px solid rgba(25,23,28,.12);
     border-radius: 50%;
-
-    box-shadow:
-        inset 0 0 0 1px
-        rgba(255,255,255,0.35),
-
-        0 2px 6px
-        rgba(25, 23, 28, 0.06);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.35), 0 2px 6px rgba(25,23,28,.06);
 }
 
-
-.hoje-cor.selecionada
-.hoje-cor-amostra {
-    box-shadow:
-        0 0 0 3px
-        #fff,
-
-        0 0 0 5px
-        rgba(225, 35, 70, 0.45),
-
-        0 4px 10px
-        rgba(25, 21, 30, 0.08);
+.hoje-cor.selecionada .hoje-cor-amostra {
+    box-shadow: 0 0 0 3px #fff, 0 0 0 5px rgba(225,35,70,.45), 0 4px 10px rgba(25,21,30,.08);
 }
-
 
 .hoje-cor-label {
     max-width: 100%;
-
     font-size: 8px;
-
     font-weight: 650;
-
     line-height: 1.05;
-
     overflow: hidden;
-
     text-overflow: ellipsis;
-
     white-space: nowrap;
 }
 
-
 .hoje-roupa-concluir {
     width: 100%;
-
     min-height: 49px;
-
-    margin:
-        15px
-        0
-        0;
-
-    padding:
-        0
-        20px;
-
+    margin: 15px 0 0;
+    padding: 0 20px;
     border: 0;
-
     border-radius: 999px;
-
-    background:
-        radial-gradient(
-            circle at 30% 0%,
-            rgba(255, 255, 255, 0.16),
-            transparent 38%
-        ),
-        #252329;
-
+    background: radial-gradient(circle at 30% 0%, rgba(255,255,255,.16), transparent 38%), #252329;
     color: #fff;
-
-    box-shadow:
-        0 8px 18px
-        rgba(24, 21, 28, 0.14),
-
-        inset 0 1px 0
-        rgba(255, 255, 255, 0.18);
-
+    box-shadow: 0 8px 18px rgba(24,21,28,.14), inset 0 1px 0 rgba(255,255,255,.18);
     font-size: 13px;
-
     font-weight: 760;
-
     cursor: pointer;
 }
-
 
 /* =========================================================
    TABLET
    ========================================================= */
 
 @media (min-width: 560px) {
-
     .hoje-pecas-grid {
-        grid-template-columns:
-            repeat(
-                5,
-                minmax(0,1fr)
-            );
+        grid-template-columns: repeat(5, minmax(0,1fr));
     }
-
 
     .perfil-hoje-balao {
         left: 8px;
-
         width: 172px;
-
         max-width: 172px;
     }
 
-
     #mini-menu-hoje {
-        left:
-            max(
-                22px,
-                env(
-                    safe-area-inset-left,
-                    0px
-                )
-            );
-
+        left: max(22px, env(safe-area-inset-left, 0px));
         width: 158px;
     }
 }
-
 
 /* =========================================================
    ECRÃS PEQUENOS
    ========================================================= */
 
 @media (max-width: 380px) {
-
     #mini-menu-hoje {
         top: 74px;
         left: 8px;
-
         width: 128px;
-
-        padding:
-            11px
-            10px
-            10px;
+        padding: 11px 10px 10px;
     }
-
 
     #mini-menu-hoje .hoje-chip,
     .perfil-hoje-balao .hoje-chip {
         width: 39px;
         height: 41px;
-
         min-height: 41px;
     }
-
 
     #mini-menu-hoje .hoje-chip-icone,
     .perfil-hoje-balao .hoje-chip-icone {
         font-size: 27px;
     }
 
-
     .perfil-hoje-adicionar {
         right: 12px;
-
         bottom: 43px;
-
         width: 46px;
         height: 46px;
     }
 
-
     .perfil-hoje-balao {
         top: 92px;
-
         left: -3px;
-
         width: 150px;
-
         max-width: 150px;
-
-        padding:
-            12px
-            10px
-            11px;
+        padding: 12px 10px 11px;
     }
-
 
     .hoje-pecas-grid {
-        grid-template-columns:
-            repeat(
-                4,
-                minmax(0,1fr)
-            );
-
+        grid-template-columns: repeat(4, minmax(0,1fr));
         gap: 7px;
     }
-
 
     .hoje-peca {
         min-height: 86px;
     }
 
-
     .hoje-peca-icone {
         font-size: 31px;
     }
 
-
     .hoje-cores-grid {
-        grid-template-columns:
-            repeat(
-                5,
-                minmax(0,1fr)
-            );
+        grid-template-columns: repeat(5, minmax(0,1fr));
     }
 }
-
 
 /* =========================================================
    ECRÃS BAIXOS
    ========================================================= */
 
 @media (max-height: 700px) {
-
     #mini-menu-hoje {
         top: 66px;
     }
 
-
-    #mini-menu-hoje
-    [data-hoje-nota] {
+    #mini-menu-hoje [data-hoje-nota] {
         font-size: 10.5px;
-
         -webkit-line-clamp: 2;
     }
 
-
-    #mini-menu-hoje
-    .hoje-chip {
+    #mini-menu-hoje .hoje-chip {
         width: 38px;
         height: 40px;
-
         min-height: 40px;
     }
 
-
-    #mini-menu-hoje
-    .hoje-chip-icone {
+    #mini-menu-hoje .hoje-chip-icone {
         font-size: 26px;
     }
 }
-
 
 /* =========================================================
    REDUCED MOTION
    ========================================================= */
 
-@media (
-    prefers-reduced-motion:
-    reduce
-) {
-
+@media (prefers-reduced-motion: reduce) {
     .hoje-editor-fundo,
     .hoje-editor-sheet,
     .perfil-hoje-adicionar,
     .perfil-hoje-balao,
     .hoje-peca {
-        transition:
-            none !important;
+        transition: none !important;
+    }
+}
+
+/* =========================================================
+   HOJE V2 — ROUPA COM COR REAL + NAVEGAÇÃO + PERFIL
+   ========================================================= */
+
+.hoje-garment-svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+.hoje-chip {
+    grid-template-columns: auto minmax(0,1fr);
+}
+
+.hoje-chip-icone {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    display: grid;
+    place-items: center;
+    font-size: 0;
+    filter: drop-shadow(0 2px 3px rgba(35,30,40,.1));
+}
+
+.hoje-chip-cor,
+.hoje-peca-cor,
+.hoje-roupa-selecionada-cor {
+    display: none !important;
+}
+
+#mini-menu-hoje .hoje-chip,
+.perfil-hoje-balao .hoje-chip {
+    width: 34px;
+    height: 36px;
+    min-height: 36px;
+    border-radius: 12px;
+    background: rgba(255,255,255,.46);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.88), 0 3px 9px rgba(24,21,28,.06);
+}
+
+#mini-menu-hoje .hoje-chip-icone,
+.perfil-hoje-balao .hoje-chip-icone {
+    width: 29px;
+    height: 29px;
+    min-width: 29px;
+    font-size: 0;
+}
+
+.perfil-hoje-balao .hoje-chips {
+    flex-wrap: nowrap;
+    gap: 4px;
+}
+
+#mini-menu-hoje .hoje-chips {
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+/* Perfil: o balão deixa de ficar em cima da foto */
+
+.perfil-foto-area {
+    --hoje-reserva-perfil: 0px;
+    padding-top: calc(10px + var(--hoje-reserva-perfil));
+    transition: padding-top 260ms cubic-bezier(.22,1,.36,1);
+}
+
+.perfil-foto-area:has(.perfil-hoje-balao:not([hidden])) {
+    --hoje-reserva-perfil: 118px;
+}
+
+.perfil-foto-area:has(.perfil-hoje-balao:not([hidden])) .perfil-acento--amarelo {
+    top: 118px;
+}
+
+.perfil-foto-area:has(.perfil-hoje-balao:not([hidden])) .perfil-acento--roxo {
+    top: 203px;
+}
+
+.perfil-hoje-balao {
+    top: 8px;
+    right: 4px;
+    left: auto;
+    bottom: auto;
+    width: min(232px, calc(100% - 34px));
+    max-width: none;
+    min-height: 82px;
+    padding: 12px 14px 13px;
+    border: 1px solid rgba(255,255,255,.82);
+    border-radius: 25px 29px 27px 29px;
+    background: radial-gradient(circle at 18% 0%, rgba(255,255,255,.98), rgba(255,255,255,.58) 36%, transparent 64%), linear-gradient(145deg, rgba(255,255,255,.79), rgba(244,241,248,.62));
+    -webkit-backdrop-filter: blur(22px) saturate(185%);
+    backdrop-filter: blur(22px) saturate(185%);
+    box-shadow: 0 16px 36px rgba(21,18,25,.11), inset 0 1px 0 rgba(255,255,255,.96), inset 0 -1px 0 rgba(65,59,73,.06);
+    transform: translateY(0);
+    animation: hoje-balao-aparecer 300ms cubic-bezier(.22,1,.36,1) both;
+}
+
+.perfil-hoje-balao::before {
+    content: "";
+    position: absolute;
+    z-index: 1;
+    left: 30px;
+    top: auto;
+    bottom: -14px;
+    width: 13px;
+    height: 13px;
+    border: 1px solid rgba(255,255,255,.82);
+    border-radius: 50%;
+    background: rgba(250,248,252,.86);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.96), 0 4px 9px rgba(22,19,26,.08);
+    -webkit-backdrop-filter: blur(12px) saturate(170%);
+    backdrop-filter: blur(12px) saturate(170%);
+}
+
+.perfil-hoje-balao::after {
+    content: "";
+    position: absolute;
+    z-index: 1;
+    left: 20px;
+    right: auto;
+    top: auto;
+    bottom: -24px;
+    width: 7px;
+    height: 7px;
+    border: 1px solid rgba(255,255,255,.82);
+    border-radius: 50%;
+    background: rgba(250,248,252,.9);
+    box-shadow: 0 3px 7px rgba(22,19,26,.07);
+}
+
+.perfil-hoje-topo {
+    margin-bottom: 5px;
+    font-size: 8px;
+}
+
+.perfil-hoje-balao [data-hoje-nota] {
+    font-size: 12px;
+    line-height: 1.25;
+    -webkit-line-clamp: 2;
+}
+
+.perfil-hoje-balao [data-hoje-roupa] {
+    margin-top: 7px;
+}
+
+@keyframes hoje-balao-aparecer {
+    from {
+        opacity: 0;
+        transform: translateY(6px) scale(.975);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Sheet: animação de entrada real + swipe down */
+
+.hoje-editor {
+    --hoje-arrasto: 0px;
+    --hoje-fundo-opacidade: 1;
+}
+
+.hoje-editor.aberto .hoje-editor-fundo {
+    opacity: var(--hoje-fundo-opacidade);
+}
+
+.hoje-editor-sheet {
+    transform: translateY(calc(100% + 36px));
+    will-change: transform;
+}
+
+.hoje-editor.aberto .hoje-editor-sheet {
+    transform: translateY(var(--hoje-arrasto));
+}
+
+.hoje-editor.a-arrastar .hoje-editor-sheet,
+.hoje-editor.a-arrastar .hoje-editor-fundo {
+    transition: none !important;
+}
+
+.hoje-editor-barra {
+    width: 44px;
+    height: 5px;
+    margin-bottom: 8px;
+    background: rgba(32,29,35,.18);
+    cursor: grab;
+}
+
+.hoje-editor-cabecalho,
+.hoje-editor-barra {
+    touch-action: pan-y;
+}
+
+.hoje-editor-view.hoje-view-entra-direita {
+    animation: hoje-view-direita 220ms cubic-bezier(.22,1,.36,1) both;
+}
+
+.hoje-editor-view.hoje-view-entra-esquerda {
+    animation: hoje-view-esquerda 220ms cubic-bezier(.22,1,.36,1) both;
+}
+
+@keyframes hoje-view-direita {
+    from {
+        opacity: 0;
+        transform: translateX(16px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes hoje-view-esquerda {
+    from {
+        opacity: 0;
+        transform: translateX(-16px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Picker de roupa: a peça é a própria amostra de cor */
+
+.hoje-peca {
+    min-height: 100px;
+    gap: 7px;
+}
+
+.hoje-peca-icone {
+    width: 50px;
+    height: 50px;
+    display: grid;
+    place-items: center;
+    font-size: 0;
+    filter: drop-shadow(0 3px 4px rgba(35,30,40,.1));
+}
+
+.hoje-peca.selecionada .hoje-peca-icone {
+    transform: scale(1.04);
+}
+
+.hoje-peca-label {
+    font-size: 9.5px;
+    line-height: 1.12;
+}
+
+.hoje-cores-area {
+    padding: 14px 12px 15px;
+}
+
+.hoje-cores-grid {
+    grid-template-columns: repeat(5, minmax(0,1fr));
+    gap: 10px 6px;
+}
+
+.hoje-cor {
+    gap: 5px;
+}
+
+.hoje-cor-amostra {
+    width: 48px;
+    height: 48px;
+    border: 0;
+    border-radius: 14px;
+    background: rgba(246,243,248,.62) !important;
+    display: grid;
+    place-items: center;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.92), 0 4px 10px rgba(25,21,30,.055);
+}
+
+.hoje-cor-garment {
+    width: 40px;
+    height: 40px;
+}
+
+.hoje-cor.selecionada .hoje-cor-amostra {
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px rgba(225,35,70,.42), 0 5px 12px rgba(25,21,30,.08);
+}
+
+.hoje-cor-label {
+    font-size: 8px;
+}
+
+.hoje-roupa-selecionada-item {
+    min-height: 44px;
+    padding: 5px 8px 5px 6px;
+    gap: 6px;
+}
+
+.hoje-roupa-selecionada-icone {
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    flex: 0 0 34px;
+}
+
+.hoje-selecionada-garment {
+    width: 32px;
+    height: 32px;
+}
+
+.hoje-roupa-selecionada-label {
+    font-size: 10px;
+    font-weight: 690;
+}
+
+.hoje-opcao-roupa-icone {
+    font-size: 0;
+}
+
+.hoje-opcao-garment {
+    width: 37px;
+    height: 37px;
+}
+
+@media (max-width: 380px) {
+    .perfil-foto-area:has(.perfil-hoje-balao:not([hidden])) {
+        --hoje-reserva-perfil: 116px;
+    }
+
+    .perfil-foto-area:has(.perfil-hoje-balao:not([hidden])) .perfil-acento--amarelo {
+        top: 116px;
+    }
+
+    .perfil-foto-area:has(.perfil-hoje-balao:not([hidden])) .perfil-acento--roxo {
+        top: 201px;
+    }
+
+    .perfil-hoje-balao {
+        top: 6px;
+        right: 2px;
+        left: auto;
+        width: min(218px, calc(100% - 24px));
+        max-width: none;
+        padding: 11px 12px 12px;
+    }
+
+    .perfil-hoje-balao .hoje-chip,
+    #mini-menu-hoje .hoje-chip {
+        width: 32px;
+        height: 34px;
+        min-height: 34px;
+    }
+
+    .perfil-hoje-balao .hoje-chip-icone,
+    #mini-menu-hoje .hoje-chip-icone {
+        width: 27px;
+        height: 27px;
+        min-width: 27px;
+        font-size: 0;
+    }
+
+    .hoje-pecas-grid {
+        grid-template-columns: repeat(4, minmax(0,1fr));
+    }
+
+    .hoje-cores-grid {
+        grid-template-columns: repeat(4, minmax(0,1fr));
+    }
+}
+
+@media (min-width: 560px) {
+    .perfil-hoje-balao {
+        top: 8px;
+        right: 18px;
+        left: auto;
+        width: 244px;
+        max-width: 244px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .perfil-hoje-balao,
+    .hoje-editor-view {
+        animation: none !important;
     }
 }
