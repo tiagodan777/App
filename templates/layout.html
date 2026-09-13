@@ -1,357 +1,303 @@
-{% extends 'layout.html' %}
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-{% block styles %}
-<link rel="stylesheet" href="{{ doc_root }}estilos/today.css?v=3" data-margot-page-style>
-{% endblock %}
+    <link rel="manifest" href="{{ doc_root }}js/manifest.json">
 
-{% block content %}
-    <canvas id="gridCanvas"></canvas>
+    <title>{% block title %}Margot{% endblock %}</title>
 
-    <div
-        class="mini-menu"
-        data-destinatario-id=""
-        aria-hidden="true"
-    >
-        <div id="barra"></div>
+    <link rel="stylesheet" href="{{ doc_root }}estilos/style.css?v=16">
 
-        <header>
-            <a
-                href="{{ doc_root }}profile/"
-                class="mini-menu-perfil"
-            >
-                <img
-                    src="{{ doc_root }}imagens/fotos-perfil/default.webp"
-                    alt=""
-                >
-            </a>
+    {% if session.id %}
+        <link rel="stylesheet" href="{{ doc_root }}estilos/index-notificacoes.css?v=8">
+        <link rel="stylesheet" href="{{ doc_root }}estilos/messaging-integration.css?v=9">
+    {% endif %}
 
-            <h1></h1>
+    {% block styles %}{% endblock %}
+</head>
 
-            <button
-                type="button"
-                id="abrir-acoes-perfil"
-                class="mais-opcoes"
-                aria-label="Mais opções"
-                aria-controls="acoes-perfil"
-                aria-expanded="false"
-            >
-                <svg
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                    focusable="false"
-                >
-                    <circle cx="5" cy="12" r="2"></circle>
-                    <circle cx="12" cy="12" r="2"></circle>
-                    <circle cx="19" cy="12" r="2"></circle>
-                </svg>
-            </button>
-        </header>
+<body>
+    <script src="{{ doc_root }}js/jquery-4.0.0.js"></script>
+    <script src="{{ doc_root }}js/csrf.js?v=1"></script>
+    <script src="{{ doc_root }}js/camara-nativa.js?v=1"></script>
+    <script src="{{ doc_root }}js/deep-links.js?v=1"></script>
 
-        <section
-            id="acoes-perfil"
-            class="acoes-perfil"
+    {% if session.id %}
+        <script src="{{ doc_root }}js/preferencias.js?v=2"></script>
+    {% endif %}
+
+    <script src="{{ doc_root }}js/push-notifications.js?v=3"></script>
+
+    <div data-margot-pagina>
+        {% block content %}{% endblock %}
+    </div>
+
+    {% if session.id %}
+        <footer id="menuPrincipal">
+            <nav aria-label="Menu principal">
+                <ul>
+                    <li>
+                        <a href="{{ doc_root }}index" aria-label="Início">
+                            <img
+                                src="{{ doc_root }}imagens/icones-menu/home.png"
+                                alt=""
+                                aria-hidden="true"
+                                draggable="false"
+                            >
+                        </a>
+                    </li>
+
+                    <li>
+                        <a href="{{ doc_root }}messages" aria-label="Mensagens">
+                            <img
+                                src="{{ doc_root }}imagens/icones-menu/messages.png"
+                                alt=""
+                                aria-hidden="true"
+                                draggable="false"
+                            >
+                        </a>
+                    </li>
+
+                    <li>
+                        <a href="{{ doc_root }}profile/{{ session.id }}" aria-label="Perfil">
+                            <img
+                                src="{{ doc_root }}imagens/icones-menu/user.png"
+                                alt=""
+                                aria-hidden="true"
+                                draggable="false"
+                            >
+                        </a>
+                    </li>
+
+                    <li class="menu-item-invisivel">
+                        <button
+                            type="button"
+                            id="alternar-invisivel"
+                            class="menu-principal-botao"
+                            data-invisivel="false"
+                            data-localizacao-desativada="false"
+                            aria-label="Ficar invisível"
+                            aria-pressed="false"
+                            title="Ficar invisível"
+                        >
+                            <img
+                                class="menu-invisivel-imagem menu-invisivel-imagem-visivel"
+                                src="{{ doc_root }}imagens/icones-menu/eye.png?v=1"
+                                alt=""
+                                aria-hidden="true"
+                                draggable="false"
+                            >
+
+                            <img
+                                class="menu-invisivel-imagem menu-invisivel-imagem-invisivel"
+                                src="{{ doc_root }}imagens/icones-menu/eye-block.png?v=1"
+                                alt=""
+                                aria-hidden="true"
+                                draggable="false"
+                            >
+
+                            <span
+                                id="alternar-invisivel-estado"
+                                class="texto-apenas-leitor"
+                            >
+                                Modo invisível desativado
+                            </span>
+                        </button>
+                    </li>
+                </ul>
+            </nav>
+        </footer>
+    {% endif %}
+
+    {% if not session.id %}
+        <script src="{{ doc_root }}js/navegacao-documento.js?v=1"></script>
+    {% endif %}
+
+    {% if session.id %}
+        <div
+            id="estado-ligacao"
+            data-status="connecting"
             aria-hidden="true"
             hidden
-        >
-            <button
-                type="button"
-                class="acoes-perfil-fundo"
-                aria-label="Fechar opções"
-                data-fechar-acoes
-            ></button>
-
-            <div
-                class="acoes-perfil-caixa"
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="acoes-perfil-titulo"
-                tabindex="-1"
-            >
-                <div id="acoes-perfil-principal">
-                    <header class="acoes-perfil-cabecalho">
-                        <h2 id="acoes-perfil-titulo">
-                            Opções
-                        </h2>
-
-                        <button
-                            type="button"
-                            class="acoes-perfil-fechar"
-                            aria-label="Fechar"
-                            data-fechar-acoes
-                        >
-                            ×
-                        </button>
-                    </header>
-
-                    <button
-                        type="button"
-                        id="bloquear-membro"
-                        class="acao-perfil acao-perfil-perigosa"
-                    >
-                        <strong>Bloquear</strong>
-
-                        <span>
-                            Deixam de aparecer um ao outro entre as pessoas por perto.
-                        </span>
-                    </button>
-
-                    <button
-                        type="button"
-                        id="abrir-denuncia"
-                        class="acao-perfil"
-                    >
-                        <strong>Denunciar</strong>
-
-                        <span>
-                            Envia uma denúncia privada.
-                        </span>
-                    </button>
-
-                    <button
-                        type="button"
-                        class="acao-perfil-cancelar"
-                        data-fechar-acoes
-                    >
-                        Cancelar
-                    </button>
-                </div>
-
-                <form
-                    id="form-denuncia"
-                    class="form-denuncia"
-                    hidden
-                >
-                    <header class="acoes-perfil-cabecalho">
-                        <button
-                            type="button"
-                            id="voltar-denuncia"
-                            class="acoes-perfil-voltar"
-                            aria-label="Voltar"
-                        >
-                            ‹
-                        </button>
-
-                        <h2>Denunciar perfil</h2>
-
-                        <button
-                            type="button"
-                            class="acoes-perfil-fechar"
-                            aria-label="Fechar"
-                            data-fechar-acoes
-                        >
-                            ×
-                        </button>
-                    </header>
-
-                    <label for="denuncia-motivo">
-                        Motivo
-                    </label>
-
-                    <select
-                        name="motivo"
-                        id="denuncia-motivo"
-                        required
-                    >
-                        <option value="">
-                            Escolhe um motivo
-                        </option>
-
-                        <option value="comportamento_inadequado">
-                            Comportamento inadequado
-                        </option>
-
-                        <option value="assedio">
-                            Assédio
-                        </option>
-
-                        <option value="perfil_falso">
-                            Perfil falso
-                        </option>
-
-                        <option value="spam">
-                            Spam
-                        </option>
-
-                        <option value="seguranca">
-                            Questão de segurança
-                        </option>
-
-                        <option value="outro">
-                            Outro
-                        </option>
-                    </select>
-
-                    <label for="denuncia-mensagem">
-                        Explica o que aconteceu
-                        <span>(opcional)</span>
-                    </label>
-
-                    <textarea
-                        name="mensagem"
-                        id="denuncia-mensagem"
-                        maxlength="2048"
-                        rows="5"
-                        placeholder="Escreve aqui…"
-                    ></textarea>
-
-                    <button
-                        type="submit"
-                        class="denuncia-enviar"
-                    >
-                        Enviar denúncia
-                    </button>
-                </form>
-            </div>
-        </section>
-
-        <section
-            id="mini-menu-hoje"
-            class="mini-menu-hoje"
-            aria-hidden="true"
-            hidden
-        >
-            <div class="mini-menu-hoje-topo">
-                Hoje
-            </div>
-
-            <p data-hoje-nota hidden></p>
-
-            <div
-                class="hoje-chips"
-                data-hoje-roupa
-                hidden
-            ></div>
-        </section>
+        ></div>
 
         <button
             type="button"
-            class="ola"
-            id="enviar-hey"
+            id="ativar-notificacoes"
+            aria-hidden="true"
+            tabindex="-1"
+            hidden
+        ></button>
+
+        <button
+            type="button"
+            id="abrir-heys"
+            class="heys-abrir"
+            aria-label="Abrir Heys"
+            aria-controls="heys-area"
+            aria-expanded="false"
         >
-            Hey
-        </button>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6.4 10.7V6.2a1.35 1.35 0 0 1 2.7 0v3.2-5a1.35 1.35 0 0 1 2.7 0v5-3.8a1.35 1.35 0 0 1 2.7 0v4.1-2.5a1.35 1.35 0 0 1 2.7 0v6.1c0 4-2.7 7.2-6.7 7.2h-.4c-2.5 0-4.5-1.1-5.8-3L1.8 14a1.45 1.45 0 0 1 2.3-1.7l2.3 2.6"></path>
+            </svg>
 
-        <form
-            action=""
-            method="post"
-            enctype="multipart/form-data"
-            class="mini-menu-mensagem"
-        >
-            <input
-                type="hidden"
-                name="profile_access_token"
-                id="mini-menu-profile-access-token"
-                value=""
-            >
-
-            <label
-                for="mini-menu-media"
-                class="mini-menu-anexo"
-                aria-label="Adicionar fotografia ou vídeo"
-            >
-                +
-            </label>
-
-            <input
-                type="file"
-                name="media"
-                id="mini-menu-media"
-                accept="image/*,video/*"
+            <span
+                id="heys-contador"
+                class="heys-contador"
+                aria-label="0 Heys por ler"
                 hidden
             >
+                0
+            </span>
+        </button>
 
-            <input
-                type="text"
-                name="mensagem"
-                id="mensagem"
-                maxlength="2000"
-                autocomplete="off"
-                autocapitalize="sentences"
-                placeholder="Mensagem…"
+        <div
+            id="heys-area"
+            class="heys-area"
+            aria-hidden="true"
+        >
+            <button
+                type="button"
+                id="heys-fundo"
+                class="heys-fundo"
+                aria-label="Fechar Heys"
+                tabindex="-1"
+            ></button>
+
+            <section
+                id="heys-painel"
+                class="heys-painel"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="heys-titulo"
+                tabindex="-1"
             >
+                <header class="heys-cabecalho">
+                    <div>
+                        <p>Atividade</p>
+                        <h1 id="heys-titulo">Heys</h1>
+                    </div>
 
-            <input
-                type="submit"
-                value="Enviar"
-            >
-        </form>
-    </div>
+                    <button
+                        type="button"
+                        id="fechar-heys"
+                        class="heys-fechar"
+                        aria-label="Fechar"
+                    >
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M6 6l12 12M18 6 6 18"></path>
+                        </svg>
+                    </button>
+                </header>
 
-    <script>
-        window.safetyUrl =
-            {{ (doc_root ~ 'safety')|json_encode|raw }};
+                <nav
+                    class="heys-separadores"
+                    role="tablist"
+                    aria-label="Tipo de Hey"
+                >
+                    <button
+                        type="button"
+                        id="heys-tab-recebidos"
+                        class="ativo"
+                        role="tab"
+                        aria-selected="true"
+                        data-direcao="recebido"
+                    >
+                        Recebidos
+                    </button>
 
-        (function () {
-            'use strict';
+                    <button
+                        type="button"
+                        id="heys-tab-enviados"
+                        role="tab"
+                        aria-selected="false"
+                        data-direcao="enviado"
+                    >
+                        Enviados
+                    </button>
+                </nav>
 
-            document.addEventListener(
-                'submit',
-                function (evento) {
-                    var form = evento.target;
+                <div class="heys-acoes">
+                    <button
+                        type="button"
+                        id="limpar-todos-heys"
+                        class="heys-limpar-todos"
+                        hidden
+                    >
+                        Limpar todos
+                    </button>
+                </div>
 
-                    if (
-                        !form ||
-                        !form.matches(
-                            '.mini-menu-mensagem'
-                        )
-                    ) {
-                        return;
-                    }
+                <div
+                    id="heys-lista"
+                    class="heys-lista"
+                    role="tabpanel"
+                    aria-live="polite"
+                ></div>
 
-                    var miniMenu =
-                        form.closest(
-                            '.mini-menu'
-                        );
+                <div
+                    id="heys-carregando"
+                    class="heys-estado"
+                    hidden
+                >
+                    A carregar…
+                </div>
 
-                    var inputToken =
-                        form.querySelector(
-                            'input[name="profile_access_token"]'
-                        );
+                <div
+                    id="heys-vazio"
+                    class="heys-estado"
+                    hidden
+                >
+                    Ainda não existem Heys.
+                </div>
 
-                    if (
-                        !miniMenu ||
-                        !inputToken
-                    ) {
-                        return;
-                    }
+                <div
+                    id="heys-erro"
+                    class="heys-estado heys-estado-erro"
+                    role="alert"
+                    hidden
+                ></div>
+            </section>
+        </div>
 
-                    var destinatarioId =
-                        String(
-                            miniMenu.getAttribute(
-                                'data-destinatario-id'
-                            ) || ''
-                        ).trim();
+        <div
+            id="heys-avisos"
+            class="heys-avisos"
+            aria-live="polite"
+            aria-atomic="true"
+        ></div>
 
-                    if (!destinatarioId) {
-                        inputToken.value = '';
-                        return;
-                    }
+        <script>
+            window.membroId = {{ session.id|json_encode|raw }};
+            window.messagesUrl = {{ (doc_root ~ 'messages')|json_encode|raw }};
+            window.profileUrl = {{ (doc_root ~ 'profile/')|json_encode|raw }};
+            window.heysUrl = {{ (doc_root ~ 'notifications')|json_encode|raw }};
+            window.todayUrl = {{ (doc_root ~ 'today/')|json_encode|raw }};
+            window.webSocketTokenUrl = {{ (doc_root ~ 'websocket-token')|json_encode|raw }};
+            window.backgroundLocationTokenUrl = {{ (doc_root ~ 'background-location-token/')|json_encode|raw }};
+            window.backgroundLocationUpdateUrl = {{ (doc_root ~ 'background-location-update/')|json_encode|raw }};
+            window.pushDeviceUrl = {{ (doc_root ~ 'push-device/')|json_encode|raw }};
+            window.pushEnvironment = {{ push_environment|default('production')|json_encode|raw }};
+            window.loginUrl = {{ (doc_root ~ 'login/')|json_encode|raw }};
 
-                    var fotografia =
-                        document.getElementById(
-                            destinatarioId
-                        );
+            window.webSocketUrl = window.location.protocol === 'https:'
+                ? 'wss://' + window.location.host + '/ws/'
+                : 'ws://' + window.location.hostname + ':8080';
+        </script>
 
-                    var token =
-                        fotografia
-                            ? String(
-                                fotografia.getAttribute(
-                                    'data-profile-access-token'
-                                ) || ''
-                            ).trim()
-                            : '';
-
-                    inputToken.value =
-                        token;
-                },
-                true
-            );
-        })();
-    </script>
-
-    <script src="{{ doc_root }}js/index-posicao.js?v=13"></script>
-    <script src="{{ doc_root }}js/today.js?v=2"></script>
-    <script src="{{ doc_root }}js/index-mini-menu.js?v=19"></script>
-    <script src="{{ doc_root }}js/index-animacao.js?v=10"></script>
-    <script src="{{ doc_root }}js/index-tap-foto.js?v=13"></script>
-{% endblock %}
+        <script src="{{ doc_root }}js/hey-vibracao.js?v=3"></script>
+        <script src="{{ doc_root }}js/index-notificacoes.js?v=10"></script>
+        <script src="{{ doc_root }}js/background-location.js?v=6"></script>
+        <script src="{{ doc_root }}js/websocket.js?v=22"></script>
+        <script src="{{ doc_root }}js/menu-invisivel.js?v=3"></script>
+        <script src="{{ doc_root }}js/javascript-geral.js?v=5"></script>
+    {% endif %}
+</body>
+</html>
