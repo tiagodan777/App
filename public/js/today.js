@@ -12,6 +12,8 @@
     var keyboardOffset = 0;
     var editorOpenFrame = 0;
     var garmentIconSequence = 0;
+    var clothesScrollBeforeColor = 0;
+    var colorTransitionTimer = 0;
 
     var PIECES = [{ type: 'tshirt', icon: '👕', label: 'T-shirt' }, { type: 'shirt', icon: '👔', label: 'Camisa' }, { type: 'sweater', icon: '🧶', label: 'Camisola' }, { type: 'hoodie', icon: '🧥', label: 'Hoodie' }, { type: 'jacket', icon: '🧥', label: 'Casaco' }, { type: 'top', icon: '👚', label: 'Top' }, { type: 'jeans', icon: '👖', label: 'Jeans' }, { type: 'trousers', icon: '👖', label: 'Calças' }, { type: 'shorts', icon: '🩳', label: 'Calções' }, { type: 'skirt', icon: '👗', label: 'Saia' }, { type: 'dress', icon: '👗', label: 'Vestido' }, { type: 'sneakers', icon: '👟', label: 'Sapatilhas' }, { type: 'boots', icon: '🥾', label: 'Botas' }, { type: 'shoes', icon: '👞', label: 'Sapatos' }, { type: 'sandals', icon: '🩴', label: 'Sandálias' }, { type: 'cap', icon: '🧢', label: 'Boné' }, { type: 'hat', icon: '👒', label: 'Chapéu' }, { type: 'glasses', icon: '🕶️', label: 'Óculos' }, { type: 'backpack', icon: '🎒', label: 'Mochila' }];
 
@@ -413,6 +415,147 @@
         }) || null;
     }
 
+    function editorSheet() {
+        var editor = byId('hoje-editor');
+        return editor ? editor.querySelector('.hoje-editor-sheet') : null;
+    }
+
+    function setSheetScroll(top, smooth) {
+        var sheet = editorSheet();
+        if (!sheet) return;
+
+        try {
+            sheet.scrollTo({ top: Math.max(0, Number(top) || 0), behavior: smooth ? 'smooth' : 'auto' });
+        } catch (error) {
+            sheet.scrollTop = Math.max(0, Number(top) || 0);
+        }
+    }
+
+    function resetColorMode() {
+        var view = byId('hoje-editor-roupa');
+        var help = view ? view.querySelector('.hoje-roupa-ajuda') : null;
+        var selected = byId('hoje-roupa-selecionada');
+        var grid = byId('hoje-pecas-grid');
+        var area = byId('hoje-cores-area');
+        var finish = byId('hoje-roupa-concluir');
+
+        if (colorTransitionTimer) {
+            window.clearTimeout(colorTransitionTimer);
+            colorTransitionTimer = 0;
+        }
+
+        if (view) view.classList.remove('a-escolher-cor');
+        if (help) help.hidden = false;
+
+        if (grid) {
+            grid.hidden = false;
+            grid.classList.remove('hoje-pecas-sair', 'hoje-pecas-regressar');
+        }
+
+        if (selected) selected.hidden = clothesDraft.length === 0;
+        if (finish) finish.hidden = false;
+
+        if (area) {
+            area.hidden = true;
+            area.classList.remove('hoje-cores-entrar', 'hoje-cores-sair');
+        }
+    }
+
+    function openColorPicker(type) {
+        var view = byId('hoje-editor-roupa');
+        var help = view ? view.querySelector('.hoje-roupa-ajuda') : null;
+        var selected = byId('hoje-roupa-selecionada');
+        var grid = byId('hoje-pecas-grid');
+        var area = byId('hoje-cores-area');
+        var finish = byId('hoje-roupa-concluir');
+        var sheet = editorSheet();
+
+        if (!view || !grid || !area) return;
+
+        activePiece = type;
+        clothesScrollBeforeColor = sheet ? sheet.scrollTop : 0;
+
+        var editorTitle = byId('hoje-editor-titulo');
+        if (editorTitle) editorTitle.textContent = 'Escolhe a cor';
+
+        showMessage('', '');
+        view.classList.add('a-escolher-cor');
+        grid.classList.add('hoje-pecas-sair');
+
+        if (colorTransitionTimer) window.clearTimeout(colorTransitionTimer);
+
+        colorTransitionTimer = window.setTimeout(function () {
+            if (help) help.hidden = true;
+            if (selected) selected.hidden = true;
+            if (finish) finish.hidden = true;
+
+            grid.hidden = true;
+            grid.classList.remove('hoje-pecas-sair');
+
+            renderColorGrid();
+            area.classList.remove('hoje-cores-sair');
+            void area.offsetWidth;
+            area.classList.add('hoje-cores-entrar');
+
+            setSheetScroll(0, false);
+            colorTransitionTimer = 0;
+        }, 120);
+    }
+
+    function closeColorPicker(restoreScroll) {
+        var view = byId('hoje-editor-roupa');
+        var help = view ? view.querySelector('.hoje-roupa-ajuda') : null;
+        var selected = byId('hoje-roupa-selecionada');
+        var grid = byId('hoje-pecas-grid');
+        var area = byId('hoje-cores-area');
+        var finish = byId('hoje-roupa-concluir');
+
+        if (!view || !grid || !area) {
+            activePiece = '';
+            return;
+        }
+
+        area.classList.remove('hoje-cores-entrar');
+        area.classList.add('hoje-cores-sair');
+
+        if (colorTransitionTimer) window.clearTimeout(colorTransitionTimer);
+
+        colorTransitionTimer = window.setTimeout(function () {
+            activePiece = '';
+
+            var editorTitle = byId('hoje-editor-titulo');
+            if (editorTitle) editorTitle.textContent = 'Roupa de hoje';
+
+            renderColorGrid();
+            renderPieceGrid();
+            renderSelectedClothes();
+            renderClothingSummary();
+
+            view.classList.remove('a-escolher-cor');
+
+            if (help) help.hidden = false;
+            if (finish) finish.hidden = false;
+
+            grid.hidden = false;
+            grid.classList.remove('hoje-pecas-sair');
+
+            void grid.offsetWidth;
+            grid.classList.add('hoje-pecas-regressar');
+
+            window.setTimeout(function () {
+                grid.classList.remove('hoje-pecas-regressar');
+            }, 240);
+
+            if (restoreScroll) {
+                window.requestAnimationFrame(function () {
+                    setSheetScroll(clothesScrollBeforeColor, false);
+                });
+            }
+
+            colorTransitionTimer = 0;
+        }, 120);
+    }
+
     function renderPieceGrid() {
         var grid = byId('hoje-pecas-grid');
         if (!grid) return;
@@ -429,13 +572,12 @@
             button.className = 'hoje-peca';
             button.dataset.type = piece.type;
             button.classList.toggle('selecionada', Boolean(chosen));
-            button.classList.toggle('ativa', activePiece === piece.type);
 
             icon.className = 'hoje-peca-icone';
             icon.appendChild(createGarmentIcon(piece.type, chosen && chosen.color ? chosen.color : '', 'hoje-peca-garment'));
 
             label.className = 'hoje-peca-label';
-            label.textContent = chosen && chosen.color ? piece.label + ' · ' + colorMeta(chosen.color).label : piece.label;
+            label.textContent = piece.label;
 
             button.appendChild(icon);
             button.appendChild(label);
@@ -446,10 +588,7 @@
                     return;
                 }
 
-                activePiece = piece.type;
-                showMessage('', '');
-                renderPieceGrid();
-                renderColorGrid();
+                openColorPicker(piece.type);
             });
 
             grid.appendChild(button);
@@ -460,25 +599,33 @@
         var area = byId('hoje-cores-area');
         var grid = byId('hoje-cores-grid');
         var title = byId('hoje-cores-titulo');
+        var preview = byId('hoje-cores-peca-preview');
 
         if (!area || !grid || !title) return;
 
         if (!activePiece) {
             area.hidden = true;
             clearNode(grid);
+
+            if (preview) clearNode(preview);
             return;
         }
 
         var piece = pieceMeta(activePiece);
         var chosen = selectedPiece(activePiece);
 
-        title.textContent = 'Escolhe a cor de ' + piece.label.toLowerCase();
+        title.textContent = piece.label;
         area.hidden = false;
         clearNode(grid);
 
+        if (preview) {
+            clearNode(preview);
+            preview.appendChild(createGarmentIcon(activePiece, chosen && chosen.color ? chosen.color : '', 'hoje-cores-peca-garment'));
+        }
+
         COLORS.forEach(function (color) {
             var button = document.createElement('button');
-            var preview = document.createElement('span');
+            var sample = document.createElement('span');
             var label = document.createElement('span');
 
             button.type = 'button';
@@ -486,31 +633,42 @@
             button.classList.toggle('selecionada', Boolean(chosen && chosen.color === color.key));
             button.setAttribute('aria-label', piece.label + ', ' + color.label);
 
-            preview.className = 'hoje-cor-amostra';
-            preview.appendChild(createGarmentIcon(activePiece, color.key, 'hoje-cor-garment'));
+            sample.className = 'hoje-cor-amostra';
+            sample.appendChild(createGarmentIcon(activePiece, color.key, 'hoje-cor-garment'));
 
             label.className = 'hoje-cor-label';
             label.textContent = color.label;
 
-            button.appendChild(preview);
+            button.appendChild(sample);
             button.appendChild(label);
 
             button.addEventListener('click', function () {
+                var type = activePiece;
+
                 var index = clothesDraft.findIndex(function (item) {
-                    return item.type === activePiece;
+                    return item.type === type;
                 });
 
                 if (index >= 0) {
-                    clothesDraft[index] = { type: activePiece, color: color.key };
+                    clothesDraft[index] = { type: type, color: color.key };
                 } else {
-                    clothesDraft.push({ type: activePiece, color: color.key });
+                    clothesDraft.push({ type: type, color: color.key });
                 }
 
-                activePiece = '';
-                renderPieceGrid();
-                renderColorGrid();
-                renderSelectedClothes();
-                renderClothingSummary();
+                grid.querySelectorAll('.hoje-cor').forEach(function (item) {
+                    item.classList.remove('selecionada');
+                });
+
+                button.classList.add('selecionada');
+
+                if (preview) {
+                    clearNode(preview);
+                    preview.appendChild(createGarmentIcon(type, color.key, 'hoje-cores-peca-garment'));
+                }
+
+                window.setTimeout(function () {
+                    closeColorPicker(true);
+                }, 90);
             });
 
             grid.appendChild(button);
@@ -577,7 +735,11 @@
 
         if (preview) {
             clearNode(preview);
-            var previewItem = clothesDraft.length ? clothesDraft[0] : { type: 'tshirt', color: '' };
+
+            var previewItem = clothesDraft.length
+                ? clothesDraft[0]
+                : { type: 'tshirt', color: '' };
+
             preview.appendChild(createGarmentIcon(previewItem.type, previewItem.color, 'hoje-opcao-garment'));
         }
 
@@ -590,6 +752,7 @@
         summary.textContent = clothesDraft.map(function (item) {
             var piece = pieceMeta(item.type);
             var color = colorMeta(item.color);
+
             return piece.label + (color.label ? ' ' + color.label.toLowerCase() : '');
         }).join(' · ');
 
@@ -625,12 +788,19 @@
         title.textContent = clothesView ? 'Roupa de hoje' : 'Hoje';
 
         if (clothesView) {
+            activePiece = '';
+            resetColorMode();
             renderPieceGrid();
             renderColorGrid();
             renderSelectedClothes();
 
-            if (!wasClothes) animateEditorView(clothes, 'forward');
+            if (!wasClothes) {
+                setSheetScroll(0, false);
+                animateEditorView(clothes, 'forward');
+            }
         } else if (wasClothes) {
+            activePiece = '';
+            resetColorMode();
             animateEditorView(main, 'back');
         }
     }
@@ -662,6 +832,7 @@
         var counter = byId('hoje-nota-contador');
 
         if (!input || !counter) return;
+
         counter.textContent = String(input.value.length) + '/160';
     }
 
@@ -673,6 +844,7 @@
 
         editor.querySelectorAll('button, textarea').forEach(function (element) {
             if (element.id === 'hoje-editor-fechar') return;
+
             element.disabled = Boolean(busy);
         });
     }
@@ -684,7 +856,12 @@
             height = 0;
 
             if (window.visualViewport) {
-                height = Math.max(0, window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop);
+                height = Math.max(
+                    0,
+                    window.innerHeight -
+                    window.visualViewport.height -
+                    window.visualViewport.offsetTop
+                );
             }
         }
 
@@ -733,11 +910,25 @@
         }
 
         sheet.addEventListener('touchstart', function (event) {
-            if (!editorOpen || keyboardOffset > 0 || !event.touches || event.touches.length !== 1 || sheet.scrollTop > 1) return;
+            if (
+                !editorOpen ||
+                keyboardOffset > 0 ||
+                !event.touches ||
+                event.touches.length !== 1 ||
+                sheet.scrollTop > 1
+            ) {
+                return;
+            }
 
             var target = event.target;
 
-            if (target && target.closest && target.closest('textarea, input, select, button, a, [contenteditable="true"]')) return;
+            if (
+                target &&
+                target.closest &&
+                target.closest('textarea, input, select, button, a, [contenteditable="true"]')
+            ) {
+                return;
+            }
 
             state.tracking = true;
             state.dragging = false;
@@ -764,6 +955,7 @@
 
             editor.classList.add('a-arrastar');
             setEditorDrag(editor, delta);
+
             event.preventDefault();
         }, { passive: false });
 
@@ -809,12 +1001,16 @@
 
         if (!editor || editorOpen) return;
 
-        var promise = profileLoaded ? Promise.resolve(profileStatus) : loadProfile(false);
+        var promise = profileLoaded
+            ? Promise.resolve(profileStatus)
+            : loadProfile(false);
 
         promise.then(function (status) {
             fillEditor(status);
 
-            if (editorOpenFrame) window.cancelAnimationFrame(editorOpenFrame);
+            if (editorOpenFrame) {
+                window.cancelAnimationFrame(editorOpenFrame);
+            }
 
             editor.classList.remove('aberto', 'a-arrastar');
             clearEditorDrag(editor);
@@ -843,7 +1039,11 @@
             });
 
             window.setTimeout(function () {
-                if (editorOpen && note && !window.matchMedia('(pointer: coarse)').matches) {
+                if (
+                    editorOpen &&
+                    note &&
+                    !window.matchMedia('(pointer: coarse)').matches
+                ) {
                     note.focus({ preventScroll: true });
                 }
             }, 340);
@@ -852,6 +1052,7 @@
 
     function closeEditor(fromDrag) {
         var editor = byId('hoje-editor');
+
         if (!editor || !editorOpen) return;
 
         if (editorOpenFrame) {
@@ -898,7 +1099,10 @@
             body: JSON.stringify({
                 note: note.value.trim(),
                 clothes: clothesDraft.map(function (item) {
-                    return { type: item.type, color: item.color };
+                    return {
+                        type: item.type,
+                        color: item.color
+                    };
                 })
             })
         }).then(function (response) {
@@ -906,22 +1110,35 @@
                 return null;
             }).then(function (payload) {
                 if (!response.ok || !payload || !payload.success) {
-                    throw new Error(payload && payload.message ? payload.message : 'Não foi possível guardar.');
+                    throw new Error(
+                        payload && payload.message
+                            ? payload.message
+                            : 'Não foi possível guardar.'
+                    );
                 }
 
                 return payload.today || null;
             });
         }).then(function (status) {
-            cache.set(memberId, { at: Date.now(), status: status });
+            cache.set(memberId, {
+                at: Date.now(),
+                status: status
+            });
+
             renderProfile(status);
             closeEditor();
 
             if (typeof window.mostrarMensagemTemporaria === 'function') {
-                window.mostrarMensagemTemporaria('Atualizado para hoje.', 'sucesso');
+                window.mostrarMensagemTemporaria(
+                    'Atualizado para hoje.',
+                    'sucesso'
+                );
             }
         }).catch(function (error) {
             showMessage(
-                error && error.message && !/^today_/.test(error.message)
+                error &&
+                error.message &&
+                !/^today_/.test(error.message)
                     ? error.message
                     : 'Não foi possível guardar. Tenta novamente.',
                 'erro'
@@ -933,6 +1150,7 @@
 
     function deleteEditor() {
         var memberId = text(window.perfilMembroId);
+
         if (!memberId) return;
 
         setEditorBusy(true);
@@ -941,21 +1159,36 @@
         window.fetch(apiUrl(memberId), {
             method: 'DELETE',
             credentials: 'same-origin',
-            headers: { Accept: 'application/json' }
+            headers: {
+                Accept: 'application/json'
+            }
         }).then(function (response) {
             return response.json().catch(function () {
                 return null;
             }).then(function (payload) {
                 if (!response.ok || !payload || !payload.success) {
-                    throw new Error(payload && payload.message ? payload.message : 'Não foi possível apagar.');
+                    throw new Error(
+                        payload && payload.message
+                            ? payload.message
+                            : 'Não foi possível apagar.'
+                    );
                 }
             });
         }).then(function () {
-            cache.set(memberId, { at: Date.now(), status: null });
+            cache.set(memberId, {
+                at: Date.now(),
+                status: null
+            });
+
             renderProfile(null);
             closeEditor();
         }).catch(function (error) {
-            showMessage(error && error.message ? error.message : 'Não foi possível apagar. Tenta novamente.', 'erro');
+            showMessage(
+                error && error.message
+                    ? error.message
+                    : 'Não foi possível apagar. Tenta novamente.',
+                'erro'
+            );
         }).finally(function () {
             setEditorBusy(false);
         });
@@ -963,6 +1196,7 @@
 
     function bindEditor() {
         var editor = byId('hoje-editor');
+
         if (!editor) return;
 
         bindEditorSwipe(editor);
@@ -982,6 +1216,7 @@
             add.addEventListener('click', function (event) {
                 event.preventDefault();
                 event.stopPropagation();
+
                 openEditor();
             });
         }
@@ -997,8 +1232,13 @@
             });
         }
 
-        if (close) close.addEventListener('click', closeEditor);
-        if (backdrop) backdrop.addEventListener('click', closeEditor);
+        if (close) {
+            close.addEventListener('click', closeEditor);
+        }
+
+        if (backdrop) {
+            backdrop.addEventListener('click', closeEditor);
+        }
 
         if (openClothes) {
             openClothes.addEventListener('click', function () {
@@ -1008,6 +1248,11 @@
 
         if (back) {
             back.addEventListener('click', function () {
+                if (activePiece) {
+                    closeColorPicker(true);
+                    return;
+                }
+
                 showEditorView('main');
             });
         }
@@ -1020,37 +1265,64 @@
             });
         }
 
-        if (save) save.addEventListener('click', saveEditor);
-        if (remove) remove.addEventListener('click', deleteEditor);
-        if (note) note.addEventListener('input', updateCounter);
+        if (save) {
+            save.addEventListener('click', saveEditor);
+        }
+
+        if (remove) {
+            remove.addEventListener('click', deleteEditor);
+        }
+
+        if (note) {
+            note.addEventListener('input', updateCounter);
+        }
 
         document.addEventListener('keydown', function (event) {
             if (!editorOpen) return;
 
-            if (event.key === 'Escape') closeEditor();
+            if (event.key === 'Escape') {
+                if (activePiece) {
+                    closeColorPicker(true);
+                } else {
+                    closeEditor();
+                }
+            }
         });
 
         if (window.visualViewport) {
             window.visualViewport.addEventListener('resize', function () {
-                if (editorOpen) updateKeyboardOffset();
+                if (editorOpen) {
+                    updateKeyboardOffset();
+                }
             });
 
             window.visualViewport.addEventListener('scroll', function () {
-                if (editorOpen) updateKeyboardOffset();
+                if (editorOpen) {
+                    updateKeyboardOffset();
+                }
             });
         }
 
         try {
             var capacitor = window.Capacitor;
-            var keyboard = capacitor && capacitor.Plugins && capacitor.Plugins.Keyboard;
+            var keyboard =
+                capacitor &&
+                capacitor.Plugins &&
+                capacitor.Plugins.Keyboard;
 
             if (keyboard && typeof keyboard.addListener === 'function') {
                 keyboard.addListener('keyboardWillShow', function (info) {
-                    if (editorOpen) updateKeyboardOffset(Number(info && info.keyboardHeight) || 0);
+                    if (editorOpen) {
+                        updateKeyboardOffset(
+                            Number(info && info.keyboardHeight) || 0
+                        );
+                    }
                 });
 
                 keyboard.addListener('keyboardWillHide', function () {
-                    if (editorOpen) updateKeyboardOffset(0);
+                    if (editorOpen) {
+                        updateKeyboardOffset(0);
+                    }
                 });
             }
         } catch (error) {
@@ -1069,14 +1341,20 @@
     window.MargotToday = {
         load: load,
         showMiniMenuFor: showMiniMenuFor,
+
         refreshProfile: function () {
             return loadProfile(true);
         },
+
         openEditor: openEditor
     };
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init, { once: true });
+        document.addEventListener(
+            'DOMContentLoaded',
+            init,
+            { once: true }
+        );
     } else {
         init();
     }
