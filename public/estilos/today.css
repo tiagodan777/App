@@ -15,8 +15,8 @@
 #mini-menu-hoje {
     position: absolute;
     z-index: 16;
-    top: 12px;
-    left: calc(50% - 56px);
+    top: 4px;
+    left: calc(50% - 64px);
     right: auto;
     width: max-content;
     min-width: 108px;
@@ -69,16 +69,21 @@
     display: none !important;
 }
 
+/* Fica visível sempre que o elemento deixa de estar hidden.
+   A classe a-visivel continua suportada pelo JS, mas já não é obrigatória. */
+#mini-menu-hoje:not([hidden]):not(.a-sair),
 #mini-menu-hoje.a-visivel {
     opacity: 1;
     transform: translate3d(0, 0, 0) scale(1);
     pointer-events: auto;
+    animation: hoje-mini-menu-entrar 220ms cubic-bezier(.22, 1, .36, 1) both;
 }
 
 #mini-menu-hoje.a-sair {
     opacity: 0;
     transform: translate3d(0, -5px, 0) scale(0.985);
     pointer-events: none;
+    animation: none;
 }
 
 .mini-menu-hoje-topo,
@@ -1039,6 +1044,17 @@ body.hoje-editor-aberto #perfil {
     animation: hoje-view-esquerda 220ms cubic-bezier(.22, 1, .36, 1) both;
 }
 
+@keyframes hoje-mini-menu-entrar {
+    from {
+        opacity: 0;
+        transform: translate3d(0, 7px, 0) scale(0.975);
+    }
+    to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0) scale(1);
+    }
+}
+
 @keyframes hoje-balao-aparecer {
     from {
         opacity: 0;
@@ -1114,8 +1130,8 @@ body.hoje-editor-aberto #perfil {
 
 @media (max-width: 380px) {
     #mini-menu-hoje {
-        top: 10px;
-        left: calc(50% - 52px);
+        top: 3px;
+        left: calc(50% - 60px);
         min-width: 102px;
         max-width: 124px;
         padding: 8px 9px 9px;
@@ -1210,8 +1226,8 @@ body.hoje-editor-aberto #perfil {
 
 @media (min-width: 560px) {
     #mini-menu-hoje {
-        top: 16px;
-        left: calc(50% - 60px);
+        top: 6px;
+        left: calc(50% - 68px);
         max-width: 146px;
     }
 
@@ -1235,6 +1251,11 @@ body.hoje-editor-aberto #perfil {
 @media (prefers-reduced-motion: reduce) {
     #mini-menu-hoje {
         transition: opacity 120ms linear;
+    }
+
+    #mini-menu-hoje:not([hidden]):not(.a-sair),
+    #mini-menu-hoje.a-visivel {
+        animation: none !important;
     }
 
     .perfil-foto-area,
