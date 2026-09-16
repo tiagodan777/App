@@ -1,11 +1,9 @@
 <?php
-
 declare(strict_types=1);
 
 namespace App\CMS;
 
-final class ProximityConfig
-{
+final class ProximityConfig {
     /*
      * RAIO ÚNICO DA MARGOT.
      *
@@ -17,30 +15,18 @@ final class ProximityConfig
      * 150.0 = 150 metros
      */
     public const RADIUS_METRES = 1600000;
-
     /**
      * Calcula automaticamente o bounding box necessário
      * para o raio configurado acima.
      *
      * @return array{0: float, 1: float}
      */
-    public static function boundingBoxDeltas(float $latitude): array
-    {
+
+    public static function boundingBoxDeltas(float $latitude): array {
         $metresPerDegreeLatitude = 111320.0;
-
-        $latitudeDelta =
-            (self::RADIUS_METRES / $metresPerDegreeLatitude) * 1.02;
-
-        $cosine = max(
-            0.05,
-            abs(cos(deg2rad($latitude)))
-        );
-
+        $latitudeDelta = (self::RADIUS_METRES / $metresPerDegreeLatitude) * 1.02;
+        $cosine = max(0.05, abs(cos(deg2rad($latitude))));
         $longitudeDelta = $latitudeDelta / $cosine;
-
-        return [
-            $latitudeDelta,
-            $longitudeDelta
-        ];
+        return [$latitudeDelta, $longitudeDelta];
     }
 }

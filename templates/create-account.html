@@ -5,29 +5,13 @@
 {% endblock %}
 
 {% block styles %}
-<link
-    rel="stylesheet"
-    href="{{ doc_root }}estilos/create-account.css?v=13"
-    data-margot-page-style
->
+<link rel="stylesheet" href="{{ doc_root }}estilos/create-account.css?v=20260916" data-margot-page-style>
 
-<link
-    rel="stylesheet"
-    href="{{ doc_root }}estilos/create-account-permissoes.css?v=2"
-    data-margot-page-style
->
+<link rel="stylesheet" href="{{ doc_root }}estilos/create-account-permissoes.css?v=20260916" data-margot-page-style>
 
-<link
-    rel="stylesheet"
-    href="{{ doc_root }}estilos/create-account-editor.css?v=2"
-    data-margot-page-style
->
+<link rel="stylesheet" href="{{ doc_root }}estilos/create-account-editor.css?v=20260916" data-margot-page-style>
 
-<link
-    rel="stylesheet"
-    href="{{ doc_root }}estilos/create-account-legal.css?v=2"
-    data-margot-page-style
->
+<link rel="stylesheet" href="{{ doc_root }}estilos/create-account-legal.css?v=20260916" data-margot-page-style>
 
 <!--
     PRÉ-AQUECIMENTO DO LOGIN
@@ -37,38 +21,16 @@
     na cache.
 -->
 
-<link
-    rel="prefetch"
-    href="{{ doc_root }}login"
->
+<link rel="prefetch" href="{{ doc_root }}login">
 
-<link
-    rel="preload"
-    href="{{ doc_root }}estilos/login.css?v=3"
-    as="style"
-    fetchpriority="low"
->
+<link rel="preload" href="{{ doc_root }}estilos/login.css?v=20260916" as="style" fetchpriority="low">
 
-<link
-    rel="prefetch"
-    href="{{ doc_root }}js/login.js"
-    as="script"
->
+<link rel="prefetch" href="{{ doc_root }}js/login.js?v=20260916" as="script">
 {% endblock %}
 
 {% block content %}
-<form
-    action="{{ doc_root }}create-account"
-    method="post"
-    enctype="multipart/form-data"
-    id="create-account-form"
-    novalidate
->
-    <input
-        type="hidden"
-        name="_csrf"
-        value="{{ csrf_token|e('html_attr') }}"
-    >
+<form action="{{ doc_root }}create-account" method="post" enctype="multipart/form-data" id="create-account-form" novalidate>
+    <input type="hidden" name="_csrf" value="{{ csrf_token|e('html_attr') }}">
 </form>
 
 {#
@@ -134,9 +96,9 @@ window.createAccountConfig = {
 }
 </script>
 
-<script src="{{ doc_root }}js/preferencias.js?v=2"></script>
-<script src="{{ doc_root }}js/create-account-fotos.js?v=7"></script>
-<script src="{{ doc_root }}js/create-account-permissoes.js?v=6"></script>
-<script src="{{ doc_root }}js/create-account-navegacao.js?v=15"></script>
-<script src="{{ doc_root }}js/create-account-autocompletar.js?v=4"></script>
+<script src="{{ doc_root }}js/preferencias.js?v=20260916"></script>
+<script src="{{ doc_root }}js/create-account-fotos.js?v=20260916"></script>
+<script src="{{ doc_root }}js/create-account-permissoes.js?v=20260916"></script>
+<script src="{{ doc_root }}js/create-account-navegacao.js?v=20260916"></script>
+<script src="{{ doc_root }}js/create-account-autocompletar.js?v=20260916"></script>
 {% endblock %}

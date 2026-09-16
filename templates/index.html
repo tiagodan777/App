@@ -1,328 +1,224 @@
 {% extends 'layout.html' %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ doc_root }}estilos/today.css?v=5" data-margot-page-style>
+<link rel="stylesheet" href="{{ doc_root }}estilos/today.css?v=20260916" data-margot-page-style>
 {% endblock %}
 
 {% block content %}
-<canvas id="gridCanvas"></canvas>
+    <canvas id="gridCanvas"></canvas>
 
-<div class="mini-menu" data-destinatario-id="" aria-hidden="true">
-    <div id="barra"></div>
+    <div class="mini-menu" data-destinatario-id="" aria-hidden="true">
+        <div id="barra"></div>
 
-    <header>
-        <a href="{{ doc_root }}profile/" class="mini-menu-perfil">
-            <img src="{{ doc_root }}imagens/fotos-perfil/default.webp" alt="">
-        </a>
+        <header>
+            <a href="{{ doc_root }}profile/" class="mini-menu-perfil">
+                <img src="{{ doc_root }}imagens/fotos-perfil/default.webp" alt="">
+            </a>
 
-        <h1></h1>
+            <h1></h1>
 
-        <button
-            type="button"
-            id="abrir-acoes-perfil"
-            class="mais-opcoes"
-            aria-label="Mais opções"
-            aria-controls="acoes-perfil"
-            aria-expanded="false"
-        >
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <circle cx="5" cy="12" r="2"></circle>
-                <circle cx="12" cy="12" r="2"></circle>
-                <circle cx="19" cy="12" r="2"></circle>
-            </svg>
-        </button>
-    </header>
+            <button
+                type="button"
+                id="abrir-acoes-perfil"
+                class="mais-opcoes"
+                aria-label="Mais opções"
+                aria-controls="acoes-perfil"
+                aria-expanded="false"
+            >
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <circle cx="5" cy="12" r="2"></circle>
+                    <circle cx="12" cy="12" r="2"></circle>
+                    <circle cx="19" cy="12" r="2"></circle>
+                </svg>
+            </button>
+        </header>
 
-    <section
-        id="acoes-perfil"
-        class="acoes-perfil"
-        aria-hidden="true"
-        hidden
-    >
-        <button
-            type="button"
-            class="acoes-perfil-fundo"
-            aria-label="Fechar opções"
-            data-fechar-acoes
-        ></button>
+        <section id="acoes-perfil" class="acoes-perfil" aria-hidden="true" hidden>
+            <button type="button" class="acoes-perfil-fundo" aria-label="Fechar opções" data-fechar-acoes></button>
 
-        <div
-            class="acoes-perfil-caixa"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="acoes-perfil-titulo"
-            tabindex="-1"
-        >
-            <div id="acoes-perfil-principal">
-                <header class="acoes-perfil-cabecalho">
-                    <h2 id="acoes-perfil-titulo">Opções</h2>
+            <div class="acoes-perfil-caixa" role="dialog" aria-modal="true" aria-labelledby="acoes-perfil-titulo" tabindex="-1">
+                <div id="acoes-perfil-principal">
+                    <header class="acoes-perfil-cabecalho">
+                        <h2 id="acoes-perfil-titulo">Opções</h2>
 
-                    <button
-                        type="button"
-                        class="acoes-perfil-fechar"
-                        aria-label="Fechar"
-                        data-fechar-acoes
-                    >
-                        ×
+                        <button type="button" class="acoes-perfil-fechar" aria-label="Fechar" data-fechar-acoes>×</button>
+                    </header>
+
+                    <button type="button" id="bloquear-membro" class="acao-perfil acao-perfil-perigosa">
+                        <strong>Bloquear</strong>
+
+                        <span>Deixam de aparecer um ao outro entre as pessoas por perto.</span>
                     </button>
-                </header>
 
-                <button
-                    type="button"
-                    id="bloquear-membro"
-                    class="acao-perfil acao-perfil-perigosa"
-                >
-                    <strong>Bloquear</strong>
-                    <span>
-                        Deixam de aparecer um ao outro entre as pessoas por perto.
-                    </span>
-                </button>
+                    <button type="button" id="abrir-denuncia" class="acao-perfil">
+                        <strong>Denunciar</strong>
 
-                <button
-                    type="button"
-                    id="abrir-denuncia"
-                    class="acao-perfil"
-                >
-                    <strong>Denunciar</strong>
-                    <span>
-                        Envia uma denúncia privada.
-                    </span>
-                </button>
+                        <span>Envia uma denúncia privada.</span>
+                    </button>
 
-                <button
-                    type="button"
-                    class="acao-perfil-cancelar"
-                    data-fechar-acoes
-                >
-                    Cancelar
-                </button>
+                    <button type="button" class="acao-perfil-cancelar" data-fechar-acoes>Cancelar</button>
+                </div>
+
+                <form id="form-denuncia" class="form-denuncia" hidden>
+                    <header class="acoes-perfil-cabecalho">
+                        <button type="button" id="voltar-denuncia" class="acoes-perfil-voltar" aria-label="Voltar">‹</button>
+
+                        <h2>Denunciar perfil</h2>
+
+                        <button type="button" class="acoes-perfil-fechar" aria-label="Fechar" data-fechar-acoes>×</button>
+                    </header>
+
+                    <label for="denuncia-motivo">Motivo</label>
+
+                    <select name="motivo" id="denuncia-motivo" required>
+                        <option value="">
+                            Escolhe um motivo
+                        </option>
+
+                        <option value="comportamento_inadequado">
+                            Comportamento inadequado
+                        </option>
+
+                        <option value="assedio">
+                            Assédio
+                        </option>
+
+                        <option value="perfil_falso">
+                            Perfil falso
+                        </option>
+
+                        <option value="spam">
+                            Spam
+                        </option>
+
+                        <option value="seguranca">
+                            Questão de segurança
+                        </option>
+
+                        <option value="outro">
+                            Outro
+                        </option>
+                    </select>
+
+                    <label for="denuncia-mensagem">
+                        Explica o que aconteceu
+                        <span>(opcional)</span>
+                    </label>
+
+                    <textarea
+                        name="mensagem"
+                        id="denuncia-mensagem"
+                        maxlength="2048"
+                        rows="5"
+                        placeholder="Escreve aqui…"
+                    ></textarea>
+
+                    <button type="submit" class="denuncia-enviar">Enviar denúncia</button>
+                </form>
+            </div>
+        </section>
+
+        <section id="mini-menu-hoje" class="mini-menu-hoje" aria-hidden="true" hidden>
+            <div class="mini-menu-hoje-topo">
+                Hoje
             </div>
 
-            <form
-                id="form-denuncia"
-                class="form-denuncia"
-                hidden
-            >
-                <header class="acoes-perfil-cabecalho">
-                    <button
-                        type="button"
-                        id="voltar-denuncia"
-                        class="acoes-perfil-voltar"
-                        aria-label="Voltar"
-                    >
-                        ‹
-                    </button>
+            <p data-hoje-nota hidden></p>
 
-                    <h2>Denunciar perfil</h2>
+            <div class="hoje-chips" data-hoje-roupa hidden></div>
+        </section>
 
-                    <button
-                        type="button"
-                        class="acoes-perfil-fechar"
-                        aria-label="Fechar"
-                        data-fechar-acoes
-                    >
-                        ×
-                    </button>
-                </header>
+        <button type="button" class="ola" id="enviar-hey">Hey</button>
 
-                <label for="denuncia-motivo">
-                    Motivo
-                </label>
+        <form action="" method="post" enctype="multipart/form-data" class="mini-menu-mensagem">
+            <input type="hidden" name="profile_access_token" id="mini-menu-profile-access-token" value="">
 
-                <select
-                    name="motivo"
-                    id="denuncia-motivo"
-                    required
-                >
-                    <option value="">
-                        Escolhe um motivo
-                    </option>
+            <label for="mini-menu-media" class="mini-menu-anexo" aria-label="Adicionar fotografia ou vídeo">+</label>
 
-                    <option value="comportamento_inadequado">
-                        Comportamento inadequado
-                    </option>
+            <input type="file" name="media" id="mini-menu-media" accept="image/*,video/*" hidden>
 
-                    <option value="assedio">
-                        Assédio
-                    </option>
+            <input type="text" name="mensagem" id="mensagem" maxlength="2000" autocomplete="off" autocapitalize="sentences" placeholder="Mensagem…">
 
-                    <option value="perfil_falso">
-                        Perfil falso
-                    </option>
+            <input type="submit" value="Enviar">
+        </form>
+    </div>
 
-                    <option value="spam">
-                        Spam
-                    </option>
+    <script>
+        window.safetyUrl =
+            {{ (doc_root ~ 'safety')|json_encode|raw }};
 
-                    <option value="seguranca">
-                        Questão de segurança
-                    </option>
+        (function () {
+            'use strict';
 
-                    <option value="outro">
-                        Outro
-                    </option>
-                </select>
+            document.addEventListener(
+                'submit',
+                function (evento) {
+                    var form = evento.target;
 
-                <label for="denuncia-mensagem">
-                    Explica o que aconteceu
-                    <span>(opcional)</span>
-                </label>
+                    if (
+                        !form ||
+                        !form.matches(
+                            '.mini-menu-mensagem'
+                        )
+                    ) {
+                        return;
+                    }
 
-                <textarea
-                    name="mensagem"
-                    id="denuncia-mensagem"
-                    maxlength="2048"
-                    rows="5"
-                    placeholder="Escreve aqui…"
-                ></textarea>
+                    var miniMenu =
+                        form.closest(
+                            '.mini-menu'
+                        );
 
-                <button
-                    type="submit"
-                    class="denuncia-enviar"
-                >
-                    Enviar denúncia
-                </button>
-            </form>
-        </div>
-    </section>
+                    var inputToken =
+                        form.querySelector(
+                            'input[name="profile_access_token"]'
+                        );
 
-    <section
-        id="mini-menu-hoje"
-        class="mini-menu-hoje"
-        aria-hidden="true"
-        hidden
-    >
-        <div class="mini-menu-hoje-topo">
-            Hoje
-        </div>
+                    if (
+                        !miniMenu ||
+                        !inputToken
+                    ) {
+                        return;
+                    }
 
-        <p data-hoje-nota hidden></p>
+                    var destinatarioId =
+                        String(
+                            miniMenu.getAttribute(
+                                'data-destinatario-id'
+                            ) || ''
+                        ).trim();
 
-        <div
-            class="hoje-chips"
-            data-hoje-roupa
-            hidden
-        ></div>
-    </section>
+                    if (!destinatarioId) {
+                        inputToken.value = '';
+                        return;
+                    }
 
-    <button
-        type="button"
-        class="ola"
-        id="enviar-hey"
-    >
-        Hey
-    </button>
+                    var fotografia =
+                        document.getElementById(
+                            destinatarioId
+                        );
 
-    <form
-        action=""
-        method="post"
-        enctype="multipart/form-data"
-        class="mini-menu-mensagem"
-    >
-        <input
-            type="hidden"
-            name="profile_access_token"
-            id="mini-menu-profile-access-token"
-            value=""
-        >
+                    var token =
+                        fotografia
+                            ? String(
+                                fotografia.getAttribute(
+                                    'data-profile-access-token'
+                                ) || ''
+                            ).trim()
+                            : '';
 
-        <label
-            for="mini-menu-media"
-            class="mini-menu-anexo"
-            aria-label="Adicionar fotografia ou vídeo"
-        >
-            +
-        </label>
-
-        <input
-            type="file"
-            name="media"
-            id="mini-menu-media"
-            accept="image/*,video/*"
-            hidden
-        >
-
-        <input
-            type="text"
-            name="mensagem"
-            id="mensagem"
-            maxlength="2000"
-            autocomplete="off"
-            autocapitalize="sentences"
-            placeholder="Mensagem…"
-        >
-
-        <input
-            type="submit"
-            value="Enviar"
-        >
-    </form>
-</div>
-
-<script>
-window.safetyUrl = {{ (doc_root ~ 'safety')|json_encode|raw }};
-
-(function () {
-    'use strict';
-
-    document.addEventListener(
-        'submit',
-        function (evento) {
-            var form = evento.target;
-
-            if (
-                !form ||
-                !form.matches('.mini-menu-mensagem')
-            ) {
-                return;
-            }
-
-            var miniMenu = form.closest('.mini-menu');
-
-            var inputToken = form.querySelector(
-                'input[name="profile_access_token"]'
+                    inputToken.value =
+                        token;
+                },
+                true
             );
+        })();
+    </script>
 
-            if (
-                !miniMenu ||
-                !inputToken
-            ) {
-                return;
-            }
-
-            var destinatarioId = String(
-                miniMenu.getAttribute(
-                    'data-destinatario-id'
-                ) || ''
-            ).trim();
-
-            if (!destinatarioId) {
-                inputToken.value = '';
-                return;
-            }
-
-            var fotografia = document.getElementById(
-                destinatarioId
-            );
-
-            var token = fotografia
-                ? String(
-                    fotografia.getAttribute(
-                        'data-profile-access-token'
-                    ) || ''
-                ).trim()
-                : '';
-
-            inputToken.value = token;
-        },
-        true
-    );
-})();
-</script>
-
-<script src="{{ doc_root }}js/index-posicao.js?v=13"></script>
-<script src="{{ doc_root }}js/today.js?v=5"></script>
-<script src="{{ doc_root }}js/index-mini-menu.js?v=19"></script>
-<script src="{{ doc_root }}js/index-animacao.js?v=10"></script>
-<script src="{{ doc_root }}js/index-tap-foto.js?v=13"></script>
+    <script src="{{ doc_root }}js/index-posicao.js?v=20260916"></script>
+    <script src="{{ doc_root }}js/today-clothes.js?v=20260916"></script>
+    <script src="{{ doc_root }}js/today.js?v=20260916"></script>
+    <script src="{{ doc_root }}js/index-mini-menu.js?v=20260916"></script>
+    <script src="{{ doc_root }}js/index-animacao.js?v=20260916"></script>
+    <script src="{{ doc_root }}js/index-tap-foto.js?v=20260916"></script>
 {% endblock %}

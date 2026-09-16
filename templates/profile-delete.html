@@ -5,11 +5,7 @@
 {% endblock %}
 
 {% block styles %}
-    <link
-        rel="stylesheet"
-        href="{{ doc_root }}estilos/profile-delete.css?v=2"
-        data-margot-page-style
-    >
+    <link rel="stylesheet" href="{{ doc_root }}estilos/profile-delete.css?v=20260916" data-margot-page-style>
 {% endblock %}
 
 {% block content %}
@@ -18,14 +14,8 @@
             {% if sent %}
                 <h1>Confirma no teu email</h1>
 
-                <section
-                    class="dados"
-                    id="dados-apagar"
-                >
-                    <p
-                        role="status"
-                        aria-live="polite"
-                    >
+                <section class="dados" id="dados-apagar">
+                    <p role="status" aria-live="polite">
                         Enviámos uma ligação para
                         {{ membro.email|e }}.
                         A ligação é válida durante
@@ -44,10 +34,7 @@
                     </p>
                 </section>
 
-                <section
-                    class="opcoes"
-                    id="opcoes-apagar"
-                >
+                <section class="opcoes" id="opcoes-apagar">
                     <a href="{{ doc_root }}settings">
                         Voltar às definições
                     </a>
@@ -55,10 +42,7 @@
             {% else %}
                 <h1>Eliminar conta</h1>
 
-                <section
-                    class="dados"
-                    id="dados-apagar"
-                >
+                <section class="dados" id="dados-apagar">
                     <img
                         src="{{ doc_root }}imagens/fotos-perfil/{{ membro.fotos[0].nome_arquivo|e('html_attr') }}"
                         alt="Foto de perfil de {{ membro.primeiro_nome|e('html_attr') }}"
@@ -103,38 +87,19 @@
                     </p>
 
                     {% if mensagem_erro %}
-                        <p
-                            id="delete-account-erro"
-                            role="alert"
-                            aria-live="assertive"
-                        >
-                            {{ mensagem_erro|e }}
-                        </p>
+                        <p id="delete-account-erro" role="alert" aria-live="assertive">{{ mensagem_erro|e }}</p>
                     {% endif %}
                 </section>
 
-                <section
-                    class="opcoes"
-                    id="opcoes-apagar"
-                >
-                    <form
-                        action="{{ doc_root }}profile-delete"
-                        method="post"
-                    >
-                        <input
-                            type="hidden"
-                            name="_csrf"
-                            value="{{ csrf_token|e('html_attr') }}"
-                        >
+                <section class="opcoes" id="opcoes-apagar">
+                    <form action="{{ doc_root }}profile-delete" method="post">
+                        <input type="hidden" name="_csrf" value="{{ csrf_token|e('html_attr') }}">
 
                         <a href="{{ doc_root }}settings">
                             Cancelar
                         </a>
 
-                        <input
-                            type="submit"
-                            value="Enviar confirmação por email"
-                        >
+                        <input type="submit" value="Enviar confirmação por email">
                     </form>
                 </section>
             {% endif %}

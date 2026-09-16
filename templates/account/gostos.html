@@ -1,0 +1,33 @@
+<div id="gostos">
+    <h1>O que gostas de fazer?</h1>
+
+    <p class="adicionar-gosto">
+        <input type="text" name="hobbie" id="hobbie" autocomplete="off" placeholder="Ex.: música">
+
+        <button type="button" id="adicionar-gosto">Adicionar</button>
+    </p>
+
+    <div id="recomendacoes">
+        <ul id="lista"></ul>
+    </div>
+
+    <div id="meus-gostos"></div>
+
+    <nav class="anterior-proximo">
+        {% if modo_edicao %}
+            <a data-etapa="#editar-perfil" data-sem-validar="true" class="anterior">
+                Voltar à lista
+            </a>
+
+            <button type="submit" class="proximo guardar-secao">Guardar e sair</button>
+        {% else %}
+            <a data-etapa="#sexo" class="anterior">
+                Anterior
+            </a>
+
+            <a data-etapa="#contactos" class="proximo">
+                Próximo
+            </a>
+        {% endif %}
+    </nav>
+</div>

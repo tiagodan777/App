@@ -4,13 +4,13 @@ namespace App\CMS;
 class CMS {
     protected $db = null;
     private $member = null;
-    private $hobbie = null;
+    private $message = null;
+    private $messageAccess = null;
     private $notification = null;
+    private $safety = null;
+    private $hobbie = null;
     private $cookie = null;
     private $token = null;
-    private $opinion = null;
-    private $follow = null;
-    private $content = null;
     private $session = null;
     private $image = null;
     private $location = null;
@@ -22,146 +22,80 @@ class CMS {
     private $todayStatus = null;
     private array $pushConfig = [];
 
-    public function __construct($dsn, $username, $password, array $pushConfig = [])
-    {
+    public function __construct($dsn, $username, $password, array $pushConfig = []) {
         $this->db = new Database($dsn, $username, $password);
         $this->pushConfig = $pushConfig;
     }
 
     public function getMember() {
-        if ($this->member === null) {
-            $this->member = new Member($this->db);
-        }
-        return $this->member;
+        return $this->member ??= new Member($this->db);
     }
 
     public function getHobbie() {
-        if ($this->hobbie === null) {
-            $this->hobbie = new Hobbie($this->db);
-        }
-        return $this->hobbie;
+        return $this->hobbie ??= new Hobbie($this->db);
     }
 
-    /*
-    public function getNotification() {
-        if ($this->notification === null) {
-            $this->notification = new Notification($this->db);
-        }
-        return $this->notification;
-    }*/
-
-    
     public function getCookie() {
-        if ($this->cookie === null) {
-            $this->cookie = new Cookie($this->db);
-        }
-        return $this->cookie;
+        return $this->cookie ??= new Cookie($this->db);
     }
 
     public function getToken() {
-        if ($this->token === null) {
-            $this->token = new Token($this->db);
-        }
-        return $this->token;
+        return $this->token ??= new Token($this->db);
     }
-
-    /*
-    public function getOpinion() {
-        if ($this->opinion === null) {
-            $this->opinion = new Opinion($this->db);
-        }
-        return $this->opinion;
-    }
-
-    public function getFollow() {
-        if ($this->follow === null) {
-            $this->follow = new Follow($this->db, null);
-        }
-        return $this->follow;
-    }
-
-    public function getContent() {
-        if ($this->content === null) {
-            $this->content = new Content($this->db);
-        }
-        return $this->content;
-    }*/
 
     public function getSession() {
-        if ($this->session === null) {
-            $this->session = new Session($this->db);
-        }
-        return $this->session;
+        return $this->session ??= new Session($this->db);
     }
 
     public function getImage() {
-        if ($this->image === null) {
-            $this->image = new Image($this->db);
-        }
-        return $this->image;
+        return $this->image ??= new Image($this->db);
     }
 
     public function getLocation() {
-        if ($this->location === null) {
-            $this->location = new Location($this->db);
-        }
-        return $this->location;
+        return $this->location ??= new Location($this->db);
     }
 
     public function getProfileAccess() {
-        if ($this->profileAccess === null) {
-            $this->profileAccess = new ProfileAccess($this->db);
-        }
-        return $this->profileAccess;
+        return $this->profileAccess ??= new ProfileAccess($this->db);
     }
 
     public function getMemberConnection() {
-        if ($this->memberConnection === null) {
-            $this->memberConnection = new MemberConnection($this->db);
-        }
-        return $this->memberConnection;
+        return $this->memberConnection ??= new MemberConnection($this->db);
     }
 
     public function getPushNotification() {
-        if ($this->pushNotification === null) {
-            $this->pushNotification = new PushNotification($this->db);
-        }
-        return $this->pushNotification;
+        return $this->pushNotification ??= new PushNotification($this->db);
     }
 
     public function getPushProvider() {
-        if ($this->pushProvider === null) {
-            $this->pushProvider = new PushProvider($this->pushConfig);
-        }
-        return $this->pushProvider;
+        return $this->pushProvider ??= new PushProvider($this->pushConfig);
     }
 
     public function getNearbyPresenceNotification() {
-        if ($this->nearbyPresenceNotification === null) {
-            $this->nearbyPresenceNotification = new NearbyPresenceNotification(
-                $this->db,
-                $this->getPushNotification()
-            );
-        }
-        return $this->nearbyPresenceNotification;
+        return $this->nearbyPresenceNotification ??= new NearbyPresenceNotification($this->db, $this->getPushNotification());
     }
 
-    public function getTodayStatus()
-    {
-        if (
-            $this->todayStatus ===
-            null
-        ) {
-            $this->todayStatus =
-                new TodayStatus(
-                    $this->db
-                );
-        }
-
-        return $this->todayStatus;
+    public function getTodayStatus() {
+        return $this->todayStatus ??= new TodayStatus($this->db);
     }
 
     public function getDatabase() {
         return $this->db;
+    }
+
+    public function getMessage(): Message {
+        return $this->message ??= new Message($this->db);
+    }
+
+    public function getMessageAccess(): MessageAccess {
+        return $this->messageAccess ??= new MessageAccess($this->db);
+    }
+
+    public function getNotification(): Notification {
+        return $this->notification ??= new Notification($this->db);
+    }
+
+    public function getSafety(): Safety {
+        return $this->safety ??= new Safety($this->db);
     }
 }

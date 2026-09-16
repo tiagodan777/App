@@ -1,5 +1,4 @@
 @charset "UTF-8";
-
 main#profile-delete {
     width: 100%;
     min-height: 100dvh;
@@ -9,7 +8,6 @@ main#profile-delete {
     align-items: flex-start;
     box-sizing: border-box;
 }
-
 #profile-delete #apagar {
     width: min(100%, 520px);
     padding: 28px 22px;
@@ -19,7 +17,6 @@ main#profile-delete {
     box-shadow: 0 16px 45px rgba(0, 0, 0, 0.08);
     box-sizing: border-box;
 }
-
 #profile-delete h1 {
     margin: 0 0 24px;
     color: #17171a;
@@ -27,13 +24,7 @@ main#profile-delete {
     line-height: 1.05;
     text-align: center;
 }
-
-#dados-apagar {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
+#dados-apagar { display: flex; flex-direction: column; align-items: center; }
 #dados-apagar #foto-perfil {
     width: 112px;
     height: 112px;
@@ -42,15 +33,7 @@ main#profile-delete {
     background: #ececf0;
     object-fit: cover;
 }
-
-#dados-apagar p {
-    width: 100%;
-    margin: 10px 0;
-    color: #3f3f46;
-    font-size: 15px;
-    line-height: 1.5;
-}
-
+#dados-apagar p { width: 100%; margin: 10px 0; color: #3f3f46; font-size: 15px; line-height: 1.5; }
 #dados-apagar ul {
     width: 100%;
     margin: 4px 0 10px;
@@ -60,7 +43,6 @@ main#profile-delete {
     line-height: 1.55;
     box-sizing: border-box;
 }
-
 #dados-apagar [role="alert"] {
     padding: 12px 14px;
     border: 1px solid rgba(207, 38, 75, 0.24);
@@ -68,7 +50,6 @@ main#profile-delete {
     background: rgba(207, 38, 75, 0.08);
     color: #a81535;
 }
-
 #dados-apagar [role="status"] {
     padding: 14px;
     border: 1px solid rgba(40, 163, 95, 0.22);
@@ -76,7 +57,6 @@ main#profile-delete {
     background: rgba(40, 163, 95, 0.08);
     color: #176c3d;
 }
-
 #opcoes-apagar,
 #opcoes-apagar form {
     width: 100%;
@@ -86,7 +66,6 @@ main#profile-delete {
     justify-content: space-between;
     align-items: center;
 }
-
 #opcoes-apagar a,
 #opcoes-apagar input[type="submit"] {
     min-height: 46px;
@@ -101,46 +80,17 @@ main#profile-delete {
     cursor: pointer;
     box-sizing: border-box;
 }
-
-#opcoes-apagar a {
-    background: #f0f0f3;
-    color: #242428;
-}
-
-#opcoes-apagar input[type="submit"] {
-    flex: 1;
-    background: #cf264b;
-    color: #fff;
-}
-
+#opcoes-apagar a { background: #f0f0f3; color: #242428; }
+#opcoes-apagar input[type="submit"] { flex: 1; background: #cf264b; color: #fff; }
 #opcoes-apagar a:focus-visible,
 #opcoes-apagar input[type="submit"]:focus-visible {
     outline: 3px solid rgba(32, 123, 255, 0.35);
     outline-offset: 2px;
 }
-
-#opcoes-apagar input[type="submit"]:active,
-#opcoes-apagar a:active {
-    transform: scale(0.98);
-}
-
+#opcoes-apagar input[type="submit"]:active, #opcoes-apagar a:active { transform: scale(0.98); }
 @media (max-width: 480px) {
-    main#profile-delete {
-        padding-right: 12px;
-        padding-left: 12px;
-    }
-
-    #profile-delete #apagar {
-        padding: 24px 18px;
-        border-radius: 20px;
-    }
-
-    #opcoes-apagar form {
-        flex-direction: column-reverse;
-    }
-
-    #opcoes-apagar a,
-    #opcoes-apagar input[type="submit"] {
-        width: 100%;
-    }
+    main#profile-delete { padding-right: 12px; padding-left: 12px; }
+    #profile-delete #apagar { padding: 24px 18px; border-radius: 20px; }
+    #opcoes-apagar form { flex-direction: column-reverse; }
+    #opcoes-apagar a, #opcoes-apagar input[type="submit"] { width: 100%; }
 }

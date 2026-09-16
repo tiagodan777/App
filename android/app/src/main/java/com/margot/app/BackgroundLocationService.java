@@ -20,10 +20,6 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.SystemClock;
-
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -37,12 +33,11 @@ import java.util.TimeZone;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
+import org.json.JSONException;
+import org.json.JSONObject;
 
-public final class BackgroundLocationService extends Service
-    implements LocationListener {
-
-    public static final String ACTION_AUTHORIZATION_EXPIRED =
-        "com.margot.app.backgroundlocation.AUTHORIZATION_EXPIRED";
+public final class BackgroundLocationService extends Service implements LocationListener {
+    public static final String ACTION_AUTHORIZATION_EXPIRED = "com.margot.app.backgroundlocation.AUTHORIZATION_EXPIRED";
 
     private static final String PREFS = "margot_background_location";
     private static final String TOKEN = "token";
@@ -51,8 +46,7 @@ public final class BackgroundLocationService extends Service
     private static final String START_REQUESTED = "start_requested";
     private static final String APP_IN_BACKGROUND = "app_in_background";
 
-    private static final String ENDPOINT =
-        "https://margot-app.com/background-location-update/";
+    private static final String ENDPOINT = "https://margot-app.com/background-location-update/";
     private static final String CHANNEL_ID = "margot_background_location";
     private static final int NOTIFICATION_ID = 41027;
 
@@ -68,19 +62,13 @@ public final class BackgroundLocationService extends Service
     private static final long MAX_LOCATION_AGE_MS = 120_000L;
     private static final float MAX_ACCURACY_METRES = 1_000f;
 
-    private static final Pattern TOKEN_PATTERN = Pattern.compile(
-        "^[A-Fa-f0-9]{64}$"
-    );
+    private static final Pattern TOKEN_PATTERN = Pattern.compile("^[A-Fa-f0-9]{64}$");
 
-    private static final ExecutorService NETWORK =
-        Executors.newSingleThreadExecutor(runnable -> {
-            Thread thread = new Thread(
-                runnable,
-                "MargotBackgroundLocation"
-            );
-            thread.setDaemon(true);
-            return thread;
-        });
+    private static final ExecutorService NETWORK = Executors.newSingleThreadExecutor(runnable -> {
+        Thread thread = new Thread(runnable, "MargotBackgroundLocation");
+        thread.setDaemon(true);
+        return thread;
+    });
 
     private static volatile boolean running;
 
@@ -97,17 +85,10 @@ public final class BackgroundLocationService extends Service
         @Override
         public void run() {
             try {
-                if (
-                    canRun(BackgroundLocationService.this) &&
-                    !sending &&
-                    lastUsableLocation != null
-                ) {
+                if (canRun(BackgroundLocationService.this) && !sending && lastUsableLocation != null) {
                     long now = SystemClock.elapsedRealtime();
 
-                    if (
-                        lastSuccessfulSendAt == 0 ||
-                        now - lastSuccessfulSendAt >= SEND_INTERVAL_MS
-                    ) {
+                    if (lastSuccessfulSendAt == 0 || now - lastSuccessfulSendAt >= SEND_INTERVAL_MS) {
                         sendLocation(new Location(lastUsableLocation));
                     }
                 }
@@ -123,9 +104,7 @@ public final class BackgroundLocationService extends Service
     public void onCreate() {
         super.onCreate();
         running = true;
-        locationManager = (LocationManager) getSystemService(
-            Context.LOCATION_SERVICE
-        );
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         createNotificationChannel();
     }
 
@@ -175,14 +154,10 @@ public final class BackgroundLocationService extends Service
         }
 
         long now = SystemClock.elapsedRealtime();
-        boolean heartbeatDue =
-            lastSuccessfulSendAt == 0 ||
-            now - lastSuccessfulSendAt >= SEND_INTERVAL_MS;
+        boolean heartbeatDue = lastSuccessfulSendAt == 0 || now - lastSuccessfulSendAt >= SEND_INTERVAL_MS;
 
-        boolean movedEnough =
-            lastSuccessfulLocation == null ||
-            lastSuccessfulLocation.distanceTo(location) >=
-                MOVEMENT_SEND_THRESHOLD_METRES;
+        boolean movedEnough = lastSuccessfulLocation == null
+            || lastSuccessfulLocation.distanceTo(location) >= MOVEMENT_SEND_THRESHOLD_METRES;
 
         /*
          * Igual ao comportamento que queremos no iPhone:
@@ -208,11 +183,7 @@ public final class BackgroundLocationService extends Service
 
     @Override
     @SuppressWarnings("deprecation")
-    public void onStatusChanged(
-        String provider,
-        int status,
-        Bundle extras
-    ) {
+    public void onStatusChanged(String provider, int status, Bundle extras) {
         // Necessário para compatibilidade com as versões Android mais antigas.
     }
 
@@ -241,10 +212,7 @@ public final class BackgroundLocationService extends Service
     }
 
     public static boolean isRunningOrRequested(Context context) {
-        return running || preferences(context).getBoolean(
-            START_REQUESTED,
-            false
-        );
+        return running || preferences(context).getBoolean(START_REQUESTED, false);
     }
 
     public static boolean isValidToken(String token) {
@@ -271,27 +239,15 @@ public final class BackgroundLocationService extends Service
         return preferences(context).getBoolean(VISIBLE, true);
     }
 
-    public static void setAppInBackground(
-        Context context,
-        boolean background
-    ) {
-        preferences(context).edit().putBoolean(
-            APP_IN_BACKGROUND,
-            background
-        ).apply();
+    public static void setAppInBackground(Context context, boolean background) {
+        preferences(context).edit().putBoolean(APP_IN_BACKGROUND, background).apply();
     }
 
     public static boolean isAppInBackground(Context context) {
-        return preferences(context).getBoolean(
-            APP_IN_BACKGROUND,
-            false
-        );
+        return preferences(context).getBoolean(APP_IN_BACKGROUND, false);
     }
 
-    public static void sendAppState(
-        Context context,
-        boolean background
-    ) {
+    public static void sendAppState(Context context, boolean background) {
         Context app = context.getApplicationContext();
         String token = readToken(app);
 
@@ -303,10 +259,7 @@ public final class BackgroundLocationService extends Service
 
         try {
             body.put("state_only", true);
-            body.put(
-                "app_state",
-                background ? "background" : "foreground"
-            );
+            body.put("app_state", background ? "background" : "foreground");
             body.put("timestamp", timestamp(new Date()));
         } catch (JSONException exception) {
             return;
@@ -321,40 +274,27 @@ public final class BackgroundLocationService extends Service
         });
     }
 
-    public static void setPermissionRequested(
-        Context context,
-        boolean requested
-    ) {
-        preferences(context).edit().putBoolean(
-            PERMISSION_REQUESTED,
-            requested
-        ).apply();
+    public static void setPermissionRequested(Context context, boolean requested) {
+        preferences(context).edit().putBoolean(PERMISSION_REQUESTED, requested).apply();
     }
 
     public static boolean wasPermissionRequested(Context context) {
-        return preferences(context).getBoolean(
-            PERMISSION_REQUESTED,
-            false
-        );
+        return preferences(context).getBoolean(PERMISSION_REQUESTED, false);
     }
 
     public static boolean hasLocationPermission(Context context) {
-        return hasFineLocationPermission(context) ||
-            context.checkSelfPermission(
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED;
+        return hasFineLocationPermission(context)
+            || context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
+            == PackageManager.PERMISSION_GRANTED;
     }
 
     public static boolean hasFineLocationPermission(Context context) {
-        return context.checkSelfPermission(
-            Manifest.permission.ACCESS_FINE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED;
+        return context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+            == PackageManager.PERMISSION_GRANTED;
     }
 
     public static boolean isLocationEnabled(Context context) {
-        LocationManager manager = (LocationManager) context.getSystemService(
-            Context.LOCATION_SERVICE
-        );
+        LocationManager manager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
 
         if (manager == null) {
             return false;
@@ -365,19 +305,14 @@ public final class BackgroundLocationService extends Service
         }
 
         try {
-            return manager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
-                manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+            return manager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+                || manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
         } catch (RuntimeException exception) {
             return false;
         }
     }
 
-    public static void sendPresence(
-        Context context,
-        String token,
-        boolean active,
-        boolean visible
-    ) {
+    public static void sendPresence(Context context, String token, boolean active, boolean visible) {
         if (!isValidToken(token)) {
             return;
         }
@@ -388,10 +323,7 @@ public final class BackgroundLocationService extends Service
         try {
             body.put("active", active);
             body.put("visible", visible);
-            body.put(
-                "app_state",
-                isAppInBackground(app) ? "background" : "foreground"
-            );
+            body.put("app_state", isAppInBackground(app) ? "background" : "foreground");
             body.put("timestamp", timestamp(new Date()));
         } catch (JSONException exception) {
             return;
@@ -407,21 +339,15 @@ public final class BackgroundLocationService extends Service
     }
 
     private static boolean canRun(Context context) {
-        return isVisible(context) &&
-            isLocationEnabled(context) &&
-            hasLocationPermission(context) &&
-            isValidToken(readToken(context));
+        return isVisible(context) && isLocationEnabled(context) && hasLocationPermission(context)
+            && isValidToken(readToken(context));
     }
 
     private void startAsForeground() {
         Notification notification = buildNotification();
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(
-                NOTIFICATION_ID,
-                notification,
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
-            );
+            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
         } else {
             startForeground(NOTIFICATION_ID, notification);
         }
@@ -432,22 +358,15 @@ public final class BackgroundLocationService extends Service
             return;
         }
 
-        NotificationManager manager = getSystemService(
-            NotificationManager.class
-        );
+        NotificationManager manager = getSystemService(NotificationManager.class);
 
         if (manager == null) {
             return;
         }
 
         NotificationChannel channel = new NotificationChannel(
-            CHANNEL_ID,
-            getString(R.string.background_location_channel_name),
-            NotificationManager.IMPORTANCE_LOW
-        );
-        channel.setDescription(
-            getString(R.string.background_location_channel_description)
-        );
+            CHANNEL_ID, getString(R.string.background_location_channel_name), NotificationManager.IMPORTANCE_LOW);
+        channel.setDescription(getString(R.string.background_location_channel_description));
         channel.enableVibration(false);
         channel.setSound(null, null);
         channel.setShowBadge(false);
@@ -457,36 +376,22 @@ public final class BackgroundLocationService extends Service
 
     private Notification buildNotification() {
         Intent openApp = new Intent(this, MainActivity.class);
-        openApp.addFlags(
-            Intent.FLAG_ACTIVITY_CLEAR_TOP |
-                Intent.FLAG_ACTIVITY_SINGLE_TOP
-        );
+        openApp.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
 
         PendingIntent contentIntent = PendingIntent.getActivity(
-            this,
-            0,
-            openApp,
-            PendingIntent.FLAG_UPDATE_CURRENT |
-                PendingIntent.FLAG_IMMUTABLE
-        );
+            this, 0, openApp, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         Notification.Builder builder;
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             builder = new Notification.Builder(this, CHANNEL_ID);
         } else {
-            builder = new Notification.Builder(this)
-                .setPriority(Notification.PRIORITY_LOW);
+            builder = new Notification.Builder(this).setPriority(Notification.PRIORITY_LOW);
         }
 
-        return builder
-            .setSmallIcon(android.R.drawable.ic_menu_mylocation)
-            .setContentTitle(
-                getString(R.string.background_location_notification_title)
-            )
-            .setContentText(
-                getString(R.string.background_location_notification_text)
-            )
+        return builder.setSmallIcon(android.R.drawable.ic_menu_mylocation)
+            .setContentTitle(getString(R.string.background_location_notification_title))
+            .setContentText(getString(R.string.background_location_notification_text))
             .setContentIntent(contentIntent)
             .setCategory(Notification.CATEGORY_SERVICE)
             .setOngoing(true)
@@ -501,18 +406,12 @@ public final class BackgroundLocationService extends Service
             return;
         }
 
-        boolean registered = registerProvider(
-            LocationManager.NETWORK_PROVIDER
-        );
+        boolean registered = registerProvider(LocationManager.NETWORK_PROVIDER);
 
-        registered = registerProvider(
-            LocationManager.GPS_PROVIDER
-        ) || registered;
+        registered = registerProvider(LocationManager.GPS_PROVIDER) || registered;
 
         if (!registered) {
-            throw new IllegalStateException(
-                "Não existe um fornecedor de localização disponível."
-            );
+            throw new IllegalStateException("Não existe um fornecedor de localização disponível.");
         }
 
         updatesRegistered = true;
@@ -530,13 +429,8 @@ public final class BackgroundLocationService extends Service
                 return false;
             }
 
-            locationManager.requestLocationUpdates(
-                provider,
-                LOCATION_REQUEST_MIN_TIME_MS,
-                LOCATION_REQUEST_MIN_DISTANCE_METRES,
-                this,
-                Looper.getMainLooper()
-            );
+            locationManager.requestLocationUpdates(provider, LOCATION_REQUEST_MIN_TIME_MS,
+                LOCATION_REQUEST_MIN_DISTANCE_METRES, this, Looper.getMainLooper());
 
             return true;
         } catch (IllegalArgumentException exception) {
@@ -545,13 +439,9 @@ public final class BackgroundLocationService extends Service
     }
 
     private Location newestLastKnownLocation() {
-        Location network = lastKnown(
-            LocationManager.NETWORK_PROVIDER
-        );
+        Location network = lastKnown(LocationManager.NETWORK_PROVIDER);
 
-        Location gps = lastKnown(
-            LocationManager.GPS_PROVIDER
-        );
+        Location gps = lastKnown(LocationManager.GPS_PROVIDER);
 
         if (network == null) {
             return gps;
@@ -561,9 +451,7 @@ public final class BackgroundLocationService extends Service
             return network;
         }
 
-        return gps.getTime() >= network.getTime()
-            ? gps
-            : network;
+        return gps.getTime() >= network.getTime() ? gps : network;
     }
 
     private Location lastKnown(String provider) {
@@ -573,10 +461,7 @@ public final class BackgroundLocationService extends Service
             }
 
             return locationManager.getLastKnownLocation(provider);
-        } catch (
-            IllegalArgumentException |
-            SecurityException exception
-        ) {
+        } catch (IllegalArgumentException | SecurityException exception) {
             return null;
         }
     }
@@ -584,10 +469,7 @@ public final class BackgroundLocationService extends Service
     private void startHeartbeat() {
         heartbeatStarted = true;
         mainHandler.removeCallbacks(heartbeat);
-        mainHandler.postDelayed(
-            heartbeat,
-            SEND_INTERVAL_MS
-        );
+        mainHandler.postDelayed(heartbeat, SEND_INTERVAL_MS);
     }
 
     private void stopHeartbeat() {
@@ -596,10 +478,7 @@ public final class BackgroundLocationService extends Service
     }
 
     private void removeLocationUpdates() {
-        if (
-            !updatesRegistered ||
-            locationManager == null
-        ) {
+        if (!updatesRegistered || locationManager == null) {
             return;
         }
 
@@ -620,78 +499,36 @@ public final class BackgroundLocationService extends Service
             return false;
         }
 
-        if (
-            location.hasAccuracy() &&
-            (
-                location.getAccuracy() < 0 ||
-                location.getAccuracy() >
-                    MAX_ACCURACY_METRES
-            )
-        ) {
+        if (location.hasAccuracy() && (location.getAccuracy() < 0 || location.getAccuracy() > MAX_ACCURACY_METRES)) {
             return false;
         }
 
-        return Math.abs(
-            System.currentTimeMillis() -
-                location.getTime()
-        ) <= MAX_LOCATION_AGE_MS;
+        return Math.abs(System.currentTimeMillis() - location.getTime()) <= MAX_LOCATION_AGE_MS;
     }
 
     private void sendLocation(Location location) {
         String token = readToken(this);
 
-        if (
-            !isValidToken(token) ||
-            !isVisible(this)
-        ) {
+        if (!isValidToken(token) || !isVisible(this)) {
             return;
         }
 
         JSONObject body = new JSONObject();
 
         try {
-            body.put(
-                "latitude",
-                location.getLatitude()
-            );
+            body.put("latitude", location.getLatitude());
 
-            body.put(
-                "longitude",
-                location.getLongitude()
-            );
+            body.put("longitude", location.getLongitude());
 
-            body.put(
-                "accuracy",
-                location.hasAccuracy()
-                    ? location.getAccuracy()
-                    : 0
-            );
+            body.put("accuracy", location.hasAccuracy() ? location.getAccuracy() : 0);
 
-            body.put(
-                "active",
-                true
-            );
+            body.put("active", true);
 
-            body.put(
-                "visible",
-                true
-            );
+            body.put("visible", true);
 
-            body.put(
-                "app_state",
-                isAppInBackground(this)
-                    ? "background"
-                    : "foreground"
-            );
+            body.put("app_state", isAppInBackground(this) ? "background" : "foreground");
 
-            body.put(
-                "timestamp",
-                timestamp(
-                    new Date(
-                        location.getTime()
-                    )
-                )
-            );
+            body.put("timestamp", timestamp(new Date(location.getTime())));
         } catch (JSONException exception) {
             return;
         }
@@ -699,198 +536,100 @@ public final class BackgroundLocationService extends Service
         sending = true;
 
         NETWORK.execute(() -> {
-            int status = post(
-                token,
-                body
-            );
+            int status = post(token, body);
 
-            Location sentLocation =
-                new Location(location);
+            Location sentLocation = new Location(location);
 
-            mainHandler.post(
-                () -> finishSend(
-                    token,
-                    status,
-                    sentLocation
-                )
-            );
+            mainHandler.post(() -> finishSend(token, status, sentLocation));
         });
     }
 
-    private void finishSend(
-        String token,
-        int status,
-        Location sentLocation
-    ) {
+    private void finishSend(String token, int status, Location sentLocation) {
         sending = false;
 
-        if (
-            status ==
-            HttpURLConnection.HTTP_UNAUTHORIZED
-        ) {
-            expireAuthorization(
-                this,
-                token
-            );
+        if (status == HttpURLConnection.HTTP_UNAUTHORIZED) {
+            expireAuthorization(this, token);
 
             stopSelf();
 
             return;
         }
 
-        if (
-            status >= 200 &&
-            status <= 299
-        ) {
-            lastSuccessfulSendAt =
-                SystemClock.elapsedRealtime();
+        if (status >= 200 && status <= 299) {
+            lastSuccessfulSendAt = SystemClock.elapsedRealtime();
 
-            lastSuccessfulLocation =
-                new Location(sentLocation);
+            lastSuccessfulLocation = new Location(sentLocation);
         }
 
         if (!isVisible(this)) {
-            String currentToken =
-                readToken(this);
+            String currentToken = readToken(this);
 
-            if (
-                token.equals(
-                    currentToken
-                )
-            ) {
-                sendPresence(
-                    this,
-                    token,
-                    true,
-                    false
-                );
-            } else if (
-                !isValidToken(
-                    currentToken
-                )
-            ) {
-                sendPresence(
-                    this,
-                    token,
-                    false,
-                    false
-                );
+            if (token.equals(currentToken)) {
+                sendPresence(this, token, true, false);
+            } else if (!isValidToken(currentToken)) {
+                sendPresence(this, token, false, false);
             }
         }
     }
 
     private void stopUnavailable() {
-        setStartRequested(
-            this,
-            false
-        );
+        setStartRequested(this, false);
 
         removeLocationUpdates();
 
         stopSelf();
     }
 
-    private static void expireAuthorization(
-        Context context,
-        String rejectedToken
-    ) {
-        Context app =
-            context.getApplicationContext();
+    private static void expireAuthorization(Context context, String rejectedToken) {
+        Context app = context.getApplicationContext();
 
-        if (
-            !rejectedToken.equals(
-                readToken(app)
-            )
-        ) {
+        if (!rejectedToken.equals(readToken(app))) {
             return;
         }
 
         clearToken(app);
         stop(app);
 
-        Intent event =
-            new Intent(
-                ACTION_AUTHORIZATION_EXPIRED
-            );
+        Intent event = new Intent(ACTION_AUTHORIZATION_EXPIRED);
 
-        event.setPackage(
-            app.getPackageName()
-        );
+        event.setPackage(app.getPackageName());
 
         app.sendBroadcast(event);
     }
 
-    private static int post(
-        String token,
-        JSONObject body
-    ) {
+    private static int post(String token, JSONObject body) {
         HttpURLConnection connection = null;
 
         try {
-            byte[] bytes =
-                body.toString()
-                    .getBytes(
-                        StandardCharsets.UTF_8
-                    );
+            byte[] bytes = body.toString().getBytes(StandardCharsets.UTF_8);
 
-            connection =
-                (HttpURLConnection)
-                    new URL(ENDPOINT)
-                        .openConnection();
+            connection = (HttpURLConnection) new URL(ENDPOINT).openConnection();
 
-            connection.setRequestMethod(
-                "POST"
-            );
+            connection.setRequestMethod("POST");
 
-            connection.setConnectTimeout(
-                15_000
-            );
+            connection.setConnectTimeout(15_000);
 
-            connection.setReadTimeout(
-                20_000
-            );
+            connection.setReadTimeout(20_000);
 
-            connection.setDoOutput(
-                true
-            );
+            connection.setDoOutput(true);
 
-            connection.setUseCaches(
-                false
-            );
+            connection.setUseCaches(false);
 
-            connection.setRequestProperty(
-                "Content-Type",
-                "application/json; charset=utf-8"
-            );
+            connection.setRequestProperty("Content-Type", "application/json; charset=utf-8");
 
-            connection.setRequestProperty(
-                "Accept",
-                "application/json"
-            );
+            connection.setRequestProperty("Accept", "application/json");
 
-            connection.setRequestProperty(
-                "Authorization",
-                "Bearer " + token
-            );
+            connection.setRequestProperty("Authorization", "Bearer " + token);
 
-            connection.setFixedLengthStreamingMode(
-                bytes.length
-            );
+            connection.setFixedLengthStreamingMode(bytes.length);
 
-            try (
-                OutputStream output =
-                    connection.getOutputStream()
-            ) {
+            try (OutputStream output = connection.getOutputStream()) {
                 output.write(bytes);
             }
 
-            int status =
-                connection.getResponseCode();
+            int status = connection.getResponseCode();
 
-            closeResponse(
-                connection,
-                status
-            );
+            closeResponse(connection, status);
 
             return status;
         } catch (IOException exception) {
@@ -902,28 +641,19 @@ public final class BackgroundLocationService extends Service
         }
     }
 
-    private static void closeResponse(
-        HttpURLConnection connection,
-        int status
-    ) {
+    private static void closeResponse(HttpURLConnection connection, int status) {
         InputStream input = null;
 
         try {
-            input =
-                status >= 400
-                    ? connection.getErrorStream()
-                    : connection.getInputStream();
+            input = status >= 400 ? connection.getErrorStream() : connection.getInputStream();
 
             if (input == null) {
                 return;
             }
 
-            byte[] buffer =
-                new byte[512];
+            byte[] buffer = new byte[512];
 
-            while (
-                input.read(buffer) != -1
-            ) {
+            while (input.read(buffer) != -1) {
                 /*
                  * O conteúdo da resposta
                  * não é necessário.
@@ -946,59 +676,27 @@ public final class BackgroundLocationService extends Service
         }
     }
 
-    private static String timestamp(
-        Date date
-    ) {
-        SimpleDateFormat format =
-            new SimpleDateFormat(
-                "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
-                Locale.US
-            );
+    private static String timestamp(Date date) {
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
 
-        format.setTimeZone(
-            TimeZone.getTimeZone("UTC")
-        );
+        format.setTimeZone(TimeZone.getTimeZone("UTC"));
 
         return format.format(date);
     }
 
-    private static SharedPreferences preferences(
-        Context context
-    ) {
-        return context
-            .getApplicationContext()
-            .getSharedPreferences(
-                PREFS,
-                Context.MODE_PRIVATE
-            );
+    private static SharedPreferences preferences(Context context) {
+        return context.getApplicationContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE);
     }
 
-    private static void setStartRequested(
-        Context context,
-        boolean requested
-    ) {
-        preferences(context)
-            .edit()
-            .putBoolean(
-                START_REQUESTED,
-                requested
-            )
-            .apply();
+    private static void setStartRequested(Context context, boolean requested) {
+        preferences(context).edit().putBoolean(START_REQUESTED, requested).apply();
     }
 
-    private static void cancelNotification(
-        Context context
-    ) {
-        NotificationManager manager =
-            (NotificationManager)
-                context.getSystemService(
-                    Context.NOTIFICATION_SERVICE
-                );
+    private static void cancelNotification(Context context) {
+        NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 
         if (manager != null) {
-            manager.cancel(
-                NOTIFICATION_ID
-            );
+            manager.cancel(NOTIFICATION_ID);
         }
     }
 }

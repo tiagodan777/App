@@ -13,5 +13,10 @@
         "twig/twig": "^3.27",
         "cboden/ratchet": "^0.4.4",
         "phpmailer/phpmailer": "^7.1"
+    },
+    "scripts": {
+        "lint": "@php tests/lint.php",
+        "test": "@php tests/run.php",
+        "db:check": "@php database/check.php"
     }
 }

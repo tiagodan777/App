@@ -1,0 +1,100 @@
+<div id="permissoes">
+    <h1>{{ modo_edicao ? 'Privacidade e permissões' : 'Antes de começares' }}</h1>
+
+    <div class="privacidade-nota privacidade-nota-localizacao">
+        <span class="privacidade-nota-icone" aria-hidden="true">🛡️</span>
+
+        <p>
+            A tua localização <strong>NUNCA</strong> é mostrada publicamente nem
+            partilhada com outros utilizadores.
+        </p>
+
+        <details class="privacidade-info">
+            <summary aria-label="Como é utilizada a localização?">
+                i
+            </summary>
+
+            <div>
+                <strong>
+                    Como é utilizada?
+                </strong>
+
+                <p>
+                    A Margot utiliza-a apenas para calcular uma distância aproximada
+                    e mostrar pessoas que estão, aproximadamente, num raio de 100
+                    metros de ti. Os outros utilizadores nunca veem a tua localização
+                    exata nem um ponto num mapa.
+                </p>
+            </div>
+        </details>
+    </div>
+
+    <p class="permissoes-explicacao">
+        Escolhe o que a Margot pode usar neste dispositivo.
+        Podes alterar estas opções mais tarde.
+    </p>
+
+    <div class="permissoes-lista">
+        <article class="permissao-cartao" data-permissao="localizacao" data-ativa="false">
+            <div class="permissao-icone" aria-hidden="true">
+                📍
+            </div>
+
+            <div class="permissao-conteudo">
+                <h2>Localização</h2>
+
+                <p>
+                    Permite encontrar e mostrar apenas pessoas que estão aproximadamente até 100 m de ti.
+                </p>
+
+                <span class="permissao-estado" aria-live="polite">A verificar…</span>
+            </div>
+
+            <div class="permissao-acoes">
+                <button type="button" class="permissao-ativar" data-permissao="localizacao">Continuar</button>
+
+                <button type="button" class="permissao-desativar" data-permissao="localizacao" hidden>Desativar</button>
+            </div>
+        </article>
+
+        <article class="permissao-cartao" data-permissao="notificacoes" data-ativa="false">
+            <div class="permissao-icone" aria-hidden="true">
+                👋
+            </div>
+
+            <div class="permissao-conteudo">
+                <h2>Notificações</h2>
+
+                <p>Permite receber avisos de Heys e mensagens.</p>
+
+                <span class="permissao-estado" aria-live="polite">A verificar…</span>
+            </div>
+
+            <div class="permissao-acoes">
+                <button type="button" class="permissao-ativar" data-permissao="notificacoes">Continuar</button>
+
+                <button type="button" class="permissao-desativar" data-permissao="notificacoes" hidden>Desativar</button>
+            </div>
+        </article>
+    </div>
+
+    <p id="permissoes-erro" role="alert" aria-live="polite"></p>
+
+    <nav class="anterior-proximo">
+        {% if modo_edicao %}
+            <a data-etapa="#editar-perfil" data-sem-validar="true" class="anterior">
+                Voltar à lista
+            </a>
+
+            <button type="submit" class="proximo guardar-secao">Guardar e sair</button>
+        {% else %}
+            <a data-etapa="#fotos" class="anterior">
+                Anterior
+            </a>
+
+            <a data-etapa="#palavra-passe" id="permissoes-proximo" class="proximo desativado" aria-disabled="true">
+                Próximo
+            </a>
+        {% endif %}
+    </nav>
+</div>

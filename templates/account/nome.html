@@ -1,0 +1,29 @@
+<div id="nome">
+    <h1>{{ modo_edicao ? 'Qual é o teu nome?' : 'Como te chamas?' }}</h1>
+
+    <p>
+        <label for="primeiro_nome">Primeiro nome</label>
+
+        <input type="text" name="primeiro_nome" id="primeiro_nome" required>
+    </p>
+
+    <p>
+        <label for="ultimo_nome">Último nome</label>
+
+        <input type="text" name="ultimo_nome" id="ultimo_nome" required>
+    </p>
+
+    <nav class="anterior-proximo">
+        {% if modo_edicao %}
+            <a data-etapa="#editar-perfil" data-sem-validar="true" class="anterior">
+                Voltar à lista
+            </a>
+
+            <button type="submit" class="proximo guardar-secao">Guardar e sair</button>
+        {% else %}
+            <a data-etapa="#nascimento" class="proximo">
+                Próximo
+            </a>
+        {% endif %}
+    </nav>
+</div>

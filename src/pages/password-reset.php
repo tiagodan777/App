@@ -4,23 +4,16 @@ declare(strict_types=1);
 use App\CMS\PasswordRecovery;
 use App\CMS\Token;
 use App\Validate\Validate;
-
 header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Pragma: no-cache');
 header('X-Robots-Tag: noindex, nofollow');
 header('Referrer-Policy: no-referrer');
-
 $metodo = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
-$token = strtolower(trim((string) (
-    $metodo === 'POST'
-        ? ($_POST['token'] ?? '')
-        : ($_GET['token'] ?? '')
-)));
+$token = strtolower(trim((string) ($metodo === 'POST' ? $_POST['token'] ?? '' : $_GET['token'] ?? '')));
 $tokenValido = false;
 $concluido = false;
 $mensagemErro = '';
 $formatoValido = preg_match('/^[a-f0-9]{64}$/', $token) === 1;
-
 if ($formatoValido) {
     try {
         $tokens = new Token($db);
@@ -29,29 +22,13 @@ if ($formatoValido) {
         error_log('[password-reset] Falha ao validar o token: ' . $erro->getMessage());
     }
 }
-
 if ($metodo === 'POST') {
     $novaPassword = (string) ($_POST['nova_password'] ?? '');
     $confirmarPassword = (string) ($_POST['confirmar_password'] ?? '');
-    $limiteIp = consumirLimiteRequisicoes(
-        'password-reset-ip',
-        chaveLimiteRequisicoes(enderecoCliente()),
-        20,
-        60 * 60
-    );
-    $limiteToken = consumirLimiteRequisicoes(
-        'password-reset-token',
-        chaveLimiteRequisicoes($token),
-        10,
-        60 * 60
-    );
-
+    $limiteIp = consumirLimiteRequisicoes('password-reset-ip', chaveLimiteRequisicoes(enderecoCliente()), 20, 60 * 60);
+    $limiteToken = consumirLimiteRequisicoes('password-reset-token', chaveLimiteRequisicoes($token), 10, 60 * 60);
     if (!$limiteIp['permitido'] || !$limiteToken['permitido']) {
-        $tentarEm = max(
-            1,
-            (int) $limiteIp['tentar_em'],
-            (int) $limiteToken['tentar_em']
-        );
+        $tentarEm = max(1, (int) $limiteIp['tentar_em'], (int) $limiteToken['tentar_em']);
         http_response_code(429);
         header('Retry-After: ' . $tentarEm);
         $mensagemErro = 'Foram feitas demasiadas tentativas. Tenta novamente mais tarde.';
@@ -68,7 +45,6 @@ if ($metodo === 'POST') {
         try {
             $recovery = new PasswordRecovery($db);
             $concluido = $recovery->resetPassword($token, $novaPassword);
-
             if ($concluido) {
                 $cookie->delete();
                 $session->delete();
@@ -86,7 +62,6 @@ if ($metodo === 'POST') {
         }
     }
 }
-
 echo $twig->render('password-reset.html', [
     'token' => $token,
     'token_valido' => $tokenValido,

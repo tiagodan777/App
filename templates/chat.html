@@ -1,7 +1,7 @@
 {% extends 'layout.html' %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ doc_root }}estilos/chat.css?v=19" data-margot-page-style>
+<link rel="stylesheet" href="{{ doc_root }}estilos/chat.css?v=20260916" data-margot-page-style>
 {% endblock %}
 
 {% block content %}
@@ -53,16 +53,8 @@
                             >
 
                         {% elseif mensagem.tipo == 'video' and mensagem.media_url %}
-                            <video
-                                class="chat-video"
-                                controls
-                                playsinline
-                                preload="metadata"
-                            >
-                                <source
-                                    src="{{ mensagem.media_url }}"
-                                    type="{{ mensagem.ficheiro_mime }}"
-                                >
+                            <video class="chat-video" controls playsinline preload="metadata">
+                                <source src="{{ mensagem.media_url }}" type="{{ mensagem.ficheiro_mime }}">
                             </video>
                         {% endif %}
 
@@ -71,32 +63,17 @@
                         {% endif %}
 
                         <footer>
-                            <time
-                                datetime="{{ mensagem.criada_em }}"
-                                data-data-mensagem="{{ mensagem.criada_em }}"
-                            ></time>
+                            <time datetime="{{ mensagem.criada_em }}" data-data-mensagem="{{ mensagem.criada_em }}"></time>
 
                             {% if mensagem.minha %}
-                                <span
-                                    class="chat-lida"
-                                    aria-label="{{ mensagem.lida ? 'Lida' : 'Enviada' }}"
-                                >
-                                    {{ mensagem.lida ? '✓✓' : '✓' }}
-                                </span>
+                                <span class="chat-lida" aria-label="{{ mensagem.lida ? 'Lida' : 'Enviada' }}">{{ mensagem.lida ? '✓✓' : '✓' }}</span>
                             {% endif %}
                         </footer>
                     </div>
 
-                    <div
-                        class="chat-reacoes"
-                        aria-label="Reações à mensagem"
-                        {% if mensagem.reactions is empty %}hidden{% endif %}
-                    >
+                    <div class="chat-reacoes" aria-label="Reações à mensagem" {% if mensagem.reactions is empty %}hidden{% endif %}>
                         {% for reacao in mensagem.reactions %}
-                            <span
-                                class="chat-reacao{{ reacao.member_id == membro_id ? ' minha-reacao' : '' }}"
-                                data-emoji="{{ reacao.emoji }}"
-                            >{{ reacao.emoji }}</span>
+                            <span class="chat-reacao{{ reacao.member_id == membro_id ? ' minha-reacao' : '' }}" data-emoji="{{ reacao.emoji }}">{{ reacao.emoji }}</span>
                         {% endfor %}
                     </div>
                 </article>
@@ -104,40 +81,20 @@
         </div>
     </section>
 
-    <form
-        id="chat-form"
-        class="chat-form"
-        action="{{ doc_root }}messages/{{ outro.id }}"
-        method="post"
-        enctype="multipart/form-data"
-    >
+    <form id="chat-form" class="chat-form" action="{{ doc_root }}messages/{{ outro.id }}" method="post" enctype="multipart/form-data">
         <input type="hidden" name="action" value="send">
         <input type="hidden" name="profile_access_token" id="chat-profile-access-token" value="">
 
-        <div
-            id="chat-media-preview"
-            class="chat-media-preview"
-            hidden
-        ></div>
+        <div id="chat-media-preview" class="chat-media-preview" hidden></div>
 
         <div class="chat-compositor">
-            <label
-                for="chat-media"
-                class="chat-anexar"
-                aria-label="Adicionar fotografia ou vídeo"
-            >
+            <label for="chat-media" class="chat-anexar" aria-label="Adicionar fotografia ou vídeo">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M12 5v14M5 12h14"></path>
                 </svg>
             </label>
 
-            <input
-                type="file"
-                id="chat-media"
-                name="media"
-                accept="image/*,video/*"
-                hidden
-            >
+            <input type="file" id="chat-media" name="media" accept="image/*,video/*" hidden>
 
             <textarea
                 id="chat-texto"
@@ -152,21 +109,10 @@
                 enterkeyhint="send"
             ></textarea>
 
-            <button
-                type="submit"
-                id="chat-enviar"
-                disabled
-            >
-                Enviar
-            </button>
+            <button type="submit" id="chat-enviar" disabled>Enviar</button>
         </div>
 
-        <p
-            id="chat-erro"
-            class="chat-erro"
-            role="alert"
-            hidden
-        ></p>
+        <p id="chat-erro" class="chat-erro" role="alert" hidden></p>
     </form>
 </main>
 
@@ -180,5 +126,6 @@ window.webSocketUrl = window.location.protocol === 'https:'
     : 'ws://' + window.location.hostname + ':8080';
 </script>
 
-<script src="{{ doc_root }}js/chat.js?v=17"></script>
+<script src="{{ doc_root }}js/chat-reactions.js?v=20260916"></script>
+<script src="{{ doc_root }}js/chat.js?v=20260916"></script>
 {% endblock %}

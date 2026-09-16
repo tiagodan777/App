@@ -1,0 +1,173 @@
+<div id="editar-perfil">
+    <header class="editar-perfil-cabecalho">
+        <button type="button" class="editar-perfil-fechar" data-voltar-perfil aria-label="Fechar edição">×</button>
+
+        <div>
+            <span>O teu perfil</span>
+
+            <h1>O que queres editar?</h1>
+
+            <p>Escolhe uma área. Podes guardar e sair logo depois da alteração.</p>
+        </div>
+    </header>
+
+    <div class="editar-perfil-lista">
+        <button type="button" class="editar-area" data-etapa="#fotos">
+            <span class="editar-area-icone" aria-hidden="true">📷</span>
+
+            <span class="editar-area-texto">
+                <strong>Fotografias</strong>
+
+                <small data-resumo-campo="fotos">
+                    Gerir as tuas fotografias
+                </small>
+            </span>
+
+            <span class="editar-area-seta" aria-hidden="true">›</span>
+        </button>
+
+        <button type="button" class="editar-area" data-etapa="#nome">
+            <span class="editar-area-icone" aria-hidden="true">👤</span>
+
+            <span class="editar-area-texto">
+                <strong>Nome</strong>
+
+                <small data-resumo-campo="nome">
+                    Editar o teu nome
+                </small>
+            </span>
+
+            <span class="editar-area-seta" aria-hidden="true">›</span>
+        </button>
+
+        <button type="button" class="editar-area" data-etapa="#nascimento">
+            <span class="editar-area-icone" aria-hidden="true">🎂</span>
+
+            <span class="editar-area-texto">
+                <strong>Data de nascimento</strong>
+
+                <small data-resumo-campo="nascimento">
+                    Editar a data de nascimento
+                </small>
+            </span>
+
+            <span class="editar-area-seta" aria-hidden="true">›</span>
+        </button>
+
+        <button type="button" class="editar-area" data-etapa="#sexo">
+            <span class="editar-area-icone" aria-hidden="true">✨</span>
+
+            <span class="editar-area-texto">
+                <strong>Género</strong>
+
+                <small data-resumo-campo="genero">
+                    Editar o género
+                </small>
+            </span>
+
+            <span class="editar-area-seta" aria-hidden="true">›</span>
+        </button>
+
+        <button type="button" class="editar-area" data-etapa="#gostos">
+            <span class="editar-area-icone" aria-hidden="true">🎨</span>
+
+            <span class="editar-area-texto">
+                <strong>Gostos e interesses</strong>
+
+                <small data-resumo-campo="gostos">
+                    Editar os teus gostos
+                </small>
+            </span>
+
+            <span class="editar-area-seta" aria-hidden="true">›</span>
+        </button>
+
+        <button type="button" class="editar-area" data-etapa="#descricao">
+            <span class="editar-area-icone" aria-hidden="true">💬</span>
+
+            <span class="editar-area-texto">
+                <strong>Sobre ti</strong>
+
+                <small data-resumo-campo="sobre_ti">
+                    Editar a tua descrição
+                </small>
+            </span>
+
+            <span class="editar-area-seta" aria-hidden="true">›</span>
+        </button>
+
+        <button type="button" class="editar-area" data-etapa="#contactos">
+            <span class="editar-area-icone" aria-hidden="true">🔐</span>
+
+            <span class="editar-area-texto">
+                <strong>Contactos</strong>
+
+                <small data-resumo-campo="contactos">
+                    Email privado · telefone opcional
+                </small>
+            </span>
+
+            <span class="editar-area-seta" aria-hidden="true">›</span>
+        </button>
+
+        <button type="button" class="editar-area" data-etapa="#permissoes">
+            <span class="editar-area-icone" aria-hidden="true">📍</span>
+
+            <span class="editar-area-texto">
+                <strong>Privacidade e permissões</strong>
+
+                <small data-resumo-campo="permissoes">
+                    Localização e notificações
+                </small>
+            </span>
+
+            <span class="editar-area-seta" aria-hidden="true">›</span>
+        </button>
+
+        <button type="button" class="editar-area" data-etapa="#palavra-passe">
+            <span class="editar-area-icone" aria-hidden="true">🔑</span>
+
+            <span class="editar-area-texto">
+                <strong>Palavra-passe</strong>
+
+                <small>
+                    Alterar a palavra-passe
+                </small>
+            </span>
+
+            <span class="editar-area-seta" aria-hidden="true">›</span>
+        </button>
+
+        <a href="{{ doc_root }}terms" class="editar-area" target="_top">
+            <span class="editar-area-icone" aria-hidden="true">📄</span>
+
+            <span class="editar-area-texto">
+                <strong>
+                    Termos de Utilização
+                </strong>
+
+                <small>
+                    Consulta os termos da Margot
+                </small>
+            </span>
+
+            <span class="editar-area-seta" aria-hidden="true">›</span>
+        </a>
+
+        <a href="{{ doc_root }}privacy" class="editar-area" target="_top">
+            <span class="editar-area-icone" aria-hidden="true">🛡️</span>
+
+            <span class="editar-area-texto">
+                <strong>
+                    Política de Privacidade
+                </strong>
+
+                <small>
+                    Consulta como tratamos os teus dados
+                </small>
+            </span>
+
+            <span class="editar-area-seta" aria-hidden="true">›</span>
+        </a>
+    </div>
+</div>

@@ -3,7 +3,6 @@
 
     var API = window.MargotPreferencias;
     var aPedir = { localizacao: false, notificacoes: false };
-
     if (!API) {
         console.error('preferencias.js tem de ser carregado antes de create-account-permissoes.js.');
         return;
@@ -16,41 +15,30 @@
             window.Capacitor.isNativePlatform()
         );
     }
-
     var geolocalizacaoPlugin = null;
 
     function geolocalizacaoNativa() {
         if (!aplicacaoNativa() || !window.Capacitor) {
             return null;
         }
-
         if (geolocalizacaoPlugin) {
             return geolocalizacaoPlugin;
         }
-
         var plugins = window.Capacitor.Plugins || {};
-
         if (plugins.Geolocation) {
             geolocalizacaoPlugin = plugins.Geolocation;
             return geolocalizacaoPlugin;
         }
-
         if (typeof window.Capacitor.registerPlugin === 'function') {
-            geolocalizacaoPlugin =
-                window.Capacitor.registerPlugin('Geolocation');
-
+            geolocalizacaoPlugin = window.Capacitor.registerPlugin('Geolocation');
             return geolocalizacaoPlugin;
         }
-
         return null;
     }
 
     function notificacoesNativas() {
         var push = window.MargotPushNotifications;
-
-        return aplicacaoNativa() && push && push.isAvailable()
-            ? push
-            : null;
+        return aplicacaoNativa() && push && push.isAvailable() ? push : null;
     }
 
     function estadoConcedido(estado) {
@@ -67,7 +55,6 @@
 
     async function estadoLocalizacao() {
         var geolocalizacao = geolocalizacaoNativa();
-
         if (aplicacaoNativa() && geolocalizacao) {
             try {
                 var permissoes = await geolocalizacao.checkPermissions();
@@ -76,10 +63,8 @@
                 return 'unknown';
             }
         }
-
         if (!window.isSecureContext || !navigator.geolocation) return 'unsupported';
         if (!navigator.permissions || !navigator.permissions.query) return 'unknown';
-
         try {
             return (await navigator.permissions.query({ name: 'geolocation' })).state;
         } catch (erro) {
@@ -89,91 +74,70 @@
 
     async function estadoNotificacoes() {
         var push = notificacoesNativas();
-
         if (push) {
             return push.permissionState();
         }
-
         if (!window.isSecureContext || !('Notification' in window)) return 'unsupported';
         return Notification.permission;
     }
 
     function textoEstado(tipo, preferencia, estado) {
         var destino = aplicacaoNativa() ? 'da app' : 'do navegador';
-
         if (preferencia === false) {
             if (estadoConcedido(estado)) return 'Desativada na Margot. O sistema ainda tem autorização.';
             if (estado === 'denied') return 'Desativada e bloqueada nas definições ' + destino + '.';
             return 'Desativada na Margot.';
         }
-
         if (estado === 'denied') return 'Bloqueada nas definições ' + destino + '.';
         if (estado === 'unsupported') return 'Não está disponível neste dispositivo.';
         if (aPedir[tipo]) return 'À espera da tua resposta…';
-
         if (preferencia === true) {
             return tipo === 'localizacao'
                 ? 'Ativa: a Margot pode usar a tua localização.'
                 : 'Ativas: a Margot pode enviar-te notificações.';
         }
-
         return 'Ainda não escolheste.';
     }
 
     async function renderizarTipo(tipo) {
         var $cartao = cartao(tipo);
         if (!$cartao.length) return;
-
         var preferencia = API.obter(tipo);
-        var estado = tipo === 'localizacao'
-            ? await estadoLocalizacao()
-            : await estadoNotificacoes();
-        var sistemaPermite = tipo === 'localizacao'
-            ? (
-                geolocalizacaoNativa()
+        var estado = tipo === 'localizacao' ? await estadoLocalizacao() : await estadoNotificacoes();
+        var sistemaPermite =
+            tipo === 'localizacao'
+                ? geolocalizacaoNativa()
                     ? estadoConcedido(estado)
                     : estado !== 'denied' && estado !== 'unsupported'
-            )
-            : estadoConcedido(estado);
+                : estadoConcedido(estado);
         var ativa = preferencia === true && sistemaPermite;
-
         $cartao.attr('data-ativa', ativa ? 'true' : 'false');
         $cartao.find('.permissao-estado').text(textoEstado(tipo, preferencia, estado));
-        $cartao.find('.permissao-ativar')
+        $cartao
+            .find('.permissao-ativar')
             .prop('hidden', ativa)
             .prop('disabled', aPedir[tipo] || estado === 'unsupported');
-        $cartao.find('.permissao-desativar')
-            .prop('hidden', !ativa)
-            .prop('disabled', aPedir[tipo]);
+        $cartao.find('.permissao-desativar').prop('hidden', !ativa).prop('disabled', aPedir[tipo]);
     }
 
     async function renderizar() {
-        await Promise.all([
-            renderizarTipo('localizacao'),
-            renderizarTipo('notificacoes')
-        ]);
-
-        $('#permissoes-proximo')
-            .removeClass('desativado')
-            .attr('aria-disabled', 'false');
+        await Promise.all([renderizarTipo('localizacao'), renderizarTipo('notificacoes')]);
+        $('#permissoes-proximo').removeClass('desativado').attr('aria-disabled', 'false');
     }
 
     async function sincronizarComSistema() {
         var localizacao = await estadoLocalizacao();
         var notificacoes = await estadoNotificacoes();
-
         if (localizacao === 'unsupported' || localizacao === 'denied') {
             API.definir('localizacao', false);
         } else if (!API.foiEscolhida('localizacao') && estadoConcedido(localizacao)) {
             API.definir('localizacao', true);
         }
-
         if (notificacoes === 'unsupported' || notificacoes === 'denied') {
             API.definir('notificacoes', false);
         } else if (!API.foiEscolhida('notificacoes') && notificacoes === 'granted') {
             API.definir('notificacoes', true);
         }
-
         await renderizar();
     }
 
@@ -181,16 +145,11 @@
         try {
             var permissoes = await geolocalizacao.checkPermissions();
             var estado = permissoes.location || permissoes.coarseLocation || 'prompt';
-
             if (!estadoConcedido(estado)) {
-                permissoes = await geolocalizacao.requestPermissions({
-                    permissions: ['location']
-                });
+                permissoes = await geolocalizacao.requestPermissions({ permissions: ['location'] });
                 estado = permissoes.location || permissoes.coarseLocation || 'denied';
             }
-
             API.definir('localizacao', estadoConcedido(estado));
-
             if (!estadoConcedido(estado)) {
                 definirErro('A localização está bloqueada. Podes permiti-la nas definições da app.');
             }
@@ -211,7 +170,6 @@
             renderizar();
             return;
         }
-
         navigator.geolocation.getCurrentPosition(
             function () {
                 aPedir.localizacao = false;
@@ -228,47 +186,34 @@
                 );
                 renderizar();
             },
-            {
-                enableHighAccuracy: true,
-                timeout: 15000,
-                maximumAge: 0
-            }
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
         );
     }
 
     function ativarLocalizacao() {
         if (aPedir.localizacao) return;
-
         aPedir.localizacao = true;
         definirErro('');
         renderizar();
-
         var geolocalizacao = geolocalizacaoNativa();
-
         if (geolocalizacao) {
             ativarLocalizacaoNativa(geolocalizacao);
             return;
         }
-
         ativarLocalizacaoWeb();
     }
 
     async function ativarNotificacoes() {
         if (aPedir.notificacoes) return;
-
         var push = notificacoesNativas();
-
         if (push) {
             aPedir.notificacoes = true;
             definirErro('');
             await renderizar();
-
             try {
                 var estadoNativo = await push.requestPermission();
                 var concedida = estadoConcedido(estadoNativo);
-
                 API.definir('notificacoes', concedida);
-
                 if (!concedida) {
                     definirErro('As notificações estão bloqueadas. Podes permiti-las nas definições da app.');
                 }
@@ -279,36 +224,28 @@
                 aPedir.notificacoes = false;
                 await renderizar();
             }
-
             return;
         }
-
         if (!window.isSecureContext || !('Notification' in window)) {
             API.definir('notificacoes', false);
             definirErro('As notificações não estão disponíveis aqui. No iPhone, instala a Margot no ecrã principal.');
             await renderizar();
             return;
         }
-
         if (Notification.permission === 'denied') {
             API.definir('notificacoes', false);
             definirErro('As notificações estão bloqueadas. Permite-as nas definições deste site.');
             await renderizar();
             return;
         }
-
         aPedir.notificacoes = true;
         definirErro('');
         renderizar();
-
         try {
-            var pedido = Notification.permission === 'granted'
-                ? Promise.resolve('granted')
-                : Notification.requestPermission();
+            var pedido =
+                Notification.permission === 'granted' ? Promise.resolve('granted') : Notification.requestPermission();
             var resposta = await pedido;
-
             API.definir('notificacoes', resposta === 'granted');
-
             if (resposta !== 'granted') {
                 definirErro('As notificações ficaram desativadas. Podes ativá-las mais tarde ao editar o perfil.');
             }
@@ -316,14 +253,12 @@
             API.definir('notificacoes', false);
             definirErro('Não foi possível pedir a permissão para notificações.');
         }
-
         aPedir.notificacoes = false;
         await renderizar();
     }
 
     function desativar(tipo) {
         API.definir(tipo, false);
-
         if (tipo === 'localizacao') {
             definirErro(
                 aplicacaoNativa()
@@ -337,37 +272,29 @@
                     : 'A Margot deixou de criar notificações. Podes remover também a autorização nas definições deste site.'
             );
         }
-
         renderizar();
     }
-
     window.inicializarEtapaPermissoes = function () {
         if (!document.getElementById('permissoes')) return;
         sincronizarComSistema();
     };
-
     window.validarEtapaPermissoes = function () {
         var valido = API.foiEscolhida('localizacao') && API.foiEscolhida('notificacoes');
-
         if (!valido) {
             definirErro('Escolhe se queres ativar ou desativar as duas opções.');
         }
-
         return valido;
     };
-
     $(document)
         .off('click.margotPermissoes', '.permissao-ativar')
         .on('click.margotPermissoes', '.permissao-ativar', function () {
             var tipo = String($(this).data('permissao') || '');
-
             if (tipo === 'localizacao') ativarLocalizacao();
             if (tipo === 'notificacoes') ativarNotificacoes();
         })
         .off('click.margotPermissoes', '.permissao-desativar')
         .on('click.margotPermissoes', '.permissao-desativar', function () {
             var tipo = String($(this).data('permissao') || '');
-
             if (tipo === 'localizacao' || tipo === 'notificacoes') {
                 desativar(tipo);
             }

@@ -7,8 +7,8 @@
     <meta name="csrf-token" content="{{ csrf_token }}">
     <meta name="robots" content="noindex,nofollow">
     <title>Reenviar confirmação | Margot</title>
-    <link rel="stylesheet" href="{{ doc_root }}estilos/style.css">
-    <link rel="stylesheet" href="{{ doc_root }}estilos/login.css">
+    <link rel="stylesheet" href="{{ doc_root }}estilos/style.css?v=20260916">
+    <link rel="stylesheet" href="{{ doc_root }}estilos/login.css?v=20260916">
 </head>
 <body>
     <main>
@@ -22,9 +22,7 @@
             {% else %}
                 <p>Escreve o email usado para criar a tua conta.</p>
                 {% if mensagem_erro %}
-                    <p id="verification-resend-error" role="alert" aria-live="assertive">
-                        {{ mensagem_erro|e }}
-                    </p>
+                    <p id="verification-resend-error" role="alert" aria-live="assertive">{{ mensagem_erro|e }}</p>
                 {% endif %}
                 <p>
                     <label for="email">Email</label>
@@ -37,6 +35,6 @@
     <aside>
         <a href="{{ doc_root }}login" id="esqueci-palavra-passe">Voltar ao login</a>
     </aside>
-    <script src="{{ doc_root }}js/navegacao-documento.js?v=1"></script>
+    <script src="{{ doc_root }}js/navegacao-documento.js?v=20260916"></script>
 </body>
 </html>

@@ -1,0 +1,62 @@
+/* MOBILE PEQUENO */
+@media (max-width: 370px) {
+    .perfil-page { padding-right: 11px; padding-left: 11px; }
+    .perfil-galeria { height: clamp(400px, 60svh, 545px); }
+    .perfil-indicadores { top: auto !important; bottom: 24px; gap: 3px; }
+    .perfil-indicadores button { width: 12px; height: 12px; padding: 4px; }
+    .perfil-indicadores button span { width: 3px; height: 3px; }
+    .perfil-indicadores button.ativo span { width: 9px; height: 3px; }
+    .perfil-identidade { width: calc(100% - 6px); padding: 20px 16px 18px; }
+    .perfil-identidade h1 { font-size: clamp(31px, 9.1vw, 46px); }
+    #perfil .perfil-hey,
+    #perfil #enviar-hey-perfil.perfil-hey {
+        min-width: 78px !important;
+        height: 40px !important;
+        min-height: 40px !important;
+        padding: 0 16px !important;
+    }
+    #perfil .perfil-hey-label { font-size: 16px !important; }
+    .perfil-seccao { padding: 19px 14px; }
+    .perfil-interesses-grid { gap: 7px; }
+    .perfil-gosto { padding: 11px 10px; }
+    .perfil-gosto-nome { font-size: 13px; }
+    .perfil-slide--sem-foto img { width: 150px; height: 150px; }
+}
+/* TOUCH */
+@media (pointer: coarse) {
+    .perfil-nav { display: none; }
+}
+/* TABLET */
+@media (min-width: 700px) {
+    .perfil-page { padding-right: 26px; padding-left: 26px; }
+    .perfil-galeria { height: clamp(550px, 69svh, 730px); }
+    .perfil-indicadores { top: auto !important; bottom: 32px; }
+    .perfil-identidade { width: min(88%, 675px); padding: 30px 30px 27px; }
+    .perfil-identidade h1 { font-size: clamp(48px, 6.8vw, 70px); }
+    .perfil-seccao { padding: 28px 27px; }
+    .perfil-interesses-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 11px; }
+    .perfil-gosto { min-height: 76px; padding: 14px 15px; }
+    .perfil-gosto-nome { font-size: 15px; }
+    .perfil-slide--sem-foto img { width: 190px; height: 190px; max-width: 190px; }
+}
+/* DESKTOP */
+@media (min-width: 900px) {
+    .perfil-page { width: 860px; padding-right: 0; padding-left: 0; }
+    .perfil-galeria { height: 700px; }
+    .perfil-identidade { width: 680px; }
+}
+/* REDUCED MOTION */
+@media (prefers-reduced-motion: reduce) {
+    .perfil-galeria,
+    .perfil-lightbox,
+    .perfil-lightbox-media,
+    .perfil-lightbox-imagem,
+    .perfil-lightbox-moldura,
+    .perfil-tinta,
+    .perfil-editar,
+    .perfil-hey,
+    .perfil-indicadores button span {
+        animation: none !important;
+        transition: none !important;
+    }
+}

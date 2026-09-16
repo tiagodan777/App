@@ -1,5 +1,4 @@
 @charset "UTF-8";
-
 :root {
     --hoje-preto: #19191d;
     --hoje-texto: #343239;
@@ -7,16 +6,14 @@
     --hoje-vermelho: #e12346;
     --hoje-teclado: 0px;
 }
-
 /* =========================================================
    ESTADO "HOJE" — MINI-MENU
    ========================================================= */
-
 #mini-menu-hoje {
     position: absolute;
     z-index: 16;
-    top: 4px;
-    left: calc(50% - 64px);
+    top: 12px;
+    left: calc(50% - 56px);
     right: auto;
     width: max-content;
     min-width: 108px;
@@ -28,7 +25,9 @@
     background: linear-gradient(145deg, rgba(255, 255, 255, 0.78), rgba(247, 245, 249, 0.65));
     -webkit-backdrop-filter: blur(19px) saturate(175%);
     backdrop-filter: blur(19px) saturate(175%);
-    box-shadow: 0 9px 24px rgba(21, 18, 25, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.94);
+    box-shadow:
+        0 9px 24px rgba(21, 18, 25, 0.09),
+        inset 0 1px 0 rgba(255, 255, 255, 0.94);
     color: var(--hoje-texto);
     isolation: isolate;
     overflow: visible;
@@ -36,10 +35,11 @@
     transform: translate3d(0, 7px, 0) scale(0.975);
     transform-origin: 70% 100%;
     pointer-events: none;
-    transition: opacity 190ms ease, transform 230ms cubic-bezier(.22, 1, .36, 1);
+    transition:
+        opacity 190ms ease,
+        transform 230ms cubic-bezier(0.22, 1, 0.36, 1);
     will-change: opacity, transform;
 }
-
 #mini-menu-hoje::before,
 #mini-menu-hoje::after {
     content: "";
@@ -49,7 +49,6 @@
     background: rgba(250, 248, 252, 0.9);
     box-shadow: 0 2px 5px rgba(22, 19, 26, 0.06);
 }
-
 #mini-menu-hoje::before {
     left: 24px;
     bottom: -10px;
@@ -57,35 +56,10 @@
     height: 8px;
     border: 1px solid rgba(255, 255, 255, 0.76);
 }
-
-#mini-menu-hoje::after {
-    left: 17px;
-    bottom: -17px;
-    width: 4px;
-    height: 4px;
-}
-
-#mini-menu-hoje[hidden] {
-    display: none !important;
-}
-
-/* Fica visível sempre que o elemento deixa de estar hidden.
-   A classe a-visivel continua suportada pelo JS, mas já não é obrigatória. */
-#mini-menu-hoje:not([hidden]):not(.a-sair),
-#mini-menu-hoje.a-visivel {
-    opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
-    pointer-events: auto;
-    animation: hoje-mini-menu-entrar 220ms cubic-bezier(.22, 1, .36, 1) both;
-}
-
-#mini-menu-hoje.a-sair {
-    opacity: 0;
-    transform: translate3d(0, -5px, 0) scale(0.985);
-    pointer-events: none;
-    animation: none;
-}
-
+#mini-menu-hoje::after { left: 17px; bottom: -17px; width: 4px; height: 4px; }
+#mini-menu-hoje[hidden] { display: none !important; }
+#mini-menu-hoje.a-visivel { opacity: 1; transform: translate3d(0, 0, 0) scale(1); pointer-events: auto; }
+#mini-menu-hoje.a-sair { opacity: 0; transform: translate3d(0, -5px, 0) scale(0.985); pointer-events: none; }
 .mini-menu-hoje-topo,
 .perfil-hoje-topo {
     display: flex;
@@ -99,7 +73,6 @@
     letter-spacing: 0.08em;
     text-transform: uppercase;
 }
-
 .mini-menu-hoje-topo::before,
 .perfil-hoje-topo::before {
     content: "";
@@ -110,7 +83,6 @@
     background: var(--hoje-vermelho);
     box-shadow: 0 0 0 3px rgba(225, 35, 70, 0.09);
 }
-
 #mini-menu-hoje [data-hoje-nota] {
     display: -webkit-box;
     margin: 0;
@@ -123,43 +95,28 @@
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
 }
-
-#mini-menu-hoje [data-hoje-roupa] {
-    margin-top: 4px;
-}
-
-.mini-menu:has(#mini-menu-hoje:not([hidden])) #enviar-hey {
-    margin-top: 15px;
-}
-
+#mini-menu-hoje [data-hoje-roupa] { margin-top: 4px; }
+.mini-menu:has(#mini-menu-hoje:not([hidden])) #enviar-hey { margin-top: 15px; }
 /* =========================================================
    ÍCONES DE ROUPA
    ========================================================= */
-
-.hoje-garment-svg {
-    display: block;
-    width: 100%;
-    height: 100%;
-    overflow: visible;
-}
-
-.hoje-chips {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px;
-}
-
+.hoje-garment-svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.hoje-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .hoje-chip {
     position: relative;
     min-height: 46px;
     padding: 6px 9px 6px 7px;
     border: 1px solid rgba(255, 255, 255, 0.78);
     border-radius: 16px;
-    background: radial-gradient(circle at 28% 14%, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.45) 42%, transparent 68%), linear-gradient(145deg, rgba(255, 255, 255, 0.76), rgba(232, 229, 239, 0.52));
+    background:
+        radial-gradient(circle at 28% 14%, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.45) 42%, transparent 68%),
+        linear-gradient(145deg, rgba(255, 255, 255, 0.76), rgba(232, 229, 239, 0.52));
     -webkit-backdrop-filter: blur(15px) saturate(170%);
     backdrop-filter: blur(15px) saturate(170%);
-    box-shadow: 0 6px 13px rgba(26, 22, 31, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.96), inset 0 -1px 0 rgba(83, 76, 93, 0.08);
+    box-shadow:
+        0 6px 13px rgba(26, 22, 31, 0.09),
+        inset 0 1px 0 rgba(255, 255, 255, 0.96),
+        inset 0 -1px 0 rgba(83, 76, 93, 0.08);
     color: #47424c;
     display: inline-grid;
     grid-template-columns: auto minmax(0, 1fr);
@@ -170,7 +127,6 @@
     line-height: 1.05;
     white-space: nowrap;
 }
-
 .hoje-chip-icone {
     width: 34px;
     height: 34px;
@@ -181,12 +137,7 @@
     line-height: 1;
     filter: drop-shadow(0 2px 3px rgba(35, 30, 40, 0.1));
 }
-
-.hoje-chip-texto {
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
+.hoje-chip-texto { overflow: hidden; text-overflow: ellipsis; }
 #mini-menu-hoje .hoje-chip,
 .perfil-hoje-balao .hoje-chip {
     width: 30px;
@@ -202,7 +153,6 @@
     display: grid;
     place-items: center;
 }
-
 #mini-menu-hoje .hoje-chip-icone,
 .perfil-hoje-balao .hoje-chip-icone {
     width: 30px;
@@ -210,7 +160,6 @@
     min-width: 30px;
     filter: drop-shadow(0 2px 2px rgba(35, 30, 40, 0.1));
 }
-
 #mini-menu-hoje .hoje-chip-texto,
 .perfil-hoje-balao .hoje-chip-texto {
     position: absolute !important;
@@ -223,21 +172,11 @@
     white-space: nowrap !important;
     border: 0 !important;
 }
-
-#mini-menu-hoje .hoje-chips {
-    max-width: 100px;
-    gap: 5px;
-}
-
-.perfil-hoje-balao .hoje-chips {
-    flex-wrap: nowrap;
-    gap: 5px;
-}
-
+#mini-menu-hoje .hoje-chips { max-width: 100px; gap: 5px; }
+.perfil-hoje-balao .hoje-chips { flex-wrap: nowrap; gap: 5px; }
 /* =========================================================
    PERFIL — BOTÃO E BALÃO
    ========================================================= */
-
 .perfil-hoje-adicionar {
     position: absolute;
     z-index: 20;
@@ -249,58 +188,49 @@
     padding: 0;
     border: 1px solid rgba(255, 255, 255, 0.86);
     border-radius: 50%;
-    background: radial-gradient(circle at 30% 16%, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.53) 42%, transparent 68%), linear-gradient(145deg, rgba(255, 255, 255, 0.76), rgba(239, 237, 243, 0.62));
+    background:
+        radial-gradient(circle at 30% 16%, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.53) 42%, transparent 68%),
+        linear-gradient(145deg, rgba(255, 255, 255, 0.76), rgba(239, 237, 243, 0.62));
     -webkit-backdrop-filter: blur(18px) saturate(185%);
     backdrop-filter: blur(18px) saturate(185%);
-    box-shadow: 0 11px 26px rgba(20, 17, 24, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.96), inset 0 -1px 0 rgba(75, 68, 84, 0.08);
+    box-shadow:
+        0 11px 26px rgba(20, 17, 24, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.96),
+        inset 0 -1px 0 rgba(75, 68, 84, 0.08);
     color: #252329;
     display: grid;
     place-items: center;
     cursor: pointer;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
-    transition: transform 150ms cubic-bezier(.2, .8, .2, 1), box-shadow 150ms ease, background-color 150ms ease;
+    transition:
+        transform 150ms cubic-bezier(0.2, 0.8, 0.2, 1),
+        box-shadow 150ms ease,
+        background-color 150ms ease;
 }
-
-.perfil-hoje-adicionar span {
-    transform: translateY(-1px);
-    font-size: 30px;
-    font-weight: 420;
-    line-height: 1;
-}
-
+.perfil-hoje-adicionar span { transform: translateY(-1px); font-size: 30px; font-weight: 420; line-height: 1; }
 .perfil-hoje-adicionar.ativo {
     color: #fff;
-    background: radial-gradient(circle at 30% 16%, rgba(255, 255, 255, 0.45), transparent 42%), linear-gradient(145deg, rgba(238, 68, 98, 0.91), rgba(210, 24, 59, 0.87));
-    box-shadow: 0 12px 28px rgba(225, 35, 70, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.58), inset 0 -1px 0 rgba(115, 11, 32, 0.12);
+    background:
+        radial-gradient(circle at 30% 16%, rgba(255, 255, 255, 0.45), transparent 42%),
+        linear-gradient(145deg, rgba(238, 68, 98, 0.91), rgba(210, 24, 59, 0.87));
+    box-shadow:
+        0 12px 28px rgba(225, 35, 70, 0.26),
+        inset 0 1px 0 rgba(255, 255, 255, 0.58),
+        inset 0 -1px 0 rgba(115, 11, 32, 0.12);
 }
-
-.perfil-hoje-adicionar:active {
-    transform: scale(0.91);
-}
-
+.perfil-hoje-adicionar:active { transform: scale(0.91); }
 .perfil-foto-area {
     --hoje-reserva-perfil: 0px;
     padding-top: calc(10px + var(--hoje-reserva-perfil));
-    transition: padding-top 260ms cubic-bezier(.22, 1, .36, 1);
+    transition: padding-top 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
-
-.perfil-foto-area:has(.perfil-hoje-balao:not([hidden])) {
-    --hoje-reserva-perfil: 50px;
-}
-
-.perfil-foto-area:has(.perfil-hoje-balao.tem-nota:not([hidden])) {
-    --hoje-reserva-perfil: 70px;
-}
-
-.perfil-foto-area:has(.perfil-hoje-balao:not([hidden])) .perfil-acento--amarelo {
-    top: var(--hoje-reserva-perfil);
-}
-
+.perfil-foto-area:has(.perfil-hoje-balao:not([hidden])) { --hoje-reserva-perfil: 50px; }
+.perfil-foto-area:has(.perfil-hoje-balao.tem-nota:not([hidden])) { --hoje-reserva-perfil: 70px; }
+.perfil-foto-area:has(.perfil-hoje-balao:not([hidden])) .perfil-acento--amarelo { top: var(--hoje-reserva-perfil); }
 .perfil-foto-area:has(.perfil-hoje-balao:not([hidden])) .perfil-acento--roxo {
     top: calc(var(--hoje-reserva-perfil) + 85px);
 }
-
 .perfil-hoje-balao {
     position: absolute;
     z-index: 16;
@@ -317,17 +247,15 @@
     background: linear-gradient(145deg, rgba(255, 255, 255, 0.78), rgba(247, 245, 249, 0.64));
     -webkit-backdrop-filter: blur(20px) saturate(175%);
     backdrop-filter: blur(20px) saturate(175%);
-    box-shadow: 0 10px 26px rgba(21, 18, 25, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.94);
+    box-shadow:
+        0 10px 26px rgba(21, 18, 25, 0.09),
+        inset 0 1px 0 rgba(255, 255, 255, 0.94);
     color: var(--hoje-texto);
     isolation: isolate;
     overflow: visible;
-    animation: hoje-balao-aparecer 300ms cubic-bezier(.22, 1, .36, 1) both;
+    animation: hoje-balao-aparecer 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-
-.perfil-hoje-balao.tem-nota {
-    width: min(218px, calc(100% - 28px));
-}
-
+.perfil-hoje-balao.tem-nota { width: min(218px, calc(100% - 28px)); }
 .perfil-hoje-balao::before,
 .perfil-hoje-balao::after {
     content: "";
@@ -337,7 +265,6 @@
     background: rgba(250, 248, 252, 0.9);
     box-shadow: 0 2px 5px rgba(22, 19, 26, 0.06);
 }
-
 .perfil-hoje-balao::before {
     left: 27px;
     bottom: -10px;
@@ -345,32 +272,15 @@
     height: 8px;
     border: 1px solid rgba(255, 255, 255, 0.76);
 }
-
-.perfil-hoje-balao::after {
-    left: 19px;
-    bottom: -17px;
-    width: 4px;
-    height: 4px;
-}
-
-.perfil-hoje-balao[data-editable="0"] {
-    pointer-events: none;
-}
-
+.perfil-hoje-balao::after { left: 19px; bottom: -17px; width: 4px; height: 4px; }
+.perfil-hoje-balao[data-editable="0"] { pointer-events: none; }
 .perfil-hoje-balao[data-editable="1"] {
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
     transition: transform 140ms ease;
 }
-
-.perfil-hoje-balao[data-editable="1"]:active {
-    transform: scale(0.975);
-}
-
-.perfil-hoje-balao[hidden] {
-    display: none !important;
-}
-
+.perfil-hoje-balao[data-editable="1"]:active { transform: scale(0.975); }
+.perfil-hoje-balao[hidden] { display: none !important; }
 .perfil-hoje-balao [data-hoje-nota] {
     display: -webkit-box;
     margin: 0;
@@ -383,25 +293,12 @@
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
 }
-
-.perfil-hoje-balao [data-hoje-roupa] {
-    margin-top: 4px;
-}
-
+.perfil-hoje-balao [data-hoje-roupa] { margin-top: 4px; }
 /* =========================================================
    EDITOR — ESTRUTURA
    ========================================================= */
-
-html.hoje-editor-aberto,
-body.hoje-editor-aberto {
-    overflow: hidden !important;
-    overscroll-behavior: none !important;
-}
-
-body.hoje-editor-aberto #perfil {
-    overflow: hidden !important;
-}
-
+html.hoje-editor-aberto, body.hoje-editor-aberto { overflow: hidden !important; overscroll-behavior: none !important; }
+body.hoje-editor-aberto #perfil { overflow: hidden !important; }
 .hoje-editor {
     --hoje-arrasto: 0px;
     --hoje-fundo-opacidade: 1;
@@ -413,11 +310,7 @@ body.hoje-editor-aberto #perfil {
     justify-content: center;
     pointer-events: none;
 }
-
-.hoje-editor[hidden] {
-    display: none !important;
-}
-
+.hoje-editor[hidden] { display: none !important; }
 .hoje-editor-fundo {
     position: absolute;
     inset: 0;
@@ -431,7 +324,6 @@ body.hoje-editor-aberto #perfil {
     cursor: default;
     transition: opacity 220ms ease;
 }
-
 .hoje-editor-sheet {
     position: relative;
     z-index: 2;
@@ -442,35 +334,30 @@ body.hoje-editor-aberto #perfil {
     border: 1px solid rgba(255, 255, 255, 0.72);
     border-bottom: 0;
     border-radius: 30px 30px 0 0;
-    background: radial-gradient(circle at 28% 0%, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.6) 30%, transparent 58%), rgba(250, 249, 252, 0.9);
+    background:
+        radial-gradient(circle at 28% 0%, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.6) 30%, transparent 58%),
+        rgba(250, 249, 252, 0.9);
     -webkit-backdrop-filter: blur(26px) saturate(180%);
     backdrop-filter: blur(26px) saturate(180%);
-    box-shadow: 0 -24px 70px rgba(18, 15, 22, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.94);
+    box-shadow:
+        0 -24px 70px rgba(18, 15, 22, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.94);
     overflow: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
     transform: translateY(calc(100% + 36px));
-    transition: transform 260ms cubic-bezier(.22, 1, .36, 1), margin-bottom 180ms ease;
+    transition:
+        transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+        margin-bottom 180ms ease;
     will-change: transform;
 }
-
-.hoje-editor.aberto {
-    pointer-events: auto;
-}
-
-.hoje-editor.aberto .hoje-editor-fundo {
-    opacity: var(--hoje-fundo-opacidade);
-}
-
-.hoje-editor.aberto .hoje-editor-sheet {
-    transform: translateY(var(--hoje-arrasto));
-}
-
+.hoje-editor.aberto { pointer-events: auto; }
+.hoje-editor.aberto .hoje-editor-fundo { opacity: var(--hoje-fundo-opacidade); }
+.hoje-editor.aberto .hoje-editor-sheet { transform: translateY(var(--hoje-arrasto)); }
 .hoje-editor.a-arrastar .hoje-editor-sheet,
 .hoje-editor.a-arrastar .hoje-editor-fundo {
     transition: none !important;
 }
-
 .hoje-editor-barra {
     width: 44px;
     height: 5px;
@@ -480,7 +367,6 @@ body.hoje-editor-aberto #perfil {
     cursor: grab;
     touch-action: pan-y;
 }
-
 .hoje-editor-cabecalho {
     min-height: 45px;
     display: grid;
@@ -489,7 +375,6 @@ body.hoje-editor-aberto #perfil {
     gap: 4px;
     touch-action: pan-y;
 }
-
 .hoje-editor-cabecalho h2 {
     margin: 0;
     color: var(--hoje-preto);
@@ -499,7 +384,6 @@ body.hoje-editor-aberto #perfil {
     letter-spacing: -0.035em;
     text-align: center;
 }
-
 .hoje-editor-fechar,
 .hoje-editor-voltar {
     width: 40px;
@@ -519,48 +403,16 @@ body.hoje-editor-aberto #perfil {
     font-weight: 420;
     line-height: 1;
 }
-
-.hoje-editor-fechar {
-    grid-column: 3;
-    font-size: 23px;
-}
-
-.hoje-editor-voltar {
-    font-size: 28px;
-}
-
-.hoje-editor-voltar[hidden] {
-    display: block !important;
-    visibility: hidden;
-    pointer-events: none;
-}
-
-.hoje-editor-intro {
-    margin: 7px 3px 14px;
-}
-
-.hoje-editor-intro strong {
-    display: block;
-    margin-bottom: 3px;
-    color: #29272d;
-    font-size: 15px;
-    font-weight: 750;
-}
-
-.hoje-editor-intro span {
-    color: var(--hoje-suave);
-    font-size: 12px;
-    line-height: 1.35;
-}
-
+.hoje-editor-fechar { grid-column: 3; font-size: 23px; }
+.hoje-editor-voltar { font-size: 28px; }
+.hoje-editor-voltar[hidden] { display: block !important; visibility: hidden; pointer-events: none; }
+.hoje-editor-intro { margin: 7px 3px 14px; }
+.hoje-editor-intro strong { display: block; margin-bottom: 3px; color: #29272d; font-size: 15px; font-weight: 750; }
+.hoje-editor-intro span { color: var(--hoje-suave); font-size: 12px; line-height: 1.35; }
 /* =========================================================
    EDITOR — NOTA E RESUMO DA ROUPA
    ========================================================= */
-
-.hoje-nota-wrap {
-    position: relative;
-}
-
+.hoje-nota-wrap { position: relative; }
 #hoje-nota-input {
     display: block;
     width: 100%;
@@ -575,26 +427,28 @@ body.hoje-editor-aberto #perfil {
     background: rgba(246, 244, 248, 0.72);
     -webkit-backdrop-filter: blur(13px) saturate(165%);
     backdrop-filter: blur(13px) saturate(165%);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.87), inset 0 -1px 0 rgba(80, 72, 91, 0.04);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.87),
+        inset 0 -1px 0 rgba(80, 72, 91, 0.04);
     color: #222126;
     font: inherit;
     font-size: 16px;
     font-weight: 560;
     line-height: 1.4;
     caret-color: var(--hoje-vermelho);
-    transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
+    transition:
+        border-color 150ms ease,
+        box-shadow 150ms ease,
+        background-color 150ms ease;
 }
-
-#hoje-nota-input::placeholder {
-    color: #a39fa8;
-}
-
+#hoje-nota-input::placeholder { color: #a39fa8; }
 #hoje-nota-input:focus {
     border-color: rgba(255, 255, 255, 0.94);
     background: rgba(255, 255, 255, 0.86);
-    box-shadow: 0 0 0 4px rgba(225, 35, 70, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.96);
+    box-shadow:
+        0 0 0 4px rgba(225, 35, 70, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.96);
 }
-
 .hoje-nota-contador {
     position: absolute;
     right: 13px;
@@ -604,7 +458,6 @@ body.hoje-editor-aberto #perfil {
     font-weight: 700;
     font-variant-numeric: tabular-nums;
 }
-
 .hoje-opcao-roupa {
     width: 100%;
     min-height: 68px;
@@ -612,10 +465,14 @@ body.hoje-editor-aberto #perfil {
     padding: 10px 12px;
     border: 1px solid rgba(255, 255, 255, 0.78);
     border-radius: 20px;
-    background: radial-gradient(circle at 15% 0%, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.48) 36%, transparent 62%), rgba(248, 247, 250, 0.68);
+    background:
+        radial-gradient(circle at 15% 0%, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.48) 36%, transparent 62%),
+        rgba(248, 247, 250, 0.68);
     -webkit-backdrop-filter: blur(16px) saturate(170%);
     backdrop-filter: blur(16px) saturate(170%);
-    box-shadow: 0 7px 18px rgba(25, 21, 30, 0.055), inset 0 1px 0 rgba(255, 255, 255, 0.94);
+    box-shadow:
+        0 7px 18px rgba(25, 21, 30, 0.055),
+        inset 0 1px 0 rgba(255, 255, 255, 0.94);
     color: var(--hoje-texto);
     display: grid;
     grid-template-columns: 50px minmax(0, 1fr) 20px;
@@ -625,27 +482,22 @@ body.hoje-editor-aberto #perfil {
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
 }
-
 .hoje-opcao-roupa-icone {
     width: 50px;
     height: 50px;
     border: 1px solid rgba(255, 255, 255, 0.8);
     border-radius: 16px;
-    background: radial-gradient(circle at 25% 15%, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.43) 45%, transparent 68%), linear-gradient(145deg, rgba(244, 240, 249, 0.88), rgba(226, 221, 235, 0.62));
-    box-shadow: 0 6px 14px rgba(25, 21, 30, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    background:
+        radial-gradient(circle at 25% 15%, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.43) 45%, transparent 68%),
+        linear-gradient(145deg, rgba(244, 240, 249, 0.88), rgba(226, 221, 235, 0.62));
+    box-shadow:
+        0 6px 14px rgba(25, 21, 30, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.95);
     display: grid;
     place-items: center;
 }
-
-.hoje-opcao-garment {
-    width: 37px;
-    height: 37px;
-}
-
-.hoje-opcao-roupa-texto {
-    min-width: 0;
-}
-
+.hoje-opcao-garment { width: 37px; height: 37px; }
+.hoje-opcao-roupa-texto { min-width: 0; }
 .hoje-opcao-roupa-texto strong {
     display: block;
     margin-bottom: 4px;
@@ -653,7 +505,6 @@ body.hoje-editor-aberto #perfil {
     font-size: 13px;
     font-weight: 760;
 }
-
 #hoje-roupa-resumo {
     display: block;
     color: #8b8690;
@@ -664,29 +515,12 @@ body.hoje-editor-aberto #perfil {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-
-.hoje-opcao-roupa.tem-roupa #hoje-roupa-resumo {
-    color: #5f5965;
-    font-weight: 650;
-}
-
-.hoje-opcao-seta {
-    color: #aaa5ae;
-    font-size: 24px;
-    line-height: 1;
-}
-
+.hoje-opcao-roupa.tem-roupa #hoje-roupa-resumo { color: #5f5965; font-weight: 650; }
+.hoje-opcao-seta { color: #aaa5ae; font-size: 24px; line-height: 1; }
 /* =========================================================
    EDITOR — AÇÕES
    ========================================================= */
-
-.hoje-editor-acoes {
-    margin-top: 15px;
-    display: flex;
-    align-items: center;
-    gap: 9px;
-}
-
+.hoje-editor-acoes { margin-top: 15px; display: flex; align-items: center; gap: 9px; }
 .hoje-editor-acoes button {
     min-height: 50px;
     margin: 0;
@@ -697,57 +531,24 @@ body.hoje-editor-aberto #perfil {
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
 }
-
-#hoje-apagar {
-    flex: 0 0 auto;
-    padding: 0 17px;
-    background: rgba(243, 241, 244, 0.8);
-    color: #8a3a48;
-}
-
+#hoje-apagar { flex: 0 0 auto; padding: 0 17px; background: rgba(243, 241, 244, 0.8); color: #8a3a48; }
 #hoje-guardar {
     flex: 1;
     padding: 0 22px;
     background: radial-gradient(circle at 30% 0%, rgba(255, 255, 255, 0.24), transparent 38%), var(--hoje-vermelho);
     color: #fff;
-    box-shadow: 0 9px 22px rgba(225, 35, 70, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.34);
+    box-shadow:
+        0 9px 22px rgba(225, 35, 70, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.34);
 }
-
-.hoje-editor-erro {
-    margin: 10px 3px 0;
-    color: #b12840;
-    font-size: 12px;
-    font-weight: 650;
-    line-height: 1.35;
-}
-
-.hoje-editor.a-guardar {
-    cursor: wait;
-}
-
-.hoje-editor.a-guardar button,
-.hoje-editor.a-guardar textarea {
-    opacity: 0.58;
-}
-
+.hoje-editor-erro { margin: 10px 3px 0; color: #b12840; font-size: 12px; font-weight: 650; line-height: 1.35; }
+.hoje-editor.a-guardar { cursor: wait; }
+.hoje-editor.a-guardar button, .hoje-editor.a-guardar textarea { opacity: 0.58; }
 /* =========================================================
    EDITOR — PEÇAS ESCOLHIDAS
    ========================================================= */
-
-.hoje-roupa-ajuda {
-    margin: 8px 3px 12px;
-    color: var(--hoje-suave);
-    font-size: 12px;
-    line-height: 1.35;
-}
-
-.hoje-roupa-selecionada {
-    margin: 0 0 13px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 7px;
-}
-
+.hoje-roupa-ajuda { margin: 8px 3px 12px; color: var(--hoje-suave); font-size: 12px; line-height: 1.35; }
+.hoje-roupa-selecionada { margin: 0 0 13px; display: flex; flex-wrap: wrap; gap: 7px; }
 .hoje-roupa-selecionada-item {
     min-height: 44px;
     margin: 0;
@@ -766,25 +567,9 @@ body.hoje-editor-aberto #perfil {
     font-weight: 690;
     cursor: pointer;
 }
-
-.hoje-roupa-selecionada-icone {
-    width: 34px;
-    height: 34px;
-    flex: 0 0 34px;
-    display: grid;
-    place-items: center;
-}
-
-.hoje-selecionada-garment {
-    width: 32px;
-    height: 32px;
-}
-
-.hoje-roupa-selecionada-label {
-    font-size: 10px;
-    font-weight: 690;
-}
-
+.hoje-roupa-selecionada-icone { width: 34px; height: 34px; flex: 0 0 34px; display: grid; place-items: center; }
+.hoje-selecionada-garment { width: 32px; height: 32px; }
+.hoje-roupa-selecionada-label { font-size: 10px; font-weight: 690; }
 .hoje-roupa-selecionada-remover {
     width: 19px;
     height: 19px;
@@ -795,17 +580,10 @@ body.hoje-editor-aberto #perfil {
     font-size: 15px;
     line-height: 1;
 }
-
 /* =========================================================
    EDITOR — GRELHA DE PEÇAS
    ========================================================= */
-
-.hoje-pecas-grid {
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 8px 7px;
-}
-
+.hoje-pecas-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px 7px; }
 .hoje-peca {
     position: relative;
     min-width: 0;
@@ -817,7 +595,9 @@ body.hoje-editor-aberto #perfil {
     background: linear-gradient(145deg, rgba(255, 255, 255, 0.78), rgba(242, 239, 245, 0.66));
     -webkit-backdrop-filter: blur(14px) saturate(165%);
     backdrop-filter: blur(14px) saturate(165%);
-    box-shadow: 0 6px 15px rgba(25, 21, 30, 0.055), inset 0 1px 0 rgba(255, 255, 255, 0.94);
+    box-shadow:
+        0 6px 15px rgba(25, 21, 30, 0.055),
+        inset 0 1px 0 rgba(255, 255, 255, 0.94);
     color: #3d3942;
     display: flex;
     flex-direction: column;
@@ -826,23 +606,20 @@ body.hoje-editor-aberto #perfil {
     gap: 5px;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
-    transition: transform 120ms ease, border-color 120ms ease, background-color 120ms ease;
+    transition:
+        transform 120ms ease,
+        border-color 120ms ease,
+        background-color 120ms ease;
 }
-
-.hoje-peca:active {
-    transform: scale(0.96);
-}
-
+.hoje-peca:active { transform: scale(0.96); }
 .hoje-peca.selecionada {
     border-color: rgba(225, 35, 70, 0.22);
     background: linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(255, 240, 244, 0.72));
-    box-shadow: 0 6px 16px rgba(225, 35, 70, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.96);
+    box-shadow:
+        0 6px 16px rgba(225, 35, 70, 0.07),
+        inset 0 1px 0 rgba(255, 255, 255, 0.96);
 }
-
-.hoje-peca.selecionada .hoje-peca-icone {
-    transform: scale(1.04);
-}
-
+.hoje-peca.selecionada .hoje-peca-icone { transform: scale(1.04); }
 .hoje-peca-icone {
     width: 43px;
     height: 43px;
@@ -852,7 +629,6 @@ body.hoje-editor-aberto #perfil {
     line-height: 1;
     filter: drop-shadow(0 3px 4px rgba(35, 30, 40, 0.1));
 }
-
 .hoje-peca-label {
     max-width: 100%;
     font-size: 9px;
@@ -862,45 +638,29 @@ body.hoje-editor-aberto #perfil {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-
-.hoje-pecas-sair {
-    animation: hoje-pecas-sair 120ms ease both;
-    pointer-events: none;
-}
-
-.hoje-pecas-regressar {
-    animation: hoje-pecas-regressar 220ms cubic-bezier(.22, 1, .36, 1) both;
-}
-
+.hoje-pecas-sair { animation: hoje-pecas-sair 120ms ease both; pointer-events: none; }
+.hoje-pecas-regressar { animation: hoje-pecas-regressar 220ms cubic-bezier(0.22, 1, 0.36, 1) both; }
 /* =========================================================
    EDITOR — SELETOR DE COR
    ========================================================= */
-
-#hoje-editor-roupa.a-escolher-cor {
-    min-height: 335px;
-}
-
+#hoje-editor-roupa.a-escolher-cor { min-height: 335px; }
 .hoje-cores-area {
     margin: 3px 0 0;
     padding: 12px;
     border: 1px solid rgba(255, 255, 255, 0.82);
     border-radius: 25px;
-    background: radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.56) 38%, transparent 67%), linear-gradient(145deg, rgba(252, 250, 253, 0.91), rgba(241, 237, 245, 0.76));
+    background:
+        radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.56) 38%, transparent 67%),
+        linear-gradient(145deg, rgba(252, 250, 253, 0.91), rgba(241, 237, 245, 0.76));
     -webkit-backdrop-filter: blur(20px) saturate(180%);
     backdrop-filter: blur(20px) saturate(180%);
-    box-shadow: 0 12px 30px rgba(25, 21, 30, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.96);
+    box-shadow:
+        0 12px 30px rgba(25, 21, 30, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.96);
     overflow: hidden;
 }
-
-.hoje-cores-area.hoje-cores-entrar {
-    animation: hoje-cores-entrar 220ms cubic-bezier(.22, 1, .36, 1) both;
-}
-
-.hoje-cores-area.hoje-cores-sair {
-    animation: hoje-cores-sair 120ms ease both;
-    pointer-events: none;
-}
-
+.hoje-cores-area.hoje-cores-entrar { animation: hoje-cores-entrar 220ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.hoje-cores-area.hoje-cores-sair { animation: hoje-cores-sair 120ms ease both; pointer-events: none; }
 .hoje-cores-cabecalho {
     min-height: 57px;
     margin-bottom: 10px;
@@ -910,7 +670,6 @@ body.hoje-editor-aberto #perfil {
     align-items: center;
     gap: 11px;
 }
-
 .hoje-cores-peca-preview {
     width: 54px;
     height: 54px;
@@ -918,20 +677,14 @@ body.hoje-editor-aberto #perfil {
     border: 1px solid rgba(255, 255, 255, 0.86);
     border-radius: 18px;
     background: rgba(255, 255, 255, 0.62);
-    box-shadow: 0 5px 14px rgba(25, 21, 30, 0.065), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    box-shadow:
+        0 5px 14px rgba(25, 21, 30, 0.065),
+        inset 0 1px 0 rgba(255, 255, 255, 0.98);
     display: grid;
     place-items: center;
 }
-
-.hoje-cores-peca-garment {
-    width: 44px;
-    height: 44px;
-}
-
-.hoje-cores-titulos {
-    min-width: 0;
-}
-
+.hoje-cores-peca-garment { width: 44px; height: 44px; }
+.hoje-cores-titulos { min-width: 0; }
 .hoje-cores-titulos > span {
     display: block;
     margin-bottom: 2px;
@@ -942,7 +695,6 @@ body.hoje-editor-aberto #perfil {
     letter-spacing: 0.08em;
     text-transform: uppercase;
 }
-
 .hoje-cores-area .hoje-cores-titulos h3 {
     margin: 0;
     color: #27242b;
@@ -951,13 +703,7 @@ body.hoje-editor-aberto #perfil {
     line-height: 1.12;
     letter-spacing: -0.025em;
 }
-
-.hoje-cores-grid {
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 8px 6px;
-}
-
+.hoje-cores-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px 6px; }
 .hoje-cor {
     min-width: 0;
     min-height: 72px;
@@ -973,39 +719,37 @@ body.hoje-editor-aberto #perfil {
     gap: 3px;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
-    transition: transform 110ms ease, background-color 110ms ease, border-color 110ms ease, box-shadow 110ms ease;
+    transition:
+        transform 110ms ease,
+        background-color 110ms ease,
+        border-color 110ms ease,
+        box-shadow 110ms ease;
 }
-
-.hoje-cor:active {
-    transform: scale(0.95);
-}
-
+.hoje-cor:active { transform: scale(0.95); }
 .hoje-cor.selecionada {
     border-color: rgba(225, 35, 70, 0.2);
     background: rgba(255, 239, 244, 0.56);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
 }
-
 .hoje-cor-amostra {
     width: 47px;
     height: 47px;
     border: 0;
     border-radius: 14px;
     background: rgba(255, 255, 255, 0.52) !important;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.94), 0 3px 9px rgba(25, 21, 30, 0.05);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.94),
+        0 3px 9px rgba(25, 21, 30, 0.05);
     display: grid;
     place-items: center;
 }
-
 .hoje-cor.selecionada .hoje-cor-amostra {
-    box-shadow: 0 0 0 2px #fff, 0 0 0 4px rgba(225, 35, 70, 0.34), 0 5px 12px rgba(25, 21, 30, 0.07);
+    box-shadow:
+        0 0 0 2px #fff,
+        0 0 0 4px rgba(225, 35, 70, 0.34),
+        0 5px 12px rgba(25, 21, 30, 0.07);
 }
-
-.hoje-cor-garment {
-    width: 39px;
-    height: 39px;
-}
-
+.hoje-cor-garment { width: 39px; height: 39px; }
 .hoje-cor-label {
     max-width: 100%;
     color: #746e78;
@@ -1016,7 +760,6 @@ body.hoje-editor-aberto #perfil {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-
 .hoje-roupa-concluir {
     width: 100%;
     min-height: 49px;
@@ -1026,150 +769,55 @@ body.hoje-editor-aberto #perfil {
     border-radius: 999px;
     background: radial-gradient(circle at 30% 0%, rgba(255, 255, 255, 0.16), transparent 38%), #252329;
     color: #fff;
-    box-shadow: 0 8px 18px rgba(24, 21, 28, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    box-shadow:
+        0 8px 18px rgba(24, 21, 28, 0.14),
+        inset 0 1px 0 rgba(255, 255, 255, 0.18);
     font-size: 13px;
     font-weight: 760;
     cursor: pointer;
 }
-
 /* =========================================================
    ANIMAÇÕES
    ========================================================= */
-
-.hoje-editor-view.hoje-view-entra-direita {
-    animation: hoje-view-direita 220ms cubic-bezier(.22, 1, .36, 1) both;
-}
-
-.hoje-editor-view.hoje-view-entra-esquerda {
-    animation: hoje-view-esquerda 220ms cubic-bezier(.22, 1, .36, 1) both;
-}
-
-@keyframes hoje-mini-menu-entrar {
-    from {
-        opacity: 0;
-        transform: translate3d(0, 7px, 0) scale(0.975);
-    }
-    to {
-        opacity: 1;
-        transform: translate3d(0, 0, 0) scale(1);
-    }
-}
-
+.hoje-editor-view.hoje-view-entra-direita { animation: hoje-view-direita 220ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.hoje-editor-view.hoje-view-entra-esquerda { animation: hoje-view-esquerda 220ms cubic-bezier(0.22, 1, 0.36, 1) both; }
 @keyframes hoje-balao-aparecer {
-    from {
-        opacity: 0;
-        transform: translateY(6px) scale(0.975);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
+    from { opacity: 0; transform: translateY(6px) scale(0.975); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
 }
-
 @keyframes hoje-view-direita {
-    from {
-        opacity: 0;
-        transform: translateX(16px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
+    from { opacity: 0; transform: translateX(16px); }
+    to { opacity: 1; transform: translateX(0); }
 }
-
 @keyframes hoje-view-esquerda {
-    from {
-        opacity: 0;
-        transform: translateX(-16px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
+    from { opacity: 0; transform: translateX(-16px); }
+    to { opacity: 1; transform: translateX(0); }
 }
-
 @keyframes hoje-pecas-sair {
-    to {
-        opacity: 0;
-        transform: translateY(6px) scale(0.985);
-    }
+    to { opacity: 0; transform: translateY(6px) scale(0.985); }
 }
-
 @keyframes hoje-pecas-regressar {
-    from {
-        opacity: 0;
-        transform: translateY(8px) scale(0.985);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
+    from { opacity: 0; transform: translateY(8px) scale(0.985); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
 }
-
 @keyframes hoje-cores-entrar {
-    from {
-        opacity: 0;
-        transform: translateY(10px) scale(0.985);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
+    from { opacity: 0; transform: translateY(10px) scale(0.985); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
 }
-
 @keyframes hoje-cores-sair {
-    to {
-        opacity: 0;
-        transform: translateY(6px) scale(0.99);
-    }
+    to { opacity: 0; transform: translateY(6px) scale(0.99); }
 }
-
 /* =========================================================
    RESPONSIVO
    ========================================================= */
-
 @media (max-width: 380px) {
-    #mini-menu-hoje {
-        top: 3px;
-        left: calc(50% - 60px);
-        min-width: 102px;
-        max-width: 124px;
-        padding: 8px 9px 9px;
-    }
-
-    #mini-menu-hoje .hoje-chip,
-    .perfil-hoje-balao .hoje-chip {
-        width: 28px;
-        height: 28px;
-        min-height: 28px;
-    }
-
-    #mini-menu-hoje .hoje-chip-icone,
-    .perfil-hoje-balao .hoje-chip-icone {
-        width: 28px;
-        height: 28px;
-        min-width: 28px;
-    }
-
-    #mini-menu-hoje .hoje-chips {
-        max-width: 94px;
-    }
-
-    .perfil-hoje-adicionar {
-        right: 12px;
-        bottom: 43px;
-        width: 46px;
-        height: 46px;
-    }
-
-    .perfil-foto-area:has(.perfil-hoje-balao:not([hidden])) {
-        --hoje-reserva-perfil: 46px;
-    }
-
-    .perfil-foto-area:has(.perfil-hoje-balao.tem-nota:not([hidden])) {
-        --hoje-reserva-perfil: 66px;
-    }
-
+    #mini-menu-hoje { top: 10px; left: calc(50% - 52px); min-width: 102px; max-width: 124px; padding: 8px 9px 9px; }
+    #mini-menu-hoje .hoje-chip, .perfil-hoje-balao .hoje-chip { width: 28px; height: 28px; min-height: 28px; }
+    #mini-menu-hoje .hoje-chip-icone, .perfil-hoje-balao .hoje-chip-icone { width: 28px; height: 28px; min-width: 28px; }
+    #mini-menu-hoje .hoje-chips { max-width: 94px; }
+    .perfil-hoje-adicionar { right: 12px; bottom: 43px; width: 46px; height: 46px; }
+    .perfil-foto-area:has(.perfil-hoje-balao:not([hidden])) { --hoje-reserva-perfil: 46px; }
+    .perfil-foto-area:has(.perfil-hoje-balao.tem-nota:not([hidden])) { --hoje-reserva-perfil: 66px; }
     .perfil-hoje-balao {
         top: 14px;
         right: 7px;
@@ -1177,87 +825,27 @@ body.hoje-editor-aberto #perfil {
         max-width: min(204px, calc(100% - 20px));
         padding: 9px 11px 10px;
     }
-
-    .perfil-hoje-balao.tem-nota {
-        width: min(204px, calc(100% - 20px));
-    }
-
-    .hoje-pecas-grid {
-        gap: 7px 5px;
-    }
-
-    .hoje-peca {
-        min-height: 78px;
-        border-radius: 17px;
-    }
-
-    .hoje-peca-icone {
-        width: 40px;
-        height: 40px;
-    }
-
-    .hoje-peca-label {
-        font-size: 8.5px;
-    }
-
-    .hoje-cores-grid {
-        gap: 7px 4px;
-    }
-
-    .hoje-cor {
-        min-height: 68px;
-        padding-inline: 1px;
-    }
-
-    .hoje-cor-amostra {
-        width: 43px;
-        height: 43px;
-    }
-
-    .hoje-cor-garment {
-        width: 36px;
-        height: 36px;
-    }
-
-    .hoje-cor-label {
-        font-size: 7.5px;
-    }
+    .perfil-hoje-balao.tem-nota { width: min(204px, calc(100% - 20px)); }
+    .hoje-pecas-grid { gap: 7px 5px; }
+    .hoje-peca { min-height: 78px; border-radius: 17px; }
+    .hoje-peca-icone { width: 40px; height: 40px; }
+    .hoje-peca-label { font-size: 8.5px; }
+    .hoje-cores-grid { gap: 7px 4px; }
+    .hoje-cor { min-height: 68px; padding-inline: 1px; }
+    .hoje-cor-amostra { width: 43px; height: 43px; }
+    .hoje-cor-garment { width: 36px; height: 36px; }
+    .hoje-cor-label { font-size: 7.5px; }
 }
-
 @media (min-width: 560px) {
-    #mini-menu-hoje {
-        top: 6px;
-        left: calc(50% - 68px);
-        max-width: 146px;
-    }
-
-    .perfil-hoje-balao {
-        top: 20px;
-        right: 22px;
-        max-width: 226px;
-    }
-
-    .perfil-hoje-balao.tem-nota {
-        width: 226px;
-    }
+    #mini-menu-hoje { top: 16px; left: calc(50% - 60px); max-width: 146px; }
+    .perfil-hoje-balao { top: 20px; right: 22px; max-width: 226px; }
+    .perfil-hoje-balao.tem-nota { width: 226px; }
 }
-
 @media (max-height: 700px) {
-    #mini-menu-hoje [data-hoje-nota] {
-        font-size: 10px;
-    }
+    #mini-menu-hoje [data-hoje-nota] { font-size: 10px; }
 }
-
 @media (prefers-reduced-motion: reduce) {
-    #mini-menu-hoje {
-        transition: opacity 120ms linear;
-    }
-
-    #mini-menu-hoje:not([hidden]):not(.a-sair),
-    #mini-menu-hoje.a-visivel {
-        animation: none !important;
-    }
-
+    #mini-menu-hoje { transition: opacity 120ms linear; }
     .perfil-foto-area,
     .perfil-hoje-adicionar,
     .perfil-hoje-balao,
@@ -1266,7 +854,6 @@ body.hoje-editor-aberto #perfil {
     .hoje-peca {
         transition: none !important;
     }
-
     .perfil-hoje-balao,
     .hoje-editor-view,
     .hoje-pecas-sair,

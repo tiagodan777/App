@@ -3,8 +3,12 @@
 {% block title %}{{ membro.nome }} | Margot{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ doc_root }}estilos/profile.css?v=47" data-margot-page-style>
-<link rel="stylesheet" href="{{ doc_root }}estilos/today.css?v=5" data-margot-page-style>
+<link rel="stylesheet" href="{{ doc_root }}estilos/profile.css?v=20260916" data-margot-page-style>
+<link rel="stylesheet" href="{{ doc_root }}estilos/profile-content.css?v=20260916" data-margot-page-style>
+<link rel="stylesheet" href="{{ doc_root }}estilos/profile-lightbox.css?v=20260916" data-margot-page-style>
+<link rel="stylesheet" href="{{ doc_root }}estilos/profile-responsive.css?v=20260916" data-margot-page-style>
+<link rel="stylesheet" href="{{ doc_root }}estilos/profile-actions.css?v=20260916" data-margot-page-style>
+<link rel="stylesheet" href="{{ doc_root }}estilos/today.css?v=20260916" data-margot-page-style>
 {% endblock %}
 
 {% block content %}
@@ -20,36 +24,40 @@
         <clipPath id="perfilIslandClip" clipPathUnits="objectBoundingBox">
             <path
                 id="perfil-ilha-path"
-                d="M 0.075 0.235
-                   C 0.055 0.125, 0.135 0.045, 0.285 0.055
-                   C 0.390 0.010, 0.500 0.070, 0.610 0.050
-                   C 0.750 0.020, 0.875 0.095, 0.915 0.225
-                   C 0.985 0.320, 0.940 0.435, 0.965 0.545
-                   C 0.995 0.675, 0.915 0.775, 0.825 0.835
-                   C 0.755 0.945, 0.620 0.900, 0.515 0.950
-                   C 0.405 0.995, 0.305 0.930, 0.215 0.920
-                   C 0.105 0.910, 0.045 0.820, 0.060 0.700
-                   C 0.015 0.605, 0.070 0.495, 0.045 0.405
-                   C 0.025 0.330, 0.095 0.305, 0.075 0.235
-                   Z"
+                d="
+                    M 0.075 0.235
+                    C 0.055 0.125, 0.135 0.045, 0.285 0.055
+                    C 0.390 0.010, 0.500 0.070, 0.610 0.050
+                    C 0.750 0.020, 0.875 0.095, 0.915 0.225
+                    C 0.985 0.320, 0.940 0.435, 0.965 0.545
+                    C 0.995 0.675, 0.915 0.775, 0.825 0.835
+                    C 0.755 0.945, 0.620 0.900, 0.515 0.950
+                    C 0.405 0.995, 0.305 0.930, 0.215 0.920
+                    C 0.105 0.910, 0.045 0.820, 0.060 0.700
+                    C 0.015 0.605, 0.070 0.495, 0.045 0.405
+                    C 0.025 0.330, 0.095 0.305, 0.075 0.235
+                    Z
+                "
             ></path>
         </clipPath>
 
         <clipPath id="perfilLightboxClip" clipPathUnits="objectBoundingBox">
             <path
                 id="perfil-lightbox-path"
-                d="M 0.075 0.235
-                   C 0.055 0.125, 0.135 0.045, 0.285 0.055
-                   C 0.390 0.010, 0.500 0.070, 0.610 0.050
-                   C 0.750 0.020, 0.875 0.095, 0.915 0.225
-                   C 0.985 0.320, 0.940 0.435, 0.965 0.545
-                   C 0.995 0.675, 0.915 0.775, 0.825 0.835
-                   C 0.755 0.945, 0.620 0.900, 0.515 0.950
-                   C 0.405 0.995, 0.305 0.930, 0.215 0.920
-                   C 0.105 0.910, 0.045 0.820, 0.060 0.700
-                   C 0.015 0.605, 0.070 0.495, 0.045 0.405
-                   C 0.025 0.330, 0.095 0.305, 0.075 0.235
-                   Z"
+                d="
+                    M 0.075 0.235
+                    C 0.055 0.125, 0.135 0.045, 0.285 0.055
+                    C 0.390 0.010, 0.500 0.070, 0.610 0.050
+                    C 0.750 0.020, 0.875 0.095, 0.915 0.225
+                    C 0.985 0.320, 0.940 0.435, 0.965 0.545
+                    C 0.995 0.675, 0.915 0.775, 0.825 0.835
+                    C 0.755 0.945, 0.620 0.900, 0.515 0.950
+                    C 0.405 0.995, 0.305 0.930, 0.215 0.920
+                    C 0.105 0.910, 0.045 0.820, 0.060 0.700
+                    C 0.015 0.605, 0.070 0.495, 0.045 0.405
+                    C 0.025 0.330, 0.095 0.305, 0.075 0.235
+                    Z
+                "
             ></path>
         </clipPath>
     </defs>
@@ -75,6 +83,7 @@
                         <path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3Z"></path>
                         <path d="m13.5 6.5 4 4"></path>
                     </svg>
+
                     <span>Editar</span>
                 </a>
             {% endif %}
@@ -83,7 +92,9 @@
         <section class="perfil-hero">
             <div class="perfil-foto-area">
                 <span class="perfil-acento perfil-acento--amarelo" aria-hidden="true"></span>
+
                 <span class="perfil-acento perfil-acento--roxo" aria-hidden="true"></span>
+
                 <span class="perfil-acento perfil-acento--rosa" aria-hidden="true"></span>
 
                 <section id="perfil-galeria" class="perfil-galeria" aria-label="Fotografias de {{ membro.nome }}" tabindex="0">
@@ -108,12 +119,7 @@
                                 </figure>
                             {% endfor %}
                         {% else %}
-                            <figure
-                                id="perfil-foto-0"
-                                class="perfil-slide perfil-slide--sem-foto"
-                                data-indice="0"
-                                aria-hidden="false"
-                            >
+                            <figure id="perfil-foto-0" class="perfil-slide perfil-slide--sem-foto" data-indice="0" aria-hidden="false">
                                 <img
                                     src="{{ doc_root }}imagens/fotos-perfil/default.webp"
                                     data-default="{{ doc_root }}imagens/fotos-perfil/default.webp"
@@ -143,8 +149,15 @@
 
                         <div class="perfil-contador" aria-hidden="true">
                             <span id="perfil-contador-atual">01</span>
+
                             <span>/</span>
-                            <span>{{ total_slides < 10 ? '0' ~ total_slides : total_slides }}</span>
+
+                            <span>
+                                {{ total_slides < 10
+                                    ? '0' ~ total_slides
+                                    : total_slides
+                                }}
+                            </span>
                         </div>
 
                         <button type="button" id="perfil-anterior" class="perfil-nav perfil-nav--anterior" aria-label="Fotografia anterior">
@@ -173,12 +186,7 @@
                 </section>
 
                 {% if perfil_proprio %}
-                    <button
-                        type="button"
-                        id="perfil-hoje-adicionar"
-                        class="perfil-hoje-adicionar"
-                        aria-label="Adicionar nota ou roupa de hoje"
-                    >
+                    <button type="button" id="perfil-hoje-adicionar" class="perfil-hoje-adicionar" aria-label="Adicionar nota ou roupa de hoje">
                         <span aria-hidden="true">+</span>
                     </button>
                 {% endif %}
@@ -195,8 +203,12 @@
                     {% endif %}
                     hidden
                 >
-                    <div class="perfil-hoje-topo">Hoje</div>
+                    <div class="perfil-hoje-topo">
+                        Hoje
+                    </div>
+
                     <p data-hoje-nota hidden></p>
+
                     <div class="hoje-chips" data-hoje-roupa hidden></div>
                 </div>
             </div>
@@ -211,13 +223,7 @@
 
                     {% if not perfil_proprio %}
                         <div class="perfil-acoes">
-                            <button
-                                type="button"
-                                class="perfil-hey"
-                                id="enviar-hey-perfil"
-                                data-destinatario-id="{{ membro.id }}"
-                                aria-describedby="perfil-hey-estado"
-                            >
+                            <button type="button" class="perfil-hey" id="enviar-hey-perfil" data-destinatario-id="{{ membro.id }}" aria-describedby="perfil-hey-estado">
                                 <span class="perfil-hey-label">Hey</span>
                             </button>
 
@@ -240,25 +246,13 @@
                                     </svg>
                                 </span>
 
-                                <span class="perfil-conectar-label">
-                                    {{ ligados ? 'Desconectar' : 'Conectar' }}
-                                </span>
+                                <span class="perfil-conectar-label">{{ ligados ? 'Desconectar' : 'Conectar' }}</span>
                             </button>
                         </div>
 
-                        <p
-                            id="perfil-hey-estado"
-                            class="sr-only"
-                            aria-live="polite"
-                            aria-atomic="true"
-                        ></p>
+                        <p id="perfil-hey-estado" class="sr-only" aria-live="polite" aria-atomic="true"></p>
 
-                        <p
-                            id="perfil-conectar-estado"
-                            class="sr-only"
-                            aria-live="polite"
-                            aria-atomic="true"
-                        >
+                        <p id="perfil-conectar-estado" class="sr-only" aria-live="polite" aria-atomic="true">
                             {% if ligados %}
                                 Estão ligados na Margot.
                             {% endif %}
@@ -280,6 +274,7 @@
                     <span class="perfil-seccao-icone perfil-seccao-icone--roxo" aria-hidden="true">
                         <svg viewBox="0 0 24 24">
                             <circle cx="12" cy="7.5" r="3.2"></circle>
+
                             <path d="M5.5 19c.7-3.7 3-5.5 6.5-5.5s5.8 1.8 6.5 5.5"></path>
                         </svg>
                     </span>
@@ -307,12 +302,13 @@
                     {% for gosto in membro.gostos %}
                         <li class="perfil-gosto perfil-gosto--{{ (loop.index0 % 6) + 1 }}">
                             <span class="perfil-gosto-numero">
-                                {{ loop.index < 10 ? '0' ~ loop.index : loop.index }}
+                                {{ loop.index < 10
+                                    ? '0' ~ loop.index
+                                    : loop.index
+                                }}
                             </span>
 
-                            <span class="perfil-gosto-nome">
-                                {{ gosto['nome'] }}
-                            </span>
+                            <span class="perfil-gosto-nome">{{ gosto['nome'] }}</span>
                         </li>
                     {% endfor %}
                 </ul>
@@ -333,20 +329,17 @@
 
         <div id="perfil-lightbox-stage" class="perfil-lightbox-stage">
             <div id="perfil-lightbox-media" class="perfil-lightbox-media">
-                <img
-                    id="perfil-lightbox-imagem"
-                    class="perfil-lightbox-imagem"
-                    src=""
-                    alt=""
-                    draggable="false"
-                >
+                <img id="perfil-lightbox-imagem" class="perfil-lightbox-imagem" src="" alt="" draggable="false">
 
                 <span class="perfil-lightbox-moldura" aria-hidden="true"></span>
             </div>
 
             <span class="perfil-tinta perfil-tinta--1" aria-hidden="true"></span>
+
             <span class="perfil-tinta perfil-tinta--2" aria-hidden="true"></span>
+
             <span class="perfil-tinta perfil-tinta--3" aria-hidden="true"></span>
+
             <span class="perfil-tinta perfil-tinta--4" aria-hidden="true"></span>
 
             {% if total_slides > 1 %}
@@ -374,18 +367,20 @@
 
                 <div class="perfil-lightbox-contador" aria-hidden="true">
                     <span id="perfil-lightbox-contador-atual">01</span>
+
                     <span>/</span>
-                    <span>{{ total_slides < 10 ? '0' ~ total_slides : total_slides }}</span>
+
+                    <span>
+                        {{ total_slides < 10
+                            ? '0' ~ total_slides
+                            : total_slides
+                        }}
+                    </span>
                 </div>
             {% endif %}
         </div>
 
-        <button
-            type="button"
-            id="perfil-lightbox-fechar"
-            class="perfil-lightbox-fechar"
-            aria-label="Fechar fotografia"
-        >
+        <button type="button" id="perfil-lightbox-fechar" class="perfil-lightbox-fechar" aria-label="Fechar fotografia">
             <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M6 6l12 12"></path>
                 <path d="M18 6 6 18"></path>
@@ -396,51 +391,23 @@
 
 {% if perfil_proprio %}
 <div id="hoje-editor" class="hoje-editor" aria-hidden="true" hidden>
-    <button
-        type="button"
-        class="hoje-editor-fundo"
-        data-hoje-fechar
-        aria-label="Fechar editor"
-    ></button>
+    <button type="button" class="hoje-editor-fundo" data-hoje-fechar aria-label="Fechar editor"></button>
 
-    <section
-        class="hoje-editor-sheet"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="hoje-editor-titulo"
-    >
+    <section class="hoje-editor-sheet" role="dialog" aria-modal="true" aria-labelledby="hoje-editor-titulo">
         <div class="hoje-editor-barra" aria-hidden="true"></div>
 
         <header class="hoje-editor-cabecalho">
-            <button
-                type="button"
-                id="hoje-editor-voltar"
-                class="hoje-editor-voltar"
-                aria-label="Voltar"
-                hidden
-            >
-                ‹
-            </button>
+            <button type="button" id="hoje-editor-voltar" class="hoje-editor-voltar" aria-label="Voltar" hidden>‹</button>
 
             <h2 id="hoje-editor-titulo">Hoje</h2>
 
-            <button
-                type="button"
-                id="hoje-editor-fechar"
-                class="hoje-editor-fechar"
-                aria-label="Fechar"
-            >
-                ×
-            </button>
+            <button type="button" id="hoje-editor-fechar" class="hoje-editor-fechar" aria-label="Fechar">×</button>
         </header>
 
         <div id="hoje-editor-principal" class="hoje-editor-view">
             <p class="hoje-editor-intro">
                 <strong>O que queres mostrar hoje?</strong>
-                <span>
-                    Uma nota rápida, a roupa que tens vestida, ou as duas coisas.
-                    Desaparece ao fim de 24 horas.
-                </span>
+                <span>Uma nota rápida, a roupa que tens vestida, ou as duas coisas. Desaparece ao fim de 24 horas.</span>
             </p>
 
             <div class="hoje-nota-wrap">
@@ -453,18 +420,10 @@
                     placeholder="Escreve uma nota…"
                 ></textarea>
 
-                <span
-                    id="hoje-nota-contador"
-                    class="hoje-nota-contador"
-                    aria-hidden="true"
-                >0/160</span>
+                <span id="hoje-nota-contador" class="hoje-nota-contador" aria-hidden="true">0/160</span>
             </div>
 
-            <button
-                type="button"
-                id="hoje-abrir-roupa"
-                class="hoje-opcao-roupa"
-            >
+            <button type="button" id="hoje-abrir-roupa" class="hoje-opcao-roupa">
                 <span class="hoje-opcao-roupa-icone" aria-hidden="true"></span>
 
                 <span class="hoje-opcao-roupa-texto">
@@ -475,63 +434,25 @@
                 <span class="hoje-opcao-seta" aria-hidden="true">›</span>
             </button>
 
-            <p
-                id="hoje-editor-erro"
-                class="hoje-editor-erro"
-                role="alert"
-                hidden
-            ></p>
+            <p id="hoje-editor-erro" class="hoje-editor-erro" role="alert" hidden></p>
 
             <div class="hoje-editor-acoes">
-                <button
-                    type="button"
-                    id="hoje-apagar"
-                    hidden
-                >
-                    Apagar
-                </button>
+                <button type="button" id="hoje-apagar" hidden>Apagar</button>
 
-                <button
-                    type="button"
-                    id="hoje-guardar"
-                >
-                    Partilhar por 24 h
-                </button>
+                <button type="button" id="hoje-guardar">Partilhar por 24 h</button>
             </div>
         </div>
 
-        <div
-            id="hoje-editor-roupa"
-            class="hoje-editor-view"
-            hidden
-        >
-            <p class="hoje-roupa-ajuda">
-                Escolhe uma peça e depois a cor. Podes adicionar até 5 peças.
-            </p>
+        <div id="hoje-editor-roupa" class="hoje-editor-view" hidden>
+            <p class="hoje-roupa-ajuda">Escolhe uma peça e depois a cor. Podes adicionar até 5 peças.</p>
 
-            <div
-                id="hoje-roupa-selecionada"
-                class="hoje-roupa-selecionada"
-                hidden
-            ></div>
+            <div id="hoje-roupa-selecionada" class="hoje-roupa-selecionada" hidden></div>
 
-            <div
-                id="hoje-pecas-grid"
-                class="hoje-pecas-grid"
-                aria-label="Peças de roupa"
-            ></div>
+            <div id="hoje-pecas-grid" class="hoje-pecas-grid" aria-label="Peças de roupa"></div>
 
-            <section
-                id="hoje-cores-area"
-                class="hoje-cores-area"
-                hidden
-            >
+            <section id="hoje-cores-area" class="hoje-cores-area" hidden>
                 <header class="hoje-cores-cabecalho">
-                    <span
-                        id="hoje-cores-peca-preview"
-                        class="hoje-cores-peca-preview"
-                        aria-hidden="true"
-                    ></span>
+                    <span id="hoje-cores-peca-preview" class="hoje-cores-peca-preview" aria-hidden="true"></span>
 
                     <div class="hoje-cores-titulos">
                         <span>Cor para</span>
@@ -539,20 +460,10 @@
                     </div>
                 </header>
 
-                <div
-                    id="hoje-cores-grid"
-                    class="hoje-cores-grid"
-                    aria-label="Cores"
-                ></div>
+                <div id="hoje-cores-grid" class="hoje-cores-grid" aria-label="Cores"></div>
             </section>
 
-            <button
-                type="button"
-                id="hoje-roupa-concluir"
-                class="hoje-roupa-concluir"
-            >
-                Concluído
-            </button>
+            <button type="button" id="hoje-roupa-concluir" class="hoje-roupa-concluir">Concluído</button>
         </div>
     </section>
 </div>
@@ -567,6 +478,9 @@ window.webSocketUrl = window.location.protocol === 'https:'
     : 'ws://' + window.location.hostname + ':8080';
 </script>
 
-<script src="{{ doc_root }}js/today.js?v=5"></script>
-<script src="{{ doc_root }}js/profile.js?v=45"></script>
+<script src="{{ doc_root }}js/today-clothes.js?v=20260916"></script>
+<script src="{{ doc_root }}js/today.js?v=20260916"></script>
+<script src="{{ doc_root }}js/profile.js?v=20260916"></script>
+<script src="{{ doc_root }}js/profile-hey.js?v=20260916"></script>
+<script src="{{ doc_root }}js/profile-connection.js?v=20260916"></script>
 {% endblock %}

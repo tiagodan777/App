@@ -4,11 +4,8 @@
     const MAX_FOTOS = 6;
     const LADO_MAXIMO = 2400;
     const config = window.createAccountConfig || {};
-
     window.fotosPerfil = [];
-
     const fotosRemovidas = new Set();
-
     let streamPerfil = null;
     let cameraPerfil = 'user';
     let capturaEmCurso = false;
@@ -16,94 +13,41 @@
 
     function elementos() {
         return {
-            interfaceCamera:
-                document.getElementById(
-                    'perfil-camera-interface'
-                ),
-
-            conteudo:
-                document.getElementById(
-                    'perfil-fotos-conteudo'
-                ),
-
-            video:
-                document.getElementById(
-                    'perfil-camera-video'
-                ),
-
-            canvas:
-                document.getElementById(
-                    'perfil-camera-canvas'
-                ),
-
-            input:
-                document.getElementById(
-                    'perfil-input-fotos'
-                ),
-
-            lista:
-                document.getElementById(
-                    'perfil-lista-fotos'
-                ),
-
-            erro:
-                document.getElementById(
-                    'perfil-fotos-erro'
-                ),
-
-            capturar:
-                document.getElementById(
-                    'perfil-capturar-foto'
-                )
+            interfaceCamera: document.getElementById('perfil-camera-interface'),
+            conteudo: document.getElementById('perfil-fotos-conteudo'),
+            video: document.getElementById('perfil-camera-video'),
+            canvas: document.getElementById('perfil-camera-canvas'),
+            input: document.getElementById('perfil-input-fotos'),
+            lista: document.getElementById('perfil-lista-fotos'),
+            erro: document.getElementById('perfil-fotos-erro'),
+            capturar: document.getElementById('perfil-capturar-foto')
         };
     }
 
     function mostrarErro(mensagem) {
         const erro = elementos().erro;
-
         if (erro) {
-            erro.textContent =
-                mensagem || '';
+            erro.textContent = mensagem || '';
         }
     }
 
     function gerarId() {
-        if (
-            window.crypto &&
-            typeof window.crypto.randomUUID ===
-                'function'
-        ) {
+        if (window.crypto && typeof window.crypto.randomUUID === 'function') {
             return window.crypto.randomUUID();
         }
-
-        return (
-            Date.now().toString(36) +
-            Math.random()
-                .toString(36)
-                .substring(2)
-        );
+        return Date.now().toString(36) + Math.random().toString(36).substring(2);
     }
 
     function nomeSeguro(nome) {
         return String(nome || 'foto.jpg')
             .normalize('NFD')
-            .replace(
-                /[\u0300-\u036f]/g,
-                ''
-            )
-            .replace(
-                /[^a-zA-Z0-9._-]/g,
-                '-'
-            );
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-zA-Z0-9._-]/g, '-');
     }
 
     function eImagem(file) {
         if (!file) return false;
-
-        if (
-            String(file.type || '')
-                .startsWith('image/')
-        ) {
+        if (String(file.type || '').startsWith('image/')) {
             return true;
         }
 
@@ -111,107 +55,51 @@
          * Alguns ficheiros HEIC escolhidos no iPhone
          * chegam ao JavaScript sem MIME.
          */
-        return /\.(jpe?g|png|gif|webp|heic|heif)$/i
-            .test(
-                String(file.name || '')
-            );
+        return /\.(jpe?g|png|gif|webp|heic|heif)$/i.test(String(file.name || ''));
     }
 
     function inicializarExistentes() {
-        const existentes =
-            Array.isArray(
-                config.fotosExistentes
-            )
-                ? config.fotosExistentes
-                : [];
-
-        existentes
-            .slice(0, MAX_FOTOS)
-            .forEach(function (foto) {
-                const dbId =
-                    String(
-                        foto.id || ''
-                    ).trim();
-
-                if (!dbId) return;
-
-                window.fotosPerfil.push({
-                    id:
-                        'existente-' +
-                        dbId,
-
-                    dbId: dbId,
-                    existente: true,
-                    file: null,
-
-                    url:
-                        String(
-                            foto.url || ''
-                        ),
-
-                    fallback:
-                        String(
-                            foto.fallback ||
-                            '/imagens/fotos-perfil/default.webp'
-                        )
-                });
+        const existentes = Array.isArray(config.fotosExistentes) ? config.fotosExistentes : [];
+        existentes.slice(0, MAX_FOTOS).forEach(function (foto) {
+            const dbId = String(foto.id || '').trim();
+            if (!dbId) return;
+            window.fotosPerfil.push({
+                id: 'existente-' + dbId,
+                dbId: dbId,
+                existente: true,
+                file: null,
+                url: String(foto.url || ''),
+                fallback: String(foto.fallback || '/imagens/fotos-perfil/default.webp')
             });
+        });
     }
 
     function libertarUrl(foto) {
-        if (
-            foto &&
-            !foto.existente &&
-            foto.url &&
-            foto.url.startsWith('blob:')
-        ) {
-            URL.revokeObjectURL(
-                foto.url
-            );
+        if (foto && !foto.existente && foto.url && foto.url.startsWith('blob:')) {
+            URL.revokeObjectURL(foto.url);
         }
     }
 
     function adicionarFicheiros(files) {
         mostrarErro('');
-
-        const ficheiros =
-            Array.from(files || []);
-
-        const vagas =
-            MAX_FOTOS -
-            window.fotosPerfil.length;
-
+        const ficheiros = Array.from(files || []);
+        const vagas = MAX_FOTOS - window.fotosPerfil.length;
         let adicionou = false;
         let ignorouTipo = false;
-
-        for (
-            const file of ficheiros.slice(
-                0,
-                Math.max(0, vagas)
-            )
-        ) {
+        for (const file of ficheiros.slice(0, Math.max(0, vagas))) {
             if (!eImagem(file)) {
                 ignorouTipo = true;
                 continue;
             }
-
-            const repetida =
-                window.fotosPerfil.some(
-                    function (foto) {
-                        return (
-                            foto.file &&
-                            foto.file.name ===
-                                file.name &&
-                            foto.file.size ===
-                                file.size &&
-                            foto.file.lastModified ===
-                                file.lastModified
-                        );
-                    }
+            const repetida = window.fotosPerfil.some(function (foto) {
+                return (
+                    foto.file &&
+                    foto.file.name === file.name &&
+                    foto.file.size === file.size &&
+                    foto.file.lastModified === file.lastModified
                 );
-
+            });
             if (repetida) continue;
-
             window.fotosPerfil.push({
                 id: gerarId(),
                 existente: false,
@@ -219,356 +107,154 @@
                 url: URL.createObjectURL(file),
                 fallback: ''
             });
-
             adicionou = true;
         }
-
         if (adicionou) {
             fotosAlteradas = true;
         }
-
-        if (
-            ficheiros.length >
-            vagas
-        ) {
-            mostrarErro(
-                'Podes adicionar no máximo 6 fotografias.'
-            );
+        if (ficheiros.length > vagas) {
+            mostrarErro('Podes adicionar no máximo 6 fotografias.');
         } else if (ignorouTipo) {
-            mostrarErro(
-                'Uma das fotografias não tem um formato suportado.'
-            );
+            mostrarErro('Uma das fotografias não tem um formato suportado.');
         }
-
         renderizar();
     }
 
     function removerFoto(id) {
-        const indice =
-            window.fotosPerfil.findIndex(
-                function (foto) {
-                    return foto.id === id;
-                }
-            );
-
+        const indice = window.fotosPerfil.findIndex(function (foto) {
+            return foto.id === id;
+        });
         if (indice === -1) return;
-
-        const foto =
-            window.fotosPerfil[indice];
-
+        const foto = window.fotosPerfil[indice];
         if (foto.existente) {
-            fotosRemovidas.add(
-                foto.dbId
-            );
+            fotosRemovidas.add(foto.dbId);
         }
-
         libertarUrl(foto);
-
-        window.fotosPerfil.splice(
-            indice,
-            1
-        );
-
+        window.fotosPerfil.splice(indice, 1);
         fotosAlteradas = true;
-
         mostrarErro('');
         renderizar();
     }
 
     function tornarPrincipal(id) {
-        const indice =
-            window.fotosPerfil.findIndex(
-                function (foto) {
-                    return foto.id === id;
-                }
-            );
-
+        const indice = window.fotosPerfil.findIndex(function (foto) {
+            return foto.id === id;
+        });
         if (indice <= 0) return;
-
-        window.fotosPerfil.unshift(
-            window.fotosPerfil.splice(
-                indice,
-                1
-            )[0]
-        );
-
+        window.fotosPerfil.unshift(window.fotosPerfil.splice(indice, 1)[0]);
         fotosAlteradas = true;
-
         renderizar();
     }
 
     function criarPlaceholder() {
-        const botao =
-            document.createElement(
-                'button'
-            );
-
+        const botao = document.createElement('button');
         botao.type = 'button';
-        botao.className =
-            'perfil-foto-placeholder';
-
+        botao.className = 'perfil-foto-placeholder';
         botao.innerHTML =
             '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">' +
-                '<line x1="12" y1="5" x2="12" y2="19"></line>' +
-                '<line x1="5" y1="12" x2="19" y2="12"></line>' +
+            '<line x1="12" y1="5" x2="12" y2="19"></line>' +
+            '<line x1="5" y1="12" x2="19" y2="12"></line>' +
             '</svg>' +
             '<span>Adicionar</span>';
-
         return botao;
     }
 
-    function criarCartao(
-        foto,
-        indice
-    ) {
-        const cartao =
-            document.createElement(
-                'article'
-            );
-
-        cartao.className =
-            'perfil-foto-cartao' +
-            (
-                indice === 0
-                    ? ' principal'
-                    : ''
-            );
-
+    function criarCartao(foto, indice) {
+        const cartao = document.createElement('article');
+        cartao.className = 'perfil-foto-cartao' + (indice === 0 ? ' principal' : '');
         cartao.dataset.id = foto.id;
-
-        const imagem =
-            document.createElement(
-                'img'
-            );
-
+        const imagem = document.createElement('img');
         imagem.src = foto.url;
-
-        imagem.alt =
-            indice === 0
-                ? 'Foto principal'
-                : 'Foto de perfil ' +
-                  (indice + 1);
-
+        imagem.alt = indice === 0 ? 'Foto principal' : 'Foto de perfil ' + (indice + 1);
         imagem.onerror = function () {
             this.onerror = null;
-
-            this.src =
-                foto.fallback ||
-                '/imagens/fotos-perfil/default.webp';
+            this.src = foto.fallback || '/imagens/fotos-perfil/default.webp';
         };
-
-        const remover =
-            document.createElement(
-                'button'
-            );
-
+        const remover = document.createElement('button');
         remover.type = 'button';
-        remover.className =
-            'perfil-remover-foto';
-
+        remover.className = 'perfil-remover-foto';
         remover.dataset.id = foto.id;
-
-        remover.setAttribute(
-            'aria-label',
-            'Remover fotografia'
-        );
-
+        remover.setAttribute('aria-label', 'Remover fotografia');
         remover.innerHTML =
             '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">' +
-                '<line x1="18" y1="6" x2="6" y2="18"></line>' +
-                '<line x1="6" y1="6" x2="18" y2="18"></line>' +
+            '<line x1="18" y1="6" x2="6" y2="18"></line>' +
+            '<line x1="6" y1="6" x2="18" y2="18"></line>' +
             '</svg>';
-
-        cartao.append(
-            imagem,
-            remover
-        );
-
+        cartao.append(imagem, remover);
         if (indice === 0) {
-            const etiqueta =
-                document.createElement(
-                    'span'
-                );
-
-            etiqueta.className =
-                'perfil-foto-principal';
-
-            etiqueta.textContent =
-                'Principal';
-
-            cartao.appendChild(
-                etiqueta
-            );
+            const etiqueta = document.createElement('span');
+            etiqueta.className = 'perfil-foto-principal';
+            etiqueta.textContent = 'Principal';
+            cartao.appendChild(etiqueta);
         } else {
-            const principal =
-                document.createElement(
-                    'button'
-                );
-
-            principal.type =
-                'button';
-
-            principal.className =
-                'perfil-definir-principal';
-
-            principal.dataset.id =
-                foto.id;
-
-            principal.textContent =
-                'Tornar principal';
-
-            cartao.appendChild(
-                principal
-            );
+            const principal = document.createElement('button');
+            principal.type = 'button';
+            principal.className = 'perfil-definir-principal';
+            principal.dataset.id = foto.id;
+            principal.textContent = 'Tornar principal';
+            cartao.appendChild(principal);
         }
-
         return cartao;
     }
 
     function renderizar() {
-        const lista =
-            elementos().lista;
-
+        const lista = elementos().lista;
         if (!lista) return;
-
         lista.innerHTML = '';
-
-        window.fotosPerfil.forEach(
-            function (
-                foto,
-                indice
-            ) {
-                lista.appendChild(
-                    criarCartao(
-                        foto,
-                        indice
-                    )
-                );
-            }
-        );
-
-        for (
-            let indice =
-                window.fotosPerfil.length;
-
-            indice < MAX_FOTOS;
-
-            indice++
-        ) {
-            lista.appendChild(
-                criarPlaceholder()
-            );
+        window.fotosPerfil.forEach(function (foto, indice) {
+            lista.appendChild(criarCartao(foto, indice));
+        });
+        for (let indice = window.fotosPerfil.length; indice < MAX_FOTOS; indice++) {
+            lista.appendChild(criarPlaceholder());
         }
     }
 
     function aplicarEspelho(video) {
-        const transformacao =
-            cameraPerfil === 'user'
-                ? 'scaleX(-1)'
-                : 'none';
-
-        video.style.transform =
-            transformacao;
-
-        video.style.webkitTransform =
-            transformacao;
+        const transformacao = cameraPerfil === 'user' ? 'scaleX(-1)' : 'none';
+        video.style.transform = transformacao;
+        video.style.webkitTransform = transformacao;
     }
 
     async function iniciarCamera() {
         const ui = elementos();
-
-        if (
-            !ui.interfaceCamera ||
-            !ui.video ||
-            !navigator.mediaDevices ||
-            !navigator.mediaDevices
-                .getUserMedia
-        ) {
-            mostrarErro(
-                'A câmara não está disponível neste dispositivo.'
-            );
-
+        if (!ui.interfaceCamera || !ui.video || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            mostrarErro('A câmara não está disponível neste dispositivo.');
             return;
         }
-
         pararCamera();
-
         try {
-            streamPerfil =
-                await navigator
-                    .mediaDevices
-                    .getUserMedia({
-                        video: {
-                            facingMode: {
-                                ideal:
-                                    cameraPerfil
-                            },
-
-                            width: {
-                                ideal: 1920
-                            },
-
-                            height: {
-                                ideal: 1440
-                            },
-
-                            aspectRatio: {
-                                ideal: 4 / 3
-                            }
-                        },
-
-                        audio: false
-                    });
-
-            ui.video.srcObject =
-                streamPerfil;
-
-            aplicarEspelho(
-                ui.video
-            );
-
-            ui.interfaceCamera
-                .style
-                .display = 'flex';
-
+            streamPerfil = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: { ideal: cameraPerfil },
+                    width: { ideal: 1920 },
+                    height: { ideal: 1440 },
+                    aspectRatio: { ideal: 4 / 3 }
+                },
+                audio: false
+            });
+            ui.video.srcObject = streamPerfil;
+            aplicarEspelho(ui.video);
+            ui.interfaceCamera.style.display = 'flex';
             if (ui.conteudo) {
-                ui.conteudo
-                    .style
-                    .display = 'none';
+                ui.conteudo.style.display = 'none';
             }
-
-            document.body.classList.add(
-                'perfil-camera-aberta'
-            );
-
+            document.body.classList.add('perfil-camera-aberta');
             await ui.video.play();
         } catch (erro) {
             console.error(erro);
-
-            mostrarErro(
-                'Não foi possível abrir a câmara. Verifica as permissões.'
-            );
-
+            mostrarErro('Não foi possível abrir a câmara. Verifica as permissões.');
             fecharCamera();
         }
     }
 
     function pararCamera() {
         if (streamPerfil) {
-            streamPerfil
-                .getTracks()
-                .forEach(function (track) {
-                    track.stop();
-                });
+            streamPerfil.getTracks().forEach(function (track) {
+                track.stop();
+            });
         }
-
         streamPerfil = null;
-
-        const video =
-            document.getElementById(
-                'perfil-camera-video'
-            );
-
+        const video = document.getElementById('perfil-camera-video');
         if (video) {
             video.srcObject = null;
         }
@@ -576,389 +262,148 @@
 
     function fecharCamera() {
         const ui = elementos();
-
         pararCamera();
-
         if (ui.interfaceCamera) {
-            ui.interfaceCamera
-                .style
-                .display = 'none';
+            ui.interfaceCamera.style.display = 'none';
         }
-
         if (ui.conteudo) {
-            ui.conteudo
-                .style
-                .display = 'flex';
+            ui.conteudo.style.display = 'flex';
         }
-
-        document.body.classList.remove(
-            'perfil-camera-aberta'
-        );
+        document.body.classList.remove('perfil-camera-aberta');
     }
 
-    function desenharCaptura(
-        video,
-        canvas
-    ) {
-        const larguraOrigem =
-            video.videoWidth;
-
-        const alturaOrigem =
-            video.videoHeight;
-
-        const escala = Math.min(
-            1,
-            LADO_MAXIMO /
-            Math.max(
-                larguraOrigem,
-                alturaOrigem
-            )
-        );
-
-        const largura = Math.max(
-            1,
-            Math.round(
-                larguraOrigem *
-                escala
-            )
-        );
-
-        const altura = Math.max(
-            1,
-            Math.round(
-                alturaOrigem *
-                escala
-            )
-        );
-
+    function desenharCaptura(video, canvas) {
+        const larguraOrigem = video.videoWidth;
+        const alturaOrigem = video.videoHeight;
+        const escala = Math.min(1, LADO_MAXIMO / Math.max(larguraOrigem, alturaOrigem));
+        const largura = Math.max(1, Math.round(larguraOrigem * escala));
+        const altura = Math.max(1, Math.round(alturaOrigem * escala));
         canvas.width = largura;
         canvas.height = altura;
-
-        const contexto =
-            canvas.getContext('2d');
-
+        const contexto = canvas.getContext('2d');
         if (!contexto) {
-            throw new Error(
-                'Não foi possível preparar a fotografia.'
-            );
+            throw new Error('Não foi possível preparar a fotografia.');
         }
-
         contexto.save();
-
         if (cameraPerfil === 'user') {
-            contexto.translate(
-                largura,
-                0
-            );
-
-            contexto.scale(
-                -1,
-                1
-            );
+            contexto.translate(largura, 0);
+            contexto.scale(-1, 1);
         }
-
-        contexto.drawImage(
-            video,
-            0,
-            0,
-            larguraOrigem,
-            alturaOrigem,
-            0,
-            0,
-            largura,
-            altura
-        );
-
+        contexto.drawImage(video, 0, 0, larguraOrigem, alturaOrigem, 0, 0, largura, altura);
         contexto.restore();
-
         return canvas;
     }
 
     function canvasParaBlob(canvas) {
-        return new Promise(
-            function (
-                resolve,
-                reject
-            ) {
-                canvas.toBlob(
-                    function (blob) {
-                        if (blob) {
-                            resolve(blob);
-                        } else {
-                            reject(
-                                new Error(
-                                    'Não foi possível gerar a fotografia.'
-                                )
-                            );
-                        }
-                    },
-                    'image/jpeg',
-                    0.92
-                );
-            }
-        );
+        return new Promise(function (resolve, reject) {
+            canvas.toBlob(
+                function (blob) {
+                    if (blob) {
+                        resolve(blob);
+                    } else {
+                        reject(new Error('Não foi possível gerar a fotografia.'));
+                    }
+                },
+                'image/jpeg',
+                0.92
+            );
+        });
     }
 
     async function capturarFoto() {
         const ui = elementos();
-
-        if (
-            capturaEmCurso ||
-            !ui.video ||
-            !ui.canvas ||
-            !ui.capturar
-        ) {
+        if (capturaEmCurso || !ui.video || !ui.canvas || !ui.capturar) {
             return;
         }
-
-        if (
-            ui.video.readyState < 2 ||
-            !ui.video.videoWidth ||
-            !ui.video.videoHeight
-        ) {
-            mostrarErro(
-                'A câmara ainda está a iniciar.'
-            );
-
+        if (ui.video.readyState < 2 || !ui.video.videoWidth || !ui.video.videoHeight) {
+            mostrarErro('A câmara ainda está a iniciar.');
             return;
         }
-
-        if (
-            window.fotosPerfil.length >=
-            MAX_FOTOS
-        ) {
-            mostrarErro(
-                'Já adicionaste o máximo de 6 fotografias.'
-            );
-
+        if (window.fotosPerfil.length >= MAX_FOTOS) {
+            mostrarErro('Já adicionaste o máximo de 6 fotografias.');
             fecharCamera();
-
             return;
         }
-
         capturaEmCurso = true;
-
-        ui.capturar.classList.add(
-            'a-capturar'
-        );
-
+        ui.capturar.classList.add('a-capturar');
         try {
-            const blob =
-                await canvasParaBlob(
-                    desenharCaptura(
-                        ui.video,
-                        ui.canvas
-                    )
-                );
-
+            const blob = await canvasParaBlob(desenharCaptura(ui.video, ui.canvas));
             const agora = Date.now();
-
             adicionarFicheiros([
-                new File(
-                    [blob],
-                    'foto-perfil-' +
-                    agora +
-                    '.jpg',
-                    {
-                        type: 'image/jpeg',
-                        lastModified: agora
-                    }
-                )
+                new File([blob], 'foto-perfil-' + agora + '.jpg', { type: 'image/jpeg', lastModified: agora })
             ]);
-
             fecharCamera();
         } catch (erro) {
             console.error(erro);
-
-            mostrarErro(
-                'Não foi possível tirar a fotografia.'
-            );
+            mostrarErro('Não foi possível tirar a fotografia.');
         } finally {
             capturaEmCurso = false;
-
-            ui.capturar.classList.remove(
-                'a-capturar'
-            );
+            ui.capturar.classList.remove('a-capturar');
         }
     }
 
     function abrirGaleria() {
-        const input =
-            elementos().input;
-
+        const input = elementos().input;
         if (input) input.click();
     }
-
-    window.inicializarEtapaFotos =
-        renderizar;
-
-    window.pararCameraPerfil =
-        fecharCamera;
-
-    window.validarFotosPerfil =
-        function () {
-            mostrarErro('');
-
-            return true;
-        };
-
-    window.adicionarFotosPerfilAoFormData =
-        function (formData) {
-            let indiceNova = 0;
-
+    window.inicializarEtapaFotos = renderizar;
+    window.pararCameraPerfil = fecharCamera;
+    window.validarFotosPerfil = function () {
+        mostrarErro('');
+        return true;
+    };
+    window.adicionarFotosPerfilAoFormData = function (formData) {
+        let indiceNova = 0;
+        formData.append('fotos_alteradas', fotosAlteradas ? '1' : '0');
+        window.fotosPerfil.forEach(function (foto, indice) {
+            if (foto.existente) {
+                formData.append('ordem_fotos[]', 'existente:' + foto.dbId);
+                return;
+            }
+            if (!foto.file) return;
             formData.append(
-                'fotos_alteradas',
-                fotosAlteradas
-                    ? '1'
-                    : '0'
+                'imagens[]',
+                foto.file,
+                nomeSeguro(foto.file.name || 'foto-perfil-' + (indice + 1) + '.jpg')
             );
-
-            window.fotosPerfil.forEach(
-                function (
-                    foto,
-                    indice
-                ) {
-                    if (foto.existente) {
-                        formData.append(
-                            'ordem_fotos[]',
-                            'existente:' +
-                            foto.dbId
-                        );
-
-                        return;
-                    }
-
-                    if (!foto.file) return;
-
-                    formData.append(
-                        'imagens[]',
-                        foto.file,
-                        nomeSeguro(
-                            foto.file.name ||
-                            (
-                                'foto-perfil-' +
-                                (indice + 1) +
-                                '.jpg'
-                            )
-                        )
-                    );
-
-                    formData.append(
-                        'ordem_fotos[]',
-                        'nova:' +
-                        indiceNova
-                    );
-
-                    indiceNova++;
-                }
-            );
-
-            fotosRemovidas.forEach(
-                function (id) {
-                    formData.append(
-                        'fotos_remover[]',
-                        id
-                    );
-                }
-            );
-        };
-
+            formData.append('ordem_fotos[]', 'nova:' + indiceNova);
+            indiceNova++;
+        });
+        fotosRemovidas.forEach(function (id) {
+            formData.append('fotos_remover[]', id);
+        });
+    };
     inicializarExistentes();
-
-    $(document).on(
-        'click',
-        '#perfil-tirar-foto',
-        iniciarCamera
-    );
-
+    $(document).on('click', '#perfil-tirar-foto', iniciarCamera);
     $(document).on(
         'click',
         '#perfil-escolher-fotos, #perfil-abrir-galeria-camera, .perfil-foto-placeholder',
         abrirGaleria
     );
-
-    $(document).on(
-        'change',
-        '#perfil-input-fotos',
-        function () {
-            if (
-                !this.files ||
-                !this.files.length
-            ) {
-                return;
-            }
-
-            adicionarFicheiros(
-                this.files
-            );
-
-            this.value = '';
-
-            fecharCamera();
+    $(document).on('change', '#perfil-input-fotos', function () {
+        if (!this.files || !this.files.length) {
+            return;
         }
-    );
-
-    $(document).on(
-        'click',
-        '.perfil-remover-foto',
-        function (evento) {
-            evento.stopPropagation();
-
-            removerFoto(
-                String(
-                    $(this).data('id')
-                )
-            );
-        }
-    );
-
-    $(document).on(
-        'click',
-        '.perfil-definir-principal',
-        function (evento) {
-            evento.stopPropagation();
-
-            tornarPrincipal(
-                String(
-                    $(this).data('id')
-                )
-            );
-        }
-    );
-
-    $(document).on(
-        'click',
-        '#perfil-fechar-camera',
-        fecharCamera
-    );
-
-    $(document).on(
-        'click',
-        '#perfil-capturar-foto',
-        capturarFoto
-    );
-
-    $(document).on(
-        'click',
-        '#perfil-trocar-camera',
-        function () {
-            cameraPerfil =
-                cameraPerfil === 'user'
-                    ? 'environment'
-                    : 'user';
-
-            iniciarCamera();
-        }
-    );
-
-    window.addEventListener(
-        'pagehide',
-        function () {
-            pararCamera();
-
-            window.fotosPerfil.forEach(
-                libertarUrl
-            );
-        }
-    );
+        adicionarFicheiros(this.files);
+        this.value = '';
+        fecharCamera();
+    });
+    $(document).on('click', '.perfil-remover-foto', function (evento) {
+        evento.stopPropagation();
+        removerFoto(String($(this).data('id')));
+    });
+    $(document).on('click', '.perfil-definir-principal', function (evento) {
+        evento.stopPropagation();
+        tornarPrincipal(String($(this).data('id')));
+    });
+    $(document).on('click', '#perfil-fechar-camera', fecharCamera);
+    $(document).on('click', '#perfil-capturar-foto', capturarFoto);
+    $(document).on('click', '#perfil-trocar-camera', function () {
+        cameraPerfil = cameraPerfil === 'user' ? 'environment' : 'user';
+        iniciarCamera();
+    });
+    window.addEventListener('pagehide', function () {
+        pararCamera();
+        window.fotosPerfil.forEach(libertarUrl);
+    });
 })(window, document, jQuery);

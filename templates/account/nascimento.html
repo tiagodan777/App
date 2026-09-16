@@ -1,0 +1,54 @@
+<div id="nascimento">
+    <h1>Quando nasceste?</h1>
+
+    <nav class="campos-nascimento">
+        <div>
+            <label for="dia">Dia</label>
+
+            <input type="number" name="dia" id="dia" min="1" max="31" required>
+        </div>
+
+        <div>
+            <label for="mes">Mês</label>
+
+            <select id="mes" name="mes" required>
+                <option value="01">Janeiro</option>
+                <option value="02">Fevereiro</option>
+                <option value="03">Março</option>
+                <option value="04">Abril</option>
+                <option value="05">Maio</option>
+                <option value="06">Junho</option>
+                <option value="07">Julho</option>
+                <option value="08">Agosto</option>
+                <option value="09">Setembro</option>
+                <option value="10">Outubro</option>
+                <option value="11">Novembro</option>
+                <option value="12">Dezembro</option>
+            </select>
+        </div>
+
+        <div>
+            <label for="ano">Ano</label>
+
+            <input type="number" name="ano" id="ano" min="1900" max="{{ ano_atual }}" required>
+        </div>
+    </nav>
+
+    <nav class="anterior-proximo">
+        {% if modo_edicao %}
+            <a data-etapa="#editar-perfil" data-sem-validar="true" class="anterior">
+                Voltar à lista
+            </a>
+
+            <button type="submit" class="proximo guardar-secao">Guardar e sair</button>
+        {% else %}
+            <a data-etapa="#nome" class="anterior">
+                Anterior
+            </a>
+
+            <a data-etapa="#sexo" class="proximo">
+                Próximo
+            </a>
+        {% endif %}
+    </nav>
+</div>

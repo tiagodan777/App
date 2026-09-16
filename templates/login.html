@@ -2,73 +2,35 @@
 <html lang="pt-PT">
 <head>
     <meta charset="UTF-8">
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1, viewport-fit=cover"
-    >
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#f7f7f8">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta
-        name="apple-mobile-web-app-status-bar-style"
-        content="black-translucent"
-    >
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="csrf-token" content="{{ csrf_token }}">
 
     <title>Entrar | Margot</title>
 
-    <link
-        rel="stylesheet"
-        href="{{ doc_root }}estilos/style.css"
-    >
+    <link rel="stylesheet" href="{{ doc_root }}estilos/style.css?v=20260916">
 
-    <link
-        rel="stylesheet"
-        href="{{ doc_root }}estilos/login.css?v=3"
-    >
+    <link rel="stylesheet" href="{{ doc_root }}estilos/login.css?v=20260916">
 </head>
 
 <body>
     <main>
-        <form
-            action="{{ doc_root }}login"
-            method="post"
-        >
-            <input
-                type="hidden"
-                name="_csrf"
-                value="{{ csrf_token|e('html_attr') }}"
-            >
+        <form action="{{ doc_root }}login" method="post">
+            <input type="hidden" name="_csrf" value="{{ csrf_token|e('html_attr') }}">
 
             <h1>Entrar</h1>
 
             {% if sucesso == 'confirma-email' %}
-                <p
-                    class="login-mensagem login-mensagem-sucesso"
-                    role="status"
-                    aria-live="polite"
-                >
-                    A tua conta foi criada. Enviámos-te uma ligação para confirmares o email.
-                </p>
+                <p class="login-mensagem login-mensagem-sucesso" role="status" aria-live="polite">A tua conta foi criada. Enviámos-te uma ligação para confirmares o email.</p>
 
             {% elseif sucesso == 'conta-criada' %}
-                <p
-                    class="login-mensagem login-mensagem-sucesso"
-                    role="status"
-                    aria-live="polite"
-                >
-                    A tua conta foi criada. Já podes iniciar sessão.
-                </p>
+                <p class="login-mensagem login-mensagem-sucesso" role="status" aria-live="polite">A tua conta foi criada. Já podes iniciar sessão.</p>
             {% endif %}
 
             {% if mensagem_erro %}
-                <p
-                    id="login-erro"
-                    class="login-mensagem login-mensagem-erro"
-                    role="alert"
-                    aria-live="assertive"
-                >
-                    {{ mensagem_erro|e }}
-                </p>
+                <p id="login-erro" class="login-mensagem login-mensagem-erro" role="alert" aria-live="assertive">{{ mensagem_erro|e }}</p>
             {% endif %}
 
             {% if email_pendente %}
@@ -80,9 +42,7 @@
             {% endif %}
 
             <p>
-                <label for="utilizador">
-                    Email ou Nº de telefone
-                </label>
+                <label for="utilizador">Email ou Nº de telefone</label>
 
                 <input
                     type="text"
@@ -102,9 +62,7 @@
             </p>
 
             <p>
-                <label for="palavra-passe">
-                    Palavra-passe
-                </label>
+                <label for="palavra-passe">Palavra-passe</label>
 
                 <input
                     type="password"
@@ -120,42 +78,23 @@
             </p>
 
             <p class="em-linha">
-                <input
-                    type="checkbox"
-                    name="ver_password"
-                    id="ver-password"
-                >
+                <input type="checkbox" name="ver_password" id="ver-password">
 
-                <label for="ver-password">
-                    Mostrar palavra-passe
-                </label>
+                <label for="ver-password">Mostrar palavra-passe</label>
             </p>
 
             <p class="em-linha">
-                <input
-                    type="checkbox"
-                    name="manter_sessao"
-                    id="manter-sessao"
-                    checked
-                >
+                <input type="checkbox" name="manter_sessao" id="manter-sessao" checked>
 
-                <label for="manter-sessao">
-                    Manter sessão iniciada
-                </label>
+                <label for="manter-sessao">Manter sessão iniciada</label>
             </p>
 
-            <input
-                type="submit"
-                value="Entrar"
-            >
+            <input type="submit" value="Entrar">
         </form>
     </main>
 
     <aside>
-        <a
-            href="{{ doc_root }}password-lost"
-            id="esqueci-palavra-passe"
-        >
+        <a href="{{ doc_root }}password-lost" id="esqueci-palavra-passe">
             Esqueceste-te da password?
         </a>
 
@@ -165,17 +104,13 @@
             </a>
         {% endif %}
 
-        <a
-            href="{{ doc_root }}create-account"
-            id="registar"
-            data-margot-sem-animacao
-        >
+        <a href="{{ doc_root }}create-account" id="registar" data-margot-sem-animacao>
             Ainda não te registaste?
             <span>Cria uma conta</span>
         </a>
     </aside>
 
-    <script src="{{ doc_root }}js/login.js?v=2"></script>
-    <script src="{{ doc_root }}js/navegacao-documento.js?v=2"></script>
+    <script src="{{ doc_root }}js/login.js?v=20260916"></script>
+    <script src="{{ doc_root }}js/navegacao-documento.js?v=20260916"></script>
 </body>
 </html>

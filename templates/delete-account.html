@@ -8,8 +8,8 @@
     <meta name="robots" content="noindex,nofollow">
     <meta name="referrer" content="no-referrer">
     <title>Eliminar conta | Margot</title>
-    <link rel="stylesheet" href="{{ doc_root }}estilos/style.css?v=11">
-    <link rel="stylesheet" href="{{ doc_root }}estilos/profile-delete.css?v=2">
+    <link rel="stylesheet" href="{{ doc_root }}estilos/style.css?v=20260916">
+    <link rel="stylesheet" href="{{ doc_root }}estilos/profile-delete.css?v=20260916">
 </head>
 <body>
     <main id="profile-delete">
@@ -17,9 +17,7 @@
             {% if eliminado %}
                 <h1>Conta eliminada</h1>
                 <section class="dados" id="dados-apagar">
-                    <p role="status" aria-live="polite">
-                        A tua conta Margot e os dados associados foram eliminados definitivamente.
-                    </p>
+                    <p role="status" aria-live="polite">A tua conta Margot e os dados associados foram eliminados definitivamente.</p>
                     <p>Foi enviado um email a confirmar a eliminação.</p>
                 </section>
                 <section class="opcoes" id="opcoes-apagar">
@@ -34,9 +32,7 @@
                     <p>O perfil, fotografias, mensagens, ficheiros, localização, preferências e acessos serão eliminados.</p>
                     <p><strong>Esta ação não pode ser anulada.</strong></p>
                     {% if mensagem_erro %}
-                        <p id="delete-account-erro" role="alert" aria-live="assertive">
-                            {{ mensagem_erro|e }}
-                        </p>
+                        <p id="delete-account-erro" role="alert" aria-live="assertive">{{ mensagem_erro|e }}</p>
                     {% endif %}
                 </section>
                 <section class="opcoes" id="opcoes-apagar">
@@ -58,9 +54,7 @@
             {% else %}
                 <h1>Ligação inválida</h1>
                 <section class="dados" id="dados-apagar">
-                    <p class="mensagem-erro" role="alert">
-                        Esta ligação expirou, já foi utilizada ou não é válida.
-                    </p>
+                    <p class="mensagem-erro" role="alert">Esta ligação expirou, já foi utilizada ou não é válida.</p>
                     <p>A tua conta não foi eliminada.</p>
                 </section>
                 <section class="opcoes" id="opcoes-apagar">
@@ -73,6 +67,6 @@
             {% endif %}
         </section>
     </main>
-    <script src="{{ doc_root }}js/navegacao-documento.js?v=1"></script>
+    <script src="{{ doc_root }}js/navegacao-documento.js?v=20260916"></script>
 </body>
 </html>

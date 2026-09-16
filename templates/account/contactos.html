@@ -1,0 +1,33 @@
+<div id="contactos">
+    <h1>Como podemos contactar-te?</h1>
+
+    <p>
+        <label for="email">Email</label>
+
+        <input type="email" name="email" id="email" autocomplete="email" required>
+    </p>
+
+    <p>
+        <label for="telefone">Telefone (opcional)</label>
+
+        <input type="tel" name="telefone" id="telefone" autocomplete="tel">
+    </p>
+
+    <nav class="anterior-proximo">
+        {% if modo_edicao %}
+            <a data-etapa="#editar-perfil" data-sem-validar="true" class="anterior">
+                Voltar à lista
+            </a>
+
+            <button type="submit" class="proximo guardar-secao">Guardar e sair</button>
+        {% else %}
+            <a data-etapa="#gostos" class="anterior">
+                Anterior
+            </a>
+
+            <a data-etapa="#descricao" class="proximo">
+                Próximo
+            </a>
+        {% endif %}
+    </nav>
+</div>

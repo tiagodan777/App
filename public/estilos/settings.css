@@ -1,90 +1,34 @@
 @charset "UTF-8";
-
 .definicoes-pagina {
-    width:
-        min(
-            100% - 32px,
-            680px
-        );
-
+    width: min(100% - 32px, 680px);
     min-height: 100dvh;
     margin: 0 auto;
-
-    padding:
-        calc(
-            40px +
-            env(
-                safe-area-inset-top,
-                0px
-            )
-        )
-        0
-        calc(
-            120px +
-            env(
-                safe-area-inset-bottom,
-                0px
-            )
-        );
-
+    padding: calc(40px + env(safe-area-inset-top, 0px)) 0 calc(120px + env(safe-area-inset-bottom, 0px));
     box-sizing: border-box;
     color: #17171a;
-
-    font-family:
-        Helvetica,
-        Arial,
-        sans-serif;
+    font-family: Helvetica, Arial, sans-serif;
 }
-
-.definicoes-pagina h1 {
-    margin: 0 0 32px;
-
-    font-size:
-        clamp(
-            30px,
-            8vw,
-            42px
-        );
-
-    line-height: 1.05;
-}
-
-.definicoes-pagina nav,
-.definicoes-pagina ul {
-    width: 100%;
-}
-
+.definicoes-pagina h1 { margin: 0 0 32px; font-size: clamp(30px, 8vw, 42px); line-height: 1.05; }
+.definicoes-pagina nav, .definicoes-pagina ul { width: 100%; }
 .definicoes-pagina ul {
     margin: 0;
     padding: 0;
-
-    border:
-        1px solid
-        #e7e7ea;
-
+    border: 1px solid #e7e7ea;
     border-radius: 24px;
     overflow: hidden;
     background: #fff;
     list-style: none;
 }
-
-.definicoes-pagina li + li {
-    border-top:
-        1px solid
-        #ececef;
-}
-
+.definicoes-pagina li + li { border-top: 1px solid #ececef; }
 .definicoes-pagina li > a,
 .definicoes-logout button {
     width: 100%;
     min-height: 68px;
     padding: 12px 18px;
     box-sizing: border-box;
-
     display: flex;
     align-items: center;
     gap: 16px;
-
     border: 0;
     background: transparent;
     color: #34343a;
@@ -95,29 +39,14 @@
     text-decoration: none;
     cursor: pointer;
 }
-
-.definicoes-pagina li > a:active,
-.definicoes-logout button:active {
-    background: #f5f5f7;
-}
-
+.definicoes-pagina li > a:active, .definicoes-logout button:active { background: #f5f5f7; }
 .definicoes-pagina li > a:focus-visible,
 .definicoes-logout button:focus-visible {
     position: relative;
     z-index: 1;
-
-    outline:
-        3px solid
-        rgba(
-            32,
-            123,
-            255,
-            0.35
-        );
-
+    outline: 3px solid rgba(32, 123, 255, 0.35);
     outline-offset: -3px;
 }
-
 .definicoes-pagina li > a img,
 .definicoes-logout button span {
     width: 40px;
@@ -125,45 +54,18 @@
     flex: 0 0 40px;
     object-fit: contain;
 }
-
-.definicoes-logout {
-    width: 100%;
-    margin: 0;
-}
-
-.definicoes-logout button {
-    color: #b42318;
-}
-
+.definicoes-logout { width: 100%; margin: 0; }
+.definicoes-logout button { color: #b42318; }
 .definicoes-logout button span {
     display: grid;
     place-items: center;
-
     border-radius: 50%;
     background: #fff0ee;
-
     font-size: 24px;
     line-height: 1;
 }
-
 @media (max-width: 480px) {
-    .definicoes-pagina {
-        width:
-            min(
-                100% - 24px,
-                680px
-            );
-
-        padding-top:
-            calc(
-                28px +
-                env(
-                    safe-area-inset-top,
-                    0px
-                )
-            );
-    }
-
+    .definicoes-pagina { width: min(100% - 24px, 680px); padding-top: calc(28px + env(safe-area-inset-top, 0px)); }
     .definicoes-pagina li > a,
     .definicoes-logout button {
         min-height: 64px;
@@ -172,11 +74,5 @@
         gap: 13px;
         font-size: 15px;
     }
-
-    .definicoes-pagina li > a img,
-    .definicoes-logout button span {
-        width: 36px;
-        height: 36px;
-        flex-basis: 36px;
-    }
+    .definicoes-pagina li > a img, .definicoes-logout button span { width: 36px; height: 36px; flex-basis: 36px; }
 }

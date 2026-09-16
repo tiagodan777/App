@@ -1,23 +1,13 @@
 {% extends 'layout.html' %}
 
 {% block styles %}
-<link
-    rel="stylesheet"
-    href="{{ doc_root }}estilos/messages.css?v=4"
-    data-margot-page-style
->
+<link rel="stylesheet" href="{{ doc_root }}estilos/messages.css?v=20260916" data-margot-page-style>
 {% endblock %}
 
 {% block content %}
-<main
-    id="mensagens-pagina"
-    class="mensagens-pagina"
->
+<main id="mensagens-pagina" class="mensagens-pagina">
 
-    <div
-        class="mensagens-fundo"
-        aria-hidden="true"
-    >
+    <div class="mensagens-fundo" aria-hidden="true">
         <span class="mensagens-fundo-forma mensagens-fundo-forma--1"></span>
         <span class="mensagens-fundo-forma mensagens-fundo-forma--2"></span>
     </div>
@@ -26,26 +16,17 @@
 
         <header class="mensagens-cabecalho">
 
-            <div
-                class="mensagens-marca"
-                aria-hidden="true"
-            >
+            <div class="mensagens-marca" aria-hidden="true">
                 <span class="mensagens-marca-linha mensagens-marca-linha--1"></span>
                 <span class="mensagens-marca-linha mensagens-marca-linha--2"></span>
                 <span class="mensagens-marca-linha mensagens-marca-linha--3"></span>
             </div>
 
-            <h1>
-                Mensagens
-            </h1>
+            <h1>Mensagens</h1>
 
         </header>
 
-        <section
-            id="conversas-lista"
-            class="conversas-lista"
-            aria-live="polite"
-        >
+        <section id="conversas-lista" class="conversas-lista" aria-live="polite">
             {% for conversa in conversas %}
 
                 <a
@@ -71,25 +52,15 @@
                             {{ conversa.outro_nome }}
                         </strong>
 
-                        <span class="conversa-resumo">
-                            {{ conversa.resumo }}
-                        </span>
+                        <span class="conversa-resumo">{{ conversa.resumo }}</span>
 
                     </span>
 
                     <span class="conversa-meta">
 
-                        <time
-                            datetime="{{ conversa.criada_em }}"
-                            data-data-mensagem="{{ conversa.criada_em }}"
-                        ></time>
+                        <time datetime="{{ conversa.criada_em }}" data-data-mensagem="{{ conversa.criada_em }}"></time>
 
-                        <span
-                            class="conversa-nao-lidas"
-                            {{ conversa.nao_lidas == 0 ? 'hidden' : '' }}
-                        >
-                            {{ conversa.nao_lidas }}
-                        </span>
+                        <span class="conversa-nao-lidas" {{ conversa.nao_lidas == 0 ? 'hidden' : '' }}>{{ conversa.nao_lidas }}</span>
 
                     </span>
 
@@ -97,55 +68,30 @@
 
             {% else %}
 
-                <div
-                    id="conversas-vazio"
-                    class="conversas-vazio"
-                >
+                <div id="conversas-vazio" class="conversas-vazio">
 
-                    <span
-                        class="conversas-vazio-icone"
-                        aria-hidden="true"
-                    >
-                        <svg
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                d="M5.4 17.4 4 21l4.2-1.7c1.15.46 2.42.7 3.8.7 4.97 0 9-3.58 9-8s-4.03-8-9-8-9 3.58-9 8c0 2.08.89 3.98 2.4 5.4Z"
-                            ></path>
+                    <span class="conversas-vazio-icone" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M5.4 17.4 4 21l4.2-1.7c1.15.46 2.42.7 3.8.7 4.97 0 9-3.58 9-8s-4.03-8-9-8-9 3.58-9 8c0 2.08.89 3.98 2.4 5.4Z"></path>
 
-                            <path
-                                d="M8 12h.01M12 12h.01M16 12h.01"
-                            ></path>
+                            <path d="M8 12h.01M12 12h.01M16 12h.01"></path>
                         </svg>
                     </span>
 
-                    <h2>
-                        Ainda não há conversas
-                    </h2>
+                    <h2>Ainda não há conversas</h2>
 
-                    <p>
-                        Quando começares uma conversa, ela aparece aqui.
-                    </p>
+                    <p>Quando começares uma conversa, ela aparece aqui.</p>
 
                 </div>
 
             {% endfor %}
         </section>
 
-        <p
-            id="conversas-erro"
-            class="conversas-erro"
-            role="alert"
-            hidden
-        ></p>
+        <p id="conversas-erro" class="conversas-erro" role="alert" hidden></p>
 
     </div>
 
-    <dialog
-        id="conversa-acoes"
-        class="conversa-acoes"
-        aria-labelledby="conversa-acoes-titulo"
-    >
+    <dialog id="conversa-acoes" class="conversa-acoes" aria-labelledby="conversa-acoes-titulo">
 
         <div class="conversa-acoes-caixa">
 
@@ -159,41 +105,23 @@
 
             </div>
 
-            <button
-                type="button"
-                id="conversa-bloquear"
-                class="conversa-acao conversa-acao-perigosa"
-            >
+            <button type="button" id="conversa-bloquear" class="conversa-acao conversa-acao-perigosa">
                 <strong>
                     Bloquear utilizador
                 </strong>
 
-                <span>
-                    Deixam de se ver e de poder conversar.
-                </span>
+                <span>Deixam de se ver e de poder conversar.</span>
             </button>
 
-            <button
-                type="button"
-                id="conversa-eliminar"
-                class="conversa-acao conversa-acao-perigosa"
-            >
+            <button type="button" id="conversa-eliminar" class="conversa-acao conversa-acao-perigosa">
                 <strong>
                     Eliminar conversa
                 </strong>
 
-                <span>
-                    Remove o histórico apenas para ti.
-                </span>
+                <span>Remove o histórico apenas para ti.</span>
             </button>
 
-            <button
-                type="button"
-                id="conversa-cancelar"
-                class="conversa-acao conversa-acao-cancelar"
-            >
-                Cancelar
-            </button>
+            <button type="button" id="conversa-cancelar" class="conversa-acao conversa-acao-cancelar">Cancelar</button>
 
         </div>
 
@@ -212,5 +140,5 @@ window.webSocketUrl = window.location.protocol === 'https:'
     : 'ws://' + window.location.hostname + ':8080';
 </script>
 
-<script src="{{ doc_root }}js/messages.js?v=4"></script>
+<script src="{{ doc_root }}js/messages.js?v=20260916"></script>
 {% endblock %}

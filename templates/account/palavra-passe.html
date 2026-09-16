@@ -1,0 +1,80 @@
+<div id="palavra-passe">
+    <h1>{{ modo_edicao ? 'Alterar palavra-passe' : 'Cria a tua palavra-passe' }}</h1>
+
+    {% if modo_edicao %}
+        <p class="password-opcional">
+            Escreve e confirma a nova palavra-passe. Se não quiseres alterá-la,
+            volta à lista sem preencher os campos.
+        </p>
+    {% endif %}
+
+    <p>
+        <label for="password">{{ modo_edicao ? 'Nova palavra-passe' : 'Palavra-passe' }}</label>
+
+        <input type="password" name="password" id="password" autocomplete="new-password" {% if not modo_edicao %}required{% endif %}>
+    </p>
+
+    <p>
+        <label for="confirma-password">Confirma a palavra-passe</label>
+
+        <input
+            type="password"
+            name="confirma_password"
+            id="confirma-password"
+            autocomplete="new-password"
+            {% if not modo_edicao %}required{% endif %}
+        >
+    </p>
+
+    <p id="mostrar-password">
+        <input type="checkbox" name="ver_password" id="ver-password">
+
+        <label for="ver-password">Mostrar palavra-passe</label>
+    </p>
+
+    {% if not modo_edicao %}
+        <div class="aceitacao-legal">
+            <label class="aceitacao-legal-opcao" for="aceitou-termos">
+                <input type="checkbox" name="aceitou_termos" id="aceitou-termos" value="1" required>
+
+                <span>
+                    Li e aceito os
+                    <a href="{{ doc_root }}terms?from=create-account">
+                        Termos de Utilização
+                    </a>.
+                </span>
+            </label>
+
+            <label class="aceitacao-legal-opcao" for="aceitou-privacidade">
+                <input type="checkbox" name="aceitou_privacidade" id="aceitou-privacidade" value="1" required>
+
+                <span>
+                    Li a
+                    <a href="{{ doc_root }}privacy?from=create-account">
+                        Política de Privacidade
+                    </a>.
+                </span>
+            </label>
+
+            <input type="hidden" name="versao_termos" value="1.0">
+
+            <input type="hidden" name="versao_privacidade" value="1.0">
+        </div>
+    {% endif %}
+
+    <nav class="anterior-proximo">
+        {% if modo_edicao %}
+            <a data-etapa="#editar-perfil" data-sem-validar="true" class="anterior">
+                Voltar à lista
+            </a>
+        {% else %}
+            <a data-etapa="#permissoes" class="anterior">
+                Anterior
+            </a>
+        {% endif %}
+
+        <button type="submit" id="criar-conta-submit" class="proximo">{{ modo_edicao ? 'Guardar e sair' : 'Criar conta' }}</button>
+    </nav>
+
+    <p id="create-account-erro" aria-live="polite"></p>
+</div>
