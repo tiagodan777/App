@@ -155,5 +155,10 @@ same('default.webp', $member->get($a)['fotos'][0]['nome_arquivo'], 'Fotografia p
 check($connections->disconnect($a, $b), 'Desligar par');
 same(false, $connections->areConnected($b, $a), 'Ligação removida');
 require __DIR__ . '/websocket.php';
+require __DIR__ . '/accounts.php';
+require __DIR__ . '/push.php';
+require __DIR__ . '/location-and-deletion.php';
+require __DIR__ . '/push-provider.php';
+require __DIR__ . '/media.php';
 
 echo "OK: $checks verificações de comportamento (SQLite temporário).\n";

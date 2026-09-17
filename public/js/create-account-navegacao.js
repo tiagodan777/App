@@ -180,7 +180,7 @@
     }
 
     function textoGenero(valor) {
-        return { M: 'Masculino', F: 'Feminino', D: 'Personalizado' }[valor] || 'Editar o género';
+        return { M: 'Masculino', F: 'Feminino', P: 'Personalizado' }[valor] || 'Editar o género';
     }
 
     function resumir(valor, limite) {
@@ -456,7 +456,7 @@
         if (!nascimentoValido()) {
             return { etapa: '#nascimento', campo: 'dia', mensagem: 'Escolhe uma data de nascimento válida.' };
         }
-        if (!['M', 'F', 'D'].includes(textoGuardado('genero'))) {
+        if (!['M', 'F', 'P'].includes(textoGuardado('genero'))) {
             return { etapa: '#sexo', campo: 'genero', mensagem: 'Escolhe um género válido.' };
         }
         var gostos = Array.isArray(dados.gostos) ? dados.gostos : [];

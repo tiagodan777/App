@@ -2,7 +2,7 @@
 
 Comparação com o conteúdo de `Margot 4.zip`, excluindo histórico Git, `node_modules` e metadados de arquivo do macOS. “Alterado” inclui formatação e reorganização; não significa que as regras funcionais de cada ficheiro tenham sido reescritas. “Conservado” significa conteúdo idêntico byte a byte. Os ficheiros binários foram inventariados e preservados, não reinterpretados.
 
-Fora das bibliotecas: 132 ficheiros alterados, 46 adicionados, 123 conservados e 3 nomes movidos/consolidados. Bibliotecas conservadas byte a byte: 884 ficheiros (vendor e jQuery).
+Fora das bibliotecas: 132 ficheiros alterados, 61 adicionados, 123 conservados e 3 nomes movidos/consolidados. Bibliotecas conservadas byte a byte: 884 ficheiros (vendor e jQuery).
 
 ## Volume de código próprio
 
@@ -10,13 +10,13 @@ Contagem de linhas físicas, excluindo bibliotecas e testes novos. A redução c
 
 | Tipo | Antes | Depois |
 | --- | ---: | ---: |
-| .css | 11 505 | 5 537 |
+| .css | 11 505 | 5 530 |
 | .html | 5 794 | 4 367 |
 | .java | 1 909 | 1 214 |
-| .js | 27 558 | 12 526 |
-| .php | 17 133 | 8 766 |
+| .js | 27 558 | 12 524 |
+| .php | 17 133 | 8 738 |
 | .swift | 4 005 | 1 343 |
-| **Total** | **67 904** | **33 753** |
+| **Total** | **67 904** | **33 716** |
 
 ## Ficheiros
 
@@ -28,7 +28,7 @@ Os três nomes retirados correspondem ao worker de imagens movido para a raiz e 
 | [`.gitattributes`](../.gitattributes) | Conservado | binário/outro | binário/outro |
 | [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml) | Conservado | 74 | 74 |
 | [`.gitignore`](../.gitignore) | Conservado | 27 | 27 |
-| [`README.md`](../README.md) | Adicionado | — | 85 |
+| [`README.md`](../README.md) | Adicionado | — | 87 |
 | [`android/.gitignore`](../android/.gitignore) | Conservado | 101 | 101 |
 | [`android/.idea/.gitignore`](../android/.idea/.gitignore) | Conservado | 3 | 3 |
 | [`android/.idea/AndroidProjectSystem.xml`](../android/.idea/AndroidProjectSystem.xml) | Conservado | 6 | 6 |
@@ -105,7 +105,9 @@ Os três nomes retirados correspondem ao worker de imagens movido para a raiz e 
 | [`database/schema.sql`](../database/schema.sql) | Adicionado | — | 628 |
 | [`deploy/app-push.service`](../deploy/app-push.service) | Conservado | binário/outro | binário/outro |
 | [`deploy/push.env.example`](../deploy/push.env.example) | Conservado | binário/outro | binário/outro |
-| [`docs/REVISAO.md`](../docs/REVISAO.md) | Adicionado | — | 47 |
+| [`docs/NAVEGACAO.md`](../docs/NAVEGACAO.md) | Adicionado | — | 26 |
+| [`docs/REVISAO.md`](../docs/REVISAO.md) | Adicionado | — | 53 |
+| [`docs/TESTES-V3.md`](../docs/TESTES-V3.md) | Adicionado | — | 101 |
 | [`ios/.gitignore`](../ios/.gitignore) | Conservado | 13 | 13 |
 | [`ios/App/App.xcodeproj/project.pbxproj`](../ios/App/App.xcodeproj/project.pbxproj) | Alterado | binário/outro | binário/outro |
 | [`ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist`](../ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist) | Conservado | 8 | 8 |
@@ -174,7 +176,7 @@ Os três nomes retirados correspondem ao worker de imagens movido para a raiz e 
 | [`public/estilos/profile-responsive.css`](../public/estilos/profile-responsive.css) | Adicionado | — | 62 |
 | [`public/estilos/profile.css`](../public/estilos/profile.css) | Alterado | 2691 | 474 |
 | [`public/estilos/settings.css`](../public/estilos/settings.css) | Alterado | 182 | 78 |
-| [`public/estilos/style.css`](../public/estilos/style.css) | Alterado | 1621 | 564 |
+| [`public/estilos/style.css`](../public/estilos/style.css) | Alterado | 1621 | 557 |
 | [`public/estilos/today.css`](../public/estilos/today.css) | Alterado | 1257 | 865 |
 | [`public/imagens/fotos-perfil-originais/.gitkeep`](../public/imagens/fotos-perfil-originais/.gitkeep) | Conservado | binário/outro | binário/outro |
 | [`public/imagens/fotos-perfil/default.webp`](../public/imagens/fotos-perfil/default.webp) | Conservado | binário/outro | binário/outro |
@@ -190,7 +192,7 @@ Os três nomes retirados correspondem ao worker de imagens movido para a raiz e 
 | [`public/imagens/icones/support.png`](../public/imagens/icones/support.png) | Conservado | binário/outro | binário/outro |
 | [`public/imagens/icones/user.png`](../public/imagens/icones/user.png) | Conservado | binário/outro | binário/outro |
 | [`public/index.php`](../public/index.php) | Alterado | 288 | 21 |
-| [`public/js/background-location.js`](../public/js/background-location.js) | Alterado | 1369 | 537 |
+| [`public/js/background-location.js`](../public/js/background-location.js) | Alterado | 1369 | 550 |
 | [`public/js/camara-nativa.js`](../public/js/camara-nativa.js) | Alterado | 383 | 248 |
 | [`public/js/chat-reactions.js`](../public/js/chat-reactions.js) | Adicionado | — | 433 |
 | [`public/js/chat.js`](../public/js/chat.js) | Alterado | 3397 | 882 |
@@ -206,7 +208,7 @@ Os três nomes retirados correspondem ao worker de imagens movido para a raiz e 
 | [`public/js/index-notificacoes.js`](../public/js/index-notificacoes.js) | Alterado | 2585 | 908 |
 | [`public/js/index-posicao.js`](../public/js/index-posicao.js) | Alterado | 604 | 398 |
 | [`public/js/index-tap-foto.js`](../public/js/index-tap-foto.js) | Alterado | 739 | 366 |
-| [`public/js/javascript-geral.js`](../public/js/javascript-geral.js) | Alterado | 1819 | 718 |
+| [`public/js/javascript-geral.js`](../public/js/javascript-geral.js) | Alterado | 1819 | 703 |
 | [`public/js/login.js`](../public/js/login.js) | Alterado | 33 | 20 |
 | [`public/js/manifest.json`](../public/js/manifest.json) | Conservado | 8 | 8 |
 | [`public/js/menu-invisivel.js`](../public/js/menu-invisivel.js) | Alterado | 173 | 68 |
@@ -235,7 +237,7 @@ Os três nomes retirados correspondem ao worker de imagens movido para a raiz e 
 | [`src/classes/CMS/Hobbie.php`](../src/classes/CMS/Hobbie.php) | Alterado | 66 | 31 |
 | [`src/classes/CMS/Image.php`](../src/classes/CMS/Image.php) | Alterado | 385 | 407 |
 | [`src/classes/CMS/Location.php`](../src/classes/CMS/Location.php) | Alterado | 108 | 75 |
-| [`src/classes/CMS/Member.php`](../src/classes/CMS/Member.php) | Alterado | 1043 | 546 |
+| [`src/classes/CMS/Member.php`](../src/classes/CMS/Member.php) | Alterado | 1043 | 518 |
 | [`src/classes/CMS/MemberConnection.php`](../src/classes/CMS/MemberConnection.php) | Alterado | 164 | 72 |
 | [`src/classes/CMS/Message.php`](../src/classes/CMS/Message.php) | Adicionado | — | 495 |
 | [`src/classes/CMS/MessageAccess.php`](../src/classes/CMS/MessageAccess.php) | Adicionado | — | 161 |
@@ -320,11 +322,24 @@ Os três nomes retirados correspondem ao worker de imagens movido para a raiz e 
 | [`templates/support.html`](../templates/support.html) | Alterado | 94 | 94 |
 | [`templates/terms.html`](../templates/terms.html) | Alterado | 775 | 770 |
 | [`templates/verify-email.html`](../templates/verify-email.html) | Alterado | 57 | 42 |
-| [`tests/TestDatabase.php`](../tests/TestDatabase.php) | Adicionado | — | 72 |
-| [`tests/fixtures.sql`](../tests/fixtures.sql) | Adicionado | — | 227 |
+| [`tests/TestDatabase.php`](../tests/TestDatabase.php) | Adicionado | — | 83 |
+| [`tests/accounts.php`](../tests/accounts.php) | Adicionado | — | 78 |
+| [`tests/fixtures.sql`](../tests/fixtures.sql) | Adicionado | — | 241 |
+| [`tests/http-fixture.php`](../tests/http-fixture.php) | Adicionado | — | 54 |
+| [`tests/http.mjs`](../tests/http.mjs) | Adicionado | — | binário/outro |
 | [`tests/javascript.mjs`](../tests/javascript.mjs) | Adicionado | — | binário/outro |
 | [`tests/lint.php`](../tests/lint.php) | Adicionado | — | 41 |
-| [`tests/run.php`](../tests/run.php) | Adicionado | — | 159 |
+| [`tests/location-and-deletion.php`](../tests/location-and-deletion.php) | Adicionado | — | 77 |
+| [`tests/media.php`](../tests/media.php) | Adicionado | — | 44 |
+| [`tests/native-config.py`](../tests/native-config.py) | Adicionado | — | binário/outro |
+| [`tests/native-javascript.mjs`](../tests/native-javascript.mjs) | Adicionado | — | binário/outro |
+| [`tests/navigation-fixture.html`](../tests/navigation-fixture.html) | Adicionado | — | 2 |
+| [`tests/navigation-tests.js`](../tests/navigation-tests.js) | Adicionado | — | 263 |
+| [`tests/navigation.html`](../tests/navigation.html) | Adicionado | — | 27 |
+| [`tests/openssl.cnf`](../tests/openssl.cnf) | Adicionado | — | binário/outro |
+| [`tests/push-provider.php`](../tests/push-provider.php) | Adicionado | — | 95 |
+| [`tests/push.php`](../tests/push.php) | Adicionado | — | 91 |
+| [`tests/run.php`](../tests/run.php) | Adicionado | — | 164 |
 | [`tests/websocket.php`](../tests/websocket.php) | Adicionado | — | 98 |
 | [`websocket-server.php`](../websocket-server.php) | Alterado | 66 | 46 |
 | [`www/index.html`](../www/index.html) | Conservado | 15 | 15 |

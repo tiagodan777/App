@@ -12,8 +12,11 @@
     var urlRenderizada = window.location.href;
     var preAquecimentos = new Map();
     var preAquecimentoAgendado = false;
-    var ESPERA_MAXIMA_ESTILO = 180;
-    var DURACAO_NAVEGACAO = 220;
+    var recursosPreCarregados = new Map();
+    var posicoesAbas = new Map();
+    var animacaoEmCurso = null;
+    var ESPERA_MAXIMA_RECURSO = 5000;
+    var DURACAO_NAVEGACAO = 160;
     var TEMPO_REAQUECER = 30000;
 
     /*
@@ -82,92 +85,93 @@
         });
     }
 
-    /*
-     * Antes esperávamos até 2500 ms pelo CSS.
-     *
-     * Isso era uma das principais causas
-     * dos atrasos de vários segundos.
-     *
-     * Agora damos ao stylesheet apenas uma
-     * pequena janela para ficar disponível.
-     */
-
-    function aguardarEstilo(link) {
-        return new Promise(function (resolver) {
-            if (link.sheet) {
+    // O ecrã atual continua utilizável enquanto os recursos do destino carregam.
+    function aguardarRecurso(elemento, sinal) {
+        return new Promise(function (resolver, rejeitar) {
+            if (sinal && sinal.aborted) {
+                rejeitar(new DOMException('Navegação substituída', 'AbortError'));
+                return;
+            }
+            if (elemento.sheet) {
                 resolver();
                 return;
             }
-            var terminado = false;
-            var temporizador = null;
-            function terminar() {
-                if (terminado) {
-                    return;
-                }
-                terminado = true;
-                if (temporizador !== null) {
-                    window.clearTimeout(temporizador);
-                }
-                link.removeEventListener('load', terminar);
-                link.removeEventListener('error', terminar);
-                resolver();
+            var temporizador = window.setTimeout(falhou, ESPERA_MAXIMA_RECURSO);
+            function terminar(erro) {
+                window.clearTimeout(temporizador);
+                elemento.removeEventListener('load', carregou);
+                elemento.removeEventListener('error', falhou);
+                if (sinal) sinal.removeEventListener('abort', cancelar);
+                if (erro) rejeitar(erro);
+                else resolver();
             }
-            link.addEventListener('load', terminar);
-            link.addEventListener('error', terminar);
-            temporizador = window.setTimeout(terminar, ESPERA_MAXIMA_ESTILO);
+            function carregou() {
+                terminar();
+            }
+            function falhou() {
+                terminar(new Error('Não foi possível carregar ' + elemento.href));
+            }
+            function cancelar() {
+                terminar(new DOMException('Navegação substituída', 'AbortError'));
+            }
+            elemento.addEventListener('load', carregou, { once: true });
+            elemento.addEventListener('error', falhou, { once: true });
+            if (sinal) sinal.addEventListener('abort', cancelar, { once: true });
         });
-    }
-
-    function hrefJaCarregado(href, tipo) {
-        var links = Array.from(document.querySelectorAll('link[href]'));
-        if (
-            links.some(function (link) {
-                return link.href === href;
-            })
-        ) {
-            return true;
-        }
-        if (tipo === 'script') {
-            return Array.from(document.querySelectorAll('script[src]')).some(function (script) {
-                return script.src === href;
-            });
-        }
-        return false;
     }
 
     function adicionarPreload(href, tipo) {
         href = urlAbsoluta(href);
-        if (hrefJaCarregado(href, tipo)) {
-            return;
+        if (
+            tipo === 'script' &&
+            Array.from(document.scripts).some(function (script) {
+                return script.src === href;
+            })
+        ) {
+            return Promise.resolve();
         }
+        var chave = tipo + ':' + href;
+        var anterior = recursosPreCarregados.get(chave);
+        if (anterior && Date.now() - anterior.criadoEm < 1000) return anterior.promessa;
+        if (anterior) anterior.link.remove();
         var preload = document.createElement('link');
         preload.rel = 'preload';
         preload.href = href;
         preload.as = tipo;
         preload.setAttribute('data-margot-preload', '');
+        var promessa = aguardarRecurso(preload).catch(function (erro) {
+            if (recursosPreCarregados.get(chave)?.link === preload) recursosPreCarregados.delete(chave);
+            preload.remove();
+            throw erro;
+        });
+        recursosPreCarregados.set(chave, { promessa: promessa, link: preload, criadoEm: Date.now() });
         document.head.appendChild(preload);
+        return promessa;
     }
 
-    /*
-     * Quando descarregamos uma página em
-     * background, aproveitamos para aquecer
-     * os seus CSS e JS.
-     *
-     * Assim, quando o utilizador toca no menu,
-     * esses ficheiros normalmente já estão
-     * na cache do WebView.
-     */
-
     function preAquecerRecursos(documentoNovo) {
-        Array.from(documentoNovo.head.querySelectorAll('link[data-margot-page-style][href]')).forEach(function (link) {
-            adicionarPreload(link.getAttribute('href'), 'style');
+        var recursos = [];
+        documentoNovo.head.querySelectorAll('link[data-margot-page-style][href]').forEach(function (link) {
+            recursos.push(adicionarPreload(link.getAttribute('href'), 'style'));
         });
         var pagina = documentoNovo.querySelector(seletorPagina);
-        if (!pagina) {
-            return;
-        }
-        Array.from(pagina.querySelectorAll('script[src]')).forEach(function (script) {
-            adicionarPreload(script.getAttribute('src'), 'script');
+        if (pagina)
+            pagina.querySelectorAll('script[src]').forEach(function (script) {
+                recursos.push(adicionarPreload(script.getAttribute('src'), 'script'));
+            });
+        return Promise.all(recursos);
+    }
+
+    function aguardarPreparacao(promessa, sinal) {
+        return new Promise(function (resolver, rejeitar) {
+            function cancelar() {
+                rejeitar(new DOMException('Navegação substituída', 'AbortError'));
+            }
+            if (sinal.aborted) cancelar();
+            else sinal.addEventListener('abort', cancelar, { once: true });
+            promessa.then(resolver, rejeitar).finally(function () {
+                sinal.removeEventListener('abort', cancelar);
+            });
         });
     }
 
@@ -196,7 +200,7 @@
             }
             var html = await resposta.text();
             var documentoNovo = new DOMParser().parseFromString(html, 'text/html');
-            preAquecerRecursos(documentoNovo);
+            await preAquecerRecursos(documentoNovo);
         } catch (erro) {
             /*
              * É apenas otimização.
@@ -224,38 +228,79 @@
         window.setTimeout(executar, 350);
     }
 
-    async function prepararEstilos(documentoNovo) {
+    async function prepararEstilos(documentoNovo, sinal) {
         var atuais = Array.from(document.head.querySelectorAll('link[data-margot-page-style]'));
         var novos = Array.from(documentoNovo.head.querySelectorAll('link[data-margot-page-style]'));
-        var hrefsNovos = novos.map(function (link) {
+        var preparados = [];
+        var hrefs = novos.map(function (link) {
             return urlAbsoluta(link.getAttribute('href'));
         });
-        var promessas = [];
-        novos.forEach(function (origem) {
-            var href = urlAbsoluta(origem.getAttribute('href'));
-            if (
-                atuais.some(function (link) {
-                    return link.href === href;
+        try {
+            await Promise.all(
+                novos.map(function (origem) {
+                    var href = urlAbsoluta(origem.getAttribute('href'));
+                    if (
+                        atuais.some(function (link) {
+                            return link.href === href;
+                        })
+                    )
+                        return;
+                    var link = origem.cloneNode();
+                    var media = origem.getAttribute('media');
+                    link.href = href;
+                    link.media = 'not all';
+                    preparados.push({ link: link, media: media });
+                    var carregamento = aguardarRecurso(link, sinal);
+                    document.head.appendChild(link);
+                    return carregamento;
                 })
-            ) {
-                return;
+            );
+        } catch (erro) {
+            preparados.forEach(function (item) {
+                item.link.remove();
+            });
+            throw erro;
+        }
+        return {
+            aplicar: function () {
+                preparados.forEach(function (item) {
+                    if (item.media === null) item.link.removeAttribute('media');
+                    else item.link.media = item.media;
+                });
+                atuais.forEach(function (link) {
+                    if (!hrefs.includes(link.href)) link.remove();
+                });
+            },
+            cancelar: function () {
+                preparados.forEach(function (item) {
+                    item.link.remove();
+                });
             }
-            var link = document.createElement('link');
-            Array.from(origem.attributes).forEach(function (atributo) {
-                link.setAttribute(atributo.name, atributo.value);
-            });
-            link.href = href;
-            document.head.appendChild(link);
-            promessas.push(aguardarEstilo(link));
-        });
-        await Promise.all(promessas);
-        return function limparEstilosAntigos() {
-            Array.from(document.head.querySelectorAll('link[data-margot-page-style]')).forEach(function (link) {
-                if (!hrefsNovos.includes(link.href)) {
-                    link.remove();
-                }
-            });
         };
+    }
+
+    function eAbaPrincipal(url) {
+        return Array.from(document.querySelectorAll('#menuPrincipal a[href]')).some(function (link) {
+            return chavePagina(link.href) === chavePagina(url);
+        });
+    }
+
+    function guardarPosicaoAba(pagina) {
+        if (!eAbaPrincipal(urlRenderizada)) return;
+        var conteudo = pagina.querySelector('main') || pagina.firstElementChild;
+        posicoesAbas.set(chavePagina(urlRenderizada), {
+            janela: window.scrollY,
+            pagina: pagina.scrollTop,
+            conteudo: conteudo ? conteudo.scrollTop : 0
+        });
+    }
+
+    function reporPosicaoAba(pagina, url) {
+        var posicao = posicoesAbas.get(chavePagina(url));
+        window.scrollTo(0, posicao ? posicao.janela : 0);
+        pagina.scrollTop = posicao ? posicao.pagina : 0;
+        var conteudo = pagina.querySelector('main') || pagina.firstElementChild;
+        if (conteudo) conteudo.scrollTop = posicao ? posicao.conteudo : 0;
     }
 
     function retirarScripts(pagina) {
@@ -309,67 +354,19 @@
         }
     }
 
-    function animar(pagina, quadros, duracao) {
-        if (!pagina.animate || duracao === 0) {
-            pagina.style.transform = quadros[quadros.length - 1].transform;
-            pagina.style.opacity = quadros[quadros.length - 1].opacity;
-            return Promise.resolve(null);
-        }
-        var animacao = pagina.animate(quadros, {
-            duration: duracao,
-            easing: 'cubic-bezier(.22,.8,.28,1)',
-            fill: 'forwards'
-        });
-        return animacao.finished
-            .catch(function () {})
-            .then(function () {
-                return animacao;
-            });
-    }
-
-    async function navegarDocumentoComAnimacao(url, direcao) {
-        var paginaAtual = document.querySelector(seletorPagina);
-        if (!paginaAtual) {
-            window.location.assign(url);
-            return;
-        }
-        var reduzido = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        var duracao = reduzido ? 0 : 160;
-        document.body.classList.add('margot-a-navegar');
-        try {
-            var animacao = await animar(
-                paginaAtual,
-                [
-                    { transform: 'translate3d(0,0,0)', opacity: '1' },
-                    { transform: direcao < 0 ? 'translate3d(18%,0,0)' : 'translate3d(-18%,0,0)', opacity: '.82' }
-                ],
-                duracao
-            );
-            if (animacao) {
-                animacao.cancel();
-            }
-        } catch (erro) {
-            /*
-             * Uma falha da animação nunca pode
-             * impedir a navegação real.
-             */
-        }
-        window.location.assign(url);
-    }
-
     function colocarNavegacaoPendente(url, opcoes) {
         navegacaoPendente = { url: urlAbsoluta(url), opcoes: Object.assign({}, opcoes || {}) };
         atualizarMenu(navegacaoPendente.url);
-        if (faseNavegacao === 'fetch' && controlador) {
-            controlador.abort();
-        }
+        if ((faseNavegacao === 'fetch' || faseNavegacao === 'prepare') && controlador) controlador.abort();
+        if (animacaoEmCurso) animacaoEmCurso.cancel();
     }
 
     async function trocarPagina(url, opcoes) {
         opcoes = opcoes || {};
         url = urlAbsoluta(url);
         if (aNavegar) {
-            if (url === urlEmNavegacao) {
+            if (url === urlEmNavegacao && controlador && !controlador.signal.aborted) {
+                navegacaoPendente = null;
                 atualizarMenu(url);
                 return;
             }
@@ -384,6 +381,8 @@
         faseNavegacao = 'fetch';
         urlEmNavegacao = url;
         controlador = new AbortController();
+        var estilos = null;
+        var paginaNova = null;
         atualizarMenu(url);
         document.body.setAttribute('aria-busy', 'true');
         try {
@@ -392,73 +391,36 @@
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 signal: controlador.signal
             });
-            if (!resposta.ok) {
-                throw new Error('HTTP ' + resposta.status);
-            }
-            if (new URL(resposta.url).origin !== window.location.origin) {
-                throw new Error('Destino externo');
+            if (!resposta.ok || new URL(resposta.url).origin !== window.location.origin) {
+                throw new Error('Não foi possível abrir a página');
             }
             var html = await resposta.text();
             var documentoNovo = new DOMParser().parseFromString(html, 'text/html');
-            var paginaNova = documentoNovo.querySelector(seletorPagina);
+            paginaNova = documentoNovo.querySelector(seletorPagina);
             var paginaAtual = document.querySelector(seletorPagina);
-            if (!paginaNova || !paginaAtual) {
-                throw new Error('Página incompatível');
-            }
-            if (caminhoNormalizado(resposta.url) === '/login') {
-                await navegarDocumentoComAnimacao(resposta.url, opcoes.direcao || -1);
+            if (!paginaNova || !paginaAtual || caminhoNormalizado(resposta.url) === '/login') {
+                window.location.assign(resposta.url);
                 return;
             }
-            faseNavegacao = 'render';
+            faseNavegacao = 'prepare';
+            // Descarrega em paralelo; só executa depois de existir um único DOM da página.
+            await aguardarPreparacao(preAquecerRecursos(documentoNovo), controlador.signal);
+            estilos = await prepararEstilos(documentoNovo, controlador.signal);
+            if (controlador.signal.aborted) throw new DOMException('Navegação substituída', 'AbortError');
             var scripts = retirarScripts(paginaNova);
-            var limparEstilosAntigos = await prepararEstilos(documentoNovo);
+            var trocaDeAba = opcoes.aba || (eAbaPrincipal(urlRenderizada) && eAbaPrincipal(resposta.url));
+            var direcao = opcoes.direcao || 1;
+            faseNavegacao = 'render';
+            guardarPosicaoAba(paginaAtual);
             document.dispatchEvent(new CustomEvent('margot:page-leave'));
-            var direcao = opcoes.direcao;
-            if (!direcao) {
-                var atual = indiceMenu(urlRenderizada);
-                var seguinte = indiceMenu(resposta.url);
-                direcao = atual !== null && seguinte !== null && seguinte < atual ? -1 : 1;
-            }
-            paginaNova.style.transform = direcao > 0 ? 'translate3d(100%,0,0)' : 'translate3d(-28%,0,0)';
-            paginaNova.style.opacity = direcao > 0 ? '1' : '.94';
-            paginaAtual.insertAdjacentElement('afterend', paginaNova);
-            document.body.classList.add('margot-a-navegar');
-            var reduzido = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-            var duracao = reduzido ? 0 : DURACAO_NAVEGACAO;
-            var animacoes = await Promise.all([
-                animar(
-                    paginaAtual,
-                    [
-                        { transform: 'translate3d(0,0,0)', opacity: '1' },
-                        {
-                            transform: direcao > 0 ? 'translate3d(-28%,0,0)' : 'translate3d(100%,0,0)',
-                            opacity: direcao > 0 ? '.94' : '1'
-                        }
-                    ],
-                    duracao
-                ),
-                animar(
-                    paginaNova,
-                    [
-                        {
-                            transform: direcao > 0 ? 'translate3d(100%,0,0)' : 'translate3d(-28%,0,0)',
-                            opacity: direcao > 0 ? '1' : '.94'
-                        },
-                        { transform: 'translate3d(0,0,0)', opacity: '1' }
-                    ],
-                    duracao
-                )
-            ]);
-            animacoes.forEach(function (animacao) {
-                if (animacao) {
-                    animacao.cancel();
-                }
-            });
-            paginaAtual.remove();
-            limparEstilosAntigos();
-            paginaNova.removeAttribute('style');
-            document.body.classList.remove('margot-a-navegar');
+            paginaNova.style.visibility = 'hidden';
+            paginaNova.style.pointerEvents = 'none';
+            paginaAtual.replaceWith(paginaNova);
+            estilos.aplicar();
+            estilos = null;
+            window.scrollTo(0, 0);
             document.title = documentoNovo.title || document.title;
+            urlRenderizada = resposta.url;
             if (!navegacaoPendente) {
                 if (opcoes.historico === 'push') {
                     posicaoHistorico += 1;
@@ -467,35 +429,58 @@
                     history.replaceState({ margotPosition: posicaoHistorico }, '', resposta.url);
                 }
             }
-            urlRenderizada = resposta.url;
+            // Os scripts veem o URL de destino e um único DOM, mesmo com outro toque pendente.
+            await executarScripts(scripts);
+            reporPosicaoAba(paginaNova, resposta.url);
+            document.dispatchEvent(new CustomEvent('margot:page-ready'));
+            await new Promise(function (resolver) {
+                window.requestAnimationFrame(resolver);
+            });
+            paginaNova.style.removeProperty('visibility');
+            var reduzido = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            var duracao = reduzido || navegacaoPendente ? 0 : trocaDeAba ? 100 : DURACAO_NAVEGACAO;
+            if (duracao && paginaNova.animate) {
+                faseNavegacao = 'animate';
+                document.body.classList.add('margot-a-navegar');
+                var inicio = trocaDeAba
+                    ? { opacity: 0.8 }
+                    : { opacity: 0.8, transform: 'translate3d(' + (direcao < 0 ? '-18px' : '18px') + ',0,0)' };
+                var fim = trocaDeAba ? { opacity: 1 } : { opacity: 1, transform: 'translate3d(0,0,0)' };
+                animacaoEmCurso = paginaNova.animate([inicio, fim], {
+                    duration: duracao,
+                    easing: 'ease-out',
+                    fill: 'both'
+                });
+                await animacaoEmCurso.finished.catch(function () {});
+                animacaoEmCurso.cancel();
+                animacaoEmCurso = null;
+            }
             if (!navegacaoPendente) {
                 atualizarMenu(resposta.url);
-                await executarScripts(scripts);
-                if (window.AppWebSocket && typeof window.AppWebSocket.refreshMap === 'function') {
-                    window.AppWebSocket.refreshMap();
-                }
-                window.scrollTo(0, 0);
-                document.dispatchEvent(new CustomEvent('margot:page-ready'));
                 preAquecerMenu();
             }
         } catch (erro) {
-            document.body.classList.remove('margot-a-navegar');
             if (erro.name !== 'AbortError') {
-                await navegarDocumentoComAnimacao(url, opcoes.direcao || 1);
-                return;
+                var destino = navegacaoPendente ? navegacaoPendente.url : url;
+                navegacaoPendente = null;
+                window.location.assign(destino);
             }
         } finally {
+            if (estilos) estilos.cancelar();
+            if (paginaNova) {
+                paginaNova.style.removeProperty('visibility');
+                paginaNova.style.removeProperty('pointer-events');
+            }
+            document.body.classList.remove('margot-a-navegar');
+            document.body.removeAttribute('aria-busy');
             controlador = null;
             urlEmNavegacao = null;
             faseNavegacao = 'idle';
             aNavegar = false;
-            document.body.removeAttribute('aria-busy');
             if (navegacaoPendente) {
                 var pendente = navegacaoPendente;
                 navegacaoPendente = null;
-                window.requestAnimationFrame(function () {
-                    trocarPagina(pendente.url, pendente.opcoes);
-                });
+                trocarPagina(pendente.url, pendente.opcoes);
             }
         }
     }
@@ -691,7 +676,7 @@
             return;
         }
         evento.preventDefault();
-        trocarPagina(url.href, { historico: 'push' });
+        trocarPagina(url.href, { historico: 'push', aba: Boolean(link.closest('#menuPrincipal')) });
     });
     window.addEventListener('popstate', function (evento) {
         var proximaPosicao =

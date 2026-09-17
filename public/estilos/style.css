@@ -518,16 +518,9 @@ html[data-margot-invisivel="true"] #alternar-invisivel .menu-invisivel-imagem {
    NAVEGAÇÃO ENTRE PÁGINAS
    ========================================================= */
 [data-margot-pagina] { width: 100%; height: 100%; }
-body.margot-a-navegar { overflow: hidden !important; }
+/* Só o conteúdo anima; o menu e as dimensões do WebView mantêm-se estáveis. */
 body.margot-a-navegar > [data-margot-pagina] {
-    position: fixed !important;
-    inset: 0;
-    z-index: 1050;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    background-color: #fdfcf9;
-    will-change: transform, opacity;
+    will-change: opacity;
     -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
 }

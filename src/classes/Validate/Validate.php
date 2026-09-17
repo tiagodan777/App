@@ -15,7 +15,7 @@ class Validate {
     }
 
     public static function isGenero($genero) {
-        return in_array($genero, ['M', 'F', 'D'], true);
+        return in_array($genero, ['M', 'F', 'P'], true);
     }
 
     public static function isPassword($password) {

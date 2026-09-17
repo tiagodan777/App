@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="pt-PT">
+<meta charset="utf-8">
+<title>Testes de navegação da Margot</title>
+<h1>Testes de navegação</h1>
+<p>Rede, scripts de página e animações são simulados. Não utiliza contas nem a base de dados.</p>
+<pre id="resultado">A testar…</pre>
+<script src="navigation-tests.js"></script>
+<script>
+(async function () {
+    const resultado = document.getElementById('resultado');
+    try {
+        const source = await (await fetch('../public/js/javascript-geral.js')).text();
+        const total = await runMargotNavigationTests(() => new Promise(resolve => {
+            const iframe = document.createElement('iframe');
+            iframe.hidden = true;
+            iframe.src = 'navigation-fixture.html';
+            iframe.onload = () => resolve({ window: iframe.contentWindow, close: () => iframe.remove() });
+            document.body.appendChild(iframe);
+        }), source);
+        resultado.textContent = 'OK: ' + total + ' verificações de navegação.';
+    } catch (error) {
+        resultado.textContent = 'FALHOU: ' + error.stack;
+    }
+})();
+</script>
+</html>

@@ -5,7 +5,8 @@ CREATE TABLE "aceitacoes_legais" (
     "membro_id" TEXT NOT NULL,
     "documento" TEXT NOT NULL,
     "versao" TEXT NOT NULL,
-    "aceite_em" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "aceite_em" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (membro_id) REFERENCES membros(id) ON DELETE CASCADE
 );
 
 CREATE TABLE "bloqueados" (
@@ -39,7 +40,8 @@ CREATE TABLE "fotos_perfil" (
     "membro_id" TEXT NOT NULL,
     "ordem" INTEGER DEFAULT NULL,
     "status" TEXT DEFAULT NULL,
-    PRIMARY KEY ("id")
+    PRIMARY KEY ("id"),
+    FOREIGN KEY (membro_id) REFERENCES membros(id)
 );
 
 CREATE TABLE "hobbies" (
@@ -64,7 +66,8 @@ CREATE TABLE "localizacao_membro" (
     "visivel" INTEGER NOT NULL DEFAULT 1,
     "origem" TEXT NOT NULL DEFAULT 'foreground',
     "atualizada_em" TEXT NOT NULL,
-    PRIMARY KEY ("membro_id")
+    PRIMARY KEY ("membro_id"),
+    FOREIGN KEY (membro_id) REFERENCES membros(id) ON DELETE CASCADE
 );
 
 CREATE TABLE "localizacoes" (
@@ -79,7 +82,7 @@ CREATE TABLE "membros" (
     "primeiro_nome" TEXT NOT NULL,
     "ultimo_nome" TEXT NOT NULL,
     "nascimento" TEXT DEFAULT NULL,
-    "genero" TEXT NOT NULL,
+    "genero" TEXT NOT NULL CHECK (genero IN ('M', 'F', 'P')),
     "objetivo" TEXT DEFAULT NULL,
     "email" TEXT NOT NULL,
     "email_verificado_em" TEXT DEFAULT NULL,
@@ -94,7 +97,9 @@ CREATE TABLE "membros" (
 CREATE TABLE "membros_gostos" (
     "membro_id" TEXT NOT NULL,
     "hobbie_id" INTEGER NOT NULL,
-    PRIMARY KEY ("membro_id", "hobbie_id")
+    PRIMARY KEY ("membro_id", "hobbie_id"),
+    FOREIGN KEY (membro_id) REFERENCES membros(id),
+    FOREIGN KEY (hobbie_id) REFERENCES hobbies(id)
 );
 
 CREATE TABLE "membro_hoje" (
@@ -182,7 +187,8 @@ CREATE TABLE "push_dispositivos" (
     "ultimo_sucesso_em" TEXT DEFAULT NULL,
     "ultima_falha_em" TEXT DEFAULT NULL,
     "criado_em" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "atualizado_em" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "atualizado_em" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (membro_id) REFERENCES membros(id) ON DELETE CASCADE
 );
 
 CREATE TABLE "push_fila" (
@@ -201,7 +207,9 @@ CREATE TABLE "push_fila" (
     "bloqueado_em" TEXT DEFAULT NULL,
     "enviado_em" TEXT DEFAULT NULL,
     "ultimo_erro" TEXT DEFAULT NULL,
-    "criado_em" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "criado_em" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (membro_id) REFERENCES membros(id) ON DELETE CASCADE,
+    FOREIGN KEY (dispositivo_id) REFERENCES push_dispositivos(id) ON DELETE CASCADE
 );
 
 CREATE TABLE "schema_migrations" (
@@ -215,7 +223,8 @@ CREATE TABLE "token" (
     "token" TEXT NOT NULL,
     "membro_id" TEXT NOT NULL,
     "validade" TEXT NOT NULL,
-    "proposito" TEXT NOT NULL
+    "proposito" TEXT NOT NULL,
+    FOREIGN KEY (membro_id) REFERENCES membros(id) ON DELETE CASCADE
 );
 
 CREATE UNIQUE INDEX member_email ON membros (email);
@@ -225,3 +234,8 @@ CREATE UNIQUE INDEX member_phone ON membros (telefone);
 CREATE UNIQUE INDEX hobby_name ON hobbies (nome);
 
 CREATE UNIQUE INDEX token_value ON token (token);
+
+CREATE UNIQUE INDEX push_token ON push_dispositivos (token_hash);
+CREATE UNIQUE INDEX push_installation ON push_dispositivos (plataforma, instalacao_id);
+CREATE UNIQUE INDEX push_event ON push_fila (dispositivo_id, chave_unica);
+CREATE UNIQUE INDEX legal_acceptance ON aceitacoes_legais (membro_id, documento, versao);

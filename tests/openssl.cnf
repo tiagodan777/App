@@ -1,0 +1,5 @@
+# Apenas para gerar chaves efémeras nos testes, sem depender do openssl.cnf do servidor.
+[req]
+distinguished_name = test_dn
+[test_dn]
+CN = Margot local test

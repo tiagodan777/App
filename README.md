@@ -2,6 +2,8 @@
 
 A organização segue o mesmo percurso do Lykrr: **URL → página PHP → classe com SQL → template Twig**, com JavaScript e CSS organizados por funcionalidade. A app continua a usar Capacitor, PHP, PDO, Twig e Ratchet. Não foi acrescentada uma framework.
 
+A versão 3 inclui a [correção da navegação entre abas](docs/NAVEGACAO.md) e os [testes e correções de contas, push e localização](docs/TESTES-V3.md).
+
 ## Onde mexer
 
 | Quero alterar… | Começar aqui |
@@ -57,7 +59,7 @@ composer lint
 composer test
 ```
 
-Os testes PHP precisam de `pdo_sqlite` e `mbstring`. Usam apenas uma base temporária em memória; não carregam a configuração da base real. A aplicação continua a precisar de `pdo_mysql` e das extensões já utilizadas para imagens, email e push. SQLite é uma aproximação para testar as regras, não uma substituição de MariaDB.
+Os testes PHP completos precisam de `pdo_sqlite`, `mbstring`, `openssl`, `curl`, `fileinfo` e `imagick` com WebP. Usam apenas uma base temporária em memória; não carregam a configuração da base real. A aplicação continua a precisar de `pdo_mysql` e das extensões já utilizadas para imagens, email e push. SQLite é uma aproximação para testar as regras, não uma substituição de MariaDB.
 
 Com Node.js:
 
@@ -65,7 +67,7 @@ Com Node.js:
 npm test
 ```
 
-Este teste não precisa de instalar pacotes. Para trabalhar nos projetos nativos:
+Este teste não precisa de instalar pacotes. Os testes específicos de navegação estão em `tests/navigation.html`; executa `python3 -m http.server 8765 --bind 127.0.0.1` na raiz do projeto e abre `http://127.0.0.1:8765/tests/navigation.html`. São testes isolados, com rede, páginas e animações simuladas; não usam a base real. Para trabalhar nos projetos nativos:
 
 ```sh
 npm ci

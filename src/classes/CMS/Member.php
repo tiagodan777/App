@@ -436,55 +436,27 @@ class Member {
                 WHERE ( emissor_id = :id1 OR destinatario_id = :id2 ) AND ficheiro_nome IS NOT NULL',
             ['id1' => $id, 'id2' => $id]
         )->fetchAll(\PDO::FETCH_COLUMN);
+        $pair = ['id1' => $id, 'id2' => $id];
+        $one = ['id' => $id];
         $deletes = [
-            [
-                'DELETE
-                    FROM mensagens_chat
-                    WHERE emissor_id = :id1 OR destinatario_id = :id2',
-                ['id1' => $id, 'id2' => $id]
-            ],
-            [
-                'DELETE
-                    FROM notificacao
-                    WHERE emissor_id = :id1 OR destinatario_id = :id2',
-                ['id1' => $id, 'id2' => $id]
-            ],
-            [
-                'DELETE
-                    FROM bloqueados
-                    WHERE pessoa_bloqueou_id = :id1 OR pessoa_bloqueada_id = :id2',
-                ['id1' => $id, 'id2' => $id]
-            ],
-            [
-                'DELETE
-                    FROM denuncias
-                    WHERE membro_denuncia = :id1 OR membro_denunciado = :id2',
-                ['id1' => $id, 'id2' => $id]
-            ],
-            [
-                'DELETE
-                    FROM token
-                    WHERE membro_id = :id',
-                ['id' => $id]
-            ],
-            [
-                'DELETE
-                    FROM localizacao_membro
-                    WHERE membro_id = :id',
-                ['id' => $id]
-            ],
-            [
-                'DELETE
-                    FROM membros_gostos
-                    WHERE membro_id = :id',
-                ['id' => $id]
-            ],
-            [
-                'DELETE
-                    FROM fotos_perfil
-                    WHERE membro_id = :id',
-                ['id' => $id]
-            ]
+            // As reações de outras pessoas também pertencem às conversas removidas.
+            ['DELETE FROM mensagens_reacoes WHERE membro_id = :id OR mensagem_id IN
+                (SELECT id FROM mensagens_chat WHERE emissor_id = :id1 OR destinatario_id = :id2)', $one + $pair],
+            ['DELETE FROM mensagens_chat WHERE emissor_id = :id1 OR destinatario_id = :id2', $pair],
+            ['DELETE FROM mensagens_apagadas WHERE emissor_id = :id1 OR destinatario_id = :id2', $pair],
+            ['DELETE FROM mensagens_conversas_ocultas WHERE membro_id = :id1 OR outro_id = :id2', $pair],
+            ['DELETE FROM mensagens WHERE pessoa_enviou = :id1 OR pessoa_recebeu = :id2', $pair],
+            ['DELETE FROM notificacao WHERE emissor_id = :id1 OR destinatario_id = :id2', $pair],
+            ['DELETE FROM bloqueados WHERE pessoa_bloqueou_id = :id1 OR pessoa_bloqueada_id = :id2', $pair],
+            ['DELETE FROM denuncias WHERE membro_denuncia = :id1 OR membro_denunciado = :id2', $pair],
+            ['DELETE FROM ligacoes_membros WHERE membro_a_id = :id1 OR membro_b_id = :id2', $pair],
+            ['DELETE FROM membro_hoje WHERE membro_id = :id', $one],
+            ['DELETE FROM estado_app_membro WHERE membro_id = :id', $one],
+            ['DELETE FROM localizacoes WHERE membro_id = :id', $one],
+            ['DELETE FROM token WHERE membro_id = :id', $one],
+            ['DELETE FROM localizacao_membro WHERE membro_id = :id', $one],
+            ['DELETE FROM membros_gostos WHERE membro_id = :id', $one],
+            ['DELETE FROM fotos_perfil WHERE membro_id = :id', $one]
         ];
         try {
             $this->db->beginTransaction();

@@ -1,6 +1,10 @@
 # Revisão da Margot
 
-Esta entrega reorganiza o código para manutenção, usando a arquitetura do Lykrr como referência. Mantém as rotas, os contratos entre PHP e JavaScript, o aspeto da interface e as integrações nativas existentes. Os problemas funcionais identificados abaixo ficam explicitamente registados para a fase seguinte.
+Esta entrega reorganiza o código para manutenção, usando a arquitetura do Lykrr como referência. Mantém as rotas, os contratos entre PHP e JavaScript, o aspeto da interface e as integrações nativas existentes. As correções funcionais posteriores e as limitações estão descritas nos relatórios de cada versão.
+
+A versão 2 acrescenta a [correção da navegação](NAVEGACAO.md), com alterações funcionais no navegador interno e nas transições. A comparação de equivalência de CSS indicada abaixo refere-se à reorganização inicial; esta correção altera intencionalmente o bloco de navegação de `style.css`.
+
+A versão 3 acrescenta testes de contas, push, localização e controladores, e corrige três falhas reproduzidas. Os resultados atuais e os pontos ainda abertos estão em [TESTES-V3.md](TESTES-V3.md). As contagens abaixo documentam a revisão inicial.
 
 ## Alterações principais
 
@@ -32,15 +36,17 @@ Foram preservadas verificações que protegem dados ou permitem recuperar de fal
 
 Os testes PHP foram executados em PHP 8.3.33, usando SQLite temporário com adaptação de algumas expressões MariaDB. Não foram realizados testes contra a base MariaDB real, transações concorrentes no servidor, envio real de email/APNs/FCM, uploads HTTP reais nem testes em dispositivos. A comparação de DOM não equivale a um teste visual completo no browser. Não foi feita uma compilação completa de iOS/Android. Não foi efetuado qualquer deploy.
 
+Foram ainda executadas 207 verificações específicas da navegação, descritas em `NAVEGACAO.md`.
+
 ## Problemas existentes para a próxima fase
 
 | Tema | Evidência e impacto |
 | --- | --- |
 | Distância de descoberta | `ProximityConfig::RADIUS_METRES` está em `1600000` (1 600 km), enquanto a interface fala em 100 metros. O valor original foi preservado; é necessário decidir o raio pretendido. |
-| Género | O formulário e `Validate::isGenero()` usam `M`, `F`, `D`; o SQL fornecido define `enum('M','F','P')`. A terceira opção pode falhar ao guardar. É necessário alinhar dados, formulário e validação. |
-| Eliminação de conta | `Member::delete()` não elimina explicitamente todos os registos das tabelas mais recentes que não têm uma chave estrangeira com eliminação em cascata, incluindo ligações, estado “Hoje”, estado da app e tabelas auxiliares de mensagens. Pode deixar registos órfãos. |
+| Género | Corrigido na versão 3: formulário, resumo e validação usam `P`, como no esquema fornecido. |
+| Eliminação de conta | Corrigido na versão 3: limpeza das referências em tabelas recentes e antigas, com teste de preservação de conversas de terceiros. |
 
-Não se deve interpretar a passagem dos testes como resolução destes problemas ou garantia de ausência de outros erros. Esta entrega fornece uma base mais legível para os corrigir.
+O raio continua pendente. Ver o relatório da versão 3 para os outros problemas encontrados e os testes que exigem servidor/dispositivos.
 
 ## Dependências e ficheiros originais
 

@@ -370,11 +370,17 @@
         return plugin.status();
     }
 
-    async function renovarToken() {
+    var geracao = 0;
+
+    async function renovarToken(versao) {
+        if (versao === undefined) versao = geracao;
         if (!pluginDisponivel()) {
             return { available: false, active: false };
         }
         var token = await pedirTokenBackground();
+        if (versao !== geracao || !localizacaoPermitida()) {
+            return { active: false, cancelled: true };
+        }
         if (!token) {
             return { available: true, authenticated: false, active: false };
         }
@@ -383,6 +389,7 @@
          * O Swift agora lê efetivamente o campo visible.
          */
         var resultado = await plugin.start({ token: token, visible: presencaVisivel() });
+        if (versao !== geracao || !localizacaoPermitida()) return plugin.stop();
         if (presencaVisivel() && precisaDasDefinicoes(resultado)) {
             mostrarAvisoDefinicoes(false);
         }
@@ -397,6 +404,7 @@
         if (inicializacao) {
             return inicializacao;
         }
+        var versao = geracao;
         inicializacao = (async function () {
             try {
                 if (!localizacaoPermitida()) {
@@ -418,12 +426,14 @@
                  */
                 if (androidNativo() && presencaVisivel()) {
                     var permissaoAndroid = await garantirPermissaoLocalizacaoAndroid();
+                    if (versao !== geracao) return { active: false, cancelled: true };
                     if (!permissaoAndroid.granted) {
                         mostrarAvisoDefinicoes(!!forcarAviso);
                         return estadoAtual();
                     }
                 }
                 var estado = await estadoAtual();
+                if (versao !== geracao) return { active: false, cancelled: true };
 
                 /*
                  * Se o serviço nativo já está vivo,
@@ -436,6 +446,7 @@
                  */
                 if (localizacaoAtiva(estado) || (tokenGuardado(estado) && !presencaVisivel())) {
                     var estadoSincronizado = await definirVisibilidade(presencaVisivel());
+                    if (versao !== geracao) return plugin.stop();
                     if (presencaVisivel() && precisaDasDefinicoes(estadoSincronizado)) {
                         mostrarAvisoDefinicoes(!!forcarAviso);
                     }
@@ -444,7 +455,7 @@
                 if (presencaVisivel() && precisaDasDefinicoes(estado)) {
                     mostrarAvisoDefinicoes(!!forcarAviso);
                 }
-                var resultado = await renovarToken();
+                var resultado = await renovarToken(versao);
                 if (presencaVisivel() && precisaDasDefinicoes(resultado)) {
                     mostrarAvisoDefinicoes(!!forcarAviso);
                 }
@@ -460,6 +471,8 @@
     }
 
     async function parar() {
+        // Invalida arranques pendentes, mesmo que o pedido HTTP termine depois do logout.
+        geracao += 1;
         if (!pluginDisponivel()) {
             return { available: false, active: false };
         }
