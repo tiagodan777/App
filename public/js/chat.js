@@ -6,7 +6,7 @@
 
     window.desativarChatMargot?.();
 
-    const byId = id => document.getElementById(id);
+    const byId = (id) => document.getElementById(id);
     const form = byId('chat-form');
     const text = byId('chat-texto');
     const send = byId('chat-enviar');
@@ -20,7 +20,7 @@
     const recording = byId('chat-recording');
     const otherId = page.dataset.outroId;
     const me = String(window.membroId);
-    const url = form.action;
+    const url = new URL(form.getAttribute('action'), window.location.href).href;
     const events = new AbortController();
     const signal = events.signal;
 
@@ -32,15 +32,24 @@
     let lastId = 0;
     let polling = false;
 
+    // Mantém anexos e texto ao trocar de página dentro da app; limpa após enviar/apagar.
+    const drafts = (window.MargotChatDrafts ||= new Map());
+    const draftKey = me + ':' + otherId;
+
+    function saveDraft() {
+        if (file || text.value || reply) drafts.set(draftKey, { file, text: text.value, reply });
+        else drafts.delete(draftKey);
+    }
+
     const viewport = window.MargotChatViewport(page, list, content);
-    const own = message => String(message.emissor_id) === me;
+    const own = (message) => String(message.emissor_id) === me;
     const connected = () => window.AppWebSocket?.isConnected?.();
 
-    const publish = data => {
+    const publish = (data) => {
         if (connected()) window.AppWebSocket.send(data);
     };
 
-    const showError = message => {
+    const showError = (message) => {
         if (alive) {
             error.textContent = message;
             error.hidden = !message;
@@ -51,7 +60,7 @@
         element.addEventListener(type, handler, { signal });
     };
 
-    const summary = message =>
+    const summary = (message) =>
         message.text ||
         { imagem: 'Fotografia', video: 'Vídeo', audio: 'Mensagem de voz' }[message.type] ||
         'Mensagem';
@@ -61,33 +70,20 @@
             .replace(' ', 'T')
             .replace(/(\.\d{3})\d+/, '$1');
 
-        const date = new Date(
-            timestamp + (/Z$|[+-]\d\d:\d\d$/.test(timestamp) ? '' : 'Z')
-        );
+        const date = new Date(timestamp + (/Z$|[+-]\d\d:\d\d$/.test(timestamp) ? '' : 'Z'));
 
         return Number.isNaN(date.getTime())
             ? ''
-            : date.toLocaleTimeString('pt-PT', {
-                hour: '2-digit',
-                minute: '2-digit'
-            });
+            : date.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
     }
 
     async function request(body) {
-        const response = await fetch(url, {
-            method: 'POST',
-            body,
-            credentials: 'same-origin',
-            signal
-        });
-
+        const response = await fetch(url, { method: 'POST', body, credentials: 'same-origin', signal });
         const data = await response.json();
 
         if (!response.ok || !data.success) {
             throw new Error(
-                typeof data.message === 'string'
-                    ? data.message
-                    : 'Não foi possível concluir o pedido.'
+                typeof data.message === 'string' ? data.message : 'Não foi possível concluir o pedido.'
             );
         }
 
@@ -102,6 +98,7 @@
         send.classList.toggle('ativo', hasContent);
         send.hidden = !hasContent || busy;
         send.setAttribute('aria-label', sending ? 'A enviar mensagem' : 'Enviar mensagem');
+        send.textContent = sending ? '…' : '↑';
 
         microphone.hidden = hasContent || busy;
         microphone.disabled = sending;
@@ -113,15 +110,16 @@
         recording.hidden = !busy;
     }
 
-    function selectReply(value) {
+    function selectReply(value, focus = true) {
         reply = value;
         replyPreview.hidden = !reply;
         replyPreview.querySelector('span').textContent = reply ? summary(reply) : '';
 
-        if (reply) text.focus({ preventScroll: true });
+        if (reply && focus) text.focus({ preventScroll: true });
     }
 
     function chooseFile(value) {
+        preview.querySelectorAll('audio, video').forEach((element) => element.pause());
         if (previewUrl) URL.revokeObjectURL(previewUrl);
 
         previewUrl = null;
@@ -134,8 +132,8 @@
             const kind = file.type.startsWith('audio/')
                 ? 'audio'
                 : file.type.startsWith('video/')
-                    ? 'video'
-                    : 'img';
+                  ? 'video'
+                  : 'img';
 
             const limit = kind === 'video' ? 100 : kind === 'audio' ? 35 : 15;
 
@@ -166,11 +164,15 @@
             remove.setAttribute('aria-label', 'Remover anexo');
             remove.addEventListener('click', () => chooseFile(null), { signal });
 
-            preview.append(element, remove);
+            preview.append(
+                remove,
+                kind === 'audio' ? window.MargotChatAudioPlayer(element, showError) : element
+            );
             preview.classList.toggle('chat-preview-audio', kind === 'audio');
         }
 
         state();
+        saveDraft();
     }
 
     const recorder = window.MargotChatRecorder({
@@ -183,8 +185,8 @@
                 status === 'starting'
                     ? 'A abrir microfone…'
                     : status === 'finishing'
-                        ? 'A preparar…'
-                        : Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0');
+                      ? 'A preparar…'
+                      : Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0');
 
             byId('chat-recording-send').disabled = status !== 'recording';
             state();
@@ -243,11 +245,7 @@
         if (message.reply) bubble.append(quote(message.reply));
 
         if (message.media_url) {
-            const tag = {
-                imagem: 'img',
-                video: 'video',
-                audio: 'audio'
-            }[message.tipo];
+            const tag = { imagem: 'img', video: 'video', audio: 'audio' }[message.tipo];
 
             if (tag) {
                 const element = document.createElement(tag);
@@ -263,7 +261,7 @@
                     element.setAttribute('playsinline', '');
                 }
 
-                bubble.append(element);
+                bubble.append(tag === 'audio' ? window.MargotChatAudioPlayer(element, showError) : element);
             }
         }
 
@@ -304,9 +302,7 @@
         const article = render(message);
 
         // Polling e WebSocket podem terminar fora de ordem.
-        const next = [...content.children].find(
-            item => Number(item.dataset.mensagemId) > id
-        );
+        const next = [...content.children].find((item) => Number(item.dataset.mensagemId) > id);
 
         if (next) {
             content.insertBefore(article, next);
@@ -332,10 +328,7 @@
 
         body.set('mensagem', sentText);
         body.set('reply_to', sentReply?.id || '');
-        body.set(
-            'profile_access_token',
-            window.AppWebSocket?.profileAccessToken?.(otherId) || ''
-        );
+        body.set('profile_access_token', window.AppWebSocket?.profileAccessToken?.(otherId) || '');
         body.delete('media');
 
         if (sentFile) {
@@ -360,6 +353,7 @@
 
             if (file === sentFile) chooseFile(null);
             if (reply === sentReply) selectReply(null);
+            saveDraft();
 
             publish({ type: 'chat_publish', message_id: data.message.id });
         } catch (error) {
@@ -420,7 +414,7 @@
     on(form, 'submit', submit);
 
     // Impede a transferência de foco para o botão; o envio acontece apenas no click.
-    on(send, 'pointerdown', event => {
+    on(send, 'pointerdown', (event) => {
         if (event.button === 0) event.preventDefault();
     });
 
@@ -429,7 +423,7 @@
         state();
     });
 
-    on(text, 'keydown', event => {
+    on(text, 'keydown', (event) => {
         if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
             event.preventDefault();
             form.requestSubmit();
@@ -449,19 +443,15 @@
     on(byId('chat-recording-send'), 'click', () => recorder.finish());
     on(byId('chat-reply-cancel'), 'click', () => selectReply(null));
 
-    on(content, 'click', event => {
+    on(content, 'click', (event) => {
         const target = event.target.closest('[data-reply-id]');
         if (!target) return;
 
-        const original = content.querySelector(
-            '[data-mensagem-id="' + Number(target.dataset.replyId) + '"]'
-        );
+        const original = content.querySelector('[data-mensagem-id="' + Number(target.dataset.replyId) + '"]');
 
         if (original) {
             original.scrollIntoView({
-                behavior: matchMedia('(prefers-reduced-motion: reduce)').matches
-                    ? 'auto'
-                    : 'smooth',
+                behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
                 block: 'center'
             });
 
@@ -472,24 +462,22 @@
         }
     });
 
-    on(window, 'app:chat-message', event => {
+    on(window, 'app:chat-message', (event) => {
         const message = event.detail?.message;
 
         if (
             message &&
-            (
-                (String(message.emissor_id) === otherId && String(message.destinatario_id) === me) ||
-                (String(message.emissor_id) === me && String(message.destinatario_id) === otherId)
-            )
+            ((String(message.emissor_id) === otherId && String(message.destinatario_id) === me) ||
+                (String(message.emissor_id) === me && String(message.destinatario_id) === otherId))
         ) {
             if (add(message) && !own(message)) markRead();
         }
     });
 
-    on(window, 'app:chat-messages-read', event => {
+    on(window, 'app:chat-messages-read', (event) => {
         if (String(event.detail.reader_id) !== otherId) return;
 
-        content.querySelectorAll('.minha').forEach(article => {
+        content.querySelectorAll('.minha').forEach((article) => {
             if (Number(article.dataset.mensagemId) <= Number(event.detail.last_message_id)) {
                 const receipt = article.querySelector('.chat-lida');
 
@@ -501,7 +489,7 @@
         });
     });
 
-    on(window, 'app:chat-reaction', event => {
+    on(window, 'app:chat-reaction', (event) => {
         reactions.receive(event.detail || {});
     });
 
@@ -515,15 +503,26 @@
         }
     });
 
-    content.querySelectorAll('[data-mensagem-id]').forEach(article => {
+    content.querySelectorAll('[data-mensagem-id]').forEach((article) => {
         lastId = Math.max(lastId, Number(article.dataset.mensagemId));
     });
 
-    content.querySelectorAll('time').forEach(element => {
+    content.querySelectorAll('time').forEach((element) => {
         element.textContent = time(element.dateTime);
     });
 
+    content.querySelectorAll('audio').forEach((audio) => window.MargotChatAudioPlayer(audio, showError));
+
     const interval = setInterval(() => sync(), 12000);
+
+    const draft = drafts.get(draftKey);
+
+    if (draft) {
+        text.value = draft.text;
+        chooseFile(draft.file);
+        selectReply(draft.reply, false);
+        resizeText();
+    }
 
     state();
     markRead();
@@ -531,9 +530,11 @@
     function destroy() {
         if (!alive) return;
 
+        saveDraft();
         alive = false;
         clearInterval(interval);
         events.abort();
+        page.querySelectorAll('audio, video').forEach((element) => element.pause());
         viewport.destroy();
         reactions.destroy();
         recorder.cancel();

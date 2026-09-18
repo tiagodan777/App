@@ -1,7 +1,7 @@
 {% extends 'layout.html' %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ doc_root }}estilos/chat.css?v=20260918-chat2" data-margot-page-style>
+<link rel="stylesheet" href="{{ doc_root }}estilos/chat.css?v=20260918-chat3" data-margot-page-style>
 {% endblock %}
 
 {% block content %}
@@ -9,7 +9,7 @@
     id="chat-pagina"
     class="chat-pagina"
     data-outro-id="{{ outro.id }}"
-    data-worklet-url="{{ doc_root }}js/chat-audio-worklet.js?v=20260917-chat1"
+    data-worklet-url="{{ doc_root }}js/chat-audio-worklet.js?v=20260918-chat3"
 >
     <header class="chat-cabecalho">
         <a href="{{ doc_root }}messages" class="chat-voltar" data-margot-voltar aria-label="Voltar às mensagens">
@@ -229,9 +229,10 @@ window.webSocketUrl = window.location.protocol === 'https:'
     : 'ws://' + window.location.hostname + ':8080';
 </script>
 
-<script src="{{ doc_root }}js/chat-viewport.js?v=20260917-chat1"></script>
-<script src="{{ doc_root }}js/chat-recorder.js?v=20260917-chat1"></script>
-<script src="{{ doc_root }}js/chat-camera.js?v=20260917-chat1"></script>
-<script src="{{ doc_root }}js/chat-reactions.js?v=20260918-chat2"></script>
-<script src="{{ doc_root }}js/chat.js?v=20260918-chat2"></script>
+<script src="{{ doc_root }}js/chat-viewport.js?v=20260918-chat3"></script>
+<script src="{{ doc_root }}js/chat-recorder.js?v=20260918-chat3"></script>
+<script src="{{ doc_root }}js/chat-camera.js?v=20260918-chat3"></script>
+<script src="{{ doc_root }}js/chat-reactions.js?v=20260918-chat3"></script>
+<script src="{{ doc_root }}js/chat-audio-player.js?v=20260918-chat3"></script>
+<script src="{{ doc_root }}js/chat.js?v=20260918-chat3"></script>
 {% endblock %}
