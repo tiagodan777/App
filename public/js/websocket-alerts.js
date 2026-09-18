@@ -38,7 +38,7 @@ window.MargotMessageAlerts = function (window, document, $) {
         var conversaUrl =
             String(window.messagesUrl || '/messages').replace(/\/+$/, '') + '/' + encodeURIComponent(emissorId);
         if (!resumo) {
-            resumo = mensagem.tipo === 'imagem' ? 'Enviou-te uma fotografia.' : 'Enviou-te um vídeo.';
+            resumo = { imagem: 'Enviou-te uma fotografia.', video: 'Enviou-te um vídeo.', audio: 'Enviou-te uma mensagem de voz.' }[mensagem.tipo] || 'Enviou-te uma mensagem.';
         }
 
         /*

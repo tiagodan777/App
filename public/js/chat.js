@@ -1,882 +1,551 @@
-(function (window, document, $) {
+(function (window, document) {
     'use strict';
 
-    var $pagina = $('#chat-pagina');
-    var $mensagens = $('#chat-mensagens');
-    var $conteudo = $('#chat-mensagens-conteudo');
-    var $form = $('#chat-form');
-    var $texto = $('#chat-texto');
-    var $media = $('#chat-media');
-    var $preview = $('#chat-media-preview');
-    var $erro = $('#chat-erro');
-    var $enviar = $('#chat-enviar');
-    if (!$pagina.length || !$mensagens.length || !$conteudo.length || !$form.length) {
-        return;
-    }
-    if (typeof window.desativarChatMargot === 'function') {
-        window.desativarChatMargot();
-    }
-    var NS = '.margotChat';
-    var capacitor = window.Capacitor || null;
-    var teclado = capacitor && capacitor.Plugins ? capacitor.Plugins.Keyboard : null;
-    var viewport = window.visualViewport || null;
-    var tecladoListeners = [];
-    var outroId = String($pagina.attr('data-outro-id') || window.chatMembroId || '');
-    var ultimoId = 0;
-    var previewUrl = null;
-    var aEnviar = false;
-    var ativo = true;
-    var aFixarNoFim = true;
+    const page = document.getElementById('chat-pagina');
+    if (!page) return;
 
-    var observadorForm = null;
-    var alturaForm = 0;
-    var rafForm = null;
-    var rafTexto = null;
-    var rafViewport = null;
-    var temporizadorFallbackTeclado = null;
-    var tecladoPluginAberto = false;
-    var alturaTecladoPlugin = 0;
-    var viewportTecladoAtivo = false;
-    var alturaViewportBase = 0;
-    var preparacaoInicialConcluida = false;
-    var temporizadorPreparacaoInicial = null;
-    var instantePreparacaoInicial = 0;
+    window.desativarChatMargot?.();
 
-    var reactions = window.MargotChatReactions($conteudo, $mensagens, NS, conversaUrl);
+    const byId = id => document.getElementById(id);
+    const form = byId('chat-form');
+    const text = byId('chat-texto');
+    const send = byId('chat-enviar');
+    const list = byId('chat-mensagens');
+    const content = byId('chat-mensagens-conteudo');
+    const media = byId('chat-media');
+    const preview = byId('chat-media-preview');
+    const error = byId('chat-erro');
+    const replyPreview = byId('chat-reply-preview');
+    const microphone = byId('chat-microphone');
+    const recording = byId('chat-recording');
+    const otherId = page.dataset.outroId;
+    const me = String(window.membroId);
+    const url = form.action;
+    const events = new AbortController();
+    const signal = events.signal;
 
-    function eIOSNativo() {
-        return Boolean(
-            capacitor &&
-            typeof capacitor.isNativePlatform === 'function' &&
-            capacitor.isNativePlatform() &&
-            typeof capacitor.getPlatform === 'function' &&
-            capacitor.getPlatform() === 'ios'
+    let alive = true;
+    let sending = false;
+    let file = null;
+    let previewUrl = null;
+    let reply = null;
+    let lastId = 0;
+    let polling = false;
+
+    const viewport = window.MargotChatViewport(page, list, content);
+    const own = message => String(message.emissor_id) === me;
+    const connected = () => window.AppWebSocket?.isConnected?.();
+
+    const publish = data => {
+        if (connected()) window.AppWebSocket.send(data);
+    };
+
+    const showError = message => {
+        if (alive) {
+            error.textContent = message;
+            error.hidden = !message;
+        }
+    };
+
+    const on = (element, type, handler) => {
+        element.addEventListener(type, handler, { signal });
+    };
+
+    const summary = message =>
+        message.text ||
+        { imagem: 'Fotografia', video: 'Vídeo', audio: 'Mensagem de voz' }[message.type] ||
+        'Mensagem';
+
+    function time(value) {
+        const timestamp = String(value || '')
+            .replace(' ', 'T')
+            .replace(/(\.\d{3})\d+/, '$1');
+
+        const date = new Date(
+            timestamp + (/Z$|[+-]\d\d:\d\d$/.test(timestamp) ? '' : 'Z')
         );
-    }
 
-    function baseUrl() {
-        return String(window.messagesUrl || '/messages').replace(/\/+$/, '');
-    }
-
-    function conversaUrl() {
-        return baseUrl() + '/' + encodeURIComponent(outroId);
-    }
-
-    function dataLocal(valor) {
-        var texto = String(valor || '');
-        var data = new Date(texto.replace(' ', 'T') + (texto.includes('Z') ? '' : 'Z'));
-        if (Number.isNaN(data.getTime())) {
-            return '';
-        }
-        return data.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
-    }
-
-    function minha(mensagem) {
-        return String(mensagem.emissor_id) === String(window.membroId);
-    }
-
-    function websocketLigado() {
-        return Boolean(
-            window.AppWebSocket &&
-            typeof window.AppWebSocket.isConnected === 'function' &&
-            window.AppWebSocket.isConnected()
-        );
-    }
-
-    function maximoScroll() {
-        var elemento = $mensagens[0];
-        if (!elemento) {
-            return 0;
-        }
-        return Math.max(0, elemento.scrollHeight - elemento.clientHeight);
-    }
-
-    function distanciaAoFim() {
-        var elemento = $mensagens[0];
-        if (!elemento) {
-            return 0;
-        }
-        return Math.max(0, elemento.scrollHeight - elemento.clientHeight - elemento.scrollTop);
-    }
-
-    function irParaFimAgora() {
-        if (!ativo || !$mensagens[0]) {
-            return;
-        }
-        $mensagens[0].scrollTop = maximoScroll();
-    }
-
-    function deslocarParaFim(forcar) {
-        if (!ativo || !$mensagens[0] || (!forcar && !aFixarNoFim)) {
-            return;
-        }
-        window.requestAnimationFrame(function () {
-            if (!ativo || !$mensagens[0]) {
-                return;
-            }
-            irParaFimAgora();
-        });
-    }
-
-    function fixarNoFimAposMudanca() {
-        if (!ativo || !$mensagens[0]) {
-            return;
-        }
-        aFixarNoFim = true;
-        window.requestAnimationFrame(function () {
-            if (!ativo) {
-                return;
-            }
-            irParaFimAgora();
-            window.requestAnimationFrame(function () {
-                if (!ativo) {
-                    return;
-                }
-                irParaFimAgora();
+        return Number.isNaN(date.getTime())
+            ? ''
+            : date.toLocaleTimeString('pt-PT', {
+                hour: '2-digit',
+                minute: '2-digit'
             });
+    }
+
+    async function request(body) {
+        const response = await fetch(url, {
+            method: 'POST',
+            body,
+            credentials: 'same-origin',
+            signal
         });
-    }
 
-    /*
-     * TECLADO
-     *
-     * Não animamos scrollTop nem padding.
-     *
-     * A própria scroll layer das mensagens
-     * e o compositor deslocam-se juntos.
-     *
-     * Se visualViewport acompanhar o teclado,
-     * seguimos a posição real dele frame a frame.
-     */
+        const data = await response.json();
 
-    function definirAlturaTeclado(altura) {
-        altura = Math.max(0, Math.round(Number(altura) || 0));
-        $pagina[0].style.setProperty('--margot-keyboard-height', altura + 'px');
-    }
-
-    function alturaVisualAtual() {
-        if (!viewport) {
-            return 0;
-        }
-        var limiteVisivel = Number(viewport.height || 0) + Math.max(0, Number(viewport.offsetTop || 0));
-        if (!alturaViewportBase) {
-            alturaViewportBase = Math.max(Number(window.innerHeight || 0), limiteVisivel);
-        }
-        if (!tecladoPluginAberto && !viewportTecladoAtivo) {
-            alturaViewportBase = Math.max(Number(window.innerHeight || 0), limiteVisivel);
-        }
-        return Math.max(0, alturaViewportBase - limiteVisivel);
-    }
-
-    function cancelarFallbackTeclado() {
-        if (temporizadorFallbackTeclado === null) {
-            return;
-        }
-        window.clearTimeout(temporizadorFallbackTeclado);
-        temporizadorFallbackTeclado = null;
-    }
-
-    function aplicarViewport() {
-        rafViewport = null;
-        if (!ativo || !viewport) {
-            return;
-        }
-        var altura = alturaVisualAtual();
-        if (altura > 24) {
-            viewportTecladoAtivo = true;
-            cancelarFallbackTeclado();
-            document.body.classList.remove('margot-chat-teclado-fallback');
-            definirAlturaTeclado(altura);
-            return;
-        }
-        if (!tecladoPluginAberto) {
-            viewportTecladoAtivo = false;
-            document.body.classList.remove('margot-chat-teclado-fallback');
-            definirAlturaTeclado(0);
-        }
-    }
-
-    function agendarViewport() {
-        if (rafViewport !== null) {
-            return;
-        }
-        rafViewport = window.requestAnimationFrame(aplicarViewport);
-    }
-
-    function tecladoVaiAbrir(info) {
-        if (!ativo) {
-            return;
-        }
-        tecladoPluginAberto = true;
-        alturaTecladoPlugin = Math.max(0, Number(info && info.keyboardHeight) || 0);
-        cancelarFallbackTeclado();
-
-        /*
-         * Damos alguns milissegundos ao
-         * visualViewport para começar a mexer.
-         *
-         * Só usamos a animação artificial
-         * se o WebView não reportar o movimento.
-         */
-        temporizadorFallbackTeclado = window.setTimeout(function () {
-            temporizadorFallbackTeclado = null;
-            if (!ativo || !tecladoPluginAberto || viewportTecladoAtivo) {
-                return;
-            }
-            document.body.classList.add('margot-chat-teclado-fallback');
-            definirAlturaTeclado(alturaTecladoPlugin);
-        }, 40);
-        agendarViewport();
-    }
-
-    function tecladoAbriu(info) {
-        if (!ativo) {
-            return;
-        }
-        tecladoPluginAberto = true;
-        alturaTecladoPlugin = Math.max(0, Number(info && info.keyboardHeight) || alturaTecladoPlugin);
-        agendarViewport();
-        if (!viewportTecladoAtivo && alturaTecladoPlugin > 0) {
-            definirAlturaTeclado(alturaTecladoPlugin);
-        }
-    }
-
-    function tecladoVaiFechar() {
-        if (!ativo) {
-            return;
-        }
-        cancelarFallbackTeclado();
-        tecladoPluginAberto = false;
-
-        /*
-         * Se visualViewport está ativo,
-         * deixamo-lo levar a altura até zero.
-         */
-        if (viewportTecladoAtivo) {
-            agendarViewport();
-            return;
-        }
-        document.body.classList.add('margot-chat-teclado-fallback');
-        definirAlturaTeclado(0);
-    }
-
-    function tecladoFechou() {
-        if (!ativo) {
-            return;
-        }
-        cancelarFallbackTeclado();
-        tecladoPluginAberto = false;
-        alturaTecladoPlugin = 0;
-        agendarViewport();
-        window.requestAnimationFrame(function () {
-            if (!ativo) {
-                return;
-            }
-            if (alturaVisualAtual() <= 24) {
-                viewportTecladoAtivo = false;
-                document.body.classList.remove('margot-chat-teclado-fallback');
-                definirAlturaTeclado(0);
-            }
-        });
-    }
-
-    async function prepararTecladoNativo() {
-        if (viewport) {
-            alturaViewportBase = Math.max(
-                Number(window.innerHeight || 0),
-                Number(viewport.height || 0) + Math.max(0, Number(viewport.offsetTop || 0))
+        if (!response.ok || !data.success) {
+            throw new Error(
+                typeof data.message === 'string'
+                    ? data.message
+                    : 'Não foi possível concluir o pedido.'
             );
-            viewport.addEventListener('resize', agendarViewport);
-            viewport.addEventListener('scroll', agendarViewport);
         }
-        if (!teclado) {
-            return;
-        }
-        if (eIOSNativo() && typeof teclado.setAccessoryBarVisible === 'function') {
-            try {
-                await teclado.setAccessoryBarVisible({ isVisible: false });
-            } catch (erro) {
-                console.warn('Não foi possível ocultar a barra auxiliar do teclado.', erro);
-            }
-        }
-        if (typeof teclado.addListener !== 'function') {
-            return;
-        }
-        try {
-            tecladoListeners.push(await teclado.addListener('keyboardWillShow', tecladoVaiAbrir));
-            tecladoListeners.push(await teclado.addListener('keyboardDidShow', tecladoAbriu));
-            tecladoListeners.push(await teclado.addListener('keyboardWillHide', tecladoVaiFechar));
-            tecladoListeners.push(await teclado.addListener('keyboardDidHide', tecladoFechou));
-        } catch (erro) {
-            console.warn('Não foi possível acompanhar o teclado nativo.', erro);
-        }
+
+        return data;
     }
 
-    async function restaurarTecladoNativo() {
-        cancelarFallbackTeclado();
-        var listeners = tecladoListeners.slice();
-        tecladoListeners = [];
-        listeners.forEach(function (listener) {
-            if (listener && typeof listener.remove === 'function') {
-                Promise.resolve(listener.remove()).catch(function () {});
-            }
-        });
-        if (viewport) {
-            viewport.removeEventListener('resize', agendarViewport);
-            viewport.removeEventListener('scroll', agendarViewport);
-        }
-        if (rafViewport !== null) {
-            window.cancelAnimationFrame(rafViewport);
-            rafViewport = null;
-        }
-        document.body.classList.remove('margot-chat-teclado-fallback');
-        definirAlturaTeclado(0);
-        if (teclado && eIOSNativo() && typeof teclado.setAccessoryBarVisible === 'function') {
-            try {
-                await teclado.setAccessoryBarVisible({ isVisible: true });
-            } catch (erro) {}
-        }
+    function state() {
+        const hasContent = Boolean(text.value.trim() || file);
+        const busy = recorder.state !== 'idle';
+
+        send.disabled = sending || !hasContent || busy;
+        send.classList.toggle('ativo', hasContent);
+        send.hidden = !hasContent || busy;
+        send.setAttribute('aria-label', sending ? 'A enviar mensagem' : 'Enviar mensagem');
+
+        microphone.hidden = hasContent || busy;
+        microphone.disabled = sending;
+
+        byId('chat-camera-open').disabled = sending || busy;
+        byId('chat-gallery').disabled = sending || busy;
+
+        text.hidden = busy;
+        recording.hidden = !busy;
     }
 
-    /*
-     * ALTURA REAL DO FORMULÁRIO
-     */
+    function selectReply(value) {
+        reply = value;
+        replyPreview.hidden = !reply;
+        replyPreview.querySelector('span').textContent = reply ? summary(reply) : '';
 
-    function aplicarAlturaForm(novaAltura) {
-        novaAltura = Math.max(1, Math.ceil(Number(novaAltura) || 0));
-        if (!novaAltura || Math.abs(novaAltura - alturaForm) < 1) {
-            return;
-        }
-        alturaForm = novaAltura;
-        $pagina[0].style.setProperty('--chat-form-altura', alturaForm + 'px');
-        if (!aFixarNoFim) {
-            return;
-        }
-        if (rafForm !== null) {
-            window.cancelAnimationFrame(rafForm);
-        }
-        rafForm = window.requestAnimationFrame(function () {
-            rafForm = null;
-            if (!ativo || !aFixarNoFim) {
+        if (reply) text.focus({ preventScroll: true });
+    }
+
+    function chooseFile(value) {
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+
+        previewUrl = null;
+        file = value;
+        preview.replaceChildren();
+        preview.hidden = !file;
+        media.value = '';
+
+        if (file) {
+            const kind = file.type.startsWith('audio/')
+                ? 'audio'
+                : file.type.startsWith('video/')
+                    ? 'video'
+                    : 'img';
+
+            const limit = kind === 'video' ? 100 : kind === 'audio' ? 35 : 15;
+
+            if (file.size > limit * 1024 * 1024) {
+                file = null;
+                preview.hidden = true;
+                showError('O ficheiro pode ter no máximo ' + limit + ' MB.');
+                state();
                 return;
             }
-            irParaFimAgora();
-        });
+
+            previewUrl = URL.createObjectURL(file);
+
+            const element = document.createElement(kind);
+            element.src = previewUrl;
+
+            if (kind !== 'img') {
+                element.controls = true;
+                element.setAttribute('playsinline', '');
+            } else {
+                element.alt = 'Fotografia a enviar';
+            }
+
+            const remove = document.createElement('button');
+            remove.type = 'button';
+            remove.className = 'chat-media-remover';
+            remove.textContent = '×';
+            remove.setAttribute('aria-label', 'Remover anexo');
+            remove.addEventListener('click', () => chooseFile(null), { signal });
+
+            preview.append(element, remove);
+            preview.classList.toggle('chat-preview-audio', kind === 'audio');
+        }
+
+        state();
     }
 
-    function prepararMedicaoForm() {
-        aplicarAlturaForm($form[0].getBoundingClientRect().height);
-        if (typeof ResizeObserver !== 'function') {
-            return;
-        }
-        observadorForm = new ResizeObserver(function (entradas) {
-            if (!ativo || !entradas.length) {
-                return;
+    const recorder = window.MargotChatRecorder({
+        workletUrl: page.dataset.workletUrl,
+
+        onState(status, seconds) {
+            if (!alive) return;
+
+            byId('chat-recording-time').textContent =
+                status === 'starting'
+                    ? 'A abrir microfone…'
+                    : status === 'finishing'
+                        ? 'A preparar…'
+                        : Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0');
+
+            byId('chat-recording-send').disabled = status !== 'recording';
+            state();
+        },
+
+        onFile(value, sendImmediately) {
+            if (alive) {
+                chooseFile(value);
+                if (sendImmediately) form.requestSubmit();
             }
-            var entrada = entradas[0];
-            var tamanho = entrada.borderBoxSize;
-            var altura = 0;
-            if (tamanho) {
-                if (Array.isArray(tamanho)) {
-                    altura = tamanho[0] ? tamanho[0].blockSize : 0;
+        },
+
+        onError: showError
+    });
+
+    const camera = window.MargotChatCamera({
+        dialog: byId('chat-camera'),
+        onFile: chooseFile,
+        onError: showError,
+        gallery: media
+    });
+
+    const reactions = window.MargotChatReactions({
+        content,
+        list,
+        request,
+        publish,
+        onError: showError,
+        onReply: selectReply
+    });
+
+    function quote(value) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'chat-quote';
+        button.dataset.replyId = value.id;
+
+        button.textContent = value.available
+            ? (String(value.sender_id) === me ? 'Tu · ' : 'Resposta · ') + summary(value)
+            : 'Mensagem indisponível';
+
+        return button;
+    }
+
+    function render(message) {
+        const article = document.createElement('article');
+        article.className = 'chat-mensagem ' + (own(message) ? 'minha' : 'recebida');
+        article.dataset.mensagemId = message.id;
+        article.dataset.emissorId = message.emissor_id;
+
+        const bubble = document.createElement('div');
+        bubble.className = 'chat-balao';
+        bubble.tabIndex = 0;
+        bubble.setAttribute('aria-label', 'Mensagem. Manter premido para opções.');
+
+        if (message.reply) bubble.append(quote(message.reply));
+
+        if (message.media_url) {
+            const tag = {
+                imagem: 'img',
+                video: 'video',
+                audio: 'audio'
+            }[message.tipo];
+
+            if (tag) {
+                const element = document.createElement(tag);
+                element.className = 'chat-' + message.tipo;
+                element.src = message.media_url;
+
+                if (tag === 'img') {
+                    element.alt = 'Fotografia';
+                    element.draggable = false;
                 } else {
-                    altura = tamanho.blockSize || 0;
+                    element.controls = true;
+                    element.preload = 'metadata';
+                    element.setAttribute('playsinline', '');
                 }
+
+                bubble.append(element);
             }
-            if (!altura) {
-                altura = $form[0].getBoundingClientRect().height;
-            }
-            aplicarAlturaForm(altura);
-        });
-        observadorForm.observe($form[0]);
+        }
+
+        if (message.texto) {
+            const paragraph = document.createElement('p');
+            paragraph.textContent = message.texto;
+            bubble.append(paragraph);
+        }
+
+        const footer = document.createElement('footer');
+        const timestamp = document.createElement('time');
+        timestamp.dateTime = message.criada_em;
+        timestamp.textContent = time(message.criada_em);
+        footer.append(timestamp);
+
+        if (own(message)) {
+            const receipt = document.createElement('span');
+            receipt.className = 'chat-lida';
+            receipt.textContent = message.lida ? '✓✓' : '✓';
+            receipt.setAttribute('aria-label', message.lida ? 'Lida' : 'Enviada');
+            footer.append(receipt);
+        }
+
+        bubble.append(footer);
+        article.append(bubble);
+        reactions.render(article, message.reactions || []);
+
+        return article;
     }
 
-    function acompanharMedia($contexto, forcar) {
-        $contexto.find('img').each(function () {
-            var imagem = this;
-            if (imagem.complete) {
-                deslocarParaFim(forcar);
-                return;
-            }
-            $(imagem).one('load.margotChatScroll error.margotChatScroll', function () {
-                deslocarParaFim(forcar);
-            });
-        });
-        $contexto.find('video').each(function () {
-            var video = this;
-            if (video.readyState >= 1) {
-                deslocarParaFim(forcar);
-                return;
-            }
-            $(video).one('loadedmetadata.margotChatScroll error.margotChatScroll', function () {
-                deslocarParaFim(forcar);
-            });
-        });
-    }
+    function add(message) {
+        const id = Number(message.id);
 
-    function finalizarPreparacaoInicial() {
-        if (preparacaoInicialConcluida) {
-            return;
-        }
-        preparacaoInicialConcluida = true;
-        instantePreparacaoInicial = window.performance.now();
-        if (temporizadorPreparacaoInicial !== null) {
-            window.clearTimeout(temporizadorPreparacaoInicial);
-            temporizadorPreparacaoInicial = null;
-        }
-        if (!$mensagens[0]) {
-            return;
-        }
-        irParaFimAgora();
-        window.requestAnimationFrame(function () {
-            if (!ativo || !$mensagens[0]) {
-                return;
-            }
-            irParaFimAgora();
-            $mensagens.removeClass('chat-mensagens-a-preparar').attr('aria-busy', 'false');
-        });
-    }
-
-    function prepararConteudoInicial() {
-        var pendentes = 0;
-        var $recentes = $mensagens.find('.chat-mensagem').slice(-14);
-        $recentes.find('img.chat-imagem').attr('loading', 'eager');
-        function terminouMediaInicial() {
-            pendentes = Math.max(0, pendentes - 1);
-            if (preparacaoInicialConcluida) {
-                if (aFixarNoFim && window.performance.now() - instantePreparacaoInicial < 800) {
-                    deslocarParaFim(false);
-                }
-                return;
-            }
-            if (pendentes === 0) {
-                finalizarPreparacaoInicial();
-            }
-        }
-        $mensagens.find('img.chat-imagem').each(function () {
-            if (this.complete) {
-                return;
-            }
-            pendentes += 1;
-            $(this).one('load.margotChatInicial error.margotChatInicial', terminouMediaInicial);
-        });
-        $mensagens.find('video.chat-video').each(function () {
-            if (this.readyState >= 1) {
-                return;
-            }
-            pendentes += 1;
-            $(this).one('loadedmetadata.margotChatInicial error.margotChatInicial', terminouMediaInicial);
-        });
-        irParaFimAgora();
-        if (pendentes === 0) {
-            window.requestAnimationFrame(finalizarPreparacaoInicial);
-            return;
-        }
-        temporizadorPreparacaoInicial = window.setTimeout(finalizarPreparacaoInicial, 180);
-    }
-
-    function criarMensagem(mensagem) {
-        var eMinha = minha(mensagem);
-        var $artigo = $('<article>', {
-            class: 'chat-mensagem ' + (eMinha ? 'minha' : 'recebida'),
-            'data-mensagem-id': mensagem.id,
-            'data-emissor-id': mensagem.emissor_id
-        });
-        var $balao = $('<div>', { class: 'chat-balao' });
-        if (mensagem.tipo === 'imagem' && mensagem.media_url) {
-            $balao.append(
-                $('<img>', {
-                    class: 'chat-imagem',
-                    src: mensagem.media_url,
-                    alt: 'Fotografia enviada por ' + (mensagem.emissor_nome || 'utilizador'),
-                    loading: 'eager',
-                    draggable: false
-                })
-            );
-        }
-        if (mensagem.tipo === 'video' && mensagem.media_url) {
-            var $video = $('<video>', { class: 'chat-video', controls: true, playsinline: true, preload: 'metadata' });
-            $video.append($('<source>', { src: mensagem.media_url, type: mensagem.ficheiro_mime || 'video/mp4' }));
-            $balao.append($video);
-        }
-        if (mensagem.texto) {
-            $balao.append($('<p>').text(mensagem.texto));
-        }
-        var $rodape = $('<footer>').append(
-            $('<time>', { datetime: mensagem.criada_em }).text(dataLocal(mensagem.criada_em))
-        );
-        if (eMinha) {
-            $rodape.append(
-                $('<span>', { class: 'chat-lida', 'aria-label': mensagem.lida ? 'Lida' : 'Enviada' }).text(
-                    mensagem.lida ? '✓✓' : '✓'
-                )
-            );
-        }
-        $artigo.append($balao.append($rodape));
-        reactions.renderizarReacoesMensagem($artigo, mensagem.reactions || []);
-        return $artigo;
-    }
-
-    function adicionarMensagem(mensagem, deslocar) {
-        var id = Number(mensagem.id) || 0;
-        if (!id || $mensagens.find('[data-mensagem-id="' + id + '"]').length) {
+        if (!id || content.querySelector('[data-mensagem-id="' + id + '"]')) {
             return false;
         }
-        var $novaMensagem = criarMensagem(mensagem);
-        $conteudo.append($novaMensagem);
-        ultimoId = Math.max(ultimoId, id);
-        if (deslocar !== false) {
-            acompanharMedia($novaMensagem, true);
-            fixarNoFimAposMudanca();
+
+        const article = render(message);
+
+        // Polling e WebSocket podem terminar fora de ordem.
+        const next = [...content.children].find(
+            item => Number(item.dataset.mensagemId) > id
+        );
+
+        if (next) {
+            content.insertBefore(article, next);
+        } else {
+            viewport.insert(article, own(message));
         }
+
+        lastId = Math.max(lastId, id);
         return true;
     }
 
-    function temConteudoParaEnviar() {
-        return Boolean($texto.val().trim() || ($media[0] && $media[0].files && $media[0].files.length));
-    }
+    async function submit(event) {
+        event.preventDefault();
 
-    function atualizarEstadoEnviar() {
-        var temConteudo = temConteudoParaEnviar();
-        $enviar.toggleClass('ativo', temConteudo).prop('disabled', aEnviar || !temConteudo);
-        if (!aEnviar) {
-            $enviar.text('Enviar');
-        }
-    }
-
-    function limparMedia() {
-        if (previewUrl) {
-            URL.revokeObjectURL(previewUrl);
-        }
-        previewUrl = null;
-        $media.val('');
-        $preview.empty().prop('hidden', true);
-        atualizarEstadoEnviar();
-    }
-
-    function mostrarPreview(ficheiro) {
-        if (previewUrl) {
-            URL.revokeObjectURL(previewUrl);
-        }
-        previewUrl = null;
-        $preview.empty().prop('hidden', true);
-        $erro.prop('hidden', true).text('');
-        if (!ficheiro) {
-            atualizarEstadoEnviar();
+        if (sending || recorder.state !== 'idle' || (!text.value.trim() && !file)) {
             return;
         }
-        var eVideo = ficheiro.type.startsWith('video/');
-        var limite = eVideo ? 100 * 1024 * 1024 : 15 * 1024 * 1024;
-        if (ficheiro.size > limite) {
-            $media.val('');
-            $erro
-                .text(eVideo ? 'O vídeo pode ter no máximo 100 MB.' : 'A fotografia pode ter no máximo 15 MB.')
-                .prop('hidden', false);
-            atualizarEstadoEnviar();
-            return;
-        }
-        previewUrl = URL.createObjectURL(ficheiro);
-        var $previewConteudo = eVideo
-            ? $('<video>', { src: previewUrl, muted: true, controls: true, playsinline: true })
-            : $('<img>', { src: previewUrl, alt: 'Pré-visualização', draggable: false });
-        $preview
-            .append(
-                $previewConteudo,
-                $('<button>', { type: 'button', class: 'chat-media-remover', 'aria-label': 'Remover ficheiro' }).text(
-                    '×'
-                )
-            )
-            .prop('hidden', false);
-        atualizarEstadoEnviar();
-    }
 
-    function publicarMensagem(mensagemId) {
-        if (!websocketLigado()) {
-            return;
-        }
-        window.AppWebSocket.send({ type: 'chat_publish', message_id: mensagemId });
-    }
+        const sentText = text.value;
+        const sentFile = file;
+        const sentReply = reply;
+        const body = new FormData(form);
 
-    function prepararDadosEnvio() {
-        var dados = new FormData($form[0]);
-        var token = '';
-        if (window.AppWebSocket && typeof window.AppWebSocket.profileAccessToken === 'function') {
-            token = window.AppWebSocket.profileAccessToken(window.chatMembroId);
-        }
-        dados.set('profile_access_token', token || '');
-        var inputToken = document.getElementById('chat-profile-access-token');
-        if (inputToken) inputToken.value = token || '';
-        return dados;
-    }
+        body.set('mensagem', sentText);
+        body.set('reply_to', sentReply?.id || '');
+        body.set(
+            'profile_access_token',
+            window.AppWebSocket?.profileAccessToken?.(otherId) || ''
+        );
+        body.delete('media');
 
-    async function enviarMensagem(evento) {
-        evento.preventDefault();
-        if (aEnviar || !temConteudoParaEnviar()) {
-            return;
+        if (sentFile) {
+            body.set('media', sentFile);
+            body.set('media_kind', sentFile.type.startsWith('audio/') ? 'audio' : '');
         }
-        aEnviar = true;
-        aFixarNoFim = true;
-        $enviar.prop('disabled', true).text('A enviar…');
-        $erro.prop('hidden', true).text('');
+
+        sending = true;
+        showError('');
+        state();
+
         try {
-            var resposta = await fetch(conversaUrl(), {
-                method: 'POST',
-                body: prepararDadosEnvio(),
-                credentials: 'same-origin'
-            });
-            var dados = await resposta.json();
-            if (!resposta.ok || !dados.success) {
-                throw new Error(dados.message || 'Não foi possível enviar a mensagem.');
+            const data = await request(body);
+            if (!alive) return;
+
+            add(data.message);
+
+            if (text.value === sentText) {
+                text.value = '';
+                resizeText();
             }
-            adicionarMensagem(dados.message);
-            $texto.val('').css('height', 'auto');
-            limparMedia();
-            fixarNoFimAposMudanca();
-            publicarMensagem(dados.message.id);
-        } catch (erro) {
-            $erro.text(erro.message).prop('hidden', false);
+
+            if (file === sentFile) chooseFile(null);
+            if (reply === sentReply) selectReply(null);
+
+            publish({ type: 'chat_publish', message_id: data.message.id });
+        } catch (error) {
+            if (error.name !== 'AbortError') showError(error.message);
         } finally {
-            aEnviar = false;
-            atualizarEstadoEnviar();
+            sending = false;
+            if (alive) state();
         }
     }
 
-    async function marcarComoLidas() {
-        if (document.visibilityState === 'hidden') {
-            return;
-        }
-        var corpo = new FormData();
-        corpo.set('action', 'mark_read');
+    async function markRead() {
+        if (!alive || document.hidden) return;
+
         try {
-            await fetch(conversaUrl(), { method: 'POST', body: corpo, credentials: 'same-origin' });
-            if (websocketLigado()) {
-                window.AppWebSocket.send({ type: 'chat_read', with_member_id: outroId });
-            }
-        } catch (erro) {
-            console.error(erro);
+            await request(new URLSearchParams({ action: 'mark_read' }));
+            publish({ type: 'chat_read', with_member_id: otherId });
+        } catch (error) {
+            /* A próxima sincronização volta a confirmar a leitura. */
         }
     }
 
-    async function procurarNovasMensagens(forcar) {
-        /*
-         * Com WebSocket ligado não fazemos
-         * um request de 5 em 5 segundos.
-         *
-         * O polling serve apenas de fallback.
-         */
-        if (!forcar && websocketLigado()) {
-            return;
-        }
+    async function sync(force = false) {
+        if (!alive || polling || document.hidden || (!force && connected())) return;
+
+        polling = true;
+
         try {
-            var resposta = await fetch(conversaUrl() + '?api=history&after_id=' + ultimoId, {
-                credentials: 'same-origin',
-                cache: 'no-store'
+            let more;
+
+            do {
+                const response = await fetch(url + '?api=history&after_id=' + lastId, {
+                    credentials: 'same-origin',
+                    cache: 'no-store',
+                    signal
+                });
+
+                const data = await response.json();
+                if (!response.ok || !data.success || !alive) break;
+
+                const previous = lastId;
+                data.messages.forEach(add);
+                more = data.messages.length === 100 && lastId > previous;
+            } while (more);
+
+            markRead();
+        } catch (error) {
+            /* O intervalo seguinte volta a sincronizar. */
+        } finally {
+            polling = false;
+        }
+    }
+
+    function resizeText() {
+        text.style.height = 'auto';
+        text.style.height = Math.min(text.scrollHeight, 120) + 'px';
+    }
+
+    on(form, 'submit', submit);
+
+    // Impede a transferência de foco para o botão; o envio acontece apenas no click.
+    on(send, 'pointerdown', event => {
+        if (event.button === 0) event.preventDefault();
+    });
+
+    on(text, 'input', () => {
+        resizeText();
+        state();
+    });
+
+    on(text, 'keydown', event => {
+        if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+            event.preventDefault();
+            form.requestSubmit();
+        }
+    });
+
+    on(media, 'change', () => chooseFile(media.files[0] || null));
+    on(byId('chat-camera-open'), 'click', () => camera.open());
+    on(byId('chat-gallery'), 'click', () => media.click());
+
+    on(microphone, 'click', () => {
+        showError('');
+        recorder.start();
+    });
+
+    on(byId('chat-recording-cancel'), 'click', () => recorder.cancel());
+    on(byId('chat-recording-send'), 'click', () => recorder.finish());
+    on(byId('chat-reply-cancel'), 'click', () => selectReply(null));
+
+    on(content, 'click', event => {
+        const target = event.target.closest('[data-reply-id]');
+        if (!target) return;
+
+        const original = content.querySelector(
+            '[data-mensagem-id="' + Number(target.dataset.replyId) + '"]'
+        );
+
+        if (original) {
+            original.scrollIntoView({
+                behavior: matchMedia('(prefers-reduced-motion: reduce)').matches
+                    ? 'auto'
+                    : 'smooth',
+                block: 'center'
             });
-            var dados = await resposta.json();
-            if (!resposta.ok || !dados.success) {
-                return;
-            }
-            var recebeu = false;
-            (dados.messages || []).forEach(function (mensagem) {
-                if (adicionarMensagem(mensagem) && !minha(mensagem)) {
-                    recebeu = true;
+
+            original.classList.add('chat-highlight');
+            setTimeout(() => original.classList.remove('chat-highlight'), 900);
+        } else {
+            showError('A mensagem original não está carregada nesta conversa.');
+        }
+    });
+
+    on(window, 'app:chat-message', event => {
+        const message = event.detail?.message;
+
+        if (
+            message &&
+            (
+                (String(message.emissor_id) === otherId && String(message.destinatario_id) === me) ||
+                (String(message.emissor_id) === me && String(message.destinatario_id) === otherId)
+            )
+        ) {
+            if (add(message) && !own(message)) markRead();
+        }
+    });
+
+    on(window, 'app:chat-messages-read', event => {
+        if (String(event.detail.reader_id) !== otherId) return;
+
+        content.querySelectorAll('.minha').forEach(article => {
+            if (Number(article.dataset.mensagemId) <= Number(event.detail.last_message_id)) {
+                const receipt = article.querySelector('.chat-lida');
+
+                if (receipt) {
+                    receipt.textContent = '✓✓';
+                    receipt.setAttribute('aria-label', 'Lida');
                 }
-            });
-            if (recebeu) {
-                marcarComoLidas();
-            }
-        } catch (erro) {
-            console.error(erro);
-        }
-    }
-
-    function atualizarConfirmacoes(lidoPor, ultimoLido) {
-        if (String(lidoPor) !== outroId) {
-            return;
-        }
-        $mensagens.find('.chat-mensagem.minha').each(function () {
-            if (Number($(this).attr('data-mensagem-id')) <= Number(ultimoLido)) {
-                $(this).find('.chat-lida').text('✓✓').attr('aria-label', 'Lida');
             }
         });
-    }
+    });
 
-    /*
-     * TEXTAREA
-     *
-     * O scrollHeight é lido no máximo
-     * uma vez por frame.
-     */
+    on(window, 'app:chat-reaction', event => {
+        reactions.receive(event.detail || {});
+    });
 
-    function ajustarTextareaAgora() {
-        rafTexto = null;
-        if (!ativo || !$texto[0]) {
-            return;
-        }
-        var elemento = $texto[0];
-        elemento.style.height = 'auto';
-        elemento.style.height = Math.min(elemento.scrollHeight, 120) + 'px';
-    }
-
-    function aoAlterarTexto() {
-        atualizarEstadoEnviar();
-        if (rafTexto !== null) {
-            return;
-        }
-        rafTexto = window.requestAnimationFrame(ajustarTextareaAgora);
-    }
-    $mensagens.find('.chat-mensagem').each(function () {
-        ultimoId = Math.max(ultimoId, Number($(this).attr('data-mensagem-id')) || 0);
-    });
-    $mensagens.find('time[data-data-mensagem]').each(function () {
-        $(this).text(dataLocal($(this).attr('datetime')));
-    });
-    prepararMedicaoForm();
-    prepararConteudoInicial();
-
-    /*
-     * O estado "estou no fundo" depende
-     * do scroll real, não de tocar na lista.
-     */
-    $mensagens.on('scroll' + NS, function () {
-        aFixarNoFim = distanciaAoFim() < 90;
-    });
-    reactions.bind();
-
-    $form.on('submit' + NS, enviarMensagem);
-    $enviar.on('pointerdown' + NS, function (evento) {
-        if (aEnviar || $enviar.prop('disabled')) {
-            return;
-        }
-        if (evento.pointerType === 'mouse' && evento.button !== 0) {
-            return;
-        }
-        evento.preventDefault();
-        $form.trigger('submit');
-    });
-    $enviar.on('click' + NS, function (evento) {
-        evento.preventDefault();
-        if (aEnviar || $enviar.prop('disabled')) {
-            return;
-        }
-        $form.trigger('submit');
-    });
-    $media.on('change' + NS, function () {
-        mostrarPreview(this.files[0]);
-    });
-    $preview.on('click' + NS, '.chat-media-remover', limparMedia);
-    $texto.on('input' + NS, aoAlterarTexto);
-    $texto.on('keydown' + NS, function (evento) {
-        if (evento.key === 'Enter' && !evento.shiftKey) {
-            evento.preventDefault();
-            $form.trigger('submit');
+    on(document, 'visibilitychange', () => {
+        if (document.hidden) {
+            recorder.cancel();
+            camera.close();
+        } else {
+            sync(true);
+            markRead();
         }
     });
 
-    function aoReceberMensagem(evento) {
-        var mensagem = evento.detail.message;
-        if (!mensagem) {
-            return;
-        }
-        var pertence =
-            (String(mensagem.emissor_id) === outroId && String(mensagem.destinatario_id) === String(window.membroId)) ||
-            (String(mensagem.emissor_id) === String(window.membroId) && String(mensagem.destinatario_id) === outroId);
-        if (pertence && adicionarMensagem(mensagem) && !minha(mensagem)) {
-            marcarComoLidas();
-        }
-    }
+    content.querySelectorAll('[data-mensagem-id]').forEach(article => {
+        lastId = Math.max(lastId, Number(article.dataset.mensagemId));
+    });
 
-    function aoLerMensagens(evento) {
-        atualizarConfirmacoes(evento.detail.reader_id, evento.detail.last_message_id);
-    }
+    content.querySelectorAll('time').forEach(element => {
+        element.textContent = time(element.dateTime);
+    });
 
-    function aoReceberReacao(evento) {
-        var detalhe = evento.detail || {};
-        var mensagemId = Number(detalhe.message_id) || 0;
-        if (!mensagemId) {
-            return;
-        }
-        if (detalhe.deleted === true) {
-            reactions.removerMensagemDoChat(mensagemId, true);
-            return;
-        }
-        reactions.renderizarReacoesMensagem(reactions.artigoMensagemPorId(mensagemId), detalhe.reactions || []);
-    }
+    const interval = setInterval(() => sync(), 12000);
 
-    function aoAlterarVisibilidade() {
-        if (document.visibilityState === 'visible') {
-            procurarNovasMensagens(true);
-            marcarComoLidas();
-        }
-    }
-    window.addEventListener('app:chat-message', aoReceberMensagem);
-    window.addEventListener('app:chat-messages-read', aoLerMensagens);
-    window.addEventListener('app:chat-reaction', aoReceberReacao);
-    document.addEventListener('visibilitychange', aoAlterarVisibilidade);
-    $('#menuPrincipal a').removeClass('active');
-    atualizarEstadoEnviar();
-    prepararTecladoNativo();
-    marcarComoLidas();
+    state();
+    markRead();
 
-    /*
-     * Só é fallback se o WebSocket cair.
-     */
-    var temporizador = window.setInterval(function () {
-        procurarNovasMensagens(false);
-    }, 12000);
+    function destroy() {
+        if (!alive) return;
 
-    function desativarChat() {
-        if (!ativo) {
-            return;
-        }
-        ativo = false;
-        window.clearInterval(temporizador);
-        if (temporizadorPreparacaoInicial !== null) {
-            window.clearTimeout(temporizadorPreparacaoInicial);
-            temporizadorPreparacaoInicial = null;
-        }
-        if (rafForm !== null) {
-            window.cancelAnimationFrame(rafForm);
-            rafForm = null;
-        }
-        if (rafTexto !== null) {
-            window.cancelAnimationFrame(rafTexto);
-            rafTexto = null;
-        }
-        if (observadorForm) {
-            observadorForm.disconnect();
-            observadorForm = null;
-        }
-        $mensagens.off(NS);
-        $(document).off(NS);
+        alive = false;
+        clearInterval(interval);
+        events.abort();
+        viewport.destroy();
         reactions.destroy();
-        $form.off(NS);
-        $texto.off(NS);
-        $media.off(NS);
-        $preview.off(NS);
-        $enviar.off(NS);
-        $mensagens.find('img, video').off('.margotChatScroll').off('.margotChatInicial');
-        restaurarTecladoNativo();
-        $pagina[0].style.removeProperty('--margot-keyboard-height');
-        $pagina[0].style.removeProperty('--chat-form-altura');
-        window.removeEventListener('app:chat-message', aoReceberMensagem);
-        window.removeEventListener('app:chat-messages-read', aoLerMensagens);
-        window.removeEventListener('app:chat-reaction', aoReceberReacao);
-        document.removeEventListener('visibilitychange', aoAlterarVisibilidade);
-        document.removeEventListener('margot:page-leave', desativarChat);
-        window.removeEventListener('pagehide', desativarChat);
-        if (previewUrl) {
-            URL.revokeObjectURL(previewUrl);
-            previewUrl = null;
-        }
-        if (window.desativarChatMargot === desativarChat) {
-            delete window.desativarChatMargot;
-        }
-        if (String(window.chatMembroId || '') === outroId) {
-            delete window.chatMembroId;
-        }
+        recorder.cancel();
+        camera.destroy();
+
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+        if (window.desativarChatMargot === destroy) delete window.desativarChatMargot;
+        if (String(window.chatMembroId) === otherId) delete window.chatMembroId;
     }
-    window.desativarChatMargot = desativarChat;
-    document.addEventListener('margot:page-leave', desativarChat);
-    window.addEventListener('pagehide', desativarChat);
-})(window, document, jQuery);
+
+    window.desativarChatMargot = destroy;
+
+    on(document, 'margot:page-leave', destroy);
+    on(window, 'pagehide', destroy);
+})(window, document);

@@ -134,6 +134,7 @@ CREATE TABLE "mensagens_chat" (
     "destinatario_id" TEXT NOT NULL,
     "texto" TEXT DEFAULT NULL,
     "tipo" TEXT NOT NULL DEFAULT 'texto',
+    "resposta_a_id" INTEGER DEFAULT NULL,
     "ficheiro_nome" TEXT DEFAULT NULL,
     "ficheiro_mime" TEXT DEFAULT NULL,
     "ficheiro_tamanho" INTEGER DEFAULT NULL,
@@ -228,13 +229,9 @@ CREATE TABLE "token" (
 );
 
 CREATE UNIQUE INDEX member_email ON membros (email);
-
 CREATE UNIQUE INDEX member_phone ON membros (telefone);
-
 CREATE UNIQUE INDEX hobby_name ON hobbies (nome);
-
 CREATE UNIQUE INDEX token_value ON token (token);
-
 CREATE UNIQUE INDEX push_token ON push_dispositivos (token_hash);
 CREATE UNIQUE INDEX push_installation ON push_dispositivos (plataforma, instalacao_id);
 CREATE UNIQUE INDEX push_event ON push_fila (dispositivo_id, chave_unica);

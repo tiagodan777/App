@@ -1,11 +1,16 @@
 {% extends 'layout.html' %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ doc_root }}estilos/chat.css?v=20260916" data-margot-page-style>
+<link rel="stylesheet" href="{{ doc_root }}estilos/chat.css?v=20260918-chat2" data-margot-page-style>
 {% endblock %}
 
 {% block content %}
-<main id="chat-pagina" class="chat-pagina" data-outro-id="{{ outro.id }}">
+<main
+    id="chat-pagina"
+    class="chat-pagina"
+    data-outro-id="{{ outro.id }}"
+    data-worklet-url="{{ doc_root }}js/chat-audio-worklet.js?v=20260917-chat1"
+>
     <header class="chat-cabecalho">
         <a href="{{ doc_root }}messages" class="chat-voltar" data-margot-voltar aria-label="Voltar às mensagens">
             <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -20,7 +25,6 @@
                 onerror="this.onerror=null;this.src='{{ doc_root }}imagens/fotos-perfil/default.webp';"
                 draggable="false"
             >
-
             <span>
                 <strong>{{ outro.nome }}</strong>
                 <small id="chat-estado">Margot</small>
@@ -42,7 +46,11 @@
                     data-mensagem-id="{{ mensagem.id }}"
                     data-emissor-id="{{ mensagem.emissor_id }}"
                 >
-                    <div class="chat-balao">
+                    <div class="chat-balao" tabindex="0" aria-label="Mensagem. Manter premido para opções.">
+                        {% if mensagem.reply %}
+                            <button type="button" class="chat-quote" data-reply-id="{{ mensagem.reply.id }}">{% if mensagem.reply.available %}{{ mensagem.reply.sender_id == membro_id ? 'Tu' : 'Resposta' }} · {{ mensagem.reply.text ?: (mensagem.reply.type == 'imagem' ? 'Fotografia' : (mensagem.reply.type == 'video' ? 'Vídeo' : 'Mensagem de voz')) }}{% else %}Mensagem indisponível{% endif %}</button>
+                        {% endif %}
+
                         {% if mensagem.tipo == 'imagem' and mensagem.media_url %}
                             <img
                                 class="chat-imagem"
@@ -51,7 +59,13 @@
                                 loading="lazy"
                                 draggable="false"
                             >
-
+                        {% elseif mensagem.tipo == 'audio' and mensagem.media_url %}
+                            <audio
+                                class="chat-audio"
+                                controls
+                                preload="metadata"
+                                src="{{ mensagem.media_url }}"
+                            ></audio>
                         {% elseif mensagem.tipo == 'video' and mensagem.media_url %}
                             <video class="chat-video" controls playsinline preload="metadata">
                                 <source src="{{ mensagem.media_url }}" type="{{ mensagem.ficheiro_mime }}">
@@ -73,7 +87,7 @@
 
                     <div class="chat-reacoes" aria-label="Reações à mensagem" {% if mensagem.reactions is empty %}hidden{% endif %}>
                         {% for reacao in mensagem.reactions %}
-                            <span class="chat-reacao{{ reacao.member_id == membro_id ? ' minha-reacao' : '' }}" data-emoji="{{ reacao.emoji }}">{{ reacao.emoji }}</span>
+                            <button type="button" class="chat-reacao{{ reacao.member_id == membro_id ? ' minha-reacao' : '' }}" data-emoji="{{ reacao.emoji }}">{{ reacao.emoji }}</button>
                         {% endfor %}
                     </div>
                 </article>
@@ -81,18 +95,39 @@
         </div>
     </section>
 
-    <form id="chat-form" class="chat-form" action="{{ doc_root }}messages/{{ outro.id }}" method="post" enctype="multipart/form-data">
+    <form
+        id="chat-form"
+        class="chat-form"
+        action="{{ doc_root }}messages/{{ outro.id }}"
+        method="post"
+        enctype="multipart/form-data"
+    >
         <input type="hidden" name="action" value="send">
         <input type="hidden" name="profile_access_token" id="chat-profile-access-token" value="">
+
+        <div id="chat-reply-preview" class="chat-reply-preview" hidden>
+            <div>
+                <small>A responder</small>
+                <span></span>
+            </div>
+            <button type="button" id="chat-reply-cancel" aria-label="Cancelar resposta">×</button>
+        </div>
 
         <div id="chat-media-preview" class="chat-media-preview" hidden></div>
 
         <div class="chat-compositor">
-            <label for="chat-media" class="chat-anexar" aria-label="Adicionar fotografia ou vídeo">
+            <button type="button" id="chat-camera-open" class="chat-icon" aria-label="Tirar fotografia">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 6h4l2-3h4l2 3h4v14H4z"></path>
+                    <circle cx="12" cy="12" r="4"></circle>
+                </svg>
+            </button>
+
+            <button type="button" id="chat-gallery" class="chat-icon" aria-label="Escolher fotografia ou vídeo">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M12 5v14M5 12h14"></path>
                 </svg>
-            </label>
+            </button>
 
             <input type="file" id="chat-media" name="media" accept="image/*,video/*" hidden>
 
@@ -109,12 +144,80 @@
                 enterkeyhint="send"
             ></textarea>
 
-            <button type="submit" id="chat-enviar" disabled>Enviar</button>
+            <button type="button" id="chat-microphone" class="chat-icon" aria-label="Gravar mensagem de voz">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="9" y="2" width="6" height="13" rx="3"></rect>
+                    <path d="M5 10v2a7 7 0 0014 0v-2M12 19v3M8 22h8"></path>
+                </svg>
+            </button>
+
+            <div id="chat-recording" class="chat-recording" hidden>
+                <button type="button" id="chat-recording-cancel" aria-label="Apagar gravação">×</button>
+                <span class="chat-recording-dot" aria-hidden="true"></span>
+                <output id="chat-recording-time" aria-live="off">0:00</output>
+                <button type="button" id="chat-recording-send" aria-label="Enviar gravação">↑</button>
+            </div>
+
+            <button type="submit" id="chat-enviar" aria-label="Enviar mensagem" disabled>↑</button>
         </div>
 
         <p id="chat-erro" class="chat-erro" role="alert" hidden></p>
     </form>
 </main>
+
+<dialog id="chat-camera" class="chat-camera" aria-label="Câmara">
+    <video autoplay muted playsinline></video>
+    <img alt="Fotografia captada" hidden>
+
+    <button type="button" data-camera="close" class="chat-camera-close" aria-label="Fechar câmara">×</button>
+
+    <div class="chat-camera-controls">
+        <button type="button" data-camera="gallery">Galeria</button>
+        <button type="button" data-camera="retake" hidden>Repetir</button>
+        <button type="button" data-camera="capture" class="chat-shutter" aria-label="Tirar fotografia" disabled></button>
+        <button type="button" data-camera="use" hidden>Usar fotografia</button>
+        <button type="button" data-camera="flip" aria-label="Trocar câmara">↻</button>
+    </div>
+</dialog>
+
+<dialog id="chat-actions" class="chat-sheet" aria-label="Opções da mensagem">
+    <div class="chat-reaction-presets">
+        {% for emoji in ['❤️', '😂', '😮', '😢', '😍', '🔥'] %}
+            <button type="button" data-emoji="{{ emoji }}" aria-label="Reagir {{ emoji }}">{{ emoji }}</button>
+        {% endfor %}
+        <button type="button" data-action="all" aria-label="Outra reação">+</button>
+    </div>
+
+    <button type="button" data-action="reply">↩ Responder</button>
+    <button type="button" data-action="delete">Apagar mensagem</button>
+    <button type="button" data-action="close">Cancelar</button>
+</dialog>
+
+<dialog id="chat-emojis" class="chat-sheet chat-emoji-picker" aria-labelledby="chat-emoji-title">
+    <header>
+        <strong id="chat-emoji-title">Outra reação</strong>
+        <button type="button" data-close aria-label="Cancelar reação">×</button>
+    </header>
+
+    <form>
+        <label for="chat-emoji-input">Emoji</label>
+        <p id="chat-emoji-help">Toca no botão de emojis do teu teclado e escolhe um.</p>
+
+        <input
+            id="chat-emoji-input"
+            type="text"
+            maxlength="64"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            enterkeyhint="done"
+            aria-describedby="chat-emoji-help chat-emoji-error"
+        >
+
+        <p id="chat-emoji-error" class="chat-erro" role="alert"></p>
+        <button type="submit">Reagir</button>
+    </form>
+</dialog>
 
 <script>
 window.membroId = {{ membro_id|json_encode|raw }};
@@ -126,6 +229,9 @@ window.webSocketUrl = window.location.protocol === 'https:'
     : 'ws://' + window.location.hostname + ':8080';
 </script>
 
-<script src="{{ doc_root }}js/chat-reactions.js?v=20260916"></script>
-<script src="{{ doc_root }}js/chat.js?v=20260916"></script>
+<script src="{{ doc_root }}js/chat-viewport.js?v=20260917-chat1"></script>
+<script src="{{ doc_root }}js/chat-recorder.js?v=20260917-chat1"></script>
+<script src="{{ doc_root }}js/chat-camera.js?v=20260917-chat1"></script>
+<script src="{{ doc_root }}js/chat-reactions.js?v=20260918-chat2"></script>
+<script src="{{ doc_root }}js/chat.js?v=20260918-chat2"></script>
 {% endblock %}

@@ -49,8 +49,8 @@
             : null;
     }
 
-    function tocar(tipo, detalhe) {
-        if (notificacoesDesativadas() || !aceitar(tipo, detalhe)) {
+    function tocar(tipo, detalhe, interacao) {
+        if (!interacao && (notificacoesDesativadas() || !aceitar(tipo, detalhe))) {
             return;
         }
         var plugin = pluginNativo();
@@ -102,6 +102,7 @@
     });
     window.MargotHaptics = Object.freeze({
         play: tocar,
+        feedback: function () { tocar('heySent', null, true); },
         cancel: function () {
             if (typeof navigator.vibrate === 'function') {
                 navigator.vibrate(0);

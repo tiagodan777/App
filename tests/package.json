@@ -1,0 +1,11 @@
+{
+  "name": "margot-browser-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node chat-run.mjs"
+  },
+  "devDependencies": {
+    "jsdom": "30.0.1"
+  }
+}

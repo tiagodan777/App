@@ -1,433 +1,364 @@
-// Reações, gestos e eliminação de mensagens.
-window.MargotChatReactions = function ($conteudo, $mensagens, NS, conversaUrl) {
-    'use strict';
-    var $ = jQuery;
-    var LONG_PRESS_REACAO_MS = 650;
-    var DOUBLE_TAP_REACAO_MS = 330;
-    var gestoReacao = null;
-    var ultimoTapReacao = { id: 0, instante: 0 };
-    var $menuReacoes = null;
-    function normalizarReacoes(reacoes) {
-        if (!Array.isArray(reacoes)) {
-            return [];
+window.MargotChatReactions = function ({ content, list, request, publish, onError, onReply }) {
+    const me = String(window.membroId);
+    const events = new AbortController();
+    const signal = events.signal;
+    const menu = document.getElementById('chat-actions');
+    const picker = document.getElementById('chat-emojis');
+    const emojiForm = picker.querySelector('form');
+    const emojiInput = picker.querySelector('input');
+    const emojiError = picker.querySelector('[role="alert"]');
+    const emojiSend = picker.querySelector('[type="submit"]');
+
+    let selected;
+    let gesture;
+    let timer;
+    let lastTap;
+    let alive = true;
+    let pending = new Set();
+
+    const on = (target, type, handler) => target.addEventListener(type, handler, { signal });
+    const find = id => content.querySelector('[data-mensagem-id="' + Number(id) + '"]');
+    const haptic = () => window.MargotHaptics?.feedback?.();
+
+    function render(article, reactions) {
+        if (!article) return;
+
+        let container = article.querySelector('.chat-reacoes');
+
+        if (!container) {
+            container = document.createElement('div');
+            container.className = 'chat-reacoes';
+            article.append(container);
         }
-        return reacoes
-            .map(function (reacao) {
-                return {
-                    member_id: String((reacao && (reacao.member_id || reacao.membro_id)) || ''),
-                    emoji: String((reacao && reacao.emoji) || '')
-                };
-            })
-            .filter(function (reacao) {
-                return Boolean(reacao.member_id && reacao.emoji);
-            });
-    }
-    function renderizarReacoesMensagem($artigo, reacoes) {
-        if (!$artigo || !$artigo.length) {
-            return;
-        }
-        reacoes = normalizarReacoes(reacoes);
-        var $zona = $artigo.children('.chat-reacoes');
-        if (!$zona.length) {
-            $zona = $('<div>', { class: 'chat-reacoes', 'aria-label': 'Reações à mensagem' });
-            $artigo.append($zona);
-        }
-        $zona.empty();
-        if (!reacoes.length) {
-            $zona.prop('hidden', true);
-            return;
-        }
-        var agrupadas = Object.create(null);
-        reacoes.forEach(function (reacao) {
-            if (!agrupadas[reacao.emoji]) {
-                agrupadas[reacao.emoji] = { emoji: reacao.emoji, count: 0, minha: false };
-            }
-            agrupadas[reacao.emoji].count += 1;
-            if (reacao.member_id === String(window.membroId || '')) {
-                agrupadas[reacao.emoji].minha = true;
-            }
+
+        container.replaceChildren();
+        container.hidden = !reactions.length;
+
+        const grouped = new Map();
+
+        reactions.forEach(reaction => {
+            const item = grouped.get(reaction.emoji) || { count: 0, own: false };
+            item.count++;
+            item.own ||= String(reaction.member_id) === me;
+            grouped.set(reaction.emoji, item);
         });
-        Object.keys(agrupadas).forEach(function (emoji) {
-            var grupo = agrupadas[emoji];
-            var $reacao = $('<span>', {
-                class: 'chat-reacao' + (grupo.minha ? ' minha-reacao' : ''),
-                'data-emoji': grupo.emoji,
-                text: grupo.emoji + (grupo.count > 1 ? ' ' + grupo.count : '')
-            });
-            $zona.append($reacao);
-        });
-        $zona.prop('hidden', false);
-    }
-    function artigoMensagemPorId(mensagemId) {
-        return $conteudo.find('.chat-mensagem[data-mensagem-id="' + String(Number(mensagemId) || 0) + '"]');
-    }
-    function animarCoracaoMensagem(mensagemId) {
-        var $artigo = artigoMensagemPorId(mensagemId);
-        if (!$artigo.length) {
-            return;
+
+        for (const [emoji, item] of grouped) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'chat-reacao' + (item.own ? ' minha-reacao' : '');
+            button.dataset.emoji = emoji;
+            button.textContent = emoji + (item.count > 1 ? ' ' + item.count : '');
+            button.setAttribute('aria-label', 'Reação ' + emoji + ', ' + item.count);
+            container.append(button);
         }
-        $artigo.find('.chat-coracao-feedback').remove();
-        var $coracao = $('<span>', { class: 'chat-coracao-feedback', text: '❤️', 'aria-hidden': 'true' });
-        $artigo.append($coracao);
-        window.requestAnimationFrame(function () {
-            $coracao.addClass('visivel');
+    }
+
+    function remove(id) {
+        const article = find(id);
+        if (!article) return;
+
+        article.remove();
+
+        content.querySelectorAll('[data-reply-id="' + Number(id) + '"]').forEach(quote => {
+            quote.textContent = 'Mensagem indisponível';
         });
-        window.setTimeout(function () {
-            $coracao.removeClass('visivel');
-            window.setTimeout(function () {
-                $coracao.remove();
-            }, 220);
-        }, 520);
     }
-    function obterMinhaReacao($artigo) {
-        var $reacao = $artigo.find('.chat-reacao.minha-reacao').first();
-        return String($reacao.attr('data-emoji') || '');
-    }
-    async function enviarReacao(mensagemId, emoji, alternar) {
-        mensagemId = Number(mensagemId) || 0;
-        emoji = String(emoji || '');
-        if (!mensagemId || !emoji) {
-            return;
-        }
+
+    async function react(id, emoji, toggle = true, reportError = onError) {
+        if (pending.has(id)) return false;
+        pending.add(id);
+
         try {
-            var corpo = new URLSearchParams();
-            corpo.set('action', 'react');
-            corpo.set('message_id', String(mensagemId));
-            corpo.set('emoji', emoji);
-            corpo.set('toggle', alternar ? '1' : '0');
-            var resposta = await fetch(conversaUrl(), {
-                method: 'POST',
-                credentials: 'same-origin',
-                cache: 'no-store',
-                headers: {
-                    Accept: 'application/json',
-                    'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
-                },
-                body: corpo.toString()
-            });
-            var dados = await resposta.json();
-            if (!resposta.ok || !dados.success) {
-                throw new Error(dados.message || 'Não foi possível reagir à mensagem.');
-            }
-            renderizarReacoesMensagem(artigoMensagemPorId(mensagemId), dados.reactions || []);
-            var ficouComCoracao = (dados.reactions || []).some(function (reacao) {
-                return (
-                    String((reacao && (reacao.member_id || reacao.membro_id)) || '') ===
-                        String(window.membroId || '') && String((reacao && reacao.emoji) || '') === '❤️'
-                );
-            });
-            if (emoji === '❤️' && ficouComCoracao) {
-                animarCoracaoMensagem(mensagemId);
-            }
-            if (window.AppWebSocket && typeof window.AppWebSocket.send === 'function') {
-                window.AppWebSocket.send({ type: 'chat_reaction', message_id: mensagemId });
-            }
-        } catch (erro) {
-            console.error(erro);
-            if (typeof window.mostrarMensagemTemporaria === 'function') {
-                window.mostrarMensagemTemporaria(erro.message || 'Não foi possível reagir à mensagem.', 'erro');
-            }
-        }
-    }
-    function removerMensagemDoChat(mensagemId, animar) {
-        var $artigo = artigoMensagemPorId(mensagemId);
-        if (!$artigo.length) {
-            return;
-        }
-        if (animar === false) {
-            $artigo.remove();
-            return;
-        }
-        $artigo.css({ transition: 'opacity 160ms ease, transform 180ms ease', opacity: '0', transform: 'scale(.96)' });
-        window.setTimeout(function () {
-            $artigo.remove();
-        }, 190);
-    }
-    async function apagarMensagem(mensagemId) {
-        mensagemId = Number(mensagemId) || 0;
-        if (!mensagemId) {
-            return;
-        }
-        var $artigo = artigoMensagemPorId(mensagemId);
-        if (!$artigo.length || String($artigo.attr('data-emissor-id') || '') !== String(window.membroId || '')) {
-            return;
-        }
-        try {
-            var corpo = new URLSearchParams();
-            corpo.set('action', 'delete_message');
-            corpo.set('message_id', String(mensagemId));
-            var resposta = await fetch(conversaUrl(), {
-                method: 'POST',
-                credentials: 'same-origin',
-                cache: 'no-store',
-                headers: {
-                    Accept: 'application/json',
-                    'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
-                },
-                body: corpo.toString()
-            });
-            var dados = await resposta.json();
-            if (!resposta.ok || !dados.success) {
-                throw new Error(dados.message || 'Não foi possível apagar a mensagem.');
-            }
-            removerMensagemDoChat(mensagemId, true);
-            if (window.AppWebSocket && typeof window.AppWebSocket.send === 'function') {
-                window.AppWebSocket.send({ type: 'chat_delete', message_id: mensagemId });
-            }
-        } catch (erro) {
-            console.error(erro);
-            if (typeof window.mostrarMensagemTemporaria === 'function') {
-                window.mostrarMensagemTemporaria(erro.message || 'Não foi possível apagar a mensagem.', 'erro');
-            }
-        }
-    }
-    function fecharMenuReacoes() {
-        if (!$menuReacoes || !$menuReacoes.length) {
-            return;
-        }
-        $menuReacoes.removeClass('visivel');
-        $menuReacoes.attr('aria-hidden', 'true');
-        $menuReacoes.removeAttr('data-mensagem-id');
-    }
-    function garantirMenuReacoes() {
-        if ($menuReacoes && $menuReacoes.length && $menuReacoes[0].isConnected) {
-            return $menuReacoes;
-        }
-        $menuReacoes = $('<div>', {
-            id: 'chat-menu-reacoes',
-            class: 'chat-menu-reacoes',
-            role: 'menu',
-            'aria-label': 'Reagir à mensagem',
-            'aria-hidden': 'true'
-        });
-        ['❤️', '😂', '😮', '😢', '😍', '🔥'].forEach(function (emoji) {
-            $menuReacoes.append(
-                $('<button>', {
-                    type: 'button',
-                    class: 'chat-menu-reacao',
-                    'data-emoji': emoji,
-                    'aria-label': 'Reagir com ' + emoji,
-                    text: emoji
+            const data = await request(
+                new URLSearchParams({
+                    action: 'react',
+                    message_id: id,
+                    emoji,
+                    toggle: String(toggle)
                 })
             );
-        });
-        $menuReacoes.append(
-            $('<button>', {
-                type: 'button',
-                class: 'chat-menu-reacao chat-menu-apagar',
-                'data-action': 'delete',
-                'aria-label': 'Apagar mensagem',
-                text: '🗑️',
-                hidden: true
-            })
-        );
-        $('body').append($menuReacoes);
-        return $menuReacoes;
-    }
-    function abrirMenuReacoes($artigo) {
-        if (!$artigo || !$artigo.length) {
-            return;
-        }
-        var mensagemId = Number($artigo.attr('data-mensagem-id')) || 0;
-        if (!mensagemId) {
-            return;
-        }
-        var $menu = garantirMenuReacoes();
-        var minhaMensagem = String($artigo.attr('data-emissor-id') || '') === String(window.membroId || '');
-        $menu.find('[data-action="delete"]').prop('hidden', !minhaMensagem);
-        var rect = $artigo[0].getBoundingClientRect();
-        var largura = Math.min(minhaMensagem ? 364 : 326, window.innerWidth - 24);
-        var esquerda = Math.max(
-            12,
-            Math.min(window.innerWidth - largura - 12, rect.left + rect.width / 2 - largura / 2)
-        );
-        $menu.css({ width: largura + 'px', left: esquerda + 'px', top: '0px' });
-        $menu.attr('data-mensagem-id', String(mensagemId));
-        var minhaReacao = obterMinhaReacao($artigo);
-        $menu.find('.chat-menu-reacao').each(function () {
-            $(this).toggleClass('ativa', String($(this).attr('data-emoji')) === minhaReacao);
-        });
-        $menu.addClass('medir');
-        var altura = $menu.outerHeight() || 58;
-        var topo = rect.top - altura - 10;
-        if (topo < 12) {
-            topo = Math.min(window.innerHeight - altura - 12, rect.bottom + 10);
-        }
-        $menu.css('top', Math.max(12, topo) + 'px');
-        $menu.removeClass('medir');
-        window.requestAnimationFrame(function () {
-            $menu.attr('aria-hidden', 'false').addClass('visivel');
-        });
-    }
-    function cancelarGestoReacao() {
-        if (!gestoReacao) {
-            return;
-        }
-        if (gestoReacao.timer) {
-            window.clearTimeout(gestoReacao.timer);
-        }
-        gestoReacao = null;
-    }
-    function iniciarGestoReacao(evento) {
-        var original = evento.originalEvent || evento;
-        if (original.pointerType === 'mouse' && original.button !== 0) {
-            return;
-        }
-        if ($(evento.target).closest('button, a, video, input, textarea').length) {
-            return;
-        }
-        var $artigo = $(evento.currentTarget).closest('.chat-mensagem');
-        var mensagemId = Number($artigo.attr('data-mensagem-id')) || 0;
-        if (!mensagemId) {
-            return;
-        }
-        cancelarGestoReacao();
-        gestoReacao = {
-            pointerId: original.pointerId,
-            $alvoPointer: $(evento.currentTarget),
-            mensagemId: mensagemId,
-            $artigo: $artigo,
-            inicioX: Number(original.clientX) || 0,
-            inicioY: Number(original.clientY) || 0,
-            moveu: false,
-            longo: false,
-            timer: null
-        };
-        if (
-            original.pointerId !== undefined &&
-            evento.currentTarget &&
-            typeof evento.currentTarget.setPointerCapture === 'function'
-        ) {
-            try {
-                evento.currentTarget.setPointerCapture(original.pointerId);
-            } catch (erro) {
-                /* O Safari pode recusar a captura do ponteiro. */
-            }
-        }
-        gestoReacao.timer = window.setTimeout(function () {
-            if (!gestoReacao || gestoReacao.moveu) {
-                return;
-            }
-            gestoReacao.longo = true;
-            abrirMenuReacoes(gestoReacao.$artigo);
-            if (window.MargotHaptics && typeof window.MargotHaptics.play === 'function') {
-                window.MargotHaptics.play('messageReceived');
-            }
-        }, LONG_PRESS_REACAO_MS);
-    }
-    function moverGestoReacao(evento) {
-        if (!gestoReacao) {
-            return;
-        }
-        var original = evento.originalEvent || evento;
-        if (
-            original.pointerId !== undefined &&
-            gestoReacao.pointerId !== undefined &&
-            original.pointerId !== gestoReacao.pointerId
-        ) {
-            return;
-        }
-        var dx = (Number(original.clientX) || 0) - gestoReacao.inicioX;
-        var dy = (Number(original.clientY) || 0) - gestoReacao.inicioY;
-        if (Math.hypot(dx, dy) > 28) {
-            gestoReacao.moveu = true;
-            if (gestoReacao.timer) {
-                window.clearTimeout(gestoReacao.timer);
-                gestoReacao.timer = null;
-            }
-        }
-    }
-    function terminarGestoReacao(evento) {
-        if (!gestoReacao) {
-            return;
-        }
-        var original = evento.originalEvent || evento;
-        if (
-            original.pointerId !== undefined &&
-            gestoReacao.pointerId !== undefined &&
-            original.pointerId !== gestoReacao.pointerId
-        ) {
-            return;
-        }
-        var gesto = gestoReacao;
-        if (
-            gesto.$alvoPointer &&
-            gesto.$alvoPointer.length &&
-            original.pointerId !== undefined &&
-            typeof gesto.$alvoPointer[0].releasePointerCapture === 'function'
-        ) {
-            try {
-                if (
-                    typeof gesto.$alvoPointer[0].hasPointerCapture !== 'function' ||
-                    gesto.$alvoPointer[0].hasPointerCapture(original.pointerId)
-                ) {
-                    gesto.$alvoPointer[0].releasePointerCapture(original.pointerId);
-                }
-            } catch (erro) {
-                /* O ponteiro pode já ter sido libertado. */
-            }
-        }
-        cancelarGestoReacao();
-        if (gesto.moveu || gesto.longo) {
-            return;
-        }
-        var agora = Date.now();
-        if (ultimoTapReacao.id === gesto.mensagemId && agora - ultimoTapReacao.instante <= DOUBLE_TAP_REACAO_MS) {
-            ultimoTapReacao.id = 0;
-            ultimoTapReacao.instante = 0;
-            enviarReacao(gesto.mensagemId, '❤️', true);
-            return;
-        }
-        ultimoTapReacao.id = gesto.mensagemId;
-        ultimoTapReacao.instante = agora;
-    }
-    function bind() {
-        $mensagens.on('pointerdown' + NS, '.chat-balao', iniciarGestoReacao);
-        $mensagens.on('contextmenu' + NS, '.chat-balao', function (evento) {
-            evento.preventDefault();
-        });
-        $mensagens.on('pointermove' + NS, '.chat-balao', moverGestoReacao);
-        $mensagens.on('pointerup' + NS + ' pointercancel' + NS, '.chat-balao', terminarGestoReacao);
-        $(document).on('pointerdown' + NS, function (evento) {
+
+            if (!alive) return;
+
+            const article = find(id);
+            render(article, data.reactions || []);
+
             if (
-                $menuReacoes &&
-                $menuReacoes.length &&
-                !$menuReacoes.is(evento.target) &&
-                !$menuReacoes.has(evento.target).length
+                emoji === '❤️' &&
+                article &&
+                data.reactions.some(item => item.emoji === emoji && String(item.member_id) === me)
             ) {
-                fecharMenuReacoes();
+                const heart = document.createElement('span');
+                heart.className = 'chat-heart';
+                heart.textContent = '❤️';
+                heart.setAttribute('aria-hidden', 'true');
+                article.append(heart);
+
+                setTimeout(() => heart.remove(), 700);
+            }
+
+            publish({ type: 'chat_reaction', message_id: Number(id) });
+            return true;
+        } catch (error) {
+            if (error.name !== 'AbortError' && alive) {
+                reportError(error.message);
+            }
+
+            return false;
+        } finally {
+            pending.delete(id);
+        }
+    }
+
+    function cancelGesture() {
+        clearTimeout(timer);
+        gesture = null;
+    }
+
+    function closeMenu() {
+        if (menu.open) menu.close();
+    }
+
+    function openMenu(article) {
+        selected = article;
+        lastTap = null;
+        menu.querySelector('[data-action="delete"]').hidden = article.dataset.emissorId !== me;
+        menu.showModal();
+        haptic();
+    }
+
+    on(content, 'pointerdown', event => {
+        if (event.button !== 0 || event.target.closest('button,a,input,video,audio')) return;
+
+        const article = event.target.closest('.chat-mensagem');
+        if (!article) return;
+
+        cancelGesture();
+
+        gesture = {
+            article,
+            id: event.pointerId,
+            x: event.clientX,
+            y: event.clientY,
+            long: false
+        };
+
+        timer = setTimeout(() => {
+            if (gesture) {
+                gesture.long = true;
+                openMenu(article);
+            }
+        }, 500);
+    });
+
+    on(content, 'pointermove', event => {
+        if (gesture && Math.hypot(event.clientX - gesture.x, event.clientY - gesture.y) > 12) {
+            cancelGesture();
+            lastTap = null;
+        }
+    });
+
+    on(content, 'pointerup', event => {
+        if (!gesture || gesture.id !== event.pointerId) return;
+
+        const { article, long } = gesture;
+        cancelGesture();
+
+        if (long) {
+            event.preventDefault();
+            return;
+        }
+
+        const now = performance.now();
+
+        if (lastTap?.article === article && now - lastTap.time < 320) {
+            haptic();
+            react(article.dataset.mensagemId, '❤️', false);
+            lastTap = null;
+        } else {
+            lastTap = { article, time: now };
+        }
+    });
+
+    on(content, 'pointercancel', () => {
+        cancelGesture();
+        lastTap = null;
+    });
+
+    on(window, 'pointerup', cancelGesture);
+
+    on(list, 'scroll', () => {
+        cancelGesture();
+        lastTap = null;
+    });
+
+    on(content, 'contextmenu', event => {
+        if (event.target.closest('.chat-balao')) event.preventDefault();
+    });
+
+    on(content, 'keydown', event => {
+        if (
+            event.target.closest('.chat-balao') &&
+            (
+                event.key === 'ContextMenu' ||
+                (event.key === 'F10' && event.shiftKey) ||
+                event.key === 'Enter'
+            )
+        ) {
+            if (event.target.closest('button,video,audio')) return;
+
+            event.preventDefault();
+            openMenu(event.target.closest('.chat-mensagem'));
+        }
+    });
+
+    on(content, 'click', event => {
+        const reaction = event.target.closest('[data-emoji]');
+
+        if (reaction) {
+            react(
+                reaction.closest('.chat-mensagem').dataset.mensagemId,
+                reaction.dataset.emoji
+            );
+        }
+    });
+
+    function openPicker() {
+        closeMenu();
+        emojiForm.reset();
+        emojiError.textContent = '';
+        picker.showModal();
+        emojiInput.focus({ preventScroll: true });
+    }
+
+    on(emojiForm, 'submit', async event => {
+        event.preventDefault();
+
+        if (!selected || emojiSend.disabled) return;
+
+        const article = selected;
+        const emoji = emojiInput.value.trim();
+
+        if (!emoji) {
+            emojiError.textContent = 'Escolhe um emoji no teclado.';
+            return;
+        }
+
+        emojiError.textContent = '';
+        emojiSend.disabled = true;
+
+        const sent = await react(article.dataset.mensagemId, emoji, true, message => {
+            if (selected === article && picker.open) {
+                emojiError.textContent = message;
             }
         });
-        $(document).on('click' + NS, '.chat-menu-reacao', function () {
-            var $botao = $(this);
-            var mensagemId = Number($menuReacoes && $menuReacoes.attr('data-mensagem-id')) || 0;
-            if (!mensagemId) {
-                return;
+
+        emojiSend.disabled = false;
+
+        if (alive && sent && selected === article && picker.open) {
+            picker.close();
+        }
+    });
+
+    on(emojiInput, 'input', () => {
+        emojiError.textContent = '';
+    });
+
+    on(menu, 'click', async event => {
+        const button = event.target.closest('button');
+        if (!button || !selected) return;
+
+        const id = Number(selected.dataset.mensagemId);
+        const action = button.dataset.action;
+
+        if (button.dataset.emoji) {
+            closeMenu();
+            react(id, button.dataset.emoji);
+        }
+
+        if (action === 'all') openPicker();
+        if (action === 'close') closeMenu();
+
+        if (action === 'reply') {
+            closeMenu();
+
+            const media = selected.querySelector('audio,video,img');
+
+            onReply({
+                id,
+                text: selected.querySelector('.chat-balao > p')?.textContent || '',
+                type:
+                    media?.tagName === 'AUDIO'
+                        ? 'audio'
+                        : media?.tagName === 'VIDEO'
+                            ? 'video'
+                            : media
+                                ? 'imagem'
+                                : 'texto'
+            });
+        }
+
+        if (action === 'delete') {
+            closeMenu();
+
+            try {
+                await request(
+                    new URLSearchParams({
+                        action: 'delete_message',
+                        message_id: id
+                    })
+                );
+
+                if (alive) {
+                    remove(id);
+                    publish({ type: 'chat_delete', message_id: id });
+                }
+            } catch (error) {
+                if (error.name !== 'AbortError') onError(error.message);
             }
-            var acao = String($botao.attr('data-action') || '');
-            if (acao === 'delete') {
-                fecharMenuReacoes();
-                apagarMensagem(mensagemId);
-                return;
+        }
+    });
+
+    on(picker, 'click', event => {
+        if (event.target.closest('[data-close]')) picker.close();
+    });
+
+    [menu, picker].forEach(dialog => {
+        on(dialog, 'click', event => {
+            if (event.target === dialog) {
+                const rect = dialog.getBoundingClientRect();
+
+                if (
+                    event.clientX < rect.left ||
+                    event.clientX > rect.right ||
+                    event.clientY < rect.top ||
+                    event.clientY > rect.bottom
+                ) {
+                    dialog.close();
+                }
             }
-            var emoji = String($botao.attr('data-emoji') || '');
-            if (!emoji) {
-                return;
-            }
-            fecharMenuReacoes();
-            enviarReacao(mensagemId, emoji, true);
         });
-    }
-    function destroy() {
-        cancelarGestoReacao();
-        if ($menuReacoes) $menuReacoes.remove();
-        $menuReacoes = null;
-    }
+    });
+
     return {
-        bind: bind,
-        destroy: destroy,
-        renderizarReacoesMensagem: renderizarReacoesMensagem,
-        artigoMensagemPorId: artigoMensagemPorId,
-        removerMensagemDoChat: removerMensagemDoChat
+        render,
+
+        receive(data) {
+            if (data.deleted) {
+                remove(data.message_id);
+            } else {
+                render(find(data.message_id), data.reactions || []);
+            }
+        },
+
+        destroy() {
+            alive = false;
+            cancelGesture();
+            events.abort();
+            closeMenu();
+
+            if (picker.open) picker.close();
+        }
     };
 };
