@@ -1,7 +1,7 @@
 {% extends 'layout.html' %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ doc_root }}estilos/chat.css?v=20260920-chat4" data-margot-page-style>
+<link rel="stylesheet" href="{{ doc_root }}estilos/chat.css?v=20260920-polish" data-margot-page-style>
 {% endblock %}
 
 {% block content %}
@@ -9,10 +9,15 @@
     id="chat-pagina"
     class="chat-pagina"
     data-outro-id="{{ outro.id }}"
-    data-worklet-url="{{ doc_root }}js/chat-audio-worklet.js?v=20260920-chat4"
+    data-worklet-url="{{ doc_root }}js/chat-audio-worklet.js?v=20260920-polish"
 >
     <header class="chat-cabecalho">
-        <a href="{{ doc_root }}messages" class="chat-voltar" data-margot-voltar aria-label="Voltar às mensagens">
+        <a
+            href="{{ doc_root }}messages"
+            class="chat-voltar"
+            data-margot-voltar
+            aria-label="Voltar às mensagens"
+        >
             <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M15 5l-7 7 7 7"></path>
             </svg>
@@ -46,13 +51,22 @@
                     data-mensagem-id="{{ mensagem.id }}"
                     data-emissor-id="{{ mensagem.emissor_id }}"
                 >
-                    <div class="chat-balao" tabindex="0" aria-label="Mensagem. Manter premido para opções.">
+                    <div
+                        class="chat-balao"
+                        tabindex="0"
+                        aria-label="Mensagem. Manter premido para opções."
+                    >
                         {% if mensagem.reply %}
                             <button type="button" class="chat-quote" data-reply-id="{{ mensagem.reply.id }}">{% if mensagem.reply.available %}{{ mensagem.reply.sender_id == membro_id ? 'Tu' : 'Resposta' }} · {{ mensagem.reply.text ?: (mensagem.reply.type == 'imagem' ? 'Fotografia' : (mensagem.reply.type == 'video' ? 'Vídeo' : 'Mensagem de voz')) }}{% else %}Mensagem indisponível{% endif %}</button>
                         {% endif %}
 
                         {% if mensagem.view_once %}
-                            <button type="button" class="chat-once" data-open-photo="{{ mensagem.id }}" {% if mensagem.minha or mensagem.opened %}disabled{% endif %}>{{ mensagem.opened ? 'Fotografia aberta' : (mensagem.minha ? 'Fotografia · Ver uma vez' : '① Abrir fotografia') }}</button>
+                            <button
+                                type="button"
+                                class="chat-once"
+                                data-open-photo="{{ mensagem.id }}"
+                                {% if mensagem.minha or mensagem.opened %}disabled{% endif %}
+                            >{{ mensagem.opened ? 'Fotografia aberta' : (mensagem.minha ? 'Fotografia · Ver uma vez' : '① Abrir fotografia') }}</button>
                         {% elseif mensagem.tipo == 'imagem' and mensagem.media_url %}
                             <img
                                 class="chat-imagem"
@@ -69,8 +83,16 @@
                                 src="{{ mensagem.media_url }}"
                             ></audio>
                         {% elseif mensagem.tipo == 'video' and mensagem.media_url %}
-                            <video class="chat-video" controls playsinline preload="metadata">
-                                <source src="{{ mensagem.media_url }}" type="{{ mensagem.ficheiro_mime }}">
+                            <video
+                                class="chat-video"
+                                controls
+                                playsinline
+                                preload="metadata"
+                            >
+                                <source
+                                    src="{{ mensagem.media_url }}"
+                                    type="{{ mensagem.ficheiro_mime }}"
+                                >
                             </video>
                         {% endif %}
 
@@ -79,17 +101,31 @@
                         {% endif %}
 
                         <footer>
-                            <time datetime="{{ mensagem.criada_em }}" data-data-mensagem="{{ mensagem.criada_em }}"></time>
+                            <time
+                                datetime="{{ mensagem.criada_em }}"
+                                data-data-mensagem="{{ mensagem.criada_em }}"
+                            ></time>
 
                             {% if mensagem.minha %}
-                                <span class="chat-lida" aria-label="{{ mensagem.lida ? 'Lida' : 'Enviada' }}">{{ mensagem.lida ? '✓✓' : '✓' }}</span>
+                                <span
+                                    class="chat-lida"
+                                    aria-label="{{ mensagem.lida ? 'Lida' : 'Enviada' }}"
+                                >{{ mensagem.lida ? '✓✓' : '✓' }}</span>
                             {% endif %}
                         </footer>
                     </div>
 
-                    <div class="chat-reacoes" aria-label="Reações à mensagem" {% if mensagem.reactions is empty %}hidden{% endif %}>
+                    <div
+                        class="chat-reacoes"
+                        aria-label="Reações à mensagem"
+                        {% if mensagem.reactions is empty %}hidden{% endif %}
+                    >
                         {% for reacao in mensagem.reactions %}
-                            <button type="button" class="chat-reacao{{ reacao.member_id == membro_id ? ' minha-reacao' : '' }}" data-emoji="{{ reacao.emoji }}">{{ reacao.emoji }}</button>
+                            <button
+                                type="button"
+                                class="chat-reacao{{ reacao.member_id == membro_id ? ' minha-reacao' : '' }}"
+                                data-emoji="{{ reacao.emoji }}"
+                            >{{ reacao.emoji }}</button>
                         {% endfor %}
                     </div>
                 </article>
@@ -105,35 +141,53 @@
         enctype="multipart/form-data"
     >
         <input type="hidden" name="action" value="send">
-        <input type="hidden" name="profile_access_token" id="chat-profile-access-token" value="">
+        <input
+            type="hidden"
+            name="profile_access_token"
+            id="chat-profile-access-token"
+            value=""
+        >
 
         <div id="chat-reply-preview" class="chat-reply-preview" hidden>
             <div>
                 <small>A responder</small>
                 <span></span>
             </div>
-            <button type="button" id="chat-reply-cancel" aria-label="Cancelar resposta">×</button>
+            <button
+                type="button"
+                id="chat-reply-cancel"
+                aria-label="Cancelar resposta"
+            >×</button>
         </div>
 
         <div id="chat-media-preview" class="chat-media-preview" hidden></div>
 
-        <label id="chat-view-once-label" class="chat-once-option" hidden><input type="checkbox" id="chat-view-once"> Ver uma vez</label>
+        <div id="chat-view-once-label" class="chat-once-option" hidden>
+            <input type="checkbox" id="chat-view-once" hidden>
+            <button type="button" data-once="false">Manter na conversa</button>
+            <button type="button" data-once="true">Ver uma vez</button>
+        </div>
 
         <div class="chat-compositor">
-            <button type="button" id="chat-camera-open" class="chat-icon" aria-label="Tirar fotografia">
+            <button
+                type="button"
+                id="chat-camera-open"
+                class="chat-icon"
+                aria-label="Tirar fotografia"
+            >
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M4 6h4l2-3h4l2 3h4v14H4z"></path>
                     <circle cx="12" cy="12" r="4"></circle>
                 </svg>
             </button>
 
-            <button type="button" id="chat-gallery" class="chat-icon" aria-label="Escolher fotografia ou vídeo">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M12 5v14M5 12h14"></path>
-                </svg>
-            </button>
-
-            <input type="file" id="chat-media" name="media" accept="image/*,video/*" hidden>
+            <input
+                type="file"
+                id="chat-media"
+                name="media"
+                accept="image/*,video/*"
+                hidden
+            >
 
             <textarea
                 id="chat-texto"
@@ -148,7 +202,12 @@
                 enterkeyhint="send"
             ></textarea>
 
-            <button type="button" id="chat-microphone" class="chat-icon" aria-label="Gravar mensagem de voz">
+            <button
+                type="button"
+                id="chat-microphone"
+                class="chat-icon"
+                aria-label="Gravar mensagem de voz"
+            >
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                     <rect x="9" y="2" width="6" height="13" rx="3"></rect>
                     <path d="M5 10v2a7 7 0 0014 0v-2M12 19v3M8 22h8"></path>
@@ -156,13 +215,31 @@
             </button>
 
             <div id="chat-recording" class="chat-recording" hidden>
-                <button type="button" id="chat-recording-cancel" aria-label="Apagar gravação">×</button>
-                <span class="chat-recording-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+                <button
+                    type="button"
+                    id="chat-recording-cancel"
+                    aria-label="Apagar gravação"
+                >×</button>
+
+                <span class="chat-recording-wave" aria-hidden="true">
+                    <i></i><i></i><i></i><i></i><i></i>
+                </span>
+
                 <output id="chat-recording-time" aria-live="off">0:00</output>
-                <button type="button" id="chat-recording-send" aria-label="Enviar gravação">↑</button>
+
+                <button
+                    type="button"
+                    id="chat-recording-send"
+                    aria-label="Enviar gravação"
+                >↑</button>
             </div>
 
-            <button type="submit" id="chat-enviar" aria-label="Enviar mensagem" disabled>↑</button>
+            <button
+                type="submit"
+                id="chat-enviar"
+                aria-label="Enviar mensagem"
+                disabled
+            >↑</button>
         </div>
 
         <p id="chat-erro" class="chat-erro" role="alert" hidden></p>
@@ -174,8 +251,13 @@
 <dialog id="chat-actions" class="chat-sheet" aria-label="Opções da mensagem">
     <div class="chat-reaction-presets">
         {% for emoji in ['❤️', '😂', '😮', '😢', '😍', '🔥'] %}
-            <button type="button" data-emoji="{{ emoji }}" aria-label="Reagir {{ emoji }}">{{ emoji }}</button>
+            <button
+                type="button"
+                data-emoji="{{ emoji }}"
+                aria-label="Reagir {{ emoji }}"
+            >{{ emoji }}</button>
         {% endfor %}
+
         <button type="button" data-action="all" aria-label="Outra reação">+</button>
     </div>
 
@@ -184,7 +266,11 @@
     <button type="button" data-action="close">Cancelar</button>
 </dialog>
 
-<dialog id="chat-emojis" class="chat-sheet chat-emoji-picker" aria-labelledby="chat-emoji-title">
+<dialog
+    id="chat-emojis"
+    class="chat-sheet chat-emoji-picker"
+    aria-labelledby="chat-emoji-title"
+>
     <header>
         <strong id="chat-emoji-title">Outra reação</strong>
         <button type="button" data-close aria-label="Cancelar reação">×</button>
@@ -220,10 +306,10 @@ window.webSocketUrl = window.location.protocol === 'https:'
     : 'ws://' + window.location.hostname + ':8080';
 </script>
 
-<script src="{{ doc_root }}js/chat-viewport.js?v=20260920-chat4"></script>
-<script src="{{ doc_root }}js/chat-recorder.js?v=20260920-chat4"></script>
-<script src="{{ doc_root }}js/chat-camera.js?v=20260920-chat4"></script>
-<script src="{{ doc_root }}js/chat-reactions.js?v=20260920-chat4"></script>
-<script src="{{ doc_root }}js/chat-audio-player.js?v=20260920-chat4"></script>
-<script src="{{ doc_root }}js/chat.js?v=20260920-chat4"></script>
+<script src="{{ doc_root }}js/chat-viewport.js?v=20260920-polish"></script>
+<script src="{{ doc_root }}js/chat-recorder.js?v=20260920-polish"></script>
+<script src="{{ doc_root }}js/chat-camera.js?v=20260920-polish"></script>
+<script src="{{ doc_root }}js/chat-reactions.js?v=20260920-polish"></script>
+<script src="{{ doc_root }}js/chat-audio-player.js?v=20260920-polish"></script>
+<script src="{{ doc_root }}js/chat.js?v=20260920-polish"></script>
 {% endblock %}

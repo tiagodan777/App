@@ -1,5 +1,4 @@
 import Capacitor
-import CoreHaptics
 import UIKit
 import WebKit
 
@@ -17,6 +16,7 @@ class ViewController: CAPBridgeViewController {
 
   private func configurarGestosNavegacao() {
     guard let webView = webView else { return }
+
     webView.allowsBackForwardNavigationGestures = false
     webView.scrollView.contentInsetAdjustmentBehavior = .never
 
@@ -26,22 +26,30 @@ class ViewController: CAPBridgeViewController {
     }
 
     if gestoVoltar == nil {
-      let gesto = UIScreenEdgePanGestureRecognizer(target: self, action: #selector(tratarSwipe(_:)))
+      let gesto = UIScreenEdgePanGestureRecognizer(
+        target: self,
+        action: #selector(tratarSwipe(_:))
+      )
       gesto.edges = .left
       gesto.minimumNumberOfTouches = 1
       gesto.maximumNumberOfTouches = 1
       gesto.cancelsTouchesInView = true
+
       view.addGestureRecognizer(gesto)
       webView.scrollView.panGestureRecognizer.require(toFail: gesto)
       gestoVoltar = gesto
     }
 
     if gestoAvancar == nil {
-      let gesto = UIScreenEdgePanGestureRecognizer(target: self, action: #selector(tratarSwipe(_:)))
+      let gesto = UIScreenEdgePanGestureRecognizer(
+        target: self,
+        action: #selector(tratarSwipe(_:))
+      )
       gesto.edges = .right
       gesto.minimumNumberOfTouches = 1
       gesto.maximumNumberOfTouches = 1
       gesto.cancelsTouchesInView = true
+
       view.addGestureRecognizer(gesto)
       webView.scrollView.panGestureRecognizer.require(toFail: gesto)
       gestoAvancar = gesto
@@ -56,6 +64,7 @@ class ViewController: CAPBridgeViewController {
     let voltar = gesto.edges == .left
     let distanciaOK = voltar ? distancia.x > 45 : distancia.x < -45
     let velocidadeOK = voltar ? velocidade.x > 300 : velocidade.x < -300
+
     guard distanciaOK || velocidadeOK else { return }
 
     let comando = voltar ? "history.back();" : "history.forward();"
@@ -92,73 +101,21 @@ public final class MargotHapticsPlugin: CAPPlugin, CAPBridgedPlugin {
   }
 }
 
-// Motor partilhado pelo JavaScript e pela câmara nativa. Usar na fila principal.
+// Toques breves para ações explícitas.
+// Notificações em primeiro plano ficam silenciosas.
 final class MargotHapticFeedback {
   static let shared = MargotHapticFeedback()
-  private var engine: CHHapticEngine?
-  private var player: CHHapticPatternPlayer?
+  private let impact = UIImpactFeedbackGenerator(style: .light)
 
-  private init() {}
+  private init() {
+    impact.prepare()
+  }
 
   func play(_ type: String) {
     guard UIApplication.shared.applicationState == .active else { return }
+    guard ["interaction", "shutter", "heySent"].contains(type) else { return }
 
-    guard CHHapticEngine.capabilitiesForHardware().supportsHaptics else {
-      fallback()
-      return
-    }
-
-    do {
-      if engine == nil {
-        let created = try CHHapticEngine()
-        created.playsHapticsOnly = true
-        created.isAutoShutdownEnabled = true
-        engine = created
-      }
-
-      guard let engine else { return }
-      try engine.start()
-      try? player?.stop(atTime: CHHapticTimeImmediate)
-
-      let pattern = try CHHapticPattern(events: events(for: type), parameters: [])
-      let next = try engine.makePlayer(with: pattern)
-      player = next
-      try next.start(atTime: CHHapticTimeImmediate)
-    } catch {
-      player = nil
-      engine = nil
-      fallback()
-    }
-  }
-
-  private func events(for type: String) -> [CHHapticEvent] {
-    let pulses: [(time: Double, duration: Double)]
-
-    switch type {
-    case "interaction": pulses = [(0, 0.10)]
-    case "shutter": pulses = [(0, 0.14)]
-    case "heySent": pulses = [(0, 0.12), (0.20, 0.12)]
-    case "heyReceived": pulses = [(0, 0.14), (0.24, 0.24)]
-    case "connection": pulses = [(0, 0.12), (0.22, 0.12), (0.44, 0.28)]
-    default: pulses = [(0, 0.16), (0.26, 0.18)]
-    }
-
-    let parameters = [
-      CHHapticEventParameter(parameterID: .hapticIntensity, value: 1),
-      CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.8),
-    ]
-
-    return pulses.map { pulse in
-      CHHapticEvent(
-        eventType: .hapticContinuous,
-        parameters: parameters,
-        relativeTime: pulse.time,
-        duration: pulse.duration
-      )
-    }
-  }
-
-  private func fallback() {
-    UIImpactFeedbackGenerator(style: .heavy).impactOccurred(intensity: 1)
+    impact.impactOccurred(intensity: type == "shutter" ? 0.45 : 0.55)
+    impact.prepare()
   }
 }

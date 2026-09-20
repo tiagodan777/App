@@ -18,7 +18,9 @@
         return;
     }
 
-    var indicadores = Array.prototype.slice.call(document.querySelectorAll('#perfil-indicadores button'));
+    var indicadores = Array.prototype.slice.call(
+        document.querySelectorAll('#perfil-indicadores button')
+    );
     var anterior = document.getElementById('perfil-anterior');
     var seguinte = document.getElementById('perfil-seguinte');
     var contadorAtual = document.getElementById('perfil-contador-atual');
@@ -40,7 +42,6 @@
     var animacaoPathFrame = null;
     var temporizadorSplash = null;
     var animacaoGaleriaFrame = null;
-    var temporizadorTrocaLightbox = null;
     var pointerAtivo = false;
     var pointerId = null;
     var pointerInicioX = 0;
@@ -54,26 +55,37 @@
 
     /* PATHS */
     var PATH_ILHA = [
-        0.075, 0.235, 0.055, 0.125, 0.135, 0.045, 0.285, 0.055, 0.39, 0.01, 0.5, 0.07, 0.61, 0.05, 0.75, 0.02,
-        0.875, 0.095, 0.915, 0.225, 0.985, 0.32, 0.94, 0.435, 0.965, 0.545, 0.995, 0.675, 0.915, 0.775, 0.825,
-        0.835, 0.755, 0.945, 0.62, 0.9, 0.515, 0.95, 0.405, 0.995, 0.305, 0.93, 0.215, 0.92, 0.105, 0.91,
-        0.045, 0.82, 0.06, 0.7, 0.015, 0.605, 0.07, 0.495, 0.045, 0.405, 0.025, 0.33, 0.095, 0.305, 0.075,
-        0.235
+        0.075, 0.235, 0.055, 0.125, 0.135, 0.045, 0.285, 0.055,
+        0.39, 0.01, 0.5, 0.07, 0.61, 0.05, 0.75, 0.02,
+        0.875, 0.095, 0.915, 0.225, 0.985, 0.32, 0.94, 0.435,
+        0.965, 0.545, 0.995, 0.675, 0.915, 0.775, 0.825, 0.835,
+        0.755, 0.945, 0.62, 0.9, 0.515, 0.95, 0.405, 0.995,
+        0.305, 0.93, 0.215, 0.92, 0.105, 0.91, 0.045, 0.82,
+        0.06, 0.7, 0.015, 0.605, 0.07, 0.495, 0.045, 0.405,
+        0.025, 0.33, 0.095, 0.305, 0.075, 0.235
     ];
 
     var PATH_SPLASH = [
-        0.008, 0.115, 0.0, 0.035, 0.07, 0.008, 0.195, 0.02, 0.29, 0.0, 0.405, 0.025, 0.515, 0.008, 0.655, 0.0,
-        0.8, 0.018, 0.925, 0.07, 0.995, 0.115, 0.985, 0.25, 0.998, 0.365, 1.0, 0.5, 0.985, 0.62, 0.997, 0.735,
-        0.985, 0.87, 0.875, 0.935, 0.755, 0.95, 0.655, 0.995, 0.53, 0.975, 0.42, 0.992, 0.3, 0.998, 0.2,
-        0.965, 0.105, 0.95, 0.02, 0.92, 0.005, 0.82, 0.015, 0.705, 0.002, 0.6, 0.018, 0.5, 0.005, 0.39, 0.002,
-        0.275, 0.025, 0.205, 0.008, 0.115
+        0.008, 0.115, 0.0, 0.035, 0.07, 0.008, 0.195, 0.02,
+        0.29, 0.0, 0.405, 0.025, 0.515, 0.008, 0.655, 0.0,
+        0.8, 0.018, 0.925, 0.07, 0.995, 0.115, 0.985, 0.25,
+        0.998, 0.365, 1.0, 0.5, 0.985, 0.62, 0.997, 0.735,
+        0.985, 0.87, 0.875, 0.935, 0.755, 0.95, 0.655, 0.995,
+        0.53, 0.975, 0.42, 0.992, 0.3, 0.998, 0.2, 0.965,
+        0.105, 0.95, 0.02, 0.92, 0.005, 0.82, 0.015, 0.705,
+        0.002, 0.6, 0.018, 0.5, 0.005, 0.39, 0.002, 0.275,
+        0.025, 0.205, 0.008, 0.115
     ];
 
     var PATH_RECT = [
-        0.0, 0.0, 0.08, 0.0, 0.17, 0.0, 0.25, 0.0, 0.33, 0.0, 0.42, 0.0, 0.5, 0.0, 0.58, 0.0, 0.67, 0.0, 0.75,
-        0.0, 0.83, 0.0, 0.92, 0.0, 1.0, 0.0, 1.0, 0.16, 1.0, 0.33, 1.0, 0.5, 1.0, 0.67, 1.0, 0.84, 1.0, 1.0,
-        0.89, 1.0, 0.77, 1.0, 0.66, 1.0, 0.55, 1.0, 0.44, 1.0, 0.33, 1.0, 0.22, 1.0, 0.11, 1.0, 0.0, 1.0, 0.0,
-        0.66, 0.0, 0.33, 0.0, 0.0
+        0.0, 0.0, 0.08, 0.0, 0.17, 0.0, 0.25, 0.0,
+        0.33, 0.0, 0.42, 0.0, 0.5, 0.0, 0.58, 0.0,
+        0.67, 0.0, 0.75, 0.0, 0.83, 0.0, 0.92, 0.0,
+        1.0, 0.0, 1.0, 0.16, 1.0, 0.33, 1.0, 0.5,
+        1.0, 0.67, 1.0, 0.84, 1.0, 1.0, 0.89, 1.0,
+        0.77, 1.0, 0.66, 1.0, 0.55, 1.0, 0.44, 1.0,
+        0.33, 1.0, 0.22, 1.0, 0.11, 1.0, 0.0, 1.0,
+        0.0, 0.66, 0.0, 0.33, 0.0, 0.0
     ];
 
     /* HELPERS */
@@ -86,7 +98,10 @@
     }
 
     function prefereMovimentoReduzido() {
-        return Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+        return Boolean(
+            window.matchMedia &&
+            window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        );
     }
 
     function obterImagem(indice) {
@@ -121,7 +136,9 @@
     }
 
     function easingGaleria(t) {
-        return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        return t < 0.5
+            ? 4 * t * t * t
+            : 1 - Math.pow(-2 * t + 2, 3) / 2;
     }
 
     function animarGaleriaPara(indice, duracao) {
@@ -144,6 +161,7 @@
         function frame(agora) {
             var progresso = Math.min(1, (agora - inicio) / duracao);
             var suavizado = easingGaleria(progresso);
+
             faixa.scrollLeft = origem + distancia * suavizado;
 
             if (progresso < 1) {
@@ -161,20 +179,14 @@
 
     /* PATH */
     function criarPath(valores) {
-        return [
-            'M', valores[0], valores[1],
-            'C', valores[2], valores[3], valores[4], valores[5], valores[6], valores[7],
-            'C', valores[8], valores[9], valores[10], valores[11], valores[12], valores[13],
-            'C', valores[14], valores[15], valores[16], valores[17], valores[18], valores[19],
-            'C', valores[20], valores[21], valores[22], valores[23], valores[24], valores[25],
-            'C', valores[26], valores[27], valores[28], valores[29], valores[30], valores[31],
-            'C', valores[32], valores[33], valores[34], valores[35], valores[36], valores[37],
-            'C', valores[38], valores[39], valores[40], valores[41], valores[42], valores[43],
-            'C', valores[44], valores[45], valores[46], valores[47], valores[48], valores[49],
-            'C', valores[50], valores[51], valores[52], valores[53], valores[54], valores[55],
-            'C', valores[56], valores[57], valores[58], valores[59], valores[60], valores[61],
-            'Z'
-        ].join(' ');
+        var partes = ['M', valores[0], valores[1]];
+
+        for (var i = 2; i < valores.length; i += 6) {
+            partes.push('C', ...valores.slice(i, i + 6));
+        }
+
+        partes.push('Z');
+        return partes.join(' ');
     }
 
     function cancelarAnimacaoPath() {
@@ -191,18 +203,13 @@
 
     function animarPath(origem, destino, duracao, callback) {
         if (!lightboxPath) {
-            if (typeof callback === 'function') {
-                callback();
-            }
+            if (typeof callback === 'function') callback();
             return;
         }
 
         if (prefereMovimentoReduzido()) {
             lightboxPath.setAttribute('d', criarPath(destino));
-
-            if (typeof callback === 'function') {
-                callback();
-            }
+            if (typeof callback === 'function') callback();
             return;
         }
 
@@ -220,6 +227,7 @@
         function frame(agora) {
             var progresso = Math.min(1, (agora - inicio) / duracao);
             var suavizado = easing(progresso);
+
             var atual = origem.map(function (valor, indice) {
                 return valor + (destino[indice] - valor) * suavizado;
             });
@@ -232,9 +240,7 @@
                 animacaoPathFrame = null;
                 lightboxPath.setAttribute('d', criarPath(destino));
 
-                if (typeof callback === 'function') {
-                    callback();
-                }
+                if (typeof callback === 'function') callback();
             }
         }
 
@@ -288,7 +294,10 @@
         indiceAtual = limitarIndice(indice);
 
         slides.forEach(function (slide, posicao) {
-            slide.setAttribute('aria-hidden', posicao === indiceAtual ? 'false' : 'true');
+            slide.setAttribute(
+                'aria-hidden',
+                posicao === indiceAtual ? 'false' : 'true'
+            );
         });
 
         indicadores.forEach(function (indicador, posicao) {
@@ -301,13 +310,8 @@
             contadorAtual.textContent = formatarNumero(indiceAtual + 1);
         }
 
-        if (anterior) {
-            anterior.disabled = indiceAtual === 0;
-        }
-
-        if (seguinte) {
-            seguinte.disabled = indiceAtual === slides.length - 1;
-        }
+        if (anterior) anterior.disabled = indiceAtual === 0;
+        if (seguinte) seguinte.disabled = indiceAtual === slides.length - 1;
     }
 
     /* LIGHTBOX TAMANHO */
@@ -318,23 +322,22 @@
 
         var larguraMaxima = Math.min(window.innerWidth * 0.92, 880);
         var alturaMaxima = Math.min(window.innerHeight * 0.8, 920);
-        var proporcao = Math.min(larguraMaxima / larguraNatural, alturaMaxima / alturaNatural);
+        var proporcao = Math.min(
+            larguraMaxima / larguraNatural,
+            alturaMaxima / alturaNatural
+        );
 
         lightboxMedia.style.width = Math.max(120, larguraNatural * proporcao) + 'px';
         lightboxMedia.style.height = Math.max(120, alturaNatural * proporcao) + 'px';
     }
 
     function atualizarLightboxFoto(indice) {
-        if (!lightboxImagem) {
-            return;
-        }
+        if (!lightboxImagem) return;
 
         indice = limitarIndice(indice);
         var imagem = obterImagem(indice);
 
-        if (!imagem) {
-            return;
-        }
+        if (!imagem) return;
 
         if (imagem.naturalWidth && imagem.naturalHeight) {
             ajustarLightboxAoAspecto(imagem.naturalWidth, imagem.naturalHeight);
@@ -357,42 +360,31 @@
     }
 
     /* TROCA SUAVE NO LIGHTBOX */
-    var photoGestures = window.MargotPhotoGestures(lightbox, lightboxImagem, function (direction) {
-        if (lightboxAberto) trocarFotoLightbox(indiceAtual + direction);
-    });
+    var photoGestures = window.MargotPhotoGestures(
+        lightbox,
+        lightboxImagem,
+        function (direction) {
+            if (lightboxAberto) trocarFotoLightbox(indiceAtual + direction);
+        }
+    );
 
     function trocarFotoLightbox(novoIndice) {
-        photoGestures.reset();
         novoIndice = limitarIndice(novoIndice);
+        if (novoIndice === indiceAtual) return;
 
-        if (novoIndice === indiceAtual) {
-            return;
-        }
+        var direction = novoIndice > indiceAtual ? 1 : -1;
 
-        if (temporizadorTrocaLightbox !== null) {
-            window.clearTimeout(temporizadorTrocaLightbox);
-        }
-
-        lightboxImagem.classList.add('a-trocar');
-
-        temporizadorTrocaLightbox = window.setTimeout(function () {
-            temporizadorTrocaLightbox = null;
+        photoGestures.changePhoto(function () {
             indiceAtual = novoIndice;
             atualizarUI(indiceAtual);
             faixa.scrollLeft = slides[indiceAtual].offsetLeft;
             atualizarLightboxFoto(indiceAtual);
-
-            window.requestAnimationFrame(function () {
-                lightboxImagem.classList.remove('a-trocar');
-            });
-        }, 145);
+        }, direction);
     }
 
     /* ORIGEM LIGHTBOX */
     function calcularTransformacaoOrigem() {
-        if (!lightboxMedia || !galeria) {
-            return;
-        }
+        if (!lightboxMedia || !galeria) return;
 
         var origem = galeria.getBoundingClientRect();
         var destino = lightboxMedia.getBoundingClientRect();
@@ -406,17 +398,27 @@
         var centroDestinoX = destino.left + destino.width / 2;
         var centroDestinoY = destino.top + destino.height / 2;
 
-        lightboxMedia.style.setProperty('--perfil-origem-x', centroOrigemX - centroDestinoX + 'px');
-        lightboxMedia.style.setProperty('--perfil-origem-y', centroOrigemY - centroDestinoY + 'px');
-        lightboxMedia.style.setProperty('--perfil-origem-scale-x', String(origem.width / destino.width));
-        lightboxMedia.style.setProperty('--perfil-origem-scale-y', String(origem.height / destino.height));
+        lightboxMedia.style.setProperty(
+            '--perfil-origem-x',
+            centroOrigemX - centroDestinoX + 'px'
+        );
+        lightboxMedia.style.setProperty(
+            '--perfil-origem-y',
+            centroOrigemY - centroDestinoY + 'px'
+        );
+        lightboxMedia.style.setProperty(
+            '--perfil-origem-scale-x',
+            String(origem.width / destino.width)
+        );
+        lightboxMedia.style.setProperty(
+            '--perfil-origem-scale-y',
+            String(origem.height / destino.height)
+        );
     }
 
     /* ABRIR */
     function abrirLightbox(indice) {
-        if (!lightbox || !lightboxMedia || !lightboxImagem) {
-            return;
-        }
+        if (!lightbox || !lightboxMedia || !lightboxImagem) return;
 
         if (temporizadorFecho !== null) {
             window.clearTimeout(temporizadorFecho);
@@ -457,44 +459,36 @@
 
     /* FECHAR */
     function fecharLightbox() {
-        if (!lightbox || !lightboxAberto) {
-            return;
-        }
+        if (!lightbox || !lightboxAberto) return;
 
+        photoGestures.reset(true);
         calcularTransformacaoOrigem();
         animarFechoPath();
         lightbox.classList.remove('is-open');
         lightboxAberto = false;
 
-        temporizadorFecho = window.setTimeout(
-            function () {
-                temporizadorFecho = null;
-                cancelarAnimacaoPath();
-                lightbox.classList.remove('is-mounted');
-                lightbox.hidden = true;
-                lightbox.setAttribute('aria-hidden', 'true');
-                document.documentElement.classList.remove('perfil-modal-aberta');
-                document.body.classList.remove('perfil-modal-aberta');
+        temporizadorFecho = window.setTimeout(function () {
+            temporizadorFecho = null;
+            cancelarAnimacaoPath();
+            lightbox.classList.remove('is-mounted');
+            lightbox.hidden = true;
+            lightbox.setAttribute('aria-hidden', 'true');
+            document.documentElement.classList.remove('perfil-modal-aberta');
+            document.body.classList.remove('perfil-modal-aberta');
 
-                if (lightboxImagem) {
-                    lightboxImagem.src = '';
-                }
+            if (lightboxImagem) lightboxImagem.src = '';
 
-                if (lightboxPath) {
-                    lightboxPath.setAttribute('d', criarPath(PATH_ILHA));
-                }
+            if (lightboxPath) {
+                lightboxPath.setAttribute('d', criarPath(PATH_ILHA));
+            }
 
-                galeria.focus({ preventScroll: true });
-            },
-            prefereMovimentoReduzido() ? 0 : 830
-        );
+            galeria.focus({ preventScroll: true });
+        }, prefereMovimentoReduzido() ? 0 : 830);
     }
 
     /* SWIPE / DRAG PRINCIPAL */
     function terminarPointer(evento, cancelado) {
-        if (!pointerAtivo) {
-            return;
-        }
+        if (!pointerAtivo) return;
 
         var largura = faixa.clientWidth || 1;
         var distancia = pointerUltimoX - pointerInicioX;
@@ -520,7 +514,11 @@
             animarGaleriaPara(destino, 380);
         }
 
-        if (pointerId !== null && faixa.hasPointerCapture && faixa.hasPointerCapture(pointerId)) {
+        if (
+            pointerId !== null &&
+            faixa.hasPointerCapture &&
+            faixa.hasPointerCapture(pointerId)
+        ) {
             try {
                 faixa.releasePointerCapture(pointerId);
             } catch (erro) {
@@ -535,9 +533,7 @@
     }
 
     faixa.addEventListener('pointerdown', function (evento) {
-        if (evento.pointerType === 'mouse' && evento.button !== 0) {
-            return;
-        }
+        if (evento.pointerType === 'mouse' && evento.button !== 0) return;
 
         cancelarAnimacaoGaleria();
         pointerAtivo = true;
@@ -552,9 +548,7 @@
     });
 
     faixa.addEventListener('pointermove', function (evento) {
-        if (!pointerAtivo) {
-            return;
-        }
+        if (!pointerAtivo) return;
 
         pointerUltimoX = evento.clientX;
 
@@ -580,9 +574,7 @@
             }
         }
 
-        if (pointerDirecao !== 'horizontal') {
-            return;
-        }
+        if (pointerDirecao !== 'horizontal') return;
 
         evento.preventDefault();
         pointerMoveu = true;
@@ -600,24 +592,15 @@
     });
 
     /* SCROLL */
-    faixa.addEventListener(
-        'scroll',
-        function () {
-            if (pointerAtivo || animacaoGaleriaFrame !== null) {
-                return;
-            }
+    faixa.addEventListener('scroll', function () {
+        if (pointerAtivo || animacaoGaleriaFrame !== null) return;
+        if (frameScroll !== null) return;
 
-            if (frameScroll !== null) {
-                return;
-            }
-
-            frameScroll = window.requestAnimationFrame(function () {
-                frameScroll = null;
-                atualizarUI(indiceMaisProximo());
-            });
-        },
-        { passive: true }
-    );
+        frameScroll = window.requestAnimationFrame(function () {
+            frameScroll = null;
+            atualizarUI(indiceMaisProximo());
+        });
+    }, { passive: true });
 
     /* INDICADORES */
     indicadores.forEach(function (indicador) {
@@ -650,14 +633,10 @@
         }
 
         var imagem = evento.target.closest('.perfil-slide img');
-        if (!imagem) {
-            return;
-        }
+        if (!imagem) return;
 
         var slide = imagem.closest('.perfil-slide');
-        if (!slide) {
-            return;
-        }
+        if (!slide) return;
 
         abrirLightbox(Number(slide.dataset.indice || 0));
     });
@@ -665,21 +644,10 @@
     /* LIGHTBOX CONTROLOS */
     if (lightbox) {
         lightbox.addEventListener('click', function (evento) {
-            if (!lightboxAberto) {
-                return;
-            }
-
-            if (evento.target.closest('.perfil-lightbox-media')) {
-                return;
-            }
-
-            if (evento.target.closest('.perfil-lightbox-nav')) {
-                return;
-            }
-
-            if (evento.target.closest('.perfil-lightbox-fechar')) {
-                return;
-            }
+            if (!lightboxAberto) return;
+            if (evento.target.closest('.perfil-lightbox-media')) return;
+            if (evento.target.closest('.perfil-lightbox-nav')) return;
+            if (evento.target.closest('.perfil-lightbox-fechar')) return;
 
             fecharLightbox();
         });
@@ -695,11 +663,7 @@
     if (lightboxAnterior) {
         lightboxAnterior.addEventListener('click', function (evento) {
             evento.stopPropagation();
-
-            if (indiceAtual <= 0) {
-                return;
-            }
-
+            if (indiceAtual <= 0) return;
             trocarFotoLightbox(indiceAtual - 1);
         });
     }
@@ -707,11 +671,7 @@
     if (lightboxSeguinte) {
         lightboxSeguinte.addEventListener('click', function (evento) {
             evento.stopPropagation();
-
-            if (indiceAtual >= slides.length - 1) {
-                return;
-            }
-
+            if (indiceAtual >= slides.length - 1) return;
             trocarFotoLightbox(indiceAtual + 1);
         });
     }
@@ -740,9 +700,7 @@
             return;
         }
 
-        if (document.activeElement !== galeria) {
-            return;
-        }
+        if (document.activeElement !== galeria) return;
 
         if (evento.key === 'ArrowLeft') {
             evento.preventDefault();
@@ -793,10 +751,6 @@
 
         if (temporizadorFecho !== null) {
             window.clearTimeout(temporizadorFecho);
-        }
-
-        if (temporizadorTrocaLightbox !== null) {
-            window.clearTimeout(temporizadorTrocaLightbox);
         }
 
         if (observadorTamanho) {

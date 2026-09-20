@@ -9,15 +9,14 @@
     $(document).off(NS);
 
     var $miniMenu = $('.mini-menu');
+
     if (!$miniMenu.length) {
         return;
     }
 
-    var $anexo = $miniMenu.find('.mini-menu-anexo');
     var $botaoHey = $miniMenu.find('#enviar-hey');
     var $formMensagem = $miniMenu.find('.mini-menu-mensagem');
     var $inputMensagem = $miniMenu.find('#mensagem');
-    var $media = $miniMenu.find('#mini-menu-media');
     var $perfil = $miniMenu.find('.mini-menu-perfil');
     var $maisOpcoes = $('#abrir-acoes-perfil');
     var $acoes = $('#acoes-perfil');
@@ -45,7 +44,10 @@
         onError: function (message) {
             aviso(message, 'erro');
         },
-        workletUrl: new URL('/js/chat-audio-worklet.js?v=20260920', window.location.href).href
+        workletUrl: new URL(
+            '/js/chat-audio-worklet.js?v=20260920',
+            window.location.href
+        ).href
     });
 
     function texto(valor) {
@@ -54,7 +56,10 @@
 
     function urlFoto(valor) {
         try {
-            return new URL(texto(valor) || '/imagens/fotos-perfil/default.webp', window.location.href).href;
+            return new URL(
+                texto(valor) || '/imagens/fotos-perfil/default.webp',
+                window.location.href
+            ).href;
         } catch (erro) {
             return '/imagens/fotos-perfil/default.webp';
         }
@@ -62,18 +67,18 @@
 
     function membroId(elemento) {
         return texto(
-            elemento.getAttribute('data-membro-id') || elemento.getAttribute('data-id') || elemento.id
+            elemento.getAttribute('data-membro-id') ||
+            elemento.getAttribute('data-id') ||
+            elemento.id
         );
     }
 
     function nome(elemento) {
-        return (
-            texto(
-                elemento.getAttribute('data-nome') ||
-                    elemento.getAttribute('alt') ||
-                    elemento.getAttribute('title')
-            ) || 'Utilizador'
-        );
+        return texto(
+            elemento.getAttribute('data-nome') ||
+            elemento.getAttribute('alt') ||
+            elemento.getAttribute('title')
+        ) || 'Utilizador';
     }
 
     function foto(elemento) {
@@ -141,20 +146,29 @@
         }
 
         var id = membroId(elemento);
+
         if (!id) {
             return false;
         }
 
         compose.select(id);
+
         var membroNome = nome(elemento);
         var souEu = id === texto(window.membroId);
         var imagem = $miniMenu.find('header img').get(0);
 
         fecharAcoes();
+
         $miniMenu.attr('data-destinatario-id', id).toggleClass('perfil-proprio', souEu);
-        $perfil.attr('href', baseUrl(window.profileUrl, '/profile') + '/' + encodeURIComponent(id));
+        $perfil.attr(
+            'href',
+            baseUrl(window.profileUrl, '/profile') + '/' + encodeURIComponent(id)
+        );
         $miniMenu.find('header h1').text(membroNome);
-        $formMensagem.attr('action', baseUrl(window.messagesUrl, '/messages') + '/' + encodeURIComponent(id));
+        $formMensagem.attr(
+            'action',
+            baseUrl(window.messagesUrl, '/messages') + '/' + encodeURIComponent(id)
+        );
 
         if (window.MargotToday && typeof window.MargotToday.showMiniMenuFor === 'function') {
             window.MargotToday.showMiniMenuFor(id);
@@ -165,6 +179,7 @@
                 this.onerror = null;
                 this.src = urlFoto('/imagens/fotos-perfil/default.webp');
             };
+
             imagem.src = foto(elemento);
             imagem.alt = membroNome;
         }
@@ -197,6 +212,7 @@
         }
 
         var transformacao = window.getComputedStyle(elemento).transform;
+
         if (!transformacao || transformacao === 'none') {
             return 0;
         }
@@ -206,6 +222,7 @@
             return Number(matriz.m42) || 0;
         } catch (erro) {
             var valores = transformacao.match(/matrix(?:3d)?\(([^)]+)\)/);
+
             if (!valores) {
                 return 0;
             }
@@ -236,6 +253,7 @@
         }
 
         novaAlturaTeclado = Math.max(0, Number(novaAlturaTeclado) || 0);
+
         if (novaAlturaTeclado < 80) {
             return 0;
         }
@@ -254,6 +272,7 @@
         }
 
         novaAlturaTeclado = Math.max(0, Number(novaAlturaTeclado) || 0);
+
         if (novaAlturaTeclado < 80) {
             return;
         }
@@ -265,10 +284,13 @@
 
         var novoDeslocamento = calcularDeslocamentoMenu(novaAlturaTeclado);
         deslocamentoMenu = novoDeslocamento;
+
         var destinoY = (baseMenuY || 0) - novoDeslocamento;
 
         $miniMenu.css({
-            transition: animar ? 'transform 294ms cubic-bezier(.303,.886,.436,.976)' : 'none',
+            transition: animar
+                ? 'transform 294ms cubic-bezier(.303,.886,.436,.976)'
+                : 'none',
             transform: 'translate3d(0,' + destinoY + 'px,0)'
         });
 
@@ -285,33 +307,34 @@
         alturaTeclado = 0;
 
         var destinoY = baseMenuY;
+
         if (destinoY === null) {
             destinoY = $miniMenu[0].getBoundingClientRect().height * 0.15;
         }
 
         $miniMenu.css({
-            transition: animar ? 'transform 313ms cubic-bezier(.335,.884,.381,.961)' : 'none',
+            transition: animar
+                ? 'transform 313ms cubic-bezier(.335,.884,.381,.961)'
+                : 'none',
             transform: 'translate3d(0,' + destinoY + 'px,0)'
         });
 
         document.body.classList.remove('margot-mini-menu-teclado');
         deslocamentoMenu = 0;
 
-        temporizadorRestauracao = window.setTimeout(
-            function () {
-                temporizadorRestauracao = null;
-                if (!paginaAtiva || tecladoAberto) {
-                    return;
-                }
+        temporizadorRestauracao = window.setTimeout(function () {
+            temporizadorRestauracao = null;
 
-                if (typeof window.definirMiniMenuAcoes === 'function') {
-                    window.definirMiniMenuAcoes(false);
-                }
+            if (!paginaAtiva || tecladoAberto) {
+                return;
+            }
 
-                baseMenuY = null;
-            },
-            animar ? 330 : 0
-        );
+            if (typeof window.definirMiniMenuAcoes === 'function') {
+                window.definirMiniMenuAcoes(false);
+            }
+
+            baseMenuY = null;
+        }, animar ? 330 : 0);
     }
 
     function esconderTecladoMiniMenu() {
@@ -363,10 +386,13 @@
         alturaTeclado = 0;
         campoMensagemFocado = false;
         deslocamentoMenu = 0;
+
         document.body.classList.remove('margot-mini-menu-teclado');
 
         if (eIOSNativo() && teclado && typeof teclado.setAccessoryBarVisible === 'function') {
-            Promise.resolve(teclado.setAccessoryBarVisible({ isVisible: true })).catch(function () {});
+            Promise.resolve(
+                teclado.setAccessoryBarVisible({ isVisible: true })
+            ).catch(function () {});
         }
     }
 
@@ -377,7 +403,9 @@
 
         return Math.max(
             0,
-            viewportAltura() - (window.visualViewport.height + window.visualViewport.offsetTop)
+            viewportAltura() - (
+                window.visualViewport.height + window.visualViewport.offsetTop
+            )
         );
     }
 
@@ -401,10 +429,18 @@
         }
 
         try {
-            tecladoListeners.push(await teclado.addListener('keyboardWillShow', tecladoVaiAbrir));
-            tecladoListeners.push(await teclado.addListener('keyboardDidShow', tecladoAbriu));
-            tecladoListeners.push(await teclado.addListener('keyboardWillHide', tecladoVaiFechar));
-            tecladoListeners.push(await teclado.addListener('keyboardDidHide', tecladoFechou));
+            tecladoListeners.push(
+                await teclado.addListener('keyboardWillShow', tecladoVaiAbrir)
+            );
+            tecladoListeners.push(
+                await teclado.addListener('keyboardDidShow', tecladoAbriu)
+            );
+            tecladoListeners.push(
+                await teclado.addListener('keyboardWillHide', tecladoVaiFechar)
+            );
+            tecladoListeners.push(
+                await teclado.addListener('keyboardDidHide', tecladoFechou)
+            );
         } catch (erro) {
             console.warn('Não foi possível acompanhar o teclado no mini-menu.', erro);
         }
@@ -447,7 +483,9 @@
         guardarPosicaoNormalMiniMenu();
 
         if (eIOSNativo() && teclado && typeof teclado.setAccessoryBarVisible === 'function') {
-            Promise.resolve(teclado.setAccessoryBarVisible({ isVisible: false })).catch(function () {});
+            Promise.resolve(
+                teclado.setAccessoryBarVisible({ isVisible: false })
+            ).catch(function () {});
         }
 
         if (!teclado && window.visualViewport) {
@@ -491,7 +529,10 @@
             method: 'POST',
             body: dados,
             credentials: 'same-origin',
-            headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+            headers: {
+                Accept: 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
         });
 
         var conteudo = await resposta.text();
@@ -511,11 +552,9 @@
     }
 
     function removerPessoaDoMapa(id) {
-        $('.foto')
-            .filter(function () {
-                return membroId(this) === id;
-            })
-            .remove();
+        $('.foto').filter(function () {
+            return membroId(this) === id;
+        }).remove();
     }
 
     function definirSegurancaOcupada(ocupada) {
@@ -544,21 +583,29 @@
         }
 
         var href = this.getAttribute('href');
+
         if (!href) {
             return;
         }
 
         var url = new URL(href, window.location.href);
+
         if (url.origin !== window.location.origin) {
             return;
         }
 
-        if (!window.MargotNavigation || typeof window.MargotNavigation.navigate !== 'function') {
+        if (
+            !window.MargotNavigation ||
+            typeof window.MargotNavigation.navigate !== 'function'
+        ) {
             return;
         }
 
         evento.preventDefault();
-        window.MargotNavigation.navigate(url.href, { historico: 'push', direcao: 1 });
+        window.MargotNavigation.navigate(url.href, {
+            historico: 'push',
+            direcao: 1
+        });
     });
 
     $botaoHey.on('click' + NS, function (evento) {
@@ -589,7 +636,10 @@
         aEnviarHey = true;
         $botaoHey.prop('disabled', true).attr('aria-busy', 'true');
 
-        var enviado = window.AppWebSocket.send({ type: 'notify', destinatario_id: id });
+        var enviado = window.AppWebSocket.send({
+            type: 'notify',
+            destinatario_id: id
+        });
 
         if (!enviado) {
             libertarHey();
@@ -618,7 +668,9 @@
         compose.fill(dados);
         dados.set(
             'profile_access_token',
-            window.AppWebSocket?.profileAccessToken?.(id) || dados.get('profile_access_token') || ''
+            window.AppWebSocket?.profileAccessToken?.(id) ||
+            dados.get('profile_access_token') ||
+            ''
         );
 
         var ficheiro = dados.get('media');
@@ -628,19 +680,26 @@
             return;
         }
 
-        if (!texto(dados.get('mensagem')) && !(ficheiro instanceof File && ficheiro.size)) {
+        if (
+            !texto(dados.get('mensagem')) &&
+            !(ficheiro instanceof File && ficheiro.size)
+        ) {
             return;
         }
 
         dados.set('action', 'send');
         aEnviarMensagem = true;
         compose.setBusy(true);
-        $botao.prop('disabled', true).val('A enviar…');
+        $botao.prop('disabled', true).attr('aria-label', 'A enviar…');
 
         try {
             var resposta = await fetch(
                 baseUrl(window.messagesUrl, '/messages') + '/' + encodeURIComponent(id),
-                { method: 'POST', body: dados, credentials: 'same-origin' }
+                {
+                    method: 'POST',
+                    body: dados,
+                    credentials: 'same-origin'
+                }
             );
 
             var resultado = await resposta.json();
@@ -650,11 +709,13 @@
             }
 
             compose.sent(id, String(dados.get('mensagem') || ''), ficheiro);
-            $anexo.removeClass('selecionado').text('+').attr('aria-label', 'Adicionar fotografia ou vídeo');
             aviso('Mensagem enviada.', 'sucesso');
 
             if (window.AppWebSocket && window.AppWebSocket.isConnected()) {
-                window.AppWebSocket.send({ type: 'chat_publish', message_id: resultado.message.id });
+                window.AppWebSocket.send({
+                    type: 'chat_publish',
+                    message_id: resultado.message.id
+                });
             }
         } catch (erro) {
             aviso(erro.message, 'erro');
@@ -663,20 +724,9 @@
             compose.setBusy(false);
 
             if (paginaAtiva) {
-                $botao.prop('disabled', false).val('Enviar');
+                $botao.prop('disabled', false).attr('aria-label', 'Enviar mensagem');
             }
         }
-    });
-
-    $media.on('change' + NS, function (evento) {
-        evento.stopImmediatePropagation();
-
-        var ficheiro = this.files && this.files[0];
-
-        $anexo
-            .toggleClass('selecionado', Boolean(ficheiro))
-            .text(ficheiro ? '✓' : '+')
-            .attr('aria-label', ficheiro ? ficheiro.name : 'Adicionar fotografia ou vídeo');
     });
 
     $maisOpcoes.on('pointerdown' + NS + ' pointerup' + NS, function (evento) {
@@ -690,7 +740,10 @@
     });
 
     $acoes.on(
-        'pointerdown' + NS + ' pointermove' + NS + ' pointerup' + NS + ' pointercancel' + NS,
+        'pointerdown' + NS +
+        ' pointermove' + NS +
+        ' pointerup' + NS +
+        ' pointercancel' + NS,
         function (evento) {
             evento.stopPropagation();
         }
@@ -719,9 +772,8 @@
         if (
             !id ||
             !window.confirm(
-                'Bloquear ' +
-                    membroNome +
-                    '? Deixam imediatamente de aparecer um ao outro entre as pessoas por perto.'
+                'Bloquear ' + membroNome +
+                '? Deixam imediatamente de aparecer um ao outro entre as pessoas por perto.'
             )
         ) {
             return;
@@ -734,7 +786,10 @@
             removerPessoaDoMapa(id);
 
             if (window.AppWebSocket && window.AppWebSocket.isConnected()) {
-                window.AppWebSocket.send({ type: 'block_refresh', target_id: id });
+                window.AppWebSocket.send({
+                    type: 'block_refresh',
+                    target_id: id
+                });
             }
 
             fecharAcoes();
@@ -769,7 +824,11 @@
         definirSegurancaOcupada(true);
 
         try {
-            await pedidoSeguranca('report', { motivo: motivo, mensagem: mensagem });
+            await pedidoSeguranca('report', {
+                motivo: motivo,
+                mensagem: mensagem
+            });
+
             this.reset();
             fecharAcoes();
             aviso('Denúncia enviada. Obrigado por nos avisares.', 'sucesso');
@@ -798,8 +857,16 @@
     window.addEventListener('app:hey-erro', aoHeyErro);
 
     if (window.visualViewport) {
-        window.visualViewport.addEventListener('resize', aoAlterarVisualViewport, { passive: true });
-        window.visualViewport.addEventListener('scroll', aoAlterarVisualViewport, { passive: true });
+        window.visualViewport.addEventListener(
+            'resize',
+            aoAlterarVisualViewport,
+            { passive: true }
+        );
+        window.visualViewport.addEventListener(
+            'scroll',
+            aoAlterarVisualViewport,
+            { passive: true }
+        );
     }
 
     prepararTecladoNativo();
@@ -819,13 +886,14 @@
 
         cancelarRestauracao();
         removerListenersTeclado();
+
         document.removeEventListener('pointerdown', interceptarToqueForaDoInput, true);
+
         $(document).off(NS);
         $miniMenu.off(NS);
         $botaoHey.off(NS);
         $formMensagem.off(NS);
         $inputMensagem.off(NS);
-        $media.off(NS);
         $perfil.off(NS);
         $maisOpcoes.off(NS);
         $acoes.off(NS);
@@ -833,6 +901,7 @@
         $voltarDenuncia.off(NS);
         $bloquearMembro.off(NS);
         $formDenuncia.off(NS);
+
         window.removeEventListener('app:hey-enviado', aoHeyEnviado);
         window.removeEventListener('app:hey-erro', aoHeyErro);
 
@@ -855,6 +924,7 @@
     }
 
     window.desativarIndexMiniMenuMargot = desativarPagina;
+
     document.addEventListener('margot:page-leave', desativarPagina);
     window.addEventListener('pagehide', desativarPagina);
 })(window, document, jQuery);

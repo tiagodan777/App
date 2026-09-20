@@ -32,18 +32,26 @@
     let lastId = 0;
     let polling = false;
 
-    // Mantém anexos e texto ao trocar de página dentro da app; limpa após enviar/apagar.
+    // Mantém anexos e texto ao trocar de página dentro da app.
     const drafts = (window.MargotChatDrafts ||= new Map());
     const draftKey = me + ':' + otherId;
 
     function saveDraft() {
-        if (file || text.value || reply)
-            drafts.set(draftKey, { file, text: text.value, reply, once: byId('chat-view-once').checked });
-        else drafts.delete(draftKey);
+        if (file || text.value || reply) {
+            drafts.set(draftKey, {
+                file,
+                text: text.value,
+                reply,
+                once: byId('chat-view-once').checked
+            });
+        } else {
+            drafts.delete(draftKey);
+        }
     }
 
     const viewer = window.MargotPhotoViewer();
     const once = byId('chat-view-once');
+    const refreshMode = window.MargotPhotoMode(byId('chat-view-once-label'));
     const viewport = window.MargotChatViewport(page, list, content);
     const own = (message) => String(message.emissor_id) === me;
     const connected = () => window.AppWebSocket?.isConnected?.();
@@ -73,21 +81,33 @@
             .replace(' ', 'T')
             .replace(/(\.\d{3})\d+/, '$1');
 
-        const date = new Date(timestamp + (/Z$|[+-]\d\d:\d\d$/.test(timestamp) ? '' : 'Z'));
+        const date = new Date(
+            timestamp + (/Z$|[+-]\d\d:\d\d$/.test(timestamp) ? '' : 'Z')
+        );
 
         return Number.isNaN(date.getTime())
             ? ''
-            : date.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+            : date.toLocaleTimeString('pt-PT', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
     }
 
     async function request(body) {
-        const response = await fetch(url, { method: 'POST', body, credentials: 'same-origin', signal });
+        const response = await fetch(url, {
+            method: 'POST',
+            body,
+            credentials: 'same-origin',
+            signal
+        });
 
         const data = await response.json();
 
         if (!response.ok || !data.success) {
             throw new Error(
-                typeof data.message === 'string' ? data.message : 'Não foi possível concluir o pedido.'
+                typeof data.message === 'string'
+                    ? data.message
+                    : 'Não foi possível concluir o pedido.'
             );
         }
 
@@ -106,9 +126,7 @@
 
         microphone.hidden = hasContent || busy;
         microphone.disabled = sending;
-
         byId('chat-camera-open').disabled = sending || busy;
-        byId('chat-gallery').disabled = sending || busy;
 
         text.hidden = busy;
         recording.hidden = !busy;
@@ -124,6 +142,7 @@
 
     function chooseFile(value) {
         preview.querySelectorAll('audio, video').forEach((element) => element.pause());
+
         if (previewUrl) URL.revokeObjectURL(previewUrl);
 
         previewUrl = null;
@@ -131,15 +150,18 @@
         preview.replaceChildren();
         preview.hidden = !file;
         byId('chat-view-once-label').hidden = !file?.type.startsWith('image/');
+
         if (!file?.type.startsWith('image/')) once.checked = false;
+
+        refreshMode();
         media.value = '';
 
         if (file) {
             const kind = file.type.startsWith('audio/')
                 ? 'audio'
                 : file.type.startsWith('video/')
-                  ? 'video'
-                  : 'img';
+                    ? 'video'
+                    : 'img';
 
             const limit = kind === 'video' ? 100 : kind === 'audio' ? 35 : 15;
 
@@ -172,8 +194,11 @@
 
             preview.append(
                 remove,
-                kind === 'audio' ? window.MargotChatAudioPlayer(element, showError) : element
+                kind === 'audio'
+                    ? window.MargotChatAudioPlayer(element, showError)
+                    : element
             );
+
             preview.classList.toggle('chat-preview-audio', kind === 'audio');
         }
 
@@ -196,8 +221,10 @@
                 status === 'starting'
                     ? 'A abrir microfone…'
                     : status === 'finishing'
-                      ? 'A preparar…'
-                      : Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0');
+                        ? 'A preparar…'
+                        : Math.floor(seconds / 60) +
+                          ':' +
+                          String(seconds % 60).padStart(2, '0');
 
             byId('chat-recording-send').disabled = status !== 'recording';
             state();
@@ -265,13 +292,18 @@
             button.textContent = message.opened
                 ? 'Fotografia aberta'
                 : own(message)
-                  ? 'Fotografia · Ver uma vez'
-                  : '① Abrir fotografia';
+                    ? 'Fotografia · Ver uma vez'
+                    : '① Abrir fotografia';
+
             bubble.append(button);
         }
 
         if (message.media_url) {
-            const tag = { imagem: 'img', video: 'video', audio: 'audio' }[message.tipo];
+            const tag = {
+                imagem: 'img',
+                video: 'video',
+                audio: 'audio'
+            }[message.tipo];
 
             if (tag) {
                 const element = document.createElement(tag);
@@ -287,7 +319,11 @@
                     element.setAttribute('playsinline', '');
                 }
 
-                bubble.append(tag === 'audio' ? window.MargotChatAudioPlayer(element, showError) : element);
+                bubble.append(
+                    tag === 'audio'
+                        ? window.MargotChatAudioPlayer(element, showError)
+                        : element
+                );
             }
         }
 
@@ -328,7 +364,9 @@
         const article = render(message);
 
         // Polling e WebSocket podem terminar fora de ordem.
-        const next = [...content.children].find((item) => Number(item.dataset.mensagemId) > id);
+        const next = [...content.children].find(
+            (item) => Number(item.dataset.mensagemId) > id
+        );
 
         if (next) {
             content.insertBefore(article, next);
@@ -352,10 +390,16 @@
         const sentReply = reply;
         const body = new FormData(form);
 
-        body.set('view_once', String(Boolean(sentFile?.type.startsWith('image/') && once.checked)));
+        body.set(
+            'view_once',
+            String(Boolean(sentFile?.type.startsWith('image/') && once.checked))
+        );
         body.set('mensagem', sentText);
         body.set('reply_to', sentReply?.id || '');
-        body.set('profile_access_token', window.AppWebSocket?.profileAccessToken?.(otherId) || '');
+        body.set(
+            'profile_access_token',
+            window.AppWebSocket?.profileAccessToken?.(otherId) || ''
+        );
         body.delete('media');
 
         if (sentFile) {
@@ -380,8 +424,8 @@
 
             if (file === sentFile) chooseFile(null);
             if (reply === sentReply) selectReply(null);
-            saveDraft();
 
+            saveDraft();
             publish({ type: 'chat_publish', message_id: data.message.id });
         } catch (error) {
             if (error.name !== 'AbortError') showError(error.message);
@@ -440,7 +484,7 @@
 
     on(form, 'submit', submit);
 
-    // Impede a transferência de foco para o botão; o envio acontece apenas no click.
+    // Impede a transferência de foco para o botão.
     on(send, 'pointerdown', (event) => {
         if (event.button === 0) event.preventDefault();
     });
@@ -459,7 +503,6 @@
 
     on(media, 'change', () => chooseFile(media.files[0] || null));
     on(byId('chat-camera-open'), 'click', () => camera.open());
-    on(byId('chat-gallery'), 'click', () => media.click());
 
     on(microphone, 'click', () => {
         showError('');
@@ -481,7 +524,10 @@
                 method: 'POST',
                 credentials: 'same-origin',
                 signal,
-                body: new URLSearchParams({ action: 'open_photo', message_id: button.dataset.openPhoto })
+                body: new URLSearchParams({
+                    action: 'open_photo',
+                    message_id: button.dataset.openPhoto
+                })
             });
 
             if (!response.ok) {
@@ -505,11 +551,15 @@
         const target = event.target.closest('[data-reply-id]');
         if (!target) return;
 
-        const original = content.querySelector('[data-mensagem-id="' + Number(target.dataset.replyId) + '"]');
+        const original = content.querySelector(
+            '[data-mensagem-id="' + Number(target.dataset.replyId) + '"]'
+        );
 
         if (original) {
             original.scrollIntoView({
-                behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+                behavior: matchMedia('(prefers-reduced-motion: reduce)').matches
+                    ? 'auto'
+                    : 'smooth',
                 block: 'center'
             });
 
@@ -525,8 +575,16 @@
 
         if (
             message &&
-            ((String(message.emissor_id) === otherId && String(message.destinatario_id) === me) ||
-                (String(message.emissor_id) === me && String(message.destinatario_id) === otherId))
+            (
+                (
+                    String(message.emissor_id) === otherId &&
+                    String(message.destinatario_id) === me
+                ) ||
+                (
+                    String(message.emissor_id) === me &&
+                    String(message.destinatario_id) === otherId
+                )
+            )
         ) {
             if (add(message) && !own(message)) markRead();
         }
@@ -554,7 +612,7 @@
     on(document, 'visibilitychange', () => {
         if (document.hidden) {
             recorder.cancel();
-            camera.close();
+            camera.suspend();
             viewer.close();
         } else {
             sync(true);
@@ -570,16 +628,20 @@
         element.textContent = time(element.dateTime);
     });
 
-    content.querySelectorAll('audio').forEach((audio) => window.MargotChatAudioPlayer(audio, showError));
+    content.querySelectorAll('audio').forEach((audio) => {
+        window.MargotChatAudioPlayer(audio, showError);
+    });
 
     const interval = setInterval(() => sync(), 12000);
 
     const draft = drafts.get(draftKey);
+
     if (draft) {
         text.value = draft.text;
         chooseFile(draft.file);
         selectReply(draft.reply, false);
         once.checked = Boolean(draft.once);
+        refreshMode();
         resizeText();
     }
 
@@ -593,7 +655,9 @@
         alive = false;
         clearInterval(interval);
         events.abort();
+
         page.querySelectorAll('audio, video').forEach((element) => element.pause());
+
         viewer.destroy();
         viewport.destroy();
         reactions.destroy();
@@ -601,8 +665,14 @@
         camera.destroy();
 
         if (previewUrl) URL.revokeObjectURL(previewUrl);
-        if (window.desativarChatMargot === destroy) delete window.desativarChatMargot;
-        if (String(window.chatMembroId) === otherId) delete window.chatMembroId;
+
+        if (window.desativarChatMargot === destroy) {
+            delete window.desativarChatMargot;
+        }
+
+        if (String(window.chatMembroId) === otherId) {
+            delete window.chatMembroId;
+        }
     }
 
     window.desativarChatMargot = destroy;

@@ -19,45 +19,29 @@ public final class MargotHapticsPlugin extends Plugin {
     }
 
     private void vibrate(String type) {
-        Vibrator vibrator = (Vibrator) getContext().getSystemService(Context.VIBRATOR_SERVICE);
+        Vibrator vibrator = (Vibrator) getContext().getSystemService(
+            Context.VIBRATOR_SERVICE
+        );
 
         if (vibrator == null || !vibrator.hasVibrator()) {
             return;
         }
 
-        long[] timings;
-        int[] amplitudes;
-
-        switch (type) {
-            case "interaction":
-            case "shutter":
-                timings = new long[] {0, 65};
-                amplitudes = new int[] {0, 255};
-                break;
-
-            case "heySent":
-                timings = new long[] {0, 38};
-                amplitudes = new int[] {0, 220};
-                break;
-
-            case "heyReceived":
-                timings = new long[] {0, 68, 58, 150};
-                amplitudes = new int[] {0, 190, 0, 235};
-                break;
-
-            case "connection":
-                timings = new long[] {0, 82, 42, 105, 48, 220};
-                amplitudes = new int[] {0, 205, 0, 235, 0, 255};
-                break;
-
-            default:
-                timings = new long[] {0, 105};
-                amplitudes = new int[] {0, 235};
-                break;
+        if (
+            !type.equals("interaction") &&
+            !type.equals("shutter") &&
+            !type.equals("heySent")
+        ) {
+            return;
         }
 
+        long[] timings = {0, type.equals("shutter") ? 10 : 15};
+        int[] amplitudes = {0, 90};
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            vibrator.vibrate(VibrationEffect.createWaveform(timings, amplitudes, -1));
+            vibrator.vibrate(
+                VibrationEffect.createWaveform(timings, amplitudes, -1)
+            );
         } else {
             // noinspection deprecation
             vibrator.vibrate(timings, -1);

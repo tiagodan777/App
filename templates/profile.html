@@ -5,7 +5,7 @@
 {% block styles %}
 <link rel="stylesheet" href="{{ doc_root }}estilos/profile.css?v=20260916" data-margot-page-style>
 <link rel="stylesheet" href="{{ doc_root }}estilos/profile-content.css?v=20260916" data-margot-page-style>
-<link rel="stylesheet" href="{{ doc_root }}estilos/profile-lightbox.css?v=20260916" data-margot-page-style>
+<link rel="stylesheet" href="{{ doc_root }}estilos/profile-lightbox.css?v=20260920-polish" data-margot-page-style>
 <link rel="stylesheet" href="{{ doc_root }}estilos/profile-responsive.css?v=20260916" data-margot-page-style>
 <link rel="stylesheet" href="{{ doc_root }}estilos/profile-actions.css?v=20260916" data-margot-page-style>
 <link rel="stylesheet" href="{{ doc_root }}estilos/today.css?v=20260916" data-margot-page-style>
@@ -19,7 +19,14 @@
 {% set total_slides = total_fotos > 0 ? total_fotos : 1 %}
 {% set perfil_proprio = membro.id == session.id %}
 
-<svg class="perfil-svg-defs" width="0" height="0" viewBox="0 0 1 1" aria-hidden="true" focusable="false">
+<svg
+    class="perfil-svg-defs"
+    width="0"
+    height="0"
+    viewBox="0 0 1 1"
+    aria-hidden="true"
+    focusable="false"
+>
     <defs>
         <clipPath id="perfilIslandClip" clipPathUnits="objectBoundingBox">
             <path
@@ -94,7 +101,12 @@
                 <span class="perfil-acento perfil-acento--roxo" aria-hidden="true"></span>
                 <span class="perfil-acento perfil-acento--rosa" aria-hidden="true"></span>
 
-                <section id="perfil-galeria" class="perfil-galeria" aria-label="Fotografias de {{ membro.nome }}" tabindex="0">
+                <section
+                    id="perfil-galeria"
+                    class="perfil-galeria"
+                    aria-label="Fotografias de {{ membro.nome }}"
+                    tabindex="0"
+                >
                     <div id="perfil-fotos" class="perfil-fotos">
                         {% if total_fotos > 0 %}
                             {% for foto in fotos %}
@@ -116,7 +128,12 @@
                                 </figure>
                             {% endfor %}
                         {% else %}
-                            <figure id="perfil-foto-0" class="perfil-slide perfil-slide--sem-foto" data-indice="0" aria-hidden="false">
+                            <figure
+                                id="perfil-foto-0"
+                                class="perfil-slide perfil-slide--sem-foto"
+                                data-indice="0"
+                                aria-hidden="false"
+                            >
                                 <img
                                     src="{{ doc_root }}imagens/fotos-perfil/default.webp"
                                     data-default="{{ doc_root }}imagens/fotos-perfil/default.webp"
@@ -130,7 +147,11 @@
                     </div>
 
                     {% if total_slides > 1 %}
-                        <div id="perfil-indicadores" class="perfil-indicadores" aria-label="Escolher fotografia">
+                        <div
+                            id="perfil-indicadores"
+                            class="perfil-indicadores"
+                            aria-label="Escolher fotografia"
+                        >
                             {% for indice in 0..(total_slides - 1) %}
                                 <button
                                     type="button"
@@ -150,13 +171,23 @@
                             <span>{{ total_slides < 10 ? '0' ~ total_slides : total_slides }}</span>
                         </div>
 
-                        <button type="button" id="perfil-anterior" class="perfil-nav perfil-nav--anterior" aria-label="Fotografia anterior">
+                        <button
+                            type="button"
+                            id="perfil-anterior"
+                            class="perfil-nav perfil-nav--anterior"
+                            aria-label="Fotografia anterior"
+                        >
                             <svg viewBox="0 0 24 24" aria-hidden="true">
                                 <path d="M15 5l-7 7 7 7"></path>
                             </svg>
                         </button>
 
-                        <button type="button" id="perfil-seguinte" class="perfil-nav perfil-nav--seguinte" aria-label="Fotografia seguinte">
+                        <button
+                            type="button"
+                            id="perfil-seguinte"
+                            class="perfil-nav perfil-nav--seguinte"
+                            aria-label="Fotografia seguinte"
+                        >
                             <svg viewBox="0 0 24 24" aria-hidden="true">
                                 <path d="M9 5l7 7-7 7"></path>
                             </svg>
@@ -176,7 +207,12 @@
                 </section>
 
                 {% if perfil_proprio %}
-                    <button type="button" id="perfil-hoje-adicionar" class="perfil-hoje-adicionar" aria-label="Adicionar nota ou roupa de hoje">
+                    <button
+                        type="button"
+                        id="perfil-hoje-adicionar"
+                        class="perfil-hoje-adicionar"
+                        aria-label="Adicionar nota ou roupa de hoje"
+                    >
                         <span aria-hidden="true">+</span>
                     </button>
                 {% endif %}
@@ -208,9 +244,24 @@
 
                     {% if not perfil_proprio %}
                         <div class="perfil-acoes">
-                            <a class="perfil-mensagem" href="{{ doc_root }}messages/{{ membro.id }}">Mensagem</a>
+                            <a
+                                class="perfil-mensagem"
+                                href="{{ doc_root }}messages/{{ membro.id }}"
+                                aria-label="Enviar mensagem"
+                                title="Enviar mensagem"
+                            >
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5Z"></path>
+                                </svg>
+                            </a>
 
-                            <button type="button" class="perfil-hey" id="enviar-hey-perfil" data-destinatario-id="{{ membro.id }}" aria-describedby="perfil-hey-estado">
+                            <button
+                                type="button"
+                                class="perfil-hey"
+                                id="enviar-hey-perfil"
+                                data-destinatario-id="{{ membro.id }}"
+                                aria-describedby="perfil-hey-estado"
+                            >
                                 <span class="perfil-hey-label">Hey</span>
                             </button>
 
@@ -233,13 +284,25 @@
                                     </svg>
                                 </span>
 
-                                <span class="perfil-conectar-label">{{ ligados ? 'Desconectar' : 'Conectar' }}</span>
+                                <span class="perfil-conectar-label">
+                                    {{ ligados ? 'Desconectar' : 'Conectar' }}
+                                </span>
                             </button>
                         </div>
 
-                        <p id="perfil-hey-estado" class="sr-only" aria-live="polite" aria-atomic="true"></p>
+                        <p
+                            id="perfil-hey-estado"
+                            class="sr-only"
+                            aria-live="polite"
+                            aria-atomic="true"
+                        ></p>
 
-                        <p id="perfil-conectar-estado" class="sr-only" aria-live="polite" aria-atomic="true">
+                        <p
+                            id="perfil-conectar-estado"
+                            class="sr-only"
+                            aria-live="polite"
+                            aria-atomic="true"
+                        >
                             {% if ligados %}
                                 Estão ligados na Margot.
                             {% endif %}
@@ -256,35 +319,53 @@
         </section>
 
         {% if membro.bio|default('') %}
-            <section class="perfil-seccao perfil-sobre" aria-labelledby="perfil-sobre-titulo">
+            <section
+                class="perfil-seccao perfil-sobre"
+                aria-labelledby="perfil-sobre-titulo"
+            >
                 <header class="perfil-seccao-topo">
-                    <span class="perfil-seccao-icone perfil-seccao-icone--roxo" aria-hidden="true">
+                    <span
+                        class="perfil-seccao-icone perfil-seccao-icone--roxo"
+                        aria-hidden="true"
+                    >
                         <svg viewBox="0 0 24 24">
                             <circle cx="12" cy="7.5" r="3.2"></circle>
                             <path d="M5.5 19c.7-3.7 3-5.5 6.5-5.5s5.8 1.8 6.5 5.5"></path>
                         </svg>
                     </span>
+
                     <h2 id="perfil-sobre-titulo">Sobre</h2>
                 </header>
+
                 <p>{{ membro.bio }}</p>
             </section>
         {% endif %}
 
         {% if primeiro_gosto %}
-            <section id="adicional" class="perfil-seccao perfil-interesses" aria-labelledby="perfil-interesses-titulo">
+            <section
+                id="adicional"
+                class="perfil-seccao perfil-interesses"
+                aria-labelledby="perfil-interesses-titulo"
+            >
                 <header class="perfil-seccao-topo">
-                    <span class="perfil-seccao-icone perfil-seccao-icone--amarelo" aria-hidden="true">
+                    <span
+                        class="perfil-seccao-icone perfil-seccao-icone--amarelo"
+                        aria-hidden="true"
+                    >
                         <svg viewBox="0 0 24 24">
                             <path d="m12 3 2.6 5.2 5.7.8-4.1 4 .95 5.7L12 16l-5.15 2.7.95-5.7-4.1-4 5.7-.8L12 3Z"></path>
                         </svg>
                     </span>
+
                     <h2 id="perfil-interesses-titulo">Interesses</h2>
                 </header>
 
                 <ul class="perfil-interesses-grid">
                     {% for gosto in membro.gostos %}
                         <li class="perfil-gosto perfil-gosto--{{ (loop.index0 % 6) + 1 }}">
-                            <span class="perfil-gosto-numero">{{ loop.index < 10 ? '0' ~ loop.index : loop.index }}</span>
+                            <span class="perfil-gosto-numero">
+                                {{ loop.index < 10 ? '0' ~ loop.index : loop.index }}
+                            </span>
                             <span class="perfil-gosto-nome">{{ gosto['nome'] }}</span>
                         </li>
                     {% endfor %}
@@ -306,7 +387,13 @@
 
         <div id="perfil-lightbox-stage" class="perfil-lightbox-stage">
             <div id="perfil-lightbox-media" class="perfil-lightbox-media">
-                <img id="perfil-lightbox-imagem" class="perfil-lightbox-imagem" src="" alt="" draggable="false">
+                <img
+                    id="perfil-lightbox-imagem"
+                    class="perfil-lightbox-imagem"
+                    src=""
+                    alt=""
+                    draggable="false"
+                >
                 <span class="perfil-lightbox-moldura" aria-hidden="true"></span>
             </div>
 
@@ -346,7 +433,12 @@
             {% endif %}
         </div>
 
-        <button type="button" id="perfil-lightbox-fechar" class="perfil-lightbox-fechar" aria-label="Fechar fotografia">
+        <button
+            type="button"
+            id="perfil-lightbox-fechar"
+            class="perfil-lightbox-fechar"
+            aria-label="Fechar fotografia"
+        >
             <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M6 6l12 12"></path>
                 <path d="M18 6 6 18"></path>
@@ -357,21 +449,47 @@
 
 {% if perfil_proprio %}
 <div id="hoje-editor" class="hoje-editor" aria-hidden="true" hidden>
-    <button type="button" class="hoje-editor-fundo" data-hoje-fechar aria-label="Fechar editor"></button>
+    <button
+        type="button"
+        class="hoje-editor-fundo"
+        data-hoje-fechar
+        aria-label="Fechar editor"
+    ></button>
 
-    <section class="hoje-editor-sheet" role="dialog" aria-modal="true" aria-labelledby="hoje-editor-titulo">
+    <section
+        class="hoje-editor-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="hoje-editor-titulo"
+    >
         <div class="hoje-editor-barra" aria-hidden="true"></div>
 
         <header class="hoje-editor-cabecalho">
-            <button type="button" id="hoje-editor-voltar" class="hoje-editor-voltar" aria-label="Voltar" hidden>‹</button>
+            <button
+                type="button"
+                id="hoje-editor-voltar"
+                class="hoje-editor-voltar"
+                aria-label="Voltar"
+                hidden
+            >‹</button>
+
             <h2 id="hoje-editor-titulo">Hoje</h2>
-            <button type="button" id="hoje-editor-fechar" class="hoje-editor-fechar" aria-label="Fechar">×</button>
+
+            <button
+                type="button"
+                id="hoje-editor-fechar"
+                class="hoje-editor-fechar"
+                aria-label="Fechar"
+            >×</button>
         </header>
 
         <div id="hoje-editor-principal" class="hoje-editor-view">
             <p class="hoje-editor-intro">
                 <strong>O que queres mostrar hoje?</strong>
-                <span>Uma nota rápida, a roupa que tens vestida, ou as duas coisas. Desaparece ao fim de 24 horas.</span>
+                <span>
+                    Uma nota rápida, a roupa que tens vestida, ou as duas coisas.
+                    Desaparece ao fim de 24 horas.
+                </span>
             </p>
 
             <div class="hoje-nota-wrap">
@@ -383,15 +501,22 @@
                     autocapitalize="sentences"
                     placeholder="Escreve uma nota…"
                 ></textarea>
-                <span id="hoje-nota-contador" class="hoje-nota-contador" aria-hidden="true">0/160</span>
+
+                <span
+                    id="hoje-nota-contador"
+                    class="hoje-nota-contador"
+                    aria-hidden="true"
+                >0/160</span>
             </div>
 
             <button type="button" id="hoje-abrir-roupa" class="hoje-opcao-roupa">
                 <span class="hoje-opcao-roupa-icone" aria-hidden="true"></span>
+
                 <span class="hoje-opcao-roupa-texto">
                     <strong>Roupa de hoje</strong>
                     <span id="hoje-roupa-resumo">Opcional</span>
                 </span>
+
                 <span class="hoje-opcao-seta" aria-hidden="true">›</span>
             </button>
 
@@ -404,24 +529,48 @@
         </div>
 
         <div id="hoje-editor-roupa" class="hoje-editor-view" hidden>
-            <p class="hoje-roupa-ajuda">Escolhe uma peça e depois a cor. Podes adicionar até 5 peças.</p>
+            <p class="hoje-roupa-ajuda">
+                Escolhe uma peça e depois a cor. Podes adicionar até 5 peças.
+            </p>
 
-            <div id="hoje-roupa-selecionada" class="hoje-roupa-selecionada" hidden></div>
-            <div id="hoje-pecas-grid" class="hoje-pecas-grid" aria-label="Peças de roupa"></div>
+            <div
+                id="hoje-roupa-selecionada"
+                class="hoje-roupa-selecionada"
+                hidden
+            ></div>
+
+            <div
+                id="hoje-pecas-grid"
+                class="hoje-pecas-grid"
+                aria-label="Peças de roupa"
+            ></div>
 
             <section id="hoje-cores-area" class="hoje-cores-area" hidden>
                 <header class="hoje-cores-cabecalho">
-                    <span id="hoje-cores-peca-preview" class="hoje-cores-peca-preview" aria-hidden="true"></span>
+                    <span
+                        id="hoje-cores-peca-preview"
+                        class="hoje-cores-peca-preview"
+                        aria-hidden="true"
+                    ></span>
+
                     <div class="hoje-cores-titulos">
                         <span>Cor para</span>
                         <h3 id="hoje-cores-titulo">Peça</h3>
                     </div>
                 </header>
 
-                <div id="hoje-cores-grid" class="hoje-cores-grid" aria-label="Cores"></div>
+                <div
+                    id="hoje-cores-grid"
+                    class="hoje-cores-grid"
+                    aria-label="Cores"
+                ></div>
             </section>
 
-            <button type="button" id="hoje-roupa-concluir" class="hoje-roupa-concluir">Concluído</button>
+            <button
+                type="button"
+                id="hoje-roupa-concluir"
+                class="hoje-roupa-concluir"
+            >Concluído</button>
         </div>
     </section>
 </div>
@@ -438,7 +587,7 @@ window.webSocketUrl = window.location.protocol === 'https:'
 
 <script src="{{ doc_root }}js/today-clothes.js?v=20260916"></script>
 <script src="{{ doc_root }}js/today.js?v=20260916"></script>
-<script src="{{ doc_root }}js/profile.js?v=20260920"></script>
+<script src="{{ doc_root }}js/profile.js?v=20260920-polish"></script>
 <script src="{{ doc_root }}js/profile-hey.js?v=20260916"></script>
 <script src="{{ doc_root }}js/profile-connection.js?v=20260916"></script>
 {% endblock %}

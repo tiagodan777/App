@@ -7,13 +7,25 @@ window.MargotMiniCompose = function (form, { onError, workletUrl }) {
     const submit = form.querySelector('[type="submit"]');
     const controls = document.createElement('div');
 
-    controls.className = 'mini-compose-tools';
+    controls.className = 'mini-compose-input';
     controls.innerHTML = `
-        <button type="button" data-camera-open aria-label="Tirar fotografia"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h4l2-3h4l2 3h4v14H4z"></path><circle cx="12" cy="12" r="4"></circle></svg></button>
-        <button type="button" data-microphone aria-label="Gravar mensagem de voz"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="2" width="6" height="13" rx="3"></rect><path d="M5 10v2a7 7 0 0014 0v-2M12 19v3M8 22h8"></path></svg></button>
+        <button type="button" data-camera-open aria-label="Tirar fotografia">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 6h4l2-3h4l2 3h4v14H4z"></path>
+                <circle cx="12" cy="12" r="4"></circle>
+            </svg>
+        </button>
+        <button type="button" data-microphone aria-label="Gravar mensagem de voz">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="9" y="2" width="6" height="13" rx="3"></rect>
+                <path d="M5 10v2a7 7 0 0014 0v-2M12 19v3M8 22h8"></path>
+            </svg>
+        </button>
         <div class="chat-recording" hidden>
             <button type="button" data-cancel aria-label="Apagar gravação">×</button>
-            <span class="chat-recording-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+            <span class="chat-recording-wave" aria-hidden="true">
+                <i></i><i></i><i></i><i></i><i></i>
+            </span>
             <output>0:00</output>
             <button type="button" data-send aria-label="Enviar gravação">↑</button>
         </div>`;
@@ -22,41 +34,67 @@ window.MargotMiniCompose = function (form, { onError, workletUrl }) {
     preview.className = 'chat-media-preview mini-compose-preview';
     preview.hidden = true;
 
-    const option = document.createElement('label');
+    const option = document.createElement('div');
     option.className = 'chat-once-option';
-    option.innerHTML = '<input type="checkbox"> Ver uma vez';
+    option.innerHTML =
+        '<input type="checkbox" hidden>' +
+        '<button type="button" data-once="false">Manter na conversa</button>' +
+        '<button type="button" data-once="true">Ver uma vez</button>';
     option.hidden = true;
 
+    const refreshMode = window.MargotPhotoMode(option);
+
     form.prepend(preview, option);
-    form.insertBefore(controls, input);
+    form.append(controls);
+
+    const microphone = controls.querySelector('[data-microphone]');
+    controls.insertBefore(input, microphone);
+    controls.append(submit);
+    form.querySelector('.mini-menu-anexo')?.remove();
 
     const recording = controls.querySelector('.chat-recording');
     const drafts = (window.MargotMiniDrafts ||= new Map());
 
-    let file = null,
-        objectURL = null,
-        recipient = '',
-        busy = false;
+    let file = null;
+    let objectURL = null;
+    let recipient = '';
+    let busy = false;
 
-    const on = (el, type, handler) => el.addEventListener(type, handler, { signal });
+    const on = (el, type, handler) => {
+        el.addEventListener(type, handler, { signal });
+    };
 
     function save() {
-        if (recipient) drafts.set(recipient, { file, text: input.value, once: option.firstChild.checked });
+        if (recipient) {
+            drafts.set(recipient, {
+                file,
+                text: input.value,
+                once: option.firstChild.checked
+            });
+        }
     }
 
     function state() {
         const active = recorder.state !== 'idle';
+
         recording.hidden = !active;
         input.hidden = active;
         submit.hidden = active;
-        controls.querySelector('[data-microphone]').hidden = active;
+        microphone.hidden = active || Boolean(file || input.value.trim());
+        submit.hidden = active || !Boolean(file || input.value.trim());
         controls.querySelector('[data-camera-open]').hidden = active;
+
         form.classList.toggle('mini-compose-recording', active);
+
         submit.disabled = busy;
+        input.disabled = busy;
+        controls.querySelector('[data-camera-open]').disabled = busy;
+        microphone.disabled = busy;
     }
 
     function choose(value) {
         preview.querySelectorAll('audio,video').forEach((el) => el.pause());
+
         if (objectURL) URL.revokeObjectURL(objectURL);
 
         file = value;
@@ -65,20 +103,26 @@ window.MargotMiniCompose = function (form, { onError, workletUrl }) {
         preview.replaceChildren();
         preview.hidden = !file;
         option.hidden = !file?.type.startsWith('image/');
+
         if (option.hidden) option.firstChild.checked = false;
+
+        refreshMode();
 
         if (file) {
             const tag = file.type.startsWith('audio/')
                 ? 'audio'
                 : file.type.startsWith('video/')
-                  ? 'video'
-                  : 'img';
+                    ? 'video'
+                    : 'img';
+
             const limit = tag === 'audio' ? 35 : tag === 'video' ? 100 : 15;
 
             if (file.size > limit * 1024 * 1024) {
                 file = null;
                 preview.hidden = option.hidden = true;
                 onError('O ficheiro pode ter no máximo ' + limit + ' MB.');
+                state();
+                save();
                 return;
             }
 
@@ -97,14 +141,18 @@ window.MargotMiniCompose = function (form, { onError, workletUrl }) {
             remove.className = 'chat-media-remover';
             remove.textContent = '×';
             remove.setAttribute('aria-label', 'Remover anexo');
+
             on(remove, 'click', () => choose(null));
 
             preview.append(
                 remove,
-                tag === 'audio' ? window.MargotChatAudioPlayer(element, onError) : element
+                tag === 'audio'
+                    ? window.MargotChatAudioPlayer(element, onError)
+                    : element
             );
         }
 
+        state();
         save();
     }
 
@@ -122,8 +170,10 @@ window.MargotMiniCompose = function (form, { onError, workletUrl }) {
                 status === 'starting'
                     ? 'A abrir microfone…'
                     : status === 'finishing'
-                      ? 'A preparar…'
-                      : Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0');
+                        ? 'A preparar…'
+                        : Math.floor(seconds / 60) +
+                          ':' +
+                          String(seconds % 60).padStart(2, '0');
 
             recording.querySelector('[data-send]').disabled = status !== 'recording';
             state();
@@ -157,12 +207,18 @@ window.MargotMiniCompose = function (form, { onError, workletUrl }) {
         if (event.button === 0) event.preventDefault();
     });
 
+    on(input, 'input', () => {
+        state();
+        save();
+    });
+
+    on(option, 'change', save);
     on(media, 'change', () => choose(media.files[0] || null));
 
     on(document, 'visibilitychange', () => {
         if (document.hidden) {
             recorder.cancel();
-            camera.close();
+            camera.suspend();
         }
     });
 
@@ -175,7 +231,10 @@ window.MargotMiniCompose = function (form, { onError, workletUrl }) {
         }
     });
 
-    observer.observe(menu, { attributes: true, attributeFilter: ['aria-hidden'] });
+    observer.observe(menu, {
+        attributes: true,
+        attributeFilter: ['aria-hidden']
+    });
 
     return {
         select(id) {
@@ -190,15 +249,23 @@ window.MargotMiniCompose = function (form, { onError, workletUrl }) {
             input.value = draft?.text || '';
             choose(draft?.file || null);
             option.firstChild.checked = Boolean(draft?.once);
+            refreshMode();
         },
 
         fill(body) {
             body.delete('media');
+
             if (file) body.set('media', file);
+
             body.set('media_kind', file?.type.startsWith('audio/') ? 'audio' : '');
             body.set(
                 'view_once',
-                String(Boolean(file?.type.startsWith('image/') && option.firstChild.checked))
+                String(
+                    Boolean(
+                        file?.type.startsWith('image/') &&
+                        option.firstChild.checked
+                    )
+                )
             );
         },
 
@@ -214,7 +281,10 @@ window.MargotMiniCompose = function (form, { onError, workletUrl }) {
                 save();
             } else {
                 const draft = drafts.get(id);
-                if (draft?.file === sentFile && draft?.text === sentText) drafts.delete(id);
+
+                if (draft?.file === sentFile && draft?.text === sentText) {
+                    drafts.delete(id);
+                }
             }
         },
 
@@ -224,6 +294,7 @@ window.MargotMiniCompose = function (form, { onError, workletUrl }) {
             camera.destroy();
             events.abort();
             observer.disconnect();
+
             if (objectURL) URL.revokeObjectURL(objectURL);
         },
 

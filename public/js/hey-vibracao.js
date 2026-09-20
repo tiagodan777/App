@@ -5,10 +5,9 @@
     var ordem = [];
     var MAX_PROCESSADOS = 300;
     var PADROES_WEB = Object.freeze({
-        heySent: [38],
-        heyReceived: [68, 58, 150],
-        messageReceived: [105],
-        connection: [82, 42, 105, 48, 220]
+        interaction: [12],
+        shutter: [10],
+        heySent: [15]
     });
 
     function notificacoesDesativadas() {
@@ -26,7 +25,10 @@
             tipo +
             ':' +
             String(
-                detalhe.notification_id || detalhe.message_id || (detalhe.message && detalhe.message.id) || ''
+                detalhe.notification_id ||
+                detalhe.message_id ||
+                (detalhe.message && detalhe.message.id) ||
+                ''
             )
         );
     }
@@ -53,12 +55,18 @@
     }
 
     function pluginNativo() {
-        return window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.MargotHaptics
+        return window.Capacitor &&
+            window.Capacitor.Plugins &&
+            window.Capacitor.Plugins.MargotHaptics
             ? window.Capacitor.Plugins.MargotHaptics
             : null;
     }
 
     function tocar(tipo, detalhe, interacao) {
+        if (document.hidden || (!interacao && tipo !== 'heySent')) {
+            return;
+        }
+
         if (!interacao && (notificacoesDesativadas() || !aceitar(tipo, detalhe))) {
             return;
         }
@@ -86,7 +94,7 @@
         }
 
         try {
-            navigator.vibrate((PADROES_WEB[tipo] || PADROES_WEB.messageReceived).slice());
+            navigator.vibrate((PADROES_WEB[tipo] || PADROES_WEB.interaction).slice());
         } catch (erro) {
             console.warn('Não foi possível reproduzir a háptica da Margot.', erro);
         }
@@ -123,9 +131,11 @@
 
     window.MargotHaptics = Object.freeze({
         play: tocar,
+
         feedback: function (tipo) {
             tocar(tipo || 'interaction', null, true);
         },
+
         cancel: function () {
             if (typeof navigator.vibrate === 'function') {
                 navigator.vibrate(0);

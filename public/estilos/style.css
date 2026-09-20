@@ -38,8 +38,17 @@ body {
  */
 body:has(#gridCanvas) {
     background:
-        radial-gradient(circle at 92% 12%, rgba(207, 196, 239, 0.055), transparent 29%),
-        radial-gradient(circle at 5% 78%, rgba(244, 220, 146, 0.04), transparent 31%), #fdfcf9;
+        radial-gradient(
+            circle at 92% 12%,
+            rgba(207, 196, 239, 0.055),
+            transparent 29%
+        ),
+        radial-gradient(
+            circle at 5% 78%,
+            rgba(244, 220, 146, 0.04),
+            transparent 31%
+        ),
+        #fdfcf9;
 }
 
 /* CANVAS */
@@ -104,11 +113,6 @@ img {
     overflow: hidden;
     border: none;
     border-bottom: 0;
-    /*
-     * Curvas bastante maiores.
-     * Volta a aproximar-se da personalidade
-     * do mini-menu original.
-     */
     border-radius: 75px 75px 0 0;
     background: rgba(255, 255, 255, 0.975);
     -webkit-backdrop-filter: blur(12px);
@@ -117,7 +121,11 @@ img {
         0 -1px 0 rgba(255, 255, 255, 0.75),
         0 -8px 28px rgba(20, 18, 25, 0.11),
         0 -22px 55px rgba(20, 18, 25, 0.055);
-    transform: translate3d(0, calc(100% + 96px + env(safe-area-inset-bottom, 0px)), 0);
+    transform: translate3d(
+        0,
+        calc(100% + 96px + env(safe-area-inset-bottom, 0px)),
+        0
+    );
     touch-action: none;
     display: flex;
     flex-flow: column nowrap;
@@ -260,93 +268,10 @@ img {
     cursor: default;
 }
 
-/*
- * No perfil, profile.css continua a ter
- * regras mais específicas para o Hey.
- */
+/* No perfil, profile.css tem regras mais específicas para o Hey. */
 .mini-menu.perfil-proprio #enviar-hey,
 .mini-menu.perfil-proprio .mini-menu-mensagem {
     display: none !important;
-}
-
-/* FORMULÁRIO DE MENSAGEM */
-.mini-menu > form {
-    width: min(calc(100% - 30px), 540px);
-    margin-top: 10px;
-    display: flex;
-    flex-flow: row nowrap;
-    justify-content: center;
-    align-items: center;
-    gap: 7px;
-}
-
-/* ANEXO */
-.mini-menu form .mini-menu-anexo {
-    flex: 0 0 42px;
-    width: 42px;
-    height: 42px;
-    border: 0;
-    border-radius: 50%;
-    background: #f0eff2;
-    color: #29272d;
-    font-size: 24px;
-    font-weight: 500;
-    line-height: 42px;
-    text-align: center;
-    cursor: pointer;
-}
-
-.mini-menu form .mini-menu-anexo.selecionado {
-    background: #e7f7ef;
-    color: #168753;
-    font-size: 18px;
-}
-
-/* INPUT DA MENSAGEM */
-.mini-menu > form > input#mensagem {
-    min-width: 0;
-    flex: 1;
-    width: auto;
-    height: 43px;
-    margin: 0;
-    padding: 0 14px;
-    border: 1px solid #dddddf;
-    border-radius: 999px;
-    outline: none;
-    background: #ffffff;
-    color: var(--margot-preto);
-    font-size: 0.95rem;
-    transition:
-        border-color 150ms ease,
-        box-shadow 150ms ease;
-}
-
-.mini-menu > form > input#mensagem:focus {
-    border-color: rgba(225, 35, 70, 0.32);
-    box-shadow: 0 0 0 3px rgba(225, 35, 70, 0.06);
-}
-
-/* ENVIAR MENSAGEM */
-.mini-menu > form > input[type='submit'] {
-    min-height: 43px;
-    padding: 0 16px;
-    border: 0;
-    border-radius: 999px;
-    background: var(--margot-vermelho);
-    color: #ffffff;
-    font-size: 0.84rem;
-    font-weight: 750;
-    cursor: pointer;
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
-    transition:
-        background-color 130ms ease,
-        transform 130ms ease;
-}
-
-.mini-menu > form > input[type='submit']:active {
-    background: var(--margot-vermelho-escuro);
-    transform: scale(0.96);
 }
 
 /* MENU PRINCIPAL */
@@ -370,12 +295,6 @@ img {
     isolation: auto !important;
     contain: none !important;
     transition: opacity 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
-    /*
-     * Não usar will-change aqui.
-     * Criava uma compositing layer que
-     * impedia o backdrop-filter do filho
-     * de desfocar corretamente o mapa.
-     */
     will-change: auto;
 }
 
@@ -643,15 +562,13 @@ body.margot-a-navegar > [data-margot-pagina] {
         width: min(calc(100% - 48px), 520px);
     }
 
-    .mini-menu > form > input#mensagem {
+    .mini-menu .mini-compose-input #mensagem {
         flex: 1;
         width: auto;
     }
 }
 
-/*
- * Mantida por compatibilidade com o CSS anterior.
- */
+/* Mantida por compatibilidade com o CSS anterior. */
 @media (min-width: 768px) and (max-width: 648px) {
     .mini-menu {
         right: 24px !important;
