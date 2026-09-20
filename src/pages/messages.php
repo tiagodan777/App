@@ -11,7 +11,10 @@ $json = $api !== '' || $metodo === 'POST';
 
 function conversaIndisponivel($twig, bool $json): never {
     if ($json) {
-        json_response(['success' => false, 'message' => 'Esta conversa não está disponível.'], 404);
+        json_response([
+            'success' => false,
+            'message' => 'Esta conversa não está disponível.'
+        ], 404);
     }
 
     http_response_code(404);
@@ -22,12 +25,16 @@ function conversaIndisponivel($twig, bool $json): never {
     echo $twig->render('error-page.html', [
         'message' => 'Esta conversa não está disponível.'
     ]);
+
     exit();
 }
 
 if ($membroId === '') {
     if ($json) {
-        json_response(['success' => false, 'message' => 'A sessão terminou.'], 401);
+        json_response([
+            'success' => false,
+            'message' => 'A sessão terminou.'
+        ], 401);
     }
 
     redirect(DOC_ROOT . 'login');
@@ -35,7 +42,11 @@ if ($membroId === '') {
 
 if (!in_array($metodo, ['GET', 'POST'], true)) {
     header('Allow: GET, POST');
-    json_response(['success' => false, 'message' => 'Método não permitido.'], 405);
+
+    json_response([
+        'success' => false,
+        'message' => 'Método não permitido.'
+    ], 405);
 }
 
 try {
@@ -53,6 +64,7 @@ try {
             'conversas' => $messages->conversations($membroId),
             'mensagens_nao_lidas' => $messages->unreadCount($membroId)
         ]);
+
         return;
     }
 
@@ -68,7 +80,7 @@ try {
     $ligados = (bool) $contexto['ligados'];
 
     if ($metodo === 'GET') {
-        if (!$existente && !$ligados) {
+        if (!$existente && !$ligados && !$cms->getProfileAccess()->canView($membroId, $outroId)) {
             conversaIndisponivel($twig, $json);
         }
 
@@ -97,6 +109,7 @@ try {
             'mensagens' => $messages->history($membroId, $outroId),
             'mensagens_nao_lidas' => $messages->unreadCount($membroId)
         ]);
+
         return;
     }
 
@@ -108,6 +121,27 @@ try {
         && !$ligados
     ) {
         conversaIndisponivel($twig, true);
+    }
+
+    if ($acao === 'open_photo') {
+        $photoId = filter_var($_POST['message_id'] ?? null, FILTER_VALIDATE_INT);
+
+        if (!$photoId || $photoId < 1) {
+            throw new InvalidArgumentException('Fotografia inválida.');
+        }
+
+        $photo = (new App\CMS\MessageOnce($cms->getDatabase()))->consume(
+            $photoId,
+            $membroId,
+            $outroId
+        );
+
+        header('Content-Type: ' . $photo['mime']);
+        header('Cache-Control: private, no-store, max-age=0');
+        header('X-Content-Type-Options: nosniff');
+
+        echo $photo['bytes'];
+        exit();
     }
 
     if ($acao === 'mark_read') {
@@ -138,18 +172,27 @@ try {
         $mensagemId = filter_var($_POST['message_id'] ?? null, FILTER_VALIDATE_INT);
 
         if ($mensagemId === false || $mensagemId < 1) {
-            json_response(['success' => false, 'message' => 'A mensagem não é válida.'], 422);
+            json_response([
+                'success' => false,
+                'message' => 'A mensagem não é válida.'
+            ], 422);
         }
 
         if ($acao === 'delete_message') {
             try {
                 $apagada = $messages->deleteSent($mensagemId, $membroId, $outroId);
             } catch (InvalidArgumentException $erro) {
-                json_response(['success' => false, 'message' => $erro->getMessage()], 403);
+                json_response([
+                    'success' => false,
+                    'message' => $erro->getMessage()
+                ], 403);
             }
 
             if (!$apagada) {
-                json_response(['success' => false, 'message' => 'A mensagem já não existe.'], 404);
+                json_response([
+                    'success' => false,
+                    'message' => 'A mensagem já não existe.'
+                ], 404);
             }
 
             json_response([
@@ -161,13 +204,19 @@ try {
         }
 
         if (!$messages->belongsToConversation($mensagemId, $membroId, $outroId)) {
-            json_response(['success' => false, 'message' => 'A mensagem não é válida.'], 422);
+            json_response([
+                'success' => false,
+                'message' => 'A mensagem não é válida.'
+            ], 422);
         }
 
         $emoji = trim((string) ($_POST['emoji'] ?? ''));
 
         if (!$messages->validReaction($emoji)) {
-            json_response(['success' => false, 'message' => 'A reação não é válida.'], 422);
+            json_response([
+                'success' => false,
+                'message' => 'A reação não é válida.'
+            ], 422);
         }
 
         $reacoes = $messages->react(
@@ -185,7 +234,10 @@ try {
     }
 
     if ($acao !== 'send') {
-        json_response(['success' => false, 'message' => 'Ação inválida.'], 422);
+        json_response([
+            'success' => false,
+            'message' => 'Ação inválida.'
+        ], 422);
     }
 
     if (
@@ -224,7 +276,8 @@ try {
 
     $media = (new App\CMS\MessageMedia())->receive(
         $_FILES['media'] ?? [],
-        ($_POST['media_kind'] ?? '') === 'audio'
+        ($_POST['media_kind'] ?? '') === 'audio',
+        filter_var($_POST['view_once'] ?? false, FILTER_VALIDATE_BOOLEAN)
     );
 
     if ($texto === '' && $media === []) {
@@ -242,7 +295,13 @@ try {
         throw new InvalidArgumentException('A resposta não é válida.');
     }
 
-    $mensagemId = $messages->send($membroId, $outroId, $texto, $media, $replyId);
+    $mensagemId = $messages->send(
+        $membroId,
+        $outroId,
+        $texto,
+        $media,
+        $replyId
+    );
 
     // A falha de push não deve repetir uma mensagem já guardada.
     try {
@@ -257,7 +316,10 @@ try {
     ], 201);
 } catch (InvalidArgumentException $erro) {
     if ($json) {
-        json_response(['success' => false, 'message' => $erro->getMessage()], 422);
+        json_response([
+            'success' => false,
+            'message' => $erro->getMessage()
+        ], 422);
     }
 
     http_response_code(422);

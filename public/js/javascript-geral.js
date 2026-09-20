@@ -15,15 +15,12 @@
     var recursosPreCarregados = new Map();
     var posicoesAbas = new Map();
     var animacaoEmCurso = null;
+
     var ESPERA_MAXIMA_RECURSO = 5000;
     var DURACAO_NAVEGACAO = 160;
     var TEMPO_REAQUECER = 30000;
 
-    /*
-     * Swipe para voltar em praticamente qualquer ponto do ecrã.
-     * A margem esquerda fica reservada ao gesto nativo do iOS
-     * para evitar que o mesmo gesto dispare dois backs.
-     */
+    // A margem esquerda fica reservada ao gesto nativo do iOS.
     var SWIPE_BACK_MARGEM_NATIVA = 24;
     var SWIPE_BACK_DISTANCIA_MINIMA = 70;
     var SWIPE_BACK_MOVIMENTO_INICIAL = 12;
@@ -112,10 +109,15 @@
                 elemento.removeEventListener('load', carregou);
                 elemento.removeEventListener('error', falhou);
 
-                if (sinal) sinal.removeEventListener('abort', cancelar);
+                if (sinal) {
+                    sinal.removeEventListener('abort', cancelar);
+                }
 
-                if (erro) rejeitar(erro);
-                else resolver();
+                if (erro) {
+                    rejeitar(erro);
+                } else {
+                    resolver();
+                }
             }
 
             function carregou() {
@@ -133,7 +135,9 @@
             elemento.addEventListener('load', carregou, { once: true });
             elemento.addEventListener('error', falhou, { once: true });
 
-            if (sinal) sinal.addEventListener('abort', cancelar, { once: true });
+            if (sinal) {
+                sinal.addEventListener('abort', cancelar, { once: true });
+            }
         });
     }
 
@@ -152,7 +156,9 @@
         var chave = tipo + ':' + href;
         var anterior = recursosPreCarregados.get(chave);
 
-        if (anterior) return anterior.promessa;
+        if (anterior) {
+            return anterior.promessa;
+        }
 
         var preload = document.createElement('link');
         preload.rel = 'preload';
@@ -229,9 +235,10 @@
 
             var html = await resposta.text();
             var documentoNovo = new DOMParser().parseFromString(html, 'text/html');
+
             await preAquecerRecursos(documentoNovo);
         } catch (erro) {
-            // Uma falha nesta otimização não deve interferir com a app.
+            // Uma falha de pré-carregamento não impede a navegação.
         }
     }
 
@@ -259,13 +266,19 @@
 
                     var link = origem.cloneNode();
                     var media = origem.getAttribute('media');
-
                     link.href = href;
                     link.media = 'not all';
+
                     preparados.push({ link: link, media: media });
 
                     var carregamento = aguardarRecurso(link, sinal);
+                    const theme = document.head.querySelector('link[href*="/theme.css"]');
+
                     document.head.appendChild(link);
+
+                    if (theme) {
+                        document.head.appendChild(theme);
+                    }
 
                     return carregamento;
                 })
@@ -281,12 +294,17 @@
         return {
             aplicar: function () {
                 preparados.forEach(function (item) {
-                    if (item.media === null) item.link.removeAttribute('media');
-                    else item.link.media = item.media;
+                    if (item.media === null) {
+                        item.link.removeAttribute('media');
+                    } else {
+                        item.link.media = item.media;
+                    }
                 });
 
                 atuais.forEach(function (link) {
-                    if (!hrefs.includes(link.href)) link.remove();
+                    if (!hrefs.includes(link.href)) {
+                        link.remove();
+                    }
                 });
             },
 
@@ -305,7 +323,9 @@
     }
 
     function guardarPosicaoAba(pagina) {
-        if (!eAbaPrincipal(urlRenderizada)) return;
+        if (!eAbaPrincipal(urlRenderizada)) {
+            return;
+        }
 
         var conteudo = pagina.querySelector('main') || pagina.firstElementChild;
 
@@ -324,7 +344,9 @@
 
         var conteudo = pagina.querySelector('main') || pagina.firstElementChild;
 
-        if (conteudo) conteudo.scrollTop = posicao ? posicao.conteudo : 0;
+        if (conteudo) {
+            conteudo.scrollTop = posicao ? posicao.conteudo : 0;
+        }
     }
 
     function retirarScripts(pagina) {
@@ -399,7 +421,9 @@
             controlador.abort();
         }
 
-        if (animacaoEmCurso) animacaoEmCurso.cancel();
+        if (animacaoEmCurso) {
+            animacaoEmCurso.cancel();
+        }
     }
 
     async function trocarPagina(url, opcoes) {
@@ -457,7 +481,7 @@
 
             faseNavegacao = 'prepare';
 
-            // Descarrega em paralelo; executa depois de existir um único DOM da página.
+            // Descarrega em paralelo e executa depois de substituir o DOM.
             preAquecerRecursos(documentoNovo).catch(function () {
                 // O carregamento real reporta falhas.
             });
@@ -474,6 +498,7 @@
 
             faseNavegacao = 'render';
             guardarPosicaoAba(paginaAtual);
+
             document.dispatchEvent(new CustomEvent('margot:page-leave'));
 
             paginaNova.style.visibility = 'hidden';
@@ -496,7 +521,6 @@
                 }
             }
 
-            // Os scripts veem o URL de destino e um único DOM.
             await executarScripts(scripts);
             reporPosicaoAba(paginaNova, resposta.url);
             document.dispatchEvent(new CustomEvent('margot:page-ready'));
@@ -547,7 +571,9 @@
                 window.location.assign(destino);
             }
         } finally {
-            if (estilos) estilos.cancelar();
+            if (estilos) {
+                estilos.cancelar();
+            }
 
             if (paginaNova) {
                 paginaNova.style.removeProperty('visibility');
@@ -584,16 +610,20 @@
             return;
         }
 
-        trocarPagina(urlAlternativo, { historico: 'replace', direcao: -1 });
+        trocarPagina(urlAlternativo, {
+            historico: 'replace',
+            direcao: -1
+        });
     }
 
-    // A galeria e os elementos assinalados mantêm os seus próprios gestos.
     function elementoBloqueiaSwipeBack(elemento) {
         if (!(elemento instanceof Element)) {
             return false;
         }
 
-        return Boolean(elemento.closest('#perfil-galeria, ' + '[data-margot-no-back-swipe]'));
+        return Boolean(
+            elemento.closest('#perfil-galeria, [data-margot-no-back-swipe], dialog[open]')
+        );
     }
 
     function limparSwipeBack() {
@@ -663,6 +693,7 @@
             if (Math.abs(diferencaX) > SWIPE_BACK_MOVIMENTO_INICIAL) {
                 limparSwipeBack();
             }
+
             return;
         }
 
@@ -728,7 +759,6 @@
     document.addEventListener('touchend', terminarSwipeBack, { passive: true });
     document.addEventListener('touchcancel', cancelarSwipeBack, { passive: true });
 
-    // Links internos elegíveis usam a mesma navegação animada.
     document.addEventListener('click', function (evento) {
         var link = evento.target.closest('a[href]');
 
@@ -812,7 +842,11 @@
                   : 1;
 
         posicaoHistorico = proximaPosicao;
-        trocarPagina(window.location.href, { historico: 'pop', direcao: direcao });
+
+        trocarPagina(window.location.href, {
+            historico: 'pop',
+            direcao: direcao
+        });
     });
 
     history.replaceState({ margotPosition: posicaoHistorico }, '', window.location.href);

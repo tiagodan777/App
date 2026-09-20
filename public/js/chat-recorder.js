@@ -1,23 +1,40 @@
 /* Uma gravação de cada vez. As pistas são sempre fechadas ao sair/cancelar. */
-window.MargotChatRecorder = function ({ onState, onFile, onError, workletUrl }) {
+window.MargotChatRecorder = function ({ onState, onFile, onError, onLevel = () => {}, workletUrl }) {
     let sendWhenReady = true;
     let state = 'idle',
         stream,
         context,
         node,
+        source,
+        silent,
         timer,
         generation = 0,
         chunks = [],
         seconds = 0;
+    let prepared;
+
+    function prepare() {
+        if (!prepared) {
+            context = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+            prepared = context.audioWorklet.addModule(workletUrl);
+            prepared.catch(() => {});
+        }
+        return prepared;
+    }
+
+    // Prepara o código sem abrir nem manter o microfone ligado.
+    if (window.AudioWorkletNode && (window.AudioContext || window.webkitAudioContext)) prepare();
 
     function release() {
         clearInterval(timer);
         stream?.getTracks().forEach((track) => track.stop());
         node?.disconnect();
-
-        if (context && context.state !== 'closed') context.close().catch(() => {});
-
-        stream = context = node = null;
+        source?.disconnect();
+        silent?.disconnect();
+        source = silent = null;
+        if (context?.state === 'running') context.suspend().catch(() => {});
+        stream = node = null;
+        onLevel(0);
     }
 
     function cancel() {
@@ -32,7 +49,6 @@ window.MargotChatRecorder = function ({ onState, onFile, onError, workletUrl }) 
         const count = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
         const buffer = new ArrayBuffer(44 + count * 2),
             view = new DataView(buffer);
-
         const text = (offset, value) =>
             [...value].forEach((letter, i) => view.setUint8(offset + i, letter.charCodeAt(0)));
 
@@ -51,7 +67,6 @@ window.MargotChatRecorder = function ({ onState, onFile, onError, workletUrl }) 
         view.setUint32(40, count * 2, true);
 
         let offset = 44;
-
         chunks.forEach((chunk) =>
             chunk.forEach((sample) => {
                 view.setInt16(offset, sample, true);
@@ -64,7 +79,6 @@ window.MargotChatRecorder = function ({ onState, onFile, onError, workletUrl }) 
 
     function finish(send = true) {
         if (state !== 'recording') return;
-
         sendWhenReady = send;
         state = 'finishing';
         onState(state, seconds);
@@ -73,7 +87,6 @@ window.MargotChatRecorder = function ({ onState, onFile, onError, workletUrl }) 
 
     async function start() {
         if (state !== 'idle') return;
-
         const current = ++generation;
         state = 'starting';
         onState(state, 0);
@@ -82,10 +95,9 @@ window.MargotChatRecorder = function ({ onState, onFile, onError, workletUrl }) 
             if (!navigator.mediaDevices?.getUserMedia || !window.AudioWorkletNode)
                 throw new Error('A gravação não está disponível neste dispositivo.');
 
-            context = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-            await context.resume();
-
-            if (current !== generation) return;
+            prepare();
+            const ready = Promise.all([prepared, context.resume()]);
+            ready.catch(() => {});
 
             const acquired = await navigator.mediaDevices.getUserMedia({
                 audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true }
@@ -97,34 +109,36 @@ window.MargotChatRecorder = function ({ onState, onFile, onError, workletUrl }) 
             }
 
             stream = acquired;
-            await context.audioWorklet.addModule(workletUrl);
-
+            await ready;
             if (current !== generation) return;
 
             chunks = [];
             seconds = 0;
-
             const rate = context.sampleRate;
             node = new AudioWorkletNode(context, 'margot-voice');
 
             node.port.onmessage = ({ data }) => {
                 if (current !== generation) return;
 
-                if (data.samples) chunks.push(data.samples);
+                if (data.samples) {
+                    chunks.push(data.samples);
+                    const energy = data.samples.reduce((sum, value) => sum + (value / 32768) ** 2, 0);
+                    onLevel(Math.min(1, Math.sqrt(energy / data.samples.length) * 5));
+                }
+
                 if (data.limit) finish(false);
 
                 if (data.stopped) {
                     const file = wav(rate);
                     cancel();
-
                     if (file.size > 44) onFile(file, sendWhenReady);
                     else onError('Não foi captado áudio. Tenta novamente.');
                 }
             };
 
-            context.createMediaStreamSource(stream).connect(node);
-
-            const silent = context.createGain();
+            source = context.createMediaStreamSource(stream);
+            source.connect(node);
+            silent = context.createGain();
             silent.gain.value = 0;
             node.connect(silent).connect(context.destination);
 
@@ -140,7 +154,6 @@ window.MargotChatRecorder = function ({ onState, onFile, onError, workletUrl }) 
             };
         } catch (error) {
             if (current !== generation) return;
-
             cancel();
             onError(
                 error.name === 'NotAllowedError'
@@ -154,6 +167,12 @@ window.MargotChatRecorder = function ({ onState, onFile, onError, workletUrl }) 
         start,
         finish,
         cancel,
+        destroy() {
+            cancel();
+            if (context && context.state !== 'closed') context.close().catch(() => {});
+            context = null;
+            prepared = null;
+        },
         get state() {
             return state;
         }

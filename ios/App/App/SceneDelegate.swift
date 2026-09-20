@@ -5,12 +5,18 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
   var window: UIWindow?
 
   func scene(
-    _ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions
+    _ scene: UIScene, willConnectTo session: UISceneSession,
+    options connectionOptions: UIScene.ConnectionOptions
   ) {
     guard let windowScene = scene as? UIWindowScene else { return }
-    window = UIWindow(windowScene: windowScene)
-    window?.rootViewController = ViewController()
-    window?.makeKeyAndVisible()
+
+    // O storyboard já cria a janela e o ViewController com os plugins da Margot.
+    if window == nil {
+      window = UIWindow(windowScene: windowScene)
+      window?.rootViewController = ViewController()
+      window?.makeKeyAndVisible()
+    }
+
     SceneDelegateProxy.shared.scene(scene, willConnectTo: session, options: connectionOptions)
   }
 

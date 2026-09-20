@@ -1,7 +1,7 @@
 {% extends 'layout.html' %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ doc_root }}estilos/chat.css?v=20260918-chat3" data-margot-page-style>
+<link rel="stylesheet" href="{{ doc_root }}estilos/chat.css?v=20260920-chat4" data-margot-page-style>
 {% endblock %}
 
 {% block content %}
@@ -9,7 +9,7 @@
     id="chat-pagina"
     class="chat-pagina"
     data-outro-id="{{ outro.id }}"
-    data-worklet-url="{{ doc_root }}js/chat-audio-worklet.js?v=20260918-chat3"
+    data-worklet-url="{{ doc_root }}js/chat-audio-worklet.js?v=20260920-chat4"
 >
     <header class="chat-cabecalho">
         <a href="{{ doc_root }}messages" class="chat-voltar" data-margot-voltar aria-label="Voltar às mensagens">
@@ -51,7 +51,9 @@
                             <button type="button" class="chat-quote" data-reply-id="{{ mensagem.reply.id }}">{% if mensagem.reply.available %}{{ mensagem.reply.sender_id == membro_id ? 'Tu' : 'Resposta' }} · {{ mensagem.reply.text ?: (mensagem.reply.type == 'imagem' ? 'Fotografia' : (mensagem.reply.type == 'video' ? 'Vídeo' : 'Mensagem de voz')) }}{% else %}Mensagem indisponível{% endif %}</button>
                         {% endif %}
 
-                        {% if mensagem.tipo == 'imagem' and mensagem.media_url %}
+                        {% if mensagem.view_once %}
+                            <button type="button" class="chat-once" data-open-photo="{{ mensagem.id }}" {% if mensagem.minha or mensagem.opened %}disabled{% endif %}>{{ mensagem.opened ? 'Fotografia aberta' : (mensagem.minha ? 'Fotografia · Ver uma vez' : '① Abrir fotografia') }}</button>
+                        {% elseif mensagem.tipo == 'imagem' and mensagem.media_url %}
                             <img
                                 class="chat-imagem"
                                 src="{{ mensagem.media_url }}"
@@ -115,6 +117,8 @@
 
         <div id="chat-media-preview" class="chat-media-preview" hidden></div>
 
+        <label id="chat-view-once-label" class="chat-once-option" hidden><input type="checkbox" id="chat-view-once"> Ver uma vez</label>
+
         <div class="chat-compositor">
             <button type="button" id="chat-camera-open" class="chat-icon" aria-label="Tirar fotografia">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -153,7 +157,7 @@
 
             <div id="chat-recording" class="chat-recording" hidden>
                 <button type="button" id="chat-recording-cancel" aria-label="Apagar gravação">×</button>
-                <span class="chat-recording-dot" aria-hidden="true"></span>
+                <span class="chat-recording-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
                 <output id="chat-recording-time" aria-live="off">0:00</output>
                 <button type="button" id="chat-recording-send" aria-label="Enviar gravação">↑</button>
             </div>
@@ -165,20 +169,7 @@
     </form>
 </main>
 
-<dialog id="chat-camera" class="chat-camera" aria-label="Câmara">
-    <video autoplay muted playsinline></video>
-    <img alt="Fotografia captada" hidden>
-
-    <button type="button" data-camera="close" class="chat-camera-close" aria-label="Fechar câmara">×</button>
-
-    <div class="chat-camera-controls">
-        <button type="button" data-camera="gallery">Galeria</button>
-        <button type="button" data-camera="retake" hidden>Repetir</button>
-        <button type="button" data-camera="capture" class="chat-shutter" aria-label="Tirar fotografia" disabled></button>
-        <button type="button" data-camera="use" hidden>Usar fotografia</button>
-        <button type="button" data-camera="flip" aria-label="Trocar câmara">↻</button>
-    </div>
-</dialog>
+{% include 'partials/chat-camera.html' %}
 
 <dialog id="chat-actions" class="chat-sheet" aria-label="Opções da mensagem">
     <div class="chat-reaction-presets">
@@ -229,10 +220,10 @@ window.webSocketUrl = window.location.protocol === 'https:'
     : 'ws://' + window.location.hostname + ':8080';
 </script>
 
-<script src="{{ doc_root }}js/chat-viewport.js?v=20260918-chat3"></script>
-<script src="{{ doc_root }}js/chat-recorder.js?v=20260918-chat3"></script>
-<script src="{{ doc_root }}js/chat-camera.js?v=20260918-chat3"></script>
-<script src="{{ doc_root }}js/chat-reactions.js?v=20260918-chat3"></script>
-<script src="{{ doc_root }}js/chat-audio-player.js?v=20260918-chat3"></script>
-<script src="{{ doc_root }}js/chat.js?v=20260918-chat3"></script>
+<script src="{{ doc_root }}js/chat-viewport.js?v=20260920-chat4"></script>
+<script src="{{ doc_root }}js/chat-recorder.js?v=20260920-chat4"></script>
+<script src="{{ doc_root }}js/chat-camera.js?v=20260920-chat4"></script>
+<script src="{{ doc_root }}js/chat-reactions.js?v=20260920-chat4"></script>
+<script src="{{ doc_root }}js/chat-audio-player.js?v=20260920-chat4"></script>
+<script src="{{ doc_root }}js/chat.js?v=20260920-chat4"></script>
 {% endblock %}

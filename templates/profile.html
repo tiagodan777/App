@@ -83,7 +83,6 @@
                         <path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3Z"></path>
                         <path d="m13.5 6.5 4 4"></path>
                     </svg>
-
                     <span>Editar</span>
                 </a>
             {% endif %}
@@ -92,9 +91,7 @@
         <section class="perfil-hero">
             <div class="perfil-foto-area">
                 <span class="perfil-acento perfil-acento--amarelo" aria-hidden="true"></span>
-
                 <span class="perfil-acento perfil-acento--roxo" aria-hidden="true"></span>
-
                 <span class="perfil-acento perfil-acento--rosa" aria-hidden="true"></span>
 
                 <section id="perfil-galeria" class="perfil-galeria" aria-label="Fotografias de {{ membro.nome }}" tabindex="0">
@@ -149,15 +146,8 @@
 
                         <div class="perfil-contador" aria-hidden="true">
                             <span id="perfil-contador-atual">01</span>
-
                             <span>/</span>
-
-                            <span>
-                                {{ total_slides < 10
-                                    ? '0' ~ total_slides
-                                    : total_slides
-                                }}
-                            </span>
+                            <span>{{ total_slides < 10 ? '0' ~ total_slides : total_slides }}</span>
                         </div>
 
                         <button type="button" id="perfil-anterior" class="perfil-nav perfil-nav--anterior" aria-label="Fotografia anterior">
@@ -203,19 +193,14 @@
                     {% endif %}
                     hidden
                 >
-                    <div class="perfil-hoje-topo">
-                        Hoje
-                    </div>
-
+                    <div class="perfil-hoje-topo">Hoje</div>
                     <p data-hoje-nota hidden></p>
-
                     <div class="hoje-chips" data-hoje-roupa hidden></div>
                 </div>
             </div>
 
             <article class="perfil-identidade">
                 <span class="perfil-identidade-mancha" aria-hidden="true"></span>
-
                 <h1>{{ membro.nome }}</h1>
 
                 <div class="perfil-identidade-rodape">
@@ -223,6 +208,8 @@
 
                     {% if not perfil_proprio %}
                         <div class="perfil-acoes">
+                            <a class="perfil-mensagem" href="{{ doc_root }}messages/{{ membro.id }}">Mensagem</a>
+
                             <button type="button" class="perfil-hey" id="enviar-hey-perfil" data-destinatario-id="{{ membro.id }}" aria-describedby="perfil-hey-estado">
                                 <span class="perfil-hey-label">Hey</span>
                             </button>
@@ -274,14 +261,11 @@
                     <span class="perfil-seccao-icone perfil-seccao-icone--roxo" aria-hidden="true">
                         <svg viewBox="0 0 24 24">
                             <circle cx="12" cy="7.5" r="3.2"></circle>
-
                             <path d="M5.5 19c.7-3.7 3-5.5 6.5-5.5s5.8 1.8 6.5 5.5"></path>
                         </svg>
                     </span>
-
                     <h2 id="perfil-sobre-titulo">Sobre</h2>
                 </header>
-
                 <p>{{ membro.bio }}</p>
             </section>
         {% endif %}
@@ -294,20 +278,13 @@
                             <path d="m12 3 2.6 5.2 5.7.8-4.1 4 .95 5.7L12 16l-5.15 2.7.95-5.7-4.1-4 5.7-.8L12 3Z"></path>
                         </svg>
                     </span>
-
                     <h2 id="perfil-interesses-titulo">Interesses</h2>
                 </header>
 
                 <ul class="perfil-interesses-grid">
                     {% for gosto in membro.gostos %}
                         <li class="perfil-gosto perfil-gosto--{{ (loop.index0 % 6) + 1 }}">
-                            <span class="perfil-gosto-numero">
-                                {{ loop.index < 10
-                                    ? '0' ~ loop.index
-                                    : loop.index
-                                }}
-                            </span>
-
+                            <span class="perfil-gosto-numero">{{ loop.index < 10 ? '0' ~ loop.index : loop.index }}</span>
                             <span class="perfil-gosto-nome">{{ gosto['nome'] }}</span>
                         </li>
                     {% endfor %}
@@ -330,16 +307,12 @@
         <div id="perfil-lightbox-stage" class="perfil-lightbox-stage">
             <div id="perfil-lightbox-media" class="perfil-lightbox-media">
                 <img id="perfil-lightbox-imagem" class="perfil-lightbox-imagem" src="" alt="" draggable="false">
-
                 <span class="perfil-lightbox-moldura" aria-hidden="true"></span>
             </div>
 
             <span class="perfil-tinta perfil-tinta--1" aria-hidden="true"></span>
-
             <span class="perfil-tinta perfil-tinta--2" aria-hidden="true"></span>
-
             <span class="perfil-tinta perfil-tinta--3" aria-hidden="true"></span>
-
             <span class="perfil-tinta perfil-tinta--4" aria-hidden="true"></span>
 
             {% if total_slides > 1 %}
@@ -367,15 +340,8 @@
 
                 <div class="perfil-lightbox-contador" aria-hidden="true">
                     <span id="perfil-lightbox-contador-atual">01</span>
-
                     <span>/</span>
-
-                    <span>
-                        {{ total_slides < 10
-                            ? '0' ~ total_slides
-                            : total_slides
-                        }}
-                    </span>
+                    <span>{{ total_slides < 10 ? '0' ~ total_slides : total_slides }}</span>
                 </div>
             {% endif %}
         </div>
@@ -398,9 +364,7 @@
 
         <header class="hoje-editor-cabecalho">
             <button type="button" id="hoje-editor-voltar" class="hoje-editor-voltar" aria-label="Voltar" hidden>‹</button>
-
             <h2 id="hoje-editor-titulo">Hoje</h2>
-
             <button type="button" id="hoje-editor-fechar" class="hoje-editor-fechar" aria-label="Fechar">×</button>
         </header>
 
@@ -419,18 +383,15 @@
                     autocapitalize="sentences"
                     placeholder="Escreve uma nota…"
                 ></textarea>
-
                 <span id="hoje-nota-contador" class="hoje-nota-contador" aria-hidden="true">0/160</span>
             </div>
 
             <button type="button" id="hoje-abrir-roupa" class="hoje-opcao-roupa">
                 <span class="hoje-opcao-roupa-icone" aria-hidden="true"></span>
-
                 <span class="hoje-opcao-roupa-texto">
                     <strong>Roupa de hoje</strong>
                     <span id="hoje-roupa-resumo">Opcional</span>
                 </span>
-
                 <span class="hoje-opcao-seta" aria-hidden="true">›</span>
             </button>
 
@@ -438,7 +399,6 @@
 
             <div class="hoje-editor-acoes">
                 <button type="button" id="hoje-apagar" hidden>Apagar</button>
-
                 <button type="button" id="hoje-guardar">Partilhar por 24 h</button>
             </div>
         </div>
@@ -447,13 +407,11 @@
             <p class="hoje-roupa-ajuda">Escolhe uma peça e depois a cor. Podes adicionar até 5 peças.</p>
 
             <div id="hoje-roupa-selecionada" class="hoje-roupa-selecionada" hidden></div>
-
             <div id="hoje-pecas-grid" class="hoje-pecas-grid" aria-label="Peças de roupa"></div>
 
             <section id="hoje-cores-area" class="hoje-cores-area" hidden>
                 <header class="hoje-cores-cabecalho">
                     <span id="hoje-cores-peca-preview" class="hoje-cores-peca-preview" aria-hidden="true"></span>
-
                     <div class="hoje-cores-titulos">
                         <span>Cor para</span>
                         <h3 id="hoje-cores-titulo">Peça</h3>
@@ -480,7 +438,7 @@ window.webSocketUrl = window.location.protocol === 'https:'
 
 <script src="{{ doc_root }}js/today-clothes.js?v=20260916"></script>
 <script src="{{ doc_root }}js/today.js?v=20260916"></script>
-<script src="{{ doc_root }}js/profile.js?v=20260916"></script>
+<script src="{{ doc_root }}js/profile.js?v=20260920"></script>
 <script src="{{ doc_root }}js/profile-hey.js?v=20260916"></script>
 <script src="{{ doc_root }}js/profile-connection.js?v=20260916"></script>
 {% endblock %}

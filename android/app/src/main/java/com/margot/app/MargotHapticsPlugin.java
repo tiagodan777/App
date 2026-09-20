@@ -29,32 +29,30 @@ public final class MargotHapticsPlugin extends Plugin {
         int[] amplitudes;
 
         switch (type) {
+            case "interaction":
+            case "shutter":
+                timings = new long[] {0, 65};
+                amplitudes = new int[] {0, 255};
+                break;
+
             case "heySent":
                 timings = new long[] {0, 38};
-
-                amplitudes = new int[] {0, 105};
-
+                amplitudes = new int[] {0, 220};
                 break;
 
             case "heyReceived":
                 timings = new long[] {0, 68, 58, 150};
-
                 amplitudes = new int[] {0, 190, 0, 235};
-
                 break;
 
             case "connection":
                 timings = new long[] {0, 82, 42, 105, 48, 220};
-
                 amplitudes = new int[] {0, 205, 0, 235, 0, 255};
-
                 break;
 
             default:
                 timings = new long[] {0, 105};
-
-                amplitudes = new int[] {0, 175};
-
+                amplitudes = new int[] {0, 235};
                 break;
         }
 

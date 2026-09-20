@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#ffffff">
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#101014" media="(prefers-color-scheme: dark)">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="csrf-token" content="{{ csrf_token }}">
@@ -13,7 +14,7 @@
 
     <title>{% block title %}Margot{% endblock %}</title>
 
-    <link rel="stylesheet" href="{{ doc_root }}estilos/style.css?v=20260916-nav2">
+    <link rel="stylesheet" href="{{ doc_root }}estilos/style.css?v=20260920">
 
     {% if session.id %}
         <link rel="stylesheet" href="{{ doc_root }}estilos/index-notificacoes.css?v=20260916">
@@ -21,9 +22,12 @@
     {% endif %}
 
     {% block styles %}{% endblock %}
+    <link rel="stylesheet" href="{{ doc_root }}estilos/photo-viewer.css?v=20260920">
+    <link rel="stylesheet" href="{{ doc_root }}estilos/theme.css?v=20260920">
 </head>
 
 <body>
+    <script src="{{ doc_root }}js/photo-viewer.js?v=20260920"></script>
     <script src="{{ doc_root }}js/jquery-4.0.0.js"></script>
     <script src="{{ doc_root }}js/csrf.js?v=20260916"></script>
     <script src="{{ doc_root }}js/camara-nativa.js?v=20260916"></script>
@@ -174,14 +178,14 @@
                 : 'ws://' + window.location.hostname + ':8080';
         </script>
 
-        <script src="{{ doc_root }}js/hey-vibracao.js?v=20260917-chat1"></script>
+        <script src="{{ doc_root }}js/hey-vibracao.js?v=20260920"></script>
         <script src="{{ doc_root }}js/index-notificacoes.js?v=20260916"></script>
         <script src="{{ doc_root }}js/background-location.js?v=20260916-v3"></script>
         <script src="{{ doc_root }}js/websocket-location.js?v=20260916"></script>
         <script src="{{ doc_root }}js/websocket-alerts.js?v=20260917-chat1"></script>
         <script src="{{ doc_root }}js/websocket.js?v=20260916"></script>
         <script src="{{ doc_root }}js/menu-invisivel.js?v=20260916"></script>
-        <script src="{{ doc_root }}js/javascript-geral.js?v=20260918-nav4"></script>
+        <script src="{{ doc_root }}js/javascript-geral.js?v=20260920"></script>
     {% endif %}
 </body>
 </html>

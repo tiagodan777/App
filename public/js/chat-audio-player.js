@@ -25,7 +25,10 @@ window.MargotChatAudioPlayer = function (audio, onError) {
     };
 
     function update() {
-        play.textContent = audio.paused ? '▶' : 'Ⅱ';
+        play.innerHTML = audio.paused
+            ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16l14-8z"/></svg>'
+            : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>';
+
         play.setAttribute('aria-label', audio.paused ? 'Ouvir mensagem de voz' : 'Pausar mensagem de voz');
 
         const duration = Number.isFinite(audio.duration) ? audio.duration : 0;
@@ -63,7 +66,6 @@ window.MargotChatAudioPlayer = function (audio, onError) {
     audio.preload = 'metadata';
 
     if (audio.parentNode) audio.replaceWith(player);
-
     player.append(play, progress, time, audio);
     update();
 

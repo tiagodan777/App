@@ -1,4 +1,12 @@
-window.MargotChatReactions = function ({ content, list, request, publish, onError, onReply }) {
+window.MargotChatReactions = function ({
+    content,
+    list,
+    request,
+    publish,
+    onError,
+    onReply,
+    onPhoto = () => {}
+}) {
     const me = String(window.membroId);
     const events = new AbortController();
     const signal = events.signal;
@@ -12,12 +20,13 @@ window.MargotChatReactions = function ({ content, list, request, publish, onErro
     let selected;
     let gesture;
     let timer;
+    let photoTimer;
     let lastTap;
     let alive = true;
     let pending = new Set();
 
     const on = (target, type, handler) => target.addEventListener(type, handler, { signal });
-    const find = id => content.querySelector('[data-mensagem-id="' + Number(id) + '"]');
+    const find = (id) => content.querySelector('[data-mensagem-id="' + Number(id) + '"]');
     const haptic = () => window.MargotHaptics?.feedback?.();
 
     function render(article, reactions) {
@@ -36,7 +45,7 @@ window.MargotChatReactions = function ({ content, list, request, publish, onErro
 
         const grouped = new Map();
 
-        reactions.forEach(reaction => {
+        reactions.forEach((reaction) => {
             const item = grouped.get(reaction.emoji) || { count: 0, own: false };
             item.count++;
             item.own ||= String(reaction.member_id) === me;
@@ -60,7 +69,7 @@ window.MargotChatReactions = function ({ content, list, request, publish, onErro
 
         article.remove();
 
-        content.querySelectorAll('[data-reply-id="' + Number(id) + '"]').forEach(quote => {
+        content.querySelectorAll('[data-reply-id="' + Number(id) + '"]').forEach((quote) => {
             quote.textContent = 'Mensagem indisponível';
         });
     }
@@ -71,12 +80,7 @@ window.MargotChatReactions = function ({ content, list, request, publish, onErro
 
         try {
             const data = await request(
-                new URLSearchParams({
-                    action: 'react',
-                    message_id: id,
-                    emoji,
-                    toggle: String(toggle)
-                })
+                new URLSearchParams({ action: 'react', message_id: id, emoji, toggle: String(toggle) })
             );
 
             if (!alive) return;
@@ -87,7 +91,7 @@ window.MargotChatReactions = function ({ content, list, request, publish, onErro
             if (
                 emoji === '❤️' &&
                 article &&
-                data.reactions.some(item => item.emoji === emoji && String(item.member_id) === me)
+                data.reactions.some((item) => item.emoji === emoji && String(item.member_id) === me)
             ) {
                 const heart = document.createElement('span');
                 heart.className = 'chat-heart';
@@ -121,6 +125,7 @@ window.MargotChatReactions = function ({ content, list, request, publish, onErro
     }
 
     function openMenu(article) {
+        clearTimeout(photoTimer);
         selected = article;
         lastTap = null;
         menu.querySelector('[data-action="delete"]').hidden = article.dataset.emissorId !== me;
@@ -128,7 +133,8 @@ window.MargotChatReactions = function ({ content, list, request, publish, onErro
         haptic();
     }
 
-    on(content, 'pointerdown', event => {
+    on(content, 'pointerdown', (event) => {
+        clearTimeout(photoTimer);
         if (event.button !== 0 || event.target.closest('button,a,input,video,audio')) return;
 
         const article = event.target.closest('.chat-mensagem');
@@ -136,13 +142,7 @@ window.MargotChatReactions = function ({ content, list, request, publish, onErro
 
         cancelGesture();
 
-        gesture = {
-            article,
-            id: event.pointerId,
-            x: event.clientX,
-            y: event.clientY,
-            long: false
-        };
+        gesture = { article, id: event.pointerId, x: event.clientX, y: event.clientY, long: false };
 
         timer = setTimeout(() => {
             if (gesture) {
@@ -152,14 +152,14 @@ window.MargotChatReactions = function ({ content, list, request, publish, onErro
         }, 500);
     });
 
-    on(content, 'pointermove', event => {
+    on(content, 'pointermove', (event) => {
         if (gesture && Math.hypot(event.clientX - gesture.x, event.clientY - gesture.y) > 12) {
             cancelGesture();
             lastTap = null;
         }
     });
 
-    on(content, 'pointerup', event => {
+    on(content, 'pointerup', (event) => {
         if (!gesture || gesture.id !== event.pointerId) return;
 
         const { article, long } = gesture;
@@ -173,11 +173,20 @@ window.MargotChatReactions = function ({ content, list, request, publish, onErro
         const now = performance.now();
 
         if (lastTap?.article === article && now - lastTap.time < 320) {
+            clearTimeout(photoTimer);
             haptic();
             react(article.dataset.mensagemId, '❤️', false);
             lastTap = null;
         } else {
             lastTap = { article, time: now };
+
+            if (event.target.matches('img.chat-imagem')) {
+                const image = event.target;
+
+                photoTimer = setTimeout(() => {
+                    if (alive) onPhoto(image.src);
+                }, 330);
+            }
         }
     });
 
@@ -193,18 +202,14 @@ window.MargotChatReactions = function ({ content, list, request, publish, onErro
         lastTap = null;
     });
 
-    on(content, 'contextmenu', event => {
+    on(content, 'contextmenu', (event) => {
         if (event.target.closest('.chat-balao')) event.preventDefault();
     });
 
-    on(content, 'keydown', event => {
+    on(content, 'keydown', (event) => {
         if (
             event.target.closest('.chat-balao') &&
-            (
-                event.key === 'ContextMenu' ||
-                (event.key === 'F10' && event.shiftKey) ||
-                event.key === 'Enter'
-            )
+            (event.key === 'ContextMenu' || (event.key === 'F10' && event.shiftKey) || event.key === 'Enter')
         ) {
             if (event.target.closest('button,video,audio')) return;
 
@@ -213,14 +218,11 @@ window.MargotChatReactions = function ({ content, list, request, publish, onErro
         }
     });
 
-    on(content, 'click', event => {
+    on(content, 'click', (event) => {
         const reaction = event.target.closest('[data-emoji]');
 
         if (reaction) {
-            react(
-                reaction.closest('.chat-mensagem').dataset.mensagemId,
-                reaction.dataset.emoji
-            );
+            react(reaction.closest('.chat-mensagem').dataset.mensagemId, reaction.dataset.emoji);
         }
     });
 
@@ -232,7 +234,7 @@ window.MargotChatReactions = function ({ content, list, request, publish, onErro
         emojiInput.focus({ preventScroll: true });
     }
 
-    on(emojiForm, 'submit', async event => {
+    on(emojiForm, 'submit', async (event) => {
         event.preventDefault();
 
         if (!selected || emojiSend.disabled) return;
@@ -248,7 +250,7 @@ window.MargotChatReactions = function ({ content, list, request, publish, onErro
         emojiError.textContent = '';
         emojiSend.disabled = true;
 
-        const sent = await react(article.dataset.mensagemId, emoji, true, message => {
+        const sent = await react(article.dataset.mensagemId, emoji, true, (message) => {
             if (selected === article && picker.open) {
                 emojiError.textContent = message;
             }
@@ -265,7 +267,7 @@ window.MargotChatReactions = function ({ content, list, request, publish, onErro
         emojiError.textContent = '';
     });
 
-    on(menu, 'click', async event => {
+    on(menu, 'click', async (event) => {
         const button = event.target.closest('button');
         if (!button || !selected) return;
 
@@ -292,10 +294,10 @@ window.MargotChatReactions = function ({ content, list, request, publish, onErro
                     media?.tagName === 'AUDIO'
                         ? 'audio'
                         : media?.tagName === 'VIDEO'
-                            ? 'video'
-                            : media
-                                ? 'imagem'
-                                : 'texto'
+                          ? 'video'
+                          : media
+                            ? 'imagem'
+                            : 'texto'
             });
         }
 
@@ -303,12 +305,7 @@ window.MargotChatReactions = function ({ content, list, request, publish, onErro
             closeMenu();
 
             try {
-                await request(
-                    new URLSearchParams({
-                        action: 'delete_message',
-                        message_id: id
-                    })
-                );
+                await request(new URLSearchParams({ action: 'delete_message', message_id: id }));
 
                 if (alive) {
                     remove(id);
@@ -320,12 +317,12 @@ window.MargotChatReactions = function ({ content, list, request, publish, onErro
         }
     });
 
-    on(picker, 'click', event => {
+    on(picker, 'click', (event) => {
         if (event.target.closest('[data-close]')) picker.close();
     });
 
-    [menu, picker].forEach(dialog => {
-        on(dialog, 'click', event => {
+    [menu, picker].forEach((dialog) => {
+        on(dialog, 'click', (event) => {
             if (event.target === dialog) {
                 const rect = dialog.getBoundingClientRect();
 
@@ -354,6 +351,7 @@ window.MargotChatReactions = function ({ content, list, request, publish, onErro
 
         destroy() {
             alive = false;
+            clearTimeout(photoTimer);
             cancelGesture();
             events.abort();
             closeMenu();

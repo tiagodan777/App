@@ -1,0 +1,174 @@
+/* Segue o dispositivo, incluindo mudanças de tema com a app aberta. */
+:root {
+    color-scheme: light dark;
+    --surface: #fff;
+    --surface-soft: #f3f3f7;
+    --text: #17171b;
+    --text-muted: #767680;
+    --line: #17171b18;
+}
+
+.perfil-mensagem {
+    padding: 12px 16px;
+    border-radius: 22px;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--line);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.perfil-acoes {
+    flex-wrap: wrap;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --surface: #19191e;
+        --surface-soft: #25252d;
+        --text: #f5f5f7;
+        --text-muted: #b2b2bd;
+        --line: #ffffff24;
+        --margot-fundo: #101014;
+        --margot-preto: #f5f5f7;
+    }
+
+    html,
+    body,
+    body:has(#gridCanvas),
+    body:has(#chat-pagina),
+    body:has(#perfil),
+    body:has(#mensagens-pagina),
+    .chat-pagina,
+    .mensagens-pagina,
+    #perfil {
+        background: var(--margot-fundo);
+        color: var(--text);
+    }
+
+    .mini-menu,
+    .heys-painel,
+    .heys-aviso,
+    .hey-aviso,
+    .mensagem-aviso,
+    .acoes-perfil-caixa,
+    .conversa-acoes-caixa,
+    .conversas-vazio,
+    .perfil-identidade,
+    .perfil-cartao,
+    .perfil-hoje-balao,
+    .hoje-painel,
+    .chat-sheet,
+    .chat-compositor,
+    .chat-form,
+    .chat-media-preview,
+    .chat-reply-preview,
+    .chat-recording,
+    .chat-quote {
+        background: var(--surface);
+        color: var(--text);
+        border-color: var(--line);
+    }
+
+    .chat-cabecalho {
+        background: var(--margot-fundo);
+        border-color: var(--line);
+    }
+
+    .chat-pessoa strong,
+    .chat-pessoa small,
+    .mini-menu h1,
+    .perfil-identidade h1,
+    .mensagens-cabecalho h1,
+    .conversa-conteudo strong,
+    .heys-cabecalho,
+    .perfil-conteudo h2,
+    .perfil-conteudo p,
+    .chat-sheet button {
+        color: var(--text);
+    }
+
+    .chat-mensagem.recebida .chat-balao,
+    .conversa-item,
+    .heys-item,
+    .chat-reacao,
+    .chat-sheet button,
+    .conversa-acao,
+    .conversa-acao-cancelar,
+    .mini-menu-mensagem,
+    .hoje-chip,
+    .perfil-gosto,
+    .perfil-interesse {
+        background: var(--surface-soft);
+        color: var(--text);
+        border-color: var(--line);
+    }
+
+    .chat-mensagem.minha .chat-balao {
+        color: #fff;
+    }
+
+    .chat-mensagem footer,
+    .conversa-resumo,
+    .conversa-meta,
+    .chat-pessoa small,
+    .mini-menu p {
+        color: var(--text-muted);
+    }
+
+    .chat-mensagem.minha footer {
+        color: #ffffffe0;
+    }
+
+    input:not([type='submit']):not([type='button']):not([type='range']):not([type='checkbox']),
+    textarea,
+    select {
+        background-color: var(--surface-soft);
+        color: var(--text);
+        border-color: var(--line);
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+        color: var(--text-muted);
+    }
+
+    #chat-texto,
+    body .mini-menu > form > input#mensagem {
+        background: transparent;
+        color: var(--text);
+        border-color: var(--line);
+    }
+
+    #menuPrincipal > nav {
+        background: #28282ddd;
+    }
+
+    #menuPrincipal a.active {
+        background: #ffffff18;
+    }
+
+    #menuPrincipal img,
+    .menu-invisivel-imagem {
+        filter: brightness(0) invert(1);
+    }
+
+    .perfil-fundo,
+    .mensagens-fundo {
+        opacity: 0.18;
+    }
+
+    .perfil-identidade-mancha {
+        opacity: 0.16;
+    }
+
+    .chat-erro,
+    .heys-estado-erro {
+        color: #ff929f;
+    }
+
+    .chat-sheet input {
+        background: var(--surface-soft);
+        color: var(--text);
+    }
+}

@@ -37,10 +37,13 @@
     const draftKey = me + ':' + otherId;
 
     function saveDraft() {
-        if (file || text.value || reply) drafts.set(draftKey, { file, text: text.value, reply });
+        if (file || text.value || reply)
+            drafts.set(draftKey, { file, text: text.value, reply, once: byId('chat-view-once').checked });
         else drafts.delete(draftKey);
     }
 
+    const viewer = window.MargotPhotoViewer();
+    const once = byId('chat-view-once');
     const viewport = window.MargotChatViewport(page, list, content);
     const own = (message) => String(message.emissor_id) === me;
     const connected = () => window.AppWebSocket?.isConnected?.();
@@ -79,6 +82,7 @@
 
     async function request(body) {
         const response = await fetch(url, { method: 'POST', body, credentials: 'same-origin', signal });
+
         const data = await response.json();
 
         if (!response.ok || !data.success) {
@@ -126,6 +130,8 @@
         file = value;
         preview.replaceChildren();
         preview.hidden = !file;
+        byId('chat-view-once-label').hidden = !file?.type.startsWith('image/');
+        if (!file?.type.startsWith('image/')) once.checked = false;
         media.value = '';
 
         if (file) {
@@ -178,9 +184,14 @@
     const recorder = window.MargotChatRecorder({
         workletUrl: page.dataset.workletUrl,
 
+        onLevel(level) {
+            recording.style.setProperty('--voice-level', String(level));
+        },
+
         onState(status, seconds) {
             if (!alive) return;
 
+            recording.dataset.state = status;
             byId('chat-recording-time').textContent =
                 status === 'starting'
                     ? 'A abrir microfone…'
@@ -215,7 +226,8 @@
         request,
         publish,
         onError: showError,
-        onReply: selectReply
+        onReply: selectReply,
+        onPhoto: (src) => viewer.open(src)
     });
 
     function quote(value) {
@@ -243,6 +255,20 @@
         bubble.setAttribute('aria-label', 'Mensagem. Manter premido para opções.');
 
         if (message.reply) bubble.append(quote(message.reply));
+
+        if (message.view_once) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'chat-once';
+            button.dataset.openPhoto = message.id;
+            button.disabled = own(message) || message.opened;
+            button.textContent = message.opened
+                ? 'Fotografia aberta'
+                : own(message)
+                  ? 'Fotografia · Ver uma vez'
+                  : '① Abrir fotografia';
+            bubble.append(button);
+        }
 
         if (message.media_url) {
             const tag = { imagem: 'img', video: 'video', audio: 'audio' }[message.tipo];
@@ -326,6 +352,7 @@
         const sentReply = reply;
         const body = new FormData(form);
 
+        body.set('view_once', String(Boolean(sentFile?.type.startsWith('image/') && once.checked)));
         body.set('mensagem', sentText);
         body.set('reply_to', sentReply?.id || '');
         body.set('profile_access_token', window.AppWebSocket?.profileAccessToken?.(otherId) || '');
@@ -443,6 +470,37 @@
     on(byId('chat-recording-send'), 'click', () => recorder.finish());
     on(byId('chat-reply-cancel'), 'click', () => selectReply(null));
 
+    on(content, 'click', async (event) => {
+        const button = event.target.closest('[data-open-photo]');
+        if (!button || button.disabled) return;
+
+        button.disabled = true;
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                credentials: 'same-origin',
+                signal,
+                body: new URLSearchParams({ action: 'open_photo', message_id: button.dataset.openPhoto })
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.message || 'Não foi possível abrir a fotografia.');
+            }
+
+            const blob = await response.blob();
+            if (!alive) return;
+
+            const src = URL.createObjectURL(blob);
+            viewer.open(src, () => URL.revokeObjectURL(src));
+            button.textContent = 'Fotografia aberta';
+        } catch (error) {
+            if (error.name !== 'AbortError') showError(error.message);
+            button.disabled = false;
+        }
+    });
+
     on(content, 'click', (event) => {
         const target = event.target.closest('[data-reply-id]');
         if (!target) return;
@@ -497,6 +555,7 @@
         if (document.hidden) {
             recorder.cancel();
             camera.close();
+            viewer.close();
         } else {
             sync(true);
             markRead();
@@ -516,11 +575,11 @@
     const interval = setInterval(() => sync(), 12000);
 
     const draft = drafts.get(draftKey);
-
     if (draft) {
         text.value = draft.text;
         chooseFile(draft.file);
         selectReply(draft.reply, false);
+        once.checked = Boolean(draft.once);
         resizeText();
     }
 
@@ -535,9 +594,10 @@
         clearInterval(interval);
         events.abort();
         page.querySelectorAll('audio, video').forEach((element) => element.pause());
+        viewer.destroy();
         viewport.destroy();
         reactions.destroy();
-        recorder.cancel();
+        recorder.destroy();
         camera.destroy();
 
         if (previewUrl) URL.revokeObjectURL(previewUrl);

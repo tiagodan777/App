@@ -32,7 +32,12 @@ final class Message {
                 FROM mensagens_chat
                 WHERE ( emissor_id = :eu1 AND destinatario_id = :outro1 )
                     OR ( emissor_id = :outro2 AND destinatario_id = :eu2 )',
-            ['eu1' => $membroId, 'outro1' => $outroId, 'outro2' => $outroId, 'eu2' => $membroId]
+            [
+                'eu1' => $membroId,
+                'outro1' => $outroId,
+                'outro2' => $outroId,
+                'eu2' => $membroId
+            ]
         )->fetchColumn() ?: 0);
 
         if ($ultimoId <= 0) {
@@ -40,9 +45,11 @@ final class Message {
         }
 
         $this->db->runSQL(
-            'INSERT INTO mensagens_conversas_ocultas ( membro_id, outro_id, ocultar_ate_id, criada_em, atualizada_em )
-                VALUES ( :membro, :outro, :ultimo, NOW(6), NOW(6) )
-                ON DUPLICATE KEY UPDATE ocultar_ate_id = GREATEST( ocultar_ate_id, VALUES(ocultar_ate_id) ),
+            'INSERT INTO mensagens_conversas_ocultas
+                (membro_id, outro_id, ocultar_ate_id, criada_em, atualizada_em)
+                VALUES (:membro, :outro, :ultimo, NOW(6), NOW(6))
+                ON DUPLICATE KEY UPDATE
+                ocultar_ate_id = GREATEST(ocultar_ate_id, VALUES(ocultar_ate_id)),
                 atualizada_em = NOW(6)',
             ['membro' => $membroId, 'outro' => $outroId, 'ultimo' => $ultimoId]
         );
@@ -51,12 +58,15 @@ final class Message {
     }
 
     public function memberPreview(string $membroId): array|false {
-        $sql = "SELECT m.id, CONCAT( m.primeiro_nome, ' ', m.ultimo_nome ) AS nome, COALESCE( ( SELECT fp.nome_arquivo
-            FROM fotos_perfil fp
-            WHERE fp.membro_id COLLATE utf8mb4_unicode_ci = m.id COLLATE utf8mb4_unicode_ci AND ( fp.status =
-            'completo' OR fp.status IS NULL )
-            ORDER BY fp.ordem IS NULL ASC, fp.ordem ASC, fp.id ASC
-            LIMIT 1 ), 'default.webp' ) AS foto
+        $sql = "SELECT m.id, CONCAT(m.primeiro_nome, ' ', m.ultimo_nome) AS nome,
+            COALESCE((
+                SELECT fp.nome_arquivo
+                FROM fotos_perfil fp
+                WHERE fp.membro_id COLLATE utf8mb4_unicode_ci = m.id COLLATE utf8mb4_unicode_ci
+                    AND (fp.status = 'completo' OR fp.status IS NULL)
+                ORDER BY fp.ordem IS NULL ASC, fp.ordem ASC, fp.id ASC
+                LIMIT 1
+            ), 'default.webp') AS foto
             FROM membros m
             WHERE m.id COLLATE utf8mb4_unicode_ci = :id COLLATE utf8mb4_unicode_ci
             LIMIT 1";
@@ -70,6 +80,7 @@ final class Message {
         $foto = basename(trim((string) $membro['foto'])) ?: 'default.webp';
         $membro['foto_url'] = DOC_ROOT . 'imagens/fotos-perfil/' . rawurlencode($foto);
         $membro['perfil_url'] = DOC_ROOT . 'profile/' . rawurlencode((string) $membro['id']);
+
         unset($membro['foto']);
 
         return $membro;
@@ -93,8 +104,10 @@ final class Message {
         return (bool) $this->db->runSQL(
             'SELECT 1
                 FROM mensagens_chat
-                WHERE id = :mensagem AND ( ( emissor_id = :eu1 AND destinatario_id = :outro1 ) OR ( emissor_id = :outro2
-                AND destinatario_id = :eu2 ) )
+                WHERE id = :mensagem AND (
+                    (emissor_id = :eu1 AND destinatario_id = :outro1)
+                    OR (emissor_id = :outro2 AND destinatario_id = :eu2)
+                )
                 LIMIT 1',
             [
                 'mensagem' => $mensagemId,
@@ -203,17 +216,21 @@ final class Message {
 
         if ($alternar && $existente === $emoji) {
             $this->db->runSQL(
-                'DELETE
-                    FROM mensagens_reacoes
+                'DELETE FROM mensagens_reacoes
                     WHERE mensagem_id = :mensagem AND membro_id = :membro',
                 ['mensagem' => $mensagemId, 'membro' => $membroId]
             );
         } else {
             $this->db->runSQL(
-                'INSERT INTO mensagens_reacoes ( mensagem_id, membro_id, emoji, atualizada_em )
-                    VALUES ( :mensagem, :membro, :emoji, NOW(6) )
+                'INSERT INTO mensagens_reacoes
+                    (mensagem_id, membro_id, emoji, atualizada_em)
+                    VALUES (:mensagem, :membro, :emoji, NOW(6))
                     ON DUPLICATE KEY UPDATE emoji = VALUES(emoji), atualizada_em = NOW(6)',
-                ['mensagem' => $mensagemId, 'membro' => $membroId, 'emoji' => $emoji]
+                [
+                    'mensagem' => $mensagemId,
+                    'membro' => $membroId,
+                    'emoji' => $emoji
+                ]
             );
         }
 
@@ -222,10 +239,12 @@ final class Message {
 
     public function deleteSent(int $mensagemId, string $membroId, string $outroId): array|false {
         $mensagem = $this->db->runSQL(
-            'SELECT id, emissor_id, destinatario_id, ficheiro_nome
+            'SELECT id, emissor_id, destinatario_id, ficheiro_nome, visualizacao_unica
                 FROM mensagens_chat
-                WHERE id = :mensagem AND ( ( emissor_id = :eu1 AND destinatario_id = :outro1 ) OR ( emissor_id = :outro2
-                AND destinatario_id = :eu2 ) )
+                WHERE id = :mensagem AND (
+                    (emissor_id = :eu1 AND destinatario_id = :outro1)
+                    OR (emissor_id = :outro2 AND destinatario_id = :eu2)
+                )
                 LIMIT 1',
             [
                 'mensagem' => $mensagemId,
@@ -249,25 +268,35 @@ final class Message {
 
         try {
             $this->db->runSQL(
-                'INSERT INTO mensagens_apagadas ( mensagem_id, emissor_id, destinatario_id, apagada_em )
-                    VALUES ( :mensagem, :emissor, :destinatario, NOW(6) )
-                    ON DUPLICATE KEY UPDATE emissor_id = VALUES(emissor_id), destinatario_id = VALUES(destinatario_id),
+                'INSERT INTO mensagens_apagadas
+                    (mensagem_id, emissor_id, destinatario_id, apagada_em)
+                    VALUES (:mensagem, :emissor, :destinatario, NOW(6))
+                    ON DUPLICATE KEY UPDATE
+                    emissor_id = VALUES(emissor_id),
+                    destinatario_id = VALUES(destinatario_id),
                     apagada_em = NOW(6)',
-                ['mensagem' => $mensagemId, 'emissor' => $membroId, 'destinatario' => $outroId]
+                [
+                    'mensagem' => $mensagemId,
+                    'emissor' => $membroId,
+                    'destinatario' => $outroId
+                ]
             );
 
             $this->db->runSQL(
-                'DELETE
-                    FROM mensagens_reacoes
-                    WHERE mensagem_id = :mensagem',
+                'DELETE FROM mensagens_reacoes WHERE mensagem_id = :mensagem',
                 ['mensagem' => $mensagemId]
             );
 
             $eliminada = $this->db->runSQL(
-                'DELETE
-                    FROM mensagens_chat
-                    WHERE id = :mensagem AND emissor_id = :emissor AND destinatario_id = :destinatario',
-                ['mensagem' => $mensagemId, 'emissor' => $membroId, 'destinatario' => $outroId]
+                'DELETE FROM mensagens_chat
+                    WHERE id = :mensagem
+                        AND emissor_id = :emissor
+                        AND destinatario_id = :destinatario',
+                [
+                    'mensagem' => $mensagemId,
+                    'emissor' => $membroId,
+                    'destinatario' => $outroId
+                ]
             );
 
             if ($eliminada->rowCount() !== 1) {
@@ -284,32 +313,52 @@ final class Message {
         }
 
         if ($ficheiro !== '') {
-            $caminho = APP_ROOT . '/public/media/mensagens/' . $ficheiro;
+            $pasta = !empty($mensagem['visualizacao_unica'])
+                ? MessageOnce::folder()
+                : APP_ROOT . '/public/media/mensagens/';
+
+            $caminho = $pasta . $ficheiro;
 
             if (is_file($caminho)) {
                 @unlink($caminho);
             }
         }
 
-        return ['id' => $mensagemId, 'emissor_id' => $membroId, 'destinatario_id' => $outroId];
+        return [
+            'id' => $mensagemId,
+            'emissor_id' => $membroId,
+            'destinatario_id' => $outroId
+        ];
     }
 
     public static function selectSql(): string {
-        return " SELECT msg.id, msg.emissor_id, msg.destinatario_id, msg.texto, msg.tipo, msg.ficheiro_nome,
-            msg.ficheiro_mime, msg.ficheiro_tamanho, msg.resposta_a_id,
-            original.id AS resposta_id, original.emissor_id AS resposta_emissor, original.texto AS resposta_texto,
-            original.tipo AS resposta_tipo, msg.lida, msg.criada_em, msg.lida_em, CONCAT( em.primeiro_nome,
-            ' ', em.ultimo_nome ) AS emissor_nome, COALESCE( ( SELECT fp.nome_arquivo
-            FROM fotos_perfil fp
-            WHERE fp.membro_id COLLATE utf8mb4_unicode_ci = em.id COLLATE utf8mb4_unicode_ci AND ( fp.status =
-            'completo' OR fp.status IS NULL )
-            ORDER BY fp.ordem IS NULL ASC, fp.ordem ASC, fp.id ASC
-            LIMIT 1 ), 'default.webp' ) AS emissor_foto
+        return "SELECT msg.id, msg.emissor_id, msg.destinatario_id, msg.texto, msg.tipo,
+            msg.ficheiro_nome, msg.ficheiro_mime, msg.ficheiro_tamanho, msg.resposta_a_id,
+            msg.visualizacao_unica, msg.aberta_em,
+            original.id AS resposta_id,
+            original.emissor_id AS resposta_emissor,
+            original.texto AS resposta_texto,
+            original.tipo AS resposta_tipo,
+            msg.lida, msg.criada_em, msg.lida_em,
+            CONCAT(em.primeiro_nome, ' ', em.ultimo_nome) AS emissor_nome,
+            COALESCE((
+                SELECT fp.nome_arquivo
+                FROM fotos_perfil fp
+                WHERE fp.membro_id COLLATE utf8mb4_unicode_ci = em.id COLLATE utf8mb4_unicode_ci
+                    AND (fp.status = 'completo' OR fp.status IS NULL)
+                ORDER BY fp.ordem IS NULL ASC, fp.ordem ASC, fp.id ASC
+                LIMIT 1
+            ), 'default.webp') AS emissor_foto
             FROM mensagens_chat msg
-            INNER JOIN membros em ON em.id COLLATE utf8mb4_unicode_ci = msg.emissor_id COLLATE utf8mb4_unicode_ci
-            LEFT JOIN mensagens_chat original ON original.id = msg.resposta_a_id AND (
-                (original.emissor_id = msg.emissor_id AND original.destinatario_id = msg.destinatario_id) OR
-                (original.emissor_id = msg.destinatario_id AND original.destinatario_id = msg.emissor_id)) ";
+            INNER JOIN membros em
+                ON em.id COLLATE utf8mb4_unicode_ci = msg.emissor_id COLLATE utf8mb4_unicode_ci
+            LEFT JOIN mensagens_chat original
+                ON original.id = msg.resposta_a_id AND (
+                    (original.emissor_id = msg.emissor_id
+                        AND original.destinatario_id = msg.destinatario_id)
+                    OR (original.emissor_id = msg.destinatario_id
+                        AND original.destinatario_id = msg.emissor_id)
+                ) ";
     }
 
     public static function present(array $mensagem, string $membroId): array {
@@ -321,7 +370,20 @@ final class Message {
         $mensagem['lida'] = (bool) $mensagem['lida'];
         $mensagem['minha'] = (string) $mensagem['emissor_id'] === $membroId;
         $mensagem['texto'] = (string) ($mensagem['texto'] ?? '');
-        $mensagem['media_url'] = $ficheiro === '' ? null : $root . 'media/mensagens/' . rawurlencode($ficheiro);
+
+        $mensagem['media_url'] = $ficheiro === ''
+            ? null
+            : $root . 'media/mensagens/' . rawurlencode($ficheiro);
+
+        $mensagem['view_once'] = (bool) ($mensagem['visualizacao_unica'] ?? false);
+        $mensagem['opened'] = !empty($mensagem['aberta_em']);
+
+        if ($mensagem['view_once']) {
+            $mensagem['media_url'] = null;
+        }
+
+        unset($mensagem['visualizacao_unica'], $mensagem['aberta_em']);
+
         $mensagem['emissor_foto_url'] = $root . 'imagens/fotos-perfil/' . rawurlencode($foto);
         $mensagem['emissor_perfil_url'] = $root . 'profile/' . rawurlencode((string) $mensagem['emissor_id']);
 
@@ -348,8 +410,9 @@ final class Message {
 
     public function get(int $mensagemId, string $membroId): array|false {
         $sql = $this->selectSql() .
-            " WHERE msg.id = :id AND ( msg.emissor_id = :membro1 OR msg.destinatario_id = :membro2 )
-                LIMIT 1 ";
+            ' WHERE msg.id = :id
+                AND (msg.emissor_id = :membro1 OR msg.destinatario_id = :membro2)
+                LIMIT 1';
 
         $mensagem = $this->db->runSQL($sql, [
             'id' => $mensagemId,
@@ -373,8 +436,10 @@ final class Message {
         $depoisDe = max($depoisDe, $corte);
 
         $sql = $this->selectSql() .
-            " WHERE ( ( msg.emissor_id = :eu1 AND msg.destinatario_id = :outro1 ) OR ( msg.emissor_id = :outro2 AND
-                msg.destinatario_id = :eu2 ) ) ";
+            ' WHERE (
+                (msg.emissor_id = :eu1 AND msg.destinatario_id = :outro1)
+                OR (msg.emissor_id = :outro2 AND msg.destinatario_id = :eu2)
+            )';
 
         $parametros = [
             'eu1' => $membroId,
@@ -388,7 +453,10 @@ final class Message {
             $parametros['depois'] = $depoisDe;
         }
 
-        $sql .= $incremental ? ' ORDER BY msg.id ASC LIMIT 100' : ' ORDER BY msg.id DESC LIMIT 100';
+        $sql .= $incremental
+            ? ' ORDER BY msg.id ASC LIMIT 100'
+            : ' ORDER BY msg.id DESC LIMIT 100';
+
         $mensagens = $this->db->runSQL($sql, $parametros)->fetchAll();
 
         if (!$incremental) {
@@ -418,34 +486,59 @@ final class Message {
 
         $condicaoFaixaEtaria = $this->access->ageCondition($faixaEtaria, 'p');
 
-        $sql = "SELECT ultima.id, ultima.emissor_id, ultima.destinatario_id, ultima.texto, ultima.tipo, ultima.criada_em,
-            conversa.outro_id, CONCAT( p.primeiro_nome, ' ', p.ultimo_nome ) AS outro_nome, COALESCE( ( SELECT
-            fp.nome_arquivo
-            FROM fotos_perfil fp
-            WHERE fp.membro_id COLLATE utf8mb4_unicode_ci = p.id COLLATE utf8mb4_unicode_ci AND ( fp.status =
-            'completo' OR fp.status IS NULL )
-            ORDER BY fp.ordem IS NULL ASC, fp.ordem ASC, fp.id ASC
-            LIMIT 1 ), 'default.webp' ) AS outro_foto, ( SELECT COUNT(*)
-            FROM mensagens_chat nao_lida
-            WHERE nao_lida.emissor_id = conversa.outro_id AND nao_lida.destinatario_id = :eu4 AND nao_lida.lida = 0
-            AND nao_lida.id > COALESCE( ocultada.ocultar_ate_id, 0 ) ) AS nao_lidas
-            FROM ( SELECT participacao.outro_id, MAX(participacao.id) AS ultima_id
-            FROM ( SELECT id, destinatario_id AS outro_id
-            FROM mensagens_chat
-            WHERE emissor_id = :eu1 UNION ALL SELECT id, emissor_id AS outro_id
-            FROM mensagens_chat
-            WHERE destinatario_id = :eu2 ) participacao
-            GROUP BY participacao.outro_id ) conversa
+        $sql = "SELECT ultima.id, ultima.emissor_id, ultima.destinatario_id,
+            ultima.texto, ultima.tipo, ultima.criada_em, conversa.outro_id,
+            CONCAT(p.primeiro_nome, ' ', p.ultimo_nome) AS outro_nome,
+            COALESCE((
+                SELECT fp.nome_arquivo
+                FROM fotos_perfil fp
+                WHERE fp.membro_id COLLATE utf8mb4_unicode_ci = p.id COLLATE utf8mb4_unicode_ci
+                    AND (fp.status = 'completo' OR fp.status IS NULL)
+                ORDER BY fp.ordem IS NULL ASC, fp.ordem ASC, fp.id ASC
+                LIMIT 1
+            ), 'default.webp') AS outro_foto,
+            (
+                SELECT COUNT(*)
+                FROM mensagens_chat nao_lida
+                WHERE nao_lida.emissor_id = conversa.outro_id
+                    AND nao_lida.destinatario_id = :eu4
+                    AND nao_lida.lida = 0
+                    AND nao_lida.id > COALESCE(ocultada.ocultar_ate_id, 0)
+            ) AS nao_lidas
+            FROM (
+                SELECT participacao.outro_id, MAX(participacao.id) AS ultima_id
+                FROM (
+                    SELECT id, destinatario_id AS outro_id
+                    FROM mensagens_chat
+                    WHERE emissor_id = :eu1
+                    UNION ALL
+                    SELECT id, emissor_id AS outro_id
+                    FROM mensagens_chat
+                    WHERE destinatario_id = :eu2
+                ) participacao
+                GROUP BY participacao.outro_id
+            ) conversa
             INNER JOIN mensagens_chat ultima ON ultima.id = conversa.ultima_id
-            INNER JOIN membros p ON p.id COLLATE utf8mb4_unicode_ci = conversa.outro_id COLLATE utf8mb4_unicode_ci
-            LEFT JOIN mensagens_conversas_ocultas ocultada ON ocultada.membro_id = :eu7 AND ocultada.outro_id COLLATE
-            utf8mb4_unicode_ci = conversa.outro_id COLLATE utf8mb4_unicode_ci
-            WHERE {$condicaoFaixaEtaria} AND ultima.id > COALESCE( ocultada.ocultar_ate_id, 0 ) AND NOT EXISTS (
-            SELECT 1
-            FROM bloqueados b
-            WHERE ( b.pessoa_bloqueou_id = :eu5 AND b.pessoa_bloqueada_id COLLATE utf8mb4_unicode_ci =
-            conversa.outro_id COLLATE utf8mb4_unicode_ci ) OR ( b.pessoa_bloqueou_id COLLATE utf8mb4_unicode_ci =
-            conversa.outro_id COLLATE utf8mb4_unicode_ci AND b.pessoa_bloqueada_id = :eu6 ) )
+            INNER JOIN membros p
+                ON p.id COLLATE utf8mb4_unicode_ci = conversa.outro_id COLLATE utf8mb4_unicode_ci
+            LEFT JOIN mensagens_conversas_ocultas ocultada
+                ON ocultada.membro_id = :eu7
+                AND ocultada.outro_id COLLATE utf8mb4_unicode_ci = conversa.outro_id COLLATE utf8mb4_unicode_ci
+            WHERE {$condicaoFaixaEtaria}
+                AND ultima.id > COALESCE(ocultada.ocultar_ate_id, 0)
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM bloqueados b
+                    WHERE (
+                        b.pessoa_bloqueou_id = :eu5
+                        AND b.pessoa_bloqueada_id COLLATE utf8mb4_unicode_ci =
+                            conversa.outro_id COLLATE utf8mb4_unicode_ci
+                    ) OR (
+                        b.pessoa_bloqueou_id COLLATE utf8mb4_unicode_ci =
+                            conversa.outro_id COLLATE utf8mb4_unicode_ci
+                        AND b.pessoa_bloqueada_id = :eu6
+                    )
+                )
             ORDER BY ultima.id DESC
             LIMIT 100";
 
@@ -558,18 +651,38 @@ final class Message {
         return (int) $this->db->runSQL(
             "SELECT COUNT(*)
                 FROM mensagens_chat msg
-                INNER JOIN membros em ON em.id COLLATE utf8mb4_unicode_ci = msg.emissor_id COLLATE utf8mb4_unicode_ci
-                WHERE msg.destinatario_id = :id AND msg.lida = 0 AND {$condicaoFaixaEtaria} AND msg.id > COALESCE( (
-                SELECT ocultada.ocultar_ate_id
-                FROM mensagens_conversas_ocultas ocultada
-                WHERE ocultada.membro_id = :eu3 AND ocultada.outro_id COLLATE utf8mb4_unicode_ci = msg.emissor_id COLLATE
-                utf8mb4_unicode_ci
-                LIMIT 1 ), 0 ) AND NOT EXISTS ( SELECT 1
-                FROM bloqueados b
-                WHERE ( b.pessoa_bloqueou_id = :eu1 AND b.pessoa_bloqueada_id COLLATE utf8mb4_unicode_ci = msg.emissor_id
-                COLLATE utf8mb4_unicode_ci ) OR ( b.pessoa_bloqueou_id COLLATE utf8mb4_unicode_ci = msg.emissor_id
-                COLLATE utf8mb4_unicode_ci AND b.pessoa_bloqueada_id = :eu2 ) )",
-            ['id' => $membroId, 'eu1' => $membroId, 'eu2' => $membroId, 'eu3' => $membroId]
+                INNER JOIN membros em
+                    ON em.id COLLATE utf8mb4_unicode_ci = msg.emissor_id COLLATE utf8mb4_unicode_ci
+                WHERE msg.destinatario_id = :id
+                    AND msg.lida = 0
+                    AND {$condicaoFaixaEtaria}
+                    AND msg.id > COALESCE((
+                        SELECT ocultada.ocultar_ate_id
+                        FROM mensagens_conversas_ocultas ocultada
+                        WHERE ocultada.membro_id = :eu3
+                            AND ocultada.outro_id COLLATE utf8mb4_unicode_ci =
+                                msg.emissor_id COLLATE utf8mb4_unicode_ci
+                        LIMIT 1
+                    ), 0)
+                    AND NOT EXISTS (
+                        SELECT 1
+                        FROM bloqueados b
+                        WHERE (
+                            b.pessoa_bloqueou_id = :eu1
+                            AND b.pessoa_bloqueada_id COLLATE utf8mb4_unicode_ci =
+                                msg.emissor_id COLLATE utf8mb4_unicode_ci
+                        ) OR (
+                            b.pessoa_bloqueou_id COLLATE utf8mb4_unicode_ci =
+                                msg.emissor_id COLLATE utf8mb4_unicode_ci
+                            AND b.pessoa_bloqueada_id = :eu2
+                        )
+                    )",
+            [
+                'id' => $membroId,
+                'eu1' => $membroId,
+                'eu2' => $membroId,
+                'eu3' => $membroId
+            ]
         )->fetchColumn();
     }
 
@@ -597,13 +710,17 @@ final class Message {
                     || $replyId <= $this->hiddenUntil($senderId, $recipientId)
                 )
             ) {
-                throw new InvalidArgumentException('A mensagem a que estás a responder já não está disponível.');
+                throw new InvalidArgumentException(
+                    'A mensagem a que estás a responder já não está disponível.'
+                );
             }
 
             $this->db->runSQL(
-                'INSERT INTO mensagens_chat (emissor_id, destinatario_id, texto, tipo, ficheiro_nome, ficheiro_mime,
-                    ficheiro_tamanho, resposta_a_id, lida, criada_em)
-                    VALUES (:sender, :recipient, :text, :type, :file, :mime, :size, :reply, 0, NOW(6))',
+                'INSERT INTO mensagens_chat
+                    (emissor_id, destinatario_id, texto, tipo, ficheiro_nome, ficheiro_mime,
+                    ficheiro_tamanho, resposta_a_id, visualizacao_unica, lida, criada_em)
+                    VALUES
+                    (:sender, :recipient, :text, :type, :file, :mime, :size, :reply, :once, 0, NOW(6))',
                 [
                     'sender' => $senderId,
                     'recipient' => $recipientId,
@@ -612,7 +729,8 @@ final class Message {
                     'file' => $media['nome'] ?? null,
                     'mime' => $media['mime'] ?? null,
                     'size' => $media['tamanho'] ?? null,
-                    'reply' => $replyId
+                    'reply' => $replyId,
+                    'once' => !empty($media['view_once']) ? 1 : 0
                 ]
             );
 

@@ -1,7 +1,6 @@
 window.MargotChatCamera = function ({ dialog, onFile, onError, gallery }) {
     const video = dialog.querySelector('video'),
         photo = dialog.querySelector('img');
-
     const capture = dialog.querySelector('[data-camera="capture"]'),
         use = dialog.querySelector('[data-camera="use"]');
 
@@ -20,7 +19,6 @@ window.MargotChatCamera = function ({ dialog, onFile, onError, gallery }) {
 
     function clearPhoto() {
         if (photoUrl) URL.revokeObjectURL(photoUrl);
-
         photoUrl = null;
         file = null;
         photo.removeAttribute('src');
@@ -30,13 +28,11 @@ window.MargotChatCamera = function ({ dialog, onFile, onError, gallery }) {
         generation++;
         stop();
         clearPhoto();
-
         if (dialog.open) dialog.close();
     }
 
     async function preview() {
         const current = ++generation;
-
         stop();
         clearPhoto();
 
@@ -45,7 +41,6 @@ window.MargotChatCamera = function ({ dialog, onFile, onError, gallery }) {
         use.hidden = true;
         capture.hidden = false;
         capture.disabled = true;
-
         dialog.querySelector('[data-camera="retake"]').hidden = true;
         dialog.querySelector('[data-camera="flip"]').hidden = false;
 
@@ -54,11 +49,7 @@ window.MargotChatCamera = function ({ dialog, onFile, onError, gallery }) {
                 throw new Error('A câmara não está disponível neste dispositivo.');
 
             const acquired = await navigator.mediaDevices.getUserMedia({
-                video: {
-                    facingMode: { ideal: facing },
-                    width: { ideal: 1920 },
-                    height: { ideal: 1080 }
-                },
+                video: { facingMode: { ideal: facing }, width: { ideal: 1920 }, height: { ideal: 1080 } },
                 audio: false
             });
 
@@ -75,17 +66,14 @@ window.MargotChatCamera = function ({ dialog, onFile, onError, gallery }) {
             video.classList.toggle('frontal', facing === 'user');
 
             const track = stream.getVideoTracks?.()[0];
-
             if (track?.getCapabilities?.().focusMode?.includes('continuous')) {
                 await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
             }
 
             await video.play();
-
             if (current === generation) capture.disabled = false;
         } catch (error) {
             if (current !== generation) return;
-
             close();
             onError(
                 error.name === 'NotAllowedError'
@@ -100,6 +88,7 @@ window.MargotChatCamera = function ({ dialog, onFile, onError, gallery }) {
 
         const current = generation;
         capture.disabled = true;
+        window.MargotHaptics?.feedback('shutter');
 
         const canvas = document.createElement('canvas');
         const scale = Math.min(1, 1920 / Math.max(video.videoWidth, video.videoHeight));
@@ -109,7 +98,6 @@ window.MargotChatCamera = function ({ dialog, onFile, onError, gallery }) {
         canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
 
         const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.9));
-
         if (current !== generation) return;
 
         if (!blob) {
@@ -127,7 +115,6 @@ window.MargotChatCamera = function ({ dialog, onFile, onError, gallery }) {
         use.hidden = false;
 
         stop();
-
         dialog.querySelector('[data-camera="retake"]').hidden = false;
         dialog.querySelector('[data-camera="flip"]').hidden = true;
     }
@@ -165,7 +152,6 @@ window.MargotChatCamera = function ({ dialog, onFile, onError, gallery }) {
 
         try {
             const result = await plugin.open();
-
             if (disposed || current !== generation) return;
             if (!result.base64) return;
 
@@ -182,18 +168,22 @@ window.MargotChatCamera = function ({ dialog, onFile, onError, gallery }) {
             if (disposed) return;
 
             const native = window.Capacitor?.Plugins?.ChatCamera;
-
             if (native && window.Capacitor?.isPluginAvailable?.('ChatCamera')) {
                 openNative(native);
+                return;
+            }
+
+            if (window.Capacitor?.getPlatform?.() === 'ios') {
+                onError(
+                    'Instala a nova versão da Margot para usar a câmara. Entretanto, podes escolher uma fotografia da galeria.'
+                );
                 return;
             }
 
             dialog.showModal();
             preview();
         },
-
         close,
-
         destroy() {
             disposed = true;
             close();
