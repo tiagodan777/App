@@ -97,8 +97,8 @@
         botao.disabled = true;
         botao.removeAttribute('aria-busy');
         botao.classList.remove('a-enviar');
-        botao.classList.add('enviado');
-        alterarEtiqueta('Enviado');
+        // botao.classList.add('enviado');
+        // alterarEtiqueta('Enviado');
         anunciar('Hey enviado com sucesso.');
         if (temporizadorReposicao !== null) {
             window.clearTimeout(temporizadorReposicao);
