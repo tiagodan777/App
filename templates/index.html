@@ -1,6 +1,7 @@
 {% extends 'layout.html' %}
 
 {% block styles %}
+<link rel="stylesheet" href="{{ doc_root }}estilos/chat.css?v=20260920-chat4" data-margot-page-style>
 <link rel="stylesheet" href="{{ doc_root }}estilos/today.css?v=20260916" data-margot-page-style>
 {% endblock %}
 
@@ -40,19 +41,16 @@
                 <div id="acoes-perfil-principal">
                     <header class="acoes-perfil-cabecalho">
                         <h2 id="acoes-perfil-titulo">Opções</h2>
-
                         <button type="button" class="acoes-perfil-fechar" aria-label="Fechar" data-fechar-acoes>×</button>
                     </header>
 
                     <button type="button" id="bloquear-membro" class="acao-perfil acao-perfil-perigosa">
                         <strong>Bloquear</strong>
-
                         <span>Deixam de aparecer um ao outro entre as pessoas por perto.</span>
                     </button>
 
                     <button type="button" id="abrir-denuncia" class="acao-perfil">
                         <strong>Denunciar</strong>
-
                         <span>Envia uma denúncia privada.</span>
                     </button>
 
@@ -62,42 +60,20 @@
                 <form id="form-denuncia" class="form-denuncia" hidden>
                     <header class="acoes-perfil-cabecalho">
                         <button type="button" id="voltar-denuncia" class="acoes-perfil-voltar" aria-label="Voltar">‹</button>
-
                         <h2>Denunciar perfil</h2>
-
                         <button type="button" class="acoes-perfil-fechar" aria-label="Fechar" data-fechar-acoes>×</button>
                     </header>
 
                     <label for="denuncia-motivo">Motivo</label>
 
                     <select name="motivo" id="denuncia-motivo" required>
-                        <option value="">
-                            Escolhe um motivo
-                        </option>
-
-                        <option value="comportamento_inadequado">
-                            Comportamento inadequado
-                        </option>
-
-                        <option value="assedio">
-                            Assédio
-                        </option>
-
-                        <option value="perfil_falso">
-                            Perfil falso
-                        </option>
-
-                        <option value="spam">
-                            Spam
-                        </option>
-
-                        <option value="seguranca">
-                            Questão de segurança
-                        </option>
-
-                        <option value="outro">
-                            Outro
-                        </option>
+                        <option value="">Escolhe um motivo</option>
+                        <option value="comportamento_inadequado">Comportamento inadequado</option>
+                        <option value="assedio">Assédio</option>
+                        <option value="perfil_falso">Perfil falso</option>
+                        <option value="spam">Spam</option>
+                        <option value="seguranca">Questão de segurança</option>
+                        <option value="outro">Outro</option>
                     </select>
 
                     <label for="denuncia-mensagem">
@@ -119,12 +95,8 @@
         </section>
 
         <section id="mini-menu-hoje" class="mini-menu-hoje" aria-hidden="true" hidden>
-            <div class="mini-menu-hoje-topo">
-                Hoje
-            </div>
-
+            <div class="mini-menu-hoje-topo">Hoje</div>
             <p data-hoje-nota hidden></p>
-
             <div class="hoje-chips" data-hoje-roupa hidden></div>
         </section>
 
@@ -137,88 +109,69 @@
 
             <input type="file" name="media" id="mini-menu-media" accept="image/*,video/*" hidden>
 
-            <input type="text" name="mensagem" id="mensagem" maxlength="2000" autocomplete="off" autocapitalize="sentences" placeholder="Mensagem…">
+            <input
+                type="text"
+                name="mensagem"
+                id="mensagem"
+                maxlength="2000"
+                autocomplete="off"
+                autocapitalize="sentences"
+                placeholder="Mensagem…"
+            >
 
             <input type="submit" value="Enviar">
         </form>
     </div>
 
+    {% include 'partials/chat-camera.html' %}
+
     <script>
-        window.safetyUrl =
-            {{ (doc_root ~ 'safety')|json_encode|raw }};
+        window.safetyUrl = {{ (doc_root ~ 'safety')|json_encode|raw }};
 
         (function () {
             'use strict';
 
-            document.addEventListener(
-                'submit',
-                function (evento) {
-                    var form = evento.target;
+            document.addEventListener('submit', function (evento) {
+                var form = evento.target;
 
-                    if (
-                        !form ||
-                        !form.matches(
-                            '.mini-menu-mensagem'
-                        )
-                    ) {
-                        return;
-                    }
+                if (!form || !form.matches('.mini-menu-mensagem')) {
+                    return;
+                }
 
-                    var miniMenu =
-                        form.closest(
-                            '.mini-menu'
-                        );
+                var miniMenu = form.closest('.mini-menu');
+                var inputToken = form.querySelector('input[name="profile_access_token"]');
 
-                    var inputToken =
-                        form.querySelector(
-                            'input[name="profile_access_token"]'
-                        );
+                if (!miniMenu || !inputToken) {
+                    return;
+                }
 
-                    if (
-                        !miniMenu ||
-                        !inputToken
-                    ) {
-                        return;
-                    }
+                var destinatarioId = String(
+                    miniMenu.getAttribute('data-destinatario-id') || ''
+                ).trim();
 
-                    var destinatarioId =
-                        String(
-                            miniMenu.getAttribute(
-                                'data-destinatario-id'
-                            ) || ''
-                        ).trim();
+                if (!destinatarioId) {
+                    inputToken.value = '';
+                    return;
+                }
 
-                    if (!destinatarioId) {
-                        inputToken.value = '';
-                        return;
-                    }
+                var fotografia = document.getElementById(destinatarioId);
+                var token = fotografia
+                    ? String(fotografia.getAttribute('data-profile-access-token') || '').trim()
+                    : '';
 
-                    var fotografia =
-                        document.getElementById(
-                            destinatarioId
-                        );
-
-                    var token =
-                        fotografia
-                            ? String(
-                                fotografia.getAttribute(
-                                    'data-profile-access-token'
-                                ) || ''
-                            ).trim()
-                            : '';
-
-                    inputToken.value =
-                        token;
-                },
-                true
-            );
+                inputToken.value = token;
+            }, true);
         })();
     </script>
 
     <script src="{{ doc_root }}js/index-posicao.js?v=20260916"></script>
     <script src="{{ doc_root }}js/today-clothes.js?v=20260916"></script>
     <script src="{{ doc_root }}js/today.js?v=20260916"></script>
-    <script src="{{ doc_root }}js/index-mini-menu.js?v=20260916"></script>
-    <script src="{{ doc_root }}js/index-animacao.js?v=20260916"></script>
+    <script src="{{ doc_root }}js/chat-recorder.js?v=20260920-chat4"></script>
+    <script src="{{ doc_root }}js/chat-camera.js?v=20260920-chat4"></script>
+    <script src="{{ doc_root }}js/chat-audio-player.js?v=20260920-chat4"></script>
+    <script src="{{ doc_root }}js/mini-compose.js?v=20260920"></script>
+    <script src="{{ doc_root }}js/index-mini-menu.js?v=20260920"></script>
+    <script src="{{ doc_root }}js/index-animacao.js?v=20260920"></script>
     <script src="{{ doc_root }}js/index-tap-foto.js?v=20260916"></script>
 {% endblock %}
