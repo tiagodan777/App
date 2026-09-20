@@ -257,16 +257,6 @@
 
                             <button
                                 type="button"
-                                class="perfil-hey"
-                                id="enviar-hey-perfil"
-                                data-destinatario-id="{{ membro.id }}"
-                                aria-describedby="perfil-hey-estado"
-                            >
-                                <span class="perfil-hey-label">Hey</span>
-                            </button>
-
-                            <button
-                                type="button"
                                 class="perfil-conectar{% if ligados %} ligado{% endif %}"
                                 id="conectar-perfil"
                                 data-destinatario-id="{{ membro.id }}"
@@ -287,6 +277,16 @@
                                 <span class="perfil-conectar-label">
                                     {{ ligados ? 'Desconectar' : 'Conectar' }}
                                 </span>
+                            </button>
+
+                            <button
+                                type="button"
+                                class="perfil-hey"
+                                id="enviar-hey-perfil"
+                                data-destinatario-id="{{ membro.id }}"
+                                aria-describedby="perfil-hey-estado"
+                            >
+                                <span class="perfil-hey-label">Hey</span>
                             </button>
                         </div>
 
