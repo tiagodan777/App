@@ -1,5 +1,4 @@
 @charset "UTF-8";
-
 :root {
     --menu-principal-bottom: max(18px, env(safe-area-inset-bottom, 0px));
     --menu-principal-height: 56px;
@@ -11,14 +10,10 @@
     --margot-azul: #8fb2e8;
     --margot-roxo: #cfc4ef;
 }
-
-/* BASE */
-* {
-    box-sizing: border-box;
-    font-family: Helvetica, Arial, sans-serif;
-    font-size: 1em;
-}
-
+/* =========================================================
+   BASE
+   ========================================================= */
+* { box-sizing: border-box; font-family: Helvetica, Arial, sans-serif; font-size: 1em; }
 html,
 body {
     width: 100%;
@@ -29,7 +24,6 @@ body {
     overflow: hidden;
     background-color: var(--margot-fundo);
 }
-
 /*
  * A Home mantém uma pequena tonalidade Margot,
  * mas está muito próxima do branco.
@@ -41,29 +35,17 @@ body:has(#gridCanvas) {
         radial-gradient(circle at 92% 12%, rgba(207, 196, 239, 0.055), transparent 29%),
         radial-gradient(circle at 5% 78%, rgba(244, 220, 146, 0.04), transparent 31%), #fdfcf9;
 }
-
-/* CANVAS */
-#gridCanvas {
-    position: fixed;
-    inset: 0;
-    display: block;
-    width: 100%;
-    height: 100dvh;
-    pointer-events: none;
-}
-
-/* IMAGENS */
-.foto {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-}
-
-img {
-    max-width: 100%;
-}
-
-/* PESSOAS NO ECRÃ PRINCIPAL */
+/* =========================================================
+   CANVAS
+   ========================================================= */
+#gridCanvas { position: fixed; top: 0; left: 0; display: block; width: 100vw; height: 100vh; pointer-events: none; }
+/* =========================================================
+   IMAGENS
+   ========================================================= */
+img { width: 60px; height: 60px; border-radius: 50%; }
+/* =========================================================
+   PESSOAS NO ECRÃ PRINCIPAL
+   ========================================================= */
 .foto {
     position: absolute !important;
     top: 0 !important;
@@ -78,8 +60,9 @@ img {
     box-shadow: 0 5px 15px rgba(25, 22, 30, 0.09);
     will-change: transform, opacity;
 }
-
-/* BACKDROP */
+/* =========================================================
+   BACKDROP
+   ========================================================= */
 .back-drop {
     position: relative;
     bottom: -100%;
@@ -92,8 +75,9 @@ img {
     justify-content: flex-end;
     align-items: center;
 }
-
-/* MINI MENU */
+/* =========================================================
+   MINI MENU
+   ========================================================= */
 .mini-menu {
     position: fixed !important;
     left: 0;
@@ -127,12 +111,10 @@ img {
     -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
 }
-
-.mini-menu[aria-hidden='true'] {
-    pointer-events: none;
-}
-
-/* BARRA DO MINI MENU */
+.mini-menu[aria-hidden="true"] { pointer-events: none; }
+/* =========================================================
+   BARRA DO MINI MENU
+   ========================================================= */
 .mini-menu > div#barra {
     width: 114px;
     height: 3px;
@@ -140,8 +122,9 @@ img {
     border-radius: 999px;
     background: rgba(23, 23, 27, 0.12);
 }
-
-/* CABEÇALHO DO MINI MENU */
+/* =========================================================
+   CABEÇALHO DO MINI MENU
+   ========================================================= */
 .mini-menu > header {
     position: relative;
     width: 100%;
@@ -151,7 +134,6 @@ img {
     justify-content: space-evenly;
     align-items: center;
 }
-
 .mini-menu > header > a {
     color: #000000;
     text-decoration: none;
@@ -160,8 +142,9 @@ img {
     justify-content: space-evenly;
     align-items: center;
 }
-
-/* FOTOGRAFIA MINI MENU */
+/* =========================================================
+   FOTOGRAFIA MINI MENU
+   ========================================================= */
 .mini-menu > header > a > img {
     width: min(39vw, 164px);
     height: min(39vw, 164px);
@@ -171,25 +154,22 @@ img {
     background: #ecebed;
     box-shadow: 0 9px 25px rgba(25, 22, 30, 0.11);
 }
-
-/* NOME */
+/* =========================================================
+   NOME
+   ========================================================= */
 .mini-menu > header > h1 {
     margin: 12px 0 0;
     color: var(--margot-preto);
-    font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
     font-size: 1.65rem;
     font-weight: 750;
     line-height: 1.04;
     letter-spacing: -0.035em;
 }
-
-.mini-menu > header > span {
-    position: absolute;
-    top: 10px;
-    left: 90%;
-}
-
-/* ELEMENTOS LEGADOS */
+.mini-menu > header > span { position: absolute; top: 10px; left: 90%; }
+/* =========================================================
+   ELEMENTOS LEGADOS
+   ========================================================= */
 .mini-menu > div {
     width: 70vw;
     height: 70vw;
@@ -200,14 +180,10 @@ img {
     justify-content: center;
     align-items: center;
 }
-
-.mini-menu > div > p {
-    color: #ffffff;
-    font-size: 3em;
-    font-weight: bold;
-}
-
-/* HEY — MINI MENU + PERFIL */
+.mini-menu > div > p { color: #ffffff; font-size: 3em; font-weight: bold; }
+/* =========================================================
+   HEY — MINI MENU + PERFIL
+   ========================================================= */
 #enviar-hey,
 #enviar-hey-perfil {
     width: auto;
@@ -221,7 +197,7 @@ img {
     background: var(--margot-vermelho);
     color: #fff7ee;
     box-shadow: 0 10px 22px rgba(225, 35, 70, 0.22);
-    font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
     font-size: 21px;
     font-weight: 760;
     letter-spacing: -0.035em;
@@ -240,26 +216,18 @@ img {
         box-shadow 160ms ease,
         opacity 160ms ease;
 }
-
 #enviar-hey:active:not(:disabled),
 #enviar-hey-perfil:active:not(:disabled) {
     transform: scale(0.94);
     background: var(--margot-vermelho-escuro);
     box-shadow: 0 6px 15px rgba(225, 35, 70, 0.19);
 }
-
 #enviar-hey:focus-visible,
 #enviar-hey-perfil:focus-visible {
     outline: 3px solid rgba(225, 35, 70, 0.18);
     outline-offset: 4px;
 }
-
-#enviar-hey:disabled,
-#enviar-hey-perfil:disabled {
-    opacity: 0.45;
-    cursor: default;
-}
-
+#enviar-hey:disabled, #enviar-hey-perfil:disabled { opacity: 0.45; cursor: default; }
 /*
  * No perfil, profile.css continua a ter
  * regras mais específicas para o Hey.
@@ -268,8 +236,9 @@ img {
 .mini-menu.perfil-proprio .mini-menu-mensagem {
     display: none !important;
 }
-
-/* FORMULÁRIO DE MENSAGEM */
+/* =========================================================
+   FORMULÁRIO DE MENSAGEM
+   ========================================================= */
 .mini-menu > form {
     width: min(calc(100% - 30px), 540px);
     margin-top: 10px;
@@ -279,8 +248,9 @@ img {
     align-items: center;
     gap: 7px;
 }
-
-/* ANEXO */
+/* =========================================================
+   ANEXO
+   ========================================================= */
 .mini-menu form .mini-menu-anexo {
     flex: 0 0 42px;
     width: 42px;
@@ -295,14 +265,10 @@ img {
     text-align: center;
     cursor: pointer;
 }
-
-.mini-menu form .mini-menu-anexo.selecionado {
-    background: #e7f7ef;
-    color: #168753;
-    font-size: 18px;
-}
-
-/* INPUT DA MENSAGEM */
+.mini-menu form .mini-menu-anexo.selecionado { background: #e7f7ef; color: #168753; font-size: 18px; }
+/* =========================================================
+   INPUT DA MENSAGEM
+   ========================================================= */
 .mini-menu > form > input#mensagem {
     min-width: 0;
     flex: 1;
@@ -320,14 +286,14 @@ img {
         border-color 150ms ease,
         box-shadow 150ms ease;
 }
-
 .mini-menu > form > input#mensagem:focus {
     border-color: rgba(225, 35, 70, 0.32);
     box-shadow: 0 0 0 3px rgba(225, 35, 70, 0.06);
 }
-
-/* ENVIAR MENSAGEM */
-.mini-menu > form > input[type='submit'] {
+/* =========================================================
+   ENVIAR MENSAGEM
+   ========================================================= */
+.mini-menu > form > input[type="submit"] {
     min-height: 43px;
     padding: 0 16px;
     border: 0;
@@ -343,13 +309,10 @@ img {
         background-color 130ms ease,
         transform 130ms ease;
 }
-
-.mini-menu > form > input[type='submit']:active {
-    background: var(--margot-vermelho-escuro);
-    transform: scale(0.96);
-}
-
-/* MENU PRINCIPAL */
+.mini-menu > form > input[type="submit"]:active { background: var(--margot-vermelho-escuro); transform: scale(0.96); }
+/* =========================================================
+   MENU PRINCIPAL
+   ========================================================= */
 #menuPrincipal {
     position: fixed !important;
     top: auto !important;
@@ -378,13 +341,10 @@ img {
      */
     will-change: auto;
 }
-
-body.margot-mini-menu-aberto #menuPrincipal {
-    opacity: 0;
-    pointer-events: none;
-}
-
-/* CONTEÚDO DO MENU PRINCIPAL */
+body.margot-mini-menu-aberto #menuPrincipal { opacity: 0; pointer-events: none; }
+/* =========================================================
+   CONTEÚDO DO MENU PRINCIPAL
+   ========================================================= */
 #menuPrincipal > nav {
     width: 100% !important;
     height: 100% !important;
@@ -395,7 +355,6 @@ body.margot-mini-menu-aberto #menuPrincipal {
     justify-content: center;
     align-items: center;
 }
-
 #menuPrincipal > nav > ul {
     width: 95% !important;
     height: 100% !important;
@@ -418,7 +377,6 @@ body.margot-mini-menu-aberto #menuPrincipal {
     align-items: center;
     gap: 4px;
 }
-
 #menuPrincipal > nav > ul > li {
     min-width: 0;
     flex: 1 1 0;
@@ -427,7 +385,6 @@ body.margot-mini-menu-aberto #menuPrincipal {
     justify-content: center;
     align-items: center;
 }
-
 #menuPrincipal > nav > ul > li > a,
 #menuPrincipal .menu-principal-botao {
     position: relative;
@@ -448,25 +405,16 @@ body.margot-mini-menu-aberto #menuPrincipal {
     justify-content: center;
     align-items: center;
 }
-
-#menuPrincipal > nav > ul > li > a.active {
-    background-color: rgba(255, 255, 255, 0.5);
-}
-
+#menuPrincipal > nav > ul > li > a.active { background-color: rgba(255, 255, 255, 0.5); }
 #menuPrincipal > nav > ul > li > a:focus-visible,
 #menuPrincipal .menu-principal-botao:focus-visible {
     outline: 2px solid rgba(0, 100, 255, 0.75);
     outline-offset: 2px;
 }
-
-#menuPrincipal > nav > ul > li > a > img {
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    object-fit: contain;
-}
-
-/* MODO INVISÍVEL */
+#menuPrincipal > nav > ul > li > a > img { width: 26px; height: 26px; border-radius: 50%; object-fit: contain; }
+/* =========================================================
+   MODO INVISÍVEL
+   ========================================================= */
 #alternar-invisivel {
     transition:
         background-color 160ms ease,
@@ -474,11 +422,7 @@ body.margot-mini-menu-aberto #menuPrincipal {
         box-shadow 160ms ease,
         transform 120ms ease;
 }
-
-#alternar-invisivel:active {
-    transform: scale(0.94);
-}
-
+#alternar-invisivel:active { transform: scale(0.94); }
 .menu-invisivel-imagem {
     display: block;
     width: 26px;
@@ -492,40 +436,33 @@ body.margot-mini-menu-aberto #menuPrincipal {
         opacity 160ms ease,
         filter 160ms ease;
 }
-
-.menu-invisivel-imagem-invisivel {
+.menu-invisivel-imagem-invisivel { display: none; }
+#alternar-invisivel[data-invisivel="true"] .menu-invisivel-imagem-visivel,
+html[data-margot-invisivel="true"] #alternar-invisivel .menu-invisivel-imagem-visivel {
     display: none;
 }
-
-#alternar-invisivel[data-invisivel='true'] .menu-invisivel-imagem-visivel,
-html[data-margot-invisivel='true'] #alternar-invisivel .menu-invisivel-imagem-visivel {
-    display: none;
-}
-
-#alternar-invisivel[data-invisivel='true'] .menu-invisivel-imagem-invisivel,
-html[data-margot-invisivel='true'] #alternar-invisivel .menu-invisivel-imagem-invisivel {
+#alternar-invisivel[data-invisivel="true"] .menu-invisivel-imagem-invisivel,
+html[data-margot-invisivel="true"] #alternar-invisivel .menu-invisivel-imagem-invisivel {
     display: block;
 }
-
-#alternar-invisivel[data-invisivel='true'],
-html[data-margot-invisivel='true'] #alternar-invisivel {
+#alternar-invisivel[data-invisivel="true"],
+html[data-margot-invisivel="true"] #alternar-invisivel {
     background-color: rgba(24, 24, 28, 0.84);
     color: #ffffff;
     box-shadow:
         inset 0 1px 1px rgba(255, 255, 255, 0.18),
         0 2px 8px rgba(0, 0, 0, 0.12);
 }
-
-#alternar-invisivel[data-invisivel='true'] .menu-invisivel-imagem,
-html[data-margot-invisivel='true'] #alternar-invisivel .menu-invisivel-imagem {
+#alternar-invisivel[data-invisivel="true"] .menu-invisivel-imagem,
+html[data-margot-invisivel="true"] #alternar-invisivel .menu-invisivel-imagem {
     filter: brightness(0) invert(1);
 }
-
-#alternar-invisivel[data-localizacao-desativada='true']:not([data-invisivel='true']) {
+#alternar-invisivel[data-localizacao-desativada="true"]:not([data-invisivel="true"]) {
     opacity: 0.62;
 }
-
-/* ACESSIBILIDADE */
+/* =========================================================
+   ACESSIBILIDADE
+   ========================================================= */
 .texto-apenas-leitor {
     position: absolute !important;
     width: 1px !important;
@@ -537,8 +474,9 @@ html[data-margot-invisivel='true'] #alternar-invisivel .menu-invisivel-imagem {
     clip: rect(0, 0, 0, 0) !important;
     white-space: nowrap !important;
 }
-
-/* PWA / STANDALONE */
+/* =========================================================
+   PWA / STANDALONE
+   ========================================================= */
 @media all and (display-mode: standalone) {
     html:has(#gridCanvas),
     html:has(#perfil),
@@ -548,7 +486,6 @@ html[data-margot-invisivel='true'] #alternar-invisivel .menu-invisivel-imagem {
         min-height: calc(100% + env(safe-area-inset-top, 0px));
         overflow: hidden !important;
     }
-
     body:has(#gridCanvas),
     body:has(#perfil),
     body:has(#mensagens-pagina) {
@@ -558,7 +495,6 @@ html[data-margot-invisivel='true'] #alternar-invisivel .menu-invisivel-imagem {
         min-height: 0 !important;
         overflow: hidden !important;
     }
-
     body:has(#gridCanvas) #gridCanvas {
         position: absolute !important;
         top: 0;
@@ -566,11 +502,7 @@ html[data-margot-invisivel='true'] #alternar-invisivel .menu-invisivel-imagem {
         width: 100vw !important;
         height: 100% !important;
     }
-
-    body:has(#gridCanvas) .mini-menu {
-        position: absolute !important;
-    }
-
+    body:has(#gridCanvas) .mini-menu { position: absolute !important; }
     body:has(#perfil) #perfil,
     body:has(#mensagens-pagina) #mensagens-pagina {
         width: 100%;
@@ -582,21 +514,19 @@ html[data-margot-invisivel='true'] #alternar-invisivel .menu-invisivel-imagem {
         overscroll-behavior-y: contain;
     }
 }
-
-/* NAVEGAÇÃO ENTRE PÁGINAS */
-[data-margot-pagina] {
-    width: 100%;
-    height: 100%;
-}
-
+/* =========================================================
+   NAVEGAÇÃO ENTRE PÁGINAS
+   ========================================================= */
+[data-margot-pagina] { width: 100%; height: 100%; }
 /* Só o conteúdo anima; o menu e as dimensões do WebView mantêm-se estáveis. */
 body.margot-a-navegar > [data-margot-pagina] {
     will-change: opacity;
     -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
 }
-
-/* TABLET / ECRÃS LARGOS */
+/* =========================================================
+   TABLET / ECRÃS LARGOS
+   ========================================================= */
 @media (min-width: 768px) {
     #menuPrincipal {
         right: auto !important;
@@ -604,11 +534,7 @@ body.margot-a-navegar > [data-margot-pagina] {
         width: min(calc(100% - 48px), 760px) !important;
         transform: translateX(-50%) !important;
     }
-
-    #menuPrincipal > nav > ul {
-        width: 100% !important;
-    }
-
+    #menuPrincipal > nav > ul { width: 100% !important; }
     .mini-menu {
         left: calc(50% - 300px) !important;
         width: 600px;
@@ -616,46 +542,16 @@ body.margot-a-navegar > [data-margot-pagina] {
         height: min(72vh, 720px);
         border-radius: 62px 62px 0 0;
     }
-
-    .mini-menu > div#barra {
-        width: 120px;
-    }
-
-    .mini-menu > header > a > img {
-        width: 172px;
-        height: 172px;
-    }
-
-    .mini-menu > header > h1 {
-        font-size: 1.78rem;
-    }
-
-    #enviar-hey,
-    #enviar-hey-perfil {
-        min-width: 158px;
-        height: 60px;
-        min-height: 60px;
-        padding: 0 34px;
-        font-size: 22px;
-    }
-
-    .mini-menu > form {
-        width: min(calc(100% - 48px), 520px);
-    }
-
-    .mini-menu > form > input#mensagem {
-        flex: 1;
-        width: auto;
-    }
+    .mini-menu > div#barra { width: 120px; }
+    .mini-menu > header > a > img { width: 172px; height: 172px; }
+    .mini-menu > header > h1 { font-size: 1.78rem; }
+    #enviar-hey, #enviar-hey-perfil { min-width: 158px; height: 60px; min-height: 60px; padding: 0 34px; font-size: 22px; }
+    .mini-menu > form { width: min(calc(100% - 48px), 520px); }
+    .mini-menu > form > input#mensagem { flex: 1; width: auto; }
 }
-
 /*
  * Mantida por compatibilidade com o CSS anterior.
  */
 @media (min-width: 768px) and (max-width: 648px) {
-    .mini-menu {
-        right: 24px !important;
-        left: 24px !important;
-        width: auto;
-    }
+    .mini-menu { right: 24px !important; left: 24px !important; width: auto; }
 }
