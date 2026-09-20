@@ -3,7 +3,9 @@ window.MargotChatViewport = function (page, list, content) {
     const viewport = window.visualViewport,
         keyboard = window.Capacitor?.Plugins?.Keyboard;
     const native = Boolean(window.Capacitor?.isNativePlatform?.());
-    const nativeIOS = window.Capacitor?.isNativePlatform?.() && window.Capacitor?.getPlatform?.() === 'ios';
+    const nativeIOS =
+        window.Capacitor?.isNativePlatform?.() &&
+        window.Capacitor?.getPlatform?.() === 'ios';
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     let alive = true,
@@ -15,14 +17,20 @@ window.MargotChatViewport = function (page, list, content) {
 
     function bottom(smooth = false) {
         if (!alive) return;
+
         pinned = true;
-        list.scrollTo({ top: list.scrollHeight, behavior: smooth && !reduced ? 'smooth' : 'auto' });
+        list.scrollTo({
+            top: list.scrollHeight,
+            behavior: smooth && !reduced ? 'smooth' : 'auto'
+        });
     }
 
     let userMoved = false;
 
     function scroll() {
-        if (userMoved && !animation) pinned = list.scrollHeight - list.clientHeight - list.scrollTop < 80;
+        if (userMoved && !animation) {
+            pinned = list.scrollHeight - list.clientHeight - list.scrollTop < 80;
+        }
     }
 
     function userScroll() {
@@ -35,31 +43,56 @@ window.MargotChatViewport = function (page, list, content) {
     function layout(animate = false) {
         if (!alive) return;
 
-        if (nativeIOS) baseHeight = window.innerHeight;
-        else if (!nativeHeight) baseHeight = Math.max(baseHeight, window.innerHeight);
+        if (nativeIOS) {
+            baseHeight = window.innerHeight;
+        } else if (!nativeHeight) {
+            baseHeight = Math.max(baseHeight, window.innerHeight);
+        }
 
         const visibleHeight = viewport?.height || window.innerHeight;
-        const height =
-            native && nativeHeight ? Math.min(visibleHeight, baseHeight - nativeHeight) : visibleHeight;
+        const height = nativeIOS
+            ? baseHeight - nativeHeight
+            : native && nativeHeight
+              ? Math.min(visibleHeight, baseHeight - nativeHeight)
+              : visibleHeight;
         const top = nativeIOS ? 0 : viewport?.offsetTop || 0;
 
-        page.classList.toggle('chat-keyboard-open', nativeHeight > 0 || height < window.innerHeight - 80);
-        page.style.transition = animate && !reduced ? 'height 260ms cubic-bezier(.2,.75,.25,1)' : 'none';
+        page.classList.toggle(
+            'chat-keyboard-open',
+            nativeHeight > 0 || height < window.innerHeight - 80
+        );
+
+        const target = Math.max(0, height) + 'px';
+
+        if (page.style.height !== target) {
+            page.style.transition =
+                animate && !reduced
+                    ? 'height 280ms cubic-bezier(.2,.8,.2,1)'
+                    : 'none';
+        }
+
         page.style.height = Math.max(0, height) + 'px';
         page.style.top = top + 'px';
     }
 
     function resized() {
-        if (nativeIOS && nativeHeight) return;
+        if (
+            nativeIOS &&
+            page.style.height === Math.max(0, window.innerHeight - nativeHeight) + 'px'
+        ) {
+            return;
+        }
+
         layout();
     }
 
     function insert(article, own) {
         const follow = pinned || own;
         const before = list.scrollTop;
+
         content.append(article);
 
-        if (!reduced)
+        if (!reduced) {
             article.animate?.(
                 [
                     { opacity: 0, transform: 'translateY(14px) scale(.98)' },
@@ -67,8 +100,10 @@ window.MargotChatViewport = function (page, list, content) {
                 ],
                 { duration: 220, easing: 'ease-out' }
             );
+        }
 
         if (!follow) return;
+
         cancelAnimationFrame(animation);
         pinned = true;
 
@@ -114,7 +149,9 @@ window.MargotChatViewport = function (page, list, content) {
     window.addEventListener('resize', resized);
 
     if (keyboard && native) {
-        if (nativeIOS) keyboard.setAccessoryBarVisible({ isVisible: false }).catch(() => {});
+        if (nativeIOS) {
+            keyboard.setAccessoryBarVisible({ isVisible: false }).catch(() => {});
+        }
 
         for (const [name, show] of [
             ['keyboardWillShow', true],
@@ -140,7 +177,10 @@ window.MargotChatViewport = function (page, list, content) {
     document.addEventListener('margot:page-ready', ready);
     layout();
     bottom();
-    list.querySelectorAll('img').forEach((image) => (image.loading = 'eager'));
+
+    list.querySelectorAll('img').forEach((image) => {
+        image.loading = 'eager';
+    });
 
     requestAnimationFrame(() => {
         if (alive) {
@@ -157,6 +197,7 @@ window.MargotChatViewport = function (page, list, content) {
             alive = false;
             cancelAnimationFrame(animation);
             observer.disconnect();
+
             document.removeEventListener('margot:page-ready', ready);
             list.removeEventListener('load', mediaLoaded, true);
             list.removeEventListener('loadedmetadata', mediaLoaded, true);
@@ -166,9 +207,12 @@ window.MargotChatViewport = function (page, list, content) {
             viewport?.removeEventListener('resize', resized);
             viewport?.removeEventListener('scroll', resized);
             window.removeEventListener('resize', resized);
+
             listeners.forEach((handle) => handle.remove());
 
-            if (keyboard && nativeIOS) keyboard.setAccessoryBarVisible({ isVisible: true }).catch(() => {});
+            if (keyboard && nativeIOS) {
+                keyboard.setAccessoryBarVisible({ isVisible: true }).catch(() => {});
+            }
         }
     };
 };

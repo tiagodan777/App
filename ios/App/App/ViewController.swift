@@ -16,7 +16,6 @@ class ViewController: CAPBridgeViewController {
 
   private func configurarGestosNavegacao() {
     guard let webView = webView else { return }
-
     webView.allowsBackForwardNavigationGestures = false
     webView.scrollView.contentInsetAdjustmentBehavior = .never
 
@@ -34,7 +33,6 @@ class ViewController: CAPBridgeViewController {
       gesto.minimumNumberOfTouches = 1
       gesto.maximumNumberOfTouches = 1
       gesto.cancelsTouchesInView = true
-
       view.addGestureRecognizer(gesto)
       webView.scrollView.panGestureRecognizer.require(toFail: gesto)
       gestoVoltar = gesto
@@ -49,7 +47,6 @@ class ViewController: CAPBridgeViewController {
       gesto.minimumNumberOfTouches = 1
       gesto.maximumNumberOfTouches = 1
       gesto.cancelsTouchesInView = true
-
       view.addGestureRecognizer(gesto)
       webView.scrollView.panGestureRecognizer.require(toFail: gesto)
       gestoAvancar = gesto
@@ -101,8 +98,7 @@ public final class MargotHapticsPlugin: CAPPlugin, CAPBridgedPlugin {
   }
 }
 
-// Toques breves para ações explícitas.
-// Notificações em primeiro plano ficam silenciosas.
+// Toques breves para ações explícitas. Heys usam o mesmo clique, com mais intensidade.
 final class MargotHapticFeedback {
   static let shared = MargotHapticFeedback()
   private let impact = UIImpactFeedbackGenerator(style: .light)
@@ -113,9 +109,14 @@ final class MargotHapticFeedback {
 
   func play(_ type: String) {
     guard UIApplication.shared.applicationState == .active else { return }
-    guard ["interaction", "shutter", "heySent"].contains(type) else { return }
+    guard ["interaction", "shutter", "heySent", "heyReceived"].contains(type) else {
+      return
+    }
 
-    impact.impactOccurred(intensity: type == "shutter" ? 0.45 : 0.55)
+    let isHey = type == "heySent" || type == "heyReceived"
+    impact.impactOccurred(
+      intensity: isHey ? 1.0 : (type == "shutter" ? 0.45 : 0.55)
+    )
     impact.prepare()
   }
 }

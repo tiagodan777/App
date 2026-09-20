@@ -2,13 +2,40 @@
     <video autoplay muted playsinline></video>
     <img alt="Fotografia captada" hidden>
 
-    <button type="button" data-camera="close" class="chat-camera-close" aria-label="Fechar câmara">×</button>
+    <button
+        type="button"
+        data-camera="close"
+        class="chat-camera-close"
+        aria-label="Fechar câmara"
+    >×</button>
+
+    <div
+        class="chat-camera-mode"
+        data-camera-mode
+        hidden
+        aria-label="Disponibilidade da fotografia"
+    >
+        <button type="button" data-once="false" aria-pressed="true">
+            Manter
+        </button>
+        <button type="button" data-once="true" aria-pressed="false">
+            Ver uma vez
+        </button>
+    </div>
 
     <div class="chat-camera-controls">
         <button type="button" data-camera="gallery">Galeria</button>
         <button type="button" data-camera="retake" hidden>Repetir</button>
-        <button type="button" data-camera="capture" class="chat-shutter" aria-label="Tirar fotografia" disabled></button>
+        <button
+            type="button"
+            data-camera="capture"
+            class="chat-shutter"
+            aria-label="Tirar fotografia"
+            disabled
+        ></button>
         <button type="button" data-camera="use" hidden>Usar fotografia</button>
-        <button type="button" data-camera="flip" aria-label="Trocar câmara">↻</button>
+        <button type="button" data-camera="flip" aria-label="Trocar câmara">
+            ↻
+        </button>
     </div>
 </dialog>

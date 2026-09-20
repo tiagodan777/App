@@ -7,7 +7,8 @@
     var PADROES_WEB = Object.freeze({
         interaction: [12],
         shutter: [10],
-        heySent: [15]
+        heySent: [15],
+        heyReceived: [15]
     });
 
     function notificacoesDesativadas() {
@@ -26,9 +27,9 @@
             ':' +
             String(
                 detalhe.notification_id ||
-                detalhe.message_id ||
-                (detalhe.message && detalhe.message.id) ||
-                ''
+                    detalhe.message_id ||
+                    (detalhe.message && detalhe.message.id) ||
+                    ''
             )
         );
     }
@@ -63,7 +64,7 @@
     }
 
     function tocar(tipo, detalhe, interacao) {
-        if (document.hidden || (!interacao && tipo !== 'heySent')) {
+        if (document.hidden || (!interacao && tipo !== 'heySent' && tipo !== 'heyReceived')) {
             return;
         }
 
@@ -131,11 +132,9 @@
 
     window.MargotHaptics = Object.freeze({
         play: tocar,
-
         feedback: function (tipo) {
             tocar(tipo || 'interaction', null, true);
         },
-
         cancel: function () {
             if (typeof navigator.vibrate === 'function') {
                 navigator.vibrate(0);

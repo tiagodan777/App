@@ -51,7 +51,6 @@
 
     const viewer = window.MargotPhotoViewer();
     const once = byId('chat-view-once');
-    const refreshMode = window.MargotPhotoMode(byId('chat-view-once-label'));
     const viewport = window.MargotChatViewport(page, list, content);
     const own = (message) => String(message.emissor_id) === me;
     const connected = () => window.AppWebSocket?.isConnected?.();
@@ -88,9 +87,9 @@
         return Number.isNaN(date.getTime())
             ? ''
             : date.toLocaleTimeString('pt-PT', {
-                hour: '2-digit',
-                minute: '2-digit'
-            });
+                  hour: '2-digit',
+                  minute: '2-digit'
+              });
     }
 
     async function request(body) {
@@ -140,28 +139,23 @@
         if (reply && focus) text.focus({ preventScroll: true });
     }
 
-    function chooseFile(value) {
+    function chooseFile(value, viewOnce = false) {
         preview.querySelectorAll('audio, video').forEach((element) => element.pause());
-
         if (previewUrl) URL.revokeObjectURL(previewUrl);
 
         previewUrl = null;
         file = value;
         preview.replaceChildren();
         preview.hidden = !file;
-        byId('chat-view-once-label').hidden = !file?.type.startsWith('image/');
-
-        if (!file?.type.startsWith('image/')) once.checked = false;
-
-        refreshMode();
+        once.checked = Boolean(file?.type.startsWith('image/') && viewOnce);
         media.value = '';
 
         if (file) {
             const kind = file.type.startsWith('audio/')
                 ? 'audio'
                 : file.type.startsWith('video/')
-                    ? 'video'
-                    : 'img';
+                  ? 'video'
+                  : 'img';
 
             const limit = kind === 'video' ? 100 : kind === 'audio' ? 35 : 15;
 
@@ -198,7 +192,6 @@
                     ? window.MargotChatAudioPlayer(element, showError)
                     : element
             );
-
             preview.classList.toggle('chat-preview-audio', kind === 'audio');
         }
 
@@ -221,10 +214,10 @@
                 status === 'starting'
                     ? 'A abrir microfone…'
                     : status === 'finishing'
-                        ? 'A preparar…'
-                        : Math.floor(seconds / 60) +
-                          ':' +
-                          String(seconds % 60).padStart(2, '0');
+                      ? 'A preparar…'
+                      : Math.floor(seconds / 60) +
+                        ':' +
+                        String(seconds % 60).padStart(2, '0');
 
             byId('chat-recording-send').disabled = status !== 'recording';
             state();
@@ -292,18 +285,13 @@
             button.textContent = message.opened
                 ? 'Fotografia aberta'
                 : own(message)
-                    ? 'Fotografia · Ver uma vez'
-                    : '① Abrir fotografia';
-
+                  ? 'Fotografia · Ver uma vez'
+                  : '① Abrir fotografia';
             bubble.append(button);
         }
 
         if (message.media_url) {
-            const tag = {
-                imagem: 'img',
-                video: 'video',
-                audio: 'audio'
-            }[message.tipo];
+            const tag = { imagem: 'img', video: 'video', audio: 'audio' }[message.tipo];
 
             if (tag) {
                 const element = document.createElement(tag);
@@ -424,8 +412,8 @@
 
             if (file === sentFile) chooseFile(null);
             if (reply === sentReply) selectReply(null);
-
             saveDraft();
+
             publish({ type: 'chat_publish', message_id: data.message.id });
         } catch (error) {
             if (error.name !== 'AbortError') showError(error.message);
@@ -484,9 +472,22 @@
 
     on(form, 'submit', submit);
 
-    // Impede a transferência de foco para o botão.
+    // Impede a transferência de foco para o botão; o envio acontece apenas no click.
+    let keepFocus = false;
+
     on(send, 'pointerdown', (event) => {
-        if (event.button === 0) event.preventDefault();
+        if (event.button !== 0) return;
+        keepFocus = document.activeElement === text;
+        event.preventDefault();
+    });
+
+    on(send, 'pointercancel', () => {
+        keepFocus = false;
+    });
+
+    on(send, 'click', () => {
+        if (keepFocus) text.focus({ preventScroll: true });
+        keepFocus = false;
     });
 
     on(text, 'input', () => {
@@ -501,7 +502,18 @@
         }
     });
 
-    on(media, 'change', () => chooseFile(media.files[0] || null));
+    on(media, 'change', () => {
+        const selected = media.files[0];
+
+        if (selected?.type.startsWith('image/')) {
+            camera.review(selected);
+        } else {
+            chooseFile(selected || null);
+        }
+
+        media.value = '';
+    });
+
     on(byId('chat-camera-open'), 'click', () => camera.open());
 
     on(microphone, 'click', () => {
@@ -575,16 +587,10 @@
 
         if (
             message &&
-            (
-                (
-                    String(message.emissor_id) === otherId &&
-                    String(message.destinatario_id) === me
-                ) ||
-                (
-                    String(message.emissor_id) === me &&
-                    String(message.destinatario_id) === otherId
-                )
-            )
+            ((String(message.emissor_id) === otherId &&
+                String(message.destinatario_id) === me) ||
+                (String(message.emissor_id) === me &&
+                    String(message.destinatario_id) === otherId))
         ) {
             if (add(message) && !own(message)) markRead();
         }
@@ -641,7 +647,6 @@
         chooseFile(draft.file);
         selectReply(draft.reply, false);
         once.checked = Boolean(draft.once);
-        refreshMode();
         resizeText();
     }
 
@@ -657,7 +662,6 @@
         events.abort();
 
         page.querySelectorAll('audio, video').forEach((element) => element.pause());
-
         viewer.destroy();
         viewport.destroy();
         reactions.destroy();
@@ -665,14 +669,8 @@
         camera.destroy();
 
         if (previewUrl) URL.revokeObjectURL(previewUrl);
-
-        if (window.desativarChatMargot === destroy) {
-            delete window.desativarChatMargot;
-        }
-
-        if (String(window.chatMembroId) === otherId) {
-            delete window.chatMembroId;
-        }
+        if (window.desativarChatMargot === destroy) delete window.desativarChatMargot;
+        if (String(window.chatMembroId) === otherId) delete window.chatMembroId;
     }
 
     window.desativarChatMargot = destroy;

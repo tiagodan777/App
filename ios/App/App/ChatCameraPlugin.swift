@@ -10,6 +10,7 @@ public final class ChatCameraPlugin: CAPPlugin, CAPBridgedPlugin {
   public let pluginMethods: [CAPPluginMethod] = [
     CAPPluginMethod(name: "open", returnType: CAPPluginReturnPromise)
   ]
+
   private var opening = false
 
   @objc public func open(_ call: CAPPluginCall) {
@@ -29,7 +30,9 @@ public final class ChatCameraPlugin: CAPPlugin, CAPBridgedPlugin {
             return
           }
 
-          guard let host = self.bridge?.viewController, host.presentedViewController == nil else {
+          guard let host = self.bridge?.viewController,
+            host.presentedViewController == nil
+          else {
             self.opening = false
             call.reject("Não foi possível abrir a câmara neste momento.")
             return
@@ -42,8 +45,10 @@ public final class ChatCameraPlugin: CAPPlugin, CAPBridgedPlugin {
               self.opening = false
 
               switch result {
-              case .success(let value): call.resolve(value)
-              case .failure(let error): call.reject(error.localizedDescription)
+              case .success(let value):
+                call.resolve(value)
+              case .failure(let error):
+                call.reject(error.localizedDescription)
               }
             }
           }
@@ -55,14 +60,18 @@ public final class ChatCameraPlugin: CAPPlugin, CAPBridgedPlugin {
   }
 }
 
-private final class ChatCameraController: UIViewController, AVCapturePhotoCaptureDelegate,
-  PHPickerViewControllerDelegate
+private final class ChatCameraController: UIViewController,
+  AVCapturePhotoCaptureDelegate, PHPickerViewControllerDelegate
 {
   var completed: ((Result<[String: Any], Error>) -> Void)?
 
   private let session = AVCaptureSession()
   private let output = AVCapturePhotoOutput()
-  private let queue = DispatchQueue(label: "com.margot.camera", qos: .userInitiated)
+  private let queue = DispatchQueue(
+    label: "com.margot.camera",
+    qos: .userInitiated
+  )
+
   private var input: AVCaptureDeviceInput?
   private var finished = false
   private var photoData: Data?
@@ -74,15 +83,22 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
   private let gallery = UIButton(type: .system)
   private let closeButton = UIButton(type: .system)
   private let hint = UILabel()
+  private let photoMode = UISegmentedControl(items: ["Manter", "Ver uma vez"])
 
   private var observer: NSObjectProtocol?
   private var sessionObserver: NSObjectProtocol?
 
-  override var supportedInterfaceOrientations: UIInterfaceOrientationMask { .portrait }
-  override var preferredStatusBarStyle: UIStatusBarStyle { .lightContent }
+  override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
+    .portrait
+  }
+
+  override var preferredStatusBarStyle: UIStatusBarStyle {
+    .lightContent
+  }
 
   override func viewDidLoad() {
     super.viewDidLoad()
+
     view.backgroundColor = .black
 
     preview = AVCaptureVideoPreviewLayer(session: session)
@@ -93,13 +109,30 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
     picture.isHidden = true
     view.addSubview(picture)
 
-    button(closeButton, symbol: "xmark", label: "Fechar", action: #selector(cancel))
-    button(gallery, symbol: "photo.on.rectangle", label: "Galeria", action: #selector(leftAction))
     button(
-      flip, symbol: "arrow.triangle.2.circlepath.camera", label: "Trocar câmara",
+      closeButton,
+      symbol: "xmark",
+      label: "Fechar",
+      action: #selector(cancel)
+    )
+    button(
+      gallery,
+      symbol: "photo.on.rectangle",
+      label: "Galeria",
+      action: #selector(leftAction)
+    )
+    button(
+      flip,
+      symbol: "arrow.triangle.2.circlepath.camera",
+      label: "Trocar câmara",
       action: #selector(switchCamera)
     )
-    button(shutter, symbol: "circle.fill", label: "Tirar fotografia", action: #selector(capture))
+    button(
+      shutter,
+      symbol: "circle.fill",
+      label: "Tirar fotografia",
+      action: #selector(capture)
+    )
 
     shutter.backgroundColor = .white
     shutter.tintColor = .black
@@ -113,18 +146,40 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
     hint.textAlignment = .center
     view.addSubview(hint)
 
-    let focusTap = UITapGestureRecognizer(target: self, action: #selector(focus(_:)))
+    photoMode.selectedSegmentIndex = 0
+    photoMode.isHidden = true
+    photoMode.backgroundColor = UIColor(white: 0.15, alpha: 1)
+    photoMode.selectedSegmentTintColor = .white
+    photoMode.setTitleTextAttributes(
+      [.foregroundColor: UIColor.white],
+      for: .normal
+    )
+    photoMode.setTitleTextAttributes(
+      [.foregroundColor: UIColor.black],
+      for: .selected
+    )
+    photoMode.accessibilityLabel = "Disponibilidade da fotografia"
+    view.addSubview(photoMode)
+
+    let focusTap = UITapGestureRecognizer(
+      target: self,
+      action: #selector(focus(_:))
+    )
     focusTap.cancelsTouchesInView = false
     view.addGestureRecognizer(focusTap)
 
     observer = NotificationCenter.default.addObserver(
-      forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main
+      forName: UIApplication.didEnterBackgroundNotification,
+      object: nil,
+      queue: .main
     ) { [weak self] _ in
       self?.cancel()
     }
 
     sessionObserver = NotificationCenter.default.addObserver(
-      forName: AVCaptureSession.runtimeErrorNotification, object: session, queue: .main
+      forName: AVCaptureSession.runtimeErrorNotification,
+      object: session,
+      queue: .main
     ) { [weak self] _ in
       self?.fail("A câmara foi interrompida. Fecha e tenta novamente.")
     }
@@ -152,7 +207,9 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
         }
       } catch {
         self.session.commitConfiguration()
-        DispatchQueue.main.async { self.finish(.failure(error)) }
+        DispatchQueue.main.async {
+          self.finish(.failure(error))
+        }
       }
     }
   }
@@ -165,18 +222,46 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
     let bottom = view.bounds.height - safe.bottom - 96
 
     preview.frame = CGRect(
-      x: 0, y: safe.top + 54, width: width, height: max(1, bottom - safe.top - 70)
+      x: 0,
+      y: safe.top + 54,
+      width: width,
+      height: max(1, bottom - safe.top - 70)
     )
     picture.frame = preview.frame
-    closeButton.frame = CGRect(x: 16, y: safe.top + 4, width: 44, height: 44)
-    shutter.frame = CGRect(x: (width - 76) / 2, y: bottom, width: 76, height: 76)
+
+    closeButton.frame = CGRect(
+      x: 16, y: safe.top + 4, width: 44, height: 44
+    )
+    shutter.frame = CGRect(
+      x: (width - 76) / 2, y: bottom, width: 76, height: 76
+    )
     shutter.layer.cornerRadius = 38
-    gallery.frame = CGRect(x: 30, y: bottom + 14, width: 48, height: 48)
-    flip.frame = CGRect(x: width - 78, y: bottom + 14, width: 48, height: 48)
-    hint.frame = CGRect(x: 20, y: bottom - 30, width: width - 40, height: 24)
+
+    gallery.frame = CGRect(
+      x: 30, y: bottom + 14, width: 48, height: 48
+    )
+    flip.frame = CGRect(
+      x: width - 78, y: bottom + 14, width: 48, height: 48
+    )
+    hint.frame = CGRect(
+      x: 20, y: bottom - 30, width: width - 40, height: 24
+    )
+
+    let modeWidth = min(width - 48, 320)
+    photoMode.frame = CGRect(
+      x: (width - modeWidth) / 2,
+      y: bottom - 48,
+      width: modeWidth,
+      height: 36
+    )
   }
 
-  private func button(_ button: UIButton, symbol: String, label: String, action: Selector) {
+  private func button(
+    _ button: UIButton,
+    symbol: String,
+    label: String,
+    action: Selector
+  ) {
     button.setImage(UIImage(systemName: symbol), for: .normal)
     button.tintColor = .white
     button.backgroundColor = UIColor(white: 0.15, alpha: 1)
@@ -188,18 +273,25 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
 
   // Apenas esta fila configura a sessão e o dispositivo.
   private func setCamera(_ position: AVCaptureDevice.Position) throws {
-    guard
-      let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: position)
-    else {
+    guard let device = AVCaptureDevice.default(
+      .builtInWideAngleCamera,
+      for: .video,
+      position: position
+    ) else {
       throw cameraError("Esta câmara não está disponível.")
     }
 
     let next = try AVCaptureDeviceInput(device: device)
     let previous = input
-    if let previous { session.removeInput(previous) }
+
+    if let previous {
+      session.removeInput(previous)
+    }
 
     guard session.canAddInput(next) else {
-      if let previous { session.addInput(previous) }
+      if let previous {
+        session.addInput(previous)
+      }
       throw cameraError("Não foi possível trocar de câmara.")
     }
 
@@ -212,11 +304,9 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
     if device.isFocusModeSupported(.continuousAutoFocus) {
       device.focusMode = .continuousAutoFocus
     }
-
     if device.isExposureModeSupported(.continuousAutoExposure) {
       device.exposureMode = .continuousAutoExposure
     }
-
     if device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) {
       device.whiteBalanceMode = .continuousAutoWhiteBalance
     }
@@ -230,7 +320,9 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
       self.session.beginConfiguration()
 
       do {
-        try self.setCamera(self.input?.device.position == .back ? .front : .back)
+        try self.setCamera(
+          self.input?.device.position == .back ? .front : .back
+        )
         self.session.commitConfiguration()
 
         DispatchQueue.main.async {
@@ -239,7 +331,9 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
         }
       } catch {
         self.session.commitConfiguration()
-        DispatchQueue.main.async { self.finish(.failure(error)) }
+        DispatchQueue.main.async {
+          self.finish(.failure(error))
+        }
       }
     }
   }
@@ -248,8 +342,13 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
     let point = gesture.location(in: view)
     guard photoData == nil, preview.frame.contains(point) else { return }
 
-    let localPoint = CGPoint(x: point.x - preview.frame.minX, y: point.y - preview.frame.minY)
-    let target = preview.captureDevicePointConverted(fromLayerPoint: localPoint)
+    let localPoint = CGPoint(
+      x: point.x - preview.frame.minX,
+      y: point.y - preview.frame.minY
+    )
+    let target = preview.captureDevicePointConverted(
+      fromLayerPoint: localPoint
+    )
 
     queue.async {
       guard let device = self.input?.device else { return }
@@ -258,7 +357,9 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
         try device.lockForConfiguration()
         defer { device.unlockForConfiguration() }
 
-        if device.isFocusPointOfInterestSupported, device.isFocusModeSupported(.autoFocus) {
+        if device.isFocusPointOfInterestSupported,
+          device.isFocusModeSupported(.autoFocus)
+        {
           device.focusPointOfInterest = target
           device.focusMode = .autoFocus
         }
@@ -279,7 +380,11 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
 
   @objc private func capture() {
     if let photoData {
-      finish(.success(["base64": photoData.base64EncodedString(), "mimeType": "image/jpeg"]))
+      finish(.success([
+        "base64": photoData.base64EncodedString(),
+        "mimeType": "image/jpeg",
+        "viewOnce": photoMode.selectedSegmentIndex == 1
+      ]))
       return
     }
 
@@ -290,7 +395,9 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
     hint.text = "A captar fotografia…"
 
     queue.async {
-      let settings = AVCapturePhotoSettings(format: [AVVideoCodecKey: AVVideoCodecType.jpeg])
+      let settings = AVCapturePhotoSettings(
+        format: [AVVideoCodecKey: AVVideoCodecType.jpeg]
+      )
       settings.photoQualityPrioritization = .quality
       settings.isHighResolutionPhotoEnabled = true
       self.output.connection(with: .video)?.videoOrientation = .portrait
@@ -299,9 +406,13 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
   }
 
   func photoOutput(
-    _ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?
+    _ output: AVCapturePhotoOutput,
+    didFinishProcessingPhoto photo: AVCapturePhoto,
+    error: Error?
   ) {
-    guard error == nil, let data = photo.fileDataRepresentation(), let image = UIImage(data: data)
+    guard error == nil,
+      let data = photo.fileDataRepresentation(),
+      let image = UIImage(data: data)
     else {
       DispatchQueue.main.async {
         self.fail("Não foi possível captar a fotografia.")
@@ -315,7 +426,10 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
   private func preparePhoto(_ image: UIImage) {
     // Normaliza orientação e tamanho depois do processamento fotográfico do iOS.
     let scale = min(1, 2400 / max(image.size.width, image.size.height))
-    let size = CGSize(width: image.size.width * scale, height: image.size.height * scale)
+    let size = CGSize(
+      width: image.size.width * scale,
+      height: image.size.height * scale
+    )
     let format = UIGraphicsImageRendererFormat()
     format.scale = 1
 
@@ -330,7 +444,9 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
       return
     }
 
-    queue.async { self.session.stopRunning() }
+    queue.async {
+      self.session.stopRunning()
+    }
 
     DispatchQueue.main.async {
       guard !self.finished else { return }
@@ -338,14 +454,22 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
       self.photoData = jpeg
       self.picture.image = resized
       self.picture.isHidden = false
+
       self.shutter.setImage(UIImage(systemName: "checkmark"), for: .normal)
       self.shutter.accessibilityLabel = "Usar fotografia"
       self.shutter.isEnabled = true
-      self.gallery.setImage(UIImage(systemName: "arrow.counterclockwise"), for: .normal)
+
+      self.gallery.setImage(
+        UIImage(systemName: "arrow.counterclockwise"),
+        for: .normal
+      )
       self.gallery.accessibilityLabel = "Repetir fotografia"
       self.gallery.isEnabled = true
+
       self.flip.isHidden = true
-      self.hint.text = "Repetir ou usar fotografia"
+      self.hint.isHidden = true
+      self.photoMode.selectedSegmentIndex = 0
+      self.photoMode.isHidden = false
     }
   }
 
@@ -362,24 +486,34 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
     }
 
     photoData = nil
+    photoMode.isHidden = true
+    hint.isHidden = false
     picture.image = nil
     picture.isHidden = true
+
     shutter.isEnabled = false
     shutter.setImage(UIImage(systemName: "circle.fill"), for: .normal)
     shutter.accessibilityLabel = "Tirar fotografia"
+
     gallery.setImage(UIImage(systemName: "photo.on.rectangle"), for: .normal)
     gallery.accessibilityLabel = "Galeria"
+
     flip.isHidden = false
     flip.isEnabled = true
     hint.text = "Toca na imagem para focar"
 
     queue.async {
       self.session.startRunning()
-      DispatchQueue.main.async { self.shutter.isEnabled = true }
+      DispatchQueue.main.async {
+        self.shutter.isEnabled = true
+      }
     }
   }
 
-  func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+  func picker(
+    _ picker: PHPickerViewController,
+    didFinishPicking results: [PHPickerResult]
+  ) {
     picker.dismiss(animated: true) {
       guard let provider = results.first?.itemProvider else { return }
 
@@ -405,7 +539,11 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
   }
 
   private func cameraError(_ message: String) -> NSError {
-    NSError(domain: "MargotCamera", code: 1, userInfo: [NSLocalizedDescriptionKey: message])
+    NSError(
+      domain: "MargotCamera",
+      code: 1,
+      userInfo: [NSLocalizedDescriptionKey: message]
+    )
   }
 
   private func fail(_ message: String) {
@@ -419,12 +557,13 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
     if let observer {
       NotificationCenter.default.removeObserver(observer)
     }
-
     if let sessionObserver {
       NotificationCenter.default.removeObserver(sessionObserver)
     }
 
-    queue.async { self.session.stopRunning() }
+    queue.async {
+      self.session.stopRunning()
+    }
 
     let callback = completed
     completed = nil

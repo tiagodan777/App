@@ -27,16 +27,16 @@ public final class MargotHapticsPlugin extends Plugin {
             return;
         }
 
-        if (
-            !type.equals("interaction") &&
-            !type.equals("shutter") &&
-            !type.equals("heySent")
-        ) {
+        if (!type.equals("interaction")
+            && !type.equals("shutter")
+            && !type.equals("heySent")
+            && !type.equals("heyReceived")) {
             return;
         }
 
         long[] timings = {0, type.equals("shutter") ? 10 : 15};
-        int[] amplitudes = {0, 90};
+        boolean isHey = type.equals("heySent") || type.equals("heyReceived");
+        int[] amplitudes = {0, isHey ? 220 : 90};
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             vibrator.vibrate(

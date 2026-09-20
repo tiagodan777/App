@@ -1,16 +1,31 @@
 window.MargotChatCamera = function ({ dialog, onFile, onError, gallery }) {
-    const video = dialog.querySelector('video');
-    const photo = dialog.querySelector('img');
-    const capture = dialog.querySelector('[data-camera="capture"]');
-    const use = dialog.querySelector('[data-camera="use"]');
+    const video = dialog.querySelector('video'),
+        photo = dialog.querySelector('img');
+    const mode = dialog.querySelector('[data-camera-mode]');
 
-    let stream;
-    let file;
-    let photoUrl;
-    let facing = 'environment';
-    let generation = 0;
-    let disposed = false;
-    let nativePending = false;
+    let viewOnce = false;
+
+    function setMode(value) {
+        viewOnce = Boolean(value);
+
+        mode.querySelectorAll('[data-once]').forEach((button) => {
+            button.setAttribute(
+                'aria-pressed',
+                String(viewOnce === (button.dataset.once === 'true'))
+            );
+        });
+    }
+
+    const capture = dialog.querySelector('[data-camera="capture"]'),
+        use = dialog.querySelector('[data-camera="use"]');
+
+    let stream,
+        file,
+        photoUrl,
+        facing = 'environment',
+        generation = 0,
+        disposed = false,
+        nativePending = false;
 
     function stop() {
         stream?.getTracks().forEach((track) => track.stop());
@@ -24,6 +39,8 @@ window.MargotChatCamera = function ({ dialog, onFile, onError, gallery }) {
         photoUrl = null;
         file = null;
         photo.removeAttribute('src');
+        mode.hidden = true;
+        setMode(false);
     }
 
     function close() {
@@ -39,13 +56,11 @@ window.MargotChatCamera = function ({ dialog, onFile, onError, gallery }) {
 
         stop();
         clearPhoto();
-
         photo.hidden = true;
         video.hidden = false;
         use.hidden = true;
         capture.hidden = false;
         capture.disabled = true;
-
         dialog.querySelector('[data-camera="retake"]').hidden = true;
         dialog.querySelector('[data-camera="flip"]').hidden = false;
 
@@ -106,10 +121,7 @@ window.MargotChatCamera = function ({ dialog, onFile, onError, gallery }) {
         window.MargotHaptics?.feedback('shutter');
 
         const canvas = document.createElement('canvas');
-        const scale = Math.min(
-            1,
-            1920 / Math.max(video.videoWidth, video.videoHeight)
-        );
+        const scale = Math.min(1, 1920 / Math.max(video.videoWidth, video.videoHeight));
 
         canvas.width = Math.round(video.videoWidth * scale);
         canvas.height = Math.round(video.videoHeight * scale);
@@ -127,21 +139,36 @@ window.MargotChatCamera = function ({ dialog, onFile, onError, gallery }) {
             return;
         }
 
-        file = new File([blob], 'fotografia.jpg', { type: 'image/jpeg' });
+        review(new File([blob], 'fotografia.jpg', { type: 'image/jpeg' }));
+    }
+
+    function review(value) {
+        if (disposed) return;
+
+        generation++;
+        stop();
+        clearPhoto();
+
+        file = value;
+        mode.hidden = false;
+
+        if (!dialog.open) dialog.showModal();
+
         photoUrl = URL.createObjectURL(file);
         photo.src = photoUrl;
         photo.hidden = false;
         video.hidden = true;
         capture.hidden = true;
         use.hidden = false;
-
-        stop();
-
         dialog.querySelector('[data-camera="retake"]').hidden = false;
         dialog.querySelector('[data-camera="flip"]').hidden = true;
     }
 
     function action(event) {
+        const choice = event.target.closest('[data-once]');
+
+        if (choice) setMode(choice.dataset.once === 'true');
+
         const name = event.target.closest('[data-camera]')?.dataset.camera;
 
         if (name === 'close') close();
@@ -160,9 +187,11 @@ window.MargotChatCamera = function ({ dialog, onFile, onError, gallery }) {
         if (name === 'retake') preview();
 
         if (name === 'use' && file) {
-            const chosen = file;
+            const chosen = file,
+                once = viewOnce;
+
             close();
-            onFile(chosen);
+            onFile(chosen, once);
         }
     }
 
@@ -186,9 +215,10 @@ window.MargotChatCamera = function ({ dialog, onFile, onError, gallery }) {
                 (letter) => letter.charCodeAt(0)
             );
 
-            onFile(new File([bytes], 'fotografia.jpg', {
-                type: 'image/jpeg'
-            }));
+            onFile(
+                new File([bytes], 'fotografia.jpg', { type: 'image/jpeg' }),
+                result.viewOnce === true
+            );
         } catch (error) {
             if (!disposed && current === generation) {
                 onError(error.message || 'Não foi possível abrir a câmara.');
@@ -211,8 +241,7 @@ window.MargotChatCamera = function ({ dialog, onFile, onError, gallery }) {
 
             if (window.Capacitor?.getPlatform?.() === 'ios') {
                 onError(
-                    'Instala a nova versão da Margot para usar a câmara. ' +
-                    'Entretanto, podes escolher uma fotografia da galeria.'
+                    'Instala a nova versão da Margot para usar a câmara. Entretanto, podes escolher uma fotografia da galeria.'
                 );
                 return;
             }
@@ -220,13 +249,11 @@ window.MargotChatCamera = function ({ dialog, onFile, onError, gallery }) {
             dialog.showModal();
             preview();
         },
-
+        review,
         close,
-
         suspend() {
             if (!nativePending) close();
         },
-
         destroy() {
             disposed = true;
             close();
@@ -234,30 +261,4 @@ window.MargotChatCamera = function ({ dialog, onFile, onError, gallery }) {
             dialog.removeEventListener('cancel', close);
         }
     };
-};
-
-// A escolha pertence ao anexo; os dois botões selecionam explicitamente o modo.
-window.MargotPhotoMode = function (container) {
-    const input = container.querySelector('input');
-
-    function refresh() {
-        container.querySelectorAll('[data-once]').forEach((button) => {
-            button.setAttribute(
-                'aria-pressed',
-                String(input.checked === (button.dataset.once === 'true'))
-            );
-        });
-    }
-
-    container.addEventListener('click', (event) => {
-        const button = event.target.closest('[data-once]');
-        if (!button) return;
-
-        input.checked = button.dataset.once === 'true';
-        input.dispatchEvent(new Event('change', { bubbles: true }));
-        refresh();
-    });
-
-    refresh();
-    return refresh;
 };

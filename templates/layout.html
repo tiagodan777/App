@@ -14,7 +14,7 @@
 
     <title>{% block title %}Margot{% endblock %}</title>
 
-    <link rel="stylesheet" href="{{ doc_root }}estilos/style.css?v=20260920-polish">
+    <link rel="stylesheet" href="{{ doc_root }}estilos/style.css?v=20260920-interacoes">
 
     {% if session.id %}
         <link rel="stylesheet" href="{{ doc_root }}estilos/index-notificacoes.css?v=20260916">
@@ -23,12 +23,12 @@
 
     {% block styles %}{% endblock %}
 
-    <link rel="stylesheet" href="{{ doc_root }}estilos/photo-viewer.css?v=20260920-polish">
-    <link rel="stylesheet" href="{{ doc_root }}estilos/theme.css?v=20260920-polish">
+    <link rel="stylesheet" href="{{ doc_root }}estilos/photo-viewer.css?v=20260920-interacoes">
+    <link rel="stylesheet" href="{{ doc_root }}estilos/theme.css?v=20260920-interacoes">
 </head>
 
 <body>
-    <script src="{{ doc_root }}js/photo-viewer.js?v=20260920-polish"></script>
+    <script src="{{ doc_root }}js/photo-viewer.js?v=20260920-interacoes"></script>
     <script src="{{ doc_root }}js/jquery-4.0.0.js"></script>
     <script src="{{ doc_root }}js/csrf.js?v=20260916"></script>
     <script src="{{ doc_root }}js/camara-nativa.js?v=20260916"></script>
@@ -145,12 +145,7 @@
                 <path d="M6.4 10.7V6.2a1.35 1.35 0 0 1 2.7 0v3.2-5a1.35 1.35 0 0 1 2.7 0v5-3.8a1.35 1.35 0 0 1 2.7 0v4.1-2.5a1.35 1.35 0 0 1 2.7 0v6.1c0 4-2.7 7.2-6.7 7.2h-.4c-2.5 0-4.5-1.1-5.8-3L1.8 14a1.45 1.45 0 0 1 2.3-1.7l2.3 2.6"></path>
             </svg>
 
-            <span
-                id="heys-contador"
-                class="heys-contador"
-                aria-label="0 Heys por ler"
-                hidden
-            >0</span>
+            <span id="heys-contador" class="heys-contador" aria-label="0 Heys por ler" hidden>0</span>
         </button>
 
         <div id="heys-area" class="heys-area" aria-hidden="true">
@@ -176,23 +171,14 @@
                         <h1 id="heys-titulo">Heys</h1>
                     </div>
 
-                    <button
-                        type="button"
-                        id="fechar-heys"
-                        class="heys-fechar"
-                        aria-label="Fechar"
-                    >
+                    <button type="button" id="fechar-heys" class="heys-fechar" aria-label="Fechar">
                         <svg viewBox="0 0 24 24" aria-hidden="true">
                             <path d="M6 6l12 12M18 6 6 18"></path>
                         </svg>
                     </button>
                 </header>
 
-                <nav
-                    class="heys-separadores"
-                    role="tablist"
-                    aria-label="Tipo de Hey"
-                >
+                <nav class="heys-separadores" role="tablist" aria-label="Tipo de Hey">
                     <button
                         type="button"
                         id="heys-tab-recebidos"
@@ -212,20 +198,12 @@
                 </nav>
 
                 <div class="heys-acoes">
-                    <button
-                        type="button"
-                        id="limpar-todos-heys"
-                        class="heys-limpar-todos"
-                        hidden
-                    >Limpar todos</button>
+                    <button type="button" id="limpar-todos-heys" class="heys-limpar-todos" hidden>
+                        Limpar todos
+                    </button>
                 </div>
 
-                <div
-                    id="heys-lista"
-                    class="heys-lista"
-                    role="tabpanel"
-                    aria-live="polite"
-                ></div>
+                <div id="heys-lista" class="heys-lista" role="tabpanel" aria-live="polite"></div>
 
                 <div id="heys-carregando" class="heys-estado" hidden>
                     A carregar…
@@ -235,48 +213,38 @@
                     Ainda não existem Heys.
                 </div>
 
-                <div
-                    id="heys-erro"
-                    class="heys-estado heys-estado-erro"
-                    role="alert"
-                    hidden
-                ></div>
+                <div id="heys-erro" class="heys-estado heys-estado-erro" role="alert" hidden></div>
             </section>
         </div>
 
-        <div
-            id="heys-avisos"
-            class="heys-avisos"
-            aria-live="polite"
-            aria-atomic="true"
-        ></div>
+        <div id="heys-avisos" class="heys-avisos" aria-live="polite" aria-atomic="true"></div>
 
         <script>
-        window.membroId = {{ session.id|json_encode|raw }};
-        window.messagesUrl = {{ (doc_root ~ 'messages')|json_encode|raw }};
-        window.profileUrl = {{ (doc_root ~ 'profile/')|json_encode|raw }};
-        window.heysUrl = {{ (doc_root ~ 'notifications')|json_encode|raw }};
-        window.todayUrl = {{ (doc_root ~ 'today/')|json_encode|raw }};
-        window.webSocketTokenUrl = {{ (doc_root ~ 'websocket-token')|json_encode|raw }};
-        window.backgroundLocationTokenUrl = {{ (doc_root ~ 'background-location-token/')|json_encode|raw }};
-        window.backgroundLocationUpdateUrl = {{ (doc_root ~ 'background-location-update/')|json_encode|raw }};
-        window.pushDeviceUrl = {{ (doc_root ~ 'push-device/')|json_encode|raw }};
-        window.pushEnvironment = {{ push_environment|default('production')|json_encode|raw }};
-        window.loginUrl = {{ (doc_root ~ 'login/')|json_encode|raw }};
+            window.membroId = {{ session.id|json_encode|raw }};
+            window.messagesUrl = {{ (doc_root ~ 'messages')|json_encode|raw }};
+            window.profileUrl = {{ (doc_root ~ 'profile/')|json_encode|raw }};
+            window.heysUrl = {{ (doc_root ~ 'notifications')|json_encode|raw }};
+            window.todayUrl = {{ (doc_root ~ 'today/')|json_encode|raw }};
+            window.webSocketTokenUrl = {{ (doc_root ~ 'websocket-token')|json_encode|raw }};
+            window.backgroundLocationTokenUrl = {{ (doc_root ~ 'background-location-token/')|json_encode|raw }};
+            window.backgroundLocationUpdateUrl = {{ (doc_root ~ 'background-location-update/')|json_encode|raw }};
+            window.pushDeviceUrl = {{ (doc_root ~ 'push-device/')|json_encode|raw }};
+            window.pushEnvironment = {{ push_environment|default('production')|json_encode|raw }};
+            window.loginUrl = {{ (doc_root ~ 'login/')|json_encode|raw }};
 
-        window.webSocketUrl = window.location.protocol === 'https:'
-            ? 'wss://' + window.location.host + '/ws/'
-            : 'ws://' + window.location.hostname + ':8080';
+            window.webSocketUrl = window.location.protocol === 'https:'
+                ? 'wss://' + window.location.host + '/ws/'
+                : 'ws://' + window.location.hostname + ':8080';
         </script>
 
-        <script src="{{ doc_root }}js/hey-vibracao.js?v=20260920-polish"></script>
+        <script src="{{ doc_root }}js/hey-vibracao.js?v=20260920-interacoes"></script>
         <script src="{{ doc_root }}js/index-notificacoes.js?v=20260916"></script>
         <script src="{{ doc_root }}js/background-location.js?v=20260916-v3"></script>
         <script src="{{ doc_root }}js/websocket-location.js?v=20260916"></script>
         <script src="{{ doc_root }}js/websocket-alerts.js?v=20260917-chat1"></script>
         <script src="{{ doc_root }}js/websocket.js?v=20260916"></script>
         <script src="{{ doc_root }}js/menu-invisivel.js?v=20260916"></script>
-        <script src="{{ doc_root }}js/javascript-geral.js?v=20260920-polish"></script>
+        <script src="{{ doc_root }}js/javascript-geral.js?v=20260920-interacoes"></script>
     {% endif %}
 </body>
 </html>
