@@ -5,8 +5,8 @@ window.MargotMiniCompose = function (form, { onError, workletUrl }) {
     const input = form.querySelector('[name="mensagem"]');
     const media = form.querySelector('[name="media"]');
     const submit = form.querySelector('[type="submit"]');
-
     const controls = document.createElement('div');
+
     controls.className = 'mini-compose-input';
     controls.innerHTML = `
         <button type="button" data-camera-open aria-label="Tirar fotografia">
@@ -28,8 +28,7 @@ window.MargotMiniCompose = function (form, { onError, workletUrl }) {
             </span>
             <output>0:00</output>
             <button type="button" data-send aria-label="Enviar gravação">↑</button>
-        </div>
-    `;
+        </div>`;
 
     const preview = document.createElement('div');
     preview.className = 'chat-media-preview mini-compose-preview';
@@ -53,18 +52,10 @@ window.MargotMiniCompose = function (form, { onError, workletUrl }) {
         recipient = '',
         busy = false;
 
-    const on = (el, type, handler) => {
-        el.addEventListener(type, handler, { signal });
-    };
+    const on = (el, type, handler) => el.addEventListener(type, handler, { signal });
 
     function save() {
-        if (recipient) {
-            drafts.set(recipient, {
-                file,
-                text: input.value,
-                once: viewOnce
-            });
-        }
+        if (recipient) drafts.set(recipient, { file, text: input.value, once: viewOnce });
     }
 
     function state() {
@@ -74,6 +65,7 @@ window.MargotMiniCompose = function (form, { onError, workletUrl }) {
         input.hidden = active;
         microphone.hidden = active || Boolean(file || input.value.trim());
         submit.hidden = active || !Boolean(file || input.value.trim());
+
         controls.querySelector('[data-camera-open]').hidden = active;
         form.classList.toggle('mini-compose-recording', active);
 
@@ -131,9 +123,7 @@ window.MargotMiniCompose = function (form, { onError, workletUrl }) {
 
             preview.append(
                 remove,
-                tag === 'audio'
-                    ? window.MargotChatAudioPlayer(element, onError)
-                    : element
+                tag === 'audio' ? window.MargotChatAudioPlayer(element, onError) : element
             );
         }
 
@@ -156,9 +146,7 @@ window.MargotMiniCompose = function (form, { onError, workletUrl }) {
                     ? 'A abrir microfone…'
                     : status === 'finishing'
                       ? 'A preparar…'
-                      : Math.floor(seconds / 60) +
-                        ':' +
-                        String(seconds % 60).padStart(2, '0');
+                      : Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0');
 
             recording.querySelector('[data-send]').disabled = status !== 'recording';
             state();
@@ -213,11 +201,8 @@ window.MargotMiniCompose = function (form, { onError, workletUrl }) {
     on(media, 'change', () => {
         const selected = media.files[0];
 
-        if (selected?.type.startsWith('image/')) {
-            camera.review(selected);
-        } else {
-            choose(selected || null);
-        }
+        if (selected && /^(image|video)\//.test(selected.type)) camera.review(selected);
+        else choose(selected || null);
 
         media.value = '';
     });
@@ -261,11 +246,9 @@ window.MargotMiniCompose = function (form, { onError, workletUrl }) {
         fill(body) {
             body.delete('media');
             if (file) body.set('media', file);
+
             body.set('media_kind', file?.type.startsWith('audio/') ? 'audio' : '');
-            body.set(
-                'view_once',
-                String(Boolean(file?.type.startsWith('image/') && viewOnce))
-            );
+            body.set('view_once', String(Boolean(file?.type.startsWith('image/') && viewOnce)));
         },
 
         setBusy(value) {
@@ -280,10 +263,7 @@ window.MargotMiniCompose = function (form, { onError, workletUrl }) {
                 save();
             } else {
                 const draft = drafts.get(id);
-
-                if (draft?.file === sentFile && draft?.text === sentText) {
-                    drafts.delete(id);
-                }
+                if (draft?.file === sentFile && draft?.text === sentText) drafts.delete(id);
             }
         },
 

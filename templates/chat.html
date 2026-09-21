@@ -1,7 +1,7 @@
 {% extends 'layout.html' %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ doc_root }}estilos/chat.css?v=20260920-interacoes" data-margot-page-style>
+<link rel="stylesheet" href="{{ doc_root }}estilos/chat.css?v=20260920-video" data-margot-page-style>
 {% endblock %}
 
 {% block content %}
@@ -9,7 +9,7 @@
     id="chat-pagina"
     class="chat-pagina"
     data-outro-id="{{ outro.id }}"
-    data-worklet-url="{{ doc_root }}js/chat-audio-worklet.js?v=20260920-interacoes"
+    data-worklet-url="{{ doc_root }}js/chat-audio-worklet.js?v=20260920-video"
 >
     <header class="chat-cabecalho">
         <a href="{{ doc_root }}messages" class="chat-voltar" data-margot-voltar aria-label="Voltar às mensagens">
@@ -116,6 +116,7 @@
         </div>
 
         <div id="chat-media-preview" class="chat-media-preview" hidden></div>
+
         <input type="checkbox" id="chat-view-once" hidden>
 
         <div class="chat-compositor">
@@ -150,9 +151,7 @@
 
             <div id="chat-recording" class="chat-recording" hidden>
                 <button type="button" id="chat-recording-cancel" aria-label="Apagar gravação">×</button>
-                <span class="chat-recording-wave" aria-hidden="true">
-                    <i></i><i></i><i></i><i></i><i></i>
-                </span>
+                <span class="chat-recording-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
                 <output id="chat-recording-time" aria-live="off">0:00</output>
                 <button type="button" id="chat-recording-send" aria-label="Enviar gravação">↑</button>
             </div>
@@ -215,10 +214,10 @@ window.webSocketUrl = window.location.protocol === 'https:'
     : 'ws://' + window.location.hostname + ':8080';
 </script>
 
-<script src="{{ doc_root }}js/chat-viewport.js?v=20260920-interacoes"></script>
-<script src="{{ doc_root }}js/chat-recorder.js?v=20260920-interacoes"></script>
-<script src="{{ doc_root }}js/chat-camera.js?v=20260920-interacoes"></script>
-<script src="{{ doc_root }}js/chat-reactions.js?v=20260920-interacoes"></script>
-<script src="{{ doc_root }}js/chat-audio-player.js?v=20260920-interacoes"></script>
-<script src="{{ doc_root }}js/chat.js?v=20260920-interacoes"></script>
+<script src="{{ doc_root }}js/chat-viewport.js?v=20260920-video"></script>
+<script src="{{ doc_root }}js/chat-recorder.js?v=20260920-video"></script>
+<script src="{{ doc_root }}js/chat-camera.js?v=20260920-video"></script>
+<script src="{{ doc_root }}js/chat-reactions.js?v=20260920-video"></script>
+<script src="{{ doc_root }}js/chat-audio-player.js?v=20260920-video"></script>
+<script src="{{ doc_root }}js/chat.js?v=20260920-video"></script>
 {% endblock %}

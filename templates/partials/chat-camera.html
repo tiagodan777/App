@@ -1,5 +1,6 @@
 <dialog id="chat-camera" class="chat-camera" aria-label="Câmara">
-    <video autoplay muted playsinline></video>
+    <video data-camera-live autoplay muted playsinline></video>
+    <video data-camera-playback controls playsinline hidden></video>
     <img alt="Fotografia captada" hidden>
 
     <button
@@ -15,13 +16,11 @@
         hidden
         aria-label="Disponibilidade da fotografia"
     >
-        <button type="button" data-once="false" aria-pressed="true">
-            Manter
-        </button>
-        <button type="button" data-once="true" aria-pressed="false">
-            Ver uma vez
-        </button>
+        <button type="button" data-once="false" aria-pressed="true">Manter</button>
+        <button type="button" data-once="true" aria-pressed="false">Ver uma vez</button>
     </div>
+
+    <output class="chat-camera-status" data-camera-status aria-live="off"></output>
 
     <div class="chat-camera-controls">
         <button type="button" data-camera="gallery">Galeria</button>
@@ -30,12 +29,10 @@
             type="button"
             data-camera="capture"
             class="chat-shutter"
-            aria-label="Tirar fotografia"
+            aria-label="Tirar fotografia; manter premido para vídeo"
             disabled
         ></button>
         <button type="button" data-camera="use" hidden>Usar fotografia</button>
-        <button type="button" data-camera="flip" aria-label="Trocar câmara">
-            ↻
-        </button>
+        <button type="button" data-camera="flip" aria-label="Trocar câmara">↻</button>
     </div>
 </dialog>

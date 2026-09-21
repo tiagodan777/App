@@ -1,7 +1,7 @@
 {% extends 'layout.html' %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ doc_root }}estilos/chat.css?v=20260920-interacoes" data-margot-page-style>
+<link rel="stylesheet" href="{{ doc_root }}estilos/chat.css?v=20260920-video" data-margot-page-style>
 <link rel="stylesheet" href="{{ doc_root }}estilos/today.css?v=20260916" data-margot-page-style>
 {% endblock %}
 
@@ -35,12 +35,7 @@
         </header>
 
         <section id="acoes-perfil" class="acoes-perfil" aria-hidden="true" hidden>
-            <button
-                type="button"
-                class="acoes-perfil-fundo"
-                aria-label="Fechar opções"
-                data-fechar-acoes
-            ></button>
+            <button type="button" class="acoes-perfil-fundo" aria-label="Fechar opções" data-fechar-acoes></button>
 
             <div
                 class="acoes-perfil-caixa"
@@ -114,20 +109,8 @@
         <button type="button" class="ola" id="enviar-hey">Hey</button>
 
         <form action="" method="post" enctype="multipart/form-data" class="mini-menu-mensagem">
-            <input
-                type="hidden"
-                name="profile_access_token"
-                id="mini-menu-profile-access-token"
-                value=""
-            >
-
-            <input
-                type="file"
-                name="media"
-                id="mini-menu-media"
-                accept="image/*,video/*"
-                hidden
-            >
+            <input type="hidden" name="profile_access_token" id="mini-menu-profile-access-token" value="">
+            <input type="file" name="media" id="mini-menu-media" accept="image/*,video/*" hidden>
 
             <input
                 type="text"
@@ -157,19 +140,11 @@
 
             document.addEventListener('submit', function (evento) {
                 var form = evento.target;
-
-                if (!form || !form.matches('.mini-menu-mensagem')) {
-                    return;
-                }
+                if (!form || !form.matches('.mini-menu-mensagem')) return;
 
                 var miniMenu = form.closest('.mini-menu');
-                var inputToken = form.querySelector(
-                    'input[name="profile_access_token"]'
-                );
-
-                if (!miniMenu || !inputToken) {
-                    return;
-                }
+                var inputToken = form.querySelector('input[name="profile_access_token"]');
+                if (!miniMenu || !inputToken) return;
 
                 var destinatarioId = String(
                     miniMenu.getAttribute('data-destinatario-id') || ''
@@ -181,13 +156,10 @@
                 }
 
                 var fotografia = document.getElementById(destinatarioId);
-                var token = fotografia
-                    ? String(
-                        fotografia.getAttribute('data-profile-access-token') || ''
-                    ).trim()
-                    : '';
 
-                inputToken.value = token;
+                inputToken.value = fotografia
+                    ? String(fotografia.getAttribute('data-profile-access-token') || '').trim()
+                    : '';
             }, true);
         })();
     </script>
@@ -195,11 +167,11 @@
     <script src="{{ doc_root }}js/index-posicao.js?v=20260916"></script>
     <script src="{{ doc_root }}js/today-clothes.js?v=20260916"></script>
     <script src="{{ doc_root }}js/today.js?v=20260916"></script>
-    <script src="{{ doc_root }}js/chat-recorder.js?v=20260920-interacoes"></script>
-    <script src="{{ doc_root }}js/chat-camera.js?v=20260920-interacoes"></script>
-    <script src="{{ doc_root }}js/chat-audio-player.js?v=20260920-interacoes"></script>
-    <script src="{{ doc_root }}js/mini-compose.js?v=20260920-interacoes"></script>
-    <script src="{{ doc_root }}js/index-mini-menu.js?v=20260920-interacoes"></script>
-    <script src="{{ doc_root }}js/index-animacao.js?v=20260920-interacoes"></script>
+    <script src="{{ doc_root }}js/chat-recorder.js?v=20260920-video"></script>
+    <script src="{{ doc_root }}js/chat-camera.js?v=20260920-video"></script>
+    <script src="{{ doc_root }}js/chat-audio-player.js?v=20260920-video"></script>
+    <script src="{{ doc_root }}js/mini-compose.js?v=20260920-video"></script>
+    <script src="{{ doc_root }}js/index-mini-menu.js?v=20260920-video"></script>
+    <script src="{{ doc_root }}js/index-animacao.js?v=20260920-video"></script>
     <script src="{{ doc_root }}js/index-tap-foto.js?v=20260916"></script>
 {% endblock %}

@@ -32,21 +32,19 @@
     let lastId = 0;
     let polling = false;
 
-    // Mantém anexos e texto ao trocar de página dentro da app.
+    // Mantém anexos e texto ao trocar de página dentro da app; limpa após enviar/apagar.
     const drafts = (window.MargotChatDrafts ||= new Map());
     const draftKey = me + ':' + otherId;
 
     function saveDraft() {
-        if (file || text.value || reply) {
+        if (file || text.value || reply)
             drafts.set(draftKey, {
                 file,
                 text: text.value,
                 reply,
                 once: byId('chat-view-once').checked
             });
-        } else {
-            drafts.delete(draftKey);
-        }
+        else drafts.delete(draftKey);
     }
 
     const viewer = window.MargotPhotoViewer();
@@ -80,16 +78,11 @@
             .replace(' ', 'T')
             .replace(/(\.\d{3})\d+/, '$1');
 
-        const date = new Date(
-            timestamp + (/Z$|[+-]\d\d:\d\d$/.test(timestamp) ? '' : 'Z')
-        );
+        const date = new Date(timestamp + (/Z$|[+-]\d\d:\d\d$/.test(timestamp) ? '' : 'Z'));
 
         return Number.isNaN(date.getTime())
             ? ''
-            : date.toLocaleTimeString('pt-PT', {
-                  hour: '2-digit',
-                  minute: '2-digit'
-              });
+            : date.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
     }
 
     async function request(body) {
@@ -125,6 +118,7 @@
 
         microphone.hidden = hasContent || busy;
         microphone.disabled = sending;
+
         byId('chat-camera-open').disabled = sending || busy;
 
         text.hidden = busy;
@@ -188,10 +182,9 @@
 
             preview.append(
                 remove,
-                kind === 'audio'
-                    ? window.MargotChatAudioPlayer(element, showError)
-                    : element
+                kind === 'audio' ? window.MargotChatAudioPlayer(element, showError) : element
             );
+
             preview.classList.toggle('chat-preview-audio', kind === 'audio');
         }
 
@@ -215,9 +208,7 @@
                     ? 'A abrir microfone…'
                     : status === 'finishing'
                       ? 'A preparar…'
-                      : Math.floor(seconds / 60) +
-                        ':' +
-                        String(seconds % 60).padStart(2, '0');
+                      : Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0');
 
             byId('chat-recording-send').disabled = status !== 'recording';
             state();
@@ -287,6 +278,7 @@
                 : own(message)
                   ? 'Fotografia · Ver uma vez'
                   : '① Abrir fotografia';
+
             bubble.append(button);
         }
 
@@ -308,9 +300,7 @@
                 }
 
                 bubble.append(
-                    tag === 'audio'
-                        ? window.MargotChatAudioPlayer(element, showError)
-                        : element
+                    tag === 'audio' ? window.MargotChatAudioPlayer(element, showError) : element
                 );
             }
         }
@@ -352,9 +342,7 @@
         const article = render(message);
 
         // Polling e WebSocket podem terminar fora de ordem.
-        const next = [...content.children].find(
-            (item) => Number(item.dataset.mensagemId) > id
-        );
+        const next = [...content.children].find((item) => Number(item.dataset.mensagemId) > id);
 
         if (next) {
             content.insertBefore(article, next);
@@ -378,16 +366,10 @@
         const sentReply = reply;
         const body = new FormData(form);
 
-        body.set(
-            'view_once',
-            String(Boolean(sentFile?.type.startsWith('image/') && once.checked))
-        );
+        body.set('view_once', String(Boolean(sentFile?.type.startsWith('image/') && once.checked)));
         body.set('mensagem', sentText);
         body.set('reply_to', sentReply?.id || '');
-        body.set(
-            'profile_access_token',
-            window.AppWebSocket?.profileAccessToken?.(otherId) || ''
-        );
+        body.set('profile_access_token', window.AppWebSocket?.profileAccessToken?.(otherId) || '');
         body.delete('media');
 
         if (sentFile) {
@@ -504,13 +486,8 @@
 
     on(media, 'change', () => {
         const selected = media.files[0];
-
-        if (selected?.type.startsWith('image/')) {
-            camera.review(selected);
-        } else {
-            chooseFile(selected || null);
-        }
-
+        if (selected && /^(image|video)\//.test(selected.type)) camera.review(selected);
+        else chooseFile(selected || null);
         media.value = '';
     });
 
@@ -587,10 +564,8 @@
 
         if (
             message &&
-            ((String(message.emissor_id) === otherId &&
-                String(message.destinatario_id) === me) ||
-                (String(message.emissor_id) === me &&
-                    String(message.destinatario_id) === otherId))
+            ((String(message.emissor_id) === otherId && String(message.destinatario_id) === me) ||
+                (String(message.emissor_id) === me && String(message.destinatario_id) === otherId))
         ) {
             if (add(message) && !own(message)) markRead();
         }
@@ -634,9 +609,9 @@
         element.textContent = time(element.dateTime);
     });
 
-    content.querySelectorAll('audio').forEach((audio) => {
-        window.MargotChatAudioPlayer(audio, showError);
-    });
+    content
+        .querySelectorAll('audio')
+        .forEach((audio) => window.MargotChatAudioPlayer(audio, showError));
 
     const interval = setInterval(() => sync(), 12000);
 
@@ -662,6 +637,7 @@
         events.abort();
 
         page.querySelectorAll('audio, video').forEach((element) => element.pause());
+
         viewer.destroy();
         viewport.destroy();
         reactions.destroy();

@@ -14,7 +14,7 @@
 
     <title>{% block title %}Margot{% endblock %}</title>
 
-    <link rel="stylesheet" href="{{ doc_root }}estilos/style.css?v=20260920-interacoes">
+    <link rel="stylesheet" href="{{ doc_root }}estilos/style.css?v=20260920-video">
 
     {% if session.id %}
         <link rel="stylesheet" href="{{ doc_root }}estilos/index-notificacoes.css?v=20260916">
@@ -23,12 +23,12 @@
 
     {% block styles %}{% endblock %}
 
-    <link rel="stylesheet" href="{{ doc_root }}estilos/photo-viewer.css?v=20260920-interacoes">
-    <link rel="stylesheet" href="{{ doc_root }}estilos/theme.css?v=20260920-interacoes">
+    <link rel="stylesheet" href="{{ doc_root }}estilos/photo-viewer.css?v=20260920-video">
+    <link rel="stylesheet" href="{{ doc_root }}estilos/theme.css?v=20260920-video">
 </head>
 
 <body>
-    <script src="{{ doc_root }}js/photo-viewer.js?v=20260920-interacoes"></script>
+    <script src="{{ doc_root }}js/photo-viewer.js?v=20260920-video"></script>
     <script src="{{ doc_root }}js/jquery-4.0.0.js"></script>
     <script src="{{ doc_root }}js/csrf.js?v=20260916"></script>
     <script src="{{ doc_root }}js/camara-nativa.js?v=20260916"></script>
@@ -50,34 +50,19 @@
                 <ul>
                     <li>
                         <a href="{{ doc_root }}index" aria-label="Início">
-                            <img
-                                src="{{ doc_root }}imagens/icones-menu/home.png"
-                                alt=""
-                                aria-hidden="true"
-                                draggable="false"
-                            >
+                            <img src="{{ doc_root }}imagens/icones-menu/home.png" alt="" aria-hidden="true" draggable="false">
                         </a>
                     </li>
 
                     <li>
                         <a href="{{ doc_root }}messages" aria-label="Mensagens">
-                            <img
-                                src="{{ doc_root }}imagens/icones-menu/messages.png"
-                                alt=""
-                                aria-hidden="true"
-                                draggable="false"
-                            >
+                            <img src="{{ doc_root }}imagens/icones-menu/messages.png" alt="" aria-hidden="true" draggable="false">
                         </a>
                     </li>
 
                     <li>
                         <a href="{{ doc_root }}profile/{{ session.id }}" aria-label="Perfil">
-                            <img
-                                src="{{ doc_root }}imagens/icones-menu/user.png"
-                                alt=""
-                                aria-hidden="true"
-                                draggable="false"
-                            >
+                            <img src="{{ doc_root }}imagens/icones-menu/user.png" alt="" aria-hidden="true" draggable="false">
                         </a>
                     </li>
 
@@ -125,13 +110,7 @@
     {% if session.id %}
         <div id="estado-ligacao" data-status="connecting" aria-hidden="true" hidden></div>
 
-        <button
-            type="button"
-            id="ativar-notificacoes"
-            aria-hidden="true"
-            tabindex="-1"
-            hidden
-        ></button>
+        <button type="button" id="ativar-notificacoes" aria-hidden="true" tabindex="-1" hidden></button>
 
         <button
             type="button"
@@ -237,14 +216,14 @@
                 : 'ws://' + window.location.hostname + ':8080';
         </script>
 
-        <script src="{{ doc_root }}js/hey-vibracao.js?v=20260920-interacoes"></script>
+        <script src="{{ doc_root }}js/hey-vibracao.js?v=20260920-video"></script>
         <script src="{{ doc_root }}js/index-notificacoes.js?v=20260916"></script>
         <script src="{{ doc_root }}js/background-location.js?v=20260916-v3"></script>
         <script src="{{ doc_root }}js/websocket-location.js?v=20260916"></script>
         <script src="{{ doc_root }}js/websocket-alerts.js?v=20260917-chat1"></script>
         <script src="{{ doc_root }}js/websocket.js?v=20260916"></script>
         <script src="{{ doc_root }}js/menu-invisivel.js?v=20260916"></script>
-        <script src="{{ doc_root }}js/javascript-geral.js?v=20260920-interacoes"></script>
+        <script src="{{ doc_root }}js/javascript-geral.js?v=20260920-video"></script>
     {% endif %}
 </body>
 </html>

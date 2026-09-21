@@ -11,22 +11,69 @@
     var posicaoHistorico = 0;
     var controlador = null;
     var urlRenderizada = window.location.href;
-    var preAquecimentos = new Map();
+    var paginas = new Map();
+    var versaoDados = 0;
+    var buscar = window.fetch.bind(window);
+
+    // Apenas as três abas, em memória, por 15 segundos. Nunca guarda conversas ou formulários.
+    function invalidarPaginas() {
+        versaoDados++;
+        paginas.clear();
+    }
+
+    window.fetch = function (entrada, opcoes) {
+        var metodo = opcoes?.method || entrada?.method || 'GET';
+        var destino = new URL(entrada?.url || entrada, window.location.href);
+
+        if (
+            destino.origin === window.location.origin &&
+            !['GET', 'HEAD'].includes(metodo.toUpperCase())
+        ) {
+            invalidarPaginas();
+            return buscar(entrada, opcoes).finally(invalidarPaginas);
+        }
+
+        return buscar(entrada, opcoes);
+    };
+
+    document.addEventListener('submit', invalidarPaginas, true);
+
+    window.jQuery?.(document).ajaxSuccess(function (_evento, _xhr, pedido) {
+        if (!['GET', 'HEAD'].includes(String(pedido.type || 'GET').toUpperCase()))
+            invalidarPaginas();
+    });
+
+    [
+        'app:chat-message',
+        'app:chat-messages-read',
+        'app:hey-recebido',
+        'app:connection-created'
+    ].forEach(function (nome) {
+        window.addEventListener(nome, invalidarPaginas);
+    });
+
+    document.addEventListener('visibilitychange', function () {
+        if (document.hidden) invalidarPaginas();
+    });
+
     var recursosPreCarregados = new Map();
+    var scriptsCarregados = new Map();
     var posicoesAbas = new Map();
     var animacaoEmCurso = null;
-
     var ESPERA_MAXIMA_RECURSO = 5000;
     var DURACAO_NAVEGACAO = 160;
-    var TEMPO_REAQUECER = 30000;
+    var TEMPO_REAQUECER = 15000;
 
-    // A margem esquerda fica reservada ao gesto nativo do iOS.
+    /*
+     * Swipe para voltar em praticamente qualquer ponto do ecrã.
+     * A margem esquerda fica reservada ao gesto nativo do iOS
+     * para evitar que o mesmo gesto dispare dois backs.
+     */
     var SWIPE_BACK_MARGEM_NATIVA = 24;
     var SWIPE_BACK_DISTANCIA_MINIMA = 70;
     var SWIPE_BACK_MOVIMENTO_INICIAL = 12;
     var SWIPE_BACK_RAZAO_HORIZONTAL = 1.2;
     var SWIPE_BACK_VELOCIDADE_MINIMA = 0.45;
-
     var swipeBack = {
         ativo: false,
         horizontal: false,
@@ -109,15 +156,9 @@
                 elemento.removeEventListener('load', carregou);
                 elemento.removeEventListener('error', falhou);
 
-                if (sinal) {
-                    sinal.removeEventListener('abort', cancelar);
-                }
-
-                if (erro) {
-                    rejeitar(erro);
-                } else {
-                    resolver();
-                }
+                if (sinal) sinal.removeEventListener('abort', cancelar);
+                if (erro) rejeitar(erro);
+                else resolver();
             }
 
             function carregou() {
@@ -135,9 +176,7 @@
             elemento.addEventListener('load', carregou, { once: true });
             elemento.addEventListener('error', falhou, { once: true });
 
-            if (sinal) {
-                sinal.addEventListener('abort', cancelar, { once: true });
-            }
+            if (sinal) sinal.addEventListener('abort', cancelar, { once: true });
         });
     }
 
@@ -155,10 +194,7 @@
 
         var chave = tipo + ':' + href;
         var anterior = recursosPreCarregados.get(chave);
-
-        if (anterior) {
-            return anterior.promessa;
-        }
+        if (anterior) return anterior.promessa;
 
         var preload = document.createElement('link');
         preload.rel = 'preload';
@@ -167,9 +203,8 @@
         preload.setAttribute('data-margot-preload', '');
 
         var promessa = aguardarRecurso(preload).catch(function (erro) {
-            if (recursosPreCarregados.get(chave)?.link === preload) {
+            if (recursosPreCarregados.get(chave)?.link === preload)
                 recursosPreCarregados.delete(chave);
-            }
 
             preload.remove();
             throw erro;
@@ -185,60 +220,120 @@
         return promessa;
     }
 
+    function carregarScript(src) {
+        var href = urlAbsoluta(src);
+
+        if (!scriptsCarregados.has(href)) {
+            var promessa = buscar(href, { credentials: 'same-origin' })
+                .then(function (resposta) {
+                    if (!resposta.ok) throw new Error('Não foi possível carregar ' + href);
+                    return resposta.text();
+                })
+                .catch(function (erro) {
+                    scriptsCarregados.delete(href);
+                    throw erro;
+                });
+
+            scriptsCarregados.set(href, promessa);
+        }
+
+        return scriptsCarregados.get(href);
+    }
+
     function preAquecerRecursos(documentoNovo) {
         var recursos = [];
 
-        documentoNovo.head.querySelectorAll('link[data-margot-page-style][href]').forEach(function (link) {
-            recursos.push(adicionarPreload(link.getAttribute('href'), 'style'));
-        });
+        documentoNovo.head
+            .querySelectorAll('link[data-margot-page-style][href]')
+            .forEach(function (link) {
+                adicionarPreload(link.getAttribute('href'), 'style').catch(function () {});
+            });
 
         var pagina = documentoNovo.querySelector(seletorPagina);
 
-        if (pagina) {
+        if (pagina)
             pagina.querySelectorAll('script[src]').forEach(function (script) {
-                recursos.push(adicionarPreload(script.getAttribute('src'), 'script'));
+                if (script.type !== 'module')
+                    recursos.push(carregarScript(script.getAttribute('src')));
             });
-        }
 
         return Promise.all(recursos);
     }
 
-    async function preAquecerPagina(url) {
-        var href = urlAbsoluta(url);
-        var destino = new URL(href);
+    function aguardarPagina(promessa, sinal) {
+        if (!sinal) return promessa;
 
-        if (destino.origin !== window.location.origin || ePaginaAtual(href)) {
-            return;
-        }
+        return new Promise(function (resolver, rejeitar) {
+            function cancelar() {
+                rejeitar(new DOMException('Navegação substituída', 'AbortError'));
+            }
 
-        var ultimo = preAquecimentos.get(href);
-
-        if (ultimo && Date.now() - ultimo < TEMPO_REAQUECER) {
-            return;
-        }
-
-        preAquecimentos.set(href, Date.now());
-
-        try {
-            var resposta = await fetch(href, {
-                credentials: 'same-origin',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            });
-
-            if (
-                !resposta.ok ||
-                new URL(resposta.url).origin !== window.location.origin ||
-                caminhoNormalizado(resposta.url) === '/login'
-            ) {
+            if (sinal.aborted) {
+                cancelar();
                 return;
             }
 
-            var html = await resposta.text();
-            var documentoNovo = new DOMParser().parseFromString(html, 'text/html');
+            sinal.addEventListener('abort', cancelar, { once: true });
 
+            promessa.then(resolver, rejeitar).finally(function () {
+                sinal.removeEventListener('abort', cancelar);
+            });
+        });
+    }
+
+    function carregarPagina(url, sinal) {
+        var href = urlAbsoluta(url);
+        var cacheavel = eAbaPrincipal(href);
+        var chave = chavePagina(href);
+        var guardada = paginas.get(chave);
+
+        if (cacheavel && guardada && Date.now() - guardada.criadoEm < TEMPO_REAQUECER) {
+            return aguardarPagina(guardada.promessa, sinal);
+        }
+
+        var versao = versaoDados;
+        var entrada = { criadoEm: Date.now() };
+
+        entrada.promessa = buscar(href, {
+            credentials: 'same-origin',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            // Pedidos das abas são partilhados com o pré-carregamento.
+            signal: cacheavel ? undefined : sinal
+        })
+            .then(async function (resposta) {
+                if (!resposta.ok || new URL(resposta.url).origin !== window.location.origin) {
+                    throw new Error('Não foi possível abrir a página');
+                }
+
+                var html = await resposta.text();
+
+                if (versao !== versaoDados || caminhoNormalizado(resposta.url) === '/login') {
+                    if (paginas.get(chave) === entrada) paginas.delete(chave);
+                }
+
+                return { url: resposta.url, html: html };
+            })
+            .catch(function (erro) {
+                if (paginas.get(chave) === entrada) paginas.delete(chave);
+                throw erro;
+            });
+
+        if (cacheavel) paginas.set(chave, entrada);
+        return aguardarPagina(entrada.promessa, sinal);
+    }
+
+    async function preAquecerPagina(url) {
+        var href = urlAbsoluta(url);
+        if (!eAbaPrincipal(href) || ePaginaAtual(href)) return;
+
+        try {
+            var resposta = await carregarPagina(href);
+            if (caminhoNormalizado(resposta.url) === '/login') return;
+
+            var documentoNovo = new DOMParser().parseFromString(resposta.html, 'text/html');
             await preAquecerRecursos(documentoNovo);
         } catch (erro) {
-            // Uma falha de pré-carregamento não impede a navegação.
+            // A navegação real apresenta a falha, se ainda existir.
         }
     }
 
@@ -260,25 +355,21 @@
                         atuais.some(function (link) {
                             return link.href === href;
                         })
-                    ) {
+                    )
                         return;
-                    }
 
                     var link = origem.cloneNode();
                     var media = origem.getAttribute('media');
+
                     link.href = href;
                     link.media = 'not all';
-
                     preparados.push({ link: link, media: media });
 
                     var carregamento = aguardarRecurso(link, sinal);
                     const theme = document.head.querySelector('link[href*="/theme.css"]');
 
                     document.head.appendChild(link);
-
-                    if (theme) {
-                        document.head.appendChild(theme);
-                    }
+                    if (theme) document.head.appendChild(theme);
 
                     return carregamento;
                 })
@@ -287,24 +378,18 @@
             preparados.forEach(function (item) {
                 item.link.remove();
             });
-
             throw erro;
         }
 
         return {
             aplicar: function () {
                 preparados.forEach(function (item) {
-                    if (item.media === null) {
-                        item.link.removeAttribute('media');
-                    } else {
-                        item.link.media = item.media;
-                    }
+                    if (item.media === null) item.link.removeAttribute('media');
+                    else item.link.media = item.media;
                 });
 
                 atuais.forEach(function (link) {
-                    if (!hrefs.includes(link.href)) {
-                        link.remove();
-                    }
+                    if (!hrefs.includes(link.href)) link.remove();
                 });
             },
 
@@ -317,15 +402,15 @@
     }
 
     function eAbaPrincipal(url) {
-        return Array.from(document.querySelectorAll('#menuPrincipal a[href]')).some(function (link) {
-            return chavePagina(link.href) === chavePagina(url);
-        });
+        return Array.from(document.querySelectorAll('#menuPrincipal a[href]')).some(
+            function (link) {
+                return chavePagina(link.href) === chavePagina(url);
+            }
+        );
     }
 
     function guardarPosicaoAba(pagina) {
-        if (!eAbaPrincipal(urlRenderizada)) {
-            return;
-        }
+        if (!eAbaPrincipal(urlRenderizada)) return;
 
         var conteudo = pagina.querySelector('main') || pagina.firstElementChild;
 
@@ -343,10 +428,7 @@
         pagina.scrollTop = posicao ? posicao.pagina : 0;
 
         var conteudo = pagina.querySelector('main') || pagina.firstElementChild;
-
-        if (conteudo) {
-            conteudo.scrollTop = posicao ? posicao.conteudo : 0;
-        }
+        if (conteudo) conteudo.scrollTop = posicao ? posicao.conteudo : 0;
     }
 
     function retirarScripts(pagina) {
@@ -359,7 +441,14 @@
         return scripts;
     }
 
-    function executarScript(origem) {
+    async function executarScript(origem) {
+        if (origem.src && origem.type !== 'module') {
+            var conteudo = await carregarScript(origem.getAttribute('src'));
+            origem = origem.cloneNode();
+            origem.removeAttribute('src');
+            origem.textContent = conteudo;
+        }
+
         return new Promise(function (resolver, rejeitar) {
             var script = document.createElement('script');
 
@@ -417,13 +506,10 @@
 
         atualizarMenu(navegacaoPendente.url);
 
-        if ((faseNavegacao === 'fetch' || faseNavegacao === 'prepare') && controlador) {
+        if ((faseNavegacao === 'fetch' || faseNavegacao === 'prepare') && controlador)
             controlador.abort();
-        }
 
-        if (animacaoEmCurso) {
-            animacaoEmCurso.cancel();
-        }
+        if (animacaoEmCurso) animacaoEmCurso.cancel();
     }
 
     async function trocarPagina(url, opcoes) {
@@ -458,17 +544,12 @@
         document.body.setAttribute('aria-busy', 'true');
 
         try {
-            var resposta = await fetch(url, {
-                credentials: 'same-origin',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                signal: controlador.signal
-            });
+            var resposta = await carregarPagina(url, controlador.signal);
 
-            if (!resposta.ok || new URL(resposta.url).origin !== window.location.origin) {
-                throw new Error('Não foi possível abrir a página');
-            }
+            if (controlador.signal.aborted)
+                throw new DOMException('Navegação substituída', 'AbortError');
 
-            var html = await resposta.text();
+            var html = resposta.html;
             var documentoNovo = new DOMParser().parseFromString(html, 'text/html');
 
             paginaNova = documentoNovo.querySelector(seletorPagina);
@@ -481,30 +562,35 @@
 
             faseNavegacao = 'prepare';
 
-            // Descarrega em paralelo e executa depois de substituir o DOM.
-            preAquecerRecursos(documentoNovo).catch(function () {
-                // O carregamento real reporta falhas.
-            });
+            // Descarrega em paralelo; só executa depois de existir um único DOM da página.
+            var preparacao = await Promise.allSettled([
+                prepararEstilos(documentoNovo, controlador.signal),
+                preAquecerRecursos(documentoNovo)
+            ]);
 
-            estilos = await prepararEstilos(documentoNovo, controlador.signal);
+            if (preparacao[0].status === 'fulfilled') estilos = preparacao[0].value;
 
-            if (controlador.signal.aborted) {
-                throw new DOMException('Navegação substituída', 'AbortError');
+            for (var resultado of preparacao) {
+                if (resultado.status === 'rejected') throw resultado.reason;
             }
 
+            if (controlador.signal.aborted)
+                throw new DOMException('Navegação substituída', 'AbortError');
+
             var scripts = retirarScripts(paginaNova);
-            var trocaDeAba = opcoes.aba || (eAbaPrincipal(urlRenderizada) && eAbaPrincipal(resposta.url));
+            var trocaDeAba =
+                opcoes.aba || (eAbaPrincipal(urlRenderizada) && eAbaPrincipal(resposta.url));
             var direcao = opcoes.direcao || 1;
 
             faseNavegacao = 'render';
-            guardarPosicaoAba(paginaAtual);
 
+            guardarPosicaoAba(paginaAtual);
             document.dispatchEvent(new CustomEvent('margot:page-leave'));
 
             paginaNova.style.visibility = 'hidden';
             paginaNova.style.pointerEvents = 'none';
-            paginaAtual.replaceWith(paginaNova);
 
+            paginaAtual.replaceWith(paginaNova);
             estilos.aplicar();
             estilos = null;
 
@@ -521,6 +607,7 @@
                 }
             }
 
+            // Os scripts veem o URL de destino e um único DOM, mesmo com outro toque pendente.
             await executarScripts(scripts);
             reporPosicaoAba(paginaNova, resposta.url);
             document.dispatchEvent(new CustomEvent('margot:page-ready'));
@@ -571,9 +658,7 @@
                 window.location.assign(destino);
             }
         } finally {
-            if (estilos) {
-                estilos.cancelar();
-            }
+            if (estilos) estilos.cancelar();
 
             if (paginaNova) {
                 paginaNova.style.removeProperty('visibility');
@@ -610,12 +695,16 @@
             return;
         }
 
-        trocarPagina(urlAlternativo, {
-            historico: 'replace',
-            direcao: -1
-        });
+        trocarPagina(urlAlternativo, { historico: 'replace', direcao: -1 });
     }
 
+    /*
+     * Swipe horizontal para voltar.
+     *
+     * Pode começar praticamente em qualquer ponto do ecrã.
+     * Não interfere com a galeria do perfil nem com elementos
+     * marcados manualmente com data-margot-no-back-swipe.
+     */
     function elementoBloqueiaSwipeBack(elemento) {
         if (!(elemento instanceof Element)) {
             return false;
@@ -678,7 +767,12 @@
     }
 
     function moverSwipeBack(evento) {
-        if (!swipeBack.ativo || swipeBack.ignorar || !evento.touches || evento.touches.length !== 1) {
+        if (
+            !swipeBack.ativo ||
+            swipeBack.ignorar ||
+            !evento.touches ||
+            evento.touches.length !== 1
+        ) {
             return;
         }
 
@@ -693,7 +787,6 @@
             if (Math.abs(diferencaX) > SWIPE_BACK_MOVIMENTO_INICIAL) {
                 limparSwipeBack();
             }
-
             return;
         }
 
@@ -701,7 +794,10 @@
             var horizontal = Math.abs(diferencaX);
             var vertical = Math.abs(diferencaY);
 
-            if (horizontal < SWIPE_BACK_MOVIMENTO_INICIAL && vertical < SWIPE_BACK_MOVIMENTO_INICIAL) {
+            if (
+                horizontal < SWIPE_BACK_MOVIMENTO_INICIAL &&
+                vertical < SWIPE_BACK_MOVIMENTO_INICIAL
+            ) {
                 return;
             }
 
@@ -759,6 +855,18 @@
     document.addEventListener('touchend', terminarSwipeBack, { passive: true });
     document.addEventListener('touchcancel', cancelarSwipeBack, { passive: true });
 
+    /*
+     * Navegação por links internos.
+     *
+     * Antes só o menu principal e os links com
+     * data-margot-voltar usavam a transição. Isso fazia
+     * conversa -> chat, chat -> perfil, perfil -> definições
+     * e outros links internos abrirem com um reload seco.
+     *
+     * Agora qualquer <a> interno elegível passa pela mesma
+     * navegação animada. Links externos, downloads, novas
+     * janelas e âncoras da própria página continuam nativos.
+     */
     document.addEventListener('click', function (evento) {
         var link = evento.target.closest('a[href]');
 
@@ -805,7 +913,11 @@
 
         var atual = new URL(window.location.href);
 
-        if (chavePagina(url.href) === chavePagina(atual.href) && url.hash && url.hash !== atual.hash) {
+        if (
+            chavePagina(url.href) === chavePagina(atual.href) &&
+            url.hash &&
+            url.hash !== atual.hash
+        ) {
             return;
         }
 
@@ -842,12 +954,27 @@
                   : 1;
 
         posicaoHistorico = proximaPosicao;
-
-        trocarPagina(window.location.href, {
-            historico: 'pop',
-            direcao: direcao
-        });
+        trocarPagina(window.location.href, { historico: 'pop', direcao: direcao });
     });
+
+    document.addEventListener(
+        'pointerdown',
+        function (evento) {
+            var link = evento.target.closest('#menuPrincipal a[href]');
+            if (link) preAquecerPagina(link.href);
+        },
+        { passive: true }
+    );
+
+    function aquecerAbas() {
+        document.querySelectorAll('#menuPrincipal a[href]').forEach(function (link) {
+            preAquecerPagina(link.href);
+        });
+    }
+
+    if (window.requestIdleCallback)
+        window.requestIdleCallback(aquecerAbas, { timeout: 1500 });
+    else window.setTimeout(aquecerAbas, 600);
 
     history.replaceState({ margotPosition: posicaoHistorico }, '', window.location.href);
     atualizarMenu(window.location.href);

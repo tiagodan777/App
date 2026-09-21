@@ -622,8 +622,32 @@ body:has(#chat-pagina) #abrir-heys {
     clip-path: none;
 }
 
-.chat-camera video.frontal {
-    transform: scaleX(-1);
+.chat-camera [data-camera-live] {
+    transform-origin: center;
+}
+
+.chat-camera-status {
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    bottom: calc(130px + env(safe-area-inset-bottom, 0px));
+    text-align: center;
+    color: #fff;
+    font-size: 12px;
+    pointer-events: none;
+}
+
+.chat-camera .chat-shutter {
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+}
+
+.chat-camera .chat-shutter.is-recording {
+    background: #ff3454;
+    border-color: #ff3454;
+    transform: scale(1.1);
 }
 
 .chat-camera button {
