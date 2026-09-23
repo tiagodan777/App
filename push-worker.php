@@ -22,6 +22,9 @@ if (function_exists('pcntl_async_signals')) {
     }
 }
 $lastMaintenance = 0;
+$lastReminders = 0;
+$reminders = new App\CMS\ActivityReminders($cms->getDatabase(), $queue);
+$daylies = new App\CMS\Daylie($cms->getDatabase());
 $queue->recoverStalledJobs();
 fwrite(STDOUT, "[PUSH] Worker iniciado.\n");
 while ($running) {
@@ -29,7 +32,17 @@ while ($running) {
         if (time() - $lastMaintenance >= 3600) {
             $queue->recoverStalledJobs();
             $queue->cleanup();
+            $daylies->cleanup();
+            $cms->getDatabase()->exec('DELETE FROM lembretes_envios WHERE criado_em < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 35 DAY)');
             $lastMaintenance = time();
+        }
+        if (time() - $lastReminders >= 60) {
+            $lastReminders = time();
+            try {
+                $reminders->tick();
+            } catch (Throwable $error) {
+                error_log('[push-reminders] ' . $error->getMessage());
+            }
         }
         $job = $queue->nextJob();
         if ($job === null) {

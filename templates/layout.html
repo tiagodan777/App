@@ -19,12 +19,13 @@
     {% if session.id %}
         <link rel="stylesheet" href="{{ doc_root }}estilos/index-notificacoes.css?v=20260916">
         <link rel="stylesheet" href="{{ doc_root }}estilos/messaging-integration.css?v=20260916">
+        <link rel="stylesheet" href="{{ doc_root }}estilos/daylies.css?v=20260921">
     {% endif %}
 
     {% block styles %}{% endblock %}
 
     <link rel="stylesheet" href="{{ doc_root }}estilos/photo-viewer.css?v=20260920-video">
-    <link rel="stylesheet" href="{{ doc_root }}estilos/theme.css?v=20260920-video">
+    <link rel="stylesheet" href="{{ doc_root }}estilos/theme.css?v=20260921">
 </head>
 
 <body>
@@ -218,8 +219,16 @@
 
         <script src="{{ doc_root }}js/hey-vibracao.js?v=20260920-video"></script>
         <script src="{{ doc_root }}js/index-notificacoes.js?v=20260916"></script>
-        <script src="{{ doc_root }}js/background-location.js?v=20260916-v3"></script>
-        <script src="{{ doc_root }}js/websocket-location.js?v=20260916"></script>
+
+        {% include 'partials/daylies.html' %}
+        {% include 'partials/chat-camera.html' with {camera_id: 'daylie-camera'} %}
+
+        <script src="{{ doc_root }}js/chat-camera.js?v=20260921"></script>
+        <script src="{{ doc_root }}js/daylies.js?v=20260921"></script>
+        <script src="{{ doc_root }}js/activity-reminders.js?v=20260921"></script>
+        <script src="{{ doc_root }}js/location-onboarding.js?v=20260921"></script>
+        <script src="{{ doc_root }}js/background-location.js?v=20260921"></script>
+        <script src="{{ doc_root }}js/websocket-location.js?v=20260921"></script>
         <script src="{{ doc_root }}js/websocket-alerts.js?v=20260917-chat1"></script>
         <script src="{{ doc_root }}js/websocket.js?v=20260916"></script>
         <script src="{{ doc_root }}js/menu-invisivel.js?v=20260916"></script>

@@ -18,6 +18,10 @@
 
             <h1></h1>
 
+            <button type="button" class="daylie-entry" data-daylies-mini hidden>
+                Ver Daylies <span>24h</span>
+            </button>
+
             <button
                 type="button"
                 id="abrir-acoes-perfil"
@@ -35,7 +39,12 @@
         </header>
 
         <section id="acoes-perfil" class="acoes-perfil" aria-hidden="true" hidden>
-            <button type="button" class="acoes-perfil-fundo" aria-label="Fechar opções" data-fechar-acoes></button>
+            <button
+                type="button"
+                class="acoes-perfil-fundo"
+                aria-label="Fechar opções"
+                data-fechar-acoes
+            ></button>
 
             <div
                 class="acoes-perfil-caixa"
@@ -110,6 +119,7 @@
 
         <form action="" method="post" enctype="multipart/form-data" class="mini-menu-mensagem">
             <input type="hidden" name="profile_access_token" id="mini-menu-profile-access-token" value="">
+
             <input type="file" name="media" id="mini-menu-media" accept="image/*,video/*" hidden>
 
             <input
@@ -166,12 +176,12 @@
 
     <script src="{{ doc_root }}js/index-posicao.js?v=20260916"></script>
     <script src="{{ doc_root }}js/today-clothes.js?v=20260916"></script>
-    <script src="{{ doc_root }}js/today.js?v=20260916"></script>
+    <script src="{{ doc_root }}js/today.js?v=20260921"></script>
     <script src="{{ doc_root }}js/chat-recorder.js?v=20260920-video"></script>
-    <script src="{{ doc_root }}js/chat-camera.js?v=20260920-video"></script>
+    <script src="{{ doc_root }}js/chat-camera.js?v=20260921"></script>
     <script src="{{ doc_root }}js/chat-audio-player.js?v=20260920-video"></script>
     <script src="{{ doc_root }}js/mini-compose.js?v=20260920-video"></script>
     <script src="{{ doc_root }}js/index-mini-menu.js?v=20260920-video"></script>
-    <script src="{{ doc_root }}js/index-animacao.js?v=20260920-video"></script>
+    <script src="{{ doc_root }}js/index-animacao.js?v=20260921"></script>
     <script src="{{ doc_root }}js/index-tap-foto.js?v=20260916"></script>
 {% endblock %}

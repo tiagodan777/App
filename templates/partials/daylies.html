@@ -1,0 +1,46 @@
+<dialog id="daylie-viewer" class="daylie-viewer" aria-label="Daylies">
+    <div class="daylie-progress" aria-hidden="true"></div>
+
+    <header>
+        <strong>Daylies <span>da Margot</span></strong>
+        <button type="button" data-daylie-close aria-label="Fechar">×</button>
+    </header>
+
+    <div class="daylie-stage"></div>
+    <p class="daylie-caption"></p>
+    <p class="daylie-error" role="alert"></p>
+
+    <footer>
+        <button type="button" data-daylie-prev aria-label="Daylie anterior">‹</button>
+        <button type="button" data-daylie-pause aria-label="Pausar Daylie">Pausar</button>
+        <button type="button" data-daylie-delete hidden>Apagar</button>
+        <button type="button" data-daylie-next aria-label="Próximo Daylie">›</button>
+    </footer>
+</dialog>
+
+<dialog id="daylie-draft" class="daylie-draft" aria-labelledby="daylie-draft-title">
+    <h2 id="daylie-draft-title">O teu dia, à tua maneira.</h2>
+
+    <div class="daylie-draft-preview"></div>
+
+    <label>
+        Uma legenda?
+        <textarea
+            maxlength="160"
+            rows="2"
+            placeholder="Conta um bocadinho do teu dia…"
+        ></textarea>
+    </label>
+
+    <p>
+        Disponível durante 24 horas para as tuas conexões e pessoas próximas
+        que podem abrir o teu perfil.
+    </p>
+
+    <p class="daylie-error" role="alert"></p>
+
+    <div class="daylie-draft-actions">
+        <button type="button" data-draft-cancel>Cancelar</button>
+        <button type="button" data-draft-publish>Publicar Daylie</button>
+    </div>
+</dialog>

@@ -48,6 +48,13 @@ final class ProfileAccess {
             $this->hasProximityPass($viewerId, $profileId);
     }
 
+    public function canViewDaylies(string $viewerId, string $profileId): bool {
+        if (!$this->canView($viewerId, $profileId)) return false;
+        return $viewerId === $profileId ||
+            (new MemberConnection($this->db))->areConnected($viewerId, $profileId) ||
+            $this->hasProximityPass($viewerId, $profileId);
+    }
+
     private function members(string $viewerId, string $profileId): array {
         $rows = $this->db->runSQL(
             'SELECT id, nascimento

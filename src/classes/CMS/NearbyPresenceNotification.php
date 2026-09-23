@@ -7,8 +7,7 @@ use PDO;
 
 final class NearbyPresenceNotification {
     private const LOCATION_MAX_AGE_SECONDS = 180;
-    private const MINIMUM_NEARBY_PEOPLE = 7;
-    private const NOTIFICATION_COOLDOWN_SECONDS = 86400;
+    private const MINIMUM_NEARBY_PEOPLE = 6;
     private PDO $db;
     private PushNotification $push;
 
@@ -31,10 +30,10 @@ final class NearbyPresenceNotification {
                 VALUES(em_background) = 0 THEN 0 ELSE total_proximidade END, atualizado_em = UTC_TIMESTAMP(6)');
         $statement->execute(['member_id' => $memberId, 'background' => $background ? 1 : 0]);
     }
+
     /**
      * @return array{latitude: float, longitude: float}|null
      */
-
     public function locationSnapshot(string $memberId): ?array {
         $memberId = trim($memberId);
         if ($memberId === '') {
@@ -79,43 +78,20 @@ final class NearbyPresenceNotification {
             $this->resetAlert($memberId, $nearbyCount);
             return;
         }
-        /*
-         * Só uma atualização concorrente pode transformar o estado 0 -> 1.
-         * Assim, se várias pessoas entrarem no raio praticamente ao mesmo
-         * tempo, não enfileiramos várias notificações iguais.
-         */
-        $claim = $this->db->prepare(
-            'UPDATE estado_app_membro
-                SET alerta_proximidade_ativo = 1, total_proximidade = :nearby_count, atualizado_em = UTC_TIMESTAMP(6)
-                WHERE membro_id = :member_id AND em_background = 1 AND alerta_proximidade_ativo = 0 AND (
-                ultima_notificacao_proximidade_em IS NULL OR ultima_notificacao_proximidade_em <= DATE_SUB(
-                UTC_TIMESTAMP(6), INTERVAL ' .
-                self::NOTIFICATION_COOLDOWN_SECONDS .
-                ' SECOND
-                 )
-             )'
-        );
-        $claim->execute(['nearby_count' => $nearbyCount, 'member_id' => $memberId]);
-        if ($claim->rowCount() !== 1) {
-            $this->updateNearbyCount($memberId, $nearbyCount);
-            return;
-        }
-        $queued = $this->push->enqueueNearbyPeople($memberId, $nearbyCount);
-        if ($queued > 0) {
+        $this->updateNearbyCount($memberId, $nearbyCount);
+        if ((new ActivityReminders($this->db, $this->push))->queue($memberId, 'nearby', $nearbyCount)) {
             $statement = $this->db->prepare('UPDATE estado_app_membro
-                SET ultima_notificacao_proximidade_em = UTC_TIMESTAMP(6), total_proximidade = :nearby_count,
-                atualizado_em = UTC_TIMESTAMP(6)
-                WHERE membro_id = :member_id');
-            $statement->execute(['nearby_count' => $nearbyCount, 'member_id' => $memberId]);
-            return;
+                SET alerta_proximidade_ativo = 1, ultima_notificacao_proximidade_em = UTC_TIMESTAMP()
+                WHERE membro_id = :id');
+            $statement->execute(['id' => $memberId]);
         }
-        /*
-         * Sem dispositivo push ativo não "consumimos" esta oportunidade.
-         * Se o utilizador voltar a ter push registado enquanto continua em
-         * background, uma atualização posterior pode tentar novamente.
-         */
-        $this->resetAlert($memberId, $nearbyCount);
     }
+
+    public function currentCount(string $memberId): int {
+        $location = $this->eligibleBackgroundLocation($memberId);
+        return $location ? $this->nearbyCount($memberId, $location['latitude'], $location['longitude']) : 0;
+    }
+
     /**
      * Reavalia apenas utilizadores em background que possam ter sido
      * afetados pela posição anterior ou nova do membro que acabou de mudar.
@@ -123,7 +99,6 @@ final class NearbyPresenceNotification {
      * @param array{latitude: float, longitude: float}|null $oldPosition
      * @param array{latitude: float, longitude: float}|null $newPosition
      */
-
     public function processLocationChange(string $changedMemberId, ?array $oldPosition, ?array $newPosition): void {
         $changedMemberId = trim($changedMemberId);
         if ($changedMemberId === '') {
@@ -145,10 +120,10 @@ final class NearbyPresenceNotification {
             $this->evaluateMember((string) $candidateId);
         }
     }
+
     /**
      * @return array{latitude: float, longitude: float}|null
      */
-
     private function eligibleBackgroundLocation(string $memberId): ?array {
         $statement = $this->db->prepare(
             'SELECT lm.latitude, lm.longitude
@@ -174,11 +149,11 @@ final class NearbyPresenceNotification {
         }
         return ['latitude' => (float) $row['latitude'], 'longitude' => (float) $row['longitude']];
     }
+
     /**
      * @param array{latitude: float, longitude: float} $position
      * @return list<string>
      */
-
     private function backgroundCandidatesNear(array $position): array {
         $latitude = (float) $position['latitude'];
         $longitude = (float) $position['longitude'];

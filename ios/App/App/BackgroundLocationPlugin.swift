@@ -6,7 +6,8 @@ import Security
 import UIKit
 
 @objc(BackgroundLocationPlugin)
-public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLocationManagerDelegate {
+public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLocationManagerDelegate
+{
   public let identifier = "BackgroundLocationPlugin"
   public let jsName = "BackgroundLocation"
   public let pluginMethods: [CAPPluginMethod] = [
@@ -49,7 +50,7 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
      * repetido pela nossa própria lógica. Não o deixamos preso
      * indefinidamente dentro do URLSession.
      */
-  configuration.waitsForConnectivity = false
+    configuration.waitsForConnectivity = false
     configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
     return URLSession(configuration: configuration)
   }()
@@ -65,7 +66,7 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
      * Isto é especialmente importante em background porque o
      * servidor considera a idade da última localização.
      */
-  manager.distanceFilter = kCLDistanceFilterNone
+    manager.distanceFilter = kCLDistanceFilterNone
     manager.activityType = .fitness
     manager.pausesLocationUpdatesAutomatically = false
     manager.showsBackgroundLocationIndicator = false
@@ -79,10 +80,12 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
     }
     networkMonitor.start(queue: networkQueue)
     NotificationCenter.default.addObserver(
-      self, selector: #selector(applicationDidBecomeActive), name: UIApplication.didBecomeActiveNotification,
+      self, selector: #selector(applicationDidBecomeActive),
+      name: UIApplication.didBecomeActiveNotification,
       object: nil)
     NotificationCenter.default.addObserver(
-      self, selector: #selector(applicationDidEnterBackground), name: UIApplication.didEnterBackgroundNotification,
+      self, selector: #selector(applicationDidEnterBackground),
+      name: UIApplication.didEnterBackgroundNotification,
       object: nil)
     configureMonitoring()
     if !presenceVisible {
@@ -127,13 +130,17 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
        * Para a Margot continuar a atualizar a presença quando sai
        * do ecrã precisamos da autorização Always.
        */
-  manager.requestAlwaysAuthorization()
+      if call.getBool("requestAlways") == true { manager.requestAlwaysAuthorization() }
     case .authorizedAlways: configureMonitoring()
     case .denied, .restricted: stopMonitoring(removeToken: false)
     @unknown default: stopMonitoring(removeToken: false)
     }
     requestPreciseLocationIfNeeded()
-    if presenceVisible { sendBestAvailableLocationOrRequest(allowBackground: false) } else { queueHiddenPresence() }
+    if presenceVisible {
+      sendBestAvailableLocationOrRequest(allowBackground: false)
+    } else {
+      queueHiddenPresence()
+    }
     call.resolve(statusData())
   }
 
@@ -163,7 +170,7 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
        * Ao sair do invisível publicamos imediatamente uma posição
        * em vez de esperar pelo próximo callback periódico.
        */
-  sendBestAvailableLocationOrRequest(allowBackground: false)
+      sendBestAvailableLocationOrRequest(allowBackground: false)
     } else {
       pendingLocation = nil
       retryLocation = nil
@@ -172,7 +179,7 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
       /*
        * O utilizador tem de desaparecer imediatamente da descoberta.
        */
-  queueHiddenPresence()
+      queueHiddenPresence()
     }
     call.resolve(statusData())
   }
@@ -182,7 +189,9 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
       call.reject("Não foi possível abrir as definições.")
       return
     }
-    DispatchQueue.main.async { UIApplication.shared.open(url) { opened in call.resolve(["opened": opened]) } }
+    DispatchQueue.main.async {
+      UIApplication.shared.open(url) { opened in call.resolve(["opened": opened]) }
+    }
   }
 
   @objc private func applicationDidBecomeActive() {
@@ -190,7 +199,7 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
      * Isto também cancela, no servidor, a possibilidade de enviar
      * a push "há X pessoas aqui perto" se ela ainda estiver na fila.
      */
-  sendAppStateOnly(background: false)
+    sendAppStateOnly(background: false)
     configureMonitoring()
     if !presenceVisible {
       queueHiddenPresence()
@@ -201,7 +210,7 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
      * do Core Location. Isto também ajuda a repovoar imediatamente
      * a grelha principal com dados recentes.
      */
-  sendBestAvailableLocationOrRequest(allowBackground: false)
+    sendBestAvailableLocationOrRequest(allowBackground: false)
   }
 
   @objc private func applicationDidEnterBackground() {
@@ -209,22 +218,28 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
      * O backend passa a saber que uma eventual notificação de
      * pessoas próximas pode ser enviada.
      */
-  sendAppStateOnly(background: true)
+    sendAppStateOnly(background: true)
     configureMonitoring()
     /*
      * Com Always + UIBackgroundModes/location, o Core Location
      * continua a entregar callbacks com a aplicação fora do ecrã.
      */
-  if presenceVisible { sendBestAvailableLocationOrRequest(allowBackground: true) }
+    if presenceVisible { sendBestAvailableLocationOrRequest(allowBackground: true) }
   }
 
   public func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-    let shouldRequestAlways = manager.authorizationStatus == .authorizedWhenInUse && pendingStartCall != nil
+    let shouldRequestAlways =
+      manager.authorizationStatus == .authorizedWhenInUse
+      && pendingStartCall?.getBool("requestAlways") == true
     configureMonitoring()
     if manager.authorizationStatus == .authorizedWhenInUse { startForegroundLocationIfPossible() }
     if manager.authorizationStatus != .notDetermined, let startCall = pendingStartCall {
       pendingStartCall = nil
-      if presenceVisible { sendBestAvailableLocationOrRequest(allowBackground: false) } else { queueHiddenPresence() }
+      if presenceVisible {
+        sendBestAvailableLocationOrRequest(allowBackground: false)
+      } else {
+        queueHiddenPresence()
+      }
       startCall.resolve(statusData())
     }
     notifyListeners("backgroundLocationAuthorizationChanged", data: statusData())
@@ -234,14 +249,18 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
        * promover para Always. Dependendo do iOS, o sistema pode
        * pedir ao utilizador esta confirmação posteriormente.
        */
-  DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
-        guard let self = self, self.manager.authorizationStatus == .authorizedWhenInUse else { return }
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+        guard let self = self, self.manager.authorizationStatus == .authorizedWhenInUse else {
+          return
+        }
         self.manager.requestAlwaysAuthorization()
       }
     }
   }
 
-  public func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+  public func locationManager(
+    _ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]
+  ) {
     let validLocations = locations.filter { self.isUsableLocation($0, maxAge: 180) }
     guard let location = validLocations.last else { return }
     latestLocation = location
@@ -249,7 +268,7 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
      * Podemos continuar a receber Core Location enquanto invisíveis,
      * mas nunca publicamos essas coordenadas.
      */
-  if !presenceVisible { return }
+    if !presenceVisible { return }
     /*
      * Se um pedido anterior falhou por falta de rede, o primeiro
      * callback seguinte tenta reenviá-lo imediatamente.
@@ -265,7 +284,8 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
   public func locationManager(_ manager: CLLocationManager, didVisit visit: CLVisit) {
     let date = visit.departureDate == .distantFuture ? visit.arrivalDate : visit.departureDate
     let location = CLLocation(
-      coordinate: visit.coordinate, altitude: 0, horizontalAccuracy: visit.horizontalAccuracy, verticalAccuracy: -1,
+      coordinate: visit.coordinate, altitude: 0, horizontalAccuracy: visit.horizontalAccuracy,
+      verticalAccuracy: -1,
       timestamp: date)
     guard isUsableLocation(location, maxAge: 900) else { return }
     latestLocation = location
@@ -294,7 +314,7 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
       /*
        * Esta é a parte essencial no iPhone.
        */
-  manager.allowsBackgroundLocationUpdates = true
+      manager.allowsBackgroundLocationUpdates = true
       manager.startUpdatingLocation()
       /*
        * Temos três mecanismos em paralelo:
@@ -318,9 +338,11 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
 
   private func requestPreciseLocationIfNeeded() {
     guard manager.accuracyAuthorization == .reducedAccuracy,
-      manager.authorizationStatus == .authorizedAlways || manager.authorizationStatus == .authorizedWhenInUse
+      manager.authorizationStatus == .authorizedAlways
+        || manager.authorizationStatus == .authorizedWhenInUse
     else { return }
-    manager.requestTemporaryFullAccuracyAuthorization(withPurposeKey: "MargotNearby") { [weak self] _ in
+    manager.requestTemporaryFullAccuracyAuthorization(withPurposeKey: "MargotNearby") {
+      [weak self] _ in
       DispatchQueue.main.async {
         self?.configureMonitoring()
         self?.sendBestAvailableLocationOrRequest(allowBackground: false)
@@ -329,7 +351,8 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
   }
 
   private func startForegroundLocationIfPossible() {
-    guard UIApplication.shared.applicationState == .active, manager.authorizationStatus == .authorizedWhenInUse,
+    guard UIApplication.shared.applicationState == .active,
+      manager.authorizationStatus == .authorizedWhenInUse,
       readToken() != nil
     else { return }
     manager.allowsBackgroundLocationUpdates = false
@@ -400,17 +423,21 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
     guard presenceVisible else { return }
     let elapsed = Date().timeIntervalSince(lastSentAt)
     let distance = lastSentLocation?.distance(from: location) ?? minimumMovement
-    guard lastSentLocation == nil || elapsed >= minimumSendInterval || distance >= minimumMovement else { return }
+    guard lastSentLocation == nil || elapsed >= minimumSendInterval || distance >= minimumMovement
+    else { return }
     queueLocation(location, force: true)
   }
 
   private func queueLocation(_ location: CLLocation, force: Bool) {
-    guard presenceVisible, readToken() != nil, isUsableLocation(location, maxAge: 900) else { return }
+    guard presenceVisible, readToken() != nil, isUsableLocation(location, maxAge: 900) else {
+      return
+    }
     latestLocation = location
     if !force {
       let elapsed = Date().timeIntervalSince(lastSentAt)
       let distance = lastSentLocation?.distance(from: location) ?? minimumMovement
-      guard lastSentLocation == nil || elapsed >= minimumSendInterval || distance >= minimumMovement else { return }
+      guard lastSentLocation == nil || elapsed >= minimumSendInterval || distance >= minimumMovement
+      else { return }
     }
     if sending {
       pendingLocation = newest(location, pendingLocation)
@@ -426,12 +453,14 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
      * Guardamos antes de enviar. Se a app perder rede ou for suspensa,
      * esta coordenada fica disponível para retry.
      */
-  savePendingLocation(location)
+    savePendingLocation(location)
     retryWorkItem?.cancel()
     retryWorkItem = nil
     sending = true
     send(payload: locationPayload(location), token: token) { [weak self] statusCode, error in
-      DispatchQueue.main.async { self?.finishLocationSending(location, statusCode: statusCode, error: error) }
+      DispatchQueue.main.async {
+        self?.finishLocationSending(location, statusCode: statusCode, error: error)
+      }
     }
   }
 
@@ -459,7 +488,9 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
     retryWorkItem?.cancel()
     retryWorkItem = nil
     sending = true
-    send(payload: ["active": true, "visible": false, "app_state": currentAppStateName()], token: token) {
+    send(
+      payload: ["active": true, "visible": false, "app_state": currentAppStateName()], token: token
+    ) {
       [weak self] statusCode, error in
       DispatchQueue.main.async { self?.finishHiddenSending(statusCode: statusCode, error: error) }
     }
@@ -533,7 +564,8 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
   private func notifySendError(statusCode: Int?, error: Error?) {
     if let statusCode = statusCode {
       notifyListeners(
-        "backgroundLocationError", data: ["message": "O servidor recusou a localização.", "status_code": statusCode])
+        "backgroundLocationError",
+        data: ["message": "O servidor recusou a localização.", "status_code": statusCode])
     } else if let error = error {
       notifyListeners("backgroundLocationError", data: ["message": error.localizedDescription])
     }
@@ -609,7 +641,8 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
   private func locationPayload(_ location: CLLocation) -> [String: Any] {
     return [
       "latitude": location.coordinate.latitude, "longitude": location.coordinate.longitude,
-      "accuracy": location.horizontalAccuracy, "timestamp": ISO8601DateFormatter().string(from: location.timestamp),
+      "accuracy": location.horizontalAccuracy,
+      "timestamp": ISO8601DateFormatter().string(from: location.timestamp),
       "active": true, "visible": true, "app_state": currentAppStateName(),
     ]
   }
@@ -617,15 +650,18 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
   private func savePendingLocation(_ location: CLLocation) {
     let payload: [String: Any] = [
       "latitude": location.coordinate.latitude, "longitude": location.coordinate.longitude,
-      "accuracy": location.horizontalAccuracy, "timestamp": location.timestamp.timeIntervalSince1970,
+      "accuracy": location.horizontalAccuracy,
+      "timestamp": location.timestamp.timeIntervalSince1970,
     ]
     UserDefaults.standard.set(payload, forKey: pendingLocationKey)
   }
 
   private func readPendingLocation() -> CLLocation? {
     guard let payload = UserDefaults.standard.dictionary(forKey: pendingLocationKey),
-      let latitude = payload["latitude"] as? Double, let longitude = payload["longitude"] as? Double,
-      let accuracy = payload["accuracy"] as? Double, let timestamp = payload["timestamp"] as? Double,
+      let latitude = payload["latitude"] as? Double,
+      let longitude = payload["longitude"] as? Double,
+      let accuracy = payload["accuracy"] as? Double,
+      let timestamp = payload["timestamp"] as? Double,
       abs(Date(timeIntervalSince1970: timestamp).timeIntervalSinceNow) <= 900
     else {
       deletePendingLocation()
@@ -633,10 +669,13 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
     }
     return CLLocation(
       coordinate: CLLocationCoordinate2D(latitude: latitude, longitude: longitude), altitude: 0,
-      horizontalAccuracy: accuracy, verticalAccuracy: -1, timestamp: Date(timeIntervalSince1970: timestamp))
+      horizontalAccuracy: accuracy, verticalAccuracy: -1,
+      timestamp: Date(timeIntervalSince1970: timestamp))
   }
 
-  private func deletePendingLocation() { UserDefaults.standard.removeObject(forKey: pendingLocationKey) }
+  private func deletePendingLocation() {
+    UserDefaults.standard.removeObject(forKey: pendingLocationKey)
+  }
 
   private func setPresenceVisible(_ visible: Bool) {
     presenceVisible = visible
@@ -654,7 +693,9 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
 
   private func sendAppStateOnly(background: Bool) {
     guard let token = readToken() else { return }
-    send(payload: ["state_only": true, "app_state": background ? "background" : "foreground"], token: token)
+    send(
+      payload: ["state_only": true, "app_state": background ? "background" : "foreground"],
+      token: token)
   }
   /*
    * Importante no iPhone:
@@ -666,7 +707,9 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
    * o pedido HTTP ainda está em voo.
    */
 
-  private func send(payload: [String: Any], token: String, completion: ((Int?, Error?) -> Void)? = nil) {
+  private func send(
+    payload: [String: Any], token: String, completion: ((Int?, Error?) -> Void)? = nil
+  ) {
     var authenticatedPayload = payload
     authenticatedPayload["token"] = token
     var backgroundTask = UIBackgroundTaskIdentifier.invalid
@@ -701,9 +744,12 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
   private func statusData() -> [String: Any] {
     let authorization = manager?.authorizationStatus ?? .notDetermined
     return [
-      "success": true, "active": monitoring, "visible": presenceVisible, "permission": authorizationName(authorization),
+      "success": true, "active": monitoring, "visible": presenceVisible,
+      "permission": authorizationName(authorization),
+      "authorization": authorizationName(authorization),
       "background_enabled": monitoring && authorization == .authorizedAlways,
-      "precise": manager?.accuracyAuthorization == .fullAccuracy, "token_stored": readToken() != nil,
+      "precise": manager?.accuracyAuthorization == .fullAccuracy,
+      "token_stored": readToken() != nil,
       "requires_settings": authorization == .authorizedWhenInUse || authorization == .denied
         || authorization == .restricted,
     ]
@@ -745,7 +791,9 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
     query[kSecReturnData as String] = true
     query[kSecMatchLimit as String] = kSecMatchLimitOne
     var result: CFTypeRef?
-    guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess, let data = result as? Data else {
+    guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
+      let data = result as? Data
+    else {
       return nil
     }
     return String(data: data, encoding: .utf8)

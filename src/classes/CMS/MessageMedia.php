@@ -14,9 +14,7 @@ final class MessageMedia {
 
     public function convertIphoneImage(string $origem, string $destino): void {
         if (!class_exists(Imagick::class)) {
-            throw new InvalidArgumentException(
-                'O servidor não consegue converter fotografias HEIC/HEIF.'
-            );
+            throw new InvalidArgumentException('O servidor não consegue converter fotografias HEIC/HEIF.');
         }
 
         $imagem = null;
@@ -60,7 +58,7 @@ final class MessageMedia {
         }
     }
 
-    public function receive(array $ficheiro, bool $audio = false, bool $viewOnce = false): array {
+    public function receive(array $ficheiro, bool $audio = false, bool $viewOnce = false, ?string $folder = null): array {
         $erro = (int) ($ficheiro['error'] ?? UPLOAD_ERR_NO_FILE);
 
         if ($erro === UPLOAD_ERR_NO_FILE) {
@@ -79,9 +77,7 @@ final class MessageMedia {
         }
 
         if ($audio && $viewOnce) {
-            throw new InvalidArgumentException(
-                'A visualização única está disponível para fotografias.'
-            );
+            throw new InvalidArgumentException('A visualização única está disponível para fotografias.');
         }
 
         if ($audio) {
@@ -89,7 +85,6 @@ final class MessageMedia {
         }
 
         $mime = (new finfo(FILEINFO_MIME_TYPE))->file($temporario);
-
         $tipos = [
             'image/jpeg' => ['imagem', 'jpg'],
             'image/png' => ['imagem', 'png'],
@@ -120,19 +115,11 @@ final class MessageMedia {
         }
 
         if ($viewOnce && $tipo !== 'imagem') {
-            throw new InvalidArgumentException(
-                'A visualização única está disponível para fotografias.'
-            );
+            throw new InvalidArgumentException('A visualização única está disponível para fotografias.');
         }
-
-        $pasta = $viewOnce
-            ? MessageOnce::folder()
-            : APP_ROOT . '/public/media/mensagens/';
-
+        $pasta = $folder ?? ($viewOnce ? MessageOnce::folder() : APP_ROOT . '/public/media/mensagens/');
         if (!is_dir($pasta) && !mkdir($pasta, 0775, true) && !is_dir($pasta)) {
-            throw new InvalidArgumentException(
-                'Não foi possível preparar a pasta das mensagens.'
-            );
+            throw new InvalidArgumentException('Não foi possível preparar a pasta das mensagens.');
         }
 
         $imagemIphone = $mime === 'image/heic' || $mime === 'image/heif';

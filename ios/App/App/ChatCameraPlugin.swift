@@ -66,6 +66,7 @@ public final class ChatCameraPlugin: CAPPlugin, CAPBridgedPlugin {
             return
           }
           let camera = ChatCameraController()
+          camera.allowViewOnce = call.getBool("allowViewOnce") ?? true
           camera.modalPresentationStyle = .fullScreen
           camera.completed = { result in
             camera.dismiss(animated: true) {
@@ -122,6 +123,7 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
   private let gallery = UIButton(type: .system)
   private let closeButton = UIButton(type: .system)
   private let hint = UILabel()
+  var allowViewOnce = true
   private let photoMode = UISegmentedControl(items: ["Manter", "Ver uma vez"])
   private var observer: NSObjectProtocol?
   private var sessionObserver: NSObjectProtocol?
@@ -635,7 +637,7 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
       self.flip.isHidden = true
       self.hint.isHidden = true
       self.photoMode.selectedSegmentIndex = 0
-      self.photoMode.isHidden = false
+      self.photoMode.isHidden = !self.allowViewOnce
     }
   }
 

@@ -35,6 +35,16 @@
         --text-muted: #b2b2bd;
         --line: #ffffff24;
         --margot-fundo: #000;
+        --perfil-fundo: #000;
+        --perfil-preto: #f5f5f7;
+        --perfil-texto: #e1e1e7;
+        --perfil-suave: #b2b2bd;
+        --perfil-linha: #ffffff24;
+        --perfil-roxo-suave: #332b45;
+        --perfil-amarelo-suave: #373225;
+        --hoje-preto: #f5f5f7;
+        --hoje-texto: #e1e1e7;
+        --hoje-suave: #b2b2bd;
         --margot-preto: #f5f5f7;
     }
 
@@ -61,6 +71,8 @@
     .conversas-vazio,
     .perfil-identidade,
     .perfil-cartao,
+    .perfil-seccao,
+    .hoje-editor-sheet,
     .perfil-hoje-balao,
     .hoje-painel,
     .chat-sheet,
@@ -89,6 +101,12 @@
     .heys-cabecalho,
     .perfil-conteudo h2,
     .perfil-conteudo p,
+    .perfil-sobre p,
+    .perfil-gosto-nome,
+    .hoje-editor-intro strong,
+    .hoje-opcao-roupa-texto strong,
+    .hoje-peca-label,
+    .hoje-cor-label,
     .chat-sheet button {
         color: var(--text);
     }
@@ -142,6 +160,34 @@
         background: transparent;
         color: var(--text);
         border-color: var(--line);
+    }
+
+    .foto,
+    .mini-menu > header > a > img {
+        border-color: #414149;
+        background: #242429;
+    }
+
+    .perfil-idade {
+        color: #f4dc92;
+    }
+
+    .hoje-opcao-roupa,
+    .hoje-peca,
+    .hoje-cor,
+    .hoje-roupa-selecionada-item,
+    .hoje-editor-fechar,
+    .hoje-editor-voltar,
+    #hoje-nota-input {
+        background: var(--surface-soft);
+        color: var(--text);
+        border-color: var(--line);
+    }
+
+    .hoje-roupa-ajuda,
+    .hoje-editor-intro span,
+    #hoje-roupa-resumo {
+        color: var(--text-muted);
     }
 
     #menuPrincipal > nav {
@@ -211,6 +257,8 @@
     .chat-form,
     .perfil-identidade,
     .perfil-cartao,
+    .perfil-seccao,
+    .perfil-gosto,
     .chat-mensagem.recebida .chat-balao,
     #menuPrincipal > nav > ul,
     #menuPrincipal a,

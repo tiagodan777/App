@@ -144,9 +144,9 @@ final class PushNotification {
         );
     }
 
-    public function enqueueNearbyPeople(string $recipientId, int $nearbyCount): int {
+    public function enqueueNearbyPeople(string $recipientId, int $nearbyCount, ?string $key = null): int {
         $recipientId = $this->validMemberId($recipientId);
-        $nearbyCount = max(3, min(999, $nearbyCount));
+        $nearbyCount = max(6, $nearbyCount);
 
         return $this->enqueue(
             $recipientId,
@@ -155,8 +155,14 @@ final class PushNotification {
             'Abre a app e manda-lhes um Hey.',
             '/',
             ['type' => 'nearby', 'nearby_count' => (string) $nearbyCount],
-            'nearby:' . $recipientId . ':' . bin2hex(random_bytes(8))
+            $key ?? ('nearby:' . $recipientId . ':' . bin2hex(random_bytes(8)))
         );
+    }
+
+    public function enqueueClothesReminder(string $member, string $day, string $key): int {
+        return $this->enqueue($member, 'clothes', 'O que vestes hoje?',
+            'Atualiza a roupa na Margot para ser mais fácil reconhecer-te.',
+            '/profile/' . rawurlencode($member) . '?today=1', ['type' => 'clothes', 'day' => $day], $key);
     }
 
     public function enqueueMessage(string $senderId, string $recipientId, int $messageId): int {
@@ -221,7 +227,7 @@ final class PushNotification {
         $this->db->beginTransaction();
 
         try {
-            $statement = $this->db->prepare("SELECT q.id, q.dispositivo_id, q.membro_id, q.tipo, q.titulo, q.corpo, q.url, q.dados_json,
+            $statement = $this->db->prepare("SELECT q.id, q.dispositivo_id, q.membro_id, q.tipo, q.titulo, q.corpo, q.url, q.dados_json, q.criado_em,
                 q.chave_unica, q.tentativas, d.plataforma, d.ambiente, d.token
                 FROM push_fila AS q
                 INNER JOIN push_dispositivos AS d ON d.id = q.dispositivo_id AND d.membro_id COLLATE utf8mb4_unicode_ci =
@@ -361,28 +367,21 @@ final class PushNotification {
             return false;
         }
 
-        /*
-         * O alerta de proximidade só é útil enquanto a Margot continua
-         * efetivamente fora do ecrã.
-         *
-         * A fila pode demorar alguns segundos a ser processada.
-         * Se entretanto o utilizador abriu a app ou o grupo deixou de ter
-         * pelo menos 3 pessoas, cancelamos o push antes de o enviar.
-         */
-        if ($type === 'nearby') {
-            $member = $this->db->prepare('SELECT 1
-                FROM membros AS m
-                INNER JOIN estado_app_membro AS ea ON ea.membro_id COLLATE utf8mb4_unicode_ci = m.id COLLATE
-                utf8mb4_unicode_ci
-                WHERE m.id = :recipient_id AND ea.em_background = 1 AND ea.alerta_proximidade_ativo = 1 AND
-                ea.total_proximidade >= 3
-                LIMIT 1');
-            $member->execute(['recipient_id' => $recipientId]);
-
-            return (bool) $member->fetchColumn();
-        }
-
         $data = is_array($job['dados'] ?? null) ? $job['dados'] : [];
+        if (in_array($type, ['nearby', 'clothes'], true)) {
+            $reminders = new ActivityReminders($this->db, $this);
+            $settings = $reminders->preferences($recipientId);
+            if (!$settings[$type]) return false;
+            if ($type === 'clothes') {
+                $localDay = (new \DateTimeImmutable('now', new \DateTimeZone($settings['timezone'])))->format('Y-m-d');
+                return ($data['day'] ?? '') === $localDay && $reminders->clothesDue($recipientId);
+            }
+            $created = strtotime((string) ($job['criado_em'] ?? '') . ' UTC');
+            if (!$created || $created < time() - 600) return false;
+            $nearby = new NearbyPresenceNotification($this->db, $this);
+            $count = $nearby->currentCount($recipientId);
+            return $count > 5 && $count === (int) ($data['nearby_count'] ?? 0);
+        }
 
         try {
             $senderId = $this->validMemberId((string) ($data['from_member_id'] ?? ''));
