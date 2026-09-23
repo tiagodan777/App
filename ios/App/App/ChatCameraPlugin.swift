@@ -32,7 +32,9 @@ public final class ChatCameraPlugin: CAPPlugin, CAPBridgedPlugin {
         try handle.seek(toOffset: UInt64(offset))
         let data = try handle.read(upToCount: 512 * 1024) ?? Data()
         call.resolve(["base64": data.base64EncodedString()])
-      } catch { call.reject("Não foi possível ler o vídeo.") }
+      } catch {
+        call.reject("Não foi possível ler o vídeo.")
+      }
     }
   }
 
@@ -84,7 +86,8 @@ public final class ChatCameraPlugin: CAPPlugin, CAPBridgedPlugin {
                 } else {
                   call.resolve(value)
                 }
-              case .failure(let error): call.reject(error.localizedDescription)
+              case .failure(let error):
+                call.reject(error.localizedDescription)
               }
             }
           }
@@ -96,7 +99,7 @@ public final class ChatCameraPlugin: CAPPlugin, CAPBridgedPlugin {
 }
 
 private final class ChatCameraController: UIViewController, AVCapturePhotoCaptureDelegate,
-  PHPickerViewControllerDelegate, AVCaptureFileOutputRecordingDelegate
+  PHPickerViewControllerDelegate, AVCaptureFileOutputRecordingDelegate, UIGestureRecognizerDelegate
 {
   var completed: ((Result<[String: Any], Error>) -> Void)?
   private let session = AVCaptureSession()
@@ -107,6 +110,9 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
   private var preparing = false
   private var pressY: CGFloat = 0
   private var pressZoom: CGFloat = 1
+  private var pinchZoom: CGFloat = 1
+  private var zoomFactor: CGFloat = 1
+  private var holdGesture: UILongPressGestureRecognizer!
   private var videoURL: URL?
   private var exporter: AVAssetExportSession?
   private let player = AVPlayerViewController()
@@ -123,6 +129,8 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
   private let gallery = UIButton(type: .system)
   private let closeButton = UIButton(type: .system)
   private let hint = UILabel()
+  private let topShade = CAGradientLayer()
+  private let bottomShade = CAGradientLayer()
   var allowViewOnce = true
   private let photoMode = UISegmentedControl(items: ["Manter", "Ver uma vez"])
   private var observer: NSObjectProtocol?
@@ -135,42 +143,58 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
     super.viewDidLoad()
     view.backgroundColor = .black
     preview = AVCaptureVideoPreviewLayer(session: session)
-    preview.videoGravity = .resizeAspect
+    preview.videoGravity = .resizeAspectFill
     view.layer.addSublayer(preview)
-    picture.contentMode = .scaleAspectFit
+
+    picture.contentMode = .scaleAspectFill
+    picture.clipsToBounds = true
     picture.isHidden = true
     view.addSubview(picture)
+
     addChild(player)
     view.addSubview(player.view)
     player.didMove(toParent: self)
     player.view.isHidden = true
-    player.videoGravity = .resizeAspect
+    player.videoGravity = .resizeAspectFill
+
+    topShade.colors = [UIColor.black.withAlphaComponent(0.55).cgColor, UIColor.clear.cgColor]
+    bottomShade.colors = [UIColor.clear.cgColor, UIColor.black.withAlphaComponent(0.75).cgColor]
+    view.layer.addSublayer(topShade)
+    view.layer.addSublayer(bottomShade)
+
     button(closeButton, symbol: "xmark", label: "Fechar", action: #selector(cancel))
     button(gallery, symbol: "photo.on.rectangle", label: "Galeria", action: #selector(leftAction))
     button(
       flip, symbol: "arrow.triangle.2.circlepath.camera", label: "Trocar câmara",
       action: #selector(switchCamera))
     button(shutter, symbol: "circle.fill", label: "Tirar fotografia", action: #selector(capture))
+
     let hold = UILongPressGestureRecognizer(target: self, action: #selector(holdShutter(_:)))
     hold.minimumPressDuration = 0.25
     hold.allowableMovement = .greatestFiniteMagnitude
+    hold.delegate = self
+    holdGesture = hold
     shutter.addGestureRecognizer(hold)
+
+    let pinch = UIPinchGestureRecognizer(target: self, action: #selector(pinchCamera(_:)))
+    pinch.delegate = self
+    view.addGestureRecognizer(pinch)
+
     shutter.accessibilityHint =
-      "Toca para fotografar. Mantém premido para vídeo e desliza para ajustar o zoom."
+      "Toca para fotografar. Mantém premido para vídeo. Usa dois dedos ou desliza durante o vídeo para ajustar o zoom."
     shutter.accessibilityCustomActions = [
       UIAccessibilityCustomAction(
         name: "Gravar vídeo", target: self, selector: #selector(accessibleVideo))
     ]
-    shutter.backgroundColor = .white
-    shutter.tintColor = .black
-    shutter.layer.borderColor = UIColor.gray.cgColor
-    shutter.layer.borderWidth = 4
+    styleShutter()
     shutter.isEnabled = false
+
     hint.text = "A abrir câmara…"
     hint.textColor = .white
     hint.font = .systemFont(ofSize: 13, weight: .medium)
     hint.textAlignment = .center
     view.addSubview(hint)
+
     photoMode.selectedSegmentIndex = 0
     photoMode.isHidden = true
     photoMode.backgroundColor = UIColor(white: 0.15, alpha: 1)
@@ -179,9 +203,13 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
     photoMode.setTitleTextAttributes([.foregroundColor: UIColor.black], for: .selected)
     photoMode.accessibilityLabel = "Disponibilidade da fotografia"
     view.addSubview(photoMode)
+
     let focusTap = UITapGestureRecognizer(target: self, action: #selector(focus(_:)))
+    focusTap.delegate = self
+    focusTap.require(toFail: pinch)
     focusTap.cancelsTouchesInView = false
     view.addGestureRecognizer(focusTap)
+
     observer = NotificationCenter.default.addObserver(
       forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main
     ) { [weak self] _ in
@@ -192,6 +220,7 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
     ) { [weak self] _ in
       self?.fail("A câmara foi interrompida. Fecha e tenta novamente.")
     }
+
     queue.async {
       do {
         self.session.beginConfiguration()
@@ -219,7 +248,7 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
         DispatchQueue.main.async {
           self.orientConnections()
           self.shutter.isEnabled = true
-          self.hint.text = "Toque: foto · Manter: vídeo · Deslizar: zoom"
+          self.hint.text = "Toca para foto · Mantém para vídeo"
         }
       } catch {
         self.session.commitConfiguration()
@@ -233,8 +262,15 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
     let safe = view.safeAreaInsets
     let width = view.bounds.width
     let bottom = view.bounds.height - safe.bottom - 96
-    preview.frame = CGRect(
-      x: 0, y: safe.top + 54, width: width, height: max(1, bottom - safe.top - 70))
+
+    CATransaction.begin()
+    CATransaction.setDisableActions(true)
+    preview.frame = view.bounds
+    topShade.frame = CGRect(x: 0, y: 0, width: width, height: safe.top + 100)
+    bottomShade.frame = CGRect(
+      x: 0, y: bottom - 84, width: width, height: view.bounds.height - bottom + 84)
+    CATransaction.commit()
+
     picture.frame = preview.frame
     player.view.frame = preview.frame
     closeButton.frame = CGRect(x: 16, y: safe.top + 4, width: 44, height: 44)
@@ -251,11 +287,76 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
   private func button(_ button: UIButton, symbol: String, label: String, action: Selector) {
     button.setImage(UIImage(systemName: symbol), for: .normal)
     button.tintColor = .white
-    button.backgroundColor = UIColor(white: 0.15, alpha: 1)
+    button.backgroundColor = UIColor.black.withAlphaComponent(0.35)
+    button.setPreferredSymbolConfiguration(
+      UIImage.SymbolConfiguration(pointSize: 21, weight: .medium), forImageIn: .normal)
     button.layer.cornerRadius = 24
     button.accessibilityLabel = label
     button.addTarget(self, action: action, for: .touchUpInside)
     view.addSubview(button)
+  }
+
+  private func styleShutter(recording: Bool = false, review: Bool = false) {
+    shutter.backgroundColor = review ? .white : .clear
+    shutter.tintColor = review ? .black : (recording ? .systemRed : .white)
+    shutter.layer.borderColor = UIColor.white.cgColor
+    shutter.layer.borderWidth = 3
+    shutter.setImage(
+      UIImage(systemName: review ? "checkmark" : (recording ? "stop.fill" : "circle.fill")),
+      for: .normal)
+    shutter.setPreferredSymbolConfiguration(
+      UIImage.SymbolConfiguration(pointSize: review || recording ? 28 : 58, weight: .medium),
+      forImageIn: .normal)
+  }
+
+  func gestureRecognizer(_ gesture: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+    if gesture === holdGesture { return true }
+    var target = touch.view
+    while let current = target {
+      if current is UIControl { return false }
+      target = current.superview
+    }
+    return photoData == nil && videoURL == nil && !preparing && !finished
+  }
+
+  func gestureRecognizer(
+    _ gesture: UIGestureRecognizer,
+    shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer
+  ) -> Bool {
+    return (gesture is UIPinchGestureRecognizer && other === holdGesture)
+      || (other is UIPinchGestureRecognizer && gesture === holdGesture)
+  }
+
+  private func setZoom(_ value: CGFloat, smoothly: Bool) {
+    guard let device = input?.device else { return }
+    let target = min(
+      max(value, device.minAvailableVideoZoomFactor), min(6, device.maxAvailableVideoZoomFactor))
+    zoomFactor = target
+    queue.async {
+      do {
+        try device.lockForConfiguration()
+        defer { device.unlockForConfiguration() }
+        device.cancelVideoZoomRamp()
+        if smoothly {
+          device.ramp(toVideoZoomFactor: target, withRate: 8)
+        } else {
+          device.videoZoomFactor = target
+        }
+      } catch {
+        // O gesto seguinte pode voltar a ajustar o dispositivo.
+      }
+    }
+  }
+
+  @objc private func pinchCamera(_ gesture: UIPinchGestureRecognizer) {
+    guard photoData == nil, videoURL == nil, !preparing, !finished else { return }
+    if gesture.state == .began { pinchZoom = zoomFactor }
+    guard gesture.state == .began || gesture.state == .changed else { return }
+    setZoom(pinchZoom * gesture.scale, smoothly: false)
+    if holding {
+      pressZoom = zoomFactor
+      pressY = holdGesture.location(in: view).y
+    }
   }
 
   // Apenas esta fila configura a sessão e o dispositivo.
@@ -276,7 +377,9 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
     input = next
     try device.lockForConfiguration()
     defer { device.unlockForConfiguration() }
-    if device.isFocusModeSupported(.continuousAutoFocus) { device.focusMode = .continuousAutoFocus }
+    if device.isFocusModeSupported(.continuousAutoFocus) {
+      device.focusMode = .continuousAutoFocus
+    }
     if device.isExposureModeSupported(.continuousAutoExposure) {
       device.exposureMode = .continuousAutoExposure
     }
@@ -309,6 +412,7 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
         self.session.commitConfiguration()
         DispatchQueue.main.async {
           self.orientConnections()
+          self.zoomFactor = self.input?.device.videoZoomFactor ?? 1
           self.shutter.isEnabled = true
         }
       } catch {
@@ -361,7 +465,8 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
     if let photoData {
       finish(
         .success([
-          "base64": photoData.base64EncodedString(), "mimeType": "image/jpeg",
+          "base64": photoData.base64EncodedString(),
+          "mimeType": "image/jpeg",
           "viewOnce": photoMode.selectedSegmentIndex == 1,
         ]))
       return
@@ -386,26 +491,18 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
       guard photoData == nil, videoURL == nil, !preparing, !recording else { return }
       holding = true
       pressY = gesture.location(in: view).y
-      pressZoom = input?.device.videoZoomFactor ?? 1
+      pressZoom = zoomFactor
       beginVideo()
     case .changed:
       guard holding else { return }
       let delta = (pressY - gesture.location(in: view).y) / 120
       let target = pressZoom * pow(2, delta)
-      queue.async {
-        guard let device = self.input?.device else { return }
-        do {
-          try device.lockForConfiguration()
-          defer { device.unlockForConfiguration() }
-          device.ramp(
-            toVideoZoomFactor: min(max(target, 1), min(6, device.maxAvailableVideoZoomFactor)),
-            withRate: 8)
-        } catch {}
-      }
+      setZoom(target, smoothly: true)
     case .ended, .cancelled, .failed:
       holding = false
       stopVideo()
-    default: break
+    default:
+      break
     }
   }
 
@@ -449,7 +546,9 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
               let allowed = self.session.canAddInput(audio)
               if allowed { self.session.addInput(audio) }
               self.session.commitConfiguration()
-              guard allowed else { throw self.cameraError("Não foi possível ligar o microfone.") }
+              guard allowed else {
+                throw self.cameraError("Não foi possível ligar o microfone.")
+              }
             }
             DispatchQueue.main.async {
               self.preparing = false
@@ -462,7 +561,7 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
               }
               self.orientConnections()
               self.recording = true
-              self.shutter.tintColor = .systemRed
+              self.styleShutter(recording: true)
               self.shutter.accessibilityLabel = "Parar vídeo"
               let url = self.temporaryURL("mov")
               self.queue.async { self.movie.startRecording(to: url, recordingDelegate: self) }
@@ -514,7 +613,7 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
       self.timer = nil
       self.recording = false
       self.holding = false
-      self.shutter.tintColor = .black
+      self.styleShutter()
       if self.finished {
         try? FileManager.default.removeItem(at: fileURL)
         return
@@ -589,7 +688,7 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
   }
 
   private func showConfirmation() {
-    shutter.setImage(UIImage(systemName: "checkmark"), for: .normal)
+    styleShutter(review: true)
     shutter.accessibilityLabel = videoURL == nil ? "Usar fotografia" : "Usar vídeo"
     shutter.isEnabled = true
     gallery.setImage(UIImage(systemName: "arrow.counterclockwise"), for: .normal)
@@ -628,7 +727,7 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
       self.photoData = jpeg
       self.picture.image = resized
       self.picture.isHidden = false
-      self.shutter.setImage(UIImage(systemName: "checkmark"), for: .normal)
+      self.styleShutter(review: true)
       self.shutter.accessibilityLabel = "Usar fotografia"
       self.shutter.isEnabled = true
       self.gallery.setImage(UIImage(systemName: "arrow.counterclockwise"), for: .normal)
@@ -662,13 +761,13 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
     picture.image = nil
     picture.isHidden = true
     shutter.isEnabled = false
-    shutter.setImage(UIImage(systemName: "circle.fill"), for: .normal)
+    styleShutter()
     shutter.accessibilityLabel = "Tirar fotografia"
     gallery.setImage(UIImage(systemName: "photo.on.rectangle"), for: .normal)
     gallery.accessibilityLabel = "Galeria"
     flip.isHidden = false
     flip.isEnabled = true
-    hint.text = "Toque: foto · Manter: vídeo · Deslizar: zoom"
+    hint.text = "Toca para foto · Mantém para vídeo"
     queue.async {
       self.session.startRunning()
       DispatchQueue.main.async { self.shutter.isEnabled = true }

@@ -22,7 +22,7 @@ public class MainActivity extends BridgeActivity {
     }
 
     @Override
-    protected void onStart() {
+    public void onStart() {
         super.onStart();
 
         BackgroundLocationService.setAppInBackground(this, false);
@@ -31,7 +31,7 @@ public class MainActivity extends BridgeActivity {
     }
 
     @Override
-    protected void onStop() {
+    public void onStop() {
         BackgroundLocationService.setAppInBackground(this, true);
 
         BackgroundLocationService.sendAppState(this, true);

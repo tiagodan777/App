@@ -294,8 +294,7 @@ body:has(#chat-pagina) #abrir-heys {
         transform: scale(0.3) rotate(-12deg);
     }
 
-    35%,
-    65% {
+    35%, 65% {
         opacity: 1;
         transform: scale(1.1);
     }
@@ -595,104 +594,6 @@ body:has(#chat-pagina) #abrir-heys {
     font-size: 26px;
 }
 
-.chat-camera {
-    position: fixed;
-    inset: 0;
-    width: 100vw;
-    height: 100dvh;
-    max-width: none;
-    max-height: none;
-    margin: 0;
-    padding: 0;
-    border: 0;
-    background: #111;
-    color: #fff;
-    overflow: hidden;
-}
-
-.chat-camera video,
-.chat-camera > img {
-    position: absolute;
-    inset: 0;
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    border-radius: 0;
-    clip-path: none;
-}
-
-.chat-camera [data-camera-live] {
-    transform-origin: center;
-}
-
-.chat-camera-status {
-    position: absolute;
-    left: 16px;
-    right: 16px;
-    bottom: calc(130px + env(safe-area-inset-bottom, 0px));
-    text-align: center;
-    color: #fff;
-    font-size: 12px;
-    pointer-events: none;
-}
-
-.chat-camera .chat-shutter {
-    touch-action: none;
-    user-select: none;
-    -webkit-user-select: none;
-    -webkit-touch-callout: none;
-}
-
-.chat-camera .chat-shutter.is-recording {
-    background: #ff3454;
-    border-color: #ff3454;
-    transform: scale(1.1);
-}
-
-.chat-camera button {
-    padding: 12px;
-    border: 0;
-    border-radius: 30px;
-    background: #222b;
-    color: #fff;
-    font: inherit;
-    cursor: pointer;
-}
-
-.chat-camera-close {
-    position: absolute;
-    top: calc(16px + env(safe-area-inset-top, 0px));
-    left: 16px;
-    width: 44px;
-    height: 44px;
-}
-
-.chat-camera-controls {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: space-evenly;
-    padding: 25px 12px calc(25px + env(safe-area-inset-bottom, 0px));
-    background: linear-gradient(transparent, #0008);
-}
-
-.chat-camera .chat-shutter {
-    width: 72px;
-    height: 72px;
-    border: 5px solid #fff;
-    outline: 2px solid #777;
-    outline-offset: -8px;
-    background: #fff;
-}
-
-.chat-camera button:disabled {
-    opacity: 0.4;
-}
-
 @media (min-width: 768px) {
     body:has(#chat-pagina) {
         background: #f3f3f6;
@@ -939,37 +840,6 @@ body:has(#chat-pagina) #abrir-heys {
     max-width: 100%;
     border-radius: 12px;
     object-fit: contain;
-}
-
-.chat-camera-mode {
-    position: absolute;
-    z-index: 1;
-    left: 50%;
-    bottom: calc(130px + env(safe-area-inset-bottom, 0px));
-    transform: translateX(-50%);
-    display: flex;
-    gap: 4px;
-    padding: 4px;
-    border-radius: 24px;
-    background: #252525;
-    white-space: nowrap;
-}
-
-.chat-camera-mode button {
-    padding: 9px 18px;
-    background: transparent;
-    color: #fff;
-    font-size: 14px;
-}
-
-.chat-camera-mode button[aria-pressed='true'] {
-    background: #fff;
-    color: #111;
-}
-
-.chat-camera-mode button:focus-visible {
-    outline: 2px solid #fff;
-    outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {

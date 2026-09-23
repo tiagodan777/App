@@ -1,7 +1,7 @@
 {% extends 'layout.html' %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ doc_root }}estilos/chat.css?v=20260920-video" data-margot-page-style>
+<link rel="stylesheet" href="{{ doc_root }}estilos/chat.css?v=20260923-camera" data-margot-page-style>
 {% endblock %}
 
 {% block content %}
@@ -25,7 +25,6 @@
                 onerror="this.onerror=null;this.src='{{ doc_root }}imagens/fotos-perfil/default.webp';"
                 draggable="false"
             >
-
             <span>
                 <strong>{{ outro.nome }}</strong>
                 <small id="chat-estado">Margot</small>
@@ -53,12 +52,7 @@
                         {% endif %}
 
                         {% if mensagem.view_once %}
-                            <button
-                                type="button"
-                                class="chat-once"
-                                data-open-photo="{{ mensagem.id }}"
-                                {% if mensagem.minha or mensagem.opened %}disabled{% endif %}
-                            >{{ mensagem.opened ? 'Fotografia aberta' : (mensagem.minha ? 'Fotografia · Ver uma vez' : '① Abrir fotografia') }}</button>
+                            <button type="button" class="chat-once" data-open-photo="{{ mensagem.id }}" {% if mensagem.minha or mensagem.opened %}disabled{% endif %}>{{ mensagem.opened ? 'Fotografia aberta' : (mensagem.minha ? 'Fotografia · Ver uma vez' : '① Abrir fotografia') }}</button>
                         {% elseif mensagem.tipo == 'imagem' and mensagem.media_url %}
                             <img
                                 class="chat-imagem"
@@ -86,7 +80,6 @@
 
                         <footer>
                             <time datetime="{{ mensagem.criada_em }}" data-data-mensagem="{{ mensagem.criada_em }}"></time>
-
                             {% if mensagem.minha %}
                                 <span class="chat-lida" aria-label="{{ mensagem.lida ? 'Lida' : 'Enviada' }}">{{ mensagem.lida ? '✓✓' : '✓' }}</span>
                             {% endif %}
@@ -95,11 +88,7 @@
 
                     <div class="chat-reacoes" aria-label="Reações à mensagem" {% if mensagem.reactions is empty %}hidden{% endif %}>
                         {% for reacao in mensagem.reactions %}
-                            <button
-                                type="button"
-                                class="chat-reacao{{ reacao.member_id == membro_id ? ' minha-reacao' : '' }}"
-                                data-emoji="{{ reacao.emoji }}"
-                            >{{ reacao.emoji }}</button>
+                            <button type="button" class="chat-reacao{{ reacao.member_id == membro_id ? ' minha-reacao' : '' }}" data-emoji="{{ reacao.emoji }}">{{ reacao.emoji }}</button>
                         {% endfor %}
                     </div>
                 </article>
@@ -122,12 +111,10 @@
                 <small>A responder</small>
                 <span></span>
             </div>
-
             <button type="button" id="chat-reply-cancel" aria-label="Cancelar resposta">×</button>
         </div>
 
         <div id="chat-media-preview" class="chat-media-preview" hidden></div>
-
         <input type="checkbox" id="chat-view-once" hidden>
 
         <div class="chat-compositor">
@@ -162,11 +149,7 @@
 
             <div id="chat-recording" class="chat-recording" hidden>
                 <button type="button" id="chat-recording-cancel" aria-label="Apagar gravação">×</button>
-
-                <span class="chat-recording-wave" aria-hidden="true">
-                    <i></i><i></i><i></i><i></i><i></i>
-                </span>
-
+                <span class="chat-recording-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
                 <output id="chat-recording-time" aria-live="off">0:00</output>
                 <button type="button" id="chat-recording-send" aria-label="Enviar gravação">↑</button>
             </div>
@@ -185,7 +168,6 @@
         {% for emoji in ['❤️', '😂', '😮', '😢', '😍', '🔥'] %}
             <button type="button" data-emoji="{{ emoji }}" aria-label="Reagir {{ emoji }}">{{ emoji }}</button>
         {% endfor %}
-
         <button type="button" data-action="all" aria-label="Outra reação">+</button>
     </div>
 
@@ -232,7 +214,7 @@ window.webSocketUrl = window.location.protocol === 'https:'
 
 <script src="{{ doc_root }}js/chat-viewport.js?v=20260920-video"></script>
 <script src="{{ doc_root }}js/chat-recorder.js?v=20260920-video"></script>
-<script src="{{ doc_root }}js/chat-camera.js?v=20260921"></script>
+<script src="{{ doc_root }}js/chat-camera.js?v=20260923-camera"></script>
 <script src="{{ doc_root }}js/chat-reactions.js?v=20260920-video"></script>
 <script src="{{ doc_root }}js/chat-audio-player.js?v=20260920-video"></script>
 <script src="{{ doc_root }}js/chat.js?v=20260920-video"></script>
