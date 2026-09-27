@@ -1,184 +1,260 @@
-/* Uma única área visível: cabeçalho, lista flexível e compositor no fluxo. */
+/* O iOS controla a animação nativa; os ajustes web são agrupados por frame. */
 window.MargotChatViewport = function (page, list, content) {
-    const viewport = window.visualViewport,
-        keyboard = window.Capacitor?.Plugins?.Keyboard;
-    const native = Boolean(window.Capacitor?.isNativePlatform?.());
-    const nativeIOS =
-        window.Capacitor?.isNativePlatform?.() && window.Capacitor?.getPlatform?.() === 'ios';
-    const nativeLayout = window.Capacitor?.Plugins?.MargotKeyboard;
-    let followingNative = false;
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let alive = true,
-        pinned = true,
-        nativeHeight = 0,
-        baseHeight = window.innerHeight,
-        animation = 0,
-        listeners = [];
-    function bottom(smooth = false) {
-        if (!alive) return;
-        pinned = true;
-        list.scrollTo({ top: list.scrollHeight, behavior: smooth && !reduced ? 'smooth' : 'auto' });
+    'use strict';
+
+    const cap = window.Capacitor;
+    const native = Boolean(cap?.isNativePlatform?.());
+    const ios = native && cap?.getPlatform?.() === 'ios';
+    const visual = window.visualViewport;
+    const reduced = window.matchMedia(
+        '(prefers-reduced-motion: reduce)'
+    ).matches;
+
+    function plugin(name) {
+        if (!native || !cap.isPluginAvailable?.(name)) return null;
+
+        return cap.registerPlugin?.(name)
+            || cap.Plugins?.[name]
+            || null;
     }
+
+    const keyboard = plugin('Keyboard');
+    const nativeLayout = ios ? plugin('MargotKeyboard') : null;
+    const handles = [];
+    const removers = [];
+
+    let alive = true;
+    let pinned = true;
     let userMoved = false;
-    function scroll() {
-        if (userMoved && !animation)
-            pinned = list.scrollHeight - list.clientHeight - list.scrollTop < 80;
+    let frame = 0;
+    let keyboardHeight = 0;
+    let fullHeight = window.innerHeight;
+    let followingNative = false;
+    let configuringNative = Boolean(nativeLayout);
+    let reveal = true;
+
+    function on(target, name, handler, options) {
+        target?.addEventListener(name, handler, options);
+
+        removers.push(() => {
+            target?.removeEventListener(name, handler, options);
+        });
     }
-    function userScroll() {
-        userMoved = true;
-        cancelAnimationFrame(animation);
-        animation = 0;
-        pinned = false;
+
+    function schedule() {
+        if (!alive || frame) return;
+        frame = requestAnimationFrame(update);
     }
-    function layout(animate = false) {
+
+    function update() {
+        frame = 0;
         if (!alive) return;
-        if (followingNative) {
+
+        const visible = visual?.height || window.innerHeight;
+        const top = visual?.offsetTop || 0;
+
+        page.style.transition = 'none';
+
+        if (followingNative || configuringNative) {
             page.style.height = '100%';
             page.style.top = '0px';
-            page.style.transition = 'none';
-            page.classList.remove('chat-keyboard-open');
-            return;
+        } else {
+            if (!keyboardHeight) {
+                fullHeight = window.innerHeight;
+            }
+
+            const height = native && keyboardHeight
+                ? Math.min(visible, fullHeight - keyboardHeight)
+                : visible;
+
+            page.style.height = Math.max(0, height) + 'px';
+            page.style.top = (ios ? 0 : top) + 'px';
         }
-        if (nativeIOS) baseHeight = window.innerHeight;
-        else if (!nativeHeight) baseHeight = Math.max(baseHeight, window.innerHeight);
-        const visibleHeight = viewport?.height || window.innerHeight;
-        const height = nativeIOS
-            ? baseHeight - nativeHeight
-            : native && nativeHeight
-              ? Math.min(visibleHeight, baseHeight - nativeHeight)
-              : visibleHeight;
-        const top = nativeIOS ? 0 : viewport?.offsetTop || 0;
-        page.classList.toggle(
-            'chat-keyboard-open',
-            nativeHeight > 0 || height < window.innerHeight - 80
-        );
-        const target = Math.max(0, height) + 'px';
-        if (page.style.height !== target) {
-            page.style.transition =
-                animate && !reduced ? 'height 280ms cubic-bezier(.2,.8,.2,1)' : 'none';
-        }
-        page.style.height = Math.max(0, height) + 'px';
-        page.style.top = top + 'px';
-    }
-    function resized() {
-        if (followingNative) return;
-        if (
-            nativeIOS &&
-            page.style.height === Math.max(0, window.innerHeight - nativeHeight) + 'px'
-        )
-            return;
-        layout();
-    }
-    function insert(article, own) {
-        const follow = pinned || own;
-        const before = list.scrollTop;
-        content.append(article);
-        if (!reduced)
-            article.animate?.(
-                [
-                    { opacity: 0, transform: 'translateY(14px) scale(.98)' },
-                    { opacity: 1, transform: 'none' }
-                ],
-                { duration: 220, easing: 'ease-out' }
+
+        const open = keyboardHeight > 0
+            || (!followingNative && visible < fullHeight - 80);
+
+        page.classList.toggle('chat-keyboard-open', open);
+
+        if (pinned) {
+            const end = Math.max(
+                0,
+                list.scrollHeight - list.clientHeight
             );
-        if (!follow) return;
-        cancelAnimationFrame(animation);
-        pinned = true;
-        if (reduced) {
-            bottom();
-            return;
+
+            if (Math.abs(list.scrollTop - end) > 1) {
+                list.scrollTop = end;
+            }
+
+            userMoved = false;
         }
-        const start = performance.now();
-        function frame(now) {
-            if (!alive) return;
-            const progress = Math.min(1, (now - start) / 260),
-                eased = 1 - Math.pow(1 - progress, 3);
-            const target = Math.max(0, list.scrollHeight - list.clientHeight);
-            list.scrollTop = before + (target - before) * eased;
-            animation = progress < 1 ? requestAnimationFrame(frame) : 0;
-        }
-        animation = requestAnimationFrame(frame);
-    }
-    const observer = new ResizeObserver(() => {
-        if (pinned && !animation) bottom();
-    });
-    observer.observe(content);
-    observer.observe(list);
-    function mediaLoaded() {
-        if (pinned && !animation) bottom();
-    }
-    list.addEventListener('load', mediaLoaded, true);
-    list.addEventListener('loadedmetadata', mediaLoaded, true);
-    list.addEventListener('scroll', scroll, { passive: true });
-    list.addEventListener('wheel', userScroll, { passive: true });
-    list.addEventListener('touchmove', userScroll, { passive: true });
-    viewport?.addEventListener('resize', resized);
-    viewport?.addEventListener('scroll', resized);
-    window.addEventListener('resize', resized);
-    if (nativeIOS && nativeLayout) {
-        nativeLayout
-            .configure({ enabled: true })
-            .then((result) => {
-                if (!alive) return;
-                followingNative = result.nativeLayout === true;
-                layout();
-                if (pinned) bottom();
-            })
-            .catch(() => {});
-    }
-    if (keyboard && native) {
-        if (nativeIOS) keyboard.setAccessoryBarVisible({ isVisible: false }).catch(() => {});
-        for (const [name, show] of [
-            ['keyboardWillShow', true],
-            ['keyboardWillHide', false]
-        ]) {
-            Promise.resolve(
-                keyboard.addListener(name, (info) => {
-                    nativeHeight = show ? info.keyboardHeight : 0;
-                    layout(true);
-                })
-            ).then((handle) => {
-                if (alive) listeners.push(handle);
-                else handle.remove();
-            });
-        }
-    }
-    function ready() {
-        layout();
-        if (!userMoved) bottom();
-    }
-    document.addEventListener('margot:page-ready', ready);
-    layout();
-    bottom();
-    list.querySelectorAll('img').forEach((image) => (image.loading = 'eager'));
-    requestAnimationFrame(() => {
-        if (alive) {
-            bottom();
+
+        if (reveal) {
+            reveal = false;
             list.classList.remove('chat-mensagens-a-preparar');
             list.setAttribute('aria-busy', 'false');
         }
-    });
+    }
+
+    function bottom(smooth = false) {
+        if (!alive) return;
+
+        pinned = true;
+        userMoved = false;
+
+        if (smooth && !reduced && !keyboardHeight) {
+            list.scrollTo({
+                top: list.scrollHeight,
+                behavior: 'smooth'
+            });
+        } else {
+            schedule();
+        }
+    }
+
+    function userScroll() {
+        userMoved = true;
+        pinned = false;
+    }
+
+    function scrolled() {
+        if (!userMoved) return;
+
+        pinned = (
+            list.scrollHeight
+            - list.clientHeight
+            - list.scrollTop
+        ) < 80;
+    }
+
+    function insert(article, own) {
+        const follow = pinned || own;
+
+        content.append(article);
+
+        if (!reduced) {
+            article.animate?.(
+                [
+                    {
+                        opacity: 0,
+                        transform: 'translateY(8px)'
+                    },
+                    {
+                        opacity: 1,
+                        transform: 'none'
+                    }
+                ],
+                {
+                    duration: 180,
+                    easing: 'ease-out'
+                }
+            );
+        }
+
+        if (follow) bottom();
+    }
+
+    const observer = new ResizeObserver(schedule);
+
+    observer.observe(content);
+    observer.observe(list);
+
+    on(list, 'load', schedule, true);
+    on(list, 'loadedmetadata', schedule, true);
+    on(list, 'scroll', scrolled, { passive: true });
+    on(list, 'wheel', userScroll, { passive: true });
+    on(list, 'touchmove', userScroll, { passive: true });
+
+    on(visual, 'resize', schedule);
+    on(visual, 'scroll', schedule);
+    on(window, 'resize', schedule);
+    on(document, 'margot:page-ready', schedule);
+
+    if (keyboard) {
+        if (ios) {
+            keyboard.setAccessoryBarVisible({
+                isVisible: false
+            }).catch(() => {});
+        }
+
+        for (const [name, show] of [
+            ['keyboardWillShow', true],
+            ['keyboardDidShow', true],
+            ['keyboardWillHide', false],
+            ['keyboardDidHide', false]
+        ]) {
+            Promise.resolve(
+                keyboard.addListener(name, (info) => {
+                    if (!alive) return;
+
+                    if (
+                        show
+                        && !keyboardHeight
+                        && !followingNative
+                    ) {
+                        fullHeight = Math.max(
+                            fullHeight,
+                            window.innerHeight
+                        );
+                    }
+
+                    keyboardHeight = show
+                        ? Number(info?.keyboardHeight) || 0
+                        : 0;
+
+                    schedule();
+                })
+            ).then((handle) => {
+                if (alive) {
+                    handles.push(handle);
+                } else {
+                    handle.remove();
+                }
+            }).catch(() => {});
+        }
+    }
+
+    if (nativeLayout) {
+        nativeLayout.configure({
+            enabled: true
+        }).then((result) => {
+            if (alive) {
+                followingNative = result.nativeLayout === true;
+            }
+        }).catch(() => {}).finally(() => {
+            configuringNative = false;
+            schedule();
+        });
+    }
+
+    schedule();
+
     return {
         insert,
         bottom,
+
         destroy() {
+            if (!alive) return;
+
             alive = false;
-            if (nativeIOS && nativeLayout)
-                nativeLayout.configure({ enabled: false }).catch(() => {});
-            cancelAnimationFrame(animation);
+
+            cancelAnimationFrame(frame);
             observer.disconnect();
-            document.removeEventListener('margot:page-ready', ready);
-            list.removeEventListener('load', mediaLoaded, true);
-            list.removeEventListener('loadedmetadata', mediaLoaded, true);
-            list.removeEventListener('scroll', scroll);
-            list.removeEventListener('wheel', userScroll);
-            list.removeEventListener('touchmove', userScroll);
-            viewport?.removeEventListener('resize', resized);
-            viewport?.removeEventListener('scroll', resized);
-            window.removeEventListener('resize', resized);
-            listeners.forEach((handle) => handle.remove());
-            if (keyboard && nativeIOS)
-                keyboard.setAccessoryBarVisible({ isVisible: true }).catch(() => {});
+
+            removers.forEach((remove) => remove());
+            handles.forEach((handle) => handle.remove());
+
+            if (nativeLayout) {
+                nativeLayout.configure({
+                    enabled: false
+                }).catch(() => {});
+            }
+
+            if (keyboard && ios) {
+                keyboard.setAccessoryBarVisible({
+                    isVisible: true
+                }).catch(() => {});
+            }
         }
     };
 };

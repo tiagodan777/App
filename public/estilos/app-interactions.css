@@ -1,6 +1,6 @@
 @charset "UTF-8";
 
-/* A interface comporta-se como uma app; os campos continuam editáveis. */
+/* Evita seleção e menus do navegador na interface. */
 html,
 body,
 body * {
@@ -9,15 +9,43 @@ body * {
     -webkit-touch-callout: none !important;
 }
 
-body :is(input, textarea, [contenteditable=""], [contenteditable="true"], [contenteditable="plaintext-only"]),
-body :is([contenteditable=""], [contenteditable="true"], [contenteditable="plaintext-only"]) * {
+/* Os campos de texto continuam a permitir edição e cópia. */
+body :is(
+    input,
+    textarea,
+    [contenteditable=""],
+    [contenteditable="true"],
+    [contenteditable="plaintext-only"]
+),
+body :is(
+    [contenteditable=""],
+    [contenteditable="true"],
+    [contenteditable="plaintext-only"]
+) * {
     -webkit-user-select: text !important;
     user-select: text !important;
     -webkit-touch-callout: default !important;
 }
 
-/* Impede arrastar a imagem ou o link como um recurso do navegador. */
 body img,
 body a {
     -webkit-user-drag: none !important;
+}
+
+/*
+ * O layout global mantém o documento preso ao ecrã.
+ * Estas páginas precisam da sua própria área de scroll.
+ */
+.definicoes-pagina,
+.invite-page {
+    height: 100%;
+    min-height: 0;
+    box-sizing: border-box;
+
+    overflow-x: hidden;
+    overflow-y: scroll;
+
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: auto;
+    touch-action: pan-y;
 }
