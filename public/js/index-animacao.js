@@ -3,6 +3,7 @@
 
     const canvas = document.getElementById('gridCanvas');
     if (!canvas) return;
+    canvas.stopMargotAnimation?.();
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -44,7 +45,6 @@
 
     function resize() {
         if (!ativo) return;
-
         resizeFrame = null;
 
         const rect = canvas.getBoundingClientRect();
@@ -52,11 +52,7 @@
         const nextHeight = Math.max(1, Math.ceil(rect.height));
         const nextDpr = Math.min(window.devicePixelRatio || 1, 1.5);
 
-        if (
-            nextWidth === width &&
-            nextHeight === height &&
-            nextDpr === dpr
-        ) {
+        if (nextWidth === width && nextHeight === height && nextDpr === dpr) {
             return;
         }
 
@@ -66,7 +62,6 @@
 
         canvas.width = Math.ceil(width * dpr);
         canvas.height = Math.ceil(height * dpr);
-
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         createGrid();
 
@@ -88,7 +83,6 @@
 
     function createGrid() {
         points = [];
-
         const cols = Math.ceil(width / spacing) + 6;
         const rows = Math.ceil(height / spacing) + 6;
         const startX = -spacing * 3;
@@ -96,8 +90,8 @@
 
         for (let row = 0; row < rows; row++) {
             for (let col = 0; col < cols; col++) {
-                const baseX = startX + col * spacing;
-                const baseY = startY + row * spacing;
+                const baseX = startX + col * spacing,
+                    baseY = startY + row * spacing;
 
                 points.push({
                     baseX,
@@ -156,7 +150,6 @@
                 [colorPurple, [185, 90, 255]],
                 [colorRed, [255, 65, 110]]
             ]);
-
             c1 = brighter.get(c1);
             c2 = brighter.get(c2);
         }
@@ -186,20 +179,16 @@
             return;
         }
 
-        const elapsed = lastFrame
-            ? Math.min(now - lastFrame, 50)
-            : FRAME_TIME;
-
+        const elapsed = lastFrame ? Math.min(now - lastFrame, 50) : FRAME_TIME;
         lastFrame = now;
 
         const targetMix = theme.matches ? 1 : 0;
-
         darkMix = reduced
             ? targetMix
             : darkMix + (targetMix - darkMix) * Math.min(1, elapsed / 100);
 
         ctx.clearRect(0, 0, width, height);
-        time += reduced ? 0 : elapsed * 0.0000675;
+        time += reduced ? 0 : elapsed * 0.000045;
 
         const cx = width / 2;
         const cy = height / 2;
@@ -215,7 +204,7 @@
             Math.cos(holeTime * 0.8) * (cy * 0.9) +
             Math.sin(holeTime * 0.4) * (cy * 0.3);
 
-        const holeRadius = 160;
+        const holeRadius = lerp(160, Math.min(120, width * 0.28), darkMix);
         const holeRadiusSq = holeRadius * holeRadius;
         const edgeSoftnessInv = 1 / 60;
 
@@ -250,74 +239,44 @@
                 alpha = 0;
             } else {
                 const distance = Math.sqrt(distSq);
-                alpha = clamp(
-                    (distance - holeRadius) * edgeSoftnessInv,
-                    0,
-                    1
-                );
+                alpha = clamp((distance - holeRadius) * edgeSoftnessInv, 0, 1);
             }
 
-            const borderNoise = Math.sin(nx * 15 + time * 5) * 0.15;
-            alpha = clamp(alpha + borderNoise, 0, 1);
+            // No escuro, a zona suave conserva pontos visíveis em vez de abrir um buraco preto.
+            alpha = lerp(0.32 * darkMix, 1, alpha);
 
             const finalAlpha = alpha * (0.8 + waveValue * 0.2);
-
             if (finalAlpha < 0.05) {
                 continue;
             }
 
-            const rgb = palette[
-                Math.min(255, Math.round(waveValue * 255))
-            ];
-
+            const rgb = palette[Math.min(255, Math.round(waveValue * 255))];
             const roundedAlpha = Math.round(finalAlpha * 100) / 100;
             const size = 2.4 + darkMix * 0.4;
 
             ctx.fillStyle = `rgba(${rgb}, ${roundedAlpha})`;
-            ctx.fillRect(
-                finalX - size / 2,
-                finalY - size / 2,
-                size,
-                size
-            );
+            ctx.fillRect(finalX - size / 2, finalY - size / 2, size, size);
 
             if (darkMix > 0.01) {
-                const night = darkPalette[
-                    Math.min(255, Math.round(waveValue * 255))
-                ];
-
-                ctx.fillStyle =
-                    `rgba(${night}, ${roundedAlpha * darkMix})`;
-
-                ctx.fillRect(
-                    finalX - size / 2,
-                    finalY - size / 2,
-                    size,
-                    size
-                );
+                const night = darkPalette[Math.min(255, Math.round(waveValue * 255))];
+                ctx.fillStyle = `rgba(${night}, ${roundedAlpha * darkMix})`;
+                ctx.fillRect(finalX - size / 2, finalY - size / 2, size, size);
             }
         }
 
-        if (!reduced) {
-            animationFrame = requestAnimationFrame(draw);
-        }
+        if (!reduced) animationFrame = requestAnimationFrame(draw);
     }
 
     function visibility() {
         cancelAnimationFrame(animationFrame);
         lastFrame = 0;
-
-        if (!document.hidden) {
-            animationFrame = requestAnimationFrame(draw);
-        }
+        if (!document.hidden) animationFrame = requestAnimationFrame(draw);
     }
 
     theme.addEventListener('change', visibility);
     document.addEventListener('visibilitychange', visibility);
     window.addEventListener('resize', scheduleResize, { passive: true });
-    window.addEventListener('orientationchange', scheduleResize, {
-        passive: true
-    });
+    window.addEventListener('orientationchange', scheduleResize, { passive: true });
 
     if ('ResizeObserver' in window) {
         resizeObserver = new ResizeObserver(scheduleResize);
@@ -325,14 +284,10 @@
     }
 
     resize();
-
-    if (!reduced) {
-        animationFrame = requestAnimationFrame(draw);
-    }
+    if (!reduced) animationFrame = requestAnimationFrame(draw);
 
     function desativarPagina() {
         ativo = false;
-
         theme.removeEventListener('change', visibility);
         document.removeEventListener('visibilitychange', visibility);
 
@@ -351,7 +306,9 @@
         window.removeEventListener('resize', scheduleResize);
         window.removeEventListener('orientationchange', scheduleResize);
         document.removeEventListener('margot:page-leave', desativarPagina);
+        delete canvas.stopMargotAnimation;
     }
 
+    canvas.stopMargotAnimation = desativarPagina;
     document.addEventListener('margot:page-leave', desativarPagina);
 })();

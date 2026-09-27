@@ -210,6 +210,51 @@
         box-shadow: none;
     }
 
+    .hey-item-frase,
+    .hey-aviso-corpo strong,
+    .hey-aviso-enviado .hey-aviso-corpo strong {
+        color: var(--text);
+    }
+
+    .hey-aviso-corpo p,
+    .hey-item-data,
+    .heys-cabecalho p,
+    .heys-estado,
+    .heys-separadores button,
+    .hey-item-limpar {
+        color: var(--text-muted);
+    }
+
+    .hey-item {
+        border-color: var(--line);
+    }
+
+    .heys-fechar,
+    .heys-separadores {
+        background: var(--surface-soft);
+        color: var(--text);
+    }
+
+    .heys-separadores button.ativo,
+    .hey-aviso-link:hover,
+    .hey-item-limpar:active {
+        background: #35353e;
+        color: var(--text);
+    }
+
+    .hey-aviso {
+        background: #25252d;
+        box-shadow: 0 8px 28px #0006, inset 0 0 0 1px #ffffff24;
+    }
+
+    .heys-limpar-todos {
+        color: #ff929f;
+    }
+
+    .heys-contador {
+        border-color: var(--surface);
+    }
+
     #menuPrincipal img,
     .menu-invisivel-imagem {
         filter: brightness(0) invert(1);

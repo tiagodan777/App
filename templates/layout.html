@@ -11,6 +11,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
     <link rel="manifest" href="{{ doc_root }}js/manifest.json">
+
     <title>{% block title %}Margot{% endblock %}</title>
 
     <link rel="stylesheet" href="{{ doc_root }}estilos/style.css?v=20260920-video">
@@ -23,7 +24,7 @@
 
     {% block styles %}{% endblock %}
     <link rel="stylesheet" href="{{ doc_root }}estilos/photo-viewer.css?v=20260920-video">
-    <link rel="stylesheet" href="{{ doc_root }}estilos/theme.css?v=20260921">
+    <link rel="stylesheet" href="{{ doc_root }}estilos/theme.css?v=20260927">
 </head>
 
 <body>
@@ -52,16 +53,19 @@
                             <img src="{{ doc_root }}imagens/icones-menu/home.png" alt="" aria-hidden="true" draggable="false">
                         </a>
                     </li>
+
                     <li>
                         <a href="{{ doc_root }}messages" aria-label="Mensagens">
                             <img src="{{ doc_root }}imagens/icones-menu/messages.png" alt="" aria-hidden="true" draggable="false">
                         </a>
                     </li>
+
                     <li>
                         <a href="{{ doc_root }}profile/{{ session.id }}" aria-label="Perfil">
                             <img src="{{ doc_root }}imagens/icones-menu/user.png" alt="" aria-hidden="true" draggable="false">
                         </a>
                     </li>
+
                     <li class="menu-item-invisivel">
                         <button
                             type="button"
@@ -80,6 +84,7 @@
                                 aria-hidden="true"
                                 draggable="false"
                             >
+
                             <img
                                 class="menu-invisivel-imagem menu-invisivel-imagem-invisivel"
                                 src="{{ doc_root }}imagens/icones-menu/eye-block.png?v=1"
@@ -87,6 +92,7 @@
                                 aria-hidden="true"
                                 draggable="false"
                             >
+
                             <span id="alternar-invisivel-estado" class="texto-apenas-leitor">Modo invisível desativado</span>
                         </button>
                     </li>
@@ -101,12 +107,14 @@
 
     {% if session.id %}
         <div id="estado-ligacao" data-status="connecting" aria-hidden="true" hidden></div>
+
         <button type="button" id="ativar-notificacoes" aria-hidden="true" tabindex="-1" hidden></button>
 
         <button type="button" id="abrir-heys" class="heys-abrir" aria-label="Abrir Heys" aria-controls="heys-area" aria-expanded="false">
             <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M6.4 10.7V6.2a1.35 1.35 0 0 1 2.7 0v3.2-5a1.35 1.35 0 0 1 2.7 0v5-3.8a1.35 1.35 0 0 1 2.7 0v4.1-2.5a1.35 1.35 0 0 1 2.7 0v6.1c0 4-2.7 7.2-6.7 7.2h-.4c-2.5 0-4.5-1.1-5.8-3L1.8 14a1.45 1.45 0 0 1 2.3-1.7l2.3 2.6"></path>
             </svg>
+
             <span id="heys-contador" class="heys-contador" aria-label="0 Heys por ler" hidden>0</span>
         </button>
 
@@ -119,6 +127,7 @@
                         <p>Atividade</p>
                         <h1 id="heys-titulo">Heys</h1>
                     </div>
+
                     <button type="button" id="fechar-heys" class="heys-fechar" aria-label="Fechar">
                         <svg viewBox="0 0 24 24" aria-hidden="true">
                             <path d="M6 6l12 12M18 6 6 18"></path>
@@ -128,6 +137,7 @@
 
                 <nav class="heys-separadores" role="tablist" aria-label="Tipo de Hey">
                     <button type="button" id="heys-tab-recebidos" class="ativo" role="tab" aria-selected="true" data-direcao="recebido">Recebidos</button>
+
                     <button type="button" id="heys-tab-enviados" role="tab" aria-selected="false" data-direcao="enviado">Enviados</button>
                 </nav>
 
@@ -136,8 +146,15 @@
                 </div>
 
                 <div id="heys-lista" class="heys-lista" role="tabpanel" aria-live="polite"></div>
-                <div id="heys-carregando" class="heys-estado" hidden>A carregar…</div>
-                <div id="heys-vazio" class="heys-estado" hidden>Ainda não existem Heys.</div>
+
+                <div id="heys-carregando" class="heys-estado" hidden>
+                    A carregar…
+                </div>
+
+                <div id="heys-vazio" class="heys-estado" hidden>
+                    Ainda não existem Heys.
+                </div>
+
                 <div id="heys-erro" class="heys-estado heys-estado-erro" role="alert" hidden></div>
             </section>
         </div>
@@ -164,14 +181,12 @@
 
         <script src="{{ doc_root }}js/hey-vibracao.js?v=20260920-video"></script>
         <script src="{{ doc_root }}js/index-notificacoes.js?v=20260916"></script>
-
         {% include 'partials/daylies.html' %}
         {% include 'partials/chat-camera.html' with {camera_id: 'daylie-camera'} %}
-
         <script src="{{ doc_root }}js/chat-camera.js?v=20260923-camera"></script>
         <script src="{{ doc_root }}js/daylies.js?v=20260921"></script>
         <script src="{{ doc_root }}js/activity-reminders.js?v=20260921"></script>
-        <script src="{{ doc_root }}js/location-onboarding.js?v=20260921"></script>
+        <script src="{{ doc_root }}js/location-onboarding.js?v=20260927"></script>
         <script src="{{ doc_root }}js/background-location.js?v=20260921"></script>
         <script src="{{ doc_root }}js/websocket-location.js?v=20260921"></script>
         <script src="{{ doc_root }}js/websocket-alerts.js?v=20260917-chat1"></script>
