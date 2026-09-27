@@ -294,7 +294,8 @@ body:has(#chat-pagina) #abrir-heys {
         transform: scale(0.3) rotate(-12deg);
     }
 
-    35%, 65% {
+    35%,
+    65% {
         opacity: 1;
         transform: scale(1.1);
     }
@@ -655,7 +656,6 @@ body:has(#chat-pagina) #abrir-heys {
 .chat-emoji-picker [type='submit']:disabled {
     opacity: 0.4;
 }
-
 /* Leitor compacto, com os mesmos controlos no iPhone e no Android. */
 .chat-voice {
     display: flex;
@@ -664,7 +664,6 @@ body:has(#chat-pagina) #abrir-heys {
     width: min(65vw, 280px);
     min-height: 48px;
 }
-
 .chat-voice button {
     flex: 0 0 38px;
     height: 38px;
@@ -674,18 +673,15 @@ body:has(#chat-pagina) #abrir-heys {
     color: inherit;
     font-size: 16px;
 }
-
 .chat-voice input {
     min-width: 0;
     flex: 1;
     accent-color: var(--margot-roxo);
 }
-
 .chat-voice output {
     font-size: 12px;
     font-variant-numeric: tabular-nums;
 }
-
 .chat-preview-audio .chat-voice {
     width: 100%;
 }
@@ -699,7 +695,6 @@ body:has(#chat-pagina) #abrir-heys {
     width: 32px;
     flex: none;
 }
-
 .chat-recording-wave i {
     width: 3px;
     height: calc(6px + var(--voice-level, 0) * 24px);
@@ -708,41 +703,32 @@ body:has(#chat-pagina) #abrir-heys {
     transition: height 100ms linear;
     animation: voice-wave 650ms ease-in-out infinite alternate;
 }
-
 .chat-recording-wave i:nth-child(2) {
     animation-delay: -250ms;
 }
-
 .chat-recording-wave i:nth-child(3) {
     animation-delay: -450ms;
 }
-
 .chat-recording-wave i:nth-child(4) {
     animation-delay: -150ms;
 }
-
 .chat-recording-wave i:nth-child(5) {
     animation-delay: -350ms;
 }
-
 .chat-recording[data-state='starting'] .chat-recording-wave {
     opacity: 0.45;
 }
-
 @keyframes voice-wave {
     from {
         transform: scaleY(0.45);
     }
-
     to {
         transform: scaleY(1);
     }
 }
-
 .mini-menu [hidden] {
     display: none !important;
 }
-
 .chat-once {
     padding: 16px;
     background: transparent;
@@ -750,12 +736,10 @@ body:has(#chat-pagina) #abrir-heys {
     border: 0;
     cursor: pointer;
 }
-
 .chat-once:disabled {
     cursor: default;
     opacity: 0.75;
 }
-
 .mini-menu .mini-menu-mensagem {
     width: min(calc(100% - 32px), 540px);
     margin: 16px 0 0;
@@ -764,7 +748,6 @@ body:has(#chat-pagina) #abrir-heys {
     gap: 10px;
     background: transparent;
 }
-
 .mini-compose-input {
     display: flex;
     align-items: center;
@@ -776,7 +759,6 @@ body:has(#chat-pagina) #abrir-heys {
     border-radius: 26px;
     background: var(--surface-soft, #f3f3f7);
 }
-
 .mini-compose-input > button {
     display: grid;
     place-items: center;
@@ -790,7 +772,6 @@ body:has(#chat-pagina) #abrir-heys {
     color: var(--text, #17171b);
     cursor: pointer;
 }
-
 .mini-compose-input > button svg {
     width: 22px;
     height: 22px;
@@ -800,7 +781,6 @@ body:has(#chat-pagina) #abrir-heys {
     stroke-linecap: round;
     stroke-linejoin: round;
 }
-
 .mini-menu .mini-compose-input #mensagem {
     flex: 1;
     min-width: 0;
@@ -816,32 +796,26 @@ body:has(#chat-pagina) #abrir-heys {
     font: inherit;
     font-size: 16px;
 }
-
 .mini-compose-input > .mini-compose-send {
     background: #7657ff;
     color: #fff;
 }
-
 .mini-compose-input .chat-recording {
     flex: 1;
     min-width: 0;
     background: transparent;
 }
-
 .mini-compose-preview {
     width: 100%;
     max-height: 200px;
     margin: 0;
 }
-
-.mini-compose-preview img,
-.mini-compose-preview video {
+.mini-compose-preview img, .mini-compose-preview video {
     max-height: 180px;
     max-width: 100%;
     border-radius: 12px;
     object-fit: contain;
 }
-
 @media (prefers-reduced-motion: reduce) {
     .chat-recording-wave i {
         animation: none;

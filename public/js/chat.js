@@ -31,11 +31,9 @@
     let reply = null;
     let lastId = 0;
     let polling = false;
-
     // Mantém anexos e texto ao trocar de página dentro da app; limpa após enviar/apagar.
     const drafts = (window.MargotChatDrafts ||= new Map());
     const draftKey = me + ':' + otherId;
-
     function saveDraft() {
         if (file || text.value || reply)
             drafts.set(draftKey, {
@@ -184,7 +182,6 @@
                 remove,
                 kind === 'audio' ? window.MargotChatAudioPlayer(element, showError) : element
             );
-
             preview.classList.toggle('chat-preview-audio', kind === 'audio');
         }
 
@@ -278,10 +275,8 @@
                 : own(message)
                   ? 'Fotografia · Ver uma vez'
                   : '① Abrir fotografia';
-
             bubble.append(button);
         }
-
         if (message.media_url) {
             const tag = { imagem: 'img', video: 'video', audio: 'audio' }[message.tipo];
 
@@ -456,17 +451,14 @@
 
     // Impede a transferência de foco para o botão; o envio acontece apenas no click.
     let keepFocus = false;
-
     on(send, 'pointerdown', (event) => {
         if (event.button !== 0) return;
         keepFocus = document.activeElement === text;
         event.preventDefault();
     });
-
     on(send, 'pointercancel', () => {
         keepFocus = false;
     });
-
     on(send, 'click', () => {
         if (keepFocus) text.focus({ preventScroll: true });
         keepFocus = false;
@@ -490,7 +482,6 @@
         else chooseFile(selected || null);
         media.value = '';
     });
-
     on(byId('chat-camera-open'), 'click', () => camera.open());
 
     on(microphone, 'click', () => {
@@ -505,9 +496,7 @@
     on(content, 'click', async (event) => {
         const button = event.target.closest('[data-open-photo]');
         if (!button || button.disabled) return;
-
         button.disabled = true;
-
         try {
             const response = await fetch(url, {
                 method: 'POST',
@@ -518,15 +507,12 @@
                     message_id: button.dataset.openPhoto
                 })
             });
-
             if (!response.ok) {
                 const data = await response.json();
                 throw new Error(data.message || 'Não foi possível abrir a fotografia.');
             }
-
             const blob = await response.blob();
             if (!alive) return;
-
             const src = URL.createObjectURL(blob);
             viewer.open(src, () => URL.revokeObjectURL(src));
             button.textContent = 'Fotografia aberta';
@@ -616,7 +602,6 @@
     const interval = setInterval(() => sync(), 12000);
 
     const draft = drafts.get(draftKey);
-
     if (draft) {
         text.value = draft.text;
         chooseFile(draft.file);
@@ -624,7 +609,6 @@
         once.checked = Boolean(draft.once);
         resizeText();
     }
-
     state();
     markRead();
 
@@ -635,9 +619,7 @@
         alive = false;
         clearInterval(interval);
         events.abort();
-
         page.querySelectorAll('audio, video').forEach((element) => element.pause());
-
         viewer.destroy();
         viewport.destroy();
         reactions.destroy();

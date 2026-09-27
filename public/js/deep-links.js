@@ -18,7 +18,9 @@
         if (app) {
             return app;
         }
+
         app = window.Capacitor.registerPlugin('App');
+
         return app;
     }
 
@@ -26,37 +28,67 @@
         if (!urlRecebido) {
             return null;
         }
+
         try {
             var url = new URL(urlRecebido);
-            if (url.protocol !== 'https:' || url.hostname !== HOST_DEEP_LINK) {
+
+            if (
+                url.protocol !== 'https:' ||
+                url.hostname !== HOST_DEEP_LINK
+            ) {
                 return null;
             }
-            if (url.pathname === '/login' || url.pathname.indexOf('/login/') === 0) {
+
+            if (
+                url.username ||
+                url.password ||
+                (url.port && url.port !== '443')
+            ) {
+                return null;
+            }
+
+            if (/^\/invite\/[a-f0-9]{16}\/?$/i.test(url.pathname)) {
+                return 'https://margot-app.com'
+                    + url.pathname.toLowerCase();
+            }
+
+            if (
+                url.pathname === '/login' ||
+                url.pathname.indexOf('/login/') === 0
+            ) {
                 return URL_LOGIN;
             }
         } catch (erro) {
             console.error('[Margot Deep Links]', erro);
         }
+
         return null;
     }
 
     function abrirDeepLink(urlRecebido) {
         var destino = obterDestino(urlRecebido);
+
         if (!destino) {
             return;
         }
+
         try {
             var urlDestino = new URL(destino);
+
             if (
                 window.location.hostname === urlDestino.hostname &&
-                (window.location.pathname === urlDestino.pathname ||
-                    window.location.pathname === urlDestino.pathname + '/')
+                (
+                    window.location.pathname === urlDestino.pathname ||
+                    window.location.pathname === urlDestino.pathname + '/'
+                ) &&
+                window.location.search === urlDestino.search
             ) {
                 return;
             }
         } catch (erro) {
             console.error('[Margot Deep Links]', erro);
         }
+
         window.location.assign(destino);
     }
 
@@ -64,14 +96,18 @@
         if (!estaNaAplicacaoNativa()) {
             return;
         }
+
         try {
             var appPlugin = obterApp();
+
             await appPlugin.addListener('appUrlOpen', function (evento) {
                 if (evento && evento.url) {
                     abrirDeepLink(evento.url);
                 }
             });
+
             var lancamento = await appPlugin.getLaunchUrl();
+
             if (lancamento && lancamento.url) {
                 abrirDeepLink(lancamento.url);
             }
@@ -79,5 +115,6 @@
             console.error('[Margot Deep Links]', erro);
         }
     }
+
     iniciar();
 })(window);

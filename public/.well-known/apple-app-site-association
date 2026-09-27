@@ -6,7 +6,8 @@
         "appID": "ZU7R8DGBUR.com.margot.app",
         "paths": [
           "/login",
-          "/login/*"
+          "/login/*",
+          "/invite/*"
         ]
       }
     ]

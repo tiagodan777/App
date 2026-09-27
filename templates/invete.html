@@ -1,0 +1,213 @@
+{% extends 'layout.html' %}
+
+{% block title %}
+    Um olá leva a outro | Margot
+{% endblock %}
+
+{% block styles %}
+    <link
+        rel="stylesheet"
+        href="{{ doc_root }}estilos/invite.css?v=20260927"
+        data-margot-page-style
+    >
+{% endblock %}
+
+{% block content %}
+<main
+    class="invite-page"
+    data-invitation
+    data-url="{{ invitation_url|default('')|e('html_attr') }}"
+>
+    <a
+        class="invite-back"
+        href="{{ doc_root }}{{ session.id ? 'settings' : 'create-account' }}"
+        data-margot-sem-animacao
+    >
+        <span aria-hidden="true">‹</span>
+        {{ session.id ? 'Definições' : 'Margot' }}
+    </a>
+
+    <p class="invite-brand">Margot</p>
+
+    {% if invalid_invitation|default(false) or invitation_unavailable|default(false) %}
+        <h1>
+            {{ invalid_invitation|default(false)
+                ? 'Este convite já não está disponível.'
+                : 'O convite está a demorar.' }}
+        </h1>
+
+        <p class="invite-intro">
+            {{ invalid_invitation|default(false)
+                ? 'Podes entrar na Margot sem um convite.'
+                : 'Tenta abrir esta página novamente daqui a pouco.' }}
+        </p>
+
+        <a
+            class="invite-primary"
+            href="{{ doc_root }}{{ session.id ? 'index' : 'create-account' }}"
+        >
+            Continuar
+        </a>
+    {% else %}
+        <h1>
+            Um olá<br>
+            leva a outro.
+        </h1>
+
+        <p class="invite-intro">
+            {{ personal_invitation
+                ? 'Traz alguém para a Margot. O próximo encontro pode começar contigo.'
+                : 'Tens um convite para a Margot. Descobre quem está por perto e começa com um Hey.' }}
+        </p>
+
+        <section
+            class="invite-card"
+            aria-label="{{ personal_invitation ? 'O teu convite' : 'Convite para a Margot' }}"
+        >
+            <span class="invite-spark invite-spark-one" aria-hidden="true">✦</span>
+            <span class="invite-spark invite-spark-two" aria-hidden="true">✦</span>
+
+            {% if personal_invitation %}
+                <div
+                    class="invite-qr"
+                    data-invite-qr
+                    role="img"
+                    aria-label="QR code do teu convite para a Margot"
+                ></div>
+
+                <p class="invite-qr-help" data-qr-help>
+                    Aponta a câmara de outro telemóvel.
+                </p>
+            {% else %}
+                <div class="invite-hello" aria-hidden="true">
+                    Hey<span>✦</span>
+                </div>
+
+                <p class="invite-qr-help">
+                    O teu bilhete para mais encontros.
+                </p>
+            {% endif %}
+
+            <div class="invite-code-label">
+                CÓDIGO DE CONVITE
+            </div>
+
+            <button
+                class="invite-code"
+                type="button"
+                data-copy-code
+                aria-label="Copiar código de convite"
+            >{{ invitation_code }}</button>
+        </section>
+
+        {% if personal_invitation %}
+            <button class="invite-primary" type="button" data-share-invite>
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 16V3m-4 4 4-4 4 4M6 11H4v10h16V11h-2"/>
+                </svg>
+
+                Partilhar convite
+            </button>
+
+            <button class="invite-secondary" type="button" data-copy-link>
+                Copiar ligação
+            </button>
+
+            <p class="invite-nearby" data-nearby-help>
+                Para quem está ao teu lado: mostra o QR ou escolhe AirDrop / Quick Share
+                no menu de partilha, se disponível.
+            </p>
+
+            <div class="invite-count">
+                <strong>{{ invitation_count }}</strong>
+
+                <span>
+                    {{ invitation_count == 1
+                        ? 'pessoa chegou pelo teu convite'
+                        : 'pessoas chegaram pelo teu convite' }}
+                </span>
+            </div>
+
+            <p class="invite-footnote">
+                O mesmo código pode ser usado por várias pessoas.
+                Contamos cada nova conta com email confirmado uma vez.
+                O convite não cria uma conexão nem partilha a tua localização.
+            </p>
+        {% else %}
+            {% if session.id %}
+                <a class="invite-primary" href="{{ doc_root }}index">
+                    Abrir a Margot
+                </a>
+
+                <p class="invite-footnote">
+                    Já tens conta. Os convites são associados a novos registos.
+                </p>
+            {% else %}
+                <a
+                    class="invite-primary"
+                    href="{{ registration_url }}"
+                    data-margot-sem-animacao
+                >
+                    Criar conta com este convite
+                </a>
+
+                <a
+                    class="invite-secondary"
+                    href="https://apps.apple.com/pt/app/margot-pessoas-por-perto/id6803648498"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    Instalar para iPhone · App Store
+                </a>
+
+                <a
+                    class="invite-secondary"
+                    href="{{ invitation_url }}"
+                    data-margot-sem-animacao
+                >
+                    Já tenho a app · Abrir
+                </a>
+
+                <p class="invite-footnote">
+                    Vais instalar a app primeiro?
+                    Guarda o código e introduz em «Tens um convite?» ao criar conta.
+                </p>
+
+                <a
+                    class="invite-login"
+                    href="{{ doc_root }}login"
+                    data-margot-sem-animacao
+                >
+                    Já tens conta? Entrar
+                </a>
+            {% endif %}
+
+            <p class="invite-footnote">
+                Ao usares o convite, associamos a tua nova conta à pessoa que o partilhou.
+                Não criamos uma conexão automaticamente.
+            </p>
+        {% endif %}
+
+        <p
+            class="invite-status"
+            data-invite-status
+            role="status"
+            aria-live="polite"
+        ></p>
+
+        <div class="invite-copy-fallback" data-copy-fallback hidden>
+            <label for="invite-copy-value">
+                Seleciona e copia:
+            </label>
+
+            <input id="invite-copy-value" readonly>
+        </div>
+    {% endif %}
+</main>
+
+{% if personal_invitation|default(false) %}
+    <script src="{{ doc_root }}js/vendor/qrcodegen.js?v=20260927"></script>
+{% endif %}
+
+<script src="{{ doc_root }}js/invite.js?v=20260927"></script>
+{% endblock %}

@@ -14,27 +14,22 @@ window.MargotChatViewport = function (page, list, content) {
         baseHeight = window.innerHeight,
         animation = 0,
         listeners = [];
-
     function bottom(smooth = false) {
         if (!alive) return;
         pinned = true;
         list.scrollTo({ top: list.scrollHeight, behavior: smooth && !reduced ? 'smooth' : 'auto' });
     }
-
     let userMoved = false;
-
     function scroll() {
         if (userMoved && !animation)
             pinned = list.scrollHeight - list.clientHeight - list.scrollTop < 80;
     }
-
     function userScroll() {
         userMoved = true;
         cancelAnimationFrame(animation);
         animation = 0;
         pinned = false;
     }
-
     function layout(animate = false) {
         if (!alive) return;
         if (followingNative) {
@@ -65,7 +60,6 @@ window.MargotChatViewport = function (page, list, content) {
         page.style.height = Math.max(0, height) + 'px';
         page.style.top = top + 'px';
     }
-
     function resized() {
         if (followingNative) return;
         if (
@@ -75,7 +69,6 @@ window.MargotChatViewport = function (page, list, content) {
             return;
         layout();
     }
-
     function insert(article, own) {
         const follow = pinned || own;
         const before = list.scrollTop;
@@ -96,7 +89,6 @@ window.MargotChatViewport = function (page, list, content) {
             return;
         }
         const start = performance.now();
-
         function frame(now) {
             if (!alive) return;
             const progress = Math.min(1, (now - start) / 260),
@@ -105,20 +97,16 @@ window.MargotChatViewport = function (page, list, content) {
             list.scrollTop = before + (target - before) * eased;
             animation = progress < 1 ? requestAnimationFrame(frame) : 0;
         }
-
         animation = requestAnimationFrame(frame);
     }
-
     const observer = new ResizeObserver(() => {
         if (pinned && !animation) bottom();
     });
     observer.observe(content);
     observer.observe(list);
-
     function mediaLoaded() {
         if (pinned && !animation) bottom();
     }
-
     list.addEventListener('load', mediaLoaded, true);
     list.addEventListener('loadedmetadata', mediaLoaded, true);
     list.addEventListener('scroll', scroll, { passive: true });
@@ -127,7 +115,6 @@ window.MargotChatViewport = function (page, list, content) {
     viewport?.addEventListener('resize', resized);
     viewport?.addEventListener('scroll', resized);
     window.addEventListener('resize', resized);
-
     if (nativeIOS && nativeLayout) {
         nativeLayout
             .configure({ enabled: true })
@@ -139,7 +126,6 @@ window.MargotChatViewport = function (page, list, content) {
             })
             .catch(() => {});
     }
-
     if (keyboard && native) {
         if (nativeIOS) keyboard.setAccessoryBarVisible({ isVisible: false }).catch(() => {});
         for (const [name, show] of [
@@ -157,12 +143,10 @@ window.MargotChatViewport = function (page, list, content) {
             });
         }
     }
-
     function ready() {
         layout();
         if (!userMoved) bottom();
     }
-
     document.addEventListener('margot:page-ready', ready);
     layout();
     bottom();
@@ -174,7 +158,6 @@ window.MargotChatViewport = function (page, list, content) {
             list.setAttribute('aria-busy', 'false');
         }
     });
-
     return {
         insert,
         bottom,

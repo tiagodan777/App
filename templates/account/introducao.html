@@ -13,7 +13,10 @@
         alguém com quem gostavas de falar, podes enviar um Hey e quebrar o gelo.
     </p>-->
 
-    <div class="margot-demo" aria-label="Exemplo: duas pessoas próximas encontram-se na Margot e começam uma conversa">
+    <div
+        class="margot-demo"
+        aria-label="Exemplo: duas pessoas próximas encontram-se na Margot e começam uma conversa"
+    >
         <div class="margot-demo-cenario" aria-hidden="true">
             <span class="margot-demo-pessoa margot-demo-pessoa-a">🙂</span>
 
@@ -49,8 +52,46 @@
         Criar conta
     </a>
 
+    {% if convite_ativo|default('') %}
+        <p class="invitation-applied">
+            Convite {{ convite_formatado }} associado.
+
+            <small>
+                A tua nova conta ficará associada à pessoa que te convidou.
+            </small>
+        </p>
+    {% else %}
+        <details class="invitation-entry">
+            <summary>Tens um convite?</summary>
+
+            <label for="invitation-code">
+                Código de quem te convidou
+            </label>
+
+            <input
+                id="invitation-code"
+                name="convite"
+                type="text"
+                maxlength="19"
+                autocomplete="off"
+                autocapitalize="characters"
+                spellcheck="false"
+                placeholder="0000-0000-0000-0000"
+            >
+
+            <small>
+                É opcional. Ao usá-lo, associamos a tua nova conta à pessoa que te convidou.
+            </small>
+        </details>
+    {% endif %}
+
     <nav class="anterior-proximo">
-        <a href="{{ doc_root }}login" class="registar" target="_top" data-margot-sem-animacao>
+        <a
+            href="{{ doc_root }}login"
+            class="registar"
+            target="_top"
+            data-margot-sem-animacao
+        >
             Já tens conta?
             <span>Entrar</span>
         </a>

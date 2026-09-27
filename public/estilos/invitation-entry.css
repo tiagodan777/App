@@ -1,0 +1,53 @@
+.invitation-entry,
+.invitation-applied {
+    width: min(100%, 340px);
+    margin: 18px auto 0;
+
+    color: var(--text, #17171b);
+    text-align: center;
+
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+}
+
+.invitation-entry summary {
+    cursor: pointer;
+    padding: 10px;
+}
+
+.invitation-entry label {
+    display: block;
+    margin: 10px 0 6px;
+}
+
+#invitation-code {
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 48px;
+
+    margin: 0;
+    padding: 12px;
+
+    border: 1px solid var(--line, #ddd);
+    border-radius: 16px;
+
+    background: var(--surface, #fff);
+    color: inherit;
+
+    text-align: center;
+    font: 16px ui-monospace, monospace;
+}
+
+.invitation-entry small,
+.invitation-applied small {
+    display: block;
+    margin: 8px 0;
+
+    color: var(--text-muted, #666);
+    font-size: 12px;
+}
+
+.invitation-applied {
+    padding: 12px;
+    border-radius: 16px;
+    background: var(--surface-soft, #f3f3f7);
+}

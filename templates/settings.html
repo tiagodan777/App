@@ -3,12 +3,31 @@
 {% block title %}Definições | Margot{% endblock %}
 
 {% block styles %}
-    <link rel="stylesheet" href="{{ doc_root }}estilos/settings.css?v=20260916" data-margot-page-style>
+    <link
+        rel="stylesheet"
+        href="{{ doc_root }}estilos/settings.css?v=20260927-invite"
+        data-margot-page-style
+    >
 {% endblock %}
 
 {% block content %}
     <main class="definicoes-pagina">
         <h1>Definições</h1>
+
+        <a
+            class="settings-invite"
+            href="{{ doc_root }}invite"
+            data-margot-sem-animacao
+        >
+            <span class="settings-invite-symbol" aria-hidden="true">✦</span>
+
+            <span>
+                <strong>Convidar para a Margot</strong>
+                <small>Um olá leva a outro. Partilha o teu QR.</small>
+            </span>
+
+            <span aria-hidden="true">↗</span>
+        </a>
 
         <section class="reminder-settings" aria-labelledby="reminders-title">
             <h2 id="reminders-title">Lembretes da Margot</h2>
@@ -18,14 +37,20 @@
                     Pessoas por perto
                     <small>Mais de 5 pessoas · até 2 avisos por dia</small>
                 </span>
+
                 <input type="checkbox" data-reminder="nearby" disabled>
             </label>
 
             <label>
                 <span>
                     A roupa de hoje
-                    <small>Um aviso dia sim, dia não, entre as 12h e as 22h na tua hora local. Se já atualizaste a roupa hoje, não enviamos.</small>
+                    <small>
+                        Um aviso dia sim, dia não, entre as 12h e as 22h
+                        na tua hora local. Se já atualizaste a roupa hoje,
+                        não enviamos.
+                    </small>
                 </span>
+
                 <input type="checkbox" data-reminder="clothes" disabled>
             </label>
 
@@ -36,35 +61,57 @@
             <ul>
                 <li>
                     <a href="{{ doc_root }}create-account?editar=1">
-                        <img src="{{ doc_root }}imagens/icones/user.png" alt="Ícone de utilizador">
+                        <img
+                            src="{{ doc_root }}imagens/icones/user.png"
+                            alt="Ícone de utilizador"
+                        >
                         Informações Pessoais e Permissões
                     </a>
                 </li>
 
                 <li>
                     <a href="{{ doc_root }}blocked-users">
-                        <img src="{{ doc_root }}imagens/icones/block.png" alt="">
+                        <img
+                            src="{{ doc_root }}imagens/icones/block.png"
+                            alt=""
+                        >
                         Utilizadores Bloqueados
                     </a>
                 </li>
 
                 <li>
                     <a href="{{ doc_root }}support">
-                        <img src="{{ doc_root }}imagens/icones/support.png" alt="">
+                        <img
+                            src="{{ doc_root }}imagens/icones/support.png"
+                            alt=""
+                        >
                         Contactar o Suporte
                     </a>
                 </li>
 
                 <li>
                     <a href="{{ doc_root }}profile-delete">
-                        <img src="{{ doc_root }}imagens/icones/delete.png" alt="">
+                        <img
+                            src="{{ doc_root }}imagens/icones/delete.png"
+                            alt=""
+                        >
                         Apagar a Minha Conta
                     </a>
                 </li>
 
                 <li>
-                    <form action="{{ doc_root }}logout" method="post" class="definicoes-logout" id="form-logout">
-                        <input type="hidden" name="_csrf" value="{{ csrf_token|e('html_attr') }}">
+                    <form
+                        action="{{ doc_root }}logout"
+                        method="post"
+                        class="definicoes-logout"
+                        id="form-logout"
+                    >
+                        <input
+                            type="hidden"
+                            name="_csrf"
+                            value="{{ csrf_token|e('html_attr') }}"
+                        >
+
                         <button type="submit">
                             <span aria-hidden="true">↪</span>
                             Terminar sessão

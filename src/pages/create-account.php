@@ -3,13 +3,50 @@ declare(strict_types=1);
 
 use App\CMS\EmailVerification;
 use App\CMS\Member;
+use App\CMS\Invitation;
 use App\Email\Email;
 use App\Validate\Validate;
+
 $method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
-$editing = $method === 'POST' ? ($_POST['modo'] ?? '') === 'editar' : ($_GET['editar'] ?? '') === '1';
+
+$editing = $method === 'POST'
+    ? ($_POST['modo'] ?? '') === 'editar'
+    : ($_GET['editar'] ?? '') === '1';
+
 $memberId = trim((string) ($session->id ?? ''));
 $member = $cms->getMember();
 $base = rtrim((string) DOC_ROOT, '/') . '/';
+
+$invitationCode = '';
+$invitationSource = 'codigo';
+
+if (!$editing) {
+    $fromLink = $_GET['convite'] ?? '';
+
+    $rawInvitation = $fromLink !== ''
+        ? $fromLink
+        : ($method === 'POST' ? ($_POST['convite'] ?? '') : '');
+
+    if ($rawInvitation !== '') {
+        $invitationCode = Invitation::normalize($rawInvitation);
+        $invitationSource = $fromLink !== '' ? 'link' : 'codigo';
+
+        if (
+            $invitationCode === ''
+            || (new Invitation($db))->owner($invitationCode) === ''
+        ) {
+            if ($method === 'POST') {
+                json_response([
+                    'success' => false,
+                    'message' => 'O código de convite não é válido. Revê-o em «Tens um convite?» no início do registo.'
+                ], 422);
+            }
+
+            $invitationCode = '';
+        }
+    }
+}
+
 $allSections = [
     'nome',
     'nascimento',
@@ -21,20 +58,29 @@ $allSections = [
     'permissoes',
     'palavra-passe'
 ];
+
 if ($method !== 'POST') {
     $data = ['gostos' => []];
     $photos = [];
+
     if ($editing) {
         if ($memberId === '') {
             header('Location: ' . $base . 'login');
             exit();
         }
+
         $current = $member->get($memberId);
+
         if (!$current) {
             http_response_code(404);
             exit('Membro não encontrado.');
         }
-        $birth = DateTimeImmutable::createFromFormat('!Y-m-d', (string) $current['nascimento']);
+
+        $birth = DateTimeImmutable::createFromFormat(
+            '!Y-m-d',
+            (string) $current['nascimento']
+        );
+
         $data = [
             'primeiro_nome' => (string) $current['primeiro_nome'],
             'ultimo_nome' => (string) $current['ultimo_nome'],
@@ -47,96 +93,185 @@ if ($method !== 'POST') {
             'email' => (string) $current['email'],
             'sobre_ti' => (string) $current['bio']
         ];
+
         foreach ($current['fotos'] ?? [] as $photo) {
-            if (empty($photo['id']) || ($photo['nome_arquivo'] ?? '') === 'default.webp') {
+            if (
+                empty($photo['id'])
+                || ($photo['nome_arquivo'] ?? '') === 'default.webp'
+            ) {
                 continue;
             }
+
             $name = basename((string) $photo['nome_arquivo']);
+
             $photos[] = [
                 'id' => (string) $photo['id'],
                 'nome' => $name,
-                'url' => $base . 'imagens/fotos-perfil-originais/' . rawurlencode($name),
-                'fallback' => $base . 'imagens/fotos-perfil/' . rawurlencode($name)
+                'url' => $base
+                    . 'imagens/fotos-perfil-originais/'
+                    . rawurlencode($name),
+                'fallback' => $base
+                    . 'imagens/fotos-perfil/'
+                    . rawurlencode($name)
             ];
         }
     }
+
     echo $twig->render('create-account.html', [
         'modo_edicao' => $editing,
         'membro_id_edicao' => $editing ? $memberId : '',
         'dados_iniciais' => $data,
         'fotos_existentes' => $photos,
-        'campos_url' => $base . 'create-account-campos' . ($editing ? '?editar=1' : ''),
-        'perfil_url' => $editing ? $base . 'profile/' . rawurlencode($memberId) : '',
+        'campos_url' => $base
+            . 'create-account-campos'
+            . ($editing ? '?editar=1' : ''),
+        'perfil_url' => $editing
+            ? $base . 'profile/' . rawurlencode($memberId)
+            : '',
         'idade_minima' => Validate::MINIMUM_AGE,
         'ano_atual' => (int) date('Y'),
         'versao_termos' => Member::TERMS_VERSION,
-        'versao_privacidade' => Member::PRIVACY_VERSION
+        'versao_privacidade' => Member::PRIVACY_VERSION,
+        'convite_ativo' => $invitationCode,
+        'convite_formatado' => Invitation::display($invitationCode)
     ]);
+
     exit();
 }
+
 if ($editing && $memberId === '') {
-    json_response(['success' => false, 'message' => 'A sessão terminou.'], 401);
+    json_response([
+        'success' => false,
+        'message' => 'A sessão terminou.'
+    ], 401);
 }
-$section = $editing ? trim((string) ($_POST['secao'] ?? 'tudo')) : 'tudo';
+
+$section = $editing
+    ? trim((string) ($_POST['secao'] ?? 'tudo'))
+    : 'tudo';
+
 if ($section !== 'tudo' && !in_array($section, $allSections, true)) {
-    json_response(['success' => false, 'message' => 'A área de edição não é válida.'], 422);
+    json_response([
+        'success' => false,
+        'message' => 'A área de edição não é válida.'
+    ], 422);
 }
+
 $sections = $section === 'tudo' ? $allSections : [$section];
 $form = $member->prepareAccountForm($_POST, $sections, !$editing);
+
 if ($form['errors']) {
-    json_response(['success' => false, 'erros' => $form['errors']], 422);
+    json_response([
+        'success' => false,
+        'erros' => $form['errors']
+    ], 422);
 }
+
 $image = $cms->getImage();
 $editsPhotos = in_array('fotos', $sections, true);
 $newPhotos = [];
+
 try {
     if ($editsPhotos) {
-        $newPhotos = $image->receiveProfileUploads($_FILES['imagens'] ?? []);
+        $newPhotos = $image->receiveProfileUploads(
+            $_FILES['imagens'] ?? []
+        );
     }
+
     $photoOrder = $_POST['ordem_fotos'] ?? [];
     $photosToRemove = $_POST['fotos_remover'] ?? [];
-    $photosChanged = $editsPhotos && ($newPhotos || $photosToRemove || ($_POST['fotos_alteradas'] ?? '') === '1');
+
+    $photosChanged = $editsPhotos && (
+        $newPhotos
+        || $photosToRemove
+        || ($_POST['fotos_alteradas'] ?? '') === '1'
+    );
+
     $oldPhotos = [];
+
     $db->beginTransaction();
+
     if ($editing) {
         $savedId = $memberId;
-        if ($form['changes'] && !$member->update($savedId, $form['changes'])) {
+
+        if (
+            $form['changes']
+            && !$member->update($savedId, $form['changes'])
+        ) {
             throw new DomainException('duplicate');
         }
     } else {
         $savedId = $member->create($form['changes']);
+
         if ($savedId === false) {
             throw new DomainException('duplicate');
         }
+
         $member->recordLegalAcceptance($savedId);
+
+        if ($invitationCode !== '') {
+            (new Invitation($db))->attribute(
+                $savedId,
+                $invitationCode,
+                $invitationSource
+            );
+        }
     }
+
     if ($photosChanged) {
-        $oldPhotos = $image->syncProfilePhotos($savedId, $newPhotos, $photoOrder, $photosToRemove);
+        $oldPhotos = $image->syncProfilePhotos(
+            $savedId,
+            $newPhotos,
+            $photoOrder,
+            $photosToRemove
+        );
     }
+
     $db->commit();
 } catch (LengthException | InvalidArgumentException $error) {
     if ($db->inTransaction()) {
         $db->rollBack();
     }
+
     $image->discardProfileUploads($newPhotos);
-    json_response(['success' => false, 'erros' => ['imagens' => $error->getMessage()]], 422);
+
+    json_response([
+        'success' => false,
+        'erros' => [
+            'imagens' => $error->getMessage()
+        ]
+    ], 422);
 } catch (Throwable $error) {
     if ($db->inTransaction()) {
         $db->rollBack();
     }
+
     $image->discardProfileUploads($newPhotos);
-    if ($error instanceof DomainException && $error->getMessage() === 'duplicate') {
-        json_response(
-            ['success' => false, 'erros' => ['email' => 'O email ou o número de telefone já está a ser usado.']],
-            409
-        );
+
+    if (
+        $error instanceof DomainException
+        && $error->getMessage() === 'duplicate'
+    ) {
+        json_response([
+            'success' => false,
+            'erros' => [
+                'email' => 'O email ou o número de telefone já está a ser usado.'
+            ]
+        ], 409);
     }
+
     error_log('[create-account] ' . $error->getMessage());
-    json_response(['success' => false, 'message' => 'Não foi possível guardar a conta.'], 500);
+
+    json_response([
+        'success' => false,
+        'message' => 'Não foi possível guardar a conta.'
+    ], 500);
 }
+
 if ($oldPhotos) {
     $image->deleteProfileFiles($oldPhotos);
 }
+
 if ($newPhotos) {
     try {
         $image->startProfileWorker($savedId);
@@ -144,19 +279,42 @@ if ($newPhotos) {
         error_log('[create-account-worker] ' . $error->getMessage());
     }
 }
+
 if ($editing) {
-    json_response(['success' => true, 'redirect' => $base . 'profile/' . rawurlencode($savedId)]);
+    json_response([
+        'success' => true,
+        'redirect' => $base . 'profile/' . rawurlencode($savedId)
+    ]);
 }
+
 try {
     $verification = new EmailVerification($db);
-    $request = $verification->createRequest((string) $form['data']['email']);
+
+    $request = $verification->createRequest(
+        (string) $form['data']['email']
+    );
+
     if ($request) {
-        $link = rtrim((string) DOMAIN, '/') . '/verify-email/?token=' . rawurlencode($request['token']);
-        $name = htmlspecialchars($request['primeiro_nome'], ENT_QUOTES, 'UTF-8');
-        $safeLink = htmlspecialchars($link, ENT_QUOTES, 'UTF-8');
+        $link = rtrim((string) DOMAIN, '/')
+            . '/verify-email/?token='
+            . rawurlencode($request['token']);
+
+        $name = htmlspecialchars(
+            $request['primeiro_nome'],
+            ENT_QUOTES,
+            'UTF-8'
+        );
+
+        $safeLink = htmlspecialchars(
+            $link,
+            ENT_QUOTES,
+            'UTF-8'
+        );
+
         $body =
             "<p>Olá {$name},</p><p>Confirma o teu email para utilizares a Margot.</p>" .
             "<p><a href=\"{$safeLink}\">Confirmar o meu email</a></p>";
+
         try {
             (new Email($email_config))->sendEmail(
                 (string) $email_config['admin_email'],
@@ -166,12 +324,14 @@ try {
             );
         } catch (Throwable $error) {
             $verification->cancelRequest($request['token']);
+
             error_log('[create-account-email] ' . $error->getMessage());
         }
     }
 } catch (Throwable $error) {
     error_log('[create-account-verification] ' . $error->getMessage());
 }
+
 json_response([
     'success' => true,
     'redirect' => $base . 'login?sucesso=confirma-email',

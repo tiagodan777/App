@@ -1,7 +1,7 @@
 {% extends 'layout.html' %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ doc_root }}estilos/chat.css?v=20260923-camera" data-margot-page-style>
+<link rel="stylesheet" href="{{ doc_root }}estilos/chat.css?v=20260927-build" data-margot-page-style>
 {% endblock %}
 
 {% block content %}
@@ -80,6 +80,7 @@
 
                         <footer>
                             <time datetime="{{ mensagem.criada_em }}" data-data-mensagem="{{ mensagem.criada_em }}"></time>
+
                             {% if mensagem.minha %}
                                 <span class="chat-lida" aria-label="{{ mensagem.lida ? 'Lida' : 'Enviada' }}">{{ mensagem.lida ? '✓✓' : '✓' }}</span>
                             {% endif %}
@@ -115,6 +116,7 @@
         </div>
 
         <div id="chat-media-preview" class="chat-media-preview" hidden></div>
+
         <input type="checkbox" id="chat-view-once" hidden>
 
         <div class="chat-compositor">
@@ -212,10 +214,10 @@ window.webSocketUrl = window.location.protocol === 'https:'
     : 'ws://' + window.location.hostname + ':8080';
 </script>
 
-<script src="{{ doc_root }}js/chat-viewport.js?v=20260920-video"></script>
+<script src="{{ doc_root }}js/chat-viewport.js?v=20260927-build"></script>
 <script src="{{ doc_root }}js/chat-recorder.js?v=20260920-video"></script>
 <script src="{{ doc_root }}js/chat-camera.js?v=20260923-camera"></script>
 <script src="{{ doc_root }}js/chat-reactions.js?v=20260920-video"></script>
 <script src="{{ doc_root }}js/chat-audio-player.js?v=20260920-video"></script>
-<script src="{{ doc_root }}js/chat.js?v=20260920-video"></script>
+<script src="{{ doc_root }}js/chat.js?v=20260927-build"></script>
 {% endblock %}

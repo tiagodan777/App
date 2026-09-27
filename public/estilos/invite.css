@@ -1,0 +1,334 @@
+@import url('https://fonts.googleapis.com/css2?family=Alfa+Slab+One&display=swap');
+
+.invite-page {
+    --invite-red: #e12346;
+
+    width: min(100% - 40px, 430px);
+    margin: 0 auto;
+    padding:
+        calc(22px + env(safe-area-inset-top, 0px))
+        0
+        calc(140px + env(safe-area-inset-bottom, 0px));
+
+    color: var(--text, #17171b);
+    text-align: center;
+
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        'Helvetica Neue',
+        Arial,
+        sans-serif;
+}
+
+.invite-page * {
+    box-sizing: border-box;
+}
+
+.invite-back {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    width: fit-content;
+    min-height: 44px;
+
+    color: inherit;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.invite-back span {
+    font-size: 30px;
+}
+
+.invite-brand {
+    margin: 12px 0 20px;
+    color: var(--invite-red);
+    font: 400 27px 'Alfa Slab One', Georgia, serif;
+    letter-spacing: -1px;
+}
+
+.invite-page h1 {
+    margin: 0;
+    font: 400 clamp(38px, 10vw, 52px)/1.12 'Alfa Slab One', Georgia, serif;
+    letter-spacing: -1.5px;
+}
+
+.invite-intro {
+    max-width: 330px;
+    margin: 20px auto 26px;
+
+    color: var(--text-muted, #666);
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+.invite-card {
+    position: relative;
+    padding: 28px 18px 24px;
+
+    border: 1px solid var(--line, #17171b18);
+    border-radius: 32px;
+    background: var(--surface, #fff);
+    box-shadow: 0 20px 60px #30224b0c;
+}
+
+.invite-qr {
+    width: min(100%, 232px);
+    aspect-ratio: 1;
+    margin: auto;
+    padding: 4px;
+
+    border-radius: 18px;
+    background: #fff;
+    overflow: hidden;
+}
+
+.invite-qr svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.invite-qr-help {
+    margin: 16px 0 22px;
+    font-size: 13px;
+    color: var(--text-muted, #666);
+}
+
+.invite-code-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--text-muted, #666);
+}
+
+.invite-code {
+    min-height: 44px;
+    max-width: 100%;
+    border: 0;
+
+    background: transparent;
+    color: inherit;
+
+    font: 600 clamp(14px, 4vw, 19px) ui-monospace, monospace;
+    letter-spacing: .5px;
+
+    cursor: pointer;
+}
+
+.invite-spark {
+    position: absolute;
+    color: #ad91ef;
+    font-size: 26px;
+    pointer-events: none;
+}
+
+.invite-spark-one {
+    top: 12px;
+    left: 14px;
+    transform: rotate(16deg);
+}
+
+.invite-spark-two {
+    bottom: 15px;
+    right: 15px;
+    color: #e12346;
+    font-size: 18px;
+}
+
+.invite-primary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+
+    width: 100%;
+    min-height: 56px;
+    margin-top: 22px;
+    padding: 14px 20px;
+
+    border: 0;
+    border-radius: 999px;
+    background: var(--invite-red);
+    color: #fff;
+
+    font-family: inherit;
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.3;
+
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.invite-primary svg {
+    width: 22px;
+    height: 22px;
+
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.invite-secondary {
+    display: grid;
+    place-items: center;
+
+    min-height: 48px;
+    width: 100%;
+    margin: 5px 0;
+    padding: 10px;
+
+    border: 0;
+    background: transparent;
+    color: inherit;
+
+    font: 600 14px/1.4 sans-serif;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.invite-nearby,
+.invite-footnote {
+    margin: 12px auto;
+    max-width: 345px;
+
+    color: var(--text-muted, #666);
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.invite-count {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+
+    margin-top: 26px;
+    padding: 20px 10px;
+
+    border-top: 1px solid var(--line, #17171b18);
+}
+
+.invite-count strong {
+    color: var(--invite-red);
+    font: 700 32px Georgia, serif;
+}
+
+.invite-count span {
+    max-width: 200px;
+    text-align: left;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.invite-status {
+    min-height: 22px;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.invite-status[data-error] {
+    color: #ba203f;
+}
+
+.invite-copy-fallback input {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px;
+
+    border: 1px solid var(--line);
+    border-radius: 12px;
+
+    font-size: 16px;
+}
+
+.invite-hello {
+    position: relative;
+    display: grid;
+    place-items: center;
+
+    width: 180px;
+    height: 160px;
+    margin: auto;
+
+    border-radius: 45% 55% 60% 40%;
+    background: #f1eafd;
+    color: var(--invite-red);
+
+    font: 900 48px Georgia, serif;
+    transform: rotate(-6deg);
+}
+
+.invite-hello span {
+    position: absolute;
+    right: -4px;
+    top: 0;
+
+    color: #a689d9;
+    font: 35px Georgia, serif;
+}
+
+.invite-login {
+    display: inline-block;
+    padding: 12px;
+    color: var(--invite-red);
+    font-size: 14px;
+}
+
+.invite-page :focus-visible {
+    outline: 3px solid #9568eb;
+    outline-offset: 4px;
+}
+
+.invite-page button:disabled {
+    opacity: .6;
+    cursor: progress;
+}
+
+.invite-page [hidden] {
+    display: none !important;
+}
+
+@media (prefers-color-scheme: dark) {
+    .invite-hello {
+        background: #302438;
+    }
+
+    .invite-status[data-error] {
+        color: #ff929f;
+    }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .invite-card {
+        animation: invite-arrive 380ms cubic-bezier(.2, .7, .3, 1) both;
+    }
+
+    .invite-primary,
+    .invite-code {
+        transition:
+            transform 160ms ease,
+            opacity 160ms ease;
+    }
+
+    .invite-primary:active,
+    .invite-code:active {
+        transform: scale(.97);
+    }
+
+    @keyframes invite-arrive {
+        from {
+            opacity: 0;
+            transform: translateY(12px);
+        }
+
+        to {
+            opacity: 1;
+            transform: none;
+        }
+    }
+}
