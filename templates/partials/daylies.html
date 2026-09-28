@@ -1,3 +1,176 @@
+<style>
+    #daylie-draft {
+        position: fixed;
+        inset: 0;
+        box-sizing: border-box;
+        width: 100%;
+        height: 100vh;
+        height: 100dvh;
+        max-width: none;
+        max-height: none;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        overflow: hidden;
+        background: #000;
+        color: #fff;
+        overscroll-behavior: contain;
+    }
+
+    #daylie-draft[open] {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    #daylie-draft .daylie-draft-preview {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        border-radius: 0;
+        overflow: hidden;
+        background: #000;
+    }
+
+    #daylie-draft .daylie-draft-preview img,
+    #daylie-draft .daylie-draft-preview video {
+        display: block;
+        width: 100%;
+        height: 100%;
+        max-width: none;
+        max-height: none;
+        border-radius: 0;
+        object-fit: cover;
+    }
+
+    #daylie-draft .daylie-draft-preview video {
+        object-fit: contain;
+    }
+
+    #daylie-draft .daylie-draft-top {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-shrink: 0;
+        padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 32px;
+        background: linear-gradient(#0009, transparent);
+    }
+
+    #daylie-draft h2 {
+        margin: 0;
+        color: #fff;
+        font-size: 18px;
+        line-height: 1.25;
+        text-shadow: 0 1px 8px #0008;
+    }
+
+    #daylie-draft [data-draft-cancel] {
+        display: grid;
+        place-items: center;
+        flex: 0 0 44px;
+        width: 44px;
+        height: 44px;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        border-radius: 50%;
+        background: #0006;
+        color: #fff;
+        font: inherit;
+        font-size: 30px;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+    #daylie-draft .daylie-draft-bottom {
+        position: relative;
+        z-index: 1;
+        flex-shrink: 0;
+        max-height: 65%;
+        overflow-y: auto;
+        padding: 36px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+        background: linear-gradient(transparent, #000b 36%, #000d);
+    }
+
+    #daylie-draft .daylie-draft-label {
+        display: block;
+        margin: 0 0 6px;
+        color: #fff;
+        font-size: 13px;
+    }
+
+    #daylie-draft textarea {
+        display: block;
+        box-sizing: border-box;
+        width: 100%;
+        min-height: 48px;
+        max-height: 120px;
+        margin: 0;
+        padding: 13px 16px;
+        border: 1px solid #ffffff60;
+        border-radius: 24px;
+        background: #0006;
+        color: #fff;
+        font: inherit;
+        font-size: 16px;
+        line-height: 22px;
+        resize: none;
+    }
+
+    #daylie-draft textarea::placeholder {
+        color: #ffffffbf;
+        opacity: 1;
+    }
+
+    #daylie-draft textarea:focus-visible,
+    #daylie-draft button:focus-visible {
+        outline: 2px solid #fff;
+        outline-offset: 3px;
+    }
+
+    #daylie-draft .daylie-draft-note {
+        margin: 10px 2px;
+        color: #fff;
+        font-size: 12px;
+        line-height: 1.4;
+        opacity: 0.8;
+    }
+
+    #daylie-draft .daylie-error {
+        margin: 8px 0;
+        color: #ffb6c1;
+        opacity: 1;
+    }
+
+    #daylie-draft .daylie-error:empty {
+        display: none;
+    }
+
+    #daylie-draft .daylie-draft-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin: 0;
+    }
+
+    #daylie-draft [data-draft-publish] {
+        min-height: 48px;
+        margin: 0;
+        padding: 13px 24px;
+        border: 0;
+        border-radius: 26px;
+        background: #ed2147;
+        color: #fff;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+    }
+</style>
+
 <dialog id="daylie-viewer" class="daylie-viewer" aria-label="Daylies">
     <div class="daylie-progress" aria-hidden="true"></div>
 
@@ -18,21 +191,48 @@
     </footer>
 </dialog>
 
-<dialog id="daylie-draft" class="daylie-draft" aria-labelledby="daylie-draft-title">
-    <h2 id="daylie-draft-title">Publicar Daylie</h2>
-
+<dialog
+    id="daylie-draft"
+    class="daylie-draft"
+    aria-labelledby="daylie-draft-title"
+>
     <div class="daylie-draft-preview"></div>
 
-    <label>
-        Legenda
-        <textarea maxlength="160" rows="2" placeholder="Acrescenta uma legenda (opcional)…"></textarea>
-    </label>
+    <header class="daylie-draft-top">
+        <button
+            type="button"
+            data-draft-cancel
+            aria-label="Cancelar Daylie"
+            autofocus
+        >×</button>
 
-    <p>Visível por 24 h para conexões e pessoas próximas com acesso ao teu perfil.</p>
-    <p class="daylie-error" role="alert"></p>
+        <h2 id="daylie-draft-title">Publicar Daylie</h2>
+    </header>
 
-    <div class="daylie-draft-actions">
-        <button type="button" data-draft-cancel>Cancelar</button>
-        <button type="button" data-draft-publish>Publicar Daylie</button>
+    <div class="daylie-draft-bottom">
+        <label
+            for="daylie-draft-caption"
+            class="daylie-draft-label"
+        >Legenda opcional</label>
+
+        <textarea
+            id="daylie-draft-caption"
+            maxlength="160"
+            rows="1"
+            placeholder="Acrescenta uma legenda…"
+            aria-describedby="daylie-draft-note"
+        ></textarea>
+
+        <p id="daylie-draft-note" class="daylie-draft-note">
+            Visível por 24 h para conexões e pessoas próximas com acesso ao teu perfil.
+        </p>
+
+        <p class="daylie-error" role="alert"></p>
+
+        <div class="daylie-draft-actions">
+            <button type="button" data-draft-publish>
+                Publicar Daylie
+            </button>
+        </div>
     </div>
 </dialog>
