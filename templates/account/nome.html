@@ -49,30 +49,6 @@
                     </small>
                 </div>
             </section>
-        {% else %}
-            <section class="invitation-field">
-                <label for="invitation-code">
-                    Código de convite
-                    <span>Opcional</span>
-                </label>
-
-                <input
-                    id="invitation-code"
-                    name="convite"
-                    type="text"
-                    maxlength="19"
-                    autocomplete="off"
-                    autocapitalize="characters"
-                    autocorrect="off"
-                    spellcheck="false"
-                    placeholder="XXXX-XXXX-XXXX-XXXX"
-                    aria-describedby="invitation-code-help"
-                >
-
-                <small id="invitation-code-help">
-                    Alguém te trouxe à Margot? Coloca o código dessa pessoa.
-                </small>
-            </section>
         {% endif %}
     {% endif %}
 
