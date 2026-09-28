@@ -21,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             20,
             60 * 60
         );
-        $limiteEmail = consumirLimiteRequisicoes('password-lost-email', chaveLimiteRequisicoes($email), 3, 60 * 60);
+        $limiteEmail = consumirLimiteRequisicoes('password-lost-email', chaveLimiteRequisicoes($email), 5, 15 * 60);
         if (!$limiteIp['permitido'] || !$limiteEmail['permitido']) {
             $tentarEm = max(1, (int) $limiteIp['tentar_em'], (int) $limiteEmail['tentar_em']);
             http_response_code(429);
