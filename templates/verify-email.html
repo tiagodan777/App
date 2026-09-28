@@ -6,17 +6,40 @@
     <meta name="theme-color" content="#f7f7f8">
     <meta name="robots" content="noindex,nofollow">
     <meta name="referrer" content="no-referrer">
+
     <title>Confirmar email | Margot</title>
-    <link rel="stylesheet" href="{{ doc_root }}estilos/style.css?v=20260916-nav2">
-    <link rel="stylesheet" href="{{ doc_root }}estilos/login.css?v=20260916">
+
+    <link
+        rel="stylesheet"
+        href="{{ doc_root }}estilos/style.css?v=20260916-nav2"
+    >
+
+    <link
+        rel="stylesheet"
+        href="{{ doc_root }}estilos/login.css?v=20260916"
+    >
+
+    <link
+        rel="stylesheet"
+        href="{{ doc_root }}estilos/install-app.css?v=20260928-1"
+    >
 </head>
-<body>
+
+<body class="margot-auth-install">
     <main>
         <form>
             <h1>Confirmar email</h1>
 
             {% if verificado %}
-                <p class="login-mensagem login-mensagem-sucesso" role="status" aria-live="polite">O teu email foi confirmado. Já podes entrar na Margot.</p>
+                <p
+                    class="login-mensagem login-mensagem-sucesso"
+                    role="status"
+                    aria-live="polite"
+                >
+                    O teu email foi confirmado. Já podes entrar na Margot.
+                </p>
+
+                {% include 'partials/install-app.html' %}
             {% else %}
                 <p class="login-mensagem login-mensagem-erro" role="alert">
                     {{ mensagem_erro|default('Esta ligação é inválida, expirou ou já foi utilizada.')|e }}
@@ -27,16 +50,23 @@
 
     <aside>
         {% if verificado %}
-            <a href="https://go.margot-app.com/login" id="esqueci-palavra-passe">
+            <a
+                href="https://go.margot-app.com/login"
+                id="esqueci-palavra-passe"
+            >
                 Entrar na Margot
             </a>
         {% else %}
-            <a href="{{ doc_root }}email-verification-resend" id="esqueci-palavra-passe">
+            <a
+                href="{{ doc_root }}email-verification-resend"
+                id="esqueci-palavra-passe"
+            >
                 Pedir uma nova ligação
             </a>
         {% endif %}
     </aside>
 
     <script src="{{ doc_root }}js/navegacao-documento.js?v=20260916"></script>
+    <script src="{{ doc_root }}js/install-app.js?v=20260928-1"></script>
 </body>
 </html>

@@ -1,0 +1,82 @@
+@charset "UTF-8";
+
+body.margot-auth-install {
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: auto;
+}
+
+.margot-install {
+    width: 100%;
+    margin: 12px 0 24px;
+    padding: 26px 20px;
+    border: 1px solid #ded8ed;
+    border-radius: 28px;
+    background: linear-gradient(145deg, #f2edff, #fff 75%);
+    color: #17171b;
+    text-align: center;
+}
+
+.margot-install[hidden],
+.margot-install [hidden] {
+    display: none !important;
+}
+
+.margot-install-brand {
+    color: #e12346;
+    font: 400 25px 'Alfa Slab One', Georgia, serif;
+}
+
+.margot-install h2 {
+    margin: 18px 0 10px;
+    font-size: 25px;
+    line-height: 1.15;
+    letter-spacing: -.7px;
+}
+
+.margot-install p {
+    margin: 10px 0 18px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #64616e;
+}
+
+.margot-install a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    padding: 12px 14px;
+    border-radius: 24px;
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 700;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.margot-install .margot-install-primary {
+    color: #fff;
+    background: #e12346;
+}
+
+.margot-install .margot-install-open {
+    margin-top: 6px;
+    color: #17171b;
+}
+
+.margot-install .margot-install-help {
+    margin-bottom: 0;
+    font-size: 12px;
+}
+
+.margot-install-android strong {
+    display: block;
+    margin-bottom: 6px;
+    color: #17171b;
+}
+
+.margot-install a:focus-visible {
+    outline: 2px solid #7657d3;
+    outline-offset: 3px;
+}

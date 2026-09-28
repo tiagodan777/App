@@ -148,30 +148,28 @@
                     href="{{ registration_url }}"
                     data-margot-sem-animacao
                 >
-                    Criar conta com este convite
+                    Criar a minha conta
                 </a>
 
-                <a
-                    class="invite-secondary"
-                    href="https://apps.apple.com/pt/app/margot-pessoas-por-perto/id6803648498"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                >
-                    Instalar para iPhone · App Store
-                </a>
+                <p class="invite-footnote" data-invite-steps>
+                    Cria a conta aqui e confirma o teu email.
+                    Depois, instala a Margot e entra com os mesmos dados.
+                    O convite fica associado à tua conta durante o registo.
+                </p>
+
+                <p class="invite-footnote" data-android-notice hidden>
+                    Android · Disponível em breve na Google Play.
+                    Já podes criar a tua conta pelo convite no site.
+                </p>
 
                 <a
                     class="invite-secondary"
                     href="{{ invitation_url }}"
                     data-margot-sem-animacao
+                    data-open-existing-app
                 >
                     Já tenho a app · Abrir
                 </a>
-
-                <p class="invite-footnote">
-                    Vais instalar a app primeiro?
-                    Guarda o código e introduz em «Tens um convite?» ao criar conta.
-                </p>
 
                 <a
                     class="invite-login"
@@ -210,4 +208,5 @@
 {% endif %}
 
 <script src="{{ doc_root }}js/invite.js?v=20260927"></script>
+<script src="{{ doc_root }}js/install-app.js?v=20260928-1"></script>
 {% endblock %}

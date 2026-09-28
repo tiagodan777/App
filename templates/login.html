@@ -27,9 +27,14 @@
         rel="stylesheet"
         href="{{ doc_root }}estilos/auth-motion.css?v=20260927-auth2"
     >
+
+    <link
+        rel="stylesheet"
+        href="{{ doc_root }}estilos/install-app.css?v=20260928-1"
+    >
 </head>
 
-<body>
+<body class="margot-auth-install">
     <main>
         <form action="{{ doc_root }}login" method="post">
             <input
@@ -57,6 +62,10 @@
                 >
                     A tua conta foi criada. Já podes iniciar sessão.
                 </p>
+            {% endif %}
+
+            {% if sucesso in ['confirma-email', 'conta-criada'] and not mensagem_erro %}
+                {% include 'partials/install-app.html' %}
             {% endif %}
 
             {% if mensagem_erro %}
@@ -165,5 +174,6 @@
 
     <script src="{{ doc_root }}js/login.js?v=20260916"></script>
     <script src="{{ doc_root }}js/navegacao-documento.js?v=20260916"></script>
+    <script src="{{ doc_root }}js/install-app.js?v=20260928-1"></script>
 </body>
 </html>
