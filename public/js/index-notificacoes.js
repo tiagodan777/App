@@ -22,6 +22,7 @@
     var contador = document.getElementById('heys-contador');
     var limparTodos = document.getElementById('limpar-todos-heys');
     var avisos = document.getElementById('heys-avisos');
+
     if (!abrir || !area || !painel || !lista) {
         return;
     }
@@ -167,30 +168,38 @@
         var linkFoto = criarElemento('a', 'hey-item-foto-link');
         linkFoto.href = perfil;
         linkFoto.setAttribute('aria-label', 'Abrir perfil de ' + nomePessoa);
+
         var imagem = criarElemento('img', 'hey-item-foto');
         imagem.alt = '';
         imagem.loading = 'lazy';
         aplicarFoto(imagem, item.outro_foto_url);
         linkFoto.appendChild(imagem);
+
         var corpo = criarElemento('div', 'hey-item-corpo');
         var frase = criarElemento('p', 'hey-item-frase');
         var linkNome = criarElemento('a', 'hey-item-nome', nomePessoa);
         linkNome.href = perfil;
+
         if (item.direcao === 'enviado') {
             frase.append('Enviaste um Hey a ', linkNome, '.');
         } else {
             frase.append(linkNome, ' enviou-te um Hey.');
         }
+
         var momento = criarElemento('time', 'hey-item-data', dataLocal(item.criada_em));
         momento.dateTime = texto(item.criada_em);
         corpo.append(frase, momento);
+
         var botaoLimpar = criarElemento('button', 'hey-item-limpar');
         botaoLimpar.type = 'button';
         botaoLimpar.dataset.notificationId = String(numero(item.id));
         botaoLimpar.dataset.direction = item.direcao;
         botaoLimpar.setAttribute('aria-label', 'Limpar este Hey');
         botaoLimpar.innerHTML =
-            '<svg viewBox="0 0 24 24" aria-hidden="true">' + '<path d="M6 6l12 12M18 6 6 18"></path>' + '</svg>';
+            '<svg viewBox="0 0 24 24" aria-hidden="true">' +
+            '<path d="M6 6l12 12M18 6 6 18"></path>' +
+            '</svg>';
+
         artigo.append(linkFoto, corpo, botaoLimpar);
         return artigo;
     }
@@ -201,10 +210,12 @@
             return item.direcao === estado.direcao;
         });
         mostrarEstado(vazio, filtradas.length === 0 && !estado.carregando);
+
         if (limparTodos) {
             limparTodos.hidden = filtradas.length === 0 || estado.carregando;
             limparTodos.textContent = estado.direcao === 'enviado' ? 'Limpar enviados' : 'Limpar recebidos';
         }
+
         filtradas.forEach(function (item) {
             lista.appendChild(criarItem(item));
         });
@@ -221,6 +232,7 @@
         }
         aviso.classList.add('a-sair');
         aviso.classList.remove('visivel');
+
         if (imediato) {
             aviso.remove();
             return;
@@ -246,6 +258,7 @@
             return;
         }
         var gesto = null;
+
         aviso.addEventListener('pointerdown', function (evento) {
             if (evento.pointerType === 'mouse' && evento.button !== 0) {
                 return;
@@ -261,12 +274,14 @@
                 aviso.setPointerCapture(evento.pointerId);
             } catch (_) {}
         });
+
         aviso.addEventListener('pointermove', function (evento) {
             if (!gesto || evento.pointerId !== gesto.id) {
                 return;
             }
             var dx = evento.clientX - gesto.x;
             var dy = evento.clientY - gesto.y;
+
             if (Math.abs(dy) > 5 || Math.abs(dx) > 8) {
                 gesto.arrastou = true;
             }
@@ -278,6 +293,7 @@
                 aviso.style.opacity = String(opacidade);
             }
         });
+
         function terminarSwipe(evento) {
             if (!gesto || evento.pointerId !== gesto.id) {
                 return;
@@ -286,9 +302,11 @@
             var duracao = Math.max(1, performance.now() - gesto.inicio);
             var velocidade = dy / duracao;
             var deveFechar = dy <= -34 || velocidade <= -0.42;
+
             aviso.style.transition = '';
             aviso.style.transform = '';
             aviso.style.opacity = '';
+
             if (deveFechar) {
                 aviso.dataset.swiped = '1';
                 evento.preventDefault();
@@ -296,6 +314,7 @@
             }
             gesto = null;
         }
+
         aviso.addEventListener('pointerup', terminarSwipe);
         aviso.addEventListener('pointercancel', terminarSwipe);
         aviso.addEventListener('click', function (evento) {
@@ -315,7 +334,9 @@
             { titulo: 'Hey', mensagem: '', foto: '', url: '', tipo: 'hey', icone: '', duracao: 3800 },
             opcoes || {}
         );
+
         limitarAvisosTopo();
+
         var aviso = criarElemento(dados.url ? 'a' : 'div', 'hey-aviso hey-aviso-' + dados.tipo);
         if (dados.url) {
             aviso.href = dados.url;
@@ -324,8 +345,10 @@
             aviso.style.textDecoration = 'none';
             aviso.style.pointerEvents = 'auto';
         }
+
         aviso.setAttribute('role', 'status');
         aviso.setAttribute('aria-label', [dados.titulo, dados.mensagem].filter(Boolean).join('. '));
+
         if (dados.foto) {
             var foto = criarElemento('img', 'hey-aviso-foto');
             aplicarFoto(foto, dados.foto);
@@ -339,14 +362,18 @@
             var simbolo = criarElemento('span', 'hey-aviso-simbolo', conteudoSimbolo);
             aviso.appendChild(simbolo);
         }
+
         var corpo = criarElemento('div', 'hey-aviso-corpo');
         corpo.append(criarElemento('strong', '', dados.titulo), criarElemento('p', '', dados.mensagem));
         aviso.appendChild(corpo);
         avisos.appendChild(aviso);
+
         ativarSwipeAviso(aviso);
+
         window.requestAnimationFrame(function () {
             aviso.classList.add('visivel');
         });
+
         var duracao = Math.max(1200, Number(dados.duracao) || 3800);
         aviso.dataset.removerTimer = String(
             window.setTimeout(function () {
@@ -362,6 +389,7 @@
         if (!('Notification' in window) || Notification.permission !== 'granted') {
             return;
         }
+
         var opcoes = {
             body: mensagem,
             icon: urlFoto(foto),
@@ -370,12 +398,14 @@
             renotify: true,
             data: { url: url || window.location.href }
         };
+
         try {
             if ('serviceWorker' in navigator) {
                 var registo = await navigator.serviceWorker.ready;
                 await registo.showNotification(titulo, opcoes);
                 return;
             }
+
             var notificacao = new Notification(titulo, opcoes);
             notificacao.onclick = function () {
                 window.focus();
@@ -398,6 +428,7 @@
             }
             return;
         }
+
         var push = notificacoesNativas();
         if (push) {
             try {
@@ -407,10 +438,12 @@
             }
             return;
         }
+
         if (!('Notification' in window) || Notification.permission !== 'default') {
             concluirFluxoPermissaoNotificacoes();
             return;
         }
+
         try {
             await Notification.requestPermission();
         } catch (falha) {
@@ -444,11 +477,13 @@
             concluirFluxoPermissaoNotificacoes();
             return;
         }
+
         var pedirUmaVez = function () {
             document.removeEventListener('pointerup', pedirUmaVez, true);
             document.removeEventListener('keydown', pedirUmaVez, true);
             pedirPermissao();
         };
+
         document.addEventListener('pointerup', pedirUmaVez, true);
         document.addEventListener('keydown', pedirUmaVez, true);
     }
@@ -462,6 +497,7 @@
             mostrarEstado(carregando, true);
         }
         mostrarEstado(erro, false);
+
         try {
             var resposta = await fetch(endpoint, {
                 method: 'GET',
@@ -469,6 +505,7 @@
                 cache: 'no-store',
                 headers: { Accept: 'application/json' }
             });
+
             if (!resposta.ok) {
                 var detalhe = '';
                 try {
@@ -479,11 +516,14 @@
                 }
                 throw new Error('Resposta HTTP ' + resposta.status + (detalhe ? ': ' + detalhe : ''));
             }
+
             var dados = await resposta.json();
             if (!dados.success) {
                 throw new Error(dados.message || 'Não foi possível carregar os Heys.');
             }
+
             var recebidas = Array.isArray(dados.notifications) ? dados.notifications : [];
+
             if (estado.iniciou) {
                 recebidas.forEach(function (item) {
                     var id = numero(item.id);
@@ -491,6 +531,7 @@
                         var nome = texto(item.outro_nome) || 'Alguém';
                         var mensagem = nome + ' enviou-te um Hey.';
                         var perfil = urlPerfil(item.outro_membro_id);
+
                         mostrarAviso({
                             titulo: 'Recebeste um Hey!',
                             mensagem: mensagem,
@@ -501,6 +542,7 @@
                     }
                 });
             }
+
             estado.notificacoes = recebidas;
             estado.idsConhecidos = new Set(
                 recebidas.map(function (item) {
@@ -530,6 +572,7 @@
         Object.entries(valores || {}).forEach(function (entrada) {
             corpo.set(entrada[0], String(entrada[1]));
         });
+
         var resposta = await fetch(endpoint, {
             method: 'POST',
             credentials: 'same-origin',
@@ -537,6 +580,7 @@
             headers: { Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
             body: corpo.toString()
         });
+
         var dados = null;
         try {
             dados = await resposta.json();
@@ -556,6 +600,7 @@
         if (botao) {
             botao.disabled = true;
         }
+
         try {
             var dados = await enviarAcao('hide_one', { notification_id: notificacaoId, direction: direcao });
             estado.notificacoes = estado.notificacoes.filter(function (item) {
@@ -582,6 +627,7 @@
         }
         var direcao = estado.direcao;
         limparTodos.disabled = true;
+
         try {
             var dados = await enviarAcao('hide_all', { direction: direcao });
             estado.notificacoes = estado.notificacoes.filter(function (item) {
@@ -605,6 +651,7 @@
         try {
             var corpo = new URLSearchParams();
             corpo.set('action', 'mark_all_read');
+
             var resposta = await fetch(endpoint, {
                 method: 'POST',
                 credentials: 'same-origin',
@@ -615,6 +662,7 @@
                 },
                 body: corpo.toString()
             });
+
             if (!resposta.ok) {
                 return;
             }
@@ -638,6 +686,7 @@
         abrir.setAttribute('aria-expanded', 'true');
         document.body.classList.add('heys-abertos');
         painel.focus({ preventScroll: true });
+
         obterNotificacoes(true).then(function (carregou) {
             if (carregou) {
                 marcarComoLidas();
@@ -645,13 +694,16 @@
         });
     }
 
-    function fecharPainel() {
+    function fecharPainel(reporFoco) {
         estado.aberto = false;
         area.classList.remove('aberta');
         area.setAttribute('aria-hidden', 'true');
         abrir.setAttribute('aria-expanded', 'false');
         document.body.classList.remove('heys-abertos');
-        abrir.focus({ preventScroll: true });
+
+        if (reporFoco !== false) {
+            abrir.focus({ preventScroll: true });
+        }
     }
 
     function ativarArrastoPainel() {
@@ -662,6 +714,7 @@
         var inicioY = 0;
         var atualX = 0;
         var inicioTempo = 0;
+
         function limparEstilos() {
             painel.classList.remove('a-arrastar');
             painel.style.removeProperty('transition');
@@ -671,6 +724,7 @@
                 fundo.style.removeProperty('opacity');
             }
         }
+
         function libertarPonteiro() {
             if (!painel.releasePointerCapture || ponteiroId === null) {
                 return;
@@ -684,6 +738,7 @@
                  */
             }
         }
+
         function terminarArrasto(evento) {
             if (!ativo || evento.pointerId !== ponteiroId) {
                 return;
@@ -692,16 +747,20 @@
             var duracao = Math.max(1, Date.now() - inicioTempo);
             var velocidade = distancia / duracao;
             var deveFechar = horizontal && (distancia < -90 || velocidade < -0.55);
+
             libertarPonteiro();
             ativo = false;
             horizontal = false;
             ponteiroId = null;
+
             painel.style.transition = 'transform 220ms cubic-bezier(.4,0,1,1)';
             painel.style.transform = deveFechar ? 'translateX(-104%)' : 'translateX(0)';
+
             if (fundo) {
                 fundo.style.transition = 'opacity 220ms ease';
                 fundo.style.opacity = deveFechar ? '0' : '1';
             }
+
             window.setTimeout(function () {
                 if (deveFechar) {
                     fecharPainel();
@@ -709,6 +768,7 @@
                 limparEstilos();
             }, 220);
         }
+
         painel.addEventListener('pointerdown', function (evento) {
             if (!estado.aberto || evento.button > 0) {
                 return;
@@ -716,6 +776,7 @@
             if (evento.target.closest('a, button, input, textarea, select, label')) {
                 return;
             }
+
             ativo = true;
             horizontal = false;
             ponteiroId = evento.pointerId;
@@ -723,12 +784,14 @@
             inicioY = evento.clientY;
             inicioTempo = Date.now();
         });
+
         painel.addEventListener('pointermove', function (evento) {
             if (!ativo || evento.pointerId !== ponteiroId) {
                 return;
             }
             var distanciaX = evento.clientX - inicioX;
             var distanciaY = evento.clientY - inicioY;
+
             if (!horizontal) {
                 if (Math.abs(distanciaX) < 8 && Math.abs(distanciaY) < 8) {
                     return;
@@ -738,9 +801,11 @@
                     ponteiroId = null;
                     return;
                 }
+
                 horizontal = true;
                 painel.classList.add('a-arrastar');
                 painel.style.transition = 'none';
+
                 if (fundo) {
                     fundo.style.transition = 'none';
                 }
@@ -755,27 +820,33 @@
                     }
                 }
             }
+
             atualX = evento.clientX;
             var deslocamento = Math.min(0, distanciaX);
             var progresso = Math.min(1, Math.abs(deslocamento) / painel.offsetWidth);
+
             painel.style.transform = 'translateX(' + deslocamento + 'px)';
             if (fundo) {
                 fundo.style.opacity = String(1 - progresso);
             }
+
             evento.preventDefault();
             evento.stopPropagation();
         });
+
         painel.addEventListener('pointerup', terminarArrasto);
         painel.addEventListener('pointercancel', terminarArrasto);
     }
 
     function selecionarDirecao(botao) {
         estado.direcao = botao.dataset.direcao === 'enviado' ? 'enviado' : 'recebido';
+
         document.querySelectorAll('.heys-separadores [role="tab"]').forEach(function (separador) {
             var ativo = separador === botao;
             separador.classList.toggle('ativo', ativo);
             separador.setAttribute('aria-selected', String(ativo));
         });
+
         renderizar();
     }
 
@@ -793,23 +864,34 @@
             );
         });
     }
+
+    document.addEventListener('margot:page-leave', function () {
+        if (estado.aberto) {
+            fecharPainel(false);
+        }
+    });
+
     abrir.addEventListener('click', abrirPainel);
+
     if (fechar) {
         fechar.addEventListener('click', fecharPainel);
     }
     if (fundo) {
         fundo.addEventListener('click', fecharPainel);
     }
+
     document.addEventListener('keydown', function (evento) {
         if (evento.key === 'Escape' && estado.aberto) {
             fecharPainel();
         }
     });
+
     document.querySelectorAll('.heys-separadores [role="tab"]').forEach(function (botao) {
         botao.addEventListener('click', function () {
             selecionarDirecao(botao);
         });
     });
+
     lista.addEventListener('click', function (evento) {
         var origem = evento.target;
         if (!(origem instanceof Element)) {
@@ -819,14 +901,17 @@
         if (!botao || !lista.contains(botao)) {
             return;
         }
+
         evento.preventDefault();
         evento.stopPropagation();
+
         limparUmHey(
             numero(botao.dataset.notificationId),
             botao.dataset.direction === 'enviado' ? 'enviado' : 'recebido',
             botao
         );
     });
+
     if (limparTodos) {
         limparTodos.addEventListener('click', function (evento) {
             evento.preventDefault();
@@ -834,18 +919,22 @@
             limparTodosHeys();
         });
     }
+
     window.addEventListener('app:hey-recebido', function (evento) {
         var dados = evento.detail || {};
         var id = numero(dados.notification_id);
+
         if (id > 0 && estado.idsConhecidos.has(id)) {
             return;
         }
         if (id > 0) {
             estado.idsConhecidos.add(id);
         }
+
         var nome = texto(dados.from_name) || 'Alguém';
         var mensagem = nome + ' enviou-te um Hey.';
         var perfil = urlPerfil(dados.from_member_id);
+
         mostrarAviso({
             titulo: 'Recebeste um Hey!',
             mensagem: mensagem,
@@ -853,12 +942,15 @@
             url: perfil,
             tipo: 'recebido'
         });
+
         mostrarNotificacaoSistema('Recebeste um Hey!', mensagem, texto(dados.from_photo), perfil);
         definirContador(numero(contador.textContent) + 1);
+
         window.setTimeout(function () {
             obterNotificacoes(false);
         }, 250);
     });
+
     window.addEventListener('app:hey-enviado', function (evento) {
         var dados = evento.detail || {};
         var miniMenu = document.querySelector('.mini-menu');
@@ -866,6 +958,7 @@
             texto(dados.destinatario_nome) ||
             texto(miniMenu?.querySelector('header h1')?.textContent) ||
             'A outra pessoa';
+
         mostrarAviso({
             titulo: nome + ' recebeu o teu Hey',
             mensagem: '',
@@ -873,10 +966,12 @@
             icone: 'seta-cima',
             duracao: 2200
         });
+
         window.setTimeout(function () {
             obterNotificacoes(false);
         }, 250);
     });
+
     window.addEventListener('app:hey-erro', function (evento) {
         mostrarAviso({
             titulo: 'Não foi possível enviar',
@@ -884,10 +979,12 @@
             tipo: 'erro'
         });
     });
+
     ativarArrastoPainel();
     bloquearGestosDoMapa(abrir);
     bloquearGestosDoMapa(area);
     bloquearGestosDoMapa(painel);
+
     window.mostrarMensagemTemporaria = function (mensagem, tipo) {
         var eErro = tipo === 'erro';
         mostrarAviso({
@@ -897,9 +994,11 @@
             duracao: eErro ? 4200 : 2600
         });
     };
+
     registarServiceWorker();
     prepararPedidoPermissao();
     obterNotificacoes(false);
+
     window.setInterval(function () {
         if (!document.hidden) {
             obterNotificacoes(false);
