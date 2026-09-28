@@ -12,10 +12,13 @@ window.MargotChatReactions = function ({
     const signal = events.signal;
     const menu = document.getElementById('chat-actions');
     const picker = document.getElementById('chat-emojis');
-    const emojiForm = picker.querySelector('form');
-    const emojiInput = picker.querySelector('input');
-    const emojiError = picker.querySelector('[role="alert"]');
-    const emojiSend = picker.querySelector('[type="submit"]');
+    const quotes = window.MargotChatQuotes(content);
+
+    const emojiPicker = window.MargotEmojiPicker(picker, async (emoji, reportError) => {
+        if (!selected) return false;
+        const id = Number(selected.dataset.mensagemId);
+        return react(id, emoji, true, reportError);
+    });
 
     let selected;
     let gesture;
@@ -25,8 +28,12 @@ window.MargotChatReactions = function ({
     let alive = true;
     let pending = new Set();
 
-    const on = (target, type, handler) => target.addEventListener(type, handler, { signal });
-    const find = (id) => content.querySelector('[data-mensagem-id="' + Number(id) + '"]');
+    const on = (target, type, handler) =>
+        target.addEventListener(type, handler, { signal });
+
+    const find = (id) =>
+        content.querySelector('[data-mensagem-id="' + Number(id) + '"]');
+
     const haptic = () => window.MargotHaptics?.feedback?.();
 
     function render(article, reactions) {
@@ -80,7 +87,12 @@ window.MargotChatReactions = function ({
 
         try {
             const data = await request(
-                new URLSearchParams({ action: 'react', message_id: id, emoji, toggle: String(toggle) })
+                new URLSearchParams({
+                    action: 'react',
+                    message_id: id,
+                    emoji,
+                    toggle: String(toggle)
+                })
             );
 
             if (!alive) return;
@@ -91,7 +103,9 @@ window.MargotChatReactions = function ({
             if (
                 emoji === '❤️' &&
                 article &&
-                data.reactions.some((item) => item.emoji === emoji && String(item.member_id) === me)
+                (data.reactions || []).some(
+                    (item) => item.emoji === emoji && String(item.member_id) === me
+                )
             ) {
                 const heart = document.createElement('span');
                 heart.className = 'chat-heart';
@@ -102,6 +116,7 @@ window.MargotChatReactions = function ({
                 setTimeout(() => heart.remove(), 700);
             }
 
+            emojiPicker.remember(emoji);
             publish({ type: 'chat_reaction', message_id: Number(id) });
             return true;
         } catch (error) {
@@ -128,21 +143,35 @@ window.MargotChatReactions = function ({
         clearTimeout(photoTimer);
         selected = article;
         lastTap = null;
-        menu.querySelector('[data-action="delete"]').hidden = article.dataset.emissorId !== me;
+
+        menu.querySelector('[data-action="delete"]').hidden =
+            article.dataset.emissorId !== me;
+
+        emojiPicker.updatePresets();
         menu.showModal();
         haptic();
     }
 
     on(content, 'pointerdown', (event) => {
         clearTimeout(photoTimer);
-        if (event.button !== 0 || event.target.closest('button,a,input,video,audio')) return;
+
+        if (
+            event.button !== 0 ||
+            event.target.closest('button,a,input,video,audio')
+        ) return;
 
         const article = event.target.closest('.chat-mensagem');
         if (!article) return;
 
         cancelGesture();
 
-        gesture = { article, id: event.pointerId, x: event.clientX, y: event.clientY, long: false };
+        gesture = {
+            article,
+            id: event.pointerId,
+            x: event.clientX,
+            y: event.clientY,
+            long: false
+        };
 
         timer = setTimeout(() => {
             if (gesture) {
@@ -153,7 +182,10 @@ window.MargotChatReactions = function ({
     });
 
     on(content, 'pointermove', (event) => {
-        if (gesture && Math.hypot(event.clientX - gesture.x, event.clientY - gesture.y) > 12) {
+        if (
+            gesture &&
+            Math.hypot(event.clientX - gesture.x, event.clientY - gesture.y) > 12
+        ) {
             cancelGesture();
             lastTap = null;
         }
@@ -209,7 +241,11 @@ window.MargotChatReactions = function ({
     on(content, 'keydown', (event) => {
         if (
             event.target.closest('.chat-balao') &&
-            (event.key === 'ContextMenu' || (event.key === 'F10' && event.shiftKey) || event.key === 'Enter')
+            (
+                event.key === 'ContextMenu' ||
+                (event.key === 'F10' && event.shiftKey) ||
+                event.key === 'Enter'
+            )
         ) {
             if (event.target.closest('button,video,audio')) return;
 
@@ -222,50 +258,17 @@ window.MargotChatReactions = function ({
         const reaction = event.target.closest('[data-emoji]');
 
         if (reaction) {
-            react(reaction.closest('.chat-mensagem').dataset.mensagemId, reaction.dataset.emoji);
+            react(
+                reaction.closest('.chat-mensagem').dataset.mensagemId,
+                reaction.dataset.emoji
+            );
         }
     });
 
     function openPicker() {
         closeMenu();
-        emojiForm.reset();
-        emojiError.textContent = '';
-        picker.showModal();
-        emojiInput.focus({ preventScroll: true });
+        emojiPicker.open();
     }
-
-    on(emojiForm, 'submit', async (event) => {
-        event.preventDefault();
-
-        if (!selected || emojiSend.disabled) return;
-
-        const article = selected;
-        const emoji = emojiInput.value.trim();
-
-        if (!emoji) {
-            emojiError.textContent = 'Escolhe um emoji no teclado.';
-            return;
-        }
-
-        emojiError.textContent = '';
-        emojiSend.disabled = true;
-
-        const sent = await react(article.dataset.mensagemId, emoji, true, (message) => {
-            if (selected === article && picker.open) {
-                emojiError.textContent = message;
-            }
-        });
-
-        emojiSend.disabled = false;
-
-        if (alive && sent && selected === article && picker.open) {
-            picker.close();
-        }
-    });
-
-    on(emojiInput, 'input', () => {
-        emojiError.textContent = '';
-    });
 
     on(menu, 'click', async (event) => {
         const button = event.target.closest('button');
@@ -285,7 +288,9 @@ window.MargotChatReactions = function ({
         if (action === 'reply') {
             closeMenu();
 
-            const media = selected.querySelector('audio,video,img');
+            const body = selected.querySelector('.chat-balao');
+            const media = body?.querySelector('audio,video,img');
+            const once = body?.querySelector('.chat-once');
 
             onReply({
                 id,
@@ -295,7 +300,7 @@ window.MargotChatReactions = function ({
                         ? 'audio'
                         : media?.tagName === 'VIDEO'
                           ? 'video'
-                          : media
+                          : media || once
                             ? 'imagem'
                             : 'texto'
             });
@@ -305,7 +310,12 @@ window.MargotChatReactions = function ({
             closeMenu();
 
             try {
-                await request(new URLSearchParams({ action: 'delete_message', message_id: id }));
+                await request(
+                    new URLSearchParams({
+                        action: 'delete_message',
+                        message_id: id
+                    })
+                );
 
                 if (alive) {
                     remove(id);
@@ -354,6 +364,8 @@ window.MargotChatReactions = function ({
             clearTimeout(photoTimer);
             cancelGesture();
             events.abort();
+            quotes.destroy();
+            emojiPicker.destroy();
             closeMenu();
 
             if (picker.open) picker.close();

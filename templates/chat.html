@@ -2,6 +2,7 @@
 
 {% block styles %}
 <link rel="stylesheet" href="{{ doc_root }}estilos/chat.css?v=20260927-build" data-margot-page-style>
+<link rel="stylesheet" href="{{ doc_root }}estilos/chat-social.css?v=20260928-1" data-margot-page-style>
 {% endblock %}
 
 {% block content %}
@@ -178,31 +179,7 @@
     <button type="button" data-action="close">Cancelar</button>
 </dialog>
 
-<dialog id="chat-emojis" class="chat-sheet chat-emoji-picker" aria-labelledby="chat-emoji-title">
-    <header>
-        <strong id="chat-emoji-title">Outra reação</strong>
-        <button type="button" data-close aria-label="Cancelar reação">×</button>
-    </header>
-
-    <form>
-        <label for="chat-emoji-input">Emoji</label>
-        <p id="chat-emoji-help">Toca no botão de emojis do teu teclado e escolhe um.</p>
-
-        <input
-            id="chat-emoji-input"
-            type="text"
-            maxlength="64"
-            autocomplete="off"
-            autocapitalize="off"
-            spellcheck="false"
-            enterkeyhint="done"
-            aria-describedby="chat-emoji-help chat-emoji-error"
-        >
-
-        <p id="chat-emoji-error" class="chat-erro" role="alert"></p>
-        <button type="submit">Reagir</button>
-    </form>
-</dialog>
+<dialog id="chat-emojis" class="chat-sheet chat-emoji-picker" aria-label="Escolher reação"></dialog>
 
 <script>
 window.membroId = {{ membro_id|json_encode|raw }};
@@ -217,7 +194,9 @@ window.webSocketUrl = window.location.protocol === 'https:'
 <script src="{{ doc_root }}js/chat-viewport.js?v=20260927-scroll-keyboard-2"></script>
 <script src="{{ doc_root }}js/chat-recorder.js?v=20260920-video"></script>
 <script src="{{ doc_root }}js/chat-camera.js?v=20260923-camera"></script>
-<script src="{{ doc_root }}js/chat-reactions.js?v=20260920-video"></script>
+<script src="{{ doc_root }}js/chat-emoji-data.js?v=20260928-1"></script>
+<script src="{{ doc_root }}js/chat-social.js?v=20260928-1"></script>
+<script src="{{ doc_root }}js/chat-reactions.js?v=20260928-1"></script>
 <script src="{{ doc_root }}js/chat-audio-player.js?v=20260920-video"></script>
 <script src="{{ doc_root }}js/chat.js?v=20260927-build"></script>
 {% endblock %}
