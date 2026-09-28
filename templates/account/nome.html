@@ -1,25 +1,97 @@
 <div id="nome">
-    <h1>{{ modo_edicao ? 'Qual é o teu nome?' : 'Como te chamas?' }}</h1>
+    <h1>
+        {{ modo_edicao ? 'Qual é o teu nome?' : 'Como te chamas?' }}
+    </h1>
 
     <p>
         <label for="primeiro_nome">Primeiro nome</label>
 
-        <input type="text" name="primeiro_nome" id="primeiro_nome" required>
+        <input
+            type="text"
+            name="primeiro_nome"
+            id="primeiro_nome"
+            autocomplete="given-name"
+            required
+        >
     </p>
 
     <p>
         <label for="ultimo_nome">Último nome</label>
 
-        <input type="text" name="ultimo_nome" id="ultimo_nome" required>
+        <input
+            type="text"
+            name="ultimo_nome"
+            id="ultimo_nome"
+            autocomplete="family-name"
+            required
+        >
     </p>
+
+    {% if not modo_edicao %}
+        {% if convite_ativo|default('') %}
+            <section
+                class="invitation-applied"
+                aria-label="Convite associado"
+            >
+                <span class="invitation-applied-mark" aria-hidden="true">
+                    ✓
+                </span>
+
+                <div>
+                    <strong>Vieste por convite.</strong>
+
+                    <span class="invitation-applied-code">
+                        {{ convite_formatado }}
+                    </span>
+
+                    <small>
+                        A tua nova conta ficará associada à pessoa que te convidou.
+                    </small>
+                </div>
+            </section>
+        {% else %}
+            <section class="invitation-field">
+                <label for="invitation-code">
+                    Código de convite
+                    <span>Opcional</span>
+                </label>
+
+                <input
+                    id="invitation-code"
+                    name="convite"
+                    type="text"
+                    maxlength="19"
+                    autocomplete="off"
+                    autocapitalize="characters"
+                    autocorrect="off"
+                    spellcheck="false"
+                    placeholder="XXXX-XXXX-XXXX-XXXX"
+                    aria-describedby="invitation-code-help"
+                >
+
+                <small id="invitation-code-help">
+                    Alguém te trouxe à Margot? Coloca o código dessa pessoa.
+                </small>
+            </section>
+        {% endif %}
+    {% endif %}
 
     <nav class="anterior-proximo">
         {% if modo_edicao %}
-            <a data-etapa="#editar-perfil" data-sem-validar="true" class="anterior">
+            <a
+                data-etapa="#editar-perfil"
+                data-sem-validar="true"
+                class="anterior"
+            >
                 Voltar à lista
             </a>
 
-            <button type="submit" class="proximo guardar-secao">Guardar e sair</button>
+            <button
+                type="submit"
+                class="proximo guardar-secao"
+            >
+                Guardar e sair
+            </button>
         {% else %}
             <a data-etapa="#nascimento" class="proximo">
                 Próximo

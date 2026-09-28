@@ -1,53 +1,123 @@
-.invitation-entry,
+@charset "UTF-8";
+
+.invitation-field,
 .invitation-applied {
-    width: min(100%, 340px);
-    margin: 18px auto 0;
+    width: min(80%, 560px);
+    margin: 22px auto 8px;
+    box-sizing: border-box;
 
     color: var(--text, #17171b);
-    text-align: center;
 
-    font: 14px/1.5 -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Helvetica Neue",
+        Arial,
+        sans-serif;
 }
 
-.invitation-entry summary {
-    cursor: pointer;
-    padding: 10px;
+.invitation-field {
+    padding-top: 18px;
+    border-top: 1px solid var(--line, #17171b18);
 }
 
-.invitation-entry label {
-    display: block;
-    margin: 10px 0 6px;
+#create-account-form .invitation-field label {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+
+    margin-bottom: 10px;
+
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
 }
 
-#invitation-code {
+.invitation-field label span {
+    color: var(--text-muted, #74747c);
+    font-size: 12px;
+    font-weight: 400;
+}
+
+#create-account-form #invitation-code {
     width: 100%;
-    box-sizing: border-box;
     min-height: 48px;
-
     margin: 0;
-    padding: 12px;
+    padding: 12px 14px;
 
-    border: 1px solid var(--line, #ddd);
-    border-radius: 16px;
+    box-sizing: border-box;
+    border: 1px solid var(--line, #17171b18);
+    border-radius: 14px;
 
     background: var(--surface, #fff);
-    color: inherit;
+    color: var(--text, #17171b);
 
-    text-align: center;
-    font: 16px ui-monospace, monospace;
+    font: 500 16px/1.4 ui-monospace, monospace;
+    letter-spacing: 0.5px;
+
+    -webkit-appearance: none;
+    appearance: none;
 }
 
-.invitation-entry small,
+#create-account-form #invitation-code::placeholder {
+    color: var(--text-muted, #74747c);
+    opacity: 0.65;
+}
+
+#create-account-form #invitation-code:focus {
+    border-color: #e12346;
+    outline: 2px solid #e1234622;
+    outline-offset: 2px;
+}
+
+.invitation-field small,
 .invitation-applied small {
     display: block;
-    margin: 8px 0;
+    margin-top: 9px;
 
-    color: var(--text-muted, #666);
+    color: var(--text-muted, #74747c);
     font-size: 12px;
+    font-weight: 400;
+    line-height: 1.5;
 }
 
 .invitation-applied {
-    padding: 12px;
-    border-radius: 16px;
-    background: var(--surface-soft, #f3f3f7);
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+
+    padding: 16px;
+    border: 1px solid var(--line, #17171b18);
+    border-radius: 18px;
+
+    background: var(--surface, #fff);
+}
+
+.invitation-applied-mark {
+    display: grid;
+    place-items: center;
+
+    width: 30px;
+    height: 30px;
+    flex: 0 0 30px;
+
+    border-radius: 50%;
+    background: #e1234612;
+    color: #e12346;
+
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.invitation-applied strong {
+    display: block;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.invitation-applied-code {
+    display: block;
+    margin-top: 5px;
+    font: 500 13px/1.4 ui-monospace, monospace;
 }

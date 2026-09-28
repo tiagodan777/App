@@ -39,7 +39,8 @@
     var etapaAtual = null;
     var pedidoAtual = null;
     var templateCampos = document.getElementById('create-account-campos-cache');
-    var camposHtmlCache = templateCampos ? templateCampos.innerHTML : null;
+    var camposHtmlCache = templateCampos ? '' : null;
+    var camposDOMCache = templateCampos ? templateCampos.content : null;
     var aEnviar = false;
     var erroValidacaoPendente = null;
 
@@ -379,11 +380,6 @@
 
     function animarEntradaEtapa($etapa, direcao) {
         var elemento = $etapa.get(0);
-
-        /*
-         * Nunca deixar margin-left inline.
-         * Isto é o que mantém o formulário centrado no desktop.
-         */
         $etapa.css('margin-left', '');
 
         if (
@@ -394,50 +390,55 @@
             return;
         }
 
-        /*
-         * Queremos que a mudança de etapa seja claramente perceptível,
-         * mas sem o movimento exagerado de 200% que existia antes.
-         *
-         * Mobile: ~90px
-         * Tablet: ~140px
-         * Desktop: máximo 190px
-         */
-        var distancia = Math.max(90, Math.min(190, window.innerWidth * 0.18));
-        var inicioX = (direcao < 0 ? -1 : 1) * distancia;
-
         elemento.style.willChange = 'transform, opacity';
 
         var animacao = elemento.animate(
             [
                 {
-                    transform: 'translate3d(' + inicioX + 'px, 0, 0)',
-                    opacity: 0.72
+                    transform:
+                        'translate3d(' +
+                        (direcao < 0 ? -12 : 12) +
+                        'px,0,0)',
+                    opacity: 0.85
                 },
                 {
-                    transform: 'translate3d(0, 0, 0)',
+                    transform: 'translate3d(0,0,0)',
                     opacity: 1
                 }
             ],
             {
-                duration: 310,
-                easing: 'cubic-bezier(.22,.8,.28,1)',
-                fill: 'none'
+                duration: 180,
+                easing: 'cubic-bezier(.2,.7,.3,1)'
             }
         );
 
-        animacao.finished
-            .catch(function () {})
-            .then(function () {
-                elemento.style.willChange = '';
-            });
+        animacao.finished.catch(function () {}).finally(function () {
+            elemento.style.willChange = '';
+        });
     }
 
     function renderizarEtapa(resposta, etapa, opcoes, origem) {
-        var $resposta = $('<div>').append(
-            $.parseHTML(resposta, document, false)
-        );
+        /*
+         * O template já foi interpretado pelo navegador.
+         * Copiamos apenas a etapa pedida, sem interpretar novamente
+         * o HTML de todas as fotografias, permissões e restantes campos.
+         */
+        if (!camposDOMCache) {
+            var cache = document.createElement('template');
+            cache.innerHTML = resposta;
+            camposDOMCache = cache.content;
+        }
 
-        var $etapa = $resposta.find(etapa).first();
+        var original = camposDOMCache.querySelector(etapa);
+        var copia = original ? original.cloneNode(true) : null;
+
+        if (copia) {
+            copia.querySelectorAll('script').forEach(function (script) {
+                script.remove();
+            });
+        }
+
+        var $etapa = copia ? $(copia) : $();
 
         if (!$etapa.length) {
             console.error('A etapa não existe na resposta:', etapa);
@@ -459,8 +460,6 @@
                 opcoes.direcao || direcaoEntreEtapas(origem, etapa)
             );
         } else {
-            // Garante que uma versão antiga da animação nunca deixa a etapa
-            // desalinhada ao abrir diretamente uma URL ?etapa=... no desktop.
             $etapa.css('margin-left', '');
         }
 
@@ -484,12 +483,6 @@
 
         pararRecursos();
 
-        /*
-         * create-account-campos devolve todas as etapas de uma só vez.
-         * A versão anterior voltava a descarregar exatamente o mesmo HTML
-         * em cada toque em Próximo/Anterior. Guardamos a primeira resposta
-         * em memória para as mudanças seguintes serem imediatas.
-         */
         if (camposHtmlCache !== null) {
             renderizarEtapa(camposHtmlCache, etapa, opcoes, origem);
             return;
@@ -515,7 +508,13 @@
 
         pedido.fail(function (xhr, estado) {
             if (estado === 'abort') return;
-            console.error('Erro ao carregar a área:', xhr.status, xhr.responseText);
+
+            console.error(
+                'Erro ao carregar a área:',
+                xhr.status,
+                xhr.responseText
+            );
+
             alert('Não foi possível carregar esta área.');
         });
 
@@ -793,6 +792,7 @@
         }
 
         erroValidacaoPendente = erro;
+
         carregarEtapa(erro.etapa, {
             historico: 'push',
             animar: true
@@ -898,8 +898,6 @@
     }
 
     restaurarDaSessao();
-
-    // Remove qualquer valor antigo guardado antes de a etapa "objetivo" ser eliminada.
     delete dados.objetivo;
     guardarNaSessao();
 
@@ -907,170 +905,164 @@
     window.guardarCamposCreateAccount = guardarCamposAtuais;
     window.carregarEtapaCreateAccount = navegar;
 
-    /*
-     * O formulário e o <template> já existem quando este script
-     * é executado porque os scripts estão no fim do bloco.
-     *
-     * Inicializamos imediatamente, antes de esperar pelo
-     * DOMContentLoaded/jQuery ready. Assim a primeira etapa
-     * já está no DOM quando o browser desenha a nova página.
-     */
     inicializar();
 
-    $(function () {
-        $(document).on(
-            'click',
-            'nav.anterior-proximo > a[data-etapa], .entrar[data-etapa]',
-            function (evento) {
-                evento.preventDefault();
+    /*
+     * O formulário já existe: os botões ficam funcionais imediatamente,
+     * sem esperar pelo DOMContentLoaded dos restantes recursos.
+     */
+    $(document).on(
+        'click',
+        'nav.anterior-proximo > a[data-etapa], .entrar[data-etapa]',
+        function (evento) {
+            evento.preventDefault();
 
-                var destino = $(this).data('etapa');
-                if (!destino) return;
+            var destino = $(this).data('etapa');
+            if (!destino) return;
 
-                navegar(destino, {
-                    validar: false,
-                    guardar: true
-                });
-            }
-        );
-
-        $(document).on('click', '.editar-area[data-etapa]', function () {
-            navegar($(this).data('etapa'), {
+            navegar(destino, {
                 validar: false,
-                guardar: false
+                guardar: true
             });
-        });
+        }
+    );
 
-        $(document).on('click', '[data-voltar-perfil]', function () {
-            if (config.perfilUrl) {
-                window.location.href = config.perfilUrl;
+    $(document).on('click', '.editar-area[data-etapa]', function () {
+        navegar($(this).data('etapa'), {
+            validar: false,
+            guardar: false
+        });
+    });
+
+    $(document).on('click', '[data-voltar-perfil]', function () {
+        if (config.perfilUrl) {
+            window.location.href = config.perfilUrl;
+            return;
+        }
+
+        history.back();
+    });
+
+    window.addEventListener('popstate', function (evento) {
+        guardarCamposAtuais({ incluirPassword: true });
+
+        var destino = evento.state && evento.state.createAccount
+            ? evento.state.etapa
+            : ETAPA_INICIAL;
+
+        carregarEtapa(destino, {
+            historico: 'nenhum',
+            animar: true
+        });
+    });
+
+    $form.on('submit', function (evento) {
+        evento.preventDefault();
+        if (aEnviar) return;
+
+        guardarCamposAtuais({ incluirPassword: true });
+
+        if (modoEdicao) {
+            if (!validarEtapa()) return;
+        } else {
+            var erroValidacao = primeiroErroCriacao();
+
+            if (erroValidacao) {
+                mostrarPrimeiroErro(erroValidacao);
                 return;
             }
+        }
 
-            history.back();
-        });
+        aEnviar = true;
 
-        window.addEventListener('popstate', function (evento) {
-            guardarCamposAtuais({ incluirPassword: true });
+        var $botao = $(document.activeElement).is('[type="submit"]')
+            ? $(document.activeElement)
+            : $form.find('[type="submit"]').first();
 
-            var destino = evento.state && evento.state.createAccount
-                ? evento.state.etapa
-                : ETAPA_INICIAL;
+        var textoOriginal = $botao.text();
 
-            carregarEtapa(destino, {
-                historico: 'nenhum',
-                animar: true
-            });
-        });
+        $botao
+            .prop('disabled', true)
+            .text(modoEdicao ? 'A guardar…' : 'A criar conta…');
 
-        $form.on('submit', function (evento) {
-            evento.preventDefault();
-            if (aEnviar) return;
+        mostrarErro('');
 
-            guardarCamposAtuais({ incluirPassword: true });
-
-            if (modoEdicao) {
-                if (!validarEtapa()) return;
-            } else {
-                var erroValidacao = primeiroErroCriacao();
-
-                if (erroValidacao) {
-                    mostrarPrimeiroErro(erroValidacao);
+        $.ajax({
+            url: $form.attr('action') || '/create-account',
+            method: 'POST',
+            data: criarFormData(),
+            processData: false,
+            contentType: false,
+            dataType: 'json',
+            cache: false
+        })
+            .done(function (resposta) {
+                if (resposta.success && resposta.redirect) {
+                    limparSessao();
+                    window.location.href = resposta.redirect;
                     return;
                 }
-            }
 
-            aEnviar = true;
-
-            var $botao = $(document.activeElement).is('[type="submit"]')
-                ? $(document.activeElement)
-                : $form.find('[type="submit"]').first();
-
-            var textoOriginal = $botao.text();
-
-            $botao
-                .prop('disabled', true)
-                .text(modoEdicao ? 'A guardar…' : 'A criar conta…');
-
-            mostrarErro('');
-
-            $.ajax({
-                url: $form.attr('action') || '/create-account',
-                method: 'POST',
-                data: criarFormData(),
-                processData: false,
-                contentType: false,
-                dataType: 'json',
-                cache: false
+                mostrarErro(
+                    mensagemDaResposta(
+                        resposta,
+                        modoEdicao
+                            ? 'Não foi possível guardar as alterações.'
+                            : 'Não foi possível criar a conta.'
+                    )
+                );
             })
-                .done(function (resposta) {
-                    if (resposta.success && resposta.redirect) {
-                        limparSessao();
-                        window.location.href = resposta.redirect;
-                        return;
+            .fail(function (xhr) {
+                console.error(
+                    'Erro ao guardar:',
+                    xhr.status,
+                    xhr.responseText
+                );
+
+                var resposta = xhr.responseJSON;
+
+                if (!resposta && xhr.responseText) {
+                    try {
+                        resposta = JSON.parse(xhr.responseText);
+                    } catch (erro) {
+                        resposta = null;
                     }
+                }
 
-                    mostrarErro(
-                        mensagemDaResposta(
-                            resposta,
-                            modoEdicao
-                                ? 'Não foi possível guardar as alterações.'
-                                : 'Não foi possível criar a conta.'
-                        )
+                mostrarErro(
+                    mensagemDaResposta(
+                        resposta,
+                        modoEdicao
+                            ? 'Ocorreu um erro ao guardar as alterações.'
+                            : 'Ocorreu um erro ao criar a conta.'
+                    )
+                );
+            })
+            .always(function () {
+                aEnviar = false;
+
+                $botao
+                    .prop('disabled', false)
+                    .text(
+                        textoOriginal ||
+                        (modoEdicao ? 'Guardar e sair' : 'Criar conta')
                     );
-                })
-                .fail(function (xhr) {
-                    console.error(
-                        'Erro ao guardar:',
-                        xhr.status,
-                        xhr.responseText
-                    );
+            });
+    });
 
-                    var resposta = xhr.responseJSON;
+    $(document).on(
+        'input change',
+        '#create-account-form [name]',
+        function () {
+            $(this).removeAttr('aria-invalid');
+            mostrarErro('');
+        }
+    );
 
-                    if (!resposta && xhr.responseText) {
-                        try {
-                            resposta = JSON.parse(xhr.responseText);
-                        } catch (erro) {
-                            resposta = null;
-                        }
-                    }
-
-                    mostrarErro(
-                        mensagemDaResposta(
-                            resposta,
-                            modoEdicao
-                                ? 'Ocorreu um erro ao guardar as alterações.'
-                                : 'Ocorreu um erro ao criar a conta.'
-                        )
-                    );
-                })
-                .always(function () {
-                    aEnviar = false;
-
-                    $botao
-                        .prop('disabled', false)
-                        .text(
-                            textoOriginal ||
-                            (modoEdicao ? 'Guardar e sair' : 'Criar conta')
-                        );
-                });
-        });
-
-        $(document).on(
-            'input change',
-            '#create-account-form [name]',
-            function () {
-                $(this).removeAttr('aria-invalid');
-                mostrarErro('');
-            }
+    $(document).on('change', '#ver-password', function () {
+        $('#password, #confirma-password').attr(
+            'type',
+            this.checked ? 'text' : 'password'
         );
-
-        $(document).on('change', '#ver-password', function () {
-            $('#password, #confirma-password').attr(
-                'type',
-                this.checked ? 'text' : 'password'
-            );
-        });
     });
 })(window, document, jQuery);

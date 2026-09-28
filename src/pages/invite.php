@@ -20,12 +20,15 @@ limitarRota(
     60
 );
 
-$invitations = new Invitation($db);
-$code = Invitation::normalize($id ?? '');
-$personal = $id === null;
+/*
+ * O router aplica filter_var ao ID.
+ * Quando não há ID, pode chegar uma string vazia em vez de null.
+ */
+$rawId = (string) ($id ?? '');
+$personal = $rawId === '';
+$code = Invitation::normalize($rawId);
 $base = rtrim((string) DOC_ROOT, '/') . '/';
 
-// O domínio de universal links leva ao mesmo domínio da sessão e do registo.
 if (
     strtolower((string) ($_SERVER['HTTP_HOST'] ?? '')) === 'go.margot-app.com'
     && $code !== ''
@@ -37,10 +40,14 @@ if (
     );
 }
 
-try {
-    if ($personal) {
-        require_login($session);
+if ($personal) {
+    require_login($session);
+}
 
+try {
+    $invitations = new Invitation($db);
+
+    if ($personal) {
         $code = $invitations->personalCode((string) $session->id);
     } elseif ($code === '' || $invitations->owner($code) === '') {
         http_response_code(404);

@@ -5,29 +5,60 @@
 {% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ doc_root }}estilos/create-account.css?v=20260916" data-margot-page-style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-<link rel="stylesheet" href="{{ doc_root }}estilos/create-account-permissoes.css?v=20260916" data-margot-page-style>
+<link
+    rel="stylesheet"
+    href="{{ doc_root }}estilos/create-account.css?v=20260916"
+    data-margot-page-style
+>
 
-<link rel="stylesheet" href="{{ doc_root }}estilos/create-account-editor.css?v=20260923" data-margot-page-style>
+<link
+    rel="stylesheet"
+    href="{{ doc_root }}estilos/create-account-permissoes.css?v=20260916"
+    data-margot-page-style
+>
 
-<link rel="stylesheet" href="{{ doc_root }}estilos/create-account-legal.css?v=20260916" data-margot-page-style>
+<link
+    rel="stylesheet"
+    href="{{ doc_root }}estilos/create-account-editor.css?v=20260923"
+    data-margot-page-style
+>
 
-<link rel="stylesheet" href="{{ doc_root }}estilos/invitation-entry.css?v=20260927" data-margot-page-style>
+<link
+    rel="stylesheet"
+    href="{{ doc_root }}estilos/create-account-legal.css?v=20260916"
+    data-margot-page-style
+>
 
-<!--
-    PRÉ-AQUECIMENTO DO LOGIN
+<link
+    rel="stylesheet"
+    href="{{ doc_root }}estilos/invitation-entry.css?v=20260927-auth2"
+    data-margot-page-style
+>
 
-    Se o utilizador regressar ao login, o documento e
-    o respetivo CSS já tiveram oportunidade de entrar
-    na cache.
--->
+<link
+    rel="stylesheet"
+    href="{{ doc_root }}estilos/auth-motion.css?v=20260927-auth2"
+    data-margot-page-style
+>
+
+<link
+    rel="preload"
+    href="{{ doc_root }}estilos/login.css?v=20260916"
+    as="style"
+    fetchpriority="low"
+>
+
+<link
+    rel="preload"
+    href="{{ doc_root }}js/login.js?v=20260916"
+    as="script"
+    fetchpriority="low"
+>
 
 <link rel="prefetch" href="{{ doc_root }}login">
-
-<link rel="preload" href="{{ doc_root }}estilos/login.css?v=20260916" as="style" fetchpriority="low">
-
-<link rel="prefetch" href="{{ doc_root }}js/login.js?v=20260916" as="script">
 {% endblock %}
 
 {% block content %}
@@ -38,21 +69,12 @@
     id="create-account-form"
     novalidate
 >
-    <input type="hidden" name="_csrf" value="{{ csrf_token|e('html_attr') }}">
+    <input
+        type="hidden"
+        name="_csrf"
+        value="{{ csrf_token|e('html_attr') }}"
+    >
 </form>
-
-{#
-    As etapas ficam carregadas juntamente com a própria página.
-
-    <template> é inerte:
-    - não aparece no ecrã;
-    - os inputs não pertencem ao formulário;
-    - os required não interferem com validação;
-    - não existem pedidos AJAX adicionais para começar o registo.
-
-    create-account-navegacao.js retira daqui apenas a etapa
-    necessária antes do primeiro paint.
-#}
 
 <template id="create-account-campos-cache">
     {% include 'create-account-campos.html' %}
@@ -83,30 +105,9 @@ window.createAccountConfig = {
 };
 </script>
 
-<!--
-    Chrome/Chromium pode preparar o login em background.
-
-    Não é prerender:
-    a página não é executada escondida.
-    Estamos apenas a preparar os recursos para uma futura navegação.
--->
-<script type="speculationrules">
-{
-    "prefetch": [
-        {
-            "source": "list",
-            "urls": [
-                {{ (doc_root ~ 'login')|json_encode|raw }}
-            ],
-            "eagerness": "eager"
-        }
-    ]
-}
-</script>
-
 <script src="{{ doc_root }}js/preferencias.js?v=20260916"></script>
 <script src="{{ doc_root }}js/create-account-fotos.js?v=20260916"></script>
 <script src="{{ doc_root }}js/create-account-permissoes.js?v=20260916"></script>
-<script src="{{ doc_root }}js/create-account-navegacao.js?v=20260921-v3"></script>
+<script src="{{ doc_root }}js/create-account-navegacao.js?v=20260927-auth2"></script>
 <script src="{{ doc_root }}js/create-account-autocompletar.js?v=20260916"></script>
 {% endblock %}
