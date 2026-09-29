@@ -1,12 +1,18 @@
 <div id="gostos" data-gostos-url="{{ doc_root }}create-account-autocompletar">
     <style>
-        #create-account-form > #gostos {
-            min-height: 70svh;
-            margin: 0;
-            padding: max(104px, env(safe-area-inset-top)) 0
-                max(28px, env(safe-area-inset-bottom));
-            justify-content: flex-start;
-            gap: 18px;
+        /* Mantém a disposição centrada dos estilos originais. */
+        #gostos .gostos-sugestoes {
+            height: clamp(160px, 22svh, 240px);
+            flex-shrink: 0;
+            overflow-y: auto;
+            overscroll-behavior-y: contain;
+            -webkit-overflow-scrolling: touch;
+            padding: 4px;
+        }
+
+        #gostos #meus-gostos {
+            max-height: 88px;
+            overflow-y: auto;
         }
 
         #gostos .gostos-ajuda {

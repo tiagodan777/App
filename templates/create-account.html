@@ -5,6 +5,130 @@
 {% endblock %}
 
 {% block styles %}
+{% if not modo_edicao|default(false) %}
+<style>
+    #create-account-form:has(> #introducao),
+    html #create-account-form > #introducao {
+        min-height: 100svh;
+    }
+
+    html.margot-intro-a-preparar #create-account-form {
+        visibility: hidden;
+    }
+</style>
+
+<script>
+(function () {
+    var root = document.documentElement;
+    var finished = false;
+    var started = false;
+    var frame;
+    var timer;
+
+    root.classList.add('margot-intro-a-preparar');
+
+    function reveal() {
+        if (finished) return;
+
+        finished = true;
+        clearTimeout(timer);
+        cancelAnimationFrame(frame);
+
+        root.classList.remove('margot-intro-a-preparar');
+
+        var intro = document.querySelector(
+            '#create-account-form > #introducao'
+        );
+
+        if (
+            intro &&
+            intro.animate &&
+            !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        ) {
+            intro.animate(
+                [
+                    { opacity: 0 },
+                    { opacity: 1 }
+                ],
+                {
+                    duration: 220,
+                    easing: 'ease-out'
+                }
+            );
+        }
+    }
+
+    function waitForStableLayout() {
+        if (finished) return;
+
+        var last = '';
+        var stable = 0;
+
+        function measure() {
+            if (finished) return;
+
+            var intro = document.querySelector(
+                '#create-account-form > #introducao'
+            );
+
+            if (!intro) return reveal();
+
+            var rect = intro.getBoundingClientRect();
+
+            var value = [
+                rect.top,
+                rect.width,
+                rect.height,
+                window.innerHeight
+            ].map(Math.round).join(':');
+
+            stable = value === last ? stable + 1 : 0;
+            last = value;
+
+            if (stable >= 3) return reveal();
+
+            frame = requestAnimationFrame(measure);
+        }
+
+        frame = requestAnimationFrame(measure);
+    }
+
+    function start() {
+        if (started || finished) return;
+
+        started = true;
+        clearTimeout(timer);
+
+        if (!document.querySelector('#create-account-form > #introducao')) {
+            return reveal();
+        }
+
+        // Nunca deixar o formulário escondido se a fonte falhar.
+        timer = setTimeout(reveal, 1600);
+
+        if (document.fonts && document.fonts.load) {
+            document.fonts
+                .load('400 1em "Alfa Slab One"')
+                .then(waitForStableLayout, waitForStableLayout);
+        } else {
+            waitForStableLayout();
+        }
+    }
+
+    // Salvaguarda caso outro recurso impeça o DOMContentLoaded.
+    timer = setTimeout(reveal, 2500);
+
+    document.addEventListener('DOMContentLoaded', start, {
+        once: true
+    });
+
+    window.addEventListener('pageshow', function (event) {
+        if (event.persisted) reveal();
+    });
+})();
+</script>
+{% endif %}
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
@@ -53,7 +177,7 @@
 
 <link
     rel="preload"
-    href="{{ doc_root }}js/login.js?v=20260916"
+    href="{{ doc_root }}js/login.js?v=20260929-feedback2"
     as="script"
     fetchpriority="low"
 >
@@ -114,5 +238,5 @@ window.createAccountConfig = {
 <script src="{{ doc_root }}js/create-account-fotos.js?v=20260916"></script>
 <script src="{{ doc_root }}js/create-account-permissoes.js?v=20260929-1"></script>
 <script src="{{ doc_root }}js/create-account-navegacao.js?v=20260929-1"></script>
-<script src="{{ doc_root }}js/create-account-autocompletar.js?v=20260929-sugestoes1"></script>
+<script src="{{ doc_root }}js/create-account-autocompletar.js?v=20260929-sugestoes2"></script>
 {% endblock %}
