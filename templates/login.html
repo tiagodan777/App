@@ -39,41 +39,132 @@
     >
 
     <script src="{{ doc_root }}js/navegacao-documento.js?v=20260929-auth3"></script>
+
+    <style>
+        #login-erro {
+            color: #c51632;
+            font-weight: 700;
+            line-height: 1.45;
+            text-align: center;
+        }
+
+        [data-login-form][aria-busy="true"] > input[type="submit"] {
+            opacity: .8;
+            cursor: progress;
+        }
+
+        .margot-login-error-shake > main,
+        .margot-login-error-shake > aside {
+            animation: margot-login-shake 360ms ease-in-out;
+        }
+
+        @keyframes margot-login-shake {
+            0%, 100% {
+                transform: translateX(0);
+            }
+
+            16% {
+                transform: translateX(-8px);
+            }
+
+            32% {
+                transform: translateX(8px);
+            }
+
+            48% {
+                transform: translateX(-5px);
+            }
+
+            64% {
+                transform: translateX(5px);
+            }
+
+            82% {
+                transform: translateX(-2px);
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .margot-login-error-shake > main,
+            .margot-login-error-shake > aside {
+                animation: none;
+            }
+        }
+    </style>
 </head>
 
 <body class="margot-auth-install margot-auth-login">
     <main>
         {% if sucesso in ['confirma-email', 'email-pendente'] and not mensagem_erro %}
-            <section class="account-confirmation" aria-labelledby="account-confirmation-title">
+            <section
+                class="account-confirmation"
+                aria-labelledby="account-confirmation-title"
+            >
                 {% if sucesso == 'confirma-email' %}
-                <div class="account-confirmation-hand" aria-hidden="true">
-                    <svg viewBox="0 0 180 180" fill="none">
-                        <circle cx="90" cy="90" r="78" fill="#ffe5e9"/>
+                    <div class="account-confirmation-hand" aria-hidden="true">
+                        <svg viewBox="0 0 180 180" fill="none">
+                            <circle
+                                cx="90"
+                                cy="90"
+                                r="78"
+                                fill="#ffe5e9"
+                            />
 
-                        <g class="confirmation-thumb" stroke="#251d24" stroke-width="4" stroke-linejoin="round">
-                            <path d="M62 85C72 72 83 58 83 41C83 31 93 30 98 38C105 48 103 64 99 73H127C139 73 146 81 142 93L130 128C128 135 122 139 114 139H81L62 130Z" fill="#fff"/>
-                            <path d="M39 82H63V137H39Z" fill="#f3153c"/>
-                            <path d="M108 89H140M105 105H136M102 121H131" stroke-width="3"/>
-                        </g>
+                            <g
+                                class="confirmation-thumb"
+                                stroke="#251d24"
+                                stroke-width="4"
+                                stroke-linejoin="round"
+                            >
+                                <path
+                                    d="M62 85C72 72 83 58 83 41C83 31 93 30 98 38C105 48 103 64 99 73H127C139 73 146 81 142 93L130 128C128 135 122 139 114 139H81L62 130Z"
+                                    fill="#fff"
+                                />
+                                <path
+                                    d="M39 82H63V137H39Z"
+                                    fill="#f3153c"
+                                />
+                                <path
+                                    d="M108 89H140M105 105H136M102 121H131"
+                                    stroke-width="3"
+                                />
+                            </g>
 
-                        <g class="confirmation-spark" stroke="#f3153c" stroke-width="4" stroke-linecap="round">
-                            <path d="M132 36L139 27M147 49L158 45M57 40L51 31"/>
-                        </g>
-                    </svg>
-                </div>
+                            <g
+                                class="confirmation-spark"
+                                stroke="#f3153c"
+                                stroke-width="4"
+                                stroke-linecap="round"
+                            >
+                                <path d="M132 36L139 27M147 49L158 45M57 40L51 31"/>
+                            </g>
+                        </svg>
+                    </div>
                 {% endif %}
 
                 <div class="account-confirmation-copy" role="status">
-                    <h1 id="account-confirmation-title">{{ sucesso == 'confirma-email' ? 'Enviámos-te um email de confirmação.' : 'A tua conta foi criada.' }}</h1>
+                    <h1 id="account-confirmation-title">
+                        {{ sucesso == 'confirma-email' ? 'Enviámos-te um email de confirmação.' : 'A tua conta foi criada.' }}
+                    </h1>
 
                     {% if sucesso == 'confirma-email' %}
                         <p>Abre o email e confirma a tua conta para começares.</p>
-                        <p class="account-confirmation-detail">Se não o encontrares, verifica o spam.</p>
+                        <p class="account-confirmation-detail">
+                            Se não o encontrares, verifica o spam.
+                        </p>
                     {% else %}
-                        <p>Não conseguimos enviar o email de confirmação. Pede uma nova ligação para confirmares a tua conta.</p>
+                        <p>
+                            Não conseguimos enviar o email de confirmação.
+                            Pede uma nova ligação para confirmares a tua conta.
+                        </p>
                     {% endif %}
 
-                    <a class="account-confirmation-link" href="{{ doc_root }}email-verification-resend">{{ sucesso == 'confirma-email' ? 'Não recebeste o email?' : 'Enviar email de confirmação' }}</a>
+                    <a
+                        class="account-confirmation-link"
+                        href="{{ doc_root }}email-verification-resend"
+                    >
+                        {{ sucesso == 'confirma-email' ? 'Não recebeste o email?' : 'Enviar email de confirmação' }}
+                    </a>
 
                     <a
                         class="account-confirmation-login"
@@ -85,148 +176,153 @@
                 </div>
             </section>
         {% else %}
-        <form action="{{ doc_root }}login" method="post">
-            <input
-                type="hidden"
-                name="_csrf"
-                value="{{ csrf_token|e('html_attr') }}"
+            <form
+                action="{{ doc_root }}login"
+                method="post"
+                data-login-form
             >
-
-            <h1>Entrar</h1>
-
-            {% if sucesso == 'confirma-email' %}
-                <p
-                    class="login-mensagem login-mensagem-sucesso"
-                    role="status"
-                    aria-live="polite"
+                <input
+                    type="hidden"
+                    name="_csrf"
+                    value="{{ csrf_token|e('html_attr') }}"
                 >
-                    A tua conta foi criada. Enviámos-te uma ligação para
-                    confirmares o email. Verifica também o lixo e a caixa de spam.
-                </p>
-            {% elseif sucesso == 'conta-criada' %}
-                <p
-                    class="login-mensagem login-mensagem-sucesso"
-                    role="status"
-                    aria-live="polite"
-                >
-                    A tua conta foi criada. Já podes iniciar sessão.
-                </p>
-            {% endif %}
 
-            {% if sucesso in ['confirma-email', 'conta-criada'] and not mensagem_erro %}
-                {% include 'partials/install-app.html' %}
-            {% endif %}
+                <h1>Entrar</h1>
 
-            {% if mensagem_erro %}
-                <p
-                    id="login-erro"
-                    class="login-mensagem login-mensagem-erro"
-                    role="alert"
-                    aria-live="assertive"
-                >
-                    {{ mensagem_erro|e }}
-                </p>
-            {% endif %}
+                {% if sucesso == 'confirma-email' %}
+                    <p
+                        class="login-mensagem login-mensagem-sucesso"
+                        role="status"
+                        aria-live="polite"
+                    >
+                        A tua conta foi criada. Enviámos-te uma ligação para
+                        confirmares o email. Verifica também o lixo e a caixa de spam.
+                    </p>
+                {% elseif sucesso == 'conta-criada' %}
+                    <p
+                        class="login-mensagem login-mensagem-sucesso"
+                        role="status"
+                        aria-live="polite"
+                    >
+                        A tua conta foi criada. Já podes iniciar sessão.
+                    </p>
+                {% endif %}
 
-            {% if email_pendente %}
+                {% if sucesso in ['confirma-email', 'conta-criada'] and not mensagem_erro %}
+                    {% include 'partials/install-app.html' %}
+                {% endif %}
+
+                {% if mensagem_erro %}
+                    <p
+                        id="login-erro"
+                        {% if not email_pendente %}data-login-error-feedback{% endif %}
+                        class="login-mensagem login-mensagem-erro"
+                        role="alert"
+                        aria-live="assertive"
+                    >
+                        {{ mensagem_erro|e }}
+                    </p>
+                {% endif %}
+
+                {% if email_pendente %}
+                    <p>
+                        <a href="{{ doc_root }}email-verification-resend">
+                            Enviar uma nova ligação de confirmação
+                        </a>
+                    </p>
+                {% endif %}
+
                 <p>
-                    <a href="{{ doc_root }}email-verification-resend">
-                        Enviar uma nova ligação de confirmação
-                    </a>
+                    <label for="utilizador">Email ou Nº de telefone</label>
+
+                    <input
+                        type="text"
+                        name="utilizador"
+                        id="utilizador"
+                        value="{{ utilizador|e('html_attr') }}"
+                        autocomplete="username"
+                        autocapitalize="none"
+                        autocorrect="off"
+                        spellcheck="false"
+                        {% if mensagem_erro %}
+                            aria-describedby="login-erro"
+                            aria-invalid="true"
+                        {% endif %}
+                        required
+                    >
                 </p>
-            {% endif %}
 
-            <p>
-                <label for="utilizador">Email ou Nº de telefone</label>
+                <p>
+                    <label for="palavra-passe">Palavra-passe</label>
 
-                <input
-                    type="text"
-                    name="utilizador"
-                    id="utilizador"
-                    value="{{ utilizador|e('html_attr') }}"
-                    autocomplete="username"
-                    autocapitalize="none"
-                    autocorrect="off"
-                    spellcheck="false"
-                    {% if mensagem_erro %}
-                        aria-describedby="login-erro"
-                        aria-invalid="true"
-                    {% endif %}
-                    required
-                >
-            </p>
+                    <input
+                        type="password"
+                        name="palavra_passe"
+                        id="palavra-passe"
+                        autocomplete="current-password"
+                        {% if mensagem_erro %}
+                            aria-describedby="login-erro"
+                            aria-invalid="true"
+                        {% endif %}
+                        required
+                    >
+                </p>
 
-            <p>
-                <label for="palavra-passe">Palavra-passe</label>
+                <p class="em-linha">
+                    <input
+                        type="checkbox"
+                        name="ver_password"
+                        id="ver-password"
+                    >
 
-                <input
-                    type="password"
-                    name="palavra_passe"
-                    id="palavra-passe"
-                    autocomplete="current-password"
-                    {% if mensagem_erro %}
-                        aria-describedby="login-erro"
-                        aria-invalid="true"
-                    {% endif %}
-                    required
-                >
-            </p>
+                    <label for="ver-password">Mostrar palavra-passe</label>
+                </p>
 
-            <p class="em-linha">
-                <input
-                    type="checkbox"
-                    name="ver_password"
-                    id="ver-password"
-                >
+                <p class="em-linha">
+                    <input
+                        type="checkbox"
+                        name="manter_sessao"
+                        id="manter-sessao"
+                        checked
+                    >
 
-                <label for="ver-password">Mostrar palavra-passe</label>
-            </p>
+                    <label for="manter-sessao">Manter sessão iniciada</label>
+                </p>
 
-            <p class="em-linha">
-                <input
-                    type="checkbox"
-                    name="manter_sessao"
-                    id="manter-sessao"
-                    checked
-                >
-
-                <label for="manter-sessao">Manter sessão iniciada</label>
-            </p>
-
-            <input type="submit" value="Entrar">
-        </form>
+                <input type="submit" value="Entrar">
+            </form>
         {% endif %}
     </main>
 
     {% if sucesso not in ['confirma-email', 'email-pendente'] or mensagem_erro %}
-    <aside>
-        <a
-            href="{{ doc_root }}password-lost"
-            id="esqueci-palavra-passe"
-        >
-            Esqueceste-te da password?
-        </a>
-
-        {% if sucesso == 'confirma-email' %}
-            <a href="{{ doc_root }}email-verification-resend">
-                Não recebeste o email?
+        <aside>
+            <a
+                href="{{ doc_root }}password-lost"
+                id="esqueci-palavra-passe"
+            >
+                Esqueceste-te da password?
             </a>
-        {% endif %}
 
-        <a
-            href="{{ doc_root }}create-account"
-            id="registar"
-        >
-            Ainda não te registaste?
-            <span>Cria uma conta</span>
-        </a>
-    </aside>
+            {% if sucesso == 'confirma-email' %}
+                <a href="{{ doc_root }}email-verification-resend">
+                    Não recebeste o email?
+                </a>
+            {% endif %}
+
+            <a
+                href="{{ doc_root }}create-account"
+                id="registar"
+            >
+                Ainda não te registaste?
+                <span>Cria uma conta</span>
+            </a>
+        </aside>
     {% endif %}
 
     <script src="{{ doc_root }}js/app-login.js?v=20260929-fluidez-2"></script>
     <script src="{{ doc_root }}js/account-confirmation.js?v=20260929-1"></script>
     <script src="{{ doc_root }}js/deep-links.js?v=20260927-invite"></script>
-    <script src="{{ doc_root }}js/login.js?v=20260916"></script>
+    <script src="{{ doc_root }}js/login.js?v=20260929-feedback2"></script>
     <script src="{{ doc_root }}js/install-app.js?v=20260928-1"></script>
 </body>
 </html>
