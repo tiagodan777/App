@@ -174,10 +174,13 @@
                     || capacitor.registerPlugin?.('MargotHaptics');
 
                 Promise.resolve(
-                    plugin?.play({ type: 'interaction' })
+                    plugin?.play({
+                        type: 'interaction',
+                        profile: 'selection'
+                    })
                 ).catch(function () {});
             } else if (typeof navigator.vibrate === 'function') {
-                navigator.vibrate(15);
+                navigator.vibrate(5);
             }
         } catch (_) {}
     }

@@ -195,16 +195,11 @@
             lastHaptic = Date.now();
 
             try {
-                /*
-                 * Na build instalada, heySent identifica
-                 * o impacto de intensidade 1.0.
-                 *
-                 * Esta API apenas produz háptica;
-                 * não envia qualquer Hey.
-                 */
+                // O tipo mantém compatibilidade; a nova build usa o perfil de navegação.
                 Promise.resolve(
                     plugin('MargotHaptics')?.play({
-                        type: 'heySent'
+                        type: 'heySent',
+                        profile: 'navigation'
                     })
                 ).catch(() => {});
             } catch (_) {}

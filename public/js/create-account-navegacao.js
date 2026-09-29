@@ -50,13 +50,17 @@
     function etapaPermitida(etapa) {
         if (!ETAPAS.includes(etapa)) return false;
         if (modoEdicao && etapa === '#introducao') return false;
-        if (!modoEdicao && etapa === '#editar-perfil') return false;
+        if (!modoEdicao && ['#editar-perfil', '#permissoes'].includes(etapa)) return false;
         return true;
     }
 
     function normalizarEtapa(etapa) {
         etapa = String(etapa || '').trim();
         if (!etapa.startsWith('#')) etapa = '#' + etapa;
+
+        // URLs e histórico anteriores saltam a etapa removida do registo.
+        if (!modoEdicao && etapa === '#permissoes') return '#palavra-passe';
+
         return etapaPermitida(etapa) ? etapa : ETAPA_INICIAL;
     }
 
