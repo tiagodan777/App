@@ -1,321 +1,211 @@
 (function (window, document) {
     'use strict';
 
-    if (window.MargotDocumentNavigation) {
-        return;
-    }
+    if (window.MargotDocumentNavigation) return;
 
-    // Uma só transição: evita sobrepor a animação CSS entre documentos.
-    var motionStyle = document.createElement('style');
-    motionStyle.textContent = '@view-transition { navigation: none; }';
-    document.head.append(motionStyle);
+    const root = document.documentElement;
+    const key = 'margot-document-navigation-entry';
 
-    var DURACAO_ENTRADA = 360;
-    var DURACAO_SAIDA = 240;
-    var CHAVE_ENTRADA = 'margot-document-navigation-entry';
-    var TEMPO_MAXIMO_ENTRADA = 3000;
-    var aNavegar = false;
-    var animacaoAtual = null;
-
-    function movimentoReduzido() {
-        return window.matchMedia(
+    const reduced = () =>
+        window.matchMedia(
             '(prefers-reduced-motion: reduce)'
         ).matches;
-    }
 
-    function guardarEntradaPendente() {
-        try {
-            window.sessionStorage.setItem(
-                CHAVE_ENTRADA,
-                String(Date.now())
-            );
-        } catch (erro) {
-            /* sessionStorage não é essencial. */
-        }
-    }
+    let navigating = false;
+    let failSafe;
 
-    function consumirEntradaPendente() {
-        var valor = '';
+    const pause = ms =>
+        new Promise(resolve => setTimeout(resolve, ms));
 
-        try {
-            valor =
-                window.sessionStorage.getItem(CHAVE_ENTRADA) ||
-                '';
+    root.classList.add('margot-auth-motion');
 
-            window.sessionStorage.removeItem(CHAVE_ENTRADA);
-        } catch (erro) {
-            return false;
-        }
+    /*
+     * Executado no head:
+     * a cobertura existe antes do primeiro desenho da página.
+     */
+    try {
+        const value = sessionStorage.getItem(key);
 
-        if (!valor) {
-            return false;
-        }
+        sessionStorage.removeItem(key);
 
-        var instante = Number(valor);
-
-        if (!Number.isFinite(instante)) {
-            return false;
-        }
-
-        var idade = Date.now() - instante;
-
-        return idade >= 0 && idade <= TEMPO_MAXIMO_ENTRADA;
-    }
-
-    function cancelarAnimacaoAtual() {
-        if (!animacaoAtual) {
-            return;
-        }
+        let pending;
 
         try {
-            animacaoAtual.cancel();
-        } catch (erro) {
-            /* Nada a fazer. */
-        }
+            pending = JSON.parse(value || 'null');
+        } catch (_) {}
 
-        animacaoAtual = null;
+        const age = Date.now() - Number(pending?.time);
+
+        if (
+            age >= 0 &&
+            age < 15000 &&
+            pending?.path === location.pathname
+        ) {
+            root.classList.add('margot-auth-arriving');
+        }
+    } catch (_) {}
+
+    function restore() {
+        clearTimeout(failSafe);
+
+        navigating = false;
+
+        root.classList.remove(
+            'margot-auth-arriving',
+            'margot-auth-leaving'
+        );
     }
 
-    function restaurarPagina() {
-        aNavegar = false;
-
-        cancelarAnimacaoAtual();
-
-        if (!document.body) {
-            return;
-        }
-
-        document.body.style.removeProperty('transform');
-        document.body.style.removeProperty('opacity');
-        document.body.style.removeProperty('filter');
-        document.body.style.removeProperty('pointer-events');
-    }
-
-    function animarEntrada() {
+    function reveal() {
         /*
-         * Num cold start não existe esta flag.
-         * Só animamos a entrada quando a navegação
-         * foi iniciada pela própria Margot.
+         * Dois frames permitem aplicar o estado coberto
+         * antes do fade de entrada.
          */
-        if (!consumirEntradaPendente()) {
-            return;
-        }
+        requestAnimationFrame(() => {
+            requestAnimationFrame(restore);
+        });
+    }
 
-        if (
-            movimentoReduzido() ||
-            !document.body ||
-            !document.body.animate
-        ) {
-            return;
-        }
+    function saveEntry(url) {
+        try {
+            sessionStorage.setItem(
+                key,
+                JSON.stringify({
+                    time: Date.now(),
+                    path: new URL(url, location.href).pathname
+                })
+            );
+        } catch (_) {}
+    }
 
-        cancelarAnimacaoAtual();
+    async function navigate(url) {
+        if (navigating) return;
+
+        navigating = true;
+
+        document.activeElement?.blur?.();
+
+        root.classList.remove('margot-auth-arriving');
+        root.classList.add('margot-auth-leaving');
+
+        /*
+         * Se o navegador cancelar a navegação,
+         * não deixar uma cobertura presa.
+         */
+        failSafe = setTimeout(restore, 12000);
+
+        await pause(reduced() ? 0 : 240);
+
+        saveEntry(url);
 
         try {
-            animacaoAtual = document.body.animate(
-                [
-                    {
-                        transform: 'translate3d(14px, 0, 0)',
-                        opacity: 0,
-                        filter: 'blur(6px)'
-                    },
-                    {
-                        transform: 'translate3d(0, 0, 0)',
-                        opacity: 1,
-                        filter: 'blur(0)'
-                    }
-                ],
-                {
-                    duration: DURACAO_ENTRADA,
-                    easing: 'cubic-bezier(.22, .8, .28, 1)'
-                }
-            );
-
-            animacaoAtual.finished
-                .catch(function () {})
-                .finally(function () {
-                    animacaoAtual = null;
-                });
-        } catch (erro) {
-            animacaoAtual = null;
+            window.location.assign(url);
+        } catch (error) {
+            restore();
+            throw error;
         }
     }
 
-    async function animarSaida(voltar) {
-        if (aNavegar) {
-            return false;
-        }
+    async function back() {
+        if (navigating) return;
 
-        aNavegar = true;
+        navigating = true;
 
-        if (
-            movimentoReduzido() ||
-            !document.body ||
-            !document.body.animate
-        ) {
-            return true;
-        }
+        root.classList.add('margot-auth-leaving');
 
-        cancelarAnimacaoAtual();
+        failSafe = setTimeout(restore, 1500);
 
-        try {
-            animacaoAtual = document.body.animate(
-                [
-                    {
-                        transform: 'translate3d(0, 0, 0)',
-                        opacity: 1,
-                        filter: 'blur(0)'
-                    },
-                    {
-                        transform: voltar
-                            ? 'translate3d(16px, 0, 0)'
-                            : 'translate3d(-16px, 0, 0)',
-                        opacity: 0,
-                        filter: 'blur(6px)'
-                    }
-                ],
-                {
-                    duration: DURACAO_SAIDA,
-                    easing: 'cubic-bezier(.22, .8, .28, 1)',
-                    fill: 'forwards'
-                }
-            );
-
-            await animacaoAtual.finished.catch(function () {});
-        } catch (erro) {
-            /*
-             * A navegação real tem sempre prioridade.
-             */
-        }
-
-        return true;
-    }
-
-    async function sair(url, voltar) {
-        var podeNavegar = await animarSaida(Boolean(voltar));
-
-        if (!podeNavegar) {
-            return;
-        }
-
-        guardarEntradaPendente();
-
-        window.location.assign(url);
-    }
-
-    async function voltar() {
-        var podeNavegar = await animarSaida(true);
-
-        if (!podeNavegar) {
-            return;
-        }
-
-        guardarEntradaPendente();
+        await pause(reduced() ? 0 : 240);
 
         window.history.back();
     }
 
-    document.addEventListener('click', function (evento) {
-        var link = evento.target.closest('a[href]');
+    document.addEventListener('click', event => {
+        const link = event.target.closest?.('a[href]');
 
         if (
             !link ||
-            evento.defaultPrevented ||
-            (evento.button !== undefined && evento.button !== 0) ||
-            evento.metaKey ||
-            evento.ctrlKey ||
-            evento.shiftKey ||
-            evento.altKey ||
+            event.defaultPrevented ||
+            (
+                event.button !== undefined &&
+                event.button !== 0
+            ) ||
+            event.metaKey ||
+            event.ctrlKey ||
+            event.shiftKey ||
+            event.altKey ||
             link.hasAttribute('download') ||
             link.hasAttribute('data-margot-sem-animacao')
         ) {
             return;
         }
 
-        var alvo = String(
+        const target = (
             link.getAttribute('target') || ''
         ).toLowerCase();
 
         if (
-            alvo &&
-            alvo !== '_self' &&
-            alvo !== '_top'
+            target &&
+            target !== '_self' &&
+            target !== '_top'
         ) {
             return;
         }
 
-        var href = String(
+        const href = (
             link.getAttribute('href') || ''
         ).trim();
 
-        if (!href || href.charAt(0) === '#') {
+        if (!href || href.startsWith('#')) {
             return;
         }
 
-        var destino;
+        let url;
 
         try {
-            destino = new URL(
-                link.href,
-                window.location.href
-            );
-        } catch (erro) {
+            url = new URL(link.href, location.href);
+        } catch (_) {
             return;
         }
 
         if (
-            (
-                destino.protocol !== 'http:' &&
-                destino.protocol !== 'https:'
-            ) ||
-            destino.origin !== window.location.origin
+            !['http:', 'https:'].includes(url.protocol) ||
+            url.origin !== location.origin
         ) {
             return;
         }
-
-        var atual = new URL(window.location.href);
 
         if (
-            destino.pathname === atual.pathname &&
-            destino.search === atual.search &&
-            destino.hash &&
-            destino.hash !== atual.hash
+            url.pathname === location.pathname &&
+            url.search === location.search &&
+            url.hash
         ) {
             return;
         }
 
-        evento.preventDefault();
+        event.preventDefault();
 
-        sair(
-            destino.href,
-            link.hasAttribute('data-margot-voltar')
-        );
+        navigate(url.href);
     });
 
-    /*
-     * Ao regressar através do BFCache, remove o estado
-     * visual deixado pela animação de saída.
-     *
-     * O pageshow inicial não deve cancelar a entrada.
-     */
-    window.addEventListener('pageshow', function (event) {
+    window.addEventListener('pageshow', event => {
         if (event.persisted) {
-            restaurarPagina();
+            restore();
         }
     });
 
     if (document.readyState === 'loading') {
         document.addEventListener(
             'DOMContentLoaded',
-            animarEntrada,
+            reveal,
             { once: true }
         );
     } else {
-        animarEntrada();
+        reveal();
     }
 
     window.MargotDocumentNavigation = {
-        navigate: sair,
-        back: voltar
+        navigate,
+        back
     };
 })(window, document);

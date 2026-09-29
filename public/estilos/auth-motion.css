@@ -1,48 +1,49 @@
 @charset "UTF-8";
 
+:root {
+    --margot-auth-background: #f8f8f7;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --margot-auth-background: #101014;
+    }
+}
+
+/* A cobertura mantém o mesmo fundo nos dois documentos. */
 @view-transition {
-    navigation: auto;
+    navigation: none;
 }
 
-::view-transition-group(root) {
-    animation-duration: 180ms;
-    animation-timing-function: ease-out;
+html.margot-auth-motion::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 2147483646;
+    background: var(--margot-auth-background);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 380ms cubic-bezier(.22, .68, .2, 1);
 }
 
-::view-transition-old(root) {
-    animation: margot-auth-fade-out 180ms ease-out both;
-    mix-blend-mode: normal;
+html.margot-auth-motion.margot-auth-arriving::after,
+html.margot-auth-motion.margot-auth-leaving::after {
+    opacity: 1;
+    pointer-events: auto;
 }
 
-::view-transition-new(root) {
-    animation: margot-auth-fade-in 180ms ease-out both;
-    mix-blend-mode: normal;
+html.margot-auth-motion.margot-auth-leaving::after {
+    transition-duration: 240ms;
 }
 
-@keyframes margot-auth-fade-out {
-    from {
-        opacity: 1;
-    }
-
-    to {
-        opacity: 0;
-    }
-}
-
-@keyframes margot-auth-fade-in {
-    from {
-        opacity: 0;
-    }
-
-    to {
-        opacity: 1;
-    }
+html.margot-auth-motion {
+    background: var(--margot-auth-background);
 }
 
 @media (prefers-reduced-motion: reduce) {
-    ::view-transition-group(root),
-    ::view-transition-old(root),
-    ::view-transition-new(root) {
-        animation: none;
+    html.margot-auth-motion::after {
+        transition: none;
     }
 }

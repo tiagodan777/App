@@ -22,6 +22,11 @@
         <link rel="stylesheet" href="{{ doc_root }}estilos/daylies.css?v=20260923-camera">
     {% endif %}
 
+    {% if not session.id %}
+        <link rel="stylesheet" href="{{ doc_root }}estilos/auth-motion.css?v=20260929-auth3">
+        <script src="{{ doc_root }}js/navegacao-documento.js?v=20260929-auth3"></script>
+    {% endif %}
+
     {% block styles %}{% endblock %}
 
     <link rel="stylesheet" href="{{ doc_root }}estilos/photo-viewer.css?v=20260920-video">
@@ -104,10 +109,6 @@
                 </ul>
             </nav>
         </footer>
-    {% endif %}
-
-    {% if not session.id %}
-        <script src="{{ doc_root }}js/navegacao-documento.js?v=20260929-fluidez-2"></script>
     {% endif %}
 
     {% if session.id %}

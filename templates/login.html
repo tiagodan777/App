@@ -25,7 +25,7 @@
 
     <link
         rel="stylesheet"
-        href="{{ doc_root }}estilos/auth-motion.css?v=20260927-auth2"
+        href="{{ doc_root }}estilos/auth-motion.css?v=20260929-auth3"
     >
 
     <link
@@ -37,9 +37,16 @@
         rel="stylesheet"
         href="{{ doc_root }}estilos/account-confirmation.css?v=20260929-1"
     >
+
+    <link
+        rel="stylesheet"
+        href="{{ doc_root }}estilos/auth-refresh.css?v=20260929-auth3"
+    >
+
+    <script src="{{ doc_root }}js/navegacao-documento.js?v=20260929-auth3"></script>
 </head>
 
-<body class="margot-auth-install">
+<body class="margot-auth-install margot-auth-login">
     <main>
         {% if sucesso in ['confirma-email', 'email-pendente'] and not mensagem_erro %}
             <section class="account-confirmation" aria-labelledby="account-confirmation-title">
@@ -214,7 +221,6 @@
         <a
             href="{{ doc_root }}create-account"
             id="registar"
-            data-margot-sem-animacao
         >
             Ainda não te registaste?
             <span>Cria uma conta</span>
@@ -226,7 +232,6 @@
     <script src="{{ doc_root }}js/account-confirmation.js?v=20260929-1"></script>
     <script src="{{ doc_root }}js/deep-links.js?v=20260927-invite"></script>
     <script src="{{ doc_root }}js/login.js?v=20260916"></script>
-    <script src="{{ doc_root }}js/navegacao-documento.js?v=20260929-fluidez-2"></script>
     <script src="{{ doc_root }}js/install-app.js?v=20260928-1"></script>
 </body>
 </html>

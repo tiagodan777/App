@@ -39,7 +39,32 @@
                     O teu email foi confirmado. Já podes entrar na Margot.
                 </p>
 
-                {% include 'partials/install-app.html' %}
+                <section class="margot-install" aria-label="Voltar à Margot">
+                    <span class="margot-install-brand">Margot</span>
+
+                    <h2>Está tudo pronto.</h2>
+
+                    <p>
+                        Volta à app e entra com o email e a palavra-passe
+                        que escolheste.
+                    </p>
+
+                    <a
+                        class="margot-install-primary"
+                        href="https://go.margot-app.com/login"
+                        data-app-login
+                        data-native-login="{{ doc_root }}login"
+                        data-margot-sem-animacao
+                    >Voltar à app</a>
+
+                    <a
+                        class="margot-install-open"
+                        href="https://apps.apple.com/pt/app/margot-pessoas-por-perto/id6803648498"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        data-margot-sem-animacao
+                    >Ainda não tens a app? Instalar para iPhone</a>
+                </section>
             {% else %}
                 <p class="login-mensagem login-mensagem-erro" role="alert">
                     {{ mensagem_erro|default('Esta ligação é inválida, expirou ou já foi utilizada.')|e }}
@@ -48,29 +73,18 @@
         </form>
     </main>
 
-    <aside>
-        {% if verificado %}
-            <a
-                href="https://go.margot-app.com/login"
-                id="esqueci-palavra-passe"
-                data-app-login
-                data-native-login="{{ doc_root }}login"
-                data-margot-sem-animacao
-            >
-                Entrar na Margot
-            </a>
-        {% else %}
+    {% if not verificado %}
+        <aside>
             <a
                 href="{{ doc_root }}email-verification-resend"
                 id="esqueci-palavra-passe"
             >
                 Pedir uma nova ligação
             </a>
-        {% endif %}
-    </aside>
+        </aside>
+    {% endif %}
 
     <script src="{{ doc_root }}js/navegacao-documento.js?v=20260929-fluidez-2"></script>
-    <script src="{{ doc_root }}js/install-app.js?v=20260928-1"></script>
     <script src="{{ doc_root }}js/app-login.js?v=20260929-fluidez-2"></script>
 </body>
 </html>

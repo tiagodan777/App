@@ -40,7 +40,13 @@
 
 <link
     rel="stylesheet"
-    href="{{ doc_root }}estilos/auth-motion.css?v=20260927-auth2"
+    href="{{ doc_root }}estilos/auth-motion.css?v=20260929-auth3"
+    data-margot-page-style
+>
+
+<link
+    rel="stylesheet"
+    href="{{ doc_root }}estilos/auth-refresh.css?v=20260929-auth3"
     data-margot-page-style
 >
 
@@ -67,6 +73,7 @@
     method="post"
     enctype="multipart/form-data"
     id="create-account-form"
+    {% if not modo_edicao|default(false) %}data-onboarding{% endif %}
     novalidate
 >
     <input
@@ -74,6 +81,10 @@
         name="_csrf"
         value="{{ csrf_token|e('html_attr') }}"
     >
+
+    {% if not modo_edicao|default(false) %}
+        {% include 'account/introducao.html' %}
+    {% endif %}
 </form>
 
 <template id="create-account-campos-cache">
