@@ -1,18 +1,30 @@
 <div id="gostos" data-gostos-url="{{ doc_root }}create-account-autocompletar">
     <style>
-        /* Mantém a disposição centrada dos estilos originais. */
+        /* Mantém o início da etapa mais abaixo, mesmo com a lista longa. */
+        #create-account-form:has(> #gostos) {
+            justify-content: flex-start;
+        }
+
+        #create-account-form > #gostos {
+            min-height: 0;
+            margin: 0 auto;
+            padding-top: max(23svh, env(safe-area-inset-top));
+            padding-bottom: max(28px, env(safe-area-inset-bottom));
+            justify-content: flex-start;
+            gap: 8px;
+        }
+
+        /* A lista cresce na página, sem scroll interno. */
         #gostos .gostos-sugestoes {
-            height: clamp(160px, 22svh, 240px);
-            flex-shrink: 0;
-            overflow-y: auto;
-            overscroll-behavior-y: contain;
-            -webkit-overflow-scrolling: touch;
+            height: auto;
+            max-height: none;
+            overflow: visible;
             padding: 4px;
         }
 
         #gostos #meus-gostos {
-            max-height: 88px;
-            overflow-y: auto;
+            max-height: none;
+            overflow: visible;
         }
 
         #gostos .gostos-ajuda {
