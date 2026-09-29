@@ -1,25 +1,172 @@
-<div id="gostos">
+<div id="gostos" data-gostos-url="{{ doc_root }}create-account-autocompletar">
+    <style>
+        #create-account-form > #gostos {
+            min-height: 70svh;
+            margin: 0;
+            padding: max(64px, env(safe-area-inset-top)) 0
+                max(28px, env(safe-area-inset-bottom));
+            justify-content: flex-start;
+            gap: 18px;
+        }
+
+        #gostos .gostos-ajuda {
+            margin: 0;
+            color: #666;
+            text-align: center;
+            align-items: center;
+            line-height: 1.4;
+        }
+
+        #gostos .adicionar-gosto {
+            margin: 0;
+        }
+
+        #gostos #hobbie {
+            min-width: 0;
+        }
+
+        #gostos #recomendacoes {
+            margin: 0;
+        }
+
+        #gostos #lista button {
+            width: 100%;
+            padding: 10px;
+            border: 0;
+            background: transparent;
+            color: inherit;
+            text-align: left;
+            font: inherit;
+            cursor: pointer;
+        }
+
+        #gostos #lista li {
+            padding: 0;
+        }
+
+        #gostos #meus-gostos,
+        #gostos .gostos-sugestoes {
+            width: min(80%, 560px);
+        }
+
+        #gostos #meus-gostos:empty {
+            display: none;
+        }
+
+        #gostos .gostos-tema + .gostos-tema {
+            margin-top: 20px;
+        }
+
+        #gostos .gostos-tema h2 {
+            margin: 0 0 10px;
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        #gostos .gostos-opcoes {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        #gostos .gosto-sugestao,
+        #gostos #meus-gostos .meu-hobbie {
+            min-height: 44px;
+            margin: 0;
+            padding: 10px 14px;
+            border: 1px solid #dedee2;
+            border-radius: 999px;
+            background: #fff;
+            color: #252329;
+            font: inherit;
+            font-size: 14px;
+            cursor: pointer;
+            overflow-wrap: anywhere;
+            max-width: 100%;
+        }
+
+        #gostos .gosto-sugestao[aria-pressed="true"],
+        #gostos #meus-gostos .meu-hobbie {
+            background: #e12346;
+            border-color: #e12346;
+            color: #fff;
+        }
+
+        #gostos button:focus-visible {
+            outline: 2px solid #e12346;
+            outline-offset: 3px;
+        }
+
+        #gostos [data-gostos-aviso] {
+            color: #bd1632;
+            margin: 0;
+        }
+
+        #gostos [hidden] {
+            display: none !important;
+        }
+
+        #gostos [data-sugestoes-estado] {
+            font-size: 14px;
+            color: #666;
+        }
+    </style>
+
     <h1>O que gostas de fazer?</h1>
 
-    <p class="adicionar-gosto">
-        <input type="text" name="hobbie" id="hobbie" autocomplete="off" placeholder="Ex.: música">
+    <p class="gostos-ajuda">
+        Toca nos teus gostos ou pesquisa outros.
+    </p>
 
-        <button type="button" id="adicionar-gosto">Adicionar</button>
+    <p class="adicionar-gosto">
+        <input
+            type="text"
+            name="hobbie"
+            id="hobbie"
+            autocomplete="off"
+            maxlength="80"
+            aria-label="Pesquisar um gosto"
+            placeholder="Ex.: música"
+        >
+
+        <button type="button" id="adicionar-gosto">
+            Adicionar
+        </button>
     </p>
 
     <div id="recomendacoes">
-        <ul id="lista"></ul>
+        <ul id="lista" aria-label="Resultados da pesquisa"></ul>
     </div>
 
-    <div id="meus-gostos"></div>
+    <p data-gostos-aviso role="status" hidden></p>
+
+    <div id="meus-gostos" aria-label="Gostos selecionados"></div>
+
+    <section class="gostos-sugestoes" aria-label="Sugestões por tema">
+        <p data-sugestoes-estado role="status">
+            A carregar sugestões…
+        </p>
+
+        <button type="button" data-sugestoes-repetir hidden>
+            Tentar novamente
+        </button>
+
+        <div data-sugestoes-grupos></div>
+    </section>
 
     <nav class="anterior-proximo">
         {% if modo_edicao %}
-            <a data-etapa="#editar-perfil" data-sem-validar="true" class="anterior">
+            <a
+                data-etapa="#editar-perfil"
+                data-sem-validar="true"
+                class="anterior"
+            >
                 Voltar à lista
             </a>
 
-            <button type="submit" class="proximo guardar-secao">Guardar e sair</button>
+            <button type="submit" class="proximo guardar-secao">
+                Guardar e sair
+            </button>
         {% else %}
             <a data-etapa="#sexo" class="anterior">
                 Anterior
