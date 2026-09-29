@@ -30,10 +30,19 @@
     </div>
 
     <p class="permissoes-explicacao">
-        Escolhe o que a Margot pode usar neste dispositivo.
-        Podes alterar estas opções mais tarde.
+        {% if modo_edicao %}
+            Escolhe o que a Margot pode usar neste dispositivo. Podes alterar estas opções mais tarde.
+        {% else %}
+            Tu decides o que partilhas. Cada permissão é pedida quando fizer sentido.
+        {% endif %}
     </p>
 
+    {% if not modo_edicao %}
+        <p>Quando entrares na Margot, pedimos a localização para descobrires quem está perto.
+        As notificações ficam para quando abrires as mensagens. Uma coisa de cada vez.</p>
+    {% endif %}
+
+    {% if modo_edicao %}
     <div class="permissoes-lista">
         <article class="permissao-cartao" data-permissao="localizacao" data-ativa="false">
             <div class="permissao-icone" aria-hidden="true">
@@ -77,6 +86,7 @@
             </div>
         </article>
     </div>
+    {% endif %}
 
     <p id="permissoes-erro" role="alert" aria-live="polite"></p>
 
@@ -92,7 +102,7 @@
                 Anterior
             </a>
 
-            <a data-etapa="#palavra-passe" id="permissoes-proximo" class="proximo desativado" aria-disabled="true">
+            <a data-etapa="#palavra-passe" id="permissoes-proximo" class="proximo" aria-disabled="false">
                 Próximo
             </a>
         {% endif %}

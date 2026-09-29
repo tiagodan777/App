@@ -2,6 +2,7 @@
     'use strict';
 
     if (window.MargotPushNotifications) return;
+
     var TOKEN_KEY = 'margot-push-token-v1';
     var INSTALLATION_KEY = 'margot-installation-id-v1';
     var SYNC_KEY = 'margot-push-sync-v1';
@@ -9,6 +10,7 @@
     var PENDING_DESTINATION_MAX_AGE = 10 * 60 * 1000;
     var CHANNEL_ID = 'margot_activity';
     var UUID_PATTERN = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
+
     var plugin = null;
     var listenersPromise = null;
     var registrationPromise = null;
@@ -24,21 +26,26 @@
 
     function platform() {
         if (!isNative()) return 'web';
+
         if (typeof window.Capacitor.getPlatform === 'function') {
             return String(window.Capacitor.getPlatform() || '').toLowerCase();
         }
+
         return /iphone|ipad|ipod/i.test(navigator.userAgent) ? 'ios' : 'android';
     }
 
     function pushPlugin() {
         if (!isNative()) return null;
         if (plugin) return plugin;
+
         var plugins = window.Capacitor.Plugins || {};
+
         if (plugins.PushNotifications) {
             plugin = plugins.PushNotifications;
         } else if (typeof window.Capacitor.registerPlugin === 'function') {
             plugin = window.Capacitor.registerPlugin('PushNotifications');
         }
+
         return plugin;
     }
 
@@ -46,10 +53,13 @@
         if (!pushPlugin()) {
             return false;
         }
+
         window.margotNotificationPermissionFlowManaged = true;
+
         if (window.margotNotificationPermissionFlowCompleted !== true) {
             window.margotNotificationPermissionFlowCompleted = false;
         }
+
         return true;
     }
 
@@ -57,12 +67,16 @@
         if (!isNative()) {
             return;
         }
+
         window.margotNotificationPermissionFlowManaged = true;
         window.margotNotificationPermissionState = String(estado || 'unknown');
+
         if (window.margotNotificationPermissionFlowCompleted === true) {
             return;
         }
+
         window.margotNotificationPermissionFlowCompleted = true;
+
         window.dispatchEvent(
             new CustomEvent('margot:notificacoes-permissao-concluida', {
                 detail: { state: window.margotNotificationPermissionState }
@@ -71,12 +85,9 @@
     }
 
     /*
-     * É importante marcar o fluxo como gerido de forma síncrona.
-     *
-     * push-notifications.js é carregado antes de
-     * background-location.js. Assim, quando o segundo script
-     * arrancar, já sabe que deve esperar pela autorização
-     * nativa de notificações antes de pedir localização.
+     * Marca o estado de preparação antes de os restantes scripts arrancarem.
+     * A inicialização consulta a autorização existente sem abrir o pedido.
+     * O pedido de notificações fica para uma ação contextual posterior.
      */
     iniciarFluxoPermissaoNotificacoesNativas();
 
@@ -84,7 +95,9 @@
         if (window.crypto && typeof window.crypto.randomUUID === 'function') {
             return window.crypto.randomUUID().toLowerCase();
         }
+
         var bytes = new Uint8Array(16);
+
         if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
             window.crypto.getRandomValues(bytes);
         } else {
@@ -92,30 +105,44 @@
                 bytes[index] = Math.floor(Math.random() * 256);
             }
         }
+
         bytes[6] = (bytes[6] & 15) | 64;
         bytes[8] = (bytes[8] & 63) | 128;
+
         var hex = Array.from(bytes, function (byte) {
             return byte.toString(16).padStart(2, '0');
         }).join('');
-        return [hex.slice(0, 8), hex.slice(8, 12), hex.slice(12, 16), hex.slice(16, 20), hex.slice(20)].join('-');
+
+        return [
+            hex.slice(0, 8),
+            hex.slice(8, 12),
+            hex.slice(12, 16),
+            hex.slice(16, 20),
+            hex.slice(20)
+        ].join('-');
     }
 
     function installationId() {
         var value = '';
+
         try {
             value = String(window.localStorage.getItem(INSTALLATION_KEY) || '');
         } catch (error) {
             value = '';
         }
+
         if (UUID_PATTERN.test(value)) {
             return value.toLowerCase();
         }
+
         value = newUuid();
+
         try {
             window.localStorage.setItem(INSTALLATION_KEY, value);
         } catch (error) {
             console.warn('Não foi possível guardar o identificador push.', error);
         }
+
         return value;
     }
 
@@ -156,19 +183,25 @@
 
     function validInternalDestination(value) {
         var destination = String(value || '').trim();
+
         if (!destination || destination.indexOf('//') === 0) {
             return '';
         }
+
         try {
             var url = new URL(destination, window.location.origin);
+
             if (url.origin !== window.location.origin) {
                 return '';
             }
+
             if (url.pathname === '/') {
                 return '/' + url.search;
             }
+
             var uuid = '[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}';
             var allowed = new RegExp('^/(?:profile|messages)/' + uuid + '/?$', 'i');
+
             return allowed.test(url.pathname) ? url.pathname + url.search : '';
         } catch (error) {
             return '';
@@ -178,12 +211,15 @@
     function actionDestination(action) {
         var notification = action && action.notification ? action.notification : {};
         var data = notification.data && typeof notification.data === 'object' ? notification.data : {};
+
         return validInternalDestination(data.url || notification.url || '');
     }
 
     function openNotification(action) {
         var destination = actionDestination(action);
+
         if (!destination) return;
+
         try {
             window.localStorage.setItem(
                 PENDING_DESTINATION_KEY,
@@ -192,10 +228,12 @@
         } catch (error) {
             console.warn('Não foi possível guardar o destino do push.', error);
         }
+
         if (memberId()) {
             window.location.assign(destination);
             return;
         }
+
         if (!/^\/login\/?$/i.test(window.location.pathname)) {
             window.location.assign(String(window.loginUrl || '/login/'));
         }
@@ -203,14 +241,20 @@
 
     function redirectPendingDestination() {
         if (!memberId()) return false;
+
         var pending = null;
+
         try {
-            pending = JSON.parse(window.localStorage.getItem(PENDING_DESTINATION_KEY) || 'null');
+            pending = JSON.parse(
+                window.localStorage.getItem(PENDING_DESTINATION_KEY) || 'null'
+            );
         } catch (error) {
             pending = null;
         }
+
         var destination = validInternalDestination(pending && pending.destination);
         var savedAt = Number((pending && pending.at) || 0);
+
         if (!destination || savedAt < Date.now() - PENDING_DESTINATION_MAX_AGE) {
             try {
                 window.localStorage.removeItem(PENDING_DESTINATION_KEY);
@@ -220,9 +264,12 @@
                  * com a navegação.
                  */
             }
+
             return false;
         }
+
         var current = window.location.pathname + window.location.search;
+
         if (current === destination) {
             try {
                 window.localStorage.removeItem(PENDING_DESTINATION_KEY);
@@ -231,8 +278,10 @@
                  * O destino já abriu corretamente.
                  */
             }
+
             return false;
         }
+
         try {
             window.localStorage.removeItem(PENDING_DESTINATION_KEY);
         } catch (error) {
@@ -241,37 +290,56 @@
              * o destino seguro.
              */
         }
+
         window.location.assign(destination);
         return true;
     }
 
     function notificationData(notification) {
-        return notification && notification.data && typeof notification.data === 'object' ? notification.data : {};
+        return notification && notification.data && typeof notification.data === 'object'
+            ? notification.data
+            : {};
     }
 
     function dispatchForegroundNotification(notification) {
         var data = notificationData(notification);
         var type = String(data.type || '').toLowerCase();
-        window.dispatchEvent(new CustomEvent('margot:push-recebido', { detail: notification || {} }));
+
+        window.dispatchEvent(
+            new CustomEvent('margot:push-recebido', {
+                detail: notification || {}
+            })
+        );
+
         if (type === 'hey') {
-            window.dispatchEvent(new CustomEvent('app:hey-recebido', { detail: data }));
+            window.dispatchEvent(
+                new CustomEvent('app:hey-recebido', { detail: data })
+            );
             return;
         }
+
         if (type === 'message') {
-            window.dispatchEvent(new CustomEvent('app:chat-push-recebido', { detail: data }));
+            window.dispatchEvent(
+                new CustomEvent('app:chat-push-recebido', { detail: data })
+            );
         }
     }
 
     async function postDevice(action, token) {
         var endpoint = String(window.pushDeviceUrl || '/push-device/');
         var currentMemberId = memberId();
+
         if (!currentMemberId) {
             return false;
         }
+
         var response = await window.fetch(endpoint, {
             method: 'POST',
             credentials: 'same-origin',
-            headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
             body: JSON.stringify({
                 action: action,
                 platform: platform(),
@@ -279,9 +347,13 @@
                 installation_id: installationId()
             })
         });
+
         if (!response.ok) {
-            throw new Error('O servidor recusou o registo push (' + response.status + ').');
+            throw new Error(
+                'O servidor recusou o registo push (' + response.status + ').'
+            );
         }
+
         var result = await response.json();
         return result && result.success === true;
     }
@@ -293,6 +365,7 @@
     function wasRecentlySynced(token) {
         try {
             var value = JSON.parse(window.localStorage.getItem(SYNC_KEY) || '{}');
+
             return (
                 value &&
                 value.fingerprint === syncFingerprint(token) &&
@@ -307,7 +380,10 @@
         try {
             window.localStorage.setItem(
                 SYNC_KEY,
-                JSON.stringify({ fingerprint: syncFingerprint(token), at: Date.now() })
+                JSON.stringify({
+                    fingerprint: syncFingerprint(token),
+                    at: Date.now()
+                })
             );
         } catch (error) {
             console.warn('Não foi possível guardar o estado push.', error);
@@ -316,16 +392,21 @@
 
     async function syncToken(token, force) {
         token = String(token || '').trim();
+
         if (!token || !memberId() || !notificationsWanted()) {
             return false;
         }
+
         if (!force && wasRecentlySynced(token)) {
             return true;
         }
+
         var success = await postDevice('register', token);
+
         if (success) {
             markSynced(token);
         }
+
         return success;
     }
 
@@ -341,34 +422,53 @@
         if (listenersPromise) {
             return listenersPromise;
         }
+
         listenersPromise = (async function () {
             await push.addListener('registration', function (result) {
                 var token = String((result && result.value) || '').trim();
+
                 if (!token) {
                     return;
                 }
+
                 storeToken(token);
+
                 syncToken(token, true).catch(function (error) {
                     console.warn('Não foi possível sincronizar o token push.', error);
                 });
             });
+
             await push.addListener('registrationError', function (error) {
-                console.warn('O sistema não conseguiu registar as notificações push.', error);
+                console.warn(
+                    'O sistema não conseguiu registar as notificações push.',
+                    error
+                );
             });
-            await push.addListener('pushNotificationReceived', dispatchForegroundNotification);
-            await push.addListener('pushNotificationActionPerformed', openNotification);
+
+            await push.addListener(
+                'pushNotificationReceived',
+                dispatchForegroundNotification
+            );
+
+            await push.addListener(
+                'pushNotificationActionPerformed',
+                openNotification
+            );
         })().catch(function (error) {
             listenersPromise = null;
             throw error;
         });
+
         return listenersPromise;
     }
 
     async function permissionState() {
         var push = pushPlugin();
+
         if (!push) {
             return isNative() ? 'unsupported' : 'web';
         }
+
         try {
             var permissions = await push.checkPermissions();
             return String((permissions && permissions.receive) || 'prompt');
@@ -381,25 +481,42 @@
         if (permissionRequestPromise) {
             return permissionRequestPromise;
         }
+
         var push = pushPlugin();
+
         if (!push) {
             concluirFluxoPermissaoNotificacoesNativas('unsupported');
             return 'unsupported';
         }
+
         iniciarFluxoPermissaoNotificacoesNativas();
+
         var estadoFinal = 'unknown';
+
         permissionRequestPromise = (async function () {
             await prepareListeners(push);
+
             var permissions = await push.checkPermissions();
             var state = String((permissions && permissions.receive) || 'prompt');
+
             if (state === 'prompt' || state === 'prompt-with-rationale') {
-                permissions = await push.requestPermissions();
+                permissions = window.MargotPermissionUI
+                    ? await window.MargotPermissionUI.run(() =>
+                        window.MargotPermissionUI.guide(
+                            'notifications',
+                            () => push.requestPermissions()
+                        )
+                    )
+                    : await push.requestPermissions();
+
                 state = String((permissions && permissions.receive) || 'denied');
             }
+
             if (state === 'granted') {
                 await prepareAndroidChannel(push);
                 await push.register();
             }
+
             estadoFinal = state;
             return state;
         })()
@@ -411,6 +528,7 @@
                 permissionRequestPromise = null;
                 concluirFluxoPermissaoNotificacoesNativas(estadoFinal);
             });
+
         return permissionRequestPromise;
     }
 
@@ -418,56 +536,77 @@
         if (registrationPromise) {
             return registrationPromise;
         }
+
         registrationPromise = (async function () {
             var push = pushPlugin();
+
             if (!push || !notificationsWanted()) {
                 return false;
             }
+
             await prepareListeners(push);
+
             var state = await permissionState();
+
             if (state !== 'granted') {
                 return false;
             }
+
             await prepareAndroidChannel(push);
+
             var token = storedToken();
+
             if (token) {
                 await syncToken(token, false);
             }
+
             await push.register();
             return true;
         })()
             .catch(function (error) {
-                console.warn('Não foi possível iniciar as notificações push.', error);
+                console.warn(
+                    'Não foi possível iniciar as notificações push.',
+                    error
+                );
                 return false;
             })
             .finally(function () {
                 registrationPromise = null;
             });
+
         return registrationPromise;
     }
 
     async function unregister() {
         var push = pushPlugin();
         var token = storedToken();
+
         try {
             if (memberId()) {
                 await postDevice('unregister', token);
             }
         } catch (error) {
-            console.warn('Não foi possível remover o dispositivo no servidor.', error);
+            console.warn(
+                'Não foi possível remover o dispositivo no servidor.',
+                error
+            );
         }
+
         try {
             if (push && typeof push.unregister === 'function') {
                 await push.unregister();
             }
+
             if (push && typeof push.removeAllDeliveredNotifications === 'function') {
                 await push.removeAllDeliveredNotifications();
             }
         } finally {
             clearLocalRegistration();
         }
+
         return true;
     }
+
     window.MargotPushNotifications = {
         isNative: isNative,
         isAvailable: function () {
@@ -481,24 +620,29 @@
 
     async function initialize() {
         var push = pushPlugin();
+
         if (!push) {
             if (isNative()) {
                 concluirFluxoPermissaoNotificacoesNativas('unsupported');
             }
+
             return;
         }
+
         iniciarFluxoPermissaoNotificacoesNativas();
+
         try {
             await prepareListeners(push);
+
             if (redirectPendingDestination()) {
                 concluirFluxoPermissaoNotificacoesNativas('redirect');
                 return;
             }
+
             var state = await permissionState();
+
             if (memberId() && notificationsWanted()) {
-                if (state === 'prompt' || state === 'prompt-with-rationale') {
-                    state = await requestPermission();
-                } else if (state === 'granted') {
+                if (state === 'granted') {
                     await register();
                     concluirFluxoPermissaoNotificacoesNativas(state);
                 } else {
@@ -508,19 +652,25 @@
                 concluirFluxoPermissaoNotificacoesNativas(state);
             }
         } catch (error) {
-            console.warn('Não foi possível preparar as notificações push.', error);
+            console.warn(
+                'Não foi possível preparar as notificações push.',
+                error
+            );
             concluirFluxoPermissaoNotificacoesNativas('unknown');
         }
     }
+
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initialize, { once: true });
     } else {
         initialize();
     }
+
     window.addEventListener('margot:preferencias-alteradas', function (event) {
         var preferences = event.detail || {};
+
         if (preferences.notificacoes === true) {
-            requestPermission().catch(function (error) {
+            register().catch(function (error) {
                 console.warn('Não foi possível ativar as notificações push.', error);
             });
         } else if (preferences.notificacoes === false && memberId()) {

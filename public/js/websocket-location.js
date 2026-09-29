@@ -47,6 +47,28 @@ window.MargotLocationTracker = function (actions) {
                 return;
             }
 
+            if (window.MargotLocationOnboarding) {
+                try {
+                    const permission = await nativeGeolocation.checkPermissions();
+
+                    if (
+                        permission.location !== 'granted' &&
+                        permission.coarseLocation !== 'granted'
+                    ) {
+                        return;
+                    }
+                } catch (_) {
+                    return;
+                }
+
+                if (
+                    window.disableLocationTracking ||
+                    document.visibilityState !== 'visible'
+                ) {
+                    return;
+                }
+            }
+
             if (isAndroidNativeApp()) {
                 locationWatchStarting = true;
 
@@ -165,6 +187,28 @@ window.MargotLocationTracker = function (actions) {
             if (!nativeGeolocation) {
                 mostrarMensagemTemporaria('A localização nativa não está disponível.', 'erro');
                 return;
+            }
+
+            if (window.MargotLocationOnboarding) {
+                try {
+                    const permission = await nativeGeolocation.checkPermissions();
+
+                    if (
+                        permission.location !== 'granted' &&
+                        permission.coarseLocation !== 'granted'
+                    ) {
+                        return;
+                    }
+                } catch (_) {
+                    return;
+                }
+
+                if (
+                    window.disableLocationTracking ||
+                    document.visibilityState !== 'visible'
+                ) {
+                    return;
+                }
             }
 
             if (isAndroidNativeApp()) {
@@ -292,7 +336,7 @@ window.MargotLocationTracker = function (actions) {
         }
 
         /*
-         * O pedido de autorização pertence a background-location.js.
+         * O pedido de autorização pertence ao fluxo de localização.
          * Aqui apenas confirmamos se o Android já concedeu a permissão.
          */
         androidLocationPermissionPromise = nativeGeolocation

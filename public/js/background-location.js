@@ -108,8 +108,8 @@
     }
 
     /*
-     * No Android, push-notifications.js gere POST_NOTIFICATIONS.
-     * O pedido de localização espera pela conclusão desse fluxo.
+     * Aguarda a preparação inicial das notificações no Android.
+     * Essa preparação consulta o estado sem abrir um pedido de autorização.
      */
     function aguardarPermissaoNotificacoesAndroid() {
         if (!androidNativo()) {
@@ -133,6 +133,7 @@
                 }
 
                 terminou = true;
+
                 window.removeEventListener(
                     'margot:notificacoes-permissao-concluida',
                     concluir
@@ -307,7 +308,22 @@
             return { available: false, active: false };
         }
 
-        return plugin.status();
+        var state = await plugin.status();
+
+        if (androidNativo() && geolocationPlugin) {
+            const permission = await geolocationPlugin.checkPermissions();
+
+            state.services_enabled = state.permission !== 'disabled';
+
+            if (
+                !permissaoLocalizacaoConcedida(permission) &&
+                ['denied', 'prompt-with-rationale'].includes(permission.location)
+            ) {
+                state.authorization = 'denied';
+            }
+        }
+
+        return state;
     }
 
     var geracao = 0;
@@ -346,6 +362,34 @@
         return resultado;
     }
 
+    async function pedirPermissao(always) {
+        var state = await estadoAtual();
+
+        if (plataformaAtual() === 'ios') {
+            if (state.permission_flow_version !== 2) {
+                // Compatibilidade com builds já publicados.
+                if (always || !geolocationPlugin) return state;
+
+                const permission = await geolocationPlugin.checkPermissions();
+
+                if (
+                    !permissaoLocalizacaoConcedida(permission) &&
+                    permission.location !== 'denied'
+                ) {
+                    await geolocationPlugin.requestPermissions({
+                        permissions: ['location']
+                    });
+                }
+
+                return estadoAtual();
+            }
+
+            return plugin.requestPermission({ always: always === true });
+        }
+
+        return garantirPermissaoLocalizacaoAndroid();
+    }
+
     var inicializacao = null;
 
     async function iniciar() {
@@ -368,10 +412,14 @@
                 }
 
                 /*
-                 * Android: espera pela permissão de notificações antes
-                 * de pedir localização. Não se aplica ao iOS.
+                 * Compatibilidade com páginas sem o novo coordenador.
+                 * Com o coordenador, as permissões são pedidas por ele.
                  */
-                if (androidNativo() && presencaVisivel()) {
+                if (
+                    !window.MargotLocationOnboarding &&
+                    androidNativo() &&
+                    presencaVisivel()
+                ) {
                     var permissaoAndroid = await garantirPermissaoLocalizacaoAndroid();
 
                     if (versao !== geracao) {
@@ -384,6 +432,27 @@
                 }
 
                 var estado = await estadoAtual();
+
+                if (window.MargotLocationOnboarding) {
+                    if (
+                        plataformaAtual() === 'ios' &&
+                        (
+                            !['when_in_use', 'always'].includes(estado.authorization) ||
+                            estado.services_enabled === false
+                        )
+                    ) {
+                        return estado;
+                    }
+
+                    if (
+                        androidNativo() &&
+                        !permissaoLocalizacaoConcedida(
+                            await geolocationPlugin.checkPermissions()
+                        )
+                    ) {
+                        return estado;
+                    }
+                }
 
                 if (versao !== geracao) {
                     return { active: false, cancelled: true };
@@ -453,6 +522,7 @@
         stop: parar,
         status: estadoAtual,
         openSettings: abrirDefinicoes,
+        requestPermission: pedirPermissao,
         showSettingsNotice: function () {
             window.MargotLocationOnboarding?.open();
         }

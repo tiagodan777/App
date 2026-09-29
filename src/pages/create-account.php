@@ -287,6 +287,8 @@ if ($editing) {
     ]);
 }
 
+$confirmationEmailSent = false;
+
 try {
     $verification = new EmailVerification($db);
 
@@ -316,7 +318,7 @@ try {
             "<p><a href=\"{$safeLink}\">Confirmar o meu email</a></p>";
 
         try {
-            (new Email($email_config))->sendEmail(
+            $confirmationEmailSent = (new Email($email_config))->sendEmail(
                 (string) $email_config['admin_email'],
                 $request['email'],
                 'Confirma o teu email na Margot',
@@ -334,6 +336,7 @@ try {
 
 json_response([
     'success' => true,
-    'redirect' => $base . 'login?sucesso=confirma-email',
+    'redirect' => $base . 'login?sucesso=' . ($confirmationEmailSent ? 'confirma-email' : 'email-pendente'),
+    'confirmation_email_sent' => $confirmationEmailSent,
     'message' => 'A conta foi criada. Confirma o teu email antes de entrares.'
 ]);

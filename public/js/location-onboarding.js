@@ -1,221 +1,348 @@
 (() => {
     'use strict';
+
     if (window.MargotLocationOnboarding) return;
+
     let release;
+
     window.MargotLocationReady = new Promise((resolve) => {
         release = resolve;
     });
-    const native = window.Capacitor?.isNativePlatform?.();
-    const ios = window.Capacitor?.getPlatform?.() === 'ios';
-    const key = 'margot-location-education:' + window.membroId;
-    let dialog,
-        busy = false,
-        hiddenAt = 0,
-        checked = false,
-        checking = false,
-        revision = 0;
 
-    const read = () => {
-        try {
-            return JSON.parse(localStorage.getItem(key)) || { opens: 0 };
-        } catch {
-            return { opens: 0 };
-        }
-    };
+    const native = Boolean(
+        window.Capacitor?.isNativePlatform?.()
+    );
 
-    const save = (value) => {
-        try {
-            localStorage.setItem(key, JSON.stringify(value));
-        } catch {
-            /* Sem armazenamento, funciona nesta sessão. */
-        }
-    };
+    const ios =
+        window.Capacitor?.getPlatform?.() === 'ios';
 
-    // A permissão pertence ao dispositivo; o serviço pode estar parado após o logout.
-    const authorization = (state) => state?.authorization ?? state?.permission;
-    const complete = (state) => ios
-        ? authorization(state) === 'always'
-        : ['granted', 'precise', 'approximate'].includes(authorization(state));
-    const status = () => window.MargotBackgroundLocation.status();
+    let checking = false;
+    let lastState;
+    let pill;
+    let dismissed = false;
 
-    function finish() {
-        revision++;
-        dialog?.close();
-        release();
-    }
+    const authorization = (state) =>
+        state?.authorization ?? state?.permission;
 
-    function render(confirm = false, settings = false) {
-        if (!dialog) {
-            dialog = document.createElement('dialog');
-            dialog.className = 'location-education';
-            dialog.setAttribute('aria-labelledby', 'location-title');
-            dialog.addEventListener('cancel', (event) => {
-                event.preventDefault();
-                render(true);
-            });
-            document.body.append(dialog);
-        }
+    const granted = (state) =>
+        ios
+            ? ['when_in_use', 'always'].includes(
+                  authorization(state)
+              ) && state?.services_enabled !== false
+            : ['granted', 'precise', 'approximate'].includes(
+                  authorization(state)
+              ) && state?.services_enabled !== false;
 
-        dialog.innerHTML = `
-            <div class="location-orbit" aria-hidden="true"><span>Tu</span><i>Hey</i><b>✦</b></div>
-            <p class="location-eyebrow">A MARGOT CONTINUA POR PERTO</p>
-            <h2 id="location-title"></h2><p data-explanation></p><p class="location-detail"></p>
-            <p class="location-error" role="alert"></p>
-            <button class="location-primary" type="button"></button>
-            <button class="location-secondary" type="button"></button>`;
+    const status = () =>
+        window.MargotBackgroundLocation.status();
 
-        dialog.querySelector('h2').textContent = confirm
-            ? 'Continuar sem esta opção?'
-            : 'Os encontros não esperam que abras a app.';
+    const disabled = () =>
+        window.MargotPreferencias?.obter('localizacao') === false;
 
-        dialog.querySelector('[data-explanation]').textContent = confirm
-            ? 'Sem localização em segundo plano, a tua presença pode deixar de atualizar quando sais da Margot. Alguém que passe por ti pode não te encontrar.'
-            : 'A localização em segundo plano permite atualizar quem está perto, mesmo quando tens o telemóvel no bolso. A tua posição exata não é mostrada às outras pessoas.';
+    function showNotice() {
+        if (!native) return;
 
-        dialog.querySelector('.location-detail').textContent = settings
-            ? 'No iPhone: Definições → Margot → Localização → Sempre. Podes mudar esta escolha quando quiseres.'
-            : 'Pode consumir bateria. O consumo depende do movimento, do sinal e do dispositivo. Podes desligar esta opção nas definições.';
+        if (!pill) {
+            pill = document.createElement('aside');
 
-        const primary = dialog.querySelector('.location-primary');
-        const secondary = dialog.querySelector('.location-secondary');
+            pill.className = 'margot-location-pill';
+            pill.setAttribute('aria-label', 'Localização');
 
-        primary.textContent = settings
-            ? 'Abrir definições'
-            : ios
-              ? 'Ativar localização Sempre'
-              : 'Ativar em segundo plano';
+            pill.innerHTML =
+                '<span>📍 Sem localização ativa, não conseguimos descobrir quem está perto de ti.</span>' +
+                '<button type="button" data-settings>Abrir definições</button>' +
+                '<button type="button" data-close aria-label="Fechar aviso">×</button>';
 
-        secondary.textContent = confirm ? 'Continuar assim' : 'Agora não';
+            pill.querySelector('[data-settings]').onclick = async () => {
+                const pending = [
+                    'not_determined',
+                    'prompt',
+                    'prompt-with-rationale'
+                ].includes(authorization(lastState));
 
-        primary.onclick = async () => {
-            if (busy) return;
-            busy = true;
-            const current = revision;
-            primary.disabled = secondary.disabled = true;
-
-            try {
-                const state = await status();
-                if (current !== revision) return;
-
-                if (complete(state)) {
-                    finish();
+                if (
+                    (disabled() && granted(lastState)) ||
+                    pending
+                ) {
+                    await check(true);
                     return;
                 }
 
-                const needsSettings = settings || ['denied', 'restricted'].includes(authorization(state));
-
-                if (needsSettings) {
+                try {
                     await window.MargotBackgroundLocation.openSettings();
-                } else {
-                    dialog.close();
-                    const result = await window.MargotBackgroundLocation.requestAlways();
-                    if (current !== revision) return;
-
-                    if (complete(result)) {
-                        finish();
-                        return;
-                    }
-
-                    const latest = await status();
-                    if (current !== revision) return;
-
-                    if (complete(latest)) finish();
-                    else if (['denied', 'restricted'].includes(authorization(latest))) render(true, ios);
-                    // O iOS pode concluir a passagem de "Ao usar" para "Sempre" depois.
-                    // O evento nativo e o regresso à app voltam a consultar a permissão.
-                    else finish();
+                } catch (_) {
+                    pill.querySelector('span').textContent =
+                        'Abre Definições → Margot → Localização no iPhone.';
                 }
-            } catch {
-                if (current !== revision) return;
-                render(false, settings);
-                dialog.querySelector('.location-error').textContent =
-                    'Não foi possível ativar agora. Podes tentar nas definições.';
-            } finally {
-                busy = false;
-                dialog.querySelectorAll('button').forEach((button) => {
-                    button.disabled = false;
-                });
-            }
-        };
+            };
 
-        secondary.onclick = () => (confirm ? finish() : render(true, settings));
-        if (!dialog.open) dialog.showModal();
+            pill.querySelector('[data-close]').onclick = () => {
+                dismissed = true;
+                pill.hidden = true;
+            };
+
+            document.body.append(pill);
+        }
+
+        pill.querySelector('[data-settings]').textContent =
+            disabled() && granted(lastState)
+                ? 'Alterar na Margot'
+                : [
+                      'not_determined',
+                      'prompt',
+                      'prompt-with-rationale'
+                  ].includes(authorization(lastState))
+                  ? 'Continuar'
+                  : 'Abrir definições';
+
+        pill.hidden =
+            dismissed ||
+            !document.getElementById('gridCanvas') ||
+            !lastState ||
+            lastState.available === false ||
+            (granted(lastState) && !disabled());
     }
 
     async function check(force = false) {
-        if (!native || (!force && window.MargotPreferencias?.obter?.('localizacao') === false)) {
+        if (!native || !window.MargotPermissionUI) {
             release();
             return;
         }
 
-        if (dialog?.open || busy || checking) return;
+        if (checking) return;
+
         checking = true;
-        const current = revision;
 
         try {
-            const state = await status();
-            if (current !== revision) return;
+            lastState = await status();
 
-            if (state?.available === false || !authorization(state)) {
-                release();
+            if (lastState.available === false) return;
+            if (!force && disabled()) return;
+
+            const auth = authorization(lastState);
+
+            if (
+                ['denied', 'restricted'].includes(auth) ||
+                lastState.services_enabled === false
+            ) {
                 return;
             }
 
-            if (complete(state)) {
-                finish();
+            const wasDisabled = disabled();
+
+            const first = [
+                'not_determined',
+                'prompt',
+                'prompt-with-rationale'
+            ].includes(auth);
+
+            const needsAlways =
+                ios &&
+                auth === 'when_in_use' &&
+                lastState.always_requested === false;
+
+            if (!force && !first && !needsAlways) {
                 return;
             }
 
-            const saved = read();
-            if (!force) saved.opens = (saved.opens || 0) + 1;
-            const show = force || saved.opens === 1 || (saved.opens - 1) % 3 === 0;
-            save(saved);
+            window.MargotPermissionUI.deferNotifications();
 
-            if (show) render(false, ios && authorization(state) === 'when_in_use');
-            else release();
-        } catch {
-            release();
+            await window.MargotPermissionUI.run(async () => {
+                const ui = window.MargotPermissionUI;
+
+                if (
+                    force &&
+                    granted(lastState) &&
+                    disabled()
+                ) {
+                    const accepted = await ui.explain({
+                        title: 'Descobre quem está perto.',
+                        text:
+                            'A Margot vai usar a localização que já autorizaste neste dispositivo.',
+                        detail:
+                            'A tua posição exata não é mostrada às outras pessoas.'
+                    });
+
+                    if (!accepted) return;
+
+                    window.MargotPreferencias?.definir(
+                        'localizacao',
+                        true
+                    );
+                }
+
+                if (first) {
+                    const accepted = await ui.explain({
+                        title: 'O próximo olá está perto.',
+                        text:
+                            'A localização permite descobrir pessoas que estão perto de ti.',
+                        detail:
+                            'A tua posição exata não é mostrada às outras pessoas. Escolhes a autorização no próximo ecrã.'
+                    });
+
+                    if (!accepted) return;
+
+                    lastState = await ui.guide(
+                        'location',
+                        () =>
+                            window.MargotBackgroundLocation.requestPermission(
+                                false
+                            )
+                    );
+
+                    /*
+                     * No Android, o resultado da permissão vem
+                     * embrulhado num objeto do Capacitor.
+                     */
+                    if (!ios) {
+                        lastState = await status();
+                    }
+
+                    if (lastState.update_required) {
+                        throw new Error(
+                            'Atualiza a Margot para concluir este pedido.'
+                        );
+                    }
+
+                    if (!granted(lastState)) {
+                        return;
+                    }
+
+                    window.MargotPreferencias?.definir(
+                        'localizacao',
+                        true
+                    );
+                }
+
+                if (
+                    ios &&
+                    authorization(lastState) === 'when_in_use' &&
+                    lastState.always_requested === false
+                ) {
+                    const accepted = await ui.explain({
+                        title: 'E quando guardas o telemóvel?',
+                        text:
+                            'A localização em segundo plano permite atualizar os encontros mesmo quando sais da Margot.',
+                        detail:
+                            'Pode consumir bateria. Podes mudar esta escolha nas definições quando quiseres.'
+                    });
+
+                    if (!accepted) return;
+
+                    lastState = await ui.guide(
+                        'always',
+                        () =>
+                            window.MargotBackgroundLocation.requestPermission(
+                                true
+                            )
+                    );
+                }
+
+                if (
+                    force &&
+                    ios &&
+                    authorization(lastState) === 'when_in_use' &&
+                    !needsAlways &&
+                    !first &&
+                    !wasDisabled
+                ) {
+                    const accepted = await ui.explain({
+                        title: 'Localização em segundo plano',
+                        text:
+                            'Podes permitir a localização Sempre nas definições da Margot.',
+                        detail:
+                            'A localização durante a utilização já está disponível.',
+                        action: 'Abrir definições'
+                    });
+
+                    if (accepted) {
+                        await window.MargotBackgroundLocation.openSettings();
+                    }
+                }
+
+                /*
+                 * Recusar não abre outra mensagem de persuasão
+                 * nem encaminha automaticamente para as definições.
+                 */
+            });
+        } catch (error) {
+            console.warn(
+                'Não foi possível concluir o pedido de localização.',
+                error
+            );
         } finally {
             checking = false;
+
+            release();
+            showNotice();
+        }
+    }
+
+    async function refresh() {
+        if (!native || checking) return;
+
+        try {
+            lastState = await status();
+
+            showNotice();
+
+            if (granted(lastState) && !disabled()) {
+                window.MargotBackgroundLocation.start();
+            }
+        } catch (_) {
+            /*
+             * Mantém o último estado conhecido.
+             * Regressar à app nunca abre outro pedido automaticamente.
+             */
         }
     }
 
     window.MargotLocationOnboarding = {
         open: () => check(true),
-        close: finish,
+
+        close: () => {
+            release();
+        },
+
         authorizationChanged: (state) => {
-            if (complete(state)) finish();
-        }
-    };
+            lastState = state;
 
-    const start = () => {
-        if (!checked) {
-            checked = true;
-            check();
-        }
-    };
-
-    if (document.readyState === 'loading')
-        document.addEventListener('DOMContentLoaded', start, { once: true });
-    else queueMicrotask(start);
-
-    document.addEventListener('visibilitychange', async () => {
-        if (document.hidden) {
-            hiddenAt = Date.now();
-            return;
-        }
-
-        if (dialog?.open) {
-            try {
-                if (complete(await status())) finish();
-            } catch {
-                /* Mantém a explicação disponível. */
+            if (!checking) {
+                showNotice();
             }
-            return;
         }
+    };
 
-        // Não conta abrir a câmara ou responder a um pedido de permissões como outra abertura da app.
-        if (hiddenAt && Date.now() - hiddenAt >= 60000) check();
-        hiddenAt = 0;
+    const start = () => check();
+
+    if (document.readyState === 'loading') {
+        document.addEventListener(
+            'DOMContentLoaded',
+            start,
+            { once: true }
+        );
+    } else {
+        queueMicrotask(start);
+    }
+
+    document.addEventListener(
+        'margot:permissions-resume',
+        refresh
+    );
+
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+            refresh();
+        }
     });
+
+    document.addEventListener(
+        'margot:page-ready',
+        showNotice
+    );
+
+    window.addEventListener(
+        'margot:preferencias-alteradas',
+        showNotice
+    );
 })();

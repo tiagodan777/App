@@ -42,6 +42,7 @@
     var camposHtmlCache = templateCampos ? '' : null;
     var camposDOMCache = templateCampos ? templateCampos.content : null;
     var aEnviar = false;
+    var aRedirecionar = false;
     var erroValidacaoPendente = null;
 
     if (!Array.isArray(dados.gostos)) dados.gostos = [];
@@ -685,21 +686,6 @@
             };
         }
 
-        var preferencias = window.MargotPreferencias;
-
-        if (
-            !preferencias ||
-            !preferencias.foiEscolhida('localizacao') ||
-            !preferencias.foiEscolhida('notificacoes')
-        ) {
-            return {
-                etapa: '#permissoes',
-                campo: '',
-                mensagem:
-                    'Escolhe se queres ativar ou desativar a localização e as notificações.'
-            };
-        }
-
         var password = String(dados.password || '');
 
         if (
@@ -996,9 +982,34 @@
             dataType: 'json',
             cache: false
         })
-            .done(function (resposta) {
+            .done(async function (resposta) {
                 if (resposta.success && resposta.redirect) {
+                    aRedirecionar = true;
                     limparSessao();
+
+                    if (!modoEdicao) {
+                        try {
+                            sessionStorage.setItem('margot-account-celebration', '1');
+
+                            const cap = window.Capacitor;
+
+                            if (cap?.isNativePlatform?.()) {
+                                const haptic =
+                                    cap.Plugins?.MargotHaptics ||
+                                    cap.registerPlugin?.('MargotHaptics');
+
+                                await Promise.race([
+                                    Promise.resolve(
+                                        haptic?.play({ type: 'interaction' })
+                                    ).catch(() => {}),
+                                    new Promise((resolve) => setTimeout(resolve, 300))
+                                ]);
+                            }
+                        } catch (_) {
+                            /* A criação da conta não depende da háptica. */
+                        }
+                    }
+
                     window.location.href = resposta.redirect;
                     return;
                 }
@@ -1039,6 +1050,8 @@
                 );
             })
             .always(function () {
+                if (aRedirecionar) return;
+
                 aEnviar = false;
 
                 $botao

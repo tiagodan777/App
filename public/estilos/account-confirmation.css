@@ -1,0 +1,131 @@
+.account-confirmation {
+    box-sizing: border-box;
+    width: min(85%, 460px);
+    text-align: center;
+    max-width: 460px;
+    margin: auto;
+    padding: 20px 0;
+}
+
+.account-confirmation-hand {
+    width: 180px;
+    margin: 0 auto 24px;
+}
+
+.account-confirmation-hand svg {
+    display: block;
+    width: 100%;
+    overflow: visible;
+}
+
+.confirmation-thumb {
+    transform-box: fill-box;
+    transform-origin: 30% 85%;
+    animation:
+        confirmation-like 0.85s
+        cubic-bezier(0.2, 0.8, 0.3, 1)
+        both;
+}
+
+.confirmation-spark {
+    transform-origin: center;
+    animation: confirmation-spark 0.45s 0.6s both;
+}
+
+.account-confirmation h1 {
+    font:
+        800 clamp(28px, 7vw, 36px)/1.15
+        system-ui, sans-serif;
+    margin: 0 0 20px;
+}
+
+.account-confirmation p {
+    font: 17px/1.5 system-ui, sans-serif;
+}
+
+.account-confirmation .account-confirmation-detail {
+    color: #686870;
+    font-size: 14px;
+}
+
+.account-confirmation-copy {
+    animation: confirmation-copy 0.4s 0.8s both;
+}
+
+.account-confirmation-link {
+    display: block;
+    margin: 24px 0;
+    color: inherit;
+    text-decoration: underline;
+}
+
+.account-confirmation-login {
+    display: block;
+    border-radius: 99px;
+    padding: 16px;
+    background: #f3153c;
+    color: #fff;
+    text-decoration: none;
+    font: 650 17px system-ui, sans-serif;
+}
+
+@keyframes confirmation-like {
+    0% {
+        opacity: 0;
+        transform:
+            translateY(24px)
+            rotate(55deg)
+            scale(0.75);
+    }
+
+    55% {
+        opacity: 1;
+        transform:
+            translateY(-4px)
+            rotate(-12deg)
+            scale(1.06);
+    }
+
+    100% {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes confirmation-spark {
+    from {
+        opacity: 0;
+        transform: scale(0.7);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes confirmation-copy {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+.account-confirmation-static .confirmation-thumb,
+.account-confirmation-static .confirmation-spark,
+.account-confirmation-static .account-confirmation-copy {
+    animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .confirmation-thumb,
+    .confirmation-spark,
+    .account-confirmation-copy {
+        animation: none;
+    }
+}
