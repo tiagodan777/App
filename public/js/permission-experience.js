@@ -8,21 +8,126 @@
     let visit = 0;
     let locationVisit = -1;
 
+    const native = () =>
+        Boolean(window.Capacitor?.isNativePlatform?.());
+
+    const plugin = name =>
+        window.Capacitor?.Plugins?.[name] ||
+        window.Capacitor?.registerPlugin?.(name);
+
+    const reduced = () =>
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const pause = ms =>
+        new Promise(resolve => setTimeout(resolve, ms));
+
     document.addEventListener('margot:page-ready', () => {
         visit++;
     });
 
-    const native = () =>
-        Boolean(window.Capacitor?.isNativePlatform?.());
+    // A pausa pertence à página atual. Sair ou ocultar cancela-a.
+    function waitForContext(ms, visible) {
+        if (document.hidden || !visible()) {
+            return Promise.resolve(false);
+        }
 
-    const plugin = (name) =>
-        window.Capacitor?.Plugins?.[name] ||
-        window.Capacitor?.registerPlugin?.(name);
+        return new Promise(resolve => {
+            const finish = value => {
+                clearTimeout(timer);
 
-    const arrow =
-        '<svg viewBox="0 0 100 100" aria-hidden="true">' +
-        '<path d="M12 88Q24 42 83 17M51 13L85 15L78 49"/>' +
-        '</svg>';
+                document.removeEventListener(
+                    'margot:page-leave',
+                    cancel
+                );
+
+                document.removeEventListener(
+                    'visibilitychange',
+                    visibility
+                );
+
+                resolve(value);
+            };
+
+            const cancel = () => finish(false);
+
+            const visibility = () => {
+                if (document.hidden) cancel();
+            };
+
+            const timer = setTimeout(
+                () => finish(!document.hidden && visible()),
+                ms
+            );
+
+            document.addEventListener(
+                'margot:page-leave',
+                cancel,
+                { once: true }
+            );
+
+            document.addEventListener(
+                'visibilitychange',
+                visibility
+            );
+        });
+    }
+
+    let scene;
+
+    function ensureScene() {
+        if (scene) return;
+
+        scene = document.createElement('dialog');
+        scene.className = 'margot-permission-scene';
+        scene.setAttribute('aria-hidden', 'true');
+
+        scene.addEventListener('cancel', event => {
+            event.preventDefault();
+        });
+
+        document.body.append(scene);
+
+        scene.showModal();
+        scene.getBoundingClientRect();
+        scene.classList.add('is-visible');
+    }
+
+    async function clearScene() {
+        if (!scene) return;
+
+        const old = scene;
+        scene = null;
+
+        old.classList.remove('is-visible');
+
+        await pause(reduced() ? 0 : 340);
+
+        old.close();
+        old.remove();
+    }
+
+    async function present(dialog) {
+        ensureScene();
+
+        document.body.append(dialog);
+        dialog.showModal();
+
+        // Materializa o estado inicial antes da transição.
+        dialog.getBoundingClientRect();
+        dialog.classList.add('is-visible');
+
+        await pause(reduced() ? 0 : 340);
+    }
+
+    async function dismiss(dialog) {
+        dialog.classList.remove('is-visible');
+
+        await pause(reduced() ? 0 : 220);
+
+        if (dialog.open) dialog.close();
+
+        dialog.remove();
+    }
 
     function run(task) {
         const result = tail.then(async () => {
@@ -31,6 +136,8 @@
             try {
                 return await task();
             } finally {
+                await clearScene();
+
                 active = false;
 
                 document.dispatchEvent(
@@ -51,7 +158,7 @@
         icon = '📍',
         action = 'Continuar'
     }) {
-        return new Promise((resolve) => {
+        return new Promise(resolve => {
             const dialog = document.createElement('dialog');
 
             dialog.className = 'margot-permission-card';
@@ -75,26 +182,29 @@
             dialog.querySelector('button').textContent = action;
 
             let done = false;
+            let enter;
 
-            function finish(value) {
+            async function finish(value) {
                 if (done) return;
 
                 done = true;
 
-                dialog.close();
-                dialog.remove();
+                dialog.querySelector('button').disabled = true;
 
                 document.removeEventListener(
                     'margot:page-leave',
                     cancel
                 );
 
+                await enter;
+                await dismiss(dialog);
+
                 resolve(value);
             }
 
             const cancel = () => finish(false);
 
-            dialog.addEventListener('cancel', (event) => {
+            dialog.addEventListener('cancel', event => {
                 event.preventDefault();
                 cancel();
             });
@@ -109,11 +219,76 @@
                 { once: true }
             );
 
-            document.body.append(dialog);
-
-            dialog.showModal();
+            enter = present(dialog);
         });
     }
+
+    /*
+     * A build antiga resolve start() antes de o alerta nativo fechar.
+     * Observa o ciclo da app antes da chamada para não avançar
+     * por cima do alerta.
+     */
+    async function nativeDecision(request) {
+        let inactive = document.hidden;
+        let handle;
+        let changedAt = Date.now();
+
+        const change = value => {
+            inactive = value;
+            changedAt = Date.now();
+        };
+
+        const visibility = () => change(document.hidden);
+
+        document.addEventListener(
+            'visibilitychange',
+            visibility
+        );
+
+        try {
+            try {
+                handle = await plugin('App')?.addListener(
+                    'appStateChange',
+                    state => change(!state.isActive)
+                );
+            } catch (_) {
+                // A promessa da API nativa continua a ser respeitada.
+            }
+
+            const result = await request();
+            const start = Date.now();
+
+            while (
+                inactive ||
+                Date.now() - changedAt < 450 ||
+                Date.now() - start < 700
+            ) {
+                if (Date.now() - start > 120000) {
+                    throw new Error(
+                        'A app ainda não regressou do pedido do iPhone.'
+                    );
+                }
+
+                await pause(100);
+            }
+
+            return result;
+        } finally {
+            document.removeEventListener(
+                'visibilitychange',
+                visibility
+            );
+
+            await handle?.remove();
+        }
+    }
+
+    const arrow =
+        '<svg viewBox="0 0 100 100" aria-hidden="true">' +
+        '<path class="arrow-shadow" d="M8 80Q28 49 58 50L55 34L96 50L58 69L59 57Q31 57 8 80Z"/>' +
+        '<path class="arrow-body" d="M8 76Q28 45 58 46L55 30L96 46L58 65L59 53Q31 53 8 76Z"/>' +
+        '<path class="arrow-sketch" d="M8 32Q22 16 42 20M31 12L44 20L33 27"/>' +
+        '</svg>';
 
     async function guide(kind, request) {
         if (
@@ -128,13 +303,13 @@
         dialog.className = 'margot-permission-guide';
         dialog.dataset.kind = kind;
 
-        /*
-         * Este é apenas o fundo da Margot.
-         * O alerta apresentado por cima é o verdadeiro alerta do iOS.
-         */
+        dialog.setAttribute(
+            'aria-label',
+            'Responde ao pedido do iPhone.'
+        );
+
         dialog.innerHTML =
             '<p class="permission-brand">Margot</p>' +
-            '<h2></h2>' +
             '<span class="permission-arrow permission-arrow-left">' +
             arrow +
             '</span>' +
@@ -142,31 +317,20 @@
             arrow +
             '</span>';
 
-        dialog.querySelector('h2').textContent =
-            kind === 'notifications'
-                ? 'Fica a par dos próximos olás.'
-                : kind === 'always'
-                  ? 'Os encontros continuam lá fora.'
-                  : 'Descobre quem está por perto.';
-
-        dialog.setAttribute(
-            'aria-label',
-            'Responde ao pedido do iPhone.'
-        );
-
-        dialog.addEventListener('cancel', (event) => {
+        dialog.addEventListener('cancel', event => {
             event.preventDefault();
         });
 
-        document.body.append(dialog);
-
-        dialog.showModal();
-
         try {
-            return await request();
+            await present(dialog);
+
+            return await nativeDecision(request);
         } finally {
-            dialog.close();
-            dialog.remove();
+            await dismiss(dialog);
+
+            if (!active) {
+                await clearScene();
+            }
         }
     }
 
@@ -174,6 +338,7 @@
         run,
         explain,
         guide,
+        waitForContext,
 
         deferNotifications() {
             locationVisit = visit;
@@ -212,13 +377,14 @@
 
         notificationChecking = true;
 
+        const thisVisit = visit;
+
         try {
             await window.MargotLocationReady;
 
             const state = await push.permissionState();
 
             if (
-                !messagesVisible() ||
                 active ||
                 locationVisit === visit ||
                 !['prompt', 'prompt-with-rationale'].includes(state) ||
@@ -231,14 +397,26 @@
                 if (localStorage.getItem(notificationKey)) {
                     return;
                 }
-            } catch (_) {
-                // A proteção desta sessão continua disponível.
-            }
+            } catch (_) {}
+
+            const contextReady = await waitForContext(
+                900,
+                () =>
+                    messagesVisible() &&
+                    visit === thisVisit &&
+                    !active
+            );
+
+            if (!contextReady) return;
 
             notificationShown = true;
 
-            const accepted = await run(async () => {
-                if (!messagesVisible()) {
+            const accepted = await run(() => {
+                if (
+                    !messagesVisible() ||
+                    visit !== thisVisit ||
+                    locationVisit === visit
+                ) {
                     return false;
                 }
 
@@ -252,11 +430,19 @@
                 });
             });
 
-            if (!accepted) {
+            if (
+                !accepted ||
+                !messagesVisible() ||
+                visit !== thisVisit
+            ) {
                 notificationShown = false;
                 return;
             }
 
+            /*
+             * push.requestPermission já entra na fila:
+             * não criar uma fila dentro da outra.
+             */
             const result = await push.requestPermission();
 
             if (['granted', 'denied'].includes(result)) {
@@ -265,9 +451,7 @@
                         notificationKey,
                         result
                     );
-                } catch (_) {
-                    // O armazenamento não é obrigatório.
-                }
+                } catch (_) {}
 
                 window.MargotPreferencias?.definir(
                     'notificacoes',
@@ -280,7 +464,7 @@
             notificationShown = false;
 
             console.warn(
-                'Não foi possível preparar o pedido de notificações.',
+                'Não foi possível preparar as notificações.',
                 error
             );
         } finally {
@@ -288,68 +472,61 @@
         }
     }
 
-    document.addEventListener(
-        'margot:page-ready',
-        offerNotifications
-    );
-
-    document.addEventListener(
-        'margot:permission-idle',
-        offerNotifications
-    );
-
-    document.addEventListener(
+    for (const name of [
         'DOMContentLoaded',
-        offerNotifications,
-        { once: true }
-    );
+        'margot:page-ready',
+        'margot:permission-idle'
+    ]) {
+        document.addEventListener(
+            name,
+            offerNotifications
+        );
+    }
 
     document.addEventListener(
         'margot:permissions-resume',
         async () => {
             const push = window.MargotPushNotifications;
 
-            if (!push || !window.membroId) {
-                return;
-            }
+            if (!push || !window.membroId) return;
 
             try {
                 if (await push.permissionState() === 'granted') {
-                    if (
-                        localStorage.getItem(notificationKey) === 'denied'
-                    ) {
-                        localStorage.setItem(
-                            notificationKey,
-                            'granted'
-                        );
+                    try {
+                        if (
+                            localStorage.getItem(notificationKey) ===
+                            'denied'
+                        ) {
+                            localStorage.setItem(
+                                notificationKey,
+                                'granted'
+                            );
 
-                        window.MargotPreferencias?.definir(
-                            'notificacoes',
-                            true
-                        );
-                    }
+                            window.MargotPreferencias?.definir(
+                                'notificacoes',
+                                true
+                            );
+                        }
+                    } catch (_) {}
 
                     await push.register();
                 }
-            } catch (_) {
-                // O registo volta a ser tentado no próximo regresso à app.
-            }
+            } catch (_) {}
         }
     );
 
-    /*
-     * Voltar das Definições consulta o estado e regista o dispositivo.
-     * Não abre automaticamente outro pedido de autorização.
-     */
     if (native()) {
-        plugin('App')
-            ?.addListener('appStateChange', ({ isActive }) => {
-                if (isActive) {
-                    document.dispatchEvent(
-                        new Event('margot:permissions-resume')
-                    );
+        Promise.resolve(
+            plugin('App')?.addListener(
+                'appStateChange',
+                ({ isActive }) => {
+                    if (isActive) {
+                        document.dispatchEvent(
+                            new Event('margot:permissions-resume')
+                        );
+                    }
                 }
-            })
-            .catch(() => {});
+            )
+        ).catch(() => {});
     }
 })();

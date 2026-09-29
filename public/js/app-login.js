@@ -12,7 +12,8 @@
         return;
     }
 
-    document.querySelectorAll('[data-app-login]').forEach((link) => {
+    document.querySelectorAll('[data-app-login]').forEach(link => {
         link.href = link.dataset.nativeLogin || '/login';
+        link.removeAttribute('data-margot-sem-animacao');
     });
 })();
