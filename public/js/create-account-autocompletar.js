@@ -1,8 +1,7 @@
 (function () {
     'use strict';
 
-    // Estas palavras classificam os nomes recebidos da base de dados.
-    // Não criam gostos novos.
+    // Classificação dos nomes existentes na base de dados.
     var temas = [
         ['Música', /\b(musica|cantar|canto|guitarra|piano|concertos?|festivais?|rock|pop|jazz|rap|hip hop|techno|metal|dj|fado|bateria|violino)\b/],
         ['Cinema e séries', /\b(cinema|filmes?|series?|anime|netflix|documentarios?|marvel)\b/],
@@ -29,16 +28,10 @@
 
     function agrupar(lista) {
         var grupos = temas.map(function (tema) {
-            return {
-                nome: tema[0],
-                gostos: []
-            };
+            return { nome: tema[0], gostos: [] };
         });
 
-        grupos.push({
-            nome: 'Outros',
-            gostos: []
-        });
+        grupos.push({ nome: 'Outros', gostos: [] });
 
         var vistos = new Set();
 
@@ -142,6 +135,23 @@
         painelAtual.querySelector('#recomendacoes').style.display = 'none';
     }
 
+    function toqueGosto() {
+        try {
+            var capacitor = window.Capacitor;
+
+            if (capacitor?.isNativePlatform?.()) {
+                var plugin = capacitor.Plugins?.MargotHaptics
+                    || capacitor.registerPlugin?.('MargotHaptics');
+
+                Promise.resolve(
+                    plugin?.play({ type: 'interaction' })
+                ).catch(function () {});
+            } else if (typeof navigator.vibrate === 'function') {
+                navigator.vibrate(15);
+            }
+        } catch (_) {}
+    }
+
     function adicionar(nome) {
         nome = String(nome || '').trim();
 
@@ -157,9 +167,10 @@
             }
 
             dados().gostos.push(nome);
+            toqueGosto();
         }
 
-        // O servidor guarda também os gostos novos ao concluir o formulário.
+        // Os gostos novos são guardados ao concluir o formulário.
         window.guardarCamposCreateAccount();
 
         aviso('');
@@ -168,12 +179,13 @@
     }
 
     function remover(nome) {
-        if (!dados()) return;
+        if (!dados() || !selecionado(nome)) return;
 
         dados().gostos = dados().gostos.filter(function (item) {
             return chave(item) !== chave(nome);
         });
 
+        toqueGosto();
         window.guardarCamposCreateAccount();
 
         aviso('');
