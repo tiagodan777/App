@@ -1,35 +1,23 @@
 @charset "UTF-8";
 
-/* Apenas o registo e o login; editar perfil conserva o seu layout. */
+/*
+ * Ajustes contidos sobre os estilos originais.
+ * A navegação, as transições e a háptica continuam nos seus ficheiros.
+ */
 body:has(#create-account-form[data-onboarding]),
 body.margot-auth-login {
-    --auth-ink: #19191e;
-    --auth-muted: #66656f;
-    --auth-field: #fff;
-    --auth-line: #e2e0e5;
-    --auth-accent: #e12346;
-
-    background: var(--margot-auth-background, #f8f8f7);
-    color: var(--auth-ink);
     overflow-x: hidden;
     overflow-y: auto;
     -webkit-text-size-adjust: 100%;
 }
 
+/* Posição estável: o teclado não volta a centrar todo o formulário. */
 #create-account-form[data-onboarding] {
     width: 100%;
     min-height: 100svh;
     display: block;
     margin: 0;
     padding: 0;
-
-    font-family:
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
-
-    font-size: 18px;
 }
 
 #create-account-form[data-onboarding] > div {
@@ -37,379 +25,129 @@ body.margot-auth-login {
     width: min(100%, 600px);
     min-height: 100svh;
     margin: 0 auto;
-
-    padding:
-        max(88px, env(safe-area-inset-top))
-        26px
-        max(32px, env(safe-area-inset-bottom));
-
+    padding: max(96px, env(safe-area-inset-top, 0px)) 0
+        max(32px, env(safe-area-inset-bottom, 0px));
     display: flex;
     flex-direction: column;
-    align-items: stretch;
+    align-items: center;
     justify-content: flex-start;
-    gap: 24px;
+    gap: 22px;
 }
 
+/* Fonte original da Margot; aumento moderado apenas no registo. */
 #create-account-form[data-onboarding] > div > h1,
-#create-account-form[data-onboarding] #perfil-fotos-conteudo > h1,
-body.margot-auth-login main > form > h1 {
-    font-family:
-        ui-rounded,
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
-
-    font-size: clamp(36px, 9.8vw, 48px);
-    font-weight: 850;
-    line-height: 1.06;
-    letter-spacing: -1.4px;
-    text-align: left;
-    margin: 0 0 12px;
-    max-width: 100%;
-    color: var(--auth-ink);
+#create-account-form[data-onboarding] #perfil-fotos-conteudo > h1 {
+    max-width: calc(100% - 40px);
+    margin: 0 20px 12px;
+    font-family: "Alfa Slab One", Georgia, serif;
+    font-size: clamp(34px, 8.7vw, 42px);
+    font-weight: 400;
+    line-height: 1.16;
+    letter-spacing: normal;
+    text-align: center;
 }
 
-#create-account-form[data-onboarding] > div > p {
-    width: 100%;
-    margin: 0;
-    gap: 10px;
-    font-size: 18px;
-    line-height: 1.5;
-}
-
-#create-account-form[data-onboarding] label {
-    font-family:
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
-
-    font-size: 17px;
-    font-weight: 650;
-    color: var(--auth-ink);
-}
-
-#create-account-form[data-onboarding] input:is(
-    [type="text"],
-    [type="email"],
-    [type="tel"],
-    [type="number"],
-    [type="password"]
-),
-#create-account-form[data-onboarding] select,
-#create-account-form[data-onboarding] textarea {
-    box-sizing: border-box;
-    width: 100%;
-    min-height: 62px;
-    padding: 16px 18px;
-    border: 1.5px solid var(--auth-line);
-    border-radius: 20px;
-    background: var(--auth-field);
-    color: var(--auth-ink);
-
-    font:
-        500 22px/1.25
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
-
-    transition:
-        border-color 180ms ease,
-        box-shadow 180ms ease;
-
-    scroll-margin-block: 100px;
-}
-
-#create-account-form[data-onboarding] input:focus,
-#create-account-form[data-onboarding] select:focus,
-#create-account-form[data-onboarding] textarea:focus {
-    border-color: var(--auth-accent);
-    outline: none;
-    box-shadow: 0 0 0 4px #e1234610;
+/* Os campos conservam as linhas e as dimensões dos estilos originais. */
+#create-account-form[data-onboarding] :is(input, select, textarea) {
+    scroll-margin-block: 90px;
 }
 
 #create-account-form[data-onboarding] nav.anterior-proximo {
-    width: 100%;
-    margin: 12px 0 0;
-    padding: 0;
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 12px;
-    justify-content: space-between;
+    margin-top: 12px;
 }
 
 #create-account-form[data-onboarding] nav.anterior-proximo > :is(
-    .proximo,
-    .anterior
+    .anterior,
+    .proximo
 ) {
-    min-height: 60px;
-    padding: 16px 22px;
-    border-radius: 22px;
-
-    font:
-        750 19px/1.2
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
-
     position: relative;
     z-index: auto;
-
-    transition:
-        transform 140ms ease,
-        background 180ms ease;
 }
 
-#create-account-form[data-onboarding] nav.anterior-proximo > .proximo {
-    flex: 1;
-    background: var(--auth-accent);
-    color: #fff;
-    box-shadow: 0 8px 20px #e123461c;
-}
-
-#create-account-form[data-onboarding] nav.anterior-proximo > .anterior {
-    background: var(--auth-field);
-    color: var(--auth-muted);
-    border: 1px solid var(--auth-line);
-}
-
-#create-account-form[data-onboarding] nav.anterior-proximo > a:active,
-#create-account-form[data-onboarding] nav.anterior-proximo > button:active {
-    transform: scale(.97);
-}
-
-#create-account-form[data-onboarding] #introducao {
-    max-width: 600px;
+/* Introdução: título centrado e botão com largura natural. */
+#create-account-form[data-onboarding] > #introducao {
+    padding: max(80px, env(safe-area-inset-top, 0px)) 20px
+        max(32px, env(safe-area-inset-bottom, 0px));
     gap: 22px;
-    padding-top: max(72px, env(safe-area-inset-top));
     background: transparent;
-    overflow: visible;
 }
 
 #create-account-form[data-onboarding] #introducao .margot-intro-marca {
-    font: 900 25px/1 Georgia, serif;
-    letter-spacing: -.6px;
-    color: var(--auth-accent);
+    font-family: "Alfa Slab One", Georgia, serif;
+    font-size: 18px;
+    font-weight: 400;
+    line-height: 1.3;
+    letter-spacing: normal;
+    color: #e32636;
 }
 
-#create-account-form[data-onboarding] #introducao > h1 {
-    font-size: clamp(38px, 10.4vw, 52px);
-    margin: 4px 0 0;
-    text-align: left;
-}
-
-#create-account-form[data-onboarding] .margot-demo {
+#create-account-form[data-onboarding] > #introducao > h1 {
     width: 100%;
+    max-width: 420px;
+    margin: 0;
+    font-size: clamp(28px, 7.4vw, 34px);
+    line-height: 1.2;
+}
+
+#create-account-form[data-onboarding] #introducao .margot-demo {
+    width: min(100%, 420px);
+    margin: 0;
+    padding: 4px 0;
+}
+
+#create-account-form[data-onboarding] #introducao .margot-demo-cenario {
+    height: 216px;
+    border-radius: 28px;
+    box-shadow: 0 12px 30px rgba(48, 45, 85, 0.08);
+}
+
+#create-account-form[data-onboarding] > #introducao > a.entrar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    align-self: center;
+    width: auto;
+    min-width: 180px;
+    min-height: 48px;
+    margin: 0;
+    padding: 12px 28px;
+    border-radius: 999px;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+#create-account-form[data-onboarding] #introducao > nav.anterior-proximo {
     margin: 0;
     padding: 0;
 }
 
-#create-account-form[data-onboarding] .margot-demo-cenario {
-    height: 216px;
-    border-radius: 30px;
-    box-shadow: 0 12px 28px #302d5510;
-}
-
-#create-account-form[data-onboarding] #introducao > a.entrar {
-    display: flex;
+#create-account-form[data-onboarding] #introducao a.registar {
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 100%;
-    min-height: 62px;
-    margin: 4px 0 0;
-    padding: 16px;
-    border-radius: 22px;
-    background: var(--auth-accent);
-    color: #fff;
-
-    font:
-        750 20px/1.2
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
+    flex-wrap: wrap;
+    gap: 5px;
+    min-height: 44px;
+    font-size: 15px;
+    line-height: 1.4;
+    text-align: center;
 }
 
-#create-account-form[data-onboarding] #introducao > nav {
-    margin: 0;
-    justify-content: center;
-}
-
-#create-account-form[data-onboarding] #introducao .registar {
-    font:
-        500 17px/1.5
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
-
-    color: var(--auth-muted);
-    padding: 10px 0;
-}
-
-#create-account-form[data-onboarding] #introducao .registar > span {
-    color: var(--auth-accent);
-    font-weight: 750;
-}
-
-#create-account-form[data-onboarding] .campo-genero,
-#create-account-form[data-onboarding] #descricao > label,
-#create-account-form[data-onboarding] #descricao textarea,
-#create-account-form[data-onboarding] #meus-gostos,
-#create-account-form[data-onboarding] .invitation-field,
-#create-account-form[data-onboarding] .invitation-applied {
-    width: 100%;
-}
-
-#create-account-form[data-onboarding] #nascimento .campos-nascimento {
-    width: 100%;
-    gap: 8px;
-    grid-template-columns: .7fr 1.5fr 1fr;
-}
-
-#create-account-form[data-onboarding] #nascimento :is(input, select) {
-    padding: 14px 8px;
-    font-size: 18px;
-}
-
-#create-account-form[data-onboarding] #mostrar-password {
-    align-items: center;
-}
-
-#create-account-form[data-onboarding] #mostrar-password input {
-    width: 22px;
-    height: 22px;
-    accent-color: var(--auth-accent);
-}
-
-#create-account-form[data-onboarding] .aceitacao-legal {
-    width: 100%;
-    margin: 0;
-}
-
-#create-account-form[data-onboarding] .aceitacao-legal-opcao > span {
-    font-size: 16px;
-    line-height: 1.45;
-}
-
-#create-account-form[data-onboarding] #fotos {
-    justify-content: flex-start;
-}
-
-#create-account-form[data-onboarding] :is(
-    #perfil-lista-fotos,
-    .perfil-fotos-acoes
-) {
-    width: 100%;
-}
-
-#create-account-form[data-onboarding] .perfil-fotos-explicacao {
-    width: 100%;
-    font-size: 18px;
-    text-align: left;
-}
-
-#create-account-form[data-onboarding] .permissao-conteudo h2 {
-    font-size: 20px;
-}
-
-#create-account-form[data-onboarding] .permissao-conteudo p {
-    font-size: 17px;
-}
-
+/*
+ * Login: volta a usar os campos e botões de login.css.
+ * Só a posição superior fica estável quando o teclado abre.
+ */
 body.margot-auth-login main {
-    width: min(100%, 600px);
-    margin: 0 auto;
-    padding: max(88px, env(safe-area-inset-top)) 26px 0;
-}
-
-body.margot-auth-login main > form {
-    width: 100%;
-    max-width: none;
-}
-
-body.margot-auth-login main > form > h1 {
-    align-self: flex-start;
-    margin-bottom: 24px;
-}
-
-body.margot-auth-login main > form > p {
-    margin: 0 0 20px;
-    gap: 10px;
-}
-
-body.margot-auth-login main > form > p > label {
-    font-size: 17px;
-    color: var(--auth-ink);
-}
-
-body.margot-auth-login main > form > p:not(.em-linha) > input {
-    min-height: 62px;
-    padding: 16px 18px;
-    border: 1.5px solid var(--auth-line);
-    border-radius: 20px;
-    background: var(--auth-field);
-    color: var(--auth-ink);
-    font-size: 22px;
-}
-
-body.margot-auth-login main > form > input[type="submit"] {
-    width: 100%;
-    min-height: 60px;
-    border-radius: 22px;
-    margin-top: 20px;
-    font-size: 20px;
-    font-weight: 750;
-    background: var(--auth-accent);
-}
-
-body.margot-auth-login > aside {
-    box-shadow: none;
-    border: 0;
-    background: transparent;
-    margin-top: 14px;
-}
-
-body.margot-auth-login > aside > a {
-    font-size: 17px !important;
-}
-
-@media (prefers-color-scheme: dark) {
-    body:has(#create-account-form[data-onboarding]),
-    body.margot-auth-login {
-        --auth-ink: #f5f5f7;
-        --auth-muted: #b8b7c0;
-        --auth-field: #202026;
-        --auth-line: #38373f;
-    }
-
-    body.margot-auth-login > aside > a#registar {
-        background: #202026;
-        color: #b8b7c0;
-    }
+    padding-top: max(88px, env(safe-area-inset-top, 0px));
 }
 
 @media (max-width: 360px) {
-    #create-account-form[data-onboarding] > div {
-        padding-inline: 20px;
-    }
-
     #create-account-form[data-onboarding] > div > h1 {
-        font-size: 34px;
+        font-size: 32px;
     }
 
-    #create-account-form[data-onboarding] #introducao > h1 {
-        font-size: 37px;
-    }
-
-    #create-account-form[data-onboarding] nav.anterior-proximo > :is(
-        .proximo,
-        .anterior
-    ) {
-        padding-inline: 16px;
+    #create-account-form[data-onboarding] > #introducao > h1 {
+        font-size: 28px;
     }
 }
 
