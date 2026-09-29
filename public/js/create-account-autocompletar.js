@@ -1,15 +1,35 @@
 (function () {
     'use strict';
 
-    // Classificação dos nomes existentes na base de dados.
     var temas = [
-        ['Música', /\b(musica|cantar|canto|guitarra|piano|concertos?|festivais?|rock|pop|jazz|rap|hip hop|techno|metal|dj|fado|bateria|violino)\b/],
-        ['Cinema e séries', /\b(cinema|filmes?|series?|anime|netflix|documentarios?|marvel)\b/],
-        ['Desporto e movimento', /\b(desporto|futebol|futsal|basquetebol|basket|tenis|padel|ginasio|fitness|corrida|correr|natacao|nadar|surf|yoga|pilates|danca|dancar|ciclismo|bicicleta|voleibol|boxe|skate|escalada)\b/],
-        ['Jogos e tecnologia', /\b(jogos?|gaming|videojogos?|xadrez|playstation|nintendo|xbox|tecnologia|programacao|informatica|computadores?)\b/],
-        ['Viagens e natureza', /\b(viagens?|viajar|praia|mar|natureza|caminhadas?|trilhos?|campismo|acampar|montanha|animais|caes|gatos|jardinagem|aventura)\b/],
-        ['Arte e cultura', /\b(arte|pintura|pintar|desenho|desenhar|fotografia|ler|leitura|livros?|escrita|escrever|teatro|museus?|poesia|moda|design|artesanato)\b/],
-        ['Comida e convívio', /\b(cozinhar|cozinha|culinaria|comida|gastronomia|restaurantes?|cafe|vinho|sushi|pizza|pastelaria|amigos|conversar|festas?|sair)\b/]
+        [
+            'Música',
+            /\b(musica|cantar|canto|guitarra|piano|concertos?|festivais?|rock|pop|jazz|rap|hip hop|techno|metal|dj|fado|bateria|violino)\b/
+        ],
+        [
+            'Cinema e séries',
+            /\b(cinema|filmes?|series?|anime|netflix|documentarios?|marvel)\b/
+        ],
+        [
+            'Desporto e movimento',
+            /\b(desporto|futebol|futsal|basquetebol|basket|tenis|padel|ginasio|fitness|corrida|correr|natacao|nadar|surf|yoga|pilates|danca|dancar|ciclismo|bicicleta|voleibol|boxe|skate|escalada)\b/
+        ],
+        [
+            'Jogos e tecnologia',
+            /\b(jogos?|gaming|videojogos?|xadrez|playstation|nintendo|xbox|tecnologia|programacao|informatica|computadores?)\b/
+        ],
+        [
+            'Viagens e natureza',
+            /\b(viagens?|viajar|praia|mar|natureza|caminhadas?|trilhos?|campismo|acampar|montanha|animais|caes|gatos|jardinagem|aventura)\b/
+        ],
+        [
+            'Arte e cultura',
+            /\b(arte|pintura|pintar|desenho|desenhar|fotografia|ler|leitura|livros?|escrita|escrever|teatro|museus?|poesia|moda|design|artesanato)\b/
+        ],
+        [
+            'Comida e convívio',
+            /\b(cozinhar|cozinha|culinaria|comida|gastronomia|restaurantes?|cafe|vinho|sushi|pizza|pastelaria|amigos|conversar|festas?|sair)\b/
+        ]
     ];
 
     var catalogo;
@@ -28,10 +48,16 @@
 
     function agrupar(lista) {
         var grupos = temas.map(function (tema) {
-            return { nome: tema[0], gostos: [] };
+            return {
+                nome: tema[0],
+                gostos: []
+            };
         });
 
-        grupos.push({ nome: 'Outros', gostos: [] });
+        grupos.push({
+            nome: 'Outros',
+            gostos: []
+        });
 
         var vistos = new Set();
 
@@ -85,6 +111,7 @@
 
     function aviso(texto) {
         var el = painelAtual?.querySelector('[data-gostos-aviso]');
+
         if (!el) return;
 
         el.textContent = texto;
@@ -105,6 +132,7 @@
         if (!painelAtual || !dados()) return;
 
         var lista = painelAtual.querySelector('#meus-gostos');
+
         lista.replaceChildren();
 
         dados().gostos.forEach(function (nome) {
@@ -117,7 +145,8 @@
             lista.appendChild(botao);
         });
 
-        painelAtual.querySelectorAll('[data-sugerir-gosto]')
+        painelAtual
+            .querySelectorAll('[data-sugerir-gosto]')
             .forEach(function (botao) {
                 botao.setAttribute(
                     'aria-pressed',
@@ -132,6 +161,7 @@
 
         painelAtual.querySelector('#hobbie').value = '';
         painelAtual.querySelector('#lista').replaceChildren();
+
         painelAtual.querySelector('#recomendacoes').style.display = 'none';
     }
 
@@ -210,30 +240,59 @@
         return lista;
     }
 
+    function obterCatalogo(url) {
+        if (catalogo) {
+            return Promise.resolve(catalogo);
+        }
+
+        if (!pedidoCatalogo) {
+            pedidoCatalogo = obter(url + '?sugestoes=1')
+                .then(function (lista) {
+                    catalogo = lista;
+                    return lista;
+                })
+                .finally(function () {
+                    pedidoCatalogo = null;
+                });
+        }
+
+        return pedidoCatalogo;
+    }
+
+    async function esperarEntrada(painel) {
+        if (!painel.getAnimations) return;
+
+        // Espera que os observadores instalem a animação da etapa.
+        await new Promise(function (resolve) {
+            requestAnimationFrame(resolve);
+        });
+
+        var animacoes = painel.getAnimations().filter(function (animacao) {
+            return animacao.playState === 'running';
+        });
+
+        await Promise.allSettled(
+            animacoes.map(function (animacao) {
+                return animacao.finished;
+            })
+        );
+    }
+
     async function carregarSugestoes(painel) {
         var estado = painel.querySelector('[data-sugestoes-estado]');
         var repetir = painel.querySelector('[data-sugestoes-repetir]');
+        var carregamentoNovo = !catalogo;
+
+        painel.dataset.catalogoEstado = 'carregar';
 
         estado.hidden = false;
         estado.textContent = 'A carregar sugestões…';
         repetir.hidden = true;
 
         try {
-            if (!catalogo) {
-                if (!pedidoCatalogo) {
-                    pedidoCatalogo = obter(
-                        painel.dataset.gostosUrl + '?sugestoes=1'
-                    )
-                        .then(function (lista) {
-                            catalogo = lista;
-                            return lista;
-                        })
-                        .finally(function () {
-                            pedidoCatalogo = null;
-                        });
-                }
-
-                await pedidoCatalogo;
+            if (carregamentoNovo) {
+                await obterCatalogo(painel.dataset.gostosUrl);
+                await esperarEntrada(painel);
             }
 
             if (!painel.isConnected || painel !== painelAtual) {
@@ -258,6 +317,7 @@
                 grupo.gostos.forEach(function (nome) {
                     var botao = criarBotao(nome, 'data-sugerir-gosto');
                     botao.className = 'gosto-sugestao';
+
                     opcoes.appendChild(botao);
                 });
 
@@ -270,8 +330,31 @@
                 'Ainda não há sugestões. Pesquisa ou escreve um gosto.';
 
             atualizarSelecionados();
+
+            painel.dataset.catalogoEstado = 'pronto';
+
+            if (
+                carregamentoNovo &&
+                area.animate &&
+                !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+            ) {
+                area.animate(
+                    [
+                        { opacity: 0 },
+                        { opacity: 1 }
+                    ],
+                    {
+                        duration: 180,
+                        easing: 'ease-out'
+                    }
+                );
+            }
         } catch (_) {
-            if (!painel.isConnected) return;
+            if (!painel.isConnected || painel !== painelAtual) {
+                return;
+            }
+
+            painel.dataset.catalogoEstado = 'erro';
 
             estado.textContent =
                 'Não foi possível carregar as sugestões. Podes continuar pela pesquisa.';
@@ -314,6 +397,7 @@
 
                 resultados.forEach(function (item) {
                     var nome = String(item.nome || '').trim();
+
                     if (!nome) return;
 
                     var linha = document.createElement('li');
@@ -345,6 +429,7 @@
         if (painel === painelAtual) return;
 
         painelAtual = painel;
+
         clearTimeout(pesquisaTimer);
         pesquisaVersao++;
 
@@ -397,11 +482,22 @@
 
     function iniciar() {
         var form = document.getElementById('create-account-form');
+
         if (!form) return;
 
         new MutationObserver(iniciarPainel).observe(form, {
             childList: true
         });
+
+        // Começa nas etapas anteriores, sem atrasar a navegação.
+        var cache = document.getElementById('create-account-campos-cache');
+
+        var origem = cache?.content?.querySelector('#gostos')
+            || document.querySelector('#create-account-form > #gostos');
+
+        if (origem?.dataset.gostosUrl) {
+            obterCatalogo(origem.dataset.gostosUrl).catch(function () {});
+        }
 
         iniciarPainel();
     }

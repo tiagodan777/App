@@ -1,6 +1,9 @@
-<div id="gostos" data-gostos-url="{{ doc_root }}create-account-autocompletar">
+<div
+    id="gostos"
+    data-catalogo-estado="carregar"
+    data-gostos-url="{{ doc_root }}create-account-autocompletar"
+>
     <style>
-        /* Mantém o início da etapa mais abaixo, mesmo com a lista longa. */
         #create-account-form:has(> #gostos) {
             justify-content: flex-start;
         }
@@ -12,9 +15,15 @@
             padding-bottom: max(28px, env(safe-area-inset-bottom));
             justify-content: flex-start;
             gap: 8px;
+            transform-origin: center top;
+            overflow-anchor: none;
         }
 
-        /* A lista cresce na página, sem scroll interno. */
+        /* Evita mostrar os botões num sítio e depois empurrá-los. */
+        #gostos[data-catalogo-estado="carregar"] .gostos-sugestoes {
+            min-height: 55svh;
+        }
+
         #gostos .gostos-sugestoes {
             height: auto;
             max-height: none;
