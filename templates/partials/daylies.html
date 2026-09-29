@@ -1,4 +1,5 @@
 <style>
+    #daylie-viewer,
     #daylie-draft {
         position: fixed;
         inset: 0;
@@ -18,12 +19,12 @@
         overscroll-behavior: contain;
     }
 
+    #daylie-viewer[open],
     #daylie-draft[open] {
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
+        display: block;
     }
 
+    #daylie-viewer .daylie-stage,
     #daylie-draft .daylie-draft-preview {
         position: absolute;
         inset: 0;
@@ -35,6 +36,8 @@
         background: #000;
     }
 
+    #daylie-viewer .daylie-stage img,
+    #daylie-viewer .daylie-stage video,
     #daylie-draft .daylie-draft-preview img,
     #daylie-draft .daylie-draft-preview video {
         display: block;
@@ -46,19 +49,21 @@
         object-fit: cover;
     }
 
-    #daylie-draft .daylie-draft-preview video {
-        object-fit: contain;
+    #daylie-viewer .daylie-viewer-top,
+    #daylie-draft .daylie-draft-top {
+        position: absolute;
+        z-index: 1;
+        top: 0;
+        left: 0;
+        right: 0;
+        padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 32px;
+        background: linear-gradient(#0009, transparent);
     }
 
     #daylie-draft .daylie-draft-top {
-        position: relative;
-        z-index: 1;
         display: flex;
         align-items: center;
         gap: 12px;
-        flex-shrink: 0;
-        padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 32px;
-        background: linear-gradient(#0009, transparent);
     }
 
     #daylie-draft h2 {
@@ -87,14 +92,35 @@
         cursor: pointer;
     }
 
+    #daylie-viewer .daylie-viewer-bottom,
     #daylie-draft .daylie-draft-bottom {
-        position: relative;
+        position: absolute;
         z-index: 1;
-        flex-shrink: 0;
-        max-height: 65%;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        max-height: 60%;
         overflow-y: auto;
-        padding: 36px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+        padding: 32px 16px calc(16px + env(safe-area-inset-bottom, 0px));
         background: linear-gradient(transparent, #000b 36%, #000d);
+    }
+
+    #daylie-draft .daylie-draft-bottom {
+        bottom: var(--daylie-keyboard-inset, 0px);
+        max-height: calc(
+            100% - var(--daylie-keyboard-inset, 0px)
+            - 88px - env(safe-area-inset-top, 0px)
+        );
+        scroll-padding: 12px;
+    }
+
+    #daylie-draft.daylie-typing .daylie-draft-bottom {
+        padding-top: 16px;
+        padding-bottom: 12px;
+    }
+
+    #daylie-draft.daylie-typing .daylie-draft-note {
+        display: none;
     }
 
     #daylie-draft .daylie-draft-label {
@@ -109,9 +135,9 @@
         box-sizing: border-box;
         width: 100%;
         min-height: 48px;
-        max-height: 120px;
+        max-height: 96px;
         margin: 0;
-        padding: 13px 16px;
+        padding: 12px 16px;
         border: 1px solid #ffffff60;
         border-radius: 24px;
         background: #0006;
@@ -128,7 +154,8 @@
     }
 
     #daylie-draft textarea:focus-visible,
-    #daylie-draft button:focus-visible {
+    #daylie-draft button:focus-visible,
+    #daylie-viewer button:focus-visible {
         outline: 2px solid #fff;
         outline-offset: 3px;
     }
@@ -141,12 +168,23 @@
         opacity: 0.8;
     }
 
+    #daylie-viewer .daylie-caption {
+        margin: 0 0 12px;
+        padding: 0;
+        color: #fff;
+        max-height: 30dvh;
+        overflow-y: auto;
+    }
+
+    #daylie-viewer .daylie-error,
     #daylie-draft .daylie-error {
         margin: 8px 0;
         color: #ffb6c1;
         opacity: 1;
     }
 
+    #daylie-viewer .daylie-caption:empty,
+    #daylie-viewer .daylie-error:empty,
     #daylie-draft .daylie-error:empty {
         display: none;
     }
@@ -154,7 +192,7 @@
     #daylie-draft .daylie-draft-actions {
         display: flex;
         justify-content: flex-end;
-        margin: 0;
+        margin: 10px 0 0;
     }
 
     #daylie-draft [data-draft-publish] {
@@ -172,23 +210,53 @@
 </style>
 
 <dialog id="daylie-viewer" class="daylie-viewer" aria-label="Daylies">
-    <div class="daylie-progress" aria-hidden="true"></div>
-
-    <header>
-        <strong>Daylies <span>da Margot</span></strong>
-        <button type="button" data-daylie-close aria-label="Fechar">×</button>
-    </header>
-
     <div class="daylie-stage"></div>
-    <p class="daylie-caption"></p>
-    <p class="daylie-error" role="alert"></p>
 
-    <footer>
-        <button type="button" data-daylie-prev aria-label="Daylie anterior">‹</button>
-        <button type="button" data-daylie-pause aria-label="Pausar Daylie">Pausar</button>
-        <button type="button" data-daylie-delete hidden>Apagar</button>
-        <button type="button" data-daylie-next aria-label="Próximo Daylie">›</button>
-    </footer>
+    <div class="daylie-viewer-top">
+        <div class="daylie-progress" aria-hidden="true"></div>
+
+        <header>
+            <strong>Daylies <span>da Margot</span></strong>
+
+            <button
+                type="button"
+                data-daylie-close
+                aria-label="Fechar"
+                autofocus
+            >×</button>
+        </header>
+    </div>
+
+    <div class="daylie-viewer-bottom">
+        <p class="daylie-caption"></p>
+        <p class="daylie-error" role="alert"></p>
+
+        <footer>
+            <button
+                type="button"
+                data-daylie-prev
+                aria-label="Daylie anterior"
+            >‹</button>
+
+            <button
+                type="button"
+                data-daylie-pause
+                aria-label="Pausar Daylie"
+            >Pausar</button>
+
+            <button
+                type="button"
+                data-daylie-delete
+                hidden
+            >Apagar</button>
+
+            <button
+                type="button"
+                data-daylie-next
+                aria-label="Próximo Daylie"
+            >›</button>
+        </footer>
+    </div>
 </dialog>
 
 <dialog
@@ -236,3 +304,5 @@
         </div>
     </div>
 </dialog>
+
+<script src="{{ doc_root }}js/daylie-interface.js?v=20260928-1"></script>
