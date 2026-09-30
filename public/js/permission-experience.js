@@ -205,8 +205,8 @@
             const cancel = () => finish(false);
 
             dialog.addEventListener('cancel', event => {
+                // O aviso conduz ao pedido do sistema; Escape não o dispensa.
                 event.preventDefault();
-                cancel();
             });
 
             dialog.querySelector('button').onclick = () => {
@@ -283,13 +283,6 @@
         }
     }
 
-    const arrow =
-        '<svg viewBox="0 0 100 100" aria-hidden="true">' +
-        '<path class="arrow-shadow" d="M8 80Q28 49 58 50L55 34L96 50L58 69L59 57Q31 57 8 80Z"/>' +
-        '<path class="arrow-body" d="M8 76Q28 45 58 46L55 30L96 46L58 65L59 53Q31 53 8 76Z"/>' +
-        '<path class="arrow-sketch" d="M8 32Q22 16 42 20M31 12L44 20L33 27"/>' +
-        '</svg>';
-
     async function guide(kind, request) {
         if (
             !native() ||
@@ -308,14 +301,8 @@
             'Responde ao pedido do iPhone.'
         );
 
-        dialog.innerHTML =
-            '<p class="permission-brand">Margot</p>' +
-            '<span class="permission-arrow permission-arrow-left">' +
-            arrow +
-            '</span>' +
-            '<span class="permission-arrow permission-arrow-right">' +
-            arrow +
-            '</span>';
+        // Fundo neutro: a escolha fica inteiramente no alerta do sistema.
+        dialog.innerHTML = '<p class="permission-brand">Margot</p>';
 
         dialog.addEventListener('cancel', event => {
             event.preventDefault();
