@@ -1,118 +1,188 @@
-{% extends 'layout.html' %}
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#f7f7f8">
+    <meta name="csrf-token" content="{{ csrf_token|e('html_attr') }}">
+    <meta name="robots" content="noindex,nofollow">
+    <meta name="referrer" content="no-referrer">
 
-{% block title %}
-    {{ modo_edicao|default(false) ? 'Editar perfil' : 'Criar conta' }} | Margot
-{% endblock %}
+    <title>Eliminar conta | Margot</title>
 
-{% block styles %}
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="{{ doc_root }}estilos/style.css?v=20260920-video">
+    <link rel="stylesheet" href="{{ doc_root }}estilos/profile-delete.css?v=20260916">
 
-<link
-    rel="stylesheet"
-    href="{{ doc_root }}estilos/create-account.css?v=20260916"
-    data-margot-page-style
->
+    <style>
+        #opcoes-apagar form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
 
-<link
-    rel="stylesheet"
-    href="{{ doc_root }}estilos/create-account-permissoes.css?v=20260916"
-    data-margot-page-style
->
+        #opcoes-apagar .confirmacao-eliminacao {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            color: #3f3f46;
+            font-size: 15px;
+            line-height: 1.5;
+        }
 
-<link
-    rel="stylesheet"
-    href="{{ doc_root }}estilos/create-account-editor.css?v=20260923"
-    data-margot-page-style
->
+        #opcoes-apagar .confirmacao-eliminacao input {
+            flex: 0 0 auto;
+            width: 20px;
+            height: 20px;
+            margin: 2px 0 0;
+            accent-color: #cf264b;
+        }
 
-<link
-    rel="stylesheet"
-    href="{{ doc_root }}estilos/create-account-legal.css?v=20260916"
-    data-margot-page-style
->
+        @media (max-width: 480px) {
+            #opcoes-apagar form {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
 
-<link
-    rel="stylesheet"
-    href="{{ doc_root }}estilos/invitation-entry.css?v=20260927-auth2"
-    data-margot-page-style
->
+<body>
+    <main id="profile-delete">
+        <section id="apagar">
+            {% if eliminado %}
+                <h1>Conta eliminada</h1>
 
-<link
-    rel="stylesheet"
-    href="{{ doc_root }}estilos/auth-motion.css?v=20260929-auth3"
-    data-margot-page-style
->
+                <section class="dados" id="dados-apagar">
+                    <p role="status" aria-live="polite">
+                        A tua conta Margot e os dados associados foram
+                        eliminados definitivamente.
+                    </p>
+                </section>
 
-<link
-    rel="preload"
-    href="{{ doc_root }}estilos/login.css?v=20260916"
-    as="style"
-    fetchpriority="low"
->
+                <section class="opcoes" id="opcoes-apagar">
+                    <a href="{{ doc_root }}login">
+                        Voltar ao início
+                    </a>
+                </section>
 
-<link
-    rel="preload"
-    href="{{ doc_root }}js/login.js?v=20260916"
-    as="script"
-    fetchpriority="low"
->
+            {% elseif token_valido and membro %}
+                <h1>Confirma a eliminação</h1>
 
-<link rel="prefetch" href="{{ doc_root }}login">
-{% endblock %}
+                <section class="dados" id="dados-apagar">
+                    {% if membro.fotos[0].nome_arquivo|default('') %}
+                        <img
+                            src="{{ doc_root }}imagens/fotos-perfil/{{ membro.fotos[0].nome_arquivo|e('html_attr') }}"
+                            alt="Foto de perfil de {{ membro.primeiro_nome|e('html_attr') }}"
+                            id="foto-perfil"
+                        >
+                    {% endif %}
 
-{% block content %}
-<form
-    action="{{ doc_root }}create-account{{ convite_ativo|default('') ? '?convite=' ~ convite_ativo : '' }}"
-    method="post"
-    enctype="multipart/form-data"
-    id="create-account-form"
-    {% if not modo_edicao|default(false) %}data-onboarding{% endif %}
-    novalidate
->
-    <input
-        type="hidden"
-        name="_csrf"
-        value="{{ csrf_token|e('html_attr') }}"
-    >
+                    <p>
+                        Estás prestes a eliminar definitivamente a conta de
+                        <strong>{{ membro.primeiro_nome|e }}</strong>.
+                    </p>
 
-    {% if not modo_edicao|default(false) %}
-        {% include 'account/introducao.html' %}
-    {% endif %}
-</form>
+                    <p>
+                        O perfil, fotografias, mensagens, ficheiros,
+                        localização, preferências e acessos serão eliminados.
+                    </p>
 
-<template id="create-account-campos-cache">
-    {% include 'create-account-campos.html' %}
-</template>
+                    <p>
+                        <strong>Esta ação não pode ser anulada.</strong>
+                    </p>
 
-<script>
-window.createAccountConfig = {
-    modoEdicao:
-        {{ modo_edicao|default(false)|json_encode(15)|raw }},
+                    {% if mensagem_erro %}
+                        <p
+                            id="delete-account-erro"
+                            role="alert"
+                            aria-live="assertive"
+                        >
+                            {{ mensagem_erro|e }}
+                        </p>
+                    {% endif %}
+                </section>
 
-    membroId:
-        {{ membro_id_edicao|default('')|json_encode(15)|raw }},
+                <section class="opcoes" id="opcoes-apagar">
+                    <form
+                        action="{{ doc_root }}delete-account/"
+                        method="post"
+                    >
+                        <input
+                            type="hidden"
+                            name="_csrf"
+                            value="{{ csrf_token|e('html_attr') }}"
+                        >
 
-    dadosIniciais:
-        {{ dados_iniciais|default({})|json_encode(15)|raw }},
+                        <input
+                            type="hidden"
+                            name="token"
+                            value="{{ token|e('html_attr') }}"
+                        >
 
-    fotosExistentes:
-        {{ fotos_existentes|default([])|json_encode(15)|raw }},
+                        <label
+                            class="confirmacao-eliminacao"
+                            for="confirmar-eliminacao"
+                        >
+                            <input
+                                type="checkbox"
+                                id="confirmar-eliminacao"
+                                name="confirmar_eliminacao"
+                                value="1"
+                                required
+                            >
 
-    camposUrl:
-        {{ campos_url|default(doc_root ~ 'create-account-campos')|json_encode(15)|raw }},
+                            <span>
+                                Compreendo que a eliminação é definitiva.
+                            </span>
+                        </label>
 
-    perfilUrl:
-        {{ perfil_url|default('')|json_encode(15)|raw }},
+                        {% if session.id %}
+                            <a href="{{ doc_root }}settings">
+                                Cancelar
+                            </a>
+                        {% else %}
+                            <a href="{{ doc_root }}login">
+                                Cancelar
+                            </a>
+                        {% endif %}
 
-    csrfToken:
-        {{ csrf_token|default('')|json_encode(15)|raw }}
-};
-</script>
+                        <input
+                            type="submit"
+                            value="Eliminar definitivamente"
+                        >
+                    </form>
+                </section>
 
-<script src="{{ doc_root }}js/preferencias.js?v=20260916"></script>
-<script src="{{ doc_root }}js/create-account-fotos.js?v=20260916"></script>
-<script src="{{ doc_root }}js/create-account-permissoes.js?v=20260929-1"></script>
-<script src="{{ doc_root }}js/create-account-navegacao.js?v=20260929-1"></script>
-<script src="{{ doc_root }}js/create-account-autocompletar.js?v=20260929-sugestoes2"></script>
-{% endblock %}
+            {% else %}
+                <h1>Ligação inválida</h1>
+
+                <section class="dados" id="dados-apagar">
+                    <p class="mensagem-erro" role="alert">
+                        {{ mensagem_erro|default('Esta ligação expirou, já foi utilizada ou não é válida.')|e }}
+                    </p>
+
+                    <p>
+                        A tua conta não foi eliminada através desta ligação.
+                    </p>
+
+                    <p>
+                        Pede uma nova ligação nas definições da tua conta.
+                    </p>
+                </section>
+
+                <section class="opcoes" id="opcoes-apagar">
+                    {% if session.id %}
+                        <a href="{{ doc_root }}profile-delete">
+                            Pedir uma nova ligação
+                        </a>
+                    {% else %}
+                        <a href="{{ doc_root }}login">
+                            Entrar na Margot
+                        </a>
+                    {% endif %}
+                </section>
+            {% endif %}
+        </section>
+    </main>
+</body>
+</html>
