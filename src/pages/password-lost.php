@@ -48,9 +48,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         '">Alterar a minha password</a></p>' .
                         '<p>Esta ligação é válida durante 20 minutos e só pode ser utilizada uma vez.</p>' .
                         '<p>Se não fizeste este pedido, ignora este email. A tua password continuará igual.</p>' .
-                        '<p>Ligação: ' .
-                        $linkSeguro .
-                        '</p>';
                     try {
                         $mail = new Email($email_config);
                         $mail->sendEmail(
