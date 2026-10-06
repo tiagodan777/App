@@ -39,6 +39,7 @@ window.MargotMessageAlerts = function (window, document, $) {
             String(window.messagesUrl || '/messages').replace(/\/+$/, '') + '/' + encodeURIComponent(emissorId);
         if (!resumo) {
             resumo = { imagem: 'Enviou-te uma fotografia.', video: 'Enviou-te um vídeo.', audio: 'Enviou-te uma mensagem de voz.' }[mensagem.tipo] || 'Enviou-te uma mensagem.';
+            resumo = window.MargotI18n?.t(resumo) ?? resumo;
         }
 
         /*
@@ -192,7 +193,7 @@ window.MargotMessageAlerts = function (window, document, $) {
             return;
         }
         try {
-            var notificacao = new Notification('Nova mensagem de ' + nome, {
+            var notificacao = new Notification(window.MargotI18n?.t('Nova mensagem de ' + nome) ?? ('Nova mensagem de ' + nome), {
                 body: resumo,
                 icon: mensagem.emissor_foto_url || '/imagens/fotos-perfil/default.webp',
                 tag: 'chat-' + String(mensagem.emissor_id || 'desconhecido')

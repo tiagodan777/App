@@ -3,7 +3,10 @@ declare(strict_types=1);
 
 namespace App\Email;
 
+use App\CMS\Locale;
 use InvalidArgumentException;
+
+require_once dirname(__DIR__) . '/CMS/Locale.php';
 use PHPMailer\PHPMailer\PHPMailer;
 
 final class Email {
@@ -46,13 +49,16 @@ final class Email {
         if ($subject === '') {
             throw new InvalidArgumentException('O assunto do email não pode estar vazio.');
         }
+        $language = Locale::current();
+        $subject = Locale::text($subject, $language);
+        $message = Locale::emailBody($message, $language);
         $this->phpmailer->clearAllRecipients();
         $this->phpmailer->clearReplyTos();
         $this->phpmailer->clearAttachments();
         $this->phpmailer->setFrom($from, 'Margot');
         $this->phpmailer->addAddress($to);
         $this->phpmailer->Subject = $subject;
-        $this->phpmailer->Body = $this->criarDocumentoHtml($message);
+        $this->phpmailer->Body = $this->criarDocumentoHtml($message, $language);
         $this->phpmailer->AltBody = $this->criarTextoSimples($message);
         try {
             return $this->phpmailer->send();
@@ -63,9 +69,9 @@ final class Email {
         }
     }
 
-    private function criarDocumentoHtml(string $message): string {
+    private function criarDocumentoHtml(string $message, string $language): string {
         return '<!DOCTYPE html>' .
-            '<html lang="pt-PT">' .
+            '<html lang="' . ($language === 'pt' ? 'pt-PT' : 'en') . '">' .
             '<head>' .
             '<meta charset="UTF-8">' .
             '<meta name="viewport" content="width=device-width, initial-scale=1.0">' .

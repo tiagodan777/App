@@ -15,12 +15,12 @@ public final class MargotSharePlugin extends Plugin {
         String url = call.getString("url", "");
 
         if (!url.matches("https://go\\.margot-app\\.com/invite/[a-f0-9]{16}")) {
-            call.reject("Convite inválido.");
+            call.reject(getContext().getString(R.string.share_invalid));
             return;
         }
 
         if (getActivity() == null) {
-            call.reject("Não foi possível abrir a partilha agora.");
+            call.reject(getContext().getString(R.string.share_unavailable));
             return;
         }
 
@@ -33,13 +33,13 @@ public final class MargotSharePlugin extends Plugin {
 
                 share.putExtra(
                     Intent.EXTRA_TITLE,
-                    "Um olá leva a outro · Margot"
+                    getContext().getString(R.string.share_title)
                 );
 
                 getActivity().startActivity(
                     Intent.createChooser(
                         share,
-                        "Partilhar convite"
+                        getContext().getString(R.string.share_invitation)
                     )
                 );
 
@@ -52,7 +52,7 @@ public final class MargotSharePlugin extends Plugin {
                 call.resolve(result);
             } catch (Exception error) {
                 call.reject(
-                    "Não foi possível abrir a partilha agora.",
+                    getContext().getString(R.string.share_unavailable),
                     error
                 );
             }

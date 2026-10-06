@@ -7,6 +7,8 @@ use InvalidArgumentException;
 use PDO;
 use RuntimeException;
 
+require_once __DIR__ . '/Locale.php';
+
 final class PushNotification {
     private const MAX_ATTEMPTS = 5;
     private PDO $db;
@@ -22,7 +24,8 @@ final class PushNotification {
         string $installationId,
         string $sessionHash,
         string $environment = 'production',
-        ?string $appVersion = null
+        ?string $appVersion = null,
+        string $language = 'pt'
     ): void {
         $memberId = $this->validMemberId($memberId);
         $platform = $this->validPlatform($platform);
@@ -52,21 +55,22 @@ final class PushNotification {
                 'token_hash' => $tokenHash,
                 'installation_id' => $installationId,
                 'session_hash' => $sessionHash,
-                'app_version' => $appVersion
+                'app_version' => $appVersion,
+                'language' => Locale::normalise($language)
             ];
 
             if ($deviceId === null) {
                 $statement = $this->db->prepare(
                     'INSERT INTO push_dispositivos ( membro_id, plataforma, ambiente, token, token_hash, instalacao_id,
-                        sessao_hash, versao_app, ativo, criado_em, atualizado_em )
+                        sessao_hash, versao_app, idioma, ativo, criado_em, atualizado_em )
                         VALUES ( :member_id, :platform, :environment, :token, :token_hash, :installation_id, :session_hash,
-                        :app_version, 1, UTC_TIMESTAMP(6), UTC_TIMESTAMP(6) )'
+                        :app_version, :language, 1, UTC_TIMESTAMP(6), UTC_TIMESTAMP(6) )'
                 );
             } else {
                 $parameters['id'] = $deviceId;
                 $statement = $this->db->prepare('UPDATE push_dispositivos
                     SET membro_id = :member_id, plataforma = :platform, ambiente = :environment, token = :token, token_hash =
-                    :token_hash, instalacao_id = :installation_id, sessao_hash = :session_hash, versao_app = :app_version,
+                    :token_hash, instalacao_id = :installation_id, sessao_hash = :session_hash, versao_app = :app_version, idioma = :language,
                     ativo = 1, falhas_consecutivas = 0, ultimo_erro = NULL, atualizado_em = UTC_TIMESTAMP(6)
                     WHERE id = :id');
             }
@@ -188,7 +192,8 @@ final class PushNotification {
 
         $body = trim((string) ($message['texto'] ?? ''));
 
-        if ($body === '') {
+        $systemBody = $body === '';
+        if ($systemBody) {
             $body = match ((string) ($message['tipo'] ?? '')) {
                 'imagem' => '📷 Fotografia',
                 'video' => '🎥 Vídeo',
@@ -210,7 +215,8 @@ final class PushNotification {
                 'from_name' => $sender['name'],
                 'from_photo' => $sender['photo']
             ],
-            'message:' . $messageId
+            'message:' . $messageId,
+            $systemBody
         );
     }
 
@@ -477,7 +483,8 @@ final class PushNotification {
         string $body,
         string $url,
         array $data,
-        string $uniqueKey
+        string $uniqueKey,
+        bool $systemBody = true
     ): int {
         $recipientId = $this->validMemberId($recipientId);
         $type = $this->normaliseRequiredText($type, 32);
@@ -491,7 +498,7 @@ final class PushNotification {
             JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
         );
 
-        $devices = $this->activeDeviceIds($recipientId);
+        $devices = $this->activeDevices($recipientId);
 
         if ($devices === []) {
             return 0;
@@ -506,13 +513,16 @@ final class PushNotification {
 
         $queued = 0;
 
-        foreach ($devices as $deviceId) {
+        foreach ($devices as $device) {
+            [$deviceTitle, $deviceBody] = Locale::pushText(
+                (string) ($device['idioma'] ?? 'pt'), $type, $title, $body, $data, $systemBody
+            );
             $statement->execute([
-                'device_id' => $deviceId,
+                'device_id' => (int) $device['id'],
                 'member_id' => $recipientId,
                 'type' => $type,
-                'title' => $title,
-                'body' => $body,
+                'title' => $this->normaliseRequiredText($deviceTitle, 120),
+                'body' => $this->normaliseRequiredText($deviceBody, 240),
                 'url' => $url,
                 'data' => $json,
                 'unique_key' => $uniqueKey
@@ -524,13 +534,13 @@ final class PushNotification {
         return $queued;
     }
 
-    private function activeDeviceIds(string $memberId): array {
-        $statement = $this->db->prepare('SELECT id
+    private function activeDevices(string $memberId): array {
+        $statement = $this->db->prepare('SELECT id, idioma
             FROM push_dispositivos
             WHERE membro_id = :member_id AND ativo = 1');
         $statement->execute(['member_id' => $memberId]);
 
-        return array_map(static fn(mixed $id): int => (int) $id, $statement->fetchAll(PDO::FETCH_COLUMN));
+        return $statement->fetchAll(PDO::FETCH_ASSOC);
     }
 
     /**

@@ -3,516 +3,747 @@ declare(strict_types=1);
 
 namespace App\CMS;
 
-use App\Validate\Validate;
+require_once __DIR__ . '/Locale.php';
 
-class Member {
-    public const TERMS_VERSION = '1.0';
-    public const PRIVACY_VERSION = '1.0';
-    private $db;
+use RuntimeException;
+use InvalidArgumentException;
+use Throwable;
 
-    public function __construct($db) {
+final class Message {
+    private Database $db;
+    private MessageAccess $access;
+
+    public function __construct(Database $db) {
         $this->db = $db;
+        $this->access = new MessageAccess($db);
     }
 
-    public function recordLegalAcceptance(string $memberId): void {
-        $this->db->runSQL(
-            'INSERT INTO aceitacoes_legais (membro_id, documento, versao)
-                VALUES (:id1, :terms, :terms_version), (:id2, :privacy, :privacy_version)',
+    public function hiddenUntil(string $membroId, string $outroId): int {
+        return (int) ($this->db->runSQL(
+            'SELECT ocultar_ate_id
+                FROM mensagens_conversas_ocultas
+                WHERE membro_id = :membro AND outro_id = :outro
+                LIMIT 1',
+            ['membro' => $membroId, 'outro' => $outroId]
+        )->fetchColumn() ?: 0);
+    }
+
+    public function hideConversation(string $membroId, string $outroId): int {
+        $ultimoId = (int) ($this->db->runSQL(
+            'SELECT MAX(id)
+                FROM mensagens_chat
+                WHERE ( emissor_id = :eu1 AND destinatario_id = :outro1 )
+                    OR ( emissor_id = :outro2 AND destinatario_id = :eu2 )',
             [
-                'id1' => $memberId,
-                'terms' => 'terms',
-                'terms_version' => self::TERMS_VERSION,
-                'id2' => $memberId,
-                'privacy' => 'privacy',
-                'privacy_version' => self::PRIVACY_VERSION
+                'eu1' => $membroId,
+                'outro1' => $outroId,
+                'outro2' => $outroId,
+                'eu2' => $membroId
             ]
+        )->fetchColumn() ?: 0);
+
+        if ($ultimoId <= 0) {
+            return 0;
+        }
+
+        $this->db->runSQL(
+            'INSERT INTO mensagens_conversas_ocultas
+                (membro_id, outro_id, ocultar_ate_id, criada_em, atualizada_em)
+                VALUES (:membro, :outro, :ultimo, NOW(6), NOW(6))
+                ON DUPLICATE KEY UPDATE
+                ocultar_ate_id = GREATEST(ocultar_ate_id, VALUES(ocultar_ate_id)),
+                atualizada_em = NOW(6)',
+            ['membro' => $membroId, 'outro' => $outroId, 'ultimo' => $ultimoId]
+        );
+
+        return $ultimoId;
+    }
+
+    public function memberPreview(string $membroId): array|false {
+        $sql = "SELECT m.id, CONCAT(m.primeiro_nome, ' ', m.ultimo_nome) AS nome,
+            COALESCE((
+                SELECT fp.nome_arquivo
+                FROM fotos_perfil fp
+                WHERE fp.membro_id COLLATE utf8mb4_unicode_ci = m.id COLLATE utf8mb4_unicode_ci
+                    AND (fp.status = 'completo' OR fp.status IS NULL)
+                ORDER BY fp.ordem IS NULL ASC, fp.ordem ASC, fp.id ASC
+                LIMIT 1
+            ), 'default.webp') AS foto
+            FROM membros m
+            WHERE m.id COLLATE utf8mb4_unicode_ci = :id COLLATE utf8mb4_unicode_ci
+            LIMIT 1";
+
+        $membro = $this->db->runSQL($sql, ['id' => $membroId])->fetch();
+
+        if (!$membro) {
+            return false;
+        }
+
+        $foto = basename(trim((string) $membro['foto'])) ?: 'default.webp';
+        $membro['foto_url'] = DOC_ROOT . 'imagens/fotos-perfil/' . rawurlencode($foto);
+        $membro['perfil_url'] = DOC_ROOT . 'profile/' . rawurlencode((string) $membro['id']);
+
+        unset($membro['foto']);
+
+        return $membro;
+    }
+
+    public function validReaction(string $emoji): bool {
+        if (strlen($emoji) > 64 || preg_match('/\A\X\z/u', $emoji) !== 1) {
+            return false;
+        }
+
+        // Um emoji pode incluir tom de pele, junções, bandeiras ou uma tecla numérica.
+        $symbol = '\p{Extended_Pictographic}\x{FE0F}?\p{Emoji_Modifier}?';
+
+        $pattern = '/\A(?:\p{Regional_Indicator}{2}|[#*0-9]\x{FE0F}?\x{20E3}|'
+            . $symbol . '(?:\x{200D}' . $symbol . ')*(?:[\x{E0020}-\x{E007E}]+\x{E007F})?)\z/u';
+
+        return preg_match($pattern, $emoji) === 1;
+    }
+
+    public function belongsToConversation(int $mensagemId, string $membroId, string $outroId): bool {
+        return (bool) $this->db->runSQL(
+            'SELECT 1
+                FROM mensagens_chat
+                WHERE id = :mensagem AND (
+                    (emissor_id = :eu1 AND destinatario_id = :outro1)
+                    OR (emissor_id = :outro2 AND destinatario_id = :eu2)
+                )
+                LIMIT 1',
+            [
+                'mensagem' => $mensagemId,
+                'eu1' => $membroId,
+                'outro1' => $outroId,
+                'outro2' => $outroId,
+                'eu2' => $membroId
+            ]
+        )->fetchColumn();
+    }
+
+    public function reactions(int $mensagemId): array {
+        $linhas = $this->db->runSQL(
+            'SELECT membro_id, emoji
+                FROM mensagens_reacoes
+                WHERE mensagem_id = :mensagem
+                ORDER BY atualizada_em ASC, membro_id ASC',
+            ['mensagem' => $mensagemId]
+        )->fetchAll();
+
+        return array_values(
+            array_map(
+                static fn(array $linha): array => [
+                    'member_id' => (string) ($linha['membro_id'] ?? ''),
+                    'emoji' => (string) ($linha['emoji'] ?? '')
+                ],
+                $linhas
+            )
         );
     }
 
-    public function prepareAccountForm(array $input, array $sections, bool $creating): array {
-        $value = static fn(string $key): string => is_scalar($input[$key] ?? null) ? trim((string) $input[$key]) : '';
-        $selected = array_fill_keys($sections, true);
-        $has = static fn(string $section): bool => isset($selected[$section]);
-        $data = [
-            'primeiro_nome' => $value('primeiro_nome'),
-            'ultimo_nome' => $value('ultimo_nome'),
-            'genero' => $value('genero'),
-            'gostos' => $this->normalizarGostos($input['gostos'] ?? []),
-            'telefone' => $value('telefone'),
-            'email' => $value('email'),
-            'sobre_ti' => $value('sobre_ti'),
-            'password' => is_string($input['password'] ?? null) ? $input['password'] : ''
-        ];
-        $day = (int) $value('dia');
-        $month = (int) $value('mes');
-        $year = (int) $value('ano');
-        $data['nascimento'] = checkdate($month, $day, $year) ? sprintf('%04d-%02d-%02d', $year, $month, $day) : '';
-        $errors = [];
-        $changes = [];
-        if ($has('nome')) {
-            if (!Validate::isText($data['primeiro_nome'], 1, 60)) {
-                $errors['primeiro_nome'] = 'Indica o primeiro nome.';
-            }
-            if (!Validate::isText($data['ultimo_nome'], 1, 60)) {
-                $errors['ultimo_nome'] = 'Indica o último nome.';
-            }
-            $changes += [
-                'primeiro_nome' => $data['primeiro_nome'],
-                'ultimo_nome' => $data['ultimo_nome'],
-                'nome_seo' => \create_seo_name($data['primeiro_nome'] . ' ' . $data['ultimo_nome'])
-            ];
-        }
-        if ($has('nascimento')) {
-            if (!Validate::isAdult($data['nascimento'])) {
-                $errors['nascimento'] = 'Indica uma data válida. Tens de ter pelo menos 18 anos.';
-            }
-            $changes['nascimento'] = $data['nascimento'];
-        }
-        if ($has('sexo')) {
-            if (!Validate::isGenero($data['genero'])) {
-                $errors['genero'] = 'Escolhe um género válido.';
-            }
-            $changes['genero'] = $data['genero'];
-        }
-        if ($has('gostos')) {
-            $changes['gostos'] = $data['gostos'];
-        }
-        if ($has('contactos')) {
-            if (!Validate::isEmail($data['email'])) {
-                $errors['email'] = 'Indica um email válido.';
-            }
-            /*
-             * O telefone é opcional.
-             * Só é validado quando a pessoa realmente o preenche.
-             */
-            if ($data['telefone'] !== '' && !Validate::isPhone($data['telefone'])) {
-                $errors['telefone'] = 'Indica um número de telefone válido.';
-            }
-            $changes += ['telefone' => $data['telefone'], 'email' => $data['email']];
-        }
-        if ($has('descricao')) {
-            $changes['sobre_ti'] = $data['sobre_ti'];
-        }
-        $confirmation = is_string($input['confirma_password'] ?? null) ? $input['confirma_password'] : '';
-        $passwordRequested =
-            $has('palavra-passe') &&
-            ($creating || count($sections) === 1 || $data['password'] !== '' || $confirmation !== '');
-        if ($passwordRequested) {
-            if (!Validate::isPassword($data['password'])) {
-                $errors['password'] = 'Usa pelo menos 8 caracteres, uma maiúscula, uma minúscula e um número.';
-            } elseif ($data['password'] !== $confirmation) {
-                $errors['confirma_password'] = 'As palavras-passe não são idênticas.';
-            }
-            $changes['password'] = $data['password'];
-        }
-        if ($creating) {
-            if ($value('aceitou_termos') !== '1') {
-                $errors['aceitou_termos'] = 'Aceita os Termos de Utilização.';
-            }
-            if ($value('aceitou_privacidade') !== '1') {
-                $errors['aceitou_privacidade'] = 'Confirma a Política de Privacidade.';
-            }
-        }
-        return ['data' => $data, 'changes' => $changes, 'errors' => $errors];
-    }
-
-    public function get(string $id): array|false {
-        $member = $this->db->runSQL(
-            "SELECT m.id, m.primeiro_nome, m.ultimo_nome, CONCAT(m.primeiro_nome, ' ', m.ultimo_nome) AS nome,
-                m.nascimento, m.genero, m.objetivo, m.telefone, m.email, m.bio, m.nome_seo
-                FROM membros m
-                WHERE m.id = :id
-                LIMIT 1",
-            ['id' => $id]
-        )->fetch();
-        if (!$member) {
-            return false;
-        }
-        $member['fotos'] = $this->db->runSQL(
-            "SELECT id, nome_arquivo, ordem
-                FROM fotos_perfil
-                WHERE membro_id = :id AND ( status = 'completo' OR status IS NULL )
-                ORDER BY ordem IS NULL, ordem, id",
-            ['id' => $id]
-        )->fetchAll();
-        $member['gostos'] = $this->db->runSQL(
-            'SELECT h.nome
-                FROM hobbies h
-                INNER JOIN membros_gostos mg ON mg.hobbie_id = h.id
-                WHERE mg.membro_id = :id
-                ORDER BY h.nome',
-            ['id' => $id]
-        )->fetchAll();
-        if (!$member['fotos']) {
-            $member['fotos'] = [['id' => null, 'nome_arquivo' => 'default.webp', 'ordem' => 1]];
-        }
-        return $member;
-    }
-
-    public function create(array $member): string|false {
-        $tastes = $this->normalizarGostos($member['gostos'] ?? []);
-        $member['email'] = $this->normalizarEmail((string) ($member['email'] ?? ''));
-        /*
-         * Se não existir telefone, guarda NULL.
-         * Isto permite várias contas sem telefone apesar do índice UNIQUE.
-         */
-        $member['telefone'] = $this->normalizarTelefone((string) ($member['telefone'] ?? ''));
-        $password = password_hash((string) ($member['password'] ?? ''), PASSWORD_DEFAULT);
-        if ($password === false) {
-            throw new \RuntimeException('Não foi possível proteger a palavra-passe.');
-        }
-        $managesTransaction = !$this->db->inTransaction();
-        try {
-            if ($managesTransaction) {
-                $this->db->beginTransaction();
-            }
-            $this->db->runSQL(
-                'INSERT INTO membros ( primeiro_nome, ultimo_nome, nascimento, genero, telefone, email, bio, password,
-                    nome_seo )
-                    VALUES ( :primeiro_nome, :ultimo_nome, :nascimento, :genero, :telefone, :email, :bio, :password,
-                    :nome_seo )',
-                [
-                    'primeiro_nome' => $member['primeiro_nome'],
-                    'ultimo_nome' => $member['ultimo_nome'],
-                    'nascimento' => $member['nascimento'],
-                    'genero' => $member['genero'],
-                    'telefone' => $member['telefone'],
-                    'email' => $member['email'],
-                    'bio' => $member['sobre_ti'],
-                    'password' => $password,
-                    'nome_seo' => $member['nome_seo']
-                ]
-            );
-            $id = $this->db->runSQL(
-                'SELECT id
-                    FROM membros
-                    WHERE email = :email
-                    LIMIT 1',
-                ['email' => $member['email']]
-            )->fetchColumn();
-            if (!$id) {
-                throw new \RuntimeException('Não foi possível obter o membro criado.');
-            }
-            $this->sincronizarGostos((string) $id, $tastes);
-            if ($managesTransaction) {
-                $this->db->commit();
-            }
-            return (string) $id;
-        } catch (\Throwable $error) {
-            if ($managesTransaction && $this->db->inTransaction()) {
-                $this->db->rollBack();
-            }
-            if ($error instanceof \PDOException && (int) ($error->errorInfo[1] ?? 0) === 1062) {
-                return false;
-            }
-            throw $error;
-        }
-    }
-
-    public function update(string $id, array $changes): bool {
-        if (trim($id) === '') {
-            return false;
-        }
-        $hasTastes = array_key_exists('gostos', $changes);
-        $tastes = $hasTastes ? $this->normalizarGostos($changes['gostos']) : [];
-        unset($changes['gostos'], $changes['dia'], $changes['mes'], $changes['ano']);
-        $columns = [
-            'primeiro_nome' => 'primeiro_nome',
-            'ultimo_nome' => 'ultimo_nome',
-            'nascimento' => 'nascimento',
-            'genero' => 'genero',
-            'nome_seo' => 'nome_seo'
-        ];
-        $sets = [];
-        $params = ['id' => $id];
-        foreach ($columns as $key => $column) {
-            if (!array_key_exists($key, $changes)) {
-                continue;
-            }
-            $sets[] = $column . ' = :' . $key;
-            $params[$key] = trim((string) $changes[$key]);
-        }
-        if (array_key_exists('telefone', $changes)) {
-            $sets[] = 'telefone = :telefone';
-            /*
-             * Apagar o conteúdo do campo passa a remover o telefone
-             * da conta, guardando NULL em vez de ''.
-             */
-            $params['telefone'] = $this->normalizarTelefone((string) $changes['telefone']);
-        }
-        if (array_key_exists('email', $changes)) {
-            $sets[] = 'email = :email';
-            $params['email'] = $this->normalizarEmail((string) $changes['email']);
-        }
-        if (array_key_exists('sobre_ti', $changes)) {
-            $sets[] = 'bio = :bio';
-            $params['bio'] = trim((string) $changes['sobre_ti']);
-        }
-        if (!empty($changes['password'])) {
-            $sets[] = 'password = :password';
-            $params['password'] = password_hash((string) $changes['password'], PASSWORD_DEFAULT);
-            if ($params['password'] === false) {
-                throw new \RuntimeException('Não foi possível proteger a palavra-passe.');
-            }
-        }
-        if (!$sets && !$hasTastes) {
-            return true;
-        }
-        $managesTransaction = !$this->db->inTransaction();
-        try {
-            if ($managesTransaction) {
-                $this->db->beginTransaction();
-            }
-            if ($sets) {
-                $this->db->runSQL('UPDATE membros SET ' . implode(', ', $sets) . ' WHERE id = :id', $params);
-            }
-            if ($hasTastes) {
-                $this->sincronizarGostos($id, $tastes);
-            }
-            if ($managesTransaction) {
-                $this->db->commit();
-            }
-            return true;
-        } catch (\Throwable $error) {
-            if ($managesTransaction && $this->db->inTransaction()) {
-                $this->db->rollBack();
-            }
-            if ($error instanceof \PDOException && (int) ($error->errorInfo[1] ?? 0) === 1062) {
-                return false;
-            }
-            throw $error;
-        }
-    }
-
-    private function normalizarEmail(string $email): string {
-        return mb_strtolower(trim($email), 'UTF-8');
-    }
-
-    private function normalizarTelefone(string $phone): ?string {
-        $phone = trim($phone);
-        if ($phone === '') {
-            return null;
-        }
-        $normalized = (string) preg_replace('/\D+/', '', $phone);
-        return $normalized === '' ? null : $normalized;
-    }
-
-    private function normalizarGostos($tastes): array {
-        if (!is_array($tastes)) {
+    public function withReactions(array $mensagens): array {
+        if ($mensagens === []) {
             return [];
         }
-        $result = [];
-        foreach ($tastes as $taste) {
-            if (!is_scalar($taste)) {
+
+        $ids = [];
+
+        foreach ($mensagens as $mensagem) {
+            $id = (int) ($mensagem['id'] ?? 0);
+
+            if ($id > 0) {
+                $ids[$id] = true;
+            }
+        }
+
+        if ($ids === []) {
+            return $mensagens;
+        }
+
+        $parametros = [];
+        $marcadores = [];
+
+        foreach (array_keys($ids) as $indice => $id) {
+            $chave = 'reacao_id_' . $indice;
+            $marcadores[] = ':' . $chave;
+            $parametros[$chave] = (int) $id;
+        }
+
+        $linhas = $this->db->runSQL(
+            'SELECT mensagem_id, membro_id, emoji
+                FROM mensagens_reacoes
+                WHERE mensagem_id IN (' . implode(', ', $marcadores) . ')
+                ORDER BY mensagem_id ASC, atualizada_em ASC, membro_id ASC',
+            $parametros
+        )->fetchAll();
+
+        $porMensagem = [];
+
+        foreach ($linhas as $linha) {
+            $mensagemId = (int) ($linha['mensagem_id'] ?? 0);
+
+            if ($mensagemId <= 0) {
                 continue;
             }
-            $taste = trim((string) $taste);
-            if ($taste !== '') {
-                $result[mb_strtolower($taste, 'UTF-8')] = $taste;
-            }
+
+            $porMensagem[$mensagemId] ??= [];
+            $porMensagem[$mensagemId][] = [
+                'member_id' => (string) ($linha['membro_id'] ?? ''),
+                'emoji' => (string) ($linha['emoji'] ?? '')
+            ];
         }
-        return array_values($result);
+
+        foreach ($mensagens as &$mensagem) {
+            $mensagemId = (int) ($mensagem['id'] ?? 0);
+            $mensagem['reactions'] = $porMensagem[$mensagemId] ?? [];
+        }
+
+        unset($mensagem);
+
+        return $mensagens;
     }
 
-    private function sincronizarGostos(string $memberId, array $tastes): void {
-        $this->db->runSQL(
-            'DELETE
-                FROM membros_gostos
-                WHERE membro_id = :id',
-            ['id' => $memberId]
-        );
-        foreach ($tastes as $taste) {
-            $this->db->runSQL(
-                'INSERT IGNORE INTO hobbies (nome)
-                    VALUES (:nome)',
-                ['nome' => $taste]
-            );
-            $hobbyId = $this->db->runSQL(
-                'SELECT id
-                    FROM hobbies
-                    WHERE nome = :nome
-                    LIMIT 1',
-                ['nome' => $taste]
-            )->fetchColumn();
-            if (!$hobbyId) {
-                throw new \RuntimeException('Não foi possível guardar um gosto.');
-            }
-            $this->db->runSQL(
-                'INSERT IGNORE INTO membros_gostos ( membro_id, hobbie_id )
-                    VALUES ( :member, :hobby )',
-                ['member' => $memberId, 'hobby' => $hobbyId]
-            );
+    public function react(int $mensagemId, string $membroId, string $emoji, bool $alternar): array {
+        if (!$this->validReaction($emoji)) {
+            throw new InvalidArgumentException('Reação inválida.');
         }
-    }
 
-    public function login(string $username, string $password): array|false {
-        $username = trim($username);
-        if ($username === '' || $password === '') {
-            return false;
-        }
-        $select = "SELECT m.id, m.primeiro_nome, m.ultimo_nome, m.nascimento, m.genero, m.objetivo, m.email, m.telefone,
-            m.password, m.adesao, m.bio, m.nome_seo, COALESCE( ( SELECT fp.nome_arquivo
-            FROM fotos_perfil fp
-            WHERE fp.membro_id = m.id AND ( fp.status = 'completo' OR fp.status IS NULL )
-            ORDER BY fp.ordem IS NULL, fp.ordem
-            LIMIT 1 ), 'default.webp' ) AS foto_perfil
-            FROM membros m
-            WHERE ";
-        if (filter_var($username, FILTER_VALIDATE_EMAIL)) {
-            $condition = 'LOWER(TRIM(m.email)) = :username';
-            $username = $this->normalizarEmail($username);
+        $existente = (string) ($this->db->runSQL(
+            'SELECT emoji
+                FROM mensagens_reacoes
+                WHERE mensagem_id = :mensagem AND membro_id = :membro
+                LIMIT 1',
+            ['mensagem' => $mensagemId, 'membro' => $membroId]
+        )->fetchColumn() ?: '');
+
+        if ($alternar && $existente === $emoji) {
+            $this->db->runSQL(
+                'DELETE FROM mensagens_reacoes
+                    WHERE mensagem_id = :mensagem AND membro_id = :membro',
+                ['mensagem' => $mensagemId, 'membro' => $membroId]
+            );
         } else {
-            $condition = "REPLACE(
-                    REPLACE(
-                        REPLACE(
-                            REPLACE(
-                                REPLACE(
-                                    REPLACE(
-                                        REPLACE(
-                                            TRIM(m.telefone),
-                                            '+',
-                                            ''
-                                        ),
-                                        ' ',
-                                        ''
-                                    ),
-                                    '-',
-                                    ''
-                                ),
-                                '(',
-                                ''
-                            ),
-                            ')',
-                            ''
-                        ),
-                        '.',
-                        ''
-                    ),
-                    '/',
-                    ''
-                ) = :username";
-            $telefone = $this->normalizarTelefone($username);
-            if ($telefone === null) {
-                return false;
-            }
-            $username = $telefone;
+            $this->db->runSQL(
+                'INSERT INTO mensagens_reacoes
+                    (mensagem_id, membro_id, emoji, atualizada_em)
+                    VALUES (:mensagem, :membro, :emoji, NOW(6))
+                    ON DUPLICATE KEY UPDATE emoji = VALUES(emoji), atualizada_em = NOW(6)',
+                [
+                    'mensagem' => $mensagemId,
+                    'membro' => $membroId,
+                    'emoji' => $emoji
+                ]
+            );
         }
-        if ($username === '') {
-            return false;
-        }
-        $sql = $select . $condition . ' AND ' . Validate::adultSqlColumnCondition('m.nascimento') . ' LIMIT 1';
-        $member = $this->db->runSQL($sql, ['username' => $username])->fetch();
-        if (!$member || !password_verify($password, (string) $member['password'])) {
-            return false;
-        }
-        if (password_needs_rehash((string) $member['password'], PASSWORD_DEFAULT)) {
-            $hash = password_hash($password, PASSWORD_DEFAULT);
-            if ($hash !== false) {
-                $this->db->runSQL(
-                    'UPDATE membros
-                        SET password = :password
-                        WHERE id = :id',
-                    ['password' => $hash, 'id' => $member['id']]
-                );
-                $member['password'] = $hash;
-            }
-        }
-        return $member;
+
+        return $this->reactions($mensagemId);
     }
 
-    public function delete(string $id): bool {
-        if (trim($id) === '') {
+    public function deleteSent(int $mensagemId, string $membroId, string $outroId): array|false {
+        $mensagem = $this->db->runSQL(
+            'SELECT id, emissor_id, destinatario_id, ficheiro_nome, visualizacao_unica
+                FROM mensagens_chat
+                WHERE id = :mensagem AND (
+                    (emissor_id = :eu1 AND destinatario_id = :outro1)
+                    OR (emissor_id = :outro2 AND destinatario_id = :eu2)
+                )
+                LIMIT 1',
+            [
+                'mensagem' => $mensagemId,
+                'eu1' => $membroId,
+                'outro1' => $outroId,
+                'outro2' => $outroId,
+                'eu2' => $membroId
+            ]
+        )->fetch();
+
+        if (!$mensagem) {
             return false;
         }
-        $photos = $this->db->runSQL(
-            'SELECT nome_arquivo
-                FROM fotos_perfil
-                WHERE membro_id = :id',
-            ['id' => $id]
-        )->fetchAll(\PDO::FETCH_COLUMN);
-        $messageFiles = $this->db->runSQL(
-            'SELECT ficheiro_nome
-                FROM mensagens_chat
-                WHERE ( emissor_id = :id1 OR destinatario_id = :id2 ) AND ficheiro_nome IS NOT NULL',
-            ['id1' => $id, 'id2' => $id]
-        )->fetchAll(\PDO::FETCH_COLUMN);
-        $pair = ['id1' => $id, 'id2' => $id];
-        $one = ['id' => $id];
-        $deletes = [
-            // As reações de outras pessoas também pertencem às conversas removidas.
-            ['DELETE FROM mensagens_reacoes WHERE membro_id = :id OR mensagem_id IN
-                (SELECT id FROM mensagens_chat WHERE emissor_id = :id1 OR destinatario_id = :id2)', $one + $pair],
-            ['DELETE FROM mensagens_chat WHERE emissor_id = :id1 OR destinatario_id = :id2', $pair],
-            ['DELETE FROM mensagens_apagadas WHERE emissor_id = :id1 OR destinatario_id = :id2', $pair],
-            ['DELETE FROM mensagens_conversas_ocultas WHERE membro_id = :id1 OR outro_id = :id2', $pair],
-            ['DELETE FROM mensagens WHERE pessoa_enviou = :id1 OR pessoa_recebeu = :id2', $pair],
-            ['DELETE FROM notificacao WHERE emissor_id = :id1 OR destinatario_id = :id2', $pair],
-            ['DELETE FROM bloqueados WHERE pessoa_bloqueou_id = :id1 OR pessoa_bloqueada_id = :id2', $pair],
-            ['DELETE FROM denuncias WHERE membro_denuncia = :id1 OR membro_denunciado = :id2', $pair],
-            ['DELETE FROM ligacoes_membros WHERE membro_a_id = :id1 OR membro_b_id = :id2', $pair],
-            ['DELETE FROM membro_hoje WHERE membro_id = :id', $one],
-            ['DELETE FROM estado_app_membro WHERE membro_id = :id', $one],
-            ['DELETE FROM localizacoes WHERE membro_id = :id', $one],
-            ['DELETE FROM token WHERE membro_id = :id', $one],
-            ['DELETE FROM localizacao_membro WHERE membro_id = :id', $one],
-            ['DELETE FROM membros_gostos WHERE membro_id = :id', $one],
-            ['DELETE FROM fotos_perfil WHERE membro_id = :id', $one]
-        ];
+
+        if ((string) ($mensagem['emissor_id'] ?? '') !== $membroId) {
+            throw new InvalidArgumentException('Só podes apagar mensagens que enviaste.');
+        }
+
+        $ficheiro = basename(trim((string) ($mensagem['ficheiro_nome'] ?? '')));
+        $this->db->beginTransaction();
+
         try {
-            $this->db->beginTransaction();
-            foreach ($deletes as [$sql, $params]) {
-                $this->db->runSQL($sql, $params);
+            $this->db->runSQL(
+                'INSERT INTO mensagens_apagadas
+                    (mensagem_id, emissor_id, destinatario_id, apagada_em)
+                    VALUES (:mensagem, :emissor, :destinatario, NOW(6))
+                    ON DUPLICATE KEY UPDATE
+                    emissor_id = VALUES(emissor_id),
+                    destinatario_id = VALUES(destinatario_id),
+                    apagada_em = NOW(6)',
+                [
+                    'mensagem' => $mensagemId,
+                    'emissor' => $membroId,
+                    'destinatario' => $outroId
+                ]
+            );
+
+            $this->db->runSQL(
+                'DELETE FROM mensagens_reacoes WHERE mensagem_id = :mensagem',
+                ['mensagem' => $mensagemId]
+            );
+
+            $eliminada = $this->db->runSQL(
+                'DELETE FROM mensagens_chat
+                    WHERE id = :mensagem
+                        AND emissor_id = :emissor
+                        AND destinatario_id = :destinatario',
+                [
+                    'mensagem' => $mensagemId,
+                    'emissor' => $membroId,
+                    'destinatario' => $outroId
+                ]
+            );
+
+            if ($eliminada->rowCount() !== 1) {
+                throw new RuntimeException('A mensagem já não existe.');
             }
-            $deleted =
-                $this->db->runSQL(
-                    'DELETE
-                        FROM membros
-                        WHERE id = :id',
-                    ['id' => $id]
-                )->rowCount() === 1;
+
             $this->db->commit();
-        } catch (\Throwable $error) {
+        } catch (Throwable $erro) {
             if ($this->db->inTransaction()) {
                 $this->db->rollBack();
             }
-            throw $error;
+
+            throw $erro;
         }
-        if (!$deleted) {
+
+        if ($ficheiro !== '') {
+            $pasta = !empty($mensagem['visualizacao_unica'])
+                ? MessageOnce::folder()
+                : APP_ROOT . '/public/media/mensagens/';
+
+            $caminho = $pasta . $ficheiro;
+
+            if (is_file($caminho)) {
+                @unlink($caminho);
+            }
+        }
+
+        return [
+            'id' => $mensagemId,
+            'emissor_id' => $membroId,
+            'destinatario_id' => $outroId
+        ];
+    }
+
+    public static function selectSql(): string {
+        return "SELECT msg.id, msg.emissor_id, msg.destinatario_id, msg.texto, msg.tipo,
+            msg.ficheiro_nome, msg.ficheiro_mime, msg.ficheiro_tamanho, msg.resposta_a_id,
+            msg.visualizacao_unica, msg.aberta_em,
+            original.id AS resposta_id,
+            original.emissor_id AS resposta_emissor,
+            original.texto AS resposta_texto,
+            original.tipo AS resposta_tipo,
+            msg.lida, msg.criada_em, msg.lida_em,
+            CONCAT(em.primeiro_nome, ' ', em.ultimo_nome) AS emissor_nome,
+            COALESCE((
+                SELECT fp.nome_arquivo
+                FROM fotos_perfil fp
+                WHERE fp.membro_id COLLATE utf8mb4_unicode_ci = em.id COLLATE utf8mb4_unicode_ci
+                    AND (fp.status = 'completo' OR fp.status IS NULL)
+                ORDER BY fp.ordem IS NULL ASC, fp.ordem ASC, fp.id ASC
+                LIMIT 1
+            ), 'default.webp') AS emissor_foto
+            FROM mensagens_chat msg
+            INNER JOIN membros em
+                ON em.id COLLATE utf8mb4_unicode_ci = msg.emissor_id COLLATE utf8mb4_unicode_ci
+            LEFT JOIN mensagens_chat original
+                ON original.id = msg.resposta_a_id AND (
+                    (original.emissor_id = msg.emissor_id
+                        AND original.destinatario_id = msg.destinatario_id)
+                    OR (original.emissor_id = msg.destinatario_id
+                        AND original.destinatario_id = msg.emissor_id)
+                ) ";
+    }
+
+    public static function present(array $mensagem, string $membroId): array {
+        $root = defined('DOC_ROOT') ? DOC_ROOT : '/';
+        $ficheiro = basename(trim((string) ($mensagem['ficheiro_nome'] ?? '')));
+        $foto = basename(trim((string) ($mensagem['emissor_foto'] ?? 'default.webp'))) ?: 'default.webp';
+
+        $mensagem['id'] = (int) $mensagem['id'];
+        $mensagem['lida'] = (bool) $mensagem['lida'];
+        $mensagem['minha'] = (string) $mensagem['emissor_id'] === $membroId;
+        $mensagem['texto'] = (string) ($mensagem['texto'] ?? '');
+
+        $mensagem['media_url'] = $ficheiro === ''
+            ? null
+            : $root . 'media/mensagens/' . rawurlencode($ficheiro);
+
+        $mensagem['view_once'] = (bool) ($mensagem['visualizacao_unica'] ?? false);
+        $mensagem['opened'] = !empty($mensagem['aberta_em']);
+
+        if ($mensagem['view_once']) {
+            $mensagem['media_url'] = null;
+        }
+
+        unset($mensagem['visualizacao_unica'], $mensagem['aberta_em']);
+
+        $mensagem['emissor_foto_url'] = $root . 'imagens/fotos-perfil/' . rawurlencode($foto);
+        $mensagem['emissor_perfil_url'] = $root . 'profile/' . rawurlencode((string) $mensagem['emissor_id']);
+
+        $mensagem['reply'] = empty($mensagem['resposta_a_id']) ? null : [
+            'id' => (int) $mensagem['resposta_a_id'],
+            'available' => !empty($mensagem['resposta_id']),
+            'sender_id' => $mensagem['resposta_emissor'] ?? null,
+            'text' => $mensagem['resposta_texto'] ?? '',
+            'type' => $mensagem['resposta_tipo'] ?? null
+        ];
+
+        unset(
+            $mensagem['ficheiro_nome'],
+            $mensagem['emissor_foto'],
+            $mensagem['resposta_a_id'],
+            $mensagem['resposta_id'],
+            $mensagem['resposta_emissor'],
+            $mensagem['resposta_texto'],
+            $mensagem['resposta_tipo']
+        );
+
+        return $mensagem;
+    }
+
+    public function get(int $mensagemId, string $membroId): array|false {
+        $sql = $this->selectSql() .
+            ' WHERE msg.id = :id
+                AND (msg.emissor_id = :membro1 OR msg.destinatario_id = :membro2)
+                LIMIT 1';
+
+        $mensagem = $this->db->runSQL($sql, [
+            'id' => $mensagemId,
+            'membro1' => $membroId,
+            'membro2' => $membroId
+        ])->fetch();
+
+        if (!$mensagem) {
             return false;
         }
-        $this->apagarFicheiros(
-            $photos,
-            [
-                APP_ROOT . '/public/imagens/fotos-perfil/',
-                APP_ROOT . '/public/imagens/fotos-perfil-originais/',
-                APP_ROOT . '/public/imagens/fotos-perfil-temp/'
-            ],
-            ['default.webp']
-        );
-        $this->apagarFicheiros($messageFiles, [APP_ROOT . '/public/media/mensagens/']);
-        return true;
+
+        $preparada = $this->present($mensagem, $membroId);
+        $comReacoes = $this->withReactions([$preparada]);
+
+        return $comReacoes[0] ?? $preparada;
     }
 
-    private function apagarFicheiros(array $names, array $directories, array $protected = []): void {
-        foreach (array_unique($names) as $name) {
-            $name = basename(trim((string) $name));
-            if ($name === '' || in_array($name, $protected, true)) {
+    public function history(string $membroId, string $outroId, int $depoisDe = 0): array {
+        $incremental = $depoisDe > 0;
+        $corte = $this->hiddenUntil($membroId, $outroId);
+        $depoisDe = max($depoisDe, $corte);
+
+        $sql = $this->selectSql() .
+            ' WHERE (
+                (msg.emissor_id = :eu1 AND msg.destinatario_id = :outro1)
+                OR (msg.emissor_id = :outro2 AND msg.destinatario_id = :eu2)
+            )';
+
+        $parametros = [
+            'eu1' => $membroId,
+            'outro1' => $outroId,
+            'outro2' => $outroId,
+            'eu2' => $membroId
+        ];
+
+        if ($depoisDe > 0) {
+            $sql .= ' AND msg.id > :depois';
+            $parametros['depois'] = $depoisDe;
+        }
+
+        $sql .= $incremental
+            ? ' ORDER BY msg.id ASC LIMIT 100'
+            : ' ORDER BY msg.id DESC LIMIT 100';
+
+        $mensagens = $this->db->runSQL($sql, $parametros)->fetchAll();
+
+        if (!$incremental) {
+            $mensagens = array_reverse($mensagens);
+        }
+
+        $preparadas = array_map(
+            fn(array $mensagem): array => $this->present($mensagem, $membroId),
+            $mensagens
+        );
+
+        return $this->withReactions($preparadas);
+    }
+
+    public function conversations(string $membroId): array {
+        $membro = $this->access->member($membroId);
+
+        if (!$membro) {
+            return [];
+        }
+
+        $faixaEtaria = $this->access->ageGroup((string) ($membro['nascimento'] ?? ''));
+
+        if ($faixaEtaria === null) {
+            return [];
+        }
+
+        $condicaoFaixaEtaria = $this->access->ageCondition($faixaEtaria, 'p');
+
+        $sql = "SELECT ultima.id, ultima.emissor_id, ultima.destinatario_id,
+            ultima.texto, ultima.tipo, ultima.criada_em, conversa.outro_id,
+            CONCAT(p.primeiro_nome, ' ', p.ultimo_nome) AS outro_nome,
+            COALESCE((
+                SELECT fp.nome_arquivo
+                FROM fotos_perfil fp
+                WHERE fp.membro_id COLLATE utf8mb4_unicode_ci = p.id COLLATE utf8mb4_unicode_ci
+                    AND (fp.status = 'completo' OR fp.status IS NULL)
+                ORDER BY fp.ordem IS NULL ASC, fp.ordem ASC, fp.id ASC
+                LIMIT 1
+            ), 'default.webp') AS outro_foto,
+            (
+                SELECT COUNT(*)
+                FROM mensagens_chat nao_lida
+                WHERE nao_lida.emissor_id = conversa.outro_id
+                    AND nao_lida.destinatario_id = :eu4
+                    AND nao_lida.lida = 0
+                    AND nao_lida.id > COALESCE(ocultada.ocultar_ate_id, 0)
+            ) AS nao_lidas
+            FROM (
+                SELECT participacao.outro_id, MAX(participacao.id) AS ultima_id
+                FROM (
+                    SELECT id, destinatario_id AS outro_id
+                    FROM mensagens_chat
+                    WHERE emissor_id = :eu1
+                    UNION ALL
+                    SELECT id, emissor_id AS outro_id
+                    FROM mensagens_chat
+                    WHERE destinatario_id = :eu2
+                ) participacao
+                GROUP BY participacao.outro_id
+            ) conversa
+            INNER JOIN mensagens_chat ultima ON ultima.id = conversa.ultima_id
+            INNER JOIN membros p
+                ON p.id COLLATE utf8mb4_unicode_ci = conversa.outro_id COLLATE utf8mb4_unicode_ci
+            LEFT JOIN mensagens_conversas_ocultas ocultada
+                ON ocultada.membro_id = :eu7
+                AND ocultada.outro_id COLLATE utf8mb4_unicode_ci = conversa.outro_id COLLATE utf8mb4_unicode_ci
+            WHERE {$condicaoFaixaEtaria}
+                AND ultima.id > COALESCE(ocultada.ocultar_ate_id, 0)
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM bloqueados b
+                    WHERE (
+                        b.pessoa_bloqueou_id = :eu5
+                        AND b.pessoa_bloqueada_id COLLATE utf8mb4_unicode_ci =
+                            conversa.outro_id COLLATE utf8mb4_unicode_ci
+                    ) OR (
+                        b.pessoa_bloqueou_id COLLATE utf8mb4_unicode_ci =
+                            conversa.outro_id COLLATE utf8mb4_unicode_ci
+                        AND b.pessoa_bloqueada_id = :eu6
+                    )
+                )
+            ORDER BY ultima.id DESC
+            LIMIT 100";
+
+        $linhas = $this->db->runSQL($sql, [
+            'eu1' => $membroId,
+            'eu2' => $membroId,
+            'eu4' => $membroId,
+            'eu5' => $membroId,
+            'eu6' => $membroId,
+            'eu7' => $membroId
+        ])->fetchAll();
+
+        $conversas = array_map(static function (array $linha) use ($membroId): array {
+            $foto = basename(trim((string) $linha['outro_foto'])) ?: 'default.webp';
+            $texto = trim((string) ($linha['texto'] ?? ''));
+
+            if ($texto === '') {
+                $texto = match ($linha['tipo']) {
+                    'imagem' => 'Fotografia',
+                    'video' => 'Vídeo',
+                    'audio' => 'Mensagem de voz',
+                    default => 'Mensagem'
+                };
+                $texto = Locale::text($texto);
+            }
+
+            if ((string) $linha['emissor_id'] === $membroId) {
+                $texto = Locale::text('Tu: ') . $texto;
+            }
+
+            return [
+                'id' => (int) $linha['id'],
+                'outro_id' => (string) $linha['outro_id'],
+                'outro_nome' => (string) $linha['outro_nome'],
+                'outro_foto_url' => DOC_ROOT . 'imagens/fotos-perfil/' . rawurlencode($foto),
+                'chat_url' => DOC_ROOT . 'messages/' . rawurlencode((string) $linha['outro_id']),
+                'perfil_url' => DOC_ROOT . 'profile/' . rawurlencode((string) $linha['outro_id']),
+                'resumo' => $texto,
+                'criada_em' => (string) $linha['criada_em'],
+                'nao_lidas' => (int) $linha['nao_lidas']
+            ];
+        }, $linhas);
+
+        $idsVisiveis = [];
+
+        foreach ($conversas as $conversa) {
+            $idsVisiveis[(string) $conversa['outro_id']] = true;
+        }
+
+        $ligacoes = (new MemberConnection($this->db))->connectionsFor($membroId);
+
+        foreach ($ligacoes as $ligacao) {
+            $outroId = trim((string) ($ligacao['outro_id'] ?? ''));
+
+            if (
+                $outroId === ''
+                || isset($idsVisiveis[$outroId])
+                || $this->access->areBlocked($membroId, $outroId)
+            ) {
                 continue;
             }
-            foreach ($directories as $directory) {
-                $path = rtrim($directory, '/') . '/' . $name;
-                if (is_file($path) && !@unlink($path)) {
-                    error_log('Não foi possível apagar: ' . $path);
-                }
+
+            $outro = $this->memberPreview($outroId);
+
+            if (!$outro) {
+                continue;
             }
+
+            $conversas[] = [
+                'id' => 0,
+                'outro_id' => $outroId,
+                'outro_nome' => (string) $outro['nome'],
+                'outro_foto_url' => (string) $outro['foto_url'],
+                'chat_url' => DOC_ROOT . 'messages/' . rawurlencode($outroId),
+                'perfil_url' => (string) $outro['perfil_url'],
+                'resumo' => Locale::text('Ligados na Margot'),
+                'criada_em' => (string) ($ligacao['criada_em'] ?? ''),
+                'nao_lidas' => 0,
+                'ligados' => true
+            ];
+
+            $idsVisiveis[$outroId] = true;
         }
+
+        usort(
+            $conversas,
+            static fn(array $a, array $b): int => strcmp(
+                (string) ($b['criada_em'] ?? ''),
+                (string) ($a['criada_em'] ?? '')
+            )
+        );
+
+        return array_slice($conversas, 0, 100);
     }
 
-    public function exists(string $id): bool {
-        return (bool) $this->db->runSQL('SELECT 1 FROM membros WHERE id = :id LIMIT 1', ['id' => $id])->fetchColumn();
+    public function unreadCount(string $membroId): int {
+        $membro = $this->access->member($membroId);
+
+        if (!$membro) {
+            return 0;
+        }
+
+        $faixaEtaria = $this->access->ageGroup((string) ($membro['nascimento'] ?? ''));
+
+        if ($faixaEtaria === null) {
+            return 0;
+        }
+
+        $condicaoFaixaEtaria = $this->access->ageCondition($faixaEtaria, 'em');
+
+        return (int) $this->db->runSQL(
+            "SELECT COUNT(*)
+                FROM mensagens_chat msg
+                INNER JOIN membros em
+                    ON em.id COLLATE utf8mb4_unicode_ci = msg.emissor_id COLLATE utf8mb4_unicode_ci
+                WHERE msg.destinatario_id = :id
+                    AND msg.lida = 0
+                    AND {$condicaoFaixaEtaria}
+                    AND msg.id > COALESCE((
+                        SELECT ocultada.ocultar_ate_id
+                        FROM mensagens_conversas_ocultas ocultada
+                        WHERE ocultada.membro_id = :eu3
+                            AND ocultada.outro_id COLLATE utf8mb4_unicode_ci =
+                                msg.emissor_id COLLATE utf8mb4_unicode_ci
+                        LIMIT 1
+                    ), 0)
+                    AND NOT EXISTS (
+                        SELECT 1
+                        FROM bloqueados b
+                        WHERE (
+                            b.pessoa_bloqueou_id = :eu1
+                            AND b.pessoa_bloqueada_id COLLATE utf8mb4_unicode_ci =
+                                msg.emissor_id COLLATE utf8mb4_unicode_ci
+                        ) OR (
+                            b.pessoa_bloqueou_id COLLATE utf8mb4_unicode_ci =
+                                msg.emissor_id COLLATE utf8mb4_unicode_ci
+                            AND b.pessoa_bloqueada_id = :eu2
+                        )
+                    )",
+            [
+                'id' => $membroId,
+                'eu1' => $membroId,
+                'eu2' => $membroId,
+                'eu3' => $membroId
+            ]
+        )->fetchColumn();
     }
 
-    public function emailVerified(string $id): bool {
-        return (bool) $this->db->runSQL('SELECT email_verificado_em FROM membros WHERE id = :id LIMIT 1', ['id' => $id])->fetchColumn();
+    public function markRead(string $memberId, string $otherId): void {
+        $this->db->runSQL(
+            'UPDATE mensagens_chat
+                SET lida = 1, lida_em = COALESCE(lida_em, NOW(6))
+                WHERE emissor_id = :other AND destinatario_id = :me AND lida = 0',
+            ['other' => $otherId, 'me' => $memberId]
+        );
+    }
+
+    public function send(
+        string $senderId,
+        string $recipientId,
+        string $text,
+        array $media,
+        ?int $replyId = null
+    ): int {
+        try {
+            if (
+                $replyId !== null
+                && (
+                    !$this->belongsToConversation($replyId, $senderId, $recipientId)
+                    || $replyId <= $this->hiddenUntil($senderId, $recipientId)
+                )
+            ) {
+                throw new InvalidArgumentException(
+                    'A mensagem a que estás a responder já não está disponível.'
+                );
+            }
+
+            $this->db->runSQL(
+                'INSERT INTO mensagens_chat
+                    (emissor_id, destinatario_id, texto, tipo, ficheiro_nome, ficheiro_mime,
+                    ficheiro_tamanho, resposta_a_id, visualizacao_unica, lida, criada_em)
+                    VALUES
+                    (:sender, :recipient, :text, :type, :file, :mime, :size, :reply, :once, 0, NOW(6))',
+                [
+                    'sender' => $senderId,
+                    'recipient' => $recipientId,
+                    'text' => $text === '' ? null : $text,
+                    'type' => $media['tipo'] ?? 'texto',
+                    'file' => $media['nome'] ?? null,
+                    'mime' => $media['mime'] ?? null,
+                    'size' => $media['tamanho'] ?? null,
+                    'reply' => $replyId,
+                    'once' => !empty($media['view_once']) ? 1 : 0
+                ]
+            );
+
+            return (int) $this->db->lastInsertId();
+        } catch (Throwable $error) {
+            if (isset($media['caminho']) && is_file($media['caminho'])) {
+                @unlink($media['caminho']);
+            }
+
+            throw $error;
+        }
     }
 }

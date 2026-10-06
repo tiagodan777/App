@@ -344,7 +344,8 @@
                 action: action,
                 platform: platform(),
                 token: token || '',
-                installation_id: installationId()
+                installation_id: installationId(),
+                language: deviceLanguage()
             })
         });
 
@@ -358,8 +359,13 @@
         return result && result.success === true;
     }
 
+    function deviceLanguage() {
+        var preference = navigator.language || (navigator.languages || [])[0] || '';
+        return /^pt(?:[-_]|$)/i.test(preference.trim()) ? 'pt' : 'en';
+    }
+
     function syncFingerprint(token) {
-        return memberId() + ':' + platform() + ':' + token;
+        return memberId() + ':' + platform() + ':' + token + ':' + deviceLanguage();
     }
 
     function wasRecentlySynced(token) {

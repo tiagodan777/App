@@ -4,9 +4,19 @@
     <string name="title_activity_main">Margot</string>
     <string name="package_name">com.margot.app</string>
     <string name="custom_url_scheme">com.margot.app</string>
-
-    <string name="background_location_channel_name">Localização em segundo plano</string>
-    <string name="background_location_channel_description">Mantém a posição atualizada quando a Margot está em segundo plano.</string>
-    <string name="background_location_notification_title">Localização da Margot ativa</string>
-    <string name="background_location_notification_text">A tua posição está a ser atualizada em segundo plano.</string>
+    <string name="background_location_channel_name">Background location</string>
+    <string name="background_location_channel_description">Keeps your location up to date while Margot is in the background.</string>
+    <string name="background_location_notification_title">Margot location active</string>
+    <string name="background_location_notification_text">Your location is being updated in the background.</string>
+    <string name="channel_activity_name">Margot activity</string>
+    <string name="channel_activity_description">General Margot notifications</string>
+    <string name="channel_hey_description">Heys received on Margot</string>
+    <string name="channel_message_name">Messages</string>
+    <string name="channel_message_description">Messages received on Margot</string>
+    <string name="channel_nearby_name">People nearby</string>
+    <string name="channel_nearby_description">Alerts when several people using Margot are nearby</string>
+    <string name="share_title">One hello leads to another · Margot</string>
+    <string name="share_invitation">Share invitation</string>
+    <string name="share_invalid">Invalid invitation.</string>
+    <string name="share_unavailable">Could not open sharing right now.</string>
 </resources>

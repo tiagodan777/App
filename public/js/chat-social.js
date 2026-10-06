@@ -1,5 +1,6 @@
 /* Respostas e seletor de reações, sem alterar o contrato da API do chat. */
 window.MargotChatQuotes = function (content) {
+    const t = (text) => window.MargotI18n?.t(text) ?? text;
     const me = String(window.membroId);
     const person = document.querySelector('.chat-pessoa strong')?.textContent.trim() || 'A outra pessoa';
     let alive = true;
@@ -43,11 +44,11 @@ window.MargotChatQuotes = function (content) {
             const mine = source ? source.dataset.emissorId === me : quote.dataset.replyMine === 'true';
             const sent = article.classList.contains('minha');
 
-            wrap.querySelector('.chat-reply-label').textContent = unavailable
+            wrap.querySelector('.chat-reply-label').textContent = t(unavailable
                 ? 'Mensagem original indisponível'
                 : sent
                   ? (mine ? 'Respondeste à tua mensagem' : 'Respondeste a ' + person)
-                  : (mine ? person + ' respondeu-te' : person + ' respondeu à própria mensagem');
+                  : (mine ? person + ' respondeu-te' : person + ' respondeu à própria mensagem'));
 
             quote.classList.toggle('chat-reply-own-source', mine);
             quote.disabled = unavailable;
@@ -95,10 +96,11 @@ window.MargotChatQuotes = function (content) {
 
             const summary = document.createElement('span');
             summary.className = 'chat-reply-summary';
-            summary.textContent = (video ? '▶ ' : audio ? '♪ ' : '') + text;
+            const systemSummary = unavailable || once || quote.dataset.replySystem === 'true' || (originalBubble && !originalBubble.querySelector(':scope > p') && (image || video || audio));
+            summary.textContent = (video ? '▶ ' : audio ? '♪ ' : '') + (systemSummary ? t(text) : text);
             quote.append(summary);
 
-            quote.setAttribute('aria-label', 'Ver mensagem original: ' + text);
+            quote.setAttribute('aria-label', t('Ver mensagem original: ' + (systemSummary ? t(text) : text)));
         }
 
         observer.observe(content, {
@@ -125,6 +127,7 @@ window.MargotChatQuotes = function (content) {
 };
 
 window.MargotEmojiPicker = function (dialog, onChoose) {
+    const t = (text) => window.MargotI18n?.t(text) ?? text;
     const events = new AbortController();
     const signal = events.signal;
     const key = 'margot-reactions-v1-' + String(window.membroId);
@@ -143,9 +146,9 @@ window.MargotEmojiPicker = function (dialog, onChoose) {
 
             return {
                 emoji,
-                label,
+                label: t(label),
                 tone: tone === 'tone',
-                search: normalize(label)
+                search: normalize(label + ' ' + t(label))
             };
         })
     }));

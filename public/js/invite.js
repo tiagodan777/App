@@ -130,7 +130,7 @@
                 }
             } else if (navigator.share) {
                 await navigator.share({
-                    title: 'Um olá leva a outro · Margot',
+                    title: window.MargotI18n?.t('Um olá leva a outro · Margot') ?? 'Um olá leva a outro · Margot',
                     url
                 });
 

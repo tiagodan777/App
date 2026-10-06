@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/classes/CMS/Locale.php';
+
 function create_filename($original) {
     $ext = strtolower(pathinfo($original, PATHINFO_EXTENSION));
     $unique = bin2hex(random_bytes(16));
@@ -68,12 +70,12 @@ function handle_exception(Throwable $erro): void {
         header('Content-Type: text/html; charset=UTF-8');
     }
     echo '<!DOCTYPE html>';
-    echo '<html lang="pt-PT">';
+    echo '<html lang="' . (App\CMS\Locale::current() === 'pt' ? 'pt-PT' : 'en') . '">';
     echo '<head>';
     echo '<meta charset="UTF-8">';
     echo '<meta name="viewport" content="width=device-width, initial-scale=1">';
     echo '<meta name="robots" content="noindex,nofollow">';
-    echo '<title>Ocorreu um problema</title>';
+    echo '<title>' . App\CMS\Locale::text('Ocorreu um problema') . '</title>';
     echo '<style>';
     echo 'body{margin:0;min-height:100vh;padding:24px;box-sizing:border-box;background:#fff;color:#111;font-family:Helvetica,Arial,sans-serif;display:grid;place-items:center}';
     echo 'main{width:min(100%,480px);text-align:center}';
@@ -83,8 +85,8 @@ function handle_exception(Throwable $erro): void {
     echo '</head>';
     echo '<body>';
     echo '<main>';
-    echo '<h1>Desculpa, ocorreu um problema.</h1>';
-    echo '<p>Tenta novamente dentro de alguns instantes.</p>';
+    echo '<h1>' . App\CMS\Locale::text('Desculpa, ocorreu um problema.') . '</h1>';
+    echo '<p>' . App\CMS\Locale::text('Tenta novamente dentro de alguns instantes.') . '</p>';
     echo '</main>';
     echo '</body>';
     echo '</html>';

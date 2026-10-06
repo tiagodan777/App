@@ -9,7 +9,15 @@
 <body>
     <main>
         <h1>Margot</h1>
-        <p>A abrir a aplicação…</p>
+        <p id="opening">A abrir a aplicação…</p>
     </main>
+    <script>
+        (function () {
+            var preference = navigator.language || (navigator.languages || [])[0] || '';
+            var portuguese = /^pt(?:[-_]|$)/i.test(preference.trim());
+            document.documentElement.lang = portuguese ? 'pt-PT' : 'en';
+            if (!portuguese) document.getElementById('opening').textContent = 'Opening the app…';
+        })();
+    </script>
 </body>
 </html>

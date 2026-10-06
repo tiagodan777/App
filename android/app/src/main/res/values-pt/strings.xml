@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="background_location_channel_name">Localização em segundo plano</string>
+    <string name="background_location_channel_description">Mantém a posição atualizada quando a Margot está em segundo plano.</string>
+    <string name="background_location_notification_title">Localização da Margot ativa</string>
+    <string name="background_location_notification_text">A tua posição está a ser atualizada em segundo plano.</string>
+    <string name="channel_activity_name">Atividade da Margot</string>
+    <string name="channel_activity_description">Notificações gerais da Margot</string>
+    <string name="channel_hey_description">Heys recebidos na Margot</string>
+    <string name="channel_message_name">Mensagens</string>
+    <string name="channel_message_description">Mensagens recebidas na Margot</string>
+    <string name="channel_nearby_name">Pessoas por perto</string>
+    <string name="channel_nearby_description">Avisos quando há várias pessoas com a Margot por perto</string>
+    <string name="share_title">Um olá leva a outro · Margot</string>
+    <string name="share_invitation">Partilhar convite</string>
+    <string name="share_invalid">Convite inválido.</string>
+    <string name="share_unavailable">Não foi possível abrir a partilha agora.</string>
+</resources>

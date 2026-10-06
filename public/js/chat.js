@@ -193,7 +193,9 @@
     function selectReply(value, focus = true) {
         reply = value;
         replyPreview.hidden = !reply;
-        replyPreview.querySelector('span').textContent = reply ? summary(reply) : '';
+        replyPreview.querySelector('span').textContent = reply
+            ? (reply.text || (window.MargotI18n?.t(summary(reply)) ?? summary(reply)))
+            : '';
 
         if (reply && focus) text.focus({ preventScroll: true });
     }
@@ -310,6 +312,7 @@
         button.type = 'button';
         button.className = 'chat-quote';
         button.dataset.replyId = value.id;
+        button.dataset.replySystem = String(Boolean(value.available && !value.text));
 
         button.textContent = value.available
             ? (String(value.sender_id) === me ? 'Tu · ' : 'Resposta · ') + summary(value)

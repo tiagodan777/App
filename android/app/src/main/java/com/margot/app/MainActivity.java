@@ -55,11 +55,11 @@ public class MainActivity extends BridgeActivity {
 
         NotificationChannel activity = new NotificationChannel(
             CHANNEL_ACTIVITY,
-            "Atividade da Margot",
+            getString(R.string.channel_activity_name),
             NotificationManager.IMPORTANCE_HIGH
         );
 
-        activity.setDescription("Notificações gerais da Margot");
+        activity.setDescription(getString(R.string.channel_activity_description));
         activity.enableVibration(true);
         activity.setVibrationPattern(new long[] {0, 110});
 
@@ -69,28 +69,28 @@ public class MainActivity extends BridgeActivity {
             NotificationManager.IMPORTANCE_HIGH
         );
 
-        hey.setDescription("Heys recebidos na Margot");
+        hey.setDescription(getString(R.string.channel_hey_description));
         hey.enableVibration(true);
         hey.setVibrationPattern(new long[] {0, 75, 60, 180});
 
         NotificationChannel message = new NotificationChannel(
             CHANNEL_MESSAGE,
-            "Mensagens",
+            getString(R.string.channel_message_name),
             NotificationManager.IMPORTANCE_HIGH
         );
 
-        message.setDescription("Mensagens recebidas na Margot");
+        message.setDescription(getString(R.string.channel_message_description));
         message.enableVibration(true);
         message.setVibrationPattern(new long[] {0, 135});
 
         NotificationChannel nearby = new NotificationChannel(
             CHANNEL_NEARBY,
-            "Pessoas por perto",
+            getString(R.string.channel_nearby_name),
             NotificationManager.IMPORTANCE_HIGH
         );
 
         nearby.setDescription(
-            "Avisos quando há várias pessoas com a Margot por perto"
+            getString(R.string.channel_nearby_description)
         );
 
         nearby.enableVibration(true);

@@ -5,7 +5,7 @@
 	<key>CAPACITOR_DEBUG</key>
 	<string>$(CAPACITOR_DEBUG)</string>
 	<key>CFBundleDevelopmentRegion</key>
-	<string>pt-PT</string>
+	<string>en</string>
 	<key>CFBundleDisplayName</key>
 	<string>Margot</string>
 	<key>CFBundleExecutable</key>
@@ -16,7 +16,7 @@
 	<string>6.0</string>
 	<key>CFBundleLocalizations</key>
 	<array>
-		<string>pt-PT</string>
+		<string>en</string>
 		<string>pt</string>
 	</array>
 	<key>CFBundleName</key>
@@ -30,22 +30,22 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>A Margot usa a câmara para tirares fotografias para o perfil e enviares fotografias e vídeos em mensagens.</string>
+	<string>Margot uses the camera so you can take profile photos and send photos and videos in messages.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>A Margot usa a tua localização em segundo plano para manter atualizada a descoberta de pessoas próximas, mesmo quando não estás a utilizar a aplicação. A tua localização exata não é mostrada a outros utilizadores.</string>
+	<string>Margot uses your location in the background to keep nearby discovery up to date, even when you are not using the app. Your exact location is not shown to other people.</string>
 	<key>NSLocationTemporaryUsageDescriptionDictionary</key>
 	<dict>
 		<key>MargotNearby</key>
-		<string>A localização exata permite à Margot mostrar corretamente as pessoas que estão perto de ti.</string>
+		<string>Precise location lets Margot show the people near you accurately.</string>
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>A Margot usa a tua localização para calcular quem está aproximadamente até 100 m de ti e mostrar apenas pessoas próximas. A tua localização exata não é mostrada a outros utilizadores.</string>
+	<string>Margot uses your location to find people approximately within 100 metres of you and show only people nearby. Your exact location is not shown to other people.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>A Margot usa o microfone para gravares mensagens de voz e vídeos com som.</string>
+	<string>Margot uses the microphone so you can record voice messages and videos with sound.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>A Margot precisa de permissão para guardar fotografias na tua biblioteca quando escolheres essa opção.</string>
+	<string>Margot needs permission to save photos to your library when you choose that option.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>A Margot usa a biblioteca para escolheres fotografias para o perfil e enviares fotografias e vídeos em mensagens.</string>
+	<string>Margot uses your photo library so you can choose profile photos and send photos and videos in messages.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

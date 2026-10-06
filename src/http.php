@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/classes/CMS/Locale.php';
+
 function redirect($location, $parameters = [], $response_code = 302) {
     $qs = $parameters ? '?' . http_build_query($parameters) : '';
     $location = $location . $qs;
@@ -65,12 +67,12 @@ function rejeitar_csrf(): never {
     }
     header('Content-Type: text/html; charset=UTF-8');
     echo '<!DOCTYPE html>';
-    echo '<html lang="pt-PT">';
+    echo '<html lang="' . (App\CMS\Locale::current() === 'pt' ? 'pt-PT' : 'en') . '">';
     echo '<head>';
     echo '<meta charset="UTF-8">';
     echo '<meta name="viewport" content="width=device-width, initial-scale=1">';
     echo '<meta name="robots" content="noindex,nofollow">';
-    echo '<title>Página expirada</title>';
+    echo '<title>' . App\CMS\Locale::text('Página expirada') . '</title>';
     echo '<style>';
     echo 'body{margin:0;min-height:100vh;padding:24px;box-sizing:border-box;background:#fff;color:#111;font-family:Helvetica,Arial,sans-serif;display:grid;place-items:center}';
     echo 'main{width:min(100%,480px);text-align:center}';
@@ -81,11 +83,11 @@ function rejeitar_csrf(): never {
     echo '</head>';
     echo '<body>';
     echo '<main>';
-    echo '<h1>A página expirou.</h1>';
-    echo '<p>Atualiza a página e tenta novamente.</p>';
+    echo '<h1>' . App\CMS\Locale::text('A página expirou.') . '</h1>';
+    echo '<p>' . App\CMS\Locale::text('Atualiza a página e tenta novamente.') . '</p>';
     echo '<a href="' .
         htmlspecialchars((string) ($_SERVER['REQUEST_URI'] ?? DOC_ROOT), ENT_QUOTES, 'UTF-8') .
-        '">Atualizar</a>';
+        '">' . App\CMS\Locale::text('Atualizar') . '</a>';
     echo '</main>';
     echo '</body>';
     echo '</html>';

@@ -255,7 +255,16 @@
 
     function definirResumo(campo, texto) {
         var $resumo = $('[data-resumo-campo="' + campo + '"]');
-        if ($resumo.length && texto) $resumo.text(texto);
+        if ($resumo.length && texto) {
+            // These summaries contain member content, including words that can match UI labels.
+            var personal = (campo === 'nome' && (dados.primeiro_nome || dados.ultimo_nome))
+                || (campo === 'sobre_ti' && dados.sobre_ti)
+                || (campo === 'gostos' && Array.isArray(dados.gostos) && dados.gostos.length)
+                || (campo === 'contactos' && (dados.email || dados.telefone));
+            if (personal) $resumo.attr('data-i18n-skip', '');
+            else $resumo.removeAttr('data-i18n-skip');
+            $resumo.text(texto);
+        }
     }
 
     function resumoPermissoes() {

@@ -41,7 +41,8 @@ try {
             $installationId,
             $sessionHash,
             $environment,
-            isset($data['app_version']) ? (string) $data['app_version'] : null
+            isset($data['app_version']) ? (string) $data['app_version'] : null,
+            isset($data['language']) && is_string($data['language']) ? $data['language'] : 'pt'
         );
         json_response(['success' => true]);
     }

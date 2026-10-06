@@ -7,6 +7,7 @@ if (!is_file($configFile)) {
     $configFile = APP_ROOT . '/config/config.php';
 }
 require_once $configFile;
+require_once APP_ROOT . '/src/classes/CMS/Locale.php';
 require_once APP_ROOT . '/src/functions.php';
 require_once APP_ROOT . '/src/http.php';
 require_once APP_ROOT . '/src/rate-limit.php';
@@ -21,6 +22,8 @@ $cms = new App\CMS\CMS($dsn, $username, $password, $push_config);
 unset($dsn, $username, $password);
 $twig_options['debug'] = DEV;
 $loader = new Twig\Loader\FilesystemLoader([APP_ROOT . '/templates']);
+require_once APP_ROOT . '/src/classes/CMS/LanguageTemplateLoader.php';
+$loader = new App\CMS\LanguageTemplateLoader($loader);
 $twig = new Twig\Environment($loader, $twig_options);
 $twig->addGlobal('doc_root', DOC_ROOT);
 $twig->addGlobal('push_environment', $pushEnvironment);

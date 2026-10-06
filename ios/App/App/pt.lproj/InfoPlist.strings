@@ -1,0 +1,8 @@
+/* Permission explanations shown by iOS. */
+"NSCameraUsageDescription" = "A Margot usa a câmara para tirares fotografias para o perfil e enviares fotografias e vídeos em mensagens.";
+"NSLocationAlwaysAndWhenInUseUsageDescription" = "A Margot usa a tua localização em segundo plano para manter atualizada a descoberta de pessoas próximas, mesmo quando não estás a utilizar a aplicação. A tua localização exata não é mostrada a outros utilizadores.";
+"NSLocationWhenInUseUsageDescription" = "A Margot usa a tua localização para calcular quem está aproximadamente até 100 m de ti e mostrar apenas pessoas próximas. A tua localização exata não é mostrada a outros utilizadores.";
+"NSMicrophoneUsageDescription" = "A Margot usa o microfone para gravares mensagens de voz e vídeos com som.";
+"NSPhotoLibraryAddUsageDescription" = "A Margot precisa de permissão para guardar fotografias na tua biblioteca quando escolheres essa opção.";
+"NSPhotoLibraryUsageDescription" = "A Margot usa a biblioteca para escolheres fotografias para o perfil e enviares fotografias e vídeos em mensagens.";
+"MargotNearby" = "A localização exata permite à Margot mostrar corretamente as pessoas que estão perto de ti.";

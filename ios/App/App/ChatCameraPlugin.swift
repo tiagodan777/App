@@ -23,7 +23,7 @@ public final class ChatCameraPlugin: CAPPlugin, CAPBridgedPlugin {
     let offset = call.getInt("offset") ?? -1
     files.async {
       guard let url = self.clips[id], offset >= 0 else {
-        call.reject("O vídeo já não está disponível.")
+        call.reject(NSLocalizedString("O vídeo já não está disponível.", comment: ""))
         return
       }
       do {
@@ -33,7 +33,7 @@ public final class ChatCameraPlugin: CAPPlugin, CAPBridgedPlugin {
         let data = try handle.read(upToCount: 512 * 1024) ?? Data()
         call.resolve(["base64": data.base64EncodedString()])
       } catch {
-        call.reject("Não foi possível ler o vídeo.")
+        call.reject(NSLocalizedString("Não foi possível ler o vídeo.", comment: ""))
       }
     }
   }
@@ -51,7 +51,7 @@ public final class ChatCameraPlugin: CAPPlugin, CAPBridgedPlugin {
   @objc public func open(_ call: CAPPluginCall) {
     DispatchQueue.main.async {
       guard !self.opening else {
-        call.reject("A câmara já está aberta.")
+        call.reject(NSLocalizedString("A câmara já está aberta.", comment: ""))
         return
       }
       self.opening = true
@@ -59,12 +59,12 @@ public final class ChatCameraPlugin: CAPPlugin, CAPBridgedPlugin {
         DispatchQueue.main.async {
           guard allowed else {
             self.opening = false
-            call.reject("Permite o acesso à câmara nas definições do iPhone.")
+            call.reject(NSLocalizedString("Permite o acesso à câmara nas definições do iPhone.", comment: ""))
             return
           }
           guard let host = self.bridge?.viewController, host.presentedViewController == nil else {
             self.opening = false
-            call.reject("Não foi possível abrir a câmara neste momento.")
+            call.reject(NSLocalizedString("Não foi possível abrir a câmara neste momento.", comment: ""))
             return
           }
           let camera = ChatCameraController()
@@ -132,7 +132,7 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
   private let topShade = CAGradientLayer()
   private let bottomShade = CAGradientLayer()
   var allowViewOnce = true
-  private let photoMode = UISegmentedControl(items: ["Manter", "Ver uma vez"])
+  private let photoMode = UISegmentedControl(items: [NSLocalizedString("Manter", comment: ""), NSLocalizedString("Ver uma vez", comment: "")])
   private var observer: NSObjectProtocol?
   private var sessionObserver: NSObjectProtocol?
 
@@ -162,12 +162,12 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
     view.layer.addSublayer(topShade)
     view.layer.addSublayer(bottomShade)
 
-    button(closeButton, symbol: "xmark", label: "Fechar", action: #selector(cancel))
-    button(gallery, symbol: "photo.on.rectangle", label: "Galeria", action: #selector(leftAction))
+    button(closeButton, symbol: "xmark", label: NSLocalizedString("Fechar", comment: ""), action: #selector(cancel))
+    button(gallery, symbol: "photo.on.rectangle", label: NSLocalizedString("Galeria", comment: ""), action: #selector(leftAction))
     button(
-      flip, symbol: "arrow.triangle.2.circlepath.camera", label: "Trocar câmara",
+      flip, symbol: "arrow.triangle.2.circlepath.camera", label: NSLocalizedString("Trocar câmara", comment: ""),
       action: #selector(switchCamera))
-    button(shutter, symbol: "circle.fill", label: "Tirar fotografia", action: #selector(capture))
+    button(shutter, symbol: "circle.fill", label: NSLocalizedString("Tirar fotografia", comment: ""), action: #selector(capture))
 
     let hold = UILongPressGestureRecognizer(target: self, action: #selector(holdShutter(_:)))
     hold.minimumPressDuration = 0.25
@@ -181,15 +181,15 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
     view.addGestureRecognizer(pinch)
 
     shutter.accessibilityHint =
-      "Toca para fotografar. Mantém premido para vídeo. Usa dois dedos ou desliza durante o vídeo para ajustar o zoom."
+      NSLocalizedString("Toca para fotografar. Mantém premido para vídeo. Usa dois dedos ou desliza durante o vídeo para ajustar o zoom.", comment: "")
     shutter.accessibilityCustomActions = [
       UIAccessibilityCustomAction(
-        name: "Gravar vídeo", target: self, selector: #selector(accessibleVideo))
+        name: NSLocalizedString("Gravar vídeo", comment: ""), target: self, selector: #selector(accessibleVideo))
     ]
     styleShutter()
     shutter.isEnabled = false
 
-    hint.text = "A abrir câmara…"
+    hint.text = NSLocalizedString("A abrir câmara…", comment: "")
     hint.textColor = .white
     hint.font = .systemFont(ofSize: 13, weight: .medium)
     hint.textAlignment = .center
@@ -201,7 +201,7 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
     photoMode.selectedSegmentTintColor = .white
     photoMode.setTitleTextAttributes([.foregroundColor: UIColor.white], for: .normal)
     photoMode.setTitleTextAttributes([.foregroundColor: UIColor.black], for: .selected)
-    photoMode.accessibilityLabel = "Disponibilidade da fotografia"
+    photoMode.accessibilityLabel = NSLocalizedString("Disponibilidade da fotografia", comment: "")
     view.addSubview(photoMode)
 
     let focusTap = UITapGestureRecognizer(target: self, action: #selector(focus(_:)))
@@ -218,7 +218,7 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
     sessionObserver = NotificationCenter.default.addObserver(
       forName: AVCaptureSession.runtimeErrorNotification, object: session, queue: .main
     ) { [weak self] _ in
-      self?.fail("A câmara foi interrompida. Fecha e tenta novamente.")
+      self?.fail(NSLocalizedString("A câmara foi interrompida. Fecha e tenta novamente.", comment: ""))
     }
 
     queue.async {
@@ -227,11 +227,11 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
         self.session.sessionPreset = .high
         try self.setCamera(.back)
         guard self.session.canAddOutput(self.output) else {
-          throw self.cameraError("A captura não está disponível.")
+          throw self.cameraError(NSLocalizedString("A captura não está disponível.", comment: ""))
         }
         self.session.addOutput(self.output)
         guard self.session.canAddOutput(self.movie) else {
-          throw self.cameraError("O vídeo não está disponível.")
+          throw self.cameraError(NSLocalizedString("O vídeo não está disponível.", comment: ""))
         }
         self.session.addOutput(self.movie)
         self.movie.maxRecordedDuration = CMTime(seconds: 60, preferredTimescale: 600)
@@ -248,7 +248,7 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
         DispatchQueue.main.async {
           self.orientConnections()
           self.shutter.isEnabled = true
-          self.hint.text = "Toca para foto · Mantém para vídeo"
+          self.hint.text = NSLocalizedString("Toca para foto · Mantém para vídeo", comment: "")
         }
       } catch {
         self.session.commitConfiguration()
@@ -364,14 +364,14 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
     guard
       let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: position)
     else {
-      throw cameraError("Esta câmara não está disponível.")
+      throw cameraError(NSLocalizedString("Esta câmara não está disponível.", comment: ""))
     }
     let next = try AVCaptureDeviceInput(device: device)
     let previous = input
     if let previous { session.removeInput(previous) }
     guard session.canAddInput(next) else {
       if let previous { session.addInput(previous) }
-      throw cameraError("Não foi possível trocar de câmara.")
+      throw cameraError(NSLocalizedString("Não foi possível trocar de câmara.", comment: ""))
     }
     session.addInput(next)
     input = next
@@ -445,7 +445,7 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
           device.exposureMode = .continuousAutoExposure
         }
       } catch {
-        DispatchQueue.main.async { self.hint.text = "Não foi possível ajustar o foco." }
+        DispatchQueue.main.async { self.hint.text = NSLocalizedString("Não foi possível ajustar o foco.", comment: "") }
       }
     }
   }
@@ -475,7 +475,7 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
     shutter.isEnabled = false
     flip.isEnabled = false
     gallery.isEnabled = false
-    hint.text = "A captar fotografia…"
+    hint.text = NSLocalizedString("A captar fotografia…", comment: "")
     queue.async {
       let settings = AVCapturePhotoSettings(format: [AVVideoCodecKey: AVVideoCodecType.jpeg])
       settings.photoQualityPrioritization = .quality
@@ -520,7 +520,7 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
 
   private func beginVideo() {
     preparing = true
-    hint.text = "A preparar vídeo…"
+    hint.text = NSLocalizedString("A preparar vídeo…", comment: "")
     AVCaptureDevice.requestAccess(for: .audio) { allowed in
       DispatchQueue.main.async {
         guard !self.finished else { return }
@@ -528,7 +528,7 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
           self.preparing = false
           self.hint.text =
             allowed
-            ? "Mantém premido para gravar" : "Permite o microfone nas Definições para gravar vídeo."
+            ? NSLocalizedString("Mantém premido para gravar", comment: "") : NSLocalizedString("Permite o microfone nas Definições para gravar vídeo.", comment: "")
           return
         }
         self.gallery.isEnabled = false
@@ -539,7 +539,7 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
               ($0 as? AVCaptureDeviceInput)?.device.hasMediaType(.audio) == true
             }) {
               guard let microphone = AVCaptureDevice.default(for: .audio) else {
-                throw self.cameraError("Microfone indisponível.")
+                throw self.cameraError(NSLocalizedString("Microfone indisponível.", comment: ""))
               }
               let audio = try AVCaptureDeviceInput(device: microphone)
               self.session.beginConfiguration()
@@ -547,7 +547,7 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
               if allowed { self.session.addInput(audio) }
               self.session.commitConfiguration()
               guard allowed else {
-                throw self.cameraError("Não foi possível ligar o microfone.")
+                throw self.cameraError(NSLocalizedString("Não foi possível ligar o microfone.", comment: ""))
               }
             }
             DispatchQueue.main.async {
@@ -556,13 +556,13 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
                 self.queue.async { self.removeMicrophone() }
                 self.gallery.isEnabled = true
                 self.flip.isEnabled = true
-                self.hint.text = "Mantém premido para gravar"
+                self.hint.text = NSLocalizedString("Mantém premido para gravar", comment: "")
                 return
               }
               self.orientConnections()
               self.recording = true
               self.styleShutter(recording: true)
-              self.shutter.accessibilityLabel = "Parar vídeo"
+              self.shutter.accessibilityLabel = NSLocalizedString("Parar vídeo", comment: "")
               let url = self.temporaryURL("mov")
               self.queue.async { self.movie.startRecording(to: url, recordingDelegate: self) }
             }
@@ -577,7 +577,7 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
   private func stopVideo() {
     holding = false
     guard recording else { return }
-    hint.text = "A preparar vídeo…"
+    hint.text = NSLocalizedString("A preparar vídeo…", comment: "")
     shutter.isEnabled = false
     queue.async { if self.movie.isRecording { self.movie.stopRecording() } }
   }
@@ -592,13 +592,13 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
         return
       }
       self.recordingStarted = Date()
-      self.hint.text = "● 0:00 · Desliza para ajustar o zoom"
+      self.hint.text = NSLocalizedString("● 0:00 · Desliza para ajustar o zoom", comment: "")
       self.timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) {
         [weak self = self] _ in
         guard let self else { return }
         let seconds = Int(Date().timeIntervalSince(self.recordingStarted))
         self.hint.text = String(
-          format: "● %d:%02d · Desliza para ajustar o zoom", seconds / 60, seconds % 60)
+          format: NSLocalizedString("● %d:%02d · Desliza para ajustar o zoom", comment: ""), seconds / 60, seconds % 60)
       }
       if !self.holding { self.stopVideo() }
     }
@@ -622,7 +622,7 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
         (error as NSError?)?.userInfo[AVErrorRecordingSuccessfullyFinishedKey] as? Bool ?? false
       if error != nil && !saved {
         try? FileManager.default.removeItem(at: fileURL)
-        self.fail("Não foi possível gravar o vídeo.")
+        self.fail(NSLocalizedString("Não foi possível gravar o vídeo.", comment: ""))
         return
       }
       self.prepareVideo(fileURL)
@@ -648,7 +648,7 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
     shutter.isEnabled = false
     gallery.isEnabled = false
     flip.isEnabled = false
-    hint.text = "A preparar vídeo…"
+    hint.text = NSLocalizedString("A preparar vídeo…", comment: "")
     queue.async {
       self.session.stopRunning()
       self.removeMicrophone()
@@ -659,7 +659,7 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
         asset: AVURLAsset(url: source), presetName: AVAssetExportPreset1280x720)
     else {
       try? FileManager.default.removeItem(at: source)
-      fail("Não foi possível preparar o vídeo.")
+      fail(NSLocalizedString("Não foi possível preparar o vídeo.", comment: ""))
       return
     }
     exporter = export
@@ -673,7 +673,7 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
         self.preparing = false
         guard !self.finished, export.status == .completed else {
           try? FileManager.default.removeItem(at: destination)
-          if !self.finished { self.fail("Não foi possível preparar o vídeo.") }
+          if !self.finished { self.fail(NSLocalizedString("Não foi possível preparar o vídeo.", comment: "")) }
           return
         }
         self.videoURL = destination
@@ -689,10 +689,10 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
 
   private func showConfirmation() {
     styleShutter(review: true)
-    shutter.accessibilityLabel = videoURL == nil ? "Usar fotografia" : "Usar vídeo"
+    shutter.accessibilityLabel = videoURL == nil ? NSLocalizedString("Usar fotografia", comment: "") : NSLocalizedString("Usar vídeo", comment: "")
     shutter.isEnabled = true
     gallery.setImage(UIImage(systemName: "arrow.counterclockwise"), for: .normal)
-    gallery.accessibilityLabel = "Repetir"
+    gallery.accessibilityLabel = NSLocalizedString("Repetir", comment: "")
     gallery.isEnabled = true
     flip.isHidden = true
   }
@@ -702,7 +702,7 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
   ) {
     guard error == nil, let data = photo.fileDataRepresentation(), let image = UIImage(data: data)
     else {
-      DispatchQueue.main.async { self.fail("Não foi possível captar a fotografia.") }
+      DispatchQueue.main.async { self.fail(NSLocalizedString("Não foi possível captar a fotografia.", comment: "")) }
       return
     }
     preparePhoto(image)
@@ -718,7 +718,7 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
       image.draw(in: CGRect(origin: .zero, size: size))
     }
     guard let jpeg = resized.jpegData(compressionQuality: 0.9) else {
-      DispatchQueue.main.async { self.fail("Não foi possível preparar a fotografia.") }
+      DispatchQueue.main.async { self.fail(NSLocalizedString("Não foi possível preparar a fotografia.", comment: "")) }
       return
     }
     queue.async { self.session.stopRunning() }
@@ -728,10 +728,10 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
       self.picture.image = resized
       self.picture.isHidden = false
       self.styleShutter(review: true)
-      self.shutter.accessibilityLabel = "Usar fotografia"
+      self.shutter.accessibilityLabel = NSLocalizedString("Usar fotografia", comment: "")
       self.shutter.isEnabled = true
       self.gallery.setImage(UIImage(systemName: "arrow.counterclockwise"), for: .normal)
-      self.gallery.accessibilityLabel = "Repetir fotografia"
+      self.gallery.accessibilityLabel = NSLocalizedString("Repetir fotografia", comment: "")
       self.gallery.isEnabled = true
       self.flip.isHidden = true
       self.hint.isHidden = true
@@ -762,12 +762,12 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
     picture.isHidden = true
     shutter.isEnabled = false
     styleShutter()
-    shutter.accessibilityLabel = "Tirar fotografia"
+    shutter.accessibilityLabel = NSLocalizedString("Tirar fotografia", comment: "")
     gallery.setImage(UIImage(systemName: "photo.on.rectangle"), for: .normal)
-    gallery.accessibilityLabel = "Galeria"
+    gallery.accessibilityLabel = NSLocalizedString("Galeria", comment: "")
     flip.isHidden = false
     flip.isEnabled = true
-    hint.text = "Toca para foto · Mantém para vídeo"
+    hint.text = NSLocalizedString("Toca para foto · Mantém para vídeo", comment: "")
     queue.async {
       self.session.startRunning()
       DispatchQueue.main.async { self.shutter.isEnabled = true }
@@ -781,10 +781,10 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
       self.gallery.isEnabled = false
       self.flip.isEnabled = false
       if provider.hasItemConformingToTypeIdentifier(UTType.movie.identifier) {
-        self.hint.text = "A abrir vídeo…"
+        self.hint.text = NSLocalizedString("A abrir vídeo…", comment: "")
         provider.loadFileRepresentation(forTypeIdentifier: UTType.movie.identifier) { url, error in
           guard let url, error == nil else {
-            DispatchQueue.main.async { self.fail("Não foi possível abrir o vídeo.") }
+            DispatchQueue.main.async { self.fail(NSLocalizedString("Não foi possível abrir o vídeo.", comment: "")) }
             return
           }
           let copy = self.temporaryURL(url.pathExtension)
@@ -798,14 +798,14 @@ private final class ChatCameraController: UIViewController, AVCapturePhotoCaptur
               }
             }
           } catch {
-            DispatchQueue.main.async { self.fail("Não foi possível abrir o vídeo.") }
+            DispatchQueue.main.async { self.fail(NSLocalizedString("Não foi possível abrir o vídeo.", comment: "")) }
           }
         }
         return
       }
       provider.loadObject(ofClass: UIImage.self) { object, error in
         guard error == nil, let image = object as? UIImage else {
-          DispatchQueue.main.async { self.fail("Não foi possível abrir a fotografia.") }
+          DispatchQueue.main.async { self.fail(NSLocalizedString("Não foi possível abrir a fotografia.", comment: "")) }
           return
         }
         self.preparePhoto(image)

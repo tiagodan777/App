@@ -390,6 +390,8 @@
             return;
         }
 
+        titulo = window.MargotI18n?.t(titulo) ?? titulo;
+        mensagem = window.MargotI18n?.t(mensagem) ?? mensagem;
         var opcoes = {
             body: mensagem,
             icon: urlFoto(foto),

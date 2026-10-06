@@ -49,7 +49,7 @@
                 >
                     <div class="chat-balao" tabindex="0" aria-label="Mensagem. Manter premido para opções.">
                         {% if mensagem.reply %}
-                            <button type="button" class="chat-quote" data-reply-id="{{ mensagem.reply.id }}">{% if mensagem.reply.available %}{{ mensagem.reply.sender_id == membro_id ? 'Tu' : 'Resposta' }} · {{ mensagem.reply.text ?: (mensagem.reply.type == 'imagem' ? 'Fotografia' : (mensagem.reply.type == 'video' ? 'Vídeo' : 'Mensagem de voz')) }}{% else %}Mensagem indisponível{% endif %}</button>
+                            <button type="button" class="chat-quote" data-reply-id="{{ mensagem.reply.id }}" data-reply-system="{{ mensagem.reply.available and not mensagem.reply.text ? 'true' : 'false' }}">{% if mensagem.reply.available %}{{ mensagem.reply.sender_id == membro_id ? 'Tu' : 'Resposta' }} · {{ mensagem.reply.text ?: (mensagem.reply.type == 'imagem' ? 'Fotografia' : (mensagem.reply.type == 'video' ? 'Vídeo' : 'Mensagem de voz')) }}{% else %}Mensagem indisponível{% endif %}</button>
                         {% endif %}
 
                         {% if mensagem.view_once %}
