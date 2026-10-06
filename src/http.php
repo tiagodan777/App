@@ -51,8 +51,15 @@ function rejeitar_csrf(): never {
     header('Cache-Control: no-store, no-cache, must-revalidate');
     header('X-Content-Type-Options: nosniff');
     if (pedidoEsperaJson()) {
+        $membroId = trim((string) ($_SESSION['id'] ?? ''));
         json_response(
-            ['success' => false, 'message' => 'A página expirou. Atualiza a página e tenta novamente.'],
+            [
+                'success' => false,
+                'message' => 'A página expirou. Atualiza a página e tenta novamente.',
+                'code' => 'csrf_expired',
+                'member_id' => $membroId,
+                'csrf_token' => $membroId !== '' ? csrf_token() : null
+            ],
             403
         );
     }

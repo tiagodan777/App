@@ -83,22 +83,89 @@
             : date.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
     }
 
+    const jsonHeaders = { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' };
+
+    function responseError(response) {
+        if (response.redirected || response.status === 401) {
+            return 'A sessão terminou. Volta a entrar na Margot para continuar.';
+        }
+        if (response.status === 413) return 'O ficheiro é demasiado grande para o servidor.';
+        if (response.status === 429) return 'Estás a enviar demasiado depressa. Aguarda um pouco e tenta novamente.';
+        if (response.status === 403) return 'Não foi possível autorizar o pedido. Atualiza a página e tenta novamente.';
+        return 'Não foi possível confirmar o pedido. Verifica a conversa antes de tentar novamente.';
+    }
+
+    async function readJson(response) {
+        let data;
+        try {
+            data = await response.json();
+        } catch (failure) {
+            if (failure.name === 'AbortError') throw failure;
+            // Não registar texto, anexos, tokens ou o corpo da resposta.
+            console.warn('[Margot chat] Resposta sem JSON válido.', {
+                status: response.status,
+                contentType: response.headers.get('Content-Type')
+            });
+            throw new Error(responseError(response));
+        }
+        if (!data || typeof data !== 'object' || Array.isArray(data)) {
+            throw new Error(responseError(response));
+        }
+        return data;
+    }
+
+    async function post(body, retried = false) {
+        let response;
+        try {
+            response = await fetch(url, {
+                method: 'POST',
+                body,
+                headers: jsonHeaders,
+                credentials: 'same-origin',
+                signal
+            });
+        } catch (failure) {
+            if (failure.name === 'AbortError') throw failure;
+            throw new Error('Não foi possível confirmar o pedido. Verifica a ligação e a conversa antes de tentar novamente.');
+        }
+
+        if (response.status === 403) {
+            const data = await readJson(response);
+            // Só repetir quando o servidor confirma que rejeitou o pedido
+            // ANTES de o executar e a sessão continua a ser da mesma conta.
+            if (data.code === 'csrf_expired') {
+                if (!data.member_id || String(data.member_id) !== me) {
+                    throw new Error('A sessão terminou ou mudou de conta. Volta a entrar na Margot para continuar.');
+                }
+                if (!retried && alive && !signal.aborted && !response.redirected
+                    && window.MargotCsrf?.updateToken(data.csrf_token)) {
+                    body.set('_csrf', data.csrf_token);
+                    return post(body, true);
+                }
+            }
+            throw new Error(typeof data.message === 'string' ? data.message : responseError(response));
+        }
+        return response;
+    }
+
     async function request(body) {
-        const response = await fetch(url, {
-            method: 'POST',
-            body,
-            credentials: 'same-origin',
-            signal
-        });
+        const response = await post(body);
+        const data = await readJson(response);
 
-        const data = await response.json();
-
-        if (!response.ok || !data.success) {
+        if (!response.ok || response.redirected || data.success !== true) {
             throw new Error(
                 typeof data.message === 'string'
                     ? data.message
-                    : 'Não foi possível concluir o pedido.'
+                    : responseError(response)
             );
+        }
+
+        if (body.get('action') === 'send' && (!data.message
+            || typeof data.message !== 'object'
+            || !Number.isSafeInteger(Number(data.message.id)) || Number(data.message.id) < 1
+            || String(data.message.emissor_id) !== me
+            || String(data.message.destinatario_id) !== otherId)) {
+            throw new Error(responseError(response));
         }
 
         return data;
@@ -421,13 +488,15 @@
 
             do {
                 const response = await fetch(url + '?api=history&after_id=' + lastId, {
+                    headers: jsonHeaders,
                     credentials: 'same-origin',
                     cache: 'no-store',
                     signal
                 });
 
-                const data = await response.json();
-                if (!response.ok || !data.success || !alive) break;
+                const data = await readJson(response);
+                if (!response.ok || response.redirected || data.success !== true
+                    || !Array.isArray(data.messages) || !alive) break;
 
                 const previous = lastId;
                 data.messages.forEach(add);
@@ -498,18 +567,14 @@
         if (!button || button.disabled) return;
         button.disabled = true;
         try {
-            const response = await fetch(url, {
-                method: 'POST',
-                credentials: 'same-origin',
-                signal,
-                body: new URLSearchParams({
-                    action: 'open_photo',
-                    message_id: button.dataset.openPhoto
-                })
-            });
-            if (!response.ok) {
-                const data = await response.json();
-                throw new Error(data.message || 'Não foi possível abrir a fotografia.');
+            const response = await post(new URLSearchParams({
+                action: 'open_photo',
+                message_id: button.dataset.openPhoto
+            }));
+            if (!response.ok || response.redirected
+                || !/^image\//i.test(response.headers.get('Content-Type') || '')) {
+                const data = await readJson(response);
+                throw new Error(typeof data.message === 'string' ? data.message : responseError(response));
             }
             const blob = await response.blob();
             if (!alive) return;

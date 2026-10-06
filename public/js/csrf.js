@@ -86,4 +86,14 @@
         });
     }
     window.csrfToken = token;
+    window.MargotCsrf = Object.freeze({
+        updateToken: function (value) {
+            if (typeof value !== 'string' || !/^[a-f0-9]{64}$/.test(value)) return false;
+            token = value;
+            window.csrfToken = token;
+            if (meta) meta.content = token;
+            prepararFormularios(document);
+            return true;
+        }
+    });
 })();
