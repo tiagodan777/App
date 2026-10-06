@@ -18,10 +18,10 @@
 		9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9582B6822FE993A50072D4E8 /* SceneDelegate.swift */; };
 		A12000012FE1000000000001 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A12000022FE1000000000002 /* ViewController.swift */; };
 		A12000032FE1000000000003 /* BackgroundLocationPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A12000042FE1000000000004 /* BackgroundLocationPlugin.swift */; };
-		C0DE00000000000000000001 /* LocationRelaunchCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE00000000000000000002 /* LocationRelaunchCoordinator.swift */; };
-		C0DE00000000000000000003 /* ChatCameraPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE00000000000000000004 /* ChatCameraPlugin.swift */; };
 		B10000000000000000000000 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000001 /* InfoPlist.strings */; };
 		B10000000000000000000100 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000101 /* Localizable.strings */; };
+		C0DE00000000000000000001 /* LocationRelaunchCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE00000000000000000002 /* LocationRelaunchCoordinator.swift */; };
+		C0DE00000000000000000003 /* ChatCameraPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE00000000000000000004 /* ChatCameraPlugin.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -39,12 +39,12 @@
 		A11000012FE1000000000001 /* App.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = App.entitlements; sourceTree = "<group>"; };
 		A12000022FE1000000000002 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
 		A12000042FE1000000000004 /* BackgroundLocationPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundLocationPlugin.swift; sourceTree = "<group>"; };
-		C0DE00000000000000000002 /* LocationRelaunchCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationRelaunchCoordinator.swift; sourceTree = "<group>"; };
-		C0DE00000000000000000004 /* ChatCameraPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatCameraPlugin.swift; sourceTree = "<group>"; };
 		B10000000000000000000002 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		B10000000000000000000003 /* pt */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = pt; path = pt.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		B10000000000000000000102 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		B10000000000000000000103 /* pt */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = pt; path = pt.lproj/Localizable.strings; sourceTree = "<group>"; };
+		C0DE00000000000000000002 /* LocationRelaunchCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationRelaunchCoordinator.swift; sourceTree = "<group>"; };
+		C0DE00000000000000000004 /* ChatCameraPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatCameraPlugin.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
