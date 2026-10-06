@@ -49,3 +49,9 @@ body a {
     overscroll-behavior-y: auto;
     touch-action: pan-y;
 }
+
+/* Respeita os painéis ocultos do editor Hoje, mesmo quando usam grid/flex.
+ * O botão Voltar mantém o espaço reservado definido em today.css. */
+.hoje-editor [hidden]:not(.hoje-editor-voltar) {
+    display: none !important;
+}
