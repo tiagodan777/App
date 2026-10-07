@@ -94,23 +94,19 @@ $pt = preg_match(
 ) === 1;
 
 $copy = $pt ? [
-    'eyebrow' => 'AS MELHORES CONVERSAS COMEÇAM PERTO.',
     'line1' => 'Vês alguém.',
     'line2' => 'A Margot ajuda-te a dizer olá.',
     'intro' => 'Conhece as pessoas à tua volta. A próxima conversa pode começar aqui.',
     'download' => 'Descarrega a Margot e descobre quem está por perto.',
     'apple' => 'Descarregar na App Store',
     'google' => 'Descarregar no Google Play',
-    'footer' => 'Pessoas por perto. Possibilidades por descobrir.',
 ] : [
-    'eyebrow' => 'GREAT CONVERSATIONS START NEARBY.',
     'line1' => 'See someone?',
     'line2' => 'Margot helps you say hi.',
     'intro' => 'Meet the people around you. Your next conversation could start right here.',
     'download' => 'Get Margot and discover who’s nearby.',
     'apple' => 'Download on the App Store',
     'google' => 'Get it on Google Play',
-    'footer' => 'People nearby. Possibilities to discover.',
 ];
 
 function qrEscape(string $text): string
@@ -126,22 +122,11 @@ function qrEscape(string $text): string
 <html lang="<?= $pt ? 'pt-PT' : 'en' ?>">
 <head>
     <meta charset="utf-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1, viewport-fit=cover"
-    >
-
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#faf8f5">
+    <meta name="description" content="<?= qrEscape($copy['intro']) ?>">
 
-    <meta
-        name="description"
-        content="<?= qrEscape($copy['intro']) ?>"
-    >
-
-    <title>Margot — <?= qrEscape(
-        $copy['line1'] . ' ' . $copy['line2']
-    ) ?></title>
+    <title>Margot — <?= qrEscape($copy['line1'] . ' ' . $copy['line2']) ?></title>
 
     <link rel="icon" href="/provisorio/logo.png">
 
@@ -164,6 +149,8 @@ function qrEscape(string $text): string
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
+            gap: 30px;
             overflow-x: clip;
             position: relative;
             isolation: isolate;
@@ -175,9 +162,9 @@ function qrEscape(string $text): string
                 'Segoe UI',
                 sans-serif;
             padding:
-                max(24px, env(safe-area-inset-top))
+                max(28px, env(safe-area-inset-top))
                 22px
-                max(20px, env(safe-area-inset-bottom));
+                max(32px, env(safe-area-inset-bottom));
         }
 
         .ambient {
@@ -212,41 +199,34 @@ function qrEscape(string $text): string
 
         .brand {
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 9px;
         }
 
         .brand img {
-            width: 52px;
-            height: 52px;
-            border-radius: 16px;
+            display: block;
+            width: 180px;
+            height: 180px;
+            margin: -18px 0 -28px;
+            mix-blend-mode: multiply;
         }
 
         .brand span {
-            font: 400 28px 'Alfa Slab One', Georgia, serif;
+            color: #e32636;
+            font: 400 40px/1.25 'Alfa Slab One', Georgia, serif;
             letter-spacing: -1px;
         }
 
         main {
             width: min(100%, 720px);
             text-align: center;
-            margin: auto 0;
-            padding: 40px 0 20px;
-        }
-
-        .eyebrow {
-            font-size: 10px;
-            line-height: 1.7;
-            font-weight: 700;
-            letter-spacing: 2px;
-            margin: 0 0 20px;
         }
 
         h1 {
             margin: 0;
             font:
                 400
-                clamp(42px, 8vw, 76px)/1.12
+                clamp(42px, 8vw, 68px)/1.12
                 'Alfa Slab One',
                 Georgia,
                 serif;
@@ -258,7 +238,7 @@ function qrEscape(string $text): string
             max-width: 570px;
             margin: 16px auto 0;
             color: #e82d57;
-            font-size: clamp(25px, 5vw, 40px);
+            font-size: clamp(25px, 5vw, 36px);
             line-height: 1.25;
             letter-spacing: -1px;
         }
@@ -266,7 +246,7 @@ function qrEscape(string $text): string
         .meeting {
             width: min(100%, 290px);
             height: 140px;
-            margin: 16px auto 12px;
+            margin: 20px auto 12px;
             position: relative;
         }
 
@@ -351,23 +331,7 @@ function qrEscape(string $text): string
             transform: scale(.98);
         }
 
-        footer {
-            text-align: center;
-            color: #78717e;
-            font-size: 11px;
-            line-height: 1.6;
-            padding-top: 22px;
-        }
-
-        footer p {
-            margin: 0;
-        }
-
         @media (max-width: 420px) {
-            main {
-                padding-top: 30px;
-            }
-
             h1 {
                 font-size: clamp(38px, 11vw, 46px);
                 letter-spacing: -1.5px;
@@ -399,21 +363,14 @@ function qrEscape(string $text): string
 </head>
 
 <body>
-    <div
-        class="ambient ambient-peach"
-        aria-hidden="true"
-    ></div>
-
-    <div
-        class="ambient ambient-lilac"
-        aria-hidden="true"
-    ></div>
+    <div class="ambient ambient-peach" aria-hidden="true"></div>
+    <div class="ambient ambient-lilac" aria-hidden="true"></div>
 
     <header class="brand">
         <img
             src="/provisorio/logo.png"
-            width="60"
-            height="60"
+            width="180"
+            height="180"
             alt=""
             fetchpriority="high"
         >
@@ -421,10 +378,6 @@ function qrEscape(string $text): string
     </header>
 
     <main>
-        <p class="eyebrow">
-            <?= qrEscape($copy['eyebrow']) ?>
-        </p>
-
         <h1>
             <span><?= qrEscape($copy['line1']) ?></span>
             <span class="hello">
@@ -466,17 +419,11 @@ function qrEscape(string $text): string
                         stroke="#514c58"
                     />
 
-                    <g
-                        fill="none"
-                        stroke="#fff"
-                        stroke-width="2.5"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                    >
-                        <path
-                            d="M29 16v22m-8-8 8 8 8-8M18 44h22"
-                        />
-                    </g>
+                    <path
+                        fill="#fff"
+                        transform="translate(9 8) scale(1.75)"
+                        d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.39 7.59 8.93 7.31c1.35.07 2.29.76 3.08.82 1.18-.24 2.31-.94 3.57-.85 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.41 4.07zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.57-2.33 4.5-3.74 4.25z"
+                    />
 
                     <g
                         fill="#fff"
@@ -554,9 +501,5 @@ function qrEscape(string $text): string
             </a>
         </nav>
     </main>
-
-    <footer>
-        <p><?= qrEscape($copy['footer']) ?></p>
-    </footer>
 </body>
 </html>
