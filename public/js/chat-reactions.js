@@ -25,11 +25,12 @@ window.MargotChatReactions = function ({
     let timer;
     let photoTimer;
     let lastTap;
+    let heldVideo;
     let alive = true;
     let pending = new Set();
 
-    const on = (target, type, handler) =>
-        target.addEventListener(type, handler, { signal });
+    const on = (target, type, handler, capture = false) =>
+        target.addEventListener(type, handler, { signal, capture });
 
     const find = (id) =>
         content.querySelector('[data-mensagem-id="' + Number(id) + '"]');
@@ -153,11 +154,12 @@ window.MargotChatReactions = function ({
     }
 
     on(content, 'pointerdown', (event) => {
+        heldVideo = null;
         clearTimeout(photoTimer);
 
         if (
             event.button !== 0 ||
-            event.target.closest('button,a,input,video,audio')
+            event.target.closest('button,a,input,audio')
         ) return;
 
         const article = event.target.closest('.chat-mensagem');
@@ -170,16 +172,18 @@ window.MargotChatReactions = function ({
             id: event.pointerId,
             x: event.clientX,
             y: event.clientY,
-            long: false
+            long: false,
+            video: event.target.closest('video')
         };
 
         timer = setTimeout(() => {
             if (gesture) {
                 gesture.long = true;
+                heldVideo = gesture.video;
                 openMenu(article);
             }
         }, 500);
-    });
+    }, true);
 
     on(content, 'pointermove', (event) => {
         if (
@@ -189,16 +193,21 @@ window.MargotChatReactions = function ({
             cancelGesture();
             lastTap = null;
         }
-    });
+    }, true);
 
     on(content, 'pointerup', (event) => {
         if (!gesture || gesture.id !== event.pointerId) return;
 
-        const { article, long } = gesture;
+        const { article, long, video } = gesture;
         cancelGesture();
 
         if (long) {
             event.preventDefault();
+            return;
+        }
+
+        if (video) {
+            lastTap = null;
             return;
         }
 
@@ -220,12 +229,12 @@ window.MargotChatReactions = function ({
                 }, 330);
             }
         }
-    });
+    }, true);
 
     on(content, 'pointercancel', () => {
         cancelGesture();
         lastTap = null;
-    });
+    }, true);
 
     on(window, 'pointerup', cancelGesture);
 
@@ -236,7 +245,16 @@ window.MargotChatReactions = function ({
 
     on(content, 'contextmenu', (event) => {
         if (event.target.closest('.chat-balao')) event.preventDefault();
-    });
+    }, true);
+
+    // O toque prolongado abre as opções sem também ativar o vídeo ao largar.
+    on(content, 'click', (event) => {
+        if (heldVideo && event.target.closest('video') === heldVideo) {
+            heldVideo = null;
+            event.preventDefault();
+            event.stopImmediatePropagation();
+        }
+    }, true);
 
     on(content, 'keydown', (event) => {
         if (
