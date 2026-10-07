@@ -199,7 +199,7 @@
   "A tua posição exata não é mostrada às outras pessoas. Escolhes a autorização no próximo ecrã.": "Your exact location is not shown to others. You choose the permission on the next screen.",
   "E quando guardas o telemóvel?": "And when you put your phone away?",
   "A localização em segundo plano permite atualizar os encontros mesmo quando sais da Margot.": "Background location updates encounters even when you leave Margot.",
-  "Pode consumir bateria. Podes mudar esta escolha nas definições quando quiseres.": "This may use battery. You can change this choice in settings at any time.",
+  "Podes mudar esta escolha nas definições quando quiseres.": "You can change this choice in settings at any time.",
   "Localização em segundo plano": "Background location",
   "Podes permitir a localização Sempre nas definições da Margot.": "You can allow Always location access in Margot’s settings.",
   "A localização durante a utilização já está disponível.": "Location while using the app is already available.",

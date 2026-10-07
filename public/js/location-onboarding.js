@@ -249,7 +249,7 @@
                         text:
                             'A localização em segundo plano permite atualizar os encontros mesmo quando sais da Margot.',
                         detail:
-                            'Pode consumir bateria. Podes mudar esta escolha nas definições quando quiseres.'
+                            'Podes mudar esta escolha nas definições quando quiseres.'
                     });
 
                     if (!accepted || cancelled) return;
