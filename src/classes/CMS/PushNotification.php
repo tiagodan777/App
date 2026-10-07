@@ -364,7 +364,7 @@ final class PushNotification {
         }
     }
 
-    public function isDeliverable(array $job): bool {
+    public function isDeliverable(array &$job): bool {
         $type = (string) ($job['tipo'] ?? '');
 
         try {
@@ -386,7 +386,41 @@ final class PushNotification {
             if (!$created || $created < time() - 600) return false;
             $nearby = new NearbyPresenceNotification($this->db, $this);
             $count = $nearby->currentCount($recipientId);
-            return $count > 5 && $count === (int) ($data['nearby_count'] ?? 0);
+            if ($count < 6) return false;
+
+            $device = $this->db->prepare('SELECT idioma FROM push_dispositivos
+                WHERE id = :device_id AND membro_id = :member_id AND ativo = 1');
+            $device->execute([
+                'device_id' => (int) ($job['dispositivo_id'] ?? 0),
+                'member_id' => $recipientId
+            ]);
+            $language = $device->fetchColumn();
+            if ($language === false) return false;
+
+            // Envia a contagem atual, na língua do dispositivo, sem cancelar por pequenas variações.
+            $data['nearby_count'] = (string) $count;
+            [$title, $body] = Locale::pushText(
+                (string) ($language ?? 'pt'),
+                'nearby',
+                'Há ' . $count . ' pessoas com a Margot aqui perto 👀',
+                'Abre a app e manda-lhes um Hey.',
+                $data,
+                true
+            );
+            $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+            $update = $this->db->prepare("UPDATE push_fila
+                SET titulo = :title, corpo = :body, dados_json = :data
+                WHERE id = :id AND estado = 'processing'");
+            $update->execute([
+                'title' => $title,
+                'body' => $body,
+                'data' => $json,
+                'id' => (int) $job['id']
+            ]);
+            $job['titulo'] = $title;
+            $job['corpo'] = $body;
+            $job['dados'] = $data;
+            return true;
         }
 
         try {

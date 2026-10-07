@@ -99,10 +99,14 @@ final class ActivityReminders {
             $now = new DateTimeImmutable('now', new DateTimeZone($settings['fuso_horario']));
             $day = $now->format('Y-m-d');
 
-            $query = $this->db->prepare('SELECT dia, criado_em FROM lembretes_envios
+            $query = $this->db->prepare('SELECT dia, lugar, criado_em FROM lembretes_envios
                 WHERE membro_id = :id AND tipo = :type AND (dia = :day OR criado_em > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 24 HOUR))');
             $query->execute(['id' => $member, 'type' => $type, 'day' => $day]);
             $rows = $query->fetchAll(PDO::FETCH_ASSOC);
+
+            if ($type === 'nearby') {
+                $rows = $this->releaseCancelledNearby($member, $rows);
+            }
 
             $limit = $type === 'nearby' ? 4 : 1;
             $todayCount = count(array_filter($rows, fn($row) => $row['dia'] === $day));
@@ -123,7 +127,19 @@ final class ActivityReminders {
             }
 
             $slot = $todayCount + 1;
+            if ($type === 'nearby') {
+                $usedSlots = [];
+                foreach ($rows as $row) {
+                    if ($row['dia'] === $day) $usedSlots[] = (int) $row['lugar'];
+                }
+                $slot = 1;
+                while (in_array($slot, $usedSlots, true)) $slot++;
+            }
             $key = "$type:$member:$day:$slot";
+            if ($type === 'nearby') {
+                // Cada nova tentativa tem uma chave própria, mesmo se reutilizar uma vaga cancelada.
+                $key .= ':' . bin2hex(random_bytes(16));
+            }
             $queued = $type === 'nearby'
                 ? $this->push->enqueueNearbyPeople($member, $count, $key)
                 : $this->push->enqueueClothesReminder($member, $day, $key);
@@ -143,6 +159,44 @@ final class ActivityReminders {
             if ($this->db->inTransaction()) $this->db->rollBack();
             throw $error;
         }
+    }
+
+    /**
+     * Liberta apenas reservas em que TODAS as cópias foram canceladas.
+     * Os registos de push ficam preservados para diagnóstico.
+     * A transação e o bloqueio das preferências são obtidos por queue().
+     */
+    private function releaseCancelledNearby(string $member, array $rows): array {
+        $statesQuery = $this->db->prepare("SELECT estado FROM push_fila
+            WHERE membro_id = :member_id AND tipo = 'nearby'
+            AND (chave_unica = :legacy_key OR chave_unica LIKE :attempt_keys)");
+        $delete = $this->db->prepare("DELETE FROM lembretes_envios
+            WHERE membro_id = :member_id AND tipo = 'nearby' AND dia = :day AND lugar = :slot");
+        $kept = [];
+
+        foreach ($rows as $row) {
+            $baseKey = "nearby:$member:" . $row['dia'] . ':' . (int) $row['lugar'];
+            $statesQuery->execute([
+                'member_id' => $member,
+                'legacy_key' => $baseKey,
+                'attempt_keys' => $baseKey . ':%'
+            ]);
+            $states = $statesQuery->fetchAll(PDO::FETCH_COLUMN);
+
+            // Sem prova de cancelamento total, mantém a reserva e evita duplicações.
+            if ($states === [] || array_filter($states, static fn($state) => $state !== 'cancelled')) {
+                $kept[] = $row;
+                continue;
+            }
+
+            $delete->execute([
+                'member_id' => $member,
+                'day' => $row['dia'],
+                'slot' => (int) $row['lugar']
+            ]);
+        }
+
+        return $kept;
     }
 
     public function tick(): void {
