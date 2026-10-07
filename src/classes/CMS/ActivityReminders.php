@@ -104,7 +104,7 @@ final class ActivityReminders {
             $query->execute(['id' => $member, 'type' => $type, 'day' => $day]);
             $rows = $query->fetchAll(PDO::FETCH_ASSOC);
 
-            $limit = $type === 'nearby' ? 2 : 1;
+            $limit = $type === 'nearby' ? 4 : 1;
             $todayCount = count(array_filter($rows, fn($row) => $row['dia'] === $day));
 
             // A janela móvel também evita avisos extra ao viajar e mudar de fuso horário.
