@@ -219,12 +219,25 @@ try {
             ], 422);
         }
 
+        $reactionVersion = null;
         $reacoes = $messages->react(
             $mensagemId,
             $membroId,
             $emoji,
-            filter_var($_POST['toggle'] ?? false, FILTER_VALIDATE_BOOLEAN)
+            filter_var($_POST['toggle'] ?? false, FILTER_VALIDATE_BOOLEAN),
+            $reactionVersion
         );
+
+        if ($reactionVersion !== null) {
+            // Uma falha de push não deve fazer repetir ou retirar uma reação já guardada.
+            try {
+                $cms->getPushNotification()->enqueueReaction(
+                    $membroId, $outroId, $mensagemId, $emoji, $reactionVersion
+                );
+            } catch (Throwable $erro) {
+                error_log('[reaction-push] ' . $erro->getMessage());
+            }
+        }
 
         json_response([
             'success' => true,

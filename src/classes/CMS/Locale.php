@@ -97,6 +97,9 @@ final class Locale {
         string $language, string $type, string $title, string $body, array $data, bool $systemBody
     ): array {
         if ($language === 'pt') return [$title, $body];
+        if ($type === 'message' && isset($data['reaction_emoji'])) {
+            return [$title, 'Reacted with ' . (string) $data['reaction_emoji'] . ' to your message.'];
+        }
         if ($type === 'hey') {
             $title = (string) ($data['from_name'] ?? '') . ' sent you a Hey!';
         } elseif ($type === 'nearby') {

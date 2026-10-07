@@ -2,6 +2,7 @@
 window.MargotMessageAlerts = function (window, document, $) {
     'use strict';
     var notifiedMessageIds = new Set();
+    var notifiedReactionIds = new Set();
     var notifiedMessageOrder = [];
     var MAX_NOTIFIED_MESSAGE_IDS = 200;
     function rememberNotifiedMessage(messageId) {
@@ -32,6 +33,9 @@ window.MargotMessageAlerts = function (window, document, $) {
     }
     function mostrarAvisoMensagem(mensagem) {
         var nome = String(mensagem.emissor_nome || 'Alguém');
+        var reactionTitle = mensagem.reaction === true
+            ? ((window.MargotI18n?.language === 'en' ? 'New reaction from ' : 'Nova reação de ') + nome)
+            : '';
         var resumo = String(mensagem.texto || '').trim();
         var foto = String(mensagem.emissor_foto_url || '/imagens/fotos-perfil/default.webp');
         var emissorId = String(mensagem.emissor_id || '');
@@ -90,9 +94,9 @@ window.MargotMessageAlerts = function (window, document, $) {
                 window.clearTimeout(timerAnterior);
             }
             $aviso.removeClass('a-sair').addClass('visivel').attr('data-quantidade', String(quantidade));
-            $aviso.find('.mensagem-aviso-corpo strong').text(quantidade + ' novas mensagens de ' + nome);
+            $aviso.find('.mensagem-aviso-corpo strong').text(reactionTitle || (quantidade + ' novas mensagens de ' + nome));
             $aviso.find('.mensagem-aviso-corpo > span').text(resumo);
-            $aviso.attr('aria-label', quantidade + ' novas mensagens de ' + nome + '. ' + resumo);
+            $aviso.attr('aria-label', (reactionTitle || (quantidade + ' novas mensagens de ' + nome)) + '. ' + resumo);
         } else {
             /* Máximo de três cartões no topo. O mais antigo sai primeiro. */
             var $itens = $avisos.children('.mensagem-aviso, .hey-aviso');
@@ -105,14 +109,14 @@ window.MargotMessageAlerts = function (window, document, $) {
                 href: conversaUrl,
                 'data-emissor-id': emissorId,
                 'data-quantidade': '1',
-                'aria-label': 'Nova mensagem de ' + nome + '. ' + resumo
+                'aria-label': (reactionTitle || ('Nova mensagem de ' + nome)) + '. ' + resumo
             });
             var $imagem = $('<img>', { class: 'mensagem-aviso-foto', src: foto, alt: '' }).on('error', function () {
                 this.onerror = null;
                 this.src = '/imagens/fotos-perfil/default.webp';
             });
             var $corpo = $('<span>', { class: 'mensagem-aviso-corpo' }).append(
-                $('<strong>').text('Nova mensagem de ' + nome),
+                $('<strong>').text(reactionTitle || ('Nova mensagem de ' + nome)),
                 $('<span>').text(resumo)
             );
             $aviso.append($imagem, $corpo);
@@ -212,6 +216,28 @@ window.MargotMessageAlerts = function (window, document, $) {
     }
     function aoReceberPushDeMensagem(evento) {
         var dados = evento.detail || {};
+        if (dados.reaction_emoji) {
+            var reactionKey = [dados.message_id, dados.from_member_id, dados.reaction_emoji, dados.reaction_version].join(':');
+            if (notifiedReactionIds.has(reactionKey)) return;
+            notifiedReactionIds.add(reactionKey);
+            if (notifiedReactionIds.size > MAX_NOTIFIED_MESSAGE_IDS) {
+                notifiedReactionIds.delete(notifiedReactionIds.values().next().value);
+            }
+            if (String(window.chatMembroId || '') === String(dados.from_member_id || '')) return;
+            var emoji = String(dados.reaction_emoji);
+            var text = window.MargotI18n?.language === 'en'
+                ? 'Reacted with ' + emoji + ' to your message.'
+                : 'Reagiu com ' + emoji + ' à tua mensagem.';
+            mostrarAvisoMensagem({
+                emissor_id: String(dados.from_member_id || ''),
+                emissor_nome: String(dados.from_name || 'Alguém'),
+                emissor_foto_url: String(dados.from_photo || '/imagens/fotos-perfil/default.webp'),
+                texto: text,
+                reaction: true,
+                tipo: 'texto'
+            });
+            return;
+        }
         var mensagemId = Number(dados.message_id) || 0;
         if (!rememberNotifiedMessage(mensagemId)) {
             return;

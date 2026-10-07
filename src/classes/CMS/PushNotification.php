@@ -220,6 +220,42 @@ final class PushNotification {
         );
     }
 
+    public function enqueueReaction(string $senderId, string $recipientId, int $messageId, string $emoji, string $version): int {
+        $senderId = $this->validMemberId($senderId);
+        $recipientId = $this->validMemberId($recipientId);
+        if ($messageId < 1 || $senderId === $recipientId || $version === '') return 0;
+
+        // O destinatário do aviso é o autor da mensagem, não quem reagiu.
+        $statement = $this->db->prepare('SELECT 1 FROM mensagens_chat m
+            INNER JOIN mensagens_reacoes r ON r.mensagem_id = m.id
+            WHERE m.id = :id AND m.emissor_id = :recipient AND m.destinatario_id = :sender
+                AND r.membro_id = :actor AND r.emoji = :emoji AND r.atualizada_em = :version');
+        $statement->execute([
+            'id' => $messageId, 'recipient' => $recipientId, 'sender' => $senderId,
+            'actor' => $senderId, 'emoji' => $emoji, 'version' => $version
+        ]);
+        if (!$statement->fetchColumn()) return 0;
+
+        $sender = $this->memberPreview($senderId);
+        return $this->enqueue(
+            $recipientId,
+            'message',
+            $sender['name'],
+            'Reagiu com ' . $emoji . ' à tua mensagem.',
+            '/messages/' . rawurlencode($senderId),
+            [
+                'type' => 'message',
+                'message_id' => (string) $messageId,
+                'from_member_id' => $senderId,
+                'from_name' => $sender['name'],
+                'from_photo' => $sender['photo'],
+                'reaction_emoji' => $emoji,
+                'reaction_version' => $version
+            ],
+            'reaction:' . $messageId . ':' . $senderId . ':' . hash('sha256', $emoji . ':' . $version)
+        );
+    }
+
     public function recoverStalledJobs(): int {
         $statement = $this->db->prepare("UPDATE push_fila
             SET estado = 'queued', bloqueado_em = NULL, proxima_tentativa_em = UTC_TIMESTAMP(6)
@@ -456,6 +492,24 @@ final class PushNotification {
 
         if ($blocked->fetchColumn()) {
             return false;
+        }
+
+        if ($type === 'message' && isset($data['reaction_emoji'])) {
+            $messageId = filter_var($data['message_id'] ?? null, FILTER_VALIDATE_INT);
+            if (!$messageId || $messageId < 1 || empty($data['reaction_version'])) return false;
+
+            // Uma mensagem já lida pode receber uma reação nova.
+            // Cancela avisos de reações entretanto retiradas, substituídas ou apagadas.
+            $statement = $this->db->prepare('SELECT 1 FROM mensagens_chat m
+                INNER JOIN mensagens_reacoes r ON r.mensagem_id = m.id
+                WHERE m.id = :id AND m.emissor_id = :recipient AND m.destinatario_id = :sender
+                    AND r.membro_id = :actor AND r.emoji = :emoji AND r.atualizada_em = :version');
+            $statement->execute([
+                'id' => $messageId, 'recipient' => $recipientId, 'sender' => $senderId,
+                'actor' => $senderId, 'emoji' => (string) $data['reaction_emoji'],
+                'version' => (string) $data['reaction_version']
+            ]);
+            return (bool) $statement->fetchColumn();
         }
 
         if ($type === 'hey') {

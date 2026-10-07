@@ -9,7 +9,7 @@ use Twig\Source;
 /** Adds presentation scripts to documents before Twig interpolates member data. */
 final class LanguageTemplateLoader implements LoaderInterface
 {
-    private const VERSION = '20261006-pt-en-2';
+    private const VERSION = '20261007-reaction-push-1';
     private const STYLE_VERSION = '20261006-ui-2';
 
     public function __construct(private LoaderInterface $loader)

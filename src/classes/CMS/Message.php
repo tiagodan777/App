@@ -201,40 +201,56 @@ final class Message {
         return $mensagens;
     }
 
-    public function react(int $mensagemId, string $membroId, string $emoji, bool $alternar): array {
+    public function react(int $mensagemId, string $membroId, string $emoji, bool $alternar, ?string &$reactionVersion = null): array {
+        $reactionVersion = null;
         if (!$this->validReaction($emoji)) {
             throw new InvalidArgumentException('Reação inválida.');
         }
 
-        $existente = (string) ($this->db->runSQL(
-            'SELECT emoji
-                FROM mensagens_reacoes
-                WHERE mensagem_id = :mensagem AND membro_id = :membro
-                LIMIT 1',
-            ['mensagem' => $mensagemId, 'membro' => $membroId]
-        )->fetchColumn() ?: '');
+        $this->db->beginTransaction();
+        try {
+            // Serializa alterações à mesma mensagem, incluindo pedidos repetidos.
+            $message = $this->db->runSQL(
+                'SELECT id FROM mensagens_chat WHERE id = :id
+                    AND (emissor_id = :sender OR destinatario_id = :recipient) FOR UPDATE',
+                ['id' => $mensagemId, 'sender' => $membroId, 'recipient' => $membroId]
+            )->fetchColumn();
+            if (!$message) throw new InvalidArgumentException('A mensagem não é válida.');
 
-        if ($alternar && $existente === $emoji) {
-            $this->db->runSQL(
-                'DELETE FROM mensagens_reacoes
-                    WHERE mensagem_id = :mensagem AND membro_id = :membro',
+            $existente = (string) ($this->db->runSQL(
+                'SELECT emoji FROM mensagens_reacoes
+                    WHERE mensagem_id = :mensagem AND membro_id = :membro LIMIT 1',
                 ['mensagem' => $mensagemId, 'membro' => $membroId]
-            );
-        } else {
-            $this->db->runSQL(
-                'INSERT INTO mensagens_reacoes
-                    (mensagem_id, membro_id, emoji, atualizada_em)
-                    VALUES (:mensagem, :membro, :emoji, NOW(6))
-                    ON DUPLICATE KEY UPDATE emoji = VALUES(emoji), atualizada_em = NOW(6)',
-                [
-                    'mensagem' => $mensagemId,
-                    'membro' => $membroId,
-                    'emoji' => $emoji
-                ]
-            );
-        }
+            )->fetchColumn() ?: '');
+            $version = null;
 
-        return $this->reactions($mensagemId);
+            if ($alternar && $existente === $emoji) {
+                $this->db->runSQL(
+                    'DELETE FROM mensagens_reacoes WHERE mensagem_id = :mensagem AND membro_id = :membro',
+                    ['mensagem' => $mensagemId, 'membro' => $membroId]
+                );
+            } elseif ($existente !== $emoji) {
+                $this->db->runSQL(
+                    'INSERT INTO mensagens_reacoes (mensagem_id, membro_id, emoji, atualizada_em)
+                        VALUES (:mensagem, :membro, :emoji, NOW(6))
+                        ON DUPLICATE KEY UPDATE emoji = VALUES(emoji), atualizada_em = NOW(6)',
+                    ['mensagem' => $mensagemId, 'membro' => $membroId, 'emoji' => $emoji]
+                );
+                $version = (string) $this->db->runSQL(
+                    'SELECT atualizada_em FROM mensagens_reacoes
+                        WHERE mensagem_id = :mensagem AND membro_id = :membro',
+                    ['mensagem' => $mensagemId, 'membro' => $membroId]
+                )->fetchColumn();
+            }
+
+            $reactions = $this->reactions($mensagemId);
+            $this->db->commit();
+            $reactionVersion = $version;
+            return $reactions;
+        } catch (Throwable $error) {
+            if ($this->db->inTransaction()) $this->db->rollBack();
+            throw $error;
+        }
     }
 
     public function deleteSent(int $mensagemId, string $membroId, string $outroId): array|false {
