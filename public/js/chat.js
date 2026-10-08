@@ -209,7 +209,8 @@
         microphone.hidden = hasContent || busy;
         microphone.disabled = sending || pickingGallery;
 
-        byId('chat-camera-open').hidden = hasText || busy;
+        byId('chat-camera-open').hidden = busy;
+        byId('chat-camera-open').style.visibility = hasText ? 'hidden' : '';
         byId('chat-camera-open').disabled = sending || pickingGallery || busy;
         if (galleryButton) {
             galleryButton.hidden = hasText || busy;
@@ -653,6 +654,37 @@
         media.value = '';
     });
 
+    async function readWebPhoto(photo) {
+        if (typeof photo.webPath !== 'string' || !photo.webPath) throw new Error('missing_photo');
+        const response = await fetch(photo.webPath, { signal });
+        if (!response.ok || response.redirected) throw new Error('photo_unavailable');
+        return response.blob();
+    }
+
+    async function readNativePhoto(photo, plugin) {
+        if (typeof photo.path !== 'string' || !photo.path) throw new Error('missing_photo');
+        const parts = [];
+        let offset = 0;
+        let size;
+        do {
+            if (!alive || signal.aborted) throw new DOMException('Aborted', 'AbortError');
+            const chunk = await plugin.readChunk({ path: photo.path, offset });
+            if (!alive || signal.aborted) throw new DOMException('Aborted', 'AbortError');
+            if (!Number.isSafeInteger(chunk.size) || chunk.size <= 0
+                || chunk.size > 15 * 1024 * 1024
+                || (size !== undefined && size !== chunk.size)
+                || typeof chunk.base64 !== 'string'
+                || chunk.base64.length > 700000) throw new Error('invalid_photo_chunk');
+            size = chunk.size;
+            const bytes = Uint8Array.from(atob(chunk.base64), (letter) => letter.charCodeAt(0));
+            if (!bytes.length || bytes.length > 512 * 1024 || offset + bytes.length > size)
+                throw new Error('invalid_photo_chunk');
+            parts.push(bytes);
+            offset += bytes.length;
+        } while (offset < size);
+        return new Blob(parts, { type: 'image/jpeg' });
+    }
+
     if (gallery && galleryButton) {
         galleryButton.setAttribute('aria-label', label('Escolher fotografias da galeria', 'Choose photos from your gallery'));
 
@@ -663,7 +695,10 @@
             const nativeCamera = capacitor?.isNativePlatform?.() ? capacitor.Plugins?.Camera : null;
 
             // No navegador conserva o seletor existente. Na app abre logo as fotografias.
-            if (typeof nativeCamera?.pickImages !== 'function') {
+            const ios = capacitor?.getPlatform?.() === 'ios';
+            const nativeGallery = capacitor?.Plugins?.MargotGallery;
+            if (typeof nativeCamera?.pickImages !== 'function'
+                || (ios && !capacitor?.isPluginAvailable?.('MargotGallery'))) {
                 gallery.value = '';
                 gallery.click();
                 return;
@@ -689,12 +724,9 @@
                 const selected = [];
                 for (const photo of photos) {
                     if (!alive || signal.aborted) return;
-                    if (typeof photo.webPath !== 'string' || !photo.webPath) throw new Error('missing_photo');
-
-                    const response = await fetch(photo.webPath, { signal });
-                    if (!response.ok || response.redirected) throw new Error('photo_unavailable');
-
-                    const blob = await response.blob();
+                    const blob = ios
+                        ? await readNativePhoto(photo, nativeGallery)
+                        : await readWebPhoto(photo);
                     if (!alive || signal.aborted) return;
                     if (!blob.size) throw new Error('empty_photo');
                     if (blob.size > 15 * 1024 * 1024) {

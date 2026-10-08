@@ -12,6 +12,7 @@ class ViewController: CAPBridgeViewController {
     bridge?.registerPluginInstance(BackgroundLocationPlugin())
     bridge?.registerPluginInstance(MargotHapticsPlugin())
     bridge?.registerPluginInstance(ChatCameraPlugin())
+    bridge?.registerPluginInstance(MargotGalleryPlugin())
     bridge?.registerPluginInstance(MargotSharePlugin())
     configurarTeclado()
     bridge?.registerPluginInstance(MargotKeyboardPlugin())
@@ -131,6 +132,8 @@ class ViewController: CAPBridgeViewController {
           if (document.body.classList.contains('heys-abertos')) return false;
           if (document.querySelector('dialog[open]')) return false;
           if (document.body.classList.contains('perfil-modal-aberta')) return false;
+          var caminho = window.location.pathname.replace(/\\/+$/, '') || '/';
+          if (\(voltar ? "true" : "false") && (caminho === '/' || caminho === '/index')) return false;
           \(comando)
           return true;
       })();
@@ -305,5 +308,60 @@ public final class MargotKeyboardPlugin: CAPPlugin, CAPBridgedPlugin {
         call.resolve(["nativeLayout": false])
       }
     }
+  }
+}
+
+// Lê apenas os JPEG temporários criados por Camera.pickImages no iOS.
+// A transferência pela ponte nativa dispensa pedidos web a capacitor://localhost.
+@objc(MargotGalleryPlugin)
+public final class MargotGalleryPlugin: CAPPlugin, CAPBridgedPlugin {
+  public let identifier = "MargotGalleryPlugin"
+  public let jsName = "MargotGallery"
+  public let pluginMethods: [CAPPluginMethod] = [
+    CAPPluginMethod(name: "readChunk", returnType: CAPPluginReturnPromise)
+  ]
+  private let files = DispatchQueue(label: "com.margot.gallery.files")
+
+  @objc public func readChunk(_ call: CAPPluginCall) {
+    let path = call.getString("path") ?? ""
+    let offset = call.getInt("offset") ?? -1
+    files.async {
+      do {
+        let result = try MargotGalleryFile.read(path: path, offset: offset)
+        call.resolve(["base64": result.data.base64EncodedString(), "size": result.size])
+      } catch {
+        call.reject("Não foi possível ler a fotografia selecionada.")
+      }
+    }
+  }
+}
+
+private enum MargotGalleryFile {
+  static func read(path: String, offset: Int) throws -> (data: Data, size: Int) {
+    let invalid = NSError(domain: "MargotGallery", code: 1)
+    guard let input = URL(string: path), input.isFileURL,
+      input.host == nil || input.host == "" || input.host == "localhost",
+      input.query == nil, input.fragment == nil,
+      offset >= 0
+    else { throw invalid }
+
+    let url = input.standardizedFileURL.resolvingSymlinksInPath()
+    let temporary = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+      .standardizedFileURL.resolvingSymlinksInPath()
+    guard url.deletingLastPathComponent().path == temporary.path,
+      url.lastPathComponent.range(of: "^photo-[0-9]+\\.jpg$", options: .regularExpression) != nil
+    else { throw invalid }
+
+    let values = try url.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey])
+    guard values.isRegularFile == true, let size = values.fileSize,
+      size > 0, size <= 15 * 1024 * 1024, offset < size
+    else { throw invalid }
+
+    let handle = try FileHandle(forReadingFrom: url)
+    defer { try? handle.close() }
+    try handle.seek(toOffset: UInt64(offset))
+    let data = try handle.read(upToCount: min(512 * 1024, size - offset)) ?? Data()
+    guard !data.isEmpty, offset + data.count <= size else { throw invalid }
+    return (data, size)
   }
 }

@@ -731,7 +731,8 @@
     }
 
     function iniciarSwipeBack(evento) {
-        if (aNavegar || !evento.touches || evento.touches.length !== 1) {
+        if (aNavegar || caminhoNormalizado(urlRenderizada) === '/'
+            || !evento.touches || evento.touches.length !== 1) {
             limparSwipeBack();
             return;
         }
@@ -815,7 +816,8 @@
     }
 
     function terminarSwipeBack() {
-        if (!swipeBack.ativo || swipeBack.ignorar) {
+        if (aNavegar || caminhoNormalizado(urlRenderizada) === '/'
+            || !swipeBack.ativo || swipeBack.ignorar) {
             limparSwipeBack();
             return;
         }
