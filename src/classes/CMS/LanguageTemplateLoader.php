@@ -10,6 +10,7 @@ use Twig\Source;
 final class LanguageTemplateLoader implements LoaderInterface
 {
     private const VERSION = '20261007-reaction-push-1';
+    private const CHAT_VERSION = '20261008-gallery-notice-1';
     private const STYLE_VERSION = '20261006-ui-2';
     private const VISUAL_VERSION = '20261008-compact-alerts-2';
 
@@ -58,6 +59,14 @@ final class LanguageTemplateLoader implements LoaderInterface
             ) ?? $code;
         }
 
+        foreach (['js/chat.js', 'js/websocket-alerts.js'] as $asset) {
+            $code = preg_replace(
+                '~' . preg_quote($asset, '~') . '(?:\?v=[^"\s<>]*)?~',
+                $asset . '?v=' . self::CHAT_VERSION,
+                $code
+            ) ?? $code;
+        }
+
         $position = stripos($code, '</head>');
 
         if ($position !== false) {
@@ -98,7 +107,9 @@ final class LanguageTemplateLoader implements LoaderInterface
             . ':'
             . self::STYLE_VERSION
             . ':'
-            . self::VISUAL_VERSION;
+            . self::VISUAL_VERSION
+            . ':'
+            . self::CHAT_VERSION;
     }
 
     public function isFresh(string $name, int $time): bool

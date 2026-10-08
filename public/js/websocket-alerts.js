@@ -5,6 +5,7 @@ window.MargotMessageAlerts = function (window, document, $) {
     var notifiedReactionIds = new Set();
     var notifiedMessageOrder = [];
     var MAX_NOTIFIED_MESSAGE_IDS = 200;
+
     function rememberNotifiedMessage(messageId) {
         messageId = Number(messageId) || 0;
         if (messageId < 1) {
@@ -20,6 +21,7 @@ window.MargotMessageAlerts = function (window, document, $) {
         }
         return true;
     }
+
     function atualizarBadgeMensagens(total) {
         var $link = $('#menuPrincipal a[href*="messages"]').first();
         if (!$link.length) {
@@ -31,6 +33,7 @@ window.MargotMessageAlerts = function (window, document, $) {
         }
         $badge.text(total > 99 ? '99+' : total).prop('hidden', total < 1);
     }
+
     function mostrarAvisoMensagem(mensagem) {
         var nome = String(mensagem.emissor_nome || 'Alguém');
         var reactionTitle = mensagem.reaction === true
@@ -41,8 +44,13 @@ window.MargotMessageAlerts = function (window, document, $) {
         var emissorId = String(mensagem.emissor_id || '');
         var conversaUrl =
             String(window.messagesUrl || '/messages').replace(/\/+$/, '') + '/' + encodeURIComponent(emissorId);
+
         if (!resumo) {
-            resumo = { imagem: 'Enviou-te uma fotografia.', video: 'Enviou-te um vídeo.', audio: 'Enviou-te uma mensagem de voz.' }[mensagem.tipo] || 'Enviou-te uma mensagem.';
+            resumo = {
+                imagem: 'Enviou-te uma fotografia.',
+                video: 'Enviou-te um vídeo.',
+                audio: 'Enviou-te uma mensagem de voz.'
+            }[mensagem.tipo] || 'Enviou-te uma mensagem.';
             resumo = window.MargotI18n?.t(resumo) ?? resumo;
         }
 
@@ -62,9 +70,11 @@ window.MargotMessageAlerts = function (window, document, $) {
                 'aria-atomic': 'true'
             }).appendTo('body');
         }
+
         var seletorExistente = '.mensagem-aviso[data-emissor-id="' + emissorId.replace(/"/g, '') + '"]';
         var $aviso = $avisos.find(seletorExistente).first();
         var quantidade = 1;
+
         function removerAviso(imediato) {
             if (!$aviso || !$aviso.length) {
                 return;
@@ -86,17 +96,20 @@ window.MargotMessageAlerts = function (window, document, $) {
                 }
             }, 230);
         }
+
         if ($aviso.length) {
             quantidade = Number($aviso.attr('data-quantidade')) || 1;
             quantidade += 1;
+
             var timerAnterior = Number($aviso.data('removerTimer') || 0);
             if (timerAnterior) {
                 window.clearTimeout(timerAnterior);
             }
+
             $aviso.removeClass('a-sair').addClass('visivel').attr('data-quantidade', String(quantidade));
-            $aviso.find('.mensagem-aviso-corpo strong').text(reactionTitle || (quantidade + ' novas mensagens de ' + nome));
+            $aviso.find('.mensagem-aviso-corpo strong').text(reactionTitle || nome);
             $aviso.find('.mensagem-aviso-corpo > span').text(resumo);
-            $aviso.attr('aria-label', (reactionTitle || (quantidade + ' novas mensagens de ' + nome)) + '. ' + resumo);
+            $aviso.attr('aria-label', (reactionTitle || nome) + '. ' + resumo);
         } else {
             /* Máximo de três cartões no topo. O mais antigo sai primeiro. */
             var $itens = $avisos.children('.mensagem-aviso, .hey-aviso');
@@ -104,31 +117,47 @@ window.MargotMessageAlerts = function (window, document, $) {
                 $itens.first().remove();
                 $itens = $avisos.children('.mensagem-aviso, .hey-aviso');
             }
+
             $aviso = $('<a>', {
                 class: 'mensagem-aviso',
                 href: conversaUrl,
                 'data-emissor-id': emissorId,
                 'data-quantidade': '1',
-                'aria-label': (reactionTitle || ('Nova mensagem de ' + nome)) + '. ' + resumo
+                'aria-label': (reactionTitle || nome) + '. ' + resumo
             });
-            var $imagem = $('<img>', { class: 'mensagem-aviso-foto', src: foto, alt: '' }).on('error', function () {
+
+            var $imagem = $('<img>', {
+                class: 'mensagem-aviso-foto',
+                src: foto,
+                alt: ''
+            }).on('error', function () {
                 this.onerror = null;
                 this.src = '/imagens/fotos-perfil/default.webp';
             });
+
             var $corpo = $('<span>', { class: 'mensagem-aviso-corpo' }).append(
-                $('<strong>').text(reactionTitle || ('Nova mensagem de ' + nome)),
-                $('<span>').text(resumo)
+                $('<strong>', { 'data-i18n-skip': '' }).text(reactionTitle || nome),
+                $('<span>', { style: 'font-size:14px' }).text(resumo)
             );
+
             $aviso.append($imagem, $corpo);
             $avisos.append($aviso);
+
             var gesto = null;
+
             $aviso.on('pointerdown', function (evento) {
                 var original = evento.originalEvent || evento;
                 if (original.pointerType === 'mouse' && original.button !== 0) {
                     return;
                 }
-                gesto = { id: original.pointerId, y: original.clientY, x: original.clientX, inicio: performance.now() };
+                gesto = {
+                    id: original.pointerId,
+                    y: original.clientY,
+                    x: original.clientX,
+                    inicio: performance.now()
+                };
             });
+
             $aviso.on('pointermove', function (evento) {
                 if (!gesto) {
                     return;
@@ -147,6 +176,7 @@ window.MargotMessageAlerts = function (window, document, $) {
                     });
                 }
             });
+
             $aviso.on('pointerup pointercancel', function (evento) {
                 if (!gesto) {
                     return;
@@ -156,7 +186,9 @@ window.MargotMessageAlerts = function (window, document, $) {
                 var duracao = Math.max(1, performance.now() - gesto.inicio);
                 var velocidade = dy / duracao;
                 var fechar = dy <= -34 || velocidade <= -0.42;
+
                 $aviso.css({ transition: '', transform: '', opacity: '' });
+
                 if (fechar) {
                     $aviso.data('swiped', true);
                     evento.preventDefault();
@@ -164,6 +196,7 @@ window.MargotMessageAlerts = function (window, document, $) {
                 }
                 gesto = null;
             });
+
             $aviso.on('click', function (evento) {
                 if ($aviso.data('swiped')) {
                     evento.preventDefault();
@@ -175,33 +208,40 @@ window.MargotMessageAlerts = function (window, document, $) {
                     window.clearTimeout(timer);
                 }
             });
+
             window.requestAnimationFrame(function () {
                 $aviso.addClass('visivel');
             });
         }
+
         $aviso.data(
             'removerTimer',
             window.setTimeout(function () {
                 removerAviso(false);
             }, 3600)
         );
+
         return resumo;
     }
+
     function mostrarNotificacaoMensagem(mensagem) {
         var nome = String(mensagem.emissor_nome || 'Alguém');
         var resumo = mostrarAvisoMensagem(mensagem);
+
         if (window.disableNotifications) {
             return;
         }
         if (!window.isSecureContext || !('Notification' in window) || Notification.permission !== 'granted') {
             return;
         }
+
         try {
-            var notificacao = new Notification(window.MargotI18n?.t('Nova mensagem de ' + nome) ?? ('Nova mensagem de ' + nome), {
+            var notificacao = new Notification(nome, {
                 body: resumo,
                 icon: mensagem.emissor_foto_url || '/imagens/fotos-perfil/default.webp',
                 tag: 'chat-' + String(mensagem.emissor_id || 'desconhecido')
             });
+
             notificacao.onclick = function () {
                 window.focus();
                 window.location.href =
@@ -214,20 +254,32 @@ window.MargotMessageAlerts = function (window, document, $) {
             console.error('Erro ao mostrar notificação de mensagem:', erro);
         }
     }
+
     function aoReceberPushDeMensagem(evento) {
         var dados = evento.detail || {};
+
         if (dados.reaction_emoji) {
-            var reactionKey = [dados.message_id, dados.from_member_id, dados.reaction_emoji, dados.reaction_version].join(':');
+            var reactionKey = [
+                dados.message_id,
+                dados.from_member_id,
+                dados.reaction_emoji,
+                dados.reaction_version
+            ].join(':');
+
             if (notifiedReactionIds.has(reactionKey)) return;
             notifiedReactionIds.add(reactionKey);
+
             if (notifiedReactionIds.size > MAX_NOTIFIED_MESSAGE_IDS) {
                 notifiedReactionIds.delete(notifiedReactionIds.values().next().value);
             }
+
             if (String(window.chatMembroId || '') === String(dados.from_member_id || '')) return;
+
             var emoji = String(dados.reaction_emoji);
             var text = window.MargotI18n?.language === 'en'
                 ? 'Reacted with ' + emoji + ' to your message.'
                 : 'Reagiu com ' + emoji + ' à tua mensagem.';
+
             mostrarAvisoMensagem({
                 emissor_id: String(dados.from_member_id || ''),
                 emissor_nome: String(dados.from_name || 'Alguém'),
@@ -238,6 +290,7 @@ window.MargotMessageAlerts = function (window, document, $) {
             });
             return;
         }
+
         var mensagemId = Number(dados.message_id) || 0;
         if (!rememberNotifiedMessage(mensagemId)) {
             return;
@@ -245,6 +298,7 @@ window.MargotMessageAlerts = function (window, document, $) {
         if (String(window.chatMembroId || '') === String(dados.from_member_id || '')) {
             return;
         }
+
         mostrarAvisoMensagem({
             emissor_id: String(dados.from_member_id || ''),
             emissor_nome: String(dados.from_name || 'Alguém'),
@@ -253,6 +307,7 @@ window.MargotMessageAlerts = function (window, document, $) {
             tipo: 'texto'
         });
     }
+
     return {
         rememberNotifiedMessage: rememberNotifiedMessage,
         atualizarBadgeMensagens: atualizarBadgeMensagens,

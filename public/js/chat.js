@@ -32,6 +32,7 @@
 
     let alive = true;
     let sending = false;
+    let pickingGallery = false;
     let file = null;
     let files = [];
     const previewUrls = new Set();
@@ -197,7 +198,7 @@
         const hasContent = Boolean(text.value.trim() || file);
         const busy = recorder.state !== 'idle';
 
-        send.disabled = sending || !hasContent || busy;
+        send.disabled = sending || pickingGallery || !hasContent || busy;
         send.classList.toggle('ativo', hasContent);
         send.hidden = !hasContent || busy;
         send.setAttribute('aria-label', sending ? 'A enviar mensagem' : 'Enviar mensagem');
@@ -205,11 +206,11 @@
         send.toggleAttribute('data-gallery-progress', Boolean(sending && sendProgress));
 
         microphone.hidden = hasContent || busy;
-        microphone.disabled = sending;
+        microphone.disabled = sending || pickingGallery;
 
-        byId('chat-camera-open').disabled = sending || busy;
-        if (galleryButton) galleryButton.disabled = sending || busy;
-        preview.querySelectorAll('button').forEach((button) => button.disabled = sending);
+        byId('chat-camera-open').disabled = sending || pickingGallery || busy;
+        if (galleryButton) galleryButton.disabled = sending || pickingGallery || busy;
+        preview.querySelectorAll('button').forEach((button) => button.disabled = sending || pickingGallery);
 
         text.hidden = busy;
         recording.hidden = !busy;
@@ -307,7 +308,7 @@
                 remove.setAttribute('aria-label', label('Remover anexo', 'Remove attachment') + (many ? ' ' + (index + 1) : ''));
 
                 remove.addEventListener('click', () => {
-                    if (!sending) chooseFiles(files.filter((_, position) => position !== index), once.checked);
+                    if (!sending && !pickingGallery) chooseFiles(files.filter((_, position) => position !== index), once.checked);
                 }, { signal });
 
                 const item = many ? document.createElement('div') : strip;
@@ -495,7 +496,7 @@
     async function submit(event) {
         event.preventDefault();
 
-        if (sending || recorder.state !== 'idle' || (!text.value.trim() && !file)) {
+        if (sending || pickingGallery || recorder.state !== 'idle' || (!text.value.trim() && !file)) {
             return;
         }
 
@@ -652,18 +653,77 @@
     if (gallery && galleryButton) {
         galleryButton.setAttribute('aria-label', label('Escolher fotografias da galeria', 'Choose photos from your gallery'));
 
-        on(galleryButton, 'click', () => {
-            if (sending || recorder.state !== 'idle') return;
+        on(galleryButton, 'click', async () => {
+            if (!alive || sending || pickingGallery || recorder.state !== 'idle') return;
 
-            gallery.value = '';
-            gallery.click();
+            const capacitor = window.Capacitor;
+            const nativeCamera = capacitor?.isNativePlatform?.() ? capacitor.Plugins?.Camera : null;
+
+            // No navegador conserva o seletor existente. Na app abre logo as fotografias.
+            if (typeof nativeCamera?.pickImages !== 'function') {
+                gallery.value = '';
+                gallery.click();
+                return;
+            }
+
+            pickingGallery = true;
+            showError('');
+            state();
+            text.blur();
+
+            try {
+                const result = await nativeCamera.pickImages({ limit: 10, quality: 90 });
+                if (!alive || signal.aborted) return;
+
+                const photos = result?.photos;
+                if (!Array.isArray(photos)) throw new Error('invalid_gallery_result');
+                if (!photos.length) return;
+                if (photos.length > 10) {
+                    showError(label('Podes selecionar no máximo 10 fotografias.', 'You can select up to 10 photos.'));
+                    return;
+                }
+
+                const selected = [];
+                for (const photo of photos) {
+                    if (!alive || signal.aborted) return;
+                    if (typeof photo.webPath !== 'string' || !photo.webPath) throw new Error('missing_photo');
+
+                    const response = await fetch(photo.webPath, { signal });
+                    if (!response.ok || response.redirected) throw new Error('photo_unavailable');
+
+                    const blob = await response.blob();
+                    if (!alive || signal.aborted) return;
+                    if (!blob.size) throw new Error('empty_photo');
+                    if (blob.size > 15 * 1024 * 1024) {
+                        showError(label('O ficheiro pode ter no máximo 15 MB.', 'The file must be no larger than 15 MB.'));
+                        return;
+                    }
+
+                    const format = String(photo.format || 'jpeg').toLowerCase().replace(/^jpg$/, 'jpeg');
+                    const mime = blob.type && blob.type !== 'application/octet-stream' ? blob.type : 'image/' + format;
+                    if (!/^image\/(jpeg|png|webp|gif|avif|heic|heif)$/i.test(mime)) throw new Error('invalid_photo_type');
+                    const extension = mime.split('/')[1].toLowerCase().replace(/^jpeg$/, 'jpg');
+                    selected.push(new File([blob], 'gallery-' + Date.now() + '-' + selected.length + '.' + extension, { type: mime }));
+                }
+
+                // Só substitui o rascunho depois de todas as fotografias estarem prontas.
+                if (alive && !signal.aborted) chooseFiles(selected);
+            } catch (failure) {
+                const cancelled = /\bcancel(?:led|ed)?\b/i.test(String(failure?.message || failure || ''));
+                if (alive && failure?.name !== 'AbortError' && !cancelled) {
+                    showError(label('Não foi possível abrir as fotografias. Tenta novamente.', 'Could not open the photos. Please try again.'));
+                }
+            } finally {
+                pickingGallery = false;
+                if (alive) state();
+            }
         });
 
         on(gallery, 'change', () => {
             const selected = Array.from(gallery.files || []);
             gallery.value = '';
 
-            if (!alive || sending || !selected.length) return;
+            if (!alive || sending || pickingGallery || !selected.length) return;
 
             if (!selected.every(isPhoto)) {
                 showError(label('Seleciona apenas fotografias.', 'Select only photos.'));
