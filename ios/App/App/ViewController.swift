@@ -1,3 +1,4 @@
+import AudioToolbox
 import Capacitor
 import UIKit
 import WebKit
@@ -236,14 +237,12 @@ final class MargotHapticFeedback {
   private let impact = UIImpactFeedbackGenerator(style: .light)
   private let selection = UISelectionFeedbackGenerator()
   private let navigation = UIImpactFeedbackGenerator(style: .medium)
-  private let receivedHey = UIImpactFeedbackGenerator(style: .heavy)
   private let receivedMessage = UIImpactFeedbackGenerator(style: .medium)
 
   private init() {
     impact.prepare()
     selection.prepare()
     navigation.prepare()
-    receivedHey.prepare()
     receivedMessage.prepare()
   }
 
@@ -267,8 +266,8 @@ final class MargotHapticFeedback {
     }
 
     if type == "heyReceived" {
-      receivedHey.impactOccurred(intensity: 1.0)
-      receivedHey.prepare()
+      // Uma vibração de alerta do sistema, em vez de um impacto curto.
+      AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
       return
     }
 
