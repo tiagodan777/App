@@ -35,20 +35,17 @@ public final class MargotHapticsPlugin extends Plugin {
             return;
         }
 
+        boolean received = type.equals("heyReceived")
+            || type.equals("messageReceived");
+
         long[] timings = {
             0,
-            type.equals("heyReceived") ? 45
-                : type.equals("messageReceived") ? 30
-                : type.equals("shutter") ? 10 : 15
+            received ? 54 : type.equals("shutter") ? 12 : 18
         };
-
-        boolean isHey = type.equals("heySent") || type.equals("heyReceived");
 
         int[] amplitudes = {
             0,
-            type.equals("heyReceived") ? 220
-                : type.equals("messageReceived") ? 190
-                : isHey ? 220 : 90
+            received || type.equals("heySent") ? 255 : 108
         };
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

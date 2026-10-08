@@ -235,15 +235,15 @@ final class MargotHapticFeedback {
   static let shared = MargotHapticFeedback()
 
   private let impact = UIImpactFeedbackGenerator(style: .light)
-  private let selection = UISelectionFeedbackGenerator()
-  private let navigation = UIImpactFeedbackGenerator(style: .medium)
-  private let receivedMessage = UIImpactFeedbackGenerator(style: .medium)
+  private let selection = UIImpactFeedbackGenerator(style: .medium)
+  private let navigation = UIImpactFeedbackGenerator(style: .heavy)
+  private let sentHey = UIImpactFeedbackGenerator(style: .medium)
 
   private init() {
     impact.prepare()
     selection.prepare()
     navigation.prepare()
-    receivedMessage.prepare()
+    sentHey.prepare()
   }
 
   func play(_ type: String, profile: String? = nil) {
@@ -254,33 +254,31 @@ final class MargotHapticFeedback {
     }
 
     if profile == "selection" && type == "interaction" {
-      selection.selectionChanged()
+      selection.impactOccurred(intensity: 0.66)
       selection.prepare()
       return
     }
 
     if profile == "navigation" && type == "heySent" {
-      navigation.impactOccurred(intensity: 0.9)
+      navigation.impactOccurred(intensity: 1.0)
       navigation.prepare()
       return
     }
 
-    if type == "heyReceived" {
-      // Uma vibração de alerta do sistema, em vez de um impacto curto.
+    if type == "heyReceived" || type == "messageReceived" {
+      // A mesma vibração de alerta para Heys e mensagens recebidos.
       AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
       return
     }
 
-    if type == "messageReceived" {
-      receivedMessage.impactOccurred(intensity: 1.0)
-      receivedMessage.prepare()
+    if type == "heySent" {
+      sentHey.impactOccurred(intensity: 1.0)
+      sentHey.prepare()
       return
     }
 
-    let isHey = type == "heySent" || type == "heyReceived"
-
     impact.impactOccurred(
-      intensity: isHey ? 1.0 : (type == "shutter" ? 0.45 : 0.55)
+      intensity: type == "shutter" ? 0.54 : 0.66
     )
 
     impact.prepare()

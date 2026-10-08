@@ -11,7 +11,7 @@ final class LanguageTemplateLoader implements LoaderInterface
 {
     private const VERSION = '20261007-reaction-push-1';
     private const STYLE_VERSION = '20261006-ui-2';
-    private const VISUAL_VERSION = '20261008-visual-haptics-1';
+    private const VISUAL_VERSION = '20261008-compact-alerts-2';
 
     public function __construct(private LoaderInterface $loader)
     {
