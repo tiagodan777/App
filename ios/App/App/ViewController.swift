@@ -236,19 +236,21 @@ final class MargotHapticFeedback {
   private let impact = UIImpactFeedbackGenerator(style: .light)
   private let selection = UISelectionFeedbackGenerator()
   private let navigation = UIImpactFeedbackGenerator(style: .medium)
-  private let receivedHey = UIImpactFeedbackGenerator(style: .medium)
+  private let receivedHey = UIImpactFeedbackGenerator(style: .heavy)
+  private let receivedMessage = UIImpactFeedbackGenerator(style: .medium)
 
   private init() {
     impact.prepare()
     selection.prepare()
     navigation.prepare()
     receivedHey.prepare()
+    receivedMessage.prepare()
   }
 
   func play(_ type: String, profile: String? = nil) {
     guard UIApplication.shared.applicationState == .active else { return }
 
-    guard ["interaction", "shutter", "heySent", "heyReceived"].contains(type) else {
+    guard ["interaction", "shutter", "heySent", "heyReceived", "messageReceived"].contains(type) else {
       return
     }
 
@@ -265,8 +267,14 @@ final class MargotHapticFeedback {
     }
 
     if type == "heyReceived" {
-      receivedHey.impactOccurred(intensity: 0.75)
+      receivedHey.impactOccurred(intensity: 1.0)
       receivedHey.prepare()
+      return
+    }
+
+    if type == "messageReceived" {
+      receivedMessage.impactOccurred(intensity: 1.0)
+      receivedMessage.prepare()
       return
     }
 

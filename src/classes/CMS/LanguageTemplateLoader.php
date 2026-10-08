@@ -11,6 +11,7 @@ final class LanguageTemplateLoader implements LoaderInterface
 {
     private const VERSION = '20261007-reaction-push-1';
     private const STYLE_VERSION = '20261006-ui-2';
+    private const VISUAL_VERSION = '20261008-visual-haptics-1';
 
     public function __construct(private LoaderInterface $loader)
     {
@@ -43,6 +44,19 @@ final class LanguageTemplateLoader implements LoaderInterface
             'estilos/app-interactions.css?v=' . self::STYLE_VERSION,
             $code
         ) ?? $code;
+
+        // Só invalida a cache dos recursos alterados nesta revisão.
+        foreach ([
+            'js/hey-vibracao.js',
+            'js/index-animacao.js',
+            'estilos/theme.css'
+        ] as $asset) {
+            $code = preg_replace(
+                '~' . preg_quote($asset, '~') . '(?:\?v=[^"\s<>]*)?~',
+                $asset . '?v=' . self::VISUAL_VERSION,
+                $code
+            ) ?? $code;
+        }
 
         $position = stripos($code, '</head>');
 
@@ -82,7 +96,9 @@ final class LanguageTemplateLoader implements LoaderInterface
             . ':'
             . self::VERSION
             . ':'
-            . self::STYLE_VERSION;
+            . self::STYLE_VERSION
+            . ':'
+            . self::VISUAL_VERSION;
     }
 
     public function isFresh(string $name, int $time): bool

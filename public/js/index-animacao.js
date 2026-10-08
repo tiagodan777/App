@@ -204,7 +204,7 @@
             Math.cos(holeTime * 0.8) * (cy * 0.9) +
             Math.sin(holeTime * 0.4) * (cy * 0.3);
 
-        const holeRadius = lerp(160, Math.min(120, width * 0.28), darkMix);
+        const holeRadius = 160;
         const holeRadiusSq = holeRadius * holeRadius;
         const edgeSoftnessInv = 1 / 60;
 
@@ -242,8 +242,7 @@
                 alpha = clamp((distance - holeRadius) * edgeSoftnessInv, 0, 1);
             }
 
-            // No escuro, a zona suave conserva pontos visíveis em vez de abrir um buraco preto.
-            alpha = lerp(0.32 * darkMix, 1, alpha);
+            // A zona sem pontos mantém a mesma forma e movimento nos dois temas.
 
             const finalAlpha = alpha * (0.8 + waveValue * 0.2);
             if (finalAlpha < 0.05) {

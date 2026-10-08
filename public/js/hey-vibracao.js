@@ -8,7 +8,8 @@
         interaction: [12],
         shutter: [10],
         heySent: [15],
-        heyReceived: [15]
+        heyReceived: [45],
+        messageReceived: [30]
     });
 
     function notificacoesDesativadas() {
@@ -18,8 +19,18 @@
     function chaveProcessamento(tipo, detalhe) {
         detalhe = detalhe || {};
 
+        if (tipo === 'messageReceived') {
+            return tipo + ':' + String(
+                detalhe.message_id ||
+                (detalhe.message && detalhe.message.id) ||
+                ''
+            );
+        }
+
         if (tipo === 'connection') {
-            return tipo + ':' + String(detalhe.other_member_id || detalhe.outro_id || '');
+            return tipo + ':' + String(
+                detalhe.other_member_id || detalhe.outro_id || ''
+            );
         }
 
         return (
@@ -64,7 +75,13 @@
     }
 
     function tocar(tipo, detalhe, interacao) {
-        if (document.hidden || (!interacao && tipo !== 'heySent' && tipo !== 'heyReceived')) {
+        if (
+            document.hidden ||
+            (
+                !interacao &&
+                !['heySent', 'heyReceived', 'messageReceived'].includes(tipo)
+            )
+        ) {
             return;
         }
 
@@ -95,7 +112,9 @@
         }
 
         try {
-            navigator.vibrate((PADROES_WEB[tipo] || PADROES_WEB.interaction).slice());
+            navigator.vibrate(
+                (PADROES_WEB[tipo] || PADROES_WEB.interaction).slice()
+            );
         } catch (erro) {
             console.warn('Não foi possível reproduzir a háptica da Margot.', erro);
         }
@@ -113,13 +132,23 @@
         var detalhe = evento.detail || {};
         var mensagem = detalhe.message || {};
 
-        if (String(mensagem.destinatario_id || '') === String(window.membroId || '')) {
+        if (
+            window.membroId &&
+            String(mensagem.destinatario_id || '') === String(window.membroId)
+        ) {
             tocar('messageReceived', detalhe);
         }
     });
 
     window.addEventListener('app:chat-push-recebido', function (evento) {
-        tocar('messageReceived', evento.detail || {});
+        var detalhe = evento.detail || {};
+
+        if (
+            !detalhe.reaction_emoji &&
+            String(detalhe.from_member_id || '') !== String(window.membroId || '')
+        ) {
+            tocar('messageReceived', detalhe);
+        }
     });
 
     window.addEventListener('app:connection-created', function (evento) {

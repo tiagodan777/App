@@ -322,3 +322,243 @@
         transition: filter 320ms ease;
     }
 }
+
+/* A idade e as ações conservam espaço; os Daylies têm uma linha própria. */
+#perfil .perfil-identidade-rodape {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+}
+
+#perfil .perfil-identidade-rodape > .perfil-idade {
+    grid-row: 1;
+    justify-self: start;
+}
+
+#perfil .perfil-identidade-rodape > .perfil-acoes {
+    grid-row: 2;
+    justify-self: end;
+    max-width: 100%;
+}
+
+#perfil .perfil-identidade-rodape > [data-daylies-profile] {
+    grid-row: 3;
+    justify-self: end;
+    max-width: 100%;
+}
+
+#perfil .perfil-identidade-rodape > [data-daylies-profile][hidden] {
+    display: none !important;
+}
+
+@media (min-width: 480px) {
+    #perfil .perfil-identidade-rodape {
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    #perfil .perfil-identidade-rodape > .perfil-acoes {
+        grid-column: 2;
+        grid-row: 1;
+    }
+
+    #perfil .perfil-identidade-rodape > [data-daylies-profile] {
+        grid-column: 1 / -1;
+        grid-row: 2;
+    }
+}
+
+/* Só o aviso de Hey recebido fica maior. */
+.hey-aviso.hey-aviso-recebido {
+    width: min(100%, 400px);
+    min-height: 88px;
+    padding: 12px 16px 12px 12px;
+    gap: 14px;
+    border-radius: 24px;
+}
+
+.hey-aviso-recebido .hey-aviso-foto {
+    flex: 0 0 64px;
+    width: 64px;
+    height: 64px;
+    border-radius: 20px;
+    object-fit: cover;
+}
+
+.hey-aviso-recebido .hey-aviso-corpo strong {
+    font-size: 16px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.hey-aviso-recebido .hey-aviso-corpo p {
+    font-size: 14px;
+    -webkit-line-clamp: 2;
+    overflow-wrap: anywhere;
+}
+
+@media (prefers-color-scheme: dark) {
+    .mini-menu,
+    .hoje-editor-sheet {
+        box-shadow: 0 -1px 0 var(--surface), 0 -12px 36px #0006;
+    }
+
+    .mini-menu > div#barra,
+    .hoje-editor-barra {
+        background: #6d6d78;
+    }
+
+    .mais-opcoes,
+    .definicoes-pagina,
+    .definicoes-pagina li > a,
+    .form-denuncia label {
+        color: var(--text);
+    }
+
+    .mais-opcoes:active,
+    .definicoes-pagina li > a:active,
+    .definicoes-logout button:active {
+        background: var(--surface-soft);
+    }
+
+    .definicoes-pagina ul,
+    .reminder-settings,
+    #mini-menu-hoje,
+    .perfil-hoje-balao,
+    .hoje-cores-area {
+        background: var(--surface);
+        color: var(--text);
+        border-color: var(--line);
+        box-shadow: none;
+    }
+
+    .definicoes-pagina li + li,
+    .hoje-cores-cabecalho {
+        border-color: var(--line);
+    }
+
+    .definicoes-pagina li > a img {
+        filter: brightness(0) invert(1);
+    }
+
+    .definicoes-logout button,
+    .acao-perfil-perigosa strong,
+    .hoje-editor-erro,
+    #hoje-apagar {
+        color: #ff929f;
+    }
+
+    .definicoes-logout button span {
+        background: #ff929f18;
+    }
+
+    #mini-menu-hoje::before,
+    #mini-menu-hoje::after,
+    .perfil-hoje-balao::before,
+    .perfil-hoje-balao::after {
+        background: var(--surface);
+        border-color: var(--line);
+        box-shadow: none;
+    }
+
+    #mini-menu-hoje [data-hoje-nota],
+    .perfil-hoje-balao [data-hoje-nota],
+    .hoje-cores-area .hoje-cores-titulos h3 {
+        color: var(--text);
+    }
+
+    .mini-menu-hoje-topo,
+    .perfil-hoje-topo,
+    .hoje-cores-titulos > span,
+    .acao-perfil span,
+    .form-denuncia label span,
+    .hoje-opcao-roupa.tem-roupa #hoje-roupa-resumo {
+        color: var(--text-muted);
+    }
+
+    .perfil-editar,
+    #perfil .perfil-conectar:not(.ligado):not(.a-espera),
+    .acao-perfil,
+    .acao-perfil-cancelar,
+    .acoes-perfil-fechar,
+    .acoes-perfil-voltar,
+    .hoje-opcao-roupa,
+    .hoje-peca,
+    .hoje-cor,
+    .hoje-roupa-selecionada-item,
+    .hoje-cores-peca-preview,
+    #hoje-apagar {
+        background: var(--surface-soft);
+        border-color: var(--line);
+        box-shadow: none;
+    }
+
+    .perfil-editar,
+    #perfil .perfil-conectar:not(.ligado):not(.a-espera),
+    .acao-perfil,
+    .acao-perfil-cancelar,
+    .acoes-perfil-fechar,
+    .acoes-perfil-voltar {
+        color: var(--text);
+    }
+
+    .form-denuncia select,
+    .form-denuncia textarea {
+        background: var(--surface-soft);
+        border-color: var(--line);
+        color: var(--text);
+    }
+
+    .hoje-peca.selecionada,
+    .hoje-cor.selecionada {
+        background: #482833;
+        border-color: #ff8198;
+        box-shadow: none;
+    }
+
+    #hoje-nota-input:focus {
+        background: var(--surface-soft);
+        color: var(--text);
+        border-color: #ff8198;
+        box-shadow: 0 0 0 3px #ff819826;
+    }
+
+    .hoje-cor-amostra {
+        background: #656570 !important;
+        box-shadow: none;
+    }
+
+    .hoje-cor.selecionada .hoje-cor-amostra {
+        box-shadow: 0 0 0 2px #482833, 0 0 0 4px #ff8198;
+    }
+
+    .daylie-entry span {
+        color: #baa9ff;
+    }
+
+    .mensagens-badge {
+        border-color: var(--surface);
+    }
+
+    /* Os estilos antigos dos avisos usam !important nestes textos. */
+    .mensagem-aviso,
+    .hey-aviso,
+    .hey-aviso-link,
+    .hey-aviso-link:hover,
+    .mensagem-aviso-corpo strong,
+    .hey-aviso-corpo strong {
+        color: var(--text) !important;
+    }
+
+    .mensagem-aviso-corpo > span,
+    .hey-aviso-corpo p {
+        color: var(--text-muted) !important;
+    }
+
+    .mensagem-aviso,
+    .hey-aviso,
+    .hey-aviso-link:hover {
+        background: var(--surface-soft);
+        border-color: var(--line);
+        box-shadow: 0 8px 28px #0006;
+    }
+}
