@@ -9,7 +9,8 @@
         shutter: [10],
         heySent: [15],
         heyReceived: [45],
-        messageReceived: [30]
+        messageReceived: [30],
+        connection: [18]
     });
 
     function notificacoesDesativadas() {
@@ -79,7 +80,7 @@
             document.hidden ||
             (
                 !interacao &&
-                !['heySent', 'heyReceived', 'messageReceived'].includes(tipo)
+                !['heySent', 'heyReceived', 'messageReceived', 'connection'].includes(tipo)
             )
         ) {
             return;
@@ -93,7 +94,9 @@
 
         if (plugin && typeof plugin.play === 'function') {
             try {
-                Promise.resolve(plugin.play({ type: tipo })).catch(function () {
+                // As builds atuais já suportam este impacto, sem exigir uma nova build.
+                var tipoNativo = tipo === 'connection' ? 'heySent' : tipo;
+                Promise.resolve(plugin.play({ type: tipoNativo })).catch(function () {
                     tocarFallback(tipo);
                 });
                 return;
