@@ -10,7 +10,7 @@
         heySent: [15],
         heyReceived: [45],
         messageReceived: [30],
-        connection: [18]
+        connection: [12, 65, 18, 75, 36]
     });
 
     function notificacoesDesativadas() {
@@ -75,6 +75,42 @@
             : null;
     }
 
+    function tocarOndaConexao(plugin) {
+        var passos = [
+            { tipo: 'shutter', atraso: 0 },
+            { tipo: 'interaction', atraso: 90 },
+            { tipo: 'heySent', atraso: 125 }
+        ];
+        var etapa = 0;
+
+        function tocarProximo() {
+            if (document.hidden || notificacoesDesativadas()) {
+                return;
+            }
+
+            try {
+                Promise.resolve(plugin.play({ type: passos[etapa].tipo }))
+                    .then(function () {
+                        etapa += 1;
+                        if (etapa < passos.length) {
+                            window.setTimeout(tocarProximo, passos[etapa].atraso);
+                        }
+                    })
+                    .catch(function () {
+                        if (etapa === 0) {
+                            tocarFallback('connection');
+                        }
+                    });
+            } catch (erro) {
+                if (etapa === 0) {
+                    tocarFallback('connection');
+                }
+            }
+        }
+
+        tocarProximo();
+    }
+
     function tocar(tipo, detalhe, interacao) {
         if (
             document.hidden ||
@@ -93,10 +129,13 @@
         var plugin = pluginNativo();
 
         if (plugin && typeof plugin.play === 'function') {
+            if (tipo === 'connection') {
+                tocarOndaConexao(plugin);
+                return;
+            }
+
             try {
-                // As builds atuais já suportam este impacto, sem exigir uma nova build.
-                var tipoNativo = tipo === 'connection' ? 'heySent' : tipo;
-                Promise.resolve(plugin.play({ type: tipoNativo })).catch(function () {
+                Promise.resolve(plugin.play({ type: tipo })).catch(function () {
                     tocarFallback(tipo);
                 });
                 return;
@@ -152,6 +191,22 @@
             tocar('connection', detalhe);
         }
     });
+
+    document.addEventListener('click', function (evento) {
+        var alvo = evento.target;
+        var botao = alvo && typeof alvo.closest === 'function'
+            ? alvo.closest('#abrir-acoes-perfil')
+            : null;
+        var menu = botao && botao.closest('.mini-menu');
+
+        if (
+            menu &&
+            !menu.classList.contains('perfil-proprio') &&
+            menu.getAttribute('data-destinatario-id')
+        ) {
+            tocar('shutter', null, true);
+        }
+    }, true);
 
     window.MargotHaptics = Object.freeze({
         play: tocar,
