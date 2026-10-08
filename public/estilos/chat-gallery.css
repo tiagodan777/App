@@ -1,0 +1,50 @@
+.chat-media-preview.chat-preview-gallery {
+    width: calc(100% - 12px);
+    height: auto;
+    padding: 0;
+    overflow: visible;
+    background: transparent;
+}
+
+.chat-gallery-count {
+    display: block;
+    margin: 0 0 6px;
+    color: #777780;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.chat-gallery-strip {
+    display: flex;
+    gap: 8px;
+    padding: 2px 0 4px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+}
+
+.chat-gallery-item {
+    position: relative;
+    flex: 0 0 76px;
+    width: 76px;
+    height: 76px;
+    overflow: hidden;
+    border-radius: 14px;
+    background: #eee;
+}
+
+.chat-gallery-item .chat-media-remover {
+    z-index: 1;
+}
+
+.chat-gallery-item .chat-media-remover:disabled {
+    opacity: 0.4;
+}
+
+#chat-enviar {
+    font-variant-numeric: tabular-nums;
+}
+
+.chat-compositor #chat-enviar[data-gallery-progress] {
+    font-size: 13px;
+    white-space: nowrap;
+}

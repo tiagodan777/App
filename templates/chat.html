@@ -3,6 +3,7 @@
 {% block styles %}
 <link rel="stylesheet" href="{{ doc_root }}estilos/chat.css?v=20260927-build" data-margot-page-style>
 <link rel="stylesheet" href="{{ doc_root }}estilos/chat-social.css?v=20260928-1" data-margot-page-style>
+<link rel="stylesheet" href="{{ doc_root }}estilos/chat-gallery.css?v=20261007-gallery-1" data-margot-page-style>
 {% endblock %}
 
 {% block content %}
@@ -128,6 +129,15 @@
                 </svg>
             </button>
 
+            <button type="button" id="chat-gallery-open" class="chat-icon" aria-label="Escolher fotografias da galeria">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="3" y="3" width="18" height="18" rx="3"></rect>
+                    <circle cx="8" cy="8" r="1.5"></circle>
+                    <path d="M3 17l6-6 4 4 3-3 5 5"></path>
+                </svg>
+            </button>
+
+            <input type="file" id="chat-gallery" accept="image/*" multiple hidden>
             <input type="file" id="chat-media" name="media" accept="image/*,video/*" hidden>
 
             <textarea
@@ -198,5 +208,5 @@ window.webSocketUrl = window.location.protocol === 'https:'
 <script src="{{ doc_root }}js/chat-social.js?v=20260928-1"></script>
 <script src="{{ doc_root }}js/chat-reactions.js?v=20261007-video-hold-1"></script>
 <script src="{{ doc_root }}js/chat-audio-player.js?v=20260920-video"></script>
-<script src="{{ doc_root }}js/chat.js?v=20261006-response-1"></script>
+<script src="{{ doc_root }}js/chat.js?v=20261007-gallery-1"></script>
 {% endblock %}

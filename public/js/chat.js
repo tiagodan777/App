@@ -13,6 +13,12 @@
     const list = byId('chat-mensagens');
     const content = byId('chat-mensagens-conteudo');
     const media = byId('chat-media');
+    const gallery = byId('chat-gallery');
+    const galleryButton = byId('chat-gallery-open');
+    const english = !/^pt(?:[-_]|$)/i.test(window.MargotI18n?.language || navigator.language || 'pt');
+    const label = (pt, en) => english ? en : pt;
+    const isPhoto = (value) => Boolean(value && (/^image\//i.test(value.type)
+        || (!value.type && /\.(jpe?g|png|webp|gif|avif|heic|heif)$/i.test(value.name))));
     const preview = byId('chat-media-preview');
     const error = byId('chat-erro');
     const replyPreview = byId('chat-reply-preview');
@@ -27,17 +33,22 @@
     let alive = true;
     let sending = false;
     let file = null;
-    let previewUrl = null;
+    let files = [];
+    const previewUrls = new Set();
+    let sendProgress = null;
     let reply = null;
     let lastId = 0;
     let polling = false;
+
     // Mantém anexos e texto ao trocar de página dentro da app; limpa após enviar/apagar.
     const drafts = (window.MargotChatDrafts ||= new Map());
     const draftKey = me + ':' + otherId;
+
     function saveDraft() {
         if (file || text.value || reply)
             drafts.set(draftKey, {
                 file,
+                files: files.slice(),
                 text: text.value,
                 reply,
                 once: byId('chat-view-once').checked
@@ -97,25 +108,31 @@
 
     async function readJson(response) {
         let data;
+
         try {
             data = await response.json();
         } catch (failure) {
             if (failure.name === 'AbortError') throw failure;
+
             // Não registar texto, anexos, tokens ou o corpo da resposta.
             console.warn('[Margot chat] Resposta sem JSON válido.', {
                 status: response.status,
                 contentType: response.headers.get('Content-Type')
             });
+
             throw new Error(responseError(response));
         }
+
         if (!data || typeof data !== 'object' || Array.isArray(data)) {
             throw new Error(responseError(response));
         }
+
         return data;
     }
 
     async function post(body, retried = false) {
         let response;
+
         try {
             response = await fetch(url, {
                 method: 'POST',
@@ -126,25 +143,30 @@
             });
         } catch (failure) {
             if (failure.name === 'AbortError') throw failure;
+
             throw new Error('Não foi possível confirmar o pedido. Verifica a ligação e a conversa antes de tentar novamente.');
         }
 
         if (response.status === 403) {
             const data = await readJson(response);
+
             // Só repetir quando o servidor confirma que rejeitou o pedido
             // ANTES de o executar e a sessão continua a ser da mesma conta.
             if (data.code === 'csrf_expired') {
                 if (!data.member_id || String(data.member_id) !== me) {
                     throw new Error('A sessão terminou ou mudou de conta. Volta a entrar na Margot para continuar.');
                 }
+
                 if (!retried && alive && !signal.aborted && !response.redirected
                     && window.MargotCsrf?.updateToken(data.csrf_token)) {
                     body.set('_csrf', data.csrf_token);
                     return post(body, true);
                 }
             }
+
             throw new Error(typeof data.message === 'string' ? data.message : responseError(response));
         }
+
         return response;
     }
 
@@ -179,12 +201,15 @@
         send.classList.toggle('ativo', hasContent);
         send.hidden = !hasContent || busy;
         send.setAttribute('aria-label', sending ? 'A enviar mensagem' : 'Enviar mensagem');
-        send.textContent = sending ? '…' : '↑';
+        send.textContent = sending ? (sendProgress || '…') : '↑';
+        send.toggleAttribute('data-gallery-progress', Boolean(sending && sendProgress));
 
         microphone.hidden = hasContent || busy;
         microphone.disabled = sending;
 
         byId('chat-camera-open').disabled = sending || busy;
+        if (galleryButton) galleryButton.disabled = sending || busy;
+        preview.querySelectorAll('button').forEach((button) => button.disabled = sending);
 
         text.hidden = busy;
         recording.hidden = !busy;
@@ -200,58 +225,104 @@
         if (reply && focus) text.focus({ preventScroll: true });
     }
 
-    function chooseFile(value, viewOnce = false) {
+    function clearPreview() {
         preview.querySelectorAll('audio, video').forEach((element) => element.pause());
-        if (previewUrl) URL.revokeObjectURL(previewUrl);
-
-        previewUrl = null;
-        file = value;
         preview.replaceChildren();
-        preview.hidden = !file;
-        once.checked = Boolean(file?.type.startsWith('image/') && viewOnce);
-        media.value = '';
+        previewUrls.forEach((value) => URL.revokeObjectURL(value));
+        previewUrls.clear();
+    }
 
-        if (file) {
-            const kind = file.type.startsWith('audio/')
-                ? 'audio'
-                : file.type.startsWith('video/')
-                  ? 'video'
-                  : 'img';
+    function chooseFile(value, viewOnce = false) {
+        chooseFiles(value ? [value] : [], viewOnce);
+    }
 
-            const limit = kind === 'video' ? 100 : kind === 'audio' ? 35 : 15;
+    function chooseFiles(values, viewOnce = false) {
+        const selected = Array.from(values);
 
-            if (file.size > limit * 1024 * 1024) {
-                file = null;
-                preview.hidden = true;
-                showError('O ficheiro pode ter no máximo ' + limit + ' MB.');
-                state();
+        if (selected.length > 10) {
+            showError(label('Podes selecionar no máximo 10 fotografias.', 'You can select up to 10 photos.'));
+            return;
+        }
+
+        if (selected.length > 1 && !selected.every(isPhoto)) {
+            showError(label('Seleciona apenas fotografias para enviar várias de uma vez.', 'Select only photos to send several at once.'));
+            return;
+        }
+
+        for (const value of selected) {
+            const limit = value.type.startsWith('video/') ? 100 : value.type.startsWith('audio/') ? 35 : 15;
+
+            if (value.size > limit * 1024 * 1024) {
+                showError(label('O ficheiro pode ter no máximo ', 'The file must be no larger than ') + limit + ' MB.');
                 return;
             }
+        }
 
-            previewUrl = URL.createObjectURL(file);
+        clearPreview();
 
-            const element = document.createElement(kind);
-            element.src = previewUrl;
+        files = selected;
+        file = files[0] || null;
+        preview.hidden = !file;
+        once.checked = Boolean(file && files.every(isPhoto) && viewOnce);
+        media.value = '';
+        if (gallery) gallery.value = '';
+        preview.classList.remove('chat-preview-audio', 'chat-preview-gallery');
 
-            if (kind !== 'img') {
-                element.controls = true;
-                element.setAttribute('playsinline', '');
-            } else {
-                element.alt = 'Fotografia a enviar';
+        if (file) {
+            const many = files.length > 1;
+
+            if (many) {
+                preview.classList.add('chat-preview-gallery');
+
+                const count = document.createElement('small');
+                count.className = 'chat-gallery-count';
+                count.textContent = files.length + label(' fotografias · máximo 10', ' photos · maximum 10');
+                preview.append(count);
             }
 
-            const remove = document.createElement('button');
-            remove.type = 'button';
-            remove.className = 'chat-media-remover';
-            remove.textContent = '×';
-            remove.setAttribute('aria-label', 'Remover anexo');
-            remove.addEventListener('click', () => chooseFile(null), { signal });
+            const strip = many ? document.createElement('div') : preview;
+            if (many) strip.className = 'chat-gallery-strip';
 
-            preview.append(
-                remove,
-                kind === 'audio' ? window.MargotChatAudioPlayer(element, showError) : element
-            );
-            preview.classList.toggle('chat-preview-audio', kind === 'audio');
+            files.forEach((value, index) => {
+                const kind = value.type.startsWith('audio/') ? 'audio'
+                    : value.type.startsWith('video/') ? 'video' : 'img';
+
+                const objectUrl = URL.createObjectURL(value);
+                previewUrls.add(objectUrl);
+
+                const element = document.createElement(kind);
+                element.src = objectUrl;
+
+                if (kind !== 'img') {
+                    element.controls = true;
+                    element.setAttribute('playsinline', '');
+                } else {
+                    element.alt = label('Fotografia a enviar', 'Photo to send');
+                }
+
+                const remove = document.createElement('button');
+                remove.type = 'button';
+                remove.className = 'chat-media-remover';
+                remove.textContent = '×';
+                remove.setAttribute('aria-label', label('Remover anexo', 'Remove attachment') + (many ? ' ' + (index + 1) : ''));
+
+                remove.addEventListener('click', () => {
+                    if (!sending) chooseFiles(files.filter((_, position) => position !== index), once.checked);
+                }, { signal });
+
+                const item = many ? document.createElement('div') : strip;
+                if (many) item.className = 'chat-gallery-item';
+
+                item.append(
+                    remove,
+                    kind === 'audio' ? window.MargotChatAudioPlayer(element, showError) : element
+                );
+
+                if (many) strip.append(item);
+                if (kind === 'audio') preview.classList.add('chat-preview-audio');
+            });
+
+            if (many) preview.append(strip);
         }
 
         state();
@@ -345,8 +416,10 @@
                 : own(message)
                   ? 'Fotografia · Ver uma vez'
                   : '① Abrir fotografia';
+
             bubble.append(button);
         }
+
         if (message.media_url) {
             const tag = { imagem: 'img', video: 'video', audio: 'audio' }[message.tipo];
 
@@ -427,45 +500,60 @@
         }
 
         const sentText = text.value;
-        const sentFile = file;
+        const sentFiles = files.length ? files.slice() : [null];
         const sentReply = reply;
-        const body = new FormData(form);
-
-        body.set('view_once', String(Boolean(sentFile?.type.startsWith('image/') && once.checked)));
-        body.set('mensagem', sentText);
-        body.set('reply_to', sentReply?.id || '');
-        body.set('profile_access_token', window.AppWebSocket?.profileAccessToken?.(otherId) || '');
-        body.delete('media');
-
-        if (sentFile) {
-            body.set('media', sentFile);
-            body.set('media_kind', sentFile.type.startsWith('audio/') ? 'audio' : '');
-        }
+        const sentOnce = once.checked;
 
         sending = true;
         showError('');
         state();
 
         try {
-            const data = await request(body);
-            if (!alive) return;
+            for (let index = 0; index < sentFiles.length; index++) {
+                if (!alive || signal.aborted) return;
 
-            add(data.message);
+                const sentFile = sentFiles[index];
+                const body = new FormData(form);
 
-            if (text.value === sentText) {
-                text.value = '';
-                resizeText();
+                body.set('view_once', String(Boolean(isPhoto(sentFile) && sentOnce)));
+                body.set('mensagem', index === 0 ? sentText : '');
+                body.set('reply_to', index === 0 ? (sentReply?.id || '') : '');
+                body.set('profile_access_token', window.AppWebSocket?.profileAccessToken?.(otherId) || '');
+                body.delete('media');
+                body.delete('media_kind');
+
+                if (sentFile) {
+                    body.set('media', sentFile);
+                    body.set('media_kind', sentFile.type.startsWith('audio/') ? 'audio' : '');
+                }
+
+                sendProgress = sentFiles.length > 1 ? (index + 1) + '/' + sentFiles.length : null;
+                state();
+
+                const data = await request(body);
+                if (!alive) return;
+
+                add(data.message);
+
+                if (index === 0) {
+                    if (text.value === sentText) {
+                        text.value = '';
+                        resizeText();
+                    }
+
+                    if (reply === sentReply) selectReply(null);
+                }
+
+                if (sentFile) chooseFiles(files.filter((value) => value !== sentFile), sentOnce);
+
+                saveDraft();
+                publish({ type: 'chat_publish', message_id: data.message.id });
             }
-
-            if (file === sentFile) chooseFile(null);
-            if (reply === sentReply) selectReply(null);
-            saveDraft();
-
-            publish({ type: 'chat_publish', message_id: data.message.id });
-        } catch (error) {
-            if (error.name !== 'AbortError') showError(error.message);
+        } catch (failure) {
+            if (failure.name !== 'AbortError') showError(failure.message);
         } finally {
             sending = false;
+            sendProgress = null;
             if (alive) state();
         }
     }
@@ -498,6 +586,7 @@
                 });
 
                 const data = await readJson(response);
+
                 if (!response.ok || response.redirected || data.success !== true
                     || !Array.isArray(data.messages) || !alive) break;
 
@@ -523,14 +612,17 @@
 
     // Impede a transferência de foco para o botão; o envio acontece apenas no click.
     let keepFocus = false;
+
     on(send, 'pointerdown', (event) => {
         if (event.button !== 0) return;
         keepFocus = document.activeElement === text;
         event.preventDefault();
     });
+
     on(send, 'pointercancel', () => {
         keepFocus = false;
     });
+
     on(send, 'click', () => {
         if (keepFocus) text.focus({ preventScroll: true });
         keepFocus = false;
@@ -550,10 +642,39 @@
 
     on(media, 'change', () => {
         const selected = media.files[0];
+
         if (selected && /^(image|video)\//.test(selected.type)) camera.review(selected);
         else chooseFile(selected || null);
+
         media.value = '';
     });
+
+    if (gallery && galleryButton) {
+        galleryButton.setAttribute('aria-label', label('Escolher fotografias da galeria', 'Choose photos from your gallery'));
+
+        on(galleryButton, 'click', () => {
+            if (sending || recorder.state !== 'idle') return;
+
+            gallery.value = '';
+            gallery.click();
+        });
+
+        on(gallery, 'change', () => {
+            const selected = Array.from(gallery.files || []);
+            gallery.value = '';
+
+            if (!alive || sending || !selected.length) return;
+
+            if (!selected.every(isPhoto)) {
+                showError(label('Seleciona apenas fotografias.', 'Select only photos.'));
+                return;
+            }
+
+            showError('');
+            chooseFiles(selected);
+        });
+    }
+
     on(byId('chat-camera-open'), 'click', () => camera.open());
 
     on(microphone, 'click', () => {
@@ -568,19 +689,24 @@
     on(content, 'click', async (event) => {
         const button = event.target.closest('[data-open-photo]');
         if (!button || button.disabled) return;
+
         button.disabled = true;
+
         try {
             const response = await post(new URLSearchParams({
                 action: 'open_photo',
                 message_id: button.dataset.openPhoto
             }));
+
             if (!response.ok || response.redirected
                 || !/^image\//i.test(response.headers.get('Content-Type') || '')) {
                 const data = await readJson(response);
                 throw new Error(typeof data.message === 'string' ? data.message : responseError(response));
             }
+
             const blob = await response.blob();
             if (!alive) return;
+
             const src = URL.createObjectURL(blob);
             viewer.open(src, () => URL.revokeObjectURL(src));
             button.textContent = 'Fotografia aberta';
@@ -670,13 +796,15 @@
     const interval = setInterval(() => sync(), 12000);
 
     const draft = drafts.get(draftKey);
+
     if (draft) {
         text.value = draft.text;
-        chooseFile(draft.file);
+        chooseFiles(draft.files || (draft.file ? [draft.file] : []));
         selectReply(draft.reply, false);
         once.checked = Boolean(draft.once);
         resizeText();
     }
+
     state();
     markRead();
 
@@ -687,14 +815,17 @@
         alive = false;
         clearInterval(interval);
         events.abort();
+
         page.querySelectorAll('audio, video').forEach((element) => element.pause());
+
         viewer.destroy();
         viewport.destroy();
         reactions.destroy();
         recorder.destroy();
         camera.destroy();
 
-        if (previewUrl) URL.revokeObjectURL(previewUrl);
+        clearPreview();
+
         if (window.desativarChatMargot === destroy) delete window.desativarChatMargot;
         if (String(window.chatMembroId) === otherId) delete window.chatMembroId;
     }
