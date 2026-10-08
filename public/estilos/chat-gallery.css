@@ -52,3 +52,17 @@
     line-height: 1;
     white-space: nowrap;
 }
+
+/* Mantém a câmara visível quando chat.js oculta os outros atalhos.
+   O atributo hidden continua a ocultá-la durante a gravação. */
+.chat-compositor #chat-camera-open {
+    visibility: visible !important;
+}
+
+@media (prefers-color-scheme: dark) {
+    .chat-compositor .chat-icon,
+    .chat-voltar,
+    #chat-recording-cancel {
+        color: #fff;
+    }
+}
