@@ -3,12 +3,20 @@
 {% block title %}{{ membro.nome }} | Margot{% endblock %}
 
 {% block styles %}
+{% set foto_inicial = membro.fotos[0].nome_arquivo|default('') %}
+{% if foto_inicial and foto_inicial != 'default.webp' %}
+<link rel="preload" as="image" href="{{ doc_root }}imagens/fotos-perfil-originais/{{ foto_inicial }}" fetchpriority="high">
+{% endif %}
 <link rel="stylesheet" href="{{ doc_root }}estilos/profile.css?v=20260916" data-margot-page-style>
 <link rel="stylesheet" href="{{ doc_root }}estilos/profile-content.css?v=20260916" data-margot-page-style>
 <link rel="stylesheet" href="{{ doc_root }}estilos/profile-lightbox.css?v=20260920-polish" data-margot-page-style>
 <link rel="stylesheet" href="{{ doc_root }}estilos/profile-responsive.css?v=20260916" data-margot-page-style>
 <link rel="stylesheet" href="{{ doc_root }}estilos/profile-actions.css?v=20260916" data-margot-page-style>
 <link rel="stylesheet" href="{{ doc_root }}estilos/today.css?v=20260916" data-margot-page-style>
+<link rel="stylesheet" href="{{ doc_root }}estilos/profile-photos.css?v=20261008-1" data-margot-page-style>
+<noscript>
+    <style>#perfil-fotos img[data-perfil-foto-pendente] { opacity: 1; }</style>
+</noscript>
 {% endblock %}
 
 {% block content %}
@@ -109,6 +117,8 @@
                                         data-fallback="{{ doc_root }}imagens/fotos-perfil/{{ foto.nome_arquivo }}"
                                         data-default="/imagens/fotos-perfil/default.webp"
                                         alt="Fotografia {{ loop.index }} de {{ membro.nome }}"
+                                        data-perfil-foto-pendente
+                                        decoding="async"
                                         loading="{{ loop.first ? 'eager' : 'lazy' }}"
                                         fetchpriority="{{ loop.first ? 'high' : 'auto' }}"
                                         draggable="false"
@@ -458,6 +468,7 @@ window.webSocketUrl = window.location.protocol === 'https:'
     : 'ws://' + window.location.hostname + ':8080';
 </script>
 
+<script src="{{ doc_root }}js/profile-photos.js?v=20261008-1" onerror="document.querySelectorAll('[data-perfil-foto-pendente]').forEach(function (img) { img.removeAttribute('data-perfil-foto-pendente'); });"></script>
 <script src="{{ doc_root }}js/today-clothes.js?v=20260916"></script>
 <script src="{{ doc_root }}js/today.js?v=20260921"></script>
 <script src="{{ doc_root }}js/today-keyboard.js?v=20261007"></script>

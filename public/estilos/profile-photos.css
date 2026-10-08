@@ -1,0 +1,7 @@
+#perfil-fotos .perfil-slide:has(img[data-perfil-foto-pendente]) {
+    background: rgba(128, 128, 128, 0.08);
+}
+
+#perfil-fotos img[data-perfil-foto-pendente] {
+    opacity: 0;
+}
