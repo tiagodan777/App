@@ -18,6 +18,29 @@ public final class MargotHapticsPlugin extends Plugin {
         call.resolve();
     }
 
+    @PluginMethod
+    public void playConnection(PluginCall call) {
+        Vibrator vibrator = (Vibrator) getContext().getSystemService(
+            Context.VIBRATOR_SERVICE
+        );
+
+        if (vibrator != null && vibrator.hasVibrator()) {
+            long[] timings = { 0, 24, 65, 38, 75, 72 };
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                int[] amplitudes = { 0, 70, 0, 160, 0, 255 };
+                vibrator.vibrate(
+                    VibrationEffect.createWaveform(timings, amplitudes, -1)
+                );
+            } else {
+                // noinspection deprecation
+                vibrator.vibrate(timings, -1);
+            }
+        }
+
+        call.resolve();
+    }
+
     private void vibrate(String type) {
         Vibrator vibrator = (Vibrator) getContext().getSystemService(
             Context.VIBRATOR_SERVICE

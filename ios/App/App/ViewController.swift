@@ -219,7 +219,8 @@ public final class MargotHapticsPlugin: CAPPlugin, CAPBridgedPlugin {
   public let jsName = "MargotHaptics"
 
   public let pluginMethods: [CAPPluginMethod] = [
-    CAPPluginMethod(name: "play", returnType: CAPPluginReturnPromise)
+    CAPPluginMethod(name: "play", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "playConnection", returnType: CAPPluginReturnPromise)
   ]
 
   @objc public func play(_ call: CAPPluginCall) {
@@ -228,6 +229,13 @@ public final class MargotHapticsPlugin: CAPPlugin, CAPBridgedPlugin {
 
     DispatchQueue.main.async {
       MargotHapticFeedback.shared.play(type, profile: profile)
+      call.resolve()
+    }
+  }
+
+  @objc public func playConnection(_ call: CAPPluginCall) {
+    DispatchQueue.main.async {
+      MargotHapticFeedback.shared.playConnection()
       call.resolve()
     }
   }
@@ -247,6 +255,24 @@ final class MargotHapticFeedback {
     selection.prepare()
     navigation.prepare()
     sentHey.prepare()
+  }
+
+  func playConnection() {
+    guard UIApplication.shared.applicationState == .active else { return }
+
+    impact.impactOccurred(intensity: 0.72)
+    impact.prepare()
+
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.11) { [self] in
+      guard UIApplication.shared.applicationState == .active else { return }
+      navigation.impactOccurred(intensity: 1.0)
+      navigation.prepare()
+    }
+
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+      guard UIApplication.shared.applicationState == .active else { return }
+      AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
+    }
   }
 
   func play(_ type: String, profile: String? = nil) {

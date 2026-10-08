@@ -55,3 +55,31 @@ body a {
 .hoje-editor [hidden]:not(.hoje-editor-voltar) {
     display: none !important;
 }
+
+/* O nome nos Heys mantém o aspeto de texto ao ser tocado. */
+.hey-item-nome,
+.hey-item-nome:hover,
+.hey-item-nome:focus-visible,
+.hey-item-nome:active {
+    text-decoration: none;
+}
+
+.hey-item-nome {
+    display: inline-block;
+    max-width: 100%;
+    transform-origin: center;
+    transition: transform 140ms ease-out;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.hey-item-nome:hover,
+.hey-item-nome:focus-visible,
+.hey-item-nome:active {
+    transform: scale(1.025);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hey-item-nome {
+        transition: none;
+    }
+}

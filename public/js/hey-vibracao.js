@@ -3,6 +3,7 @@
 
     var processados = new Set();
     var ordem = [];
+    var ultimasConexoes = new Map();
     var MAX_PROCESSADOS = 300;
     var PADROES_WEB = Object.freeze({
         interaction: [12],
@@ -47,6 +48,27 @@
     }
 
     function aceitar(tipo, detalhe) {
+        if (tipo === 'connection') {
+            var membro = String(
+                (detalhe && (detalhe.other_member_id || detalhe.outro_id)) || ''
+            );
+            var agora = Date.now();
+
+            if (membro && agora - (ultimasConexoes.get(membro) || 0) < 1500) {
+                return false;
+            }
+
+            if (membro) {
+                ultimasConexoes.delete(membro);
+                ultimasConexoes.set(membro, agora);
+                if (ultimasConexoes.size > MAX_PROCESSADOS) {
+                    ultimasConexoes.delete(ultimasConexoes.keys().next().value);
+                }
+            }
+
+            return true;
+        }
+
         var chave = chaveProcessamento(tipo, detalhe);
 
         if (chave === tipo + ':') {
@@ -130,6 +152,17 @@
 
         if (plugin && typeof plugin.play === 'function') {
             if (tipo === 'connection') {
+                if (typeof plugin.playConnection === 'function') {
+                    try {
+                        Promise.resolve(plugin.playConnection()).catch(function () {
+                            tocarOndaConexao(plugin);
+                        });
+                    } catch (erro) {
+                        tocarOndaConexao(plugin);
+                    }
+                    return;
+                }
+
                 tocarOndaConexao(plugin);
                 return;
             }
