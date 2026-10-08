@@ -34,9 +34,11 @@ public final class MargotHapticsPlugin extends Plugin {
             return;
         }
 
-        long[] timings = {0, type.equals("shutter") ? 10 : 15};
+        long[] timings = {0, type.equals("heyReceived") ? 32
+            : type.equals("shutter") ? 10 : 15};
         boolean isHey = type.equals("heySent") || type.equals("heyReceived");
-        int[] amplitudes = {0, isHey ? 220 : 90};
+        int[] amplitudes = {0, type.equals("heyReceived") ? 170
+            : isHey ? 220 : 90};
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             vibrator.vibrate(
