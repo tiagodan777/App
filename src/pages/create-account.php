@@ -287,6 +287,10 @@ if ($editing) {
     ]);
 }
 
+if (session_status() === PHP_SESSION_ACTIVE) session_regenerate_id(true);
+
+// This session may correct only the account it has just created, for 24 hours.
+$_SESSION['pending_registration'] = ['id' => (string) $savedId, 'expires' => time() + 86400];
 $confirmationEmailSent = false;
 
 try {

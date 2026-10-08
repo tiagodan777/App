@@ -21,23 +21,32 @@ final class PasswordRecovery {
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             return false;
         }
-        $membro = $this->db->runSQL(
-            'SELECT id, primeiro_nome, email
-                FROM membros
-                WHERE LOWER(TRIM(email)) = :email
-                LIMIT 1',
-            ['email' => $email]
-        )->fetch();
-        if (!$membro) {
-            return false;
+        $gerirTransacao = !$this->db->inTransaction();
+        try {
+            if ($gerirTransacao) $this->db->beginTransaction();
+            $membro = $this->db->runSQL(
+                'SELECT id, primeiro_nome, email
+                    FROM membros
+                    WHERE LOWER(TRIM(email)) = :email
+                    LIMIT 1 FOR UPDATE',
+                ['email' => $email]
+            )->fetch();
+            if (!$membro) {
+                if ($gerirTransacao) $this->db->commit();
+                return false;
+            }
+            $token = $this->tokens->create((string) $membro['id'], 'password_reset');
+            if ($gerirTransacao) $this->db->commit();
+            return [
+                'membro_id' => (string) $membro['id'],
+                'primeiro_nome' => trim((string) $membro['primeiro_nome']),
+                'email' => $this->normalizarEmail((string) $membro['email']),
+                'token' => $token
+            ];
+        } catch (Throwable $erro) {
+            if ($gerirTransacao && $this->db->inTransaction()) $this->db->rollBack();
+            throw $erro;
         }
-        $token = $this->tokens->create((string) $membro['id'], 'password_reset');
-        return [
-            'membro_id' => (string) $membro['id'],
-            'primeiro_nome' => trim((string) $membro['primeiro_nome']),
-            'email' => $this->normalizarEmail((string) $membro['email']),
-            'token' => $token
-        ];
     }
 
     public function cancelRequest(string $token): void {
@@ -61,7 +70,16 @@ final class PasswordRecovery {
             if ($gerirTransacao) {
                 $this->db->beginTransaction();
             }
-            $membroId = $this->tokens->consume($token, 'password_reset');
+            $membroId = $this->tokens->getMemberId($token, 'password_reset');
+            if ($membroId !== false) {
+                $locked = $this->db->runSQL(
+                    'SELECT id FROM membros WHERE id = :id FOR UPDATE',
+                    ['id' => $membroId]
+                )->fetchColumn();
+                $consumido = $locked === false
+                    ? false : $this->tokens->consume($token, 'password_reset');
+                $membroId = $consumido === $membroId ? $membroId : false;
+            }
             if ($membroId === false) {
                 if ($gerirTransacao) {
                     $this->db->commit();

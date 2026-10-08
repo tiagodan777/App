@@ -35,7 +35,7 @@
 
     <link
         rel="stylesheet"
-        href="{{ doc_root }}estilos/account-confirmation.css?v=20260929-1"
+        href="{{ doc_root }}estilos/account-confirmation.css?v=20261008-email1"
     >
 
     <script src="{{ doc_root }}js/navegacao-documento.js?v=20260929-auth3"></script>
@@ -144,20 +144,97 @@
 
                 <div class="account-confirmation-copy" role="status">
                     <h1 id="account-confirmation-title">
-                        {{ sucesso == 'confirma-email' ? 'Enviámos-te um email de confirmação.' : 'A tua conta foi criada.' }}
+                        {% if correction_error %}
+                            <span data-i18n-skip>{{ confirmation_en ? 'Check your email address.' : 'Revê o teu endereço de email.' }}</span>
+                        {% else %}
+                            {{ sucesso == 'confirma-email' ? 'Enviámos-te um email de confirmação.' : 'A tua conta foi criada.' }}
+                        {% endif %}
                     </h1>
 
-                    {% if sucesso == 'confirma-email' %}
-                        <p>Abre o email e confirma a tua conta para começares.</p>
-                        <p class="account-confirmation-detail">
-                            Se não o encontrares, verifica o spam.
-                        </p>
-                    {% else %}
-                        <p>
-                            Não conseguimos enviar o email de confirmação.
-                            Pede uma nova ligação para confirmares a tua conta.
-                        </p>
+                    {% if not correction_error %}
+                        {% if sucesso == 'confirma-email' %}
+                            <p>Abre o email e confirma a tua conta para começares.</p>
+                        {% else %}
+                            <p>
+                                Não conseguimos enviar o email de confirmação.
+                                Pede uma nova ligação para confirmares a tua conta.
+                            </p>
+                        {% endif %}
                     {% endif %}
+
+                    {% if confirmation_email %}
+                        <p class="account-confirmation-address" data-i18n-skip>
+                            {{ confirmation_en ? 'Confirmation email address:' : 'Endereço de confirmação:' }}
+                            <strong dir="ltr">{{ confirmation_email }}</strong>
+                        </p>
+
+                        <details
+                            class="account-confirmation-edit"
+                            data-i18n-skip
+                            {% if correction_error %}open{% endif %}
+                        >
+                            <summary>{{ confirmation_en ? 'Wrong email? Enter the correct one.' : 'Enganaste-te no email? Introduz o correto.' }}</summary>
+
+                            <form action="{{ doc_root }}login" method="post">
+                                <input
+                                    type="hidden"
+                                    name="_csrf"
+                                    value="{{ csrf_token|e('html_attr') }}"
+                                >
+
+                                <input
+                                    type="hidden"
+                                    name="action"
+                                    value="correct-email"
+                                >
+
+                                <input
+                                    type="hidden"
+                                    name="current_email"
+                                    value="{{ confirmation_email|e('html_attr') }}"
+                                >
+
+                                <label for="correct-email">
+                                    {{ confirmation_en ? 'Correct email address' : 'Email correto' }}
+                                </label>
+
+                                <input
+                                    type="email"
+                                    id="correct-email"
+                                    name="email"
+                                    maxlength="64"
+                                    required
+                                    value="{{ (correction_error ? correction_email : confirmation_email)|e('html_attr') }}"
+                                    autocomplete="email"
+                                    autocapitalize="none"
+                                    autocorrect="off"
+                                    spellcheck="false"
+                                    {% if correction_error %}
+                                        aria-describedby="correction-error"
+                                        aria-invalid="true"
+                                    {% endif %}
+                                >
+
+                                <button type="submit">
+                                    {{ confirmation_en ? 'Save and send confirmation' : 'Guardar e enviar confirmação' }}
+                                </button>
+                            </form>
+                        </details>
+                    {% endif %}
+
+                    {% if correction_error %}
+                        <p
+                            id="correction-error"
+                            class="account-confirmation-error"
+                            role="alert"
+                            data-i18n-skip
+                        >{{ correction_error }}</p>
+                    {% endif %}
+
+                    <p class="account-confirmation-spam" data-i18n-skip>
+                        {{ confirmation_en ? 'Can’t find the email?' : 'Não encontras o email?' }}
+                        <strong>{{ confirmation_en ? 'Check Spam and Trash too.' : 'Verifica também o Spam e o Lixo.' }}</strong>
+                    </p>
 
                     <a
                         class="account-confirmation-link"
@@ -225,6 +302,14 @@
                 {% endif %}
 
                 {% if email_pendente %}
+                    {% if confirmation_email %}
+                        <p data-i18n-skip>
+                            <span>{{ confirmation_en ? 'Confirmation email address:' : 'Endereço de confirmação:' }}</span>
+                            <strong dir="ltr">{{ confirmation_email }}</strong>
+                            <a href="{{ doc_root }}login?sucesso=email-pendente">{{ confirmation_en ? 'Wrong email? Enter the correct one.' : 'Enganaste-te no email? Introduz o correto.' }}</a>
+                        </p>
+                    {% endif %}
+
                     <p>
                         <a href="{{ doc_root }}email-verification-resend">
                             Enviar uma nova ligação de confirmação

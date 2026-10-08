@@ -129,3 +129,76 @@
         animation: none;
     }
 }
+
+.account-confirmation-address strong {
+    display: block;
+    margin-top: 6px;
+    overflow-wrap: anywhere;
+}
+
+.account-confirmation .account-confirmation-spam {
+    margin: 24px 0;
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: #fff0f3;
+    color: #542530;
+    font-size: 15px;
+}
+
+.account-confirmation-spam strong {
+    display: block;
+}
+
+.account-confirmation-edit {
+    text-align: left;
+    margin: 16px 0;
+}
+
+.account-confirmation-edit summary {
+    cursor: pointer;
+    color: #bc1736;
+    text-decoration: underline;
+    font: 600 15px/1.5 system-ui, sans-serif;
+}
+
+.account-confirmation-edit form {
+    display: grid;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.account-confirmation-edit label {
+    font: 600 15px system-ui, sans-serif;
+}
+
+.account-confirmation-edit input[type="email"] {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 12px;
+    border: 1px solid #a4a4ad;
+    border-radius: 12px;
+    background: #fff;
+    color: #202024;
+    font: 16px system-ui, sans-serif;
+}
+
+.account-confirmation-edit button {
+    padding: 14px;
+    border: 0;
+    border-radius: 16px;
+    background: #f3153c;
+    color: #fff;
+    font: 650 16px system-ui, sans-serif;
+    cursor: pointer;
+}
+
+.account-confirmation-edit :focus-visible {
+    outline: 2px solid #bc1736;
+    outline-offset: 3px;
+}
+
+.account-confirmation .account-confirmation-error {
+    color: #b01932;
+    font-size: 15px;
+}
