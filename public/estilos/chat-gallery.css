@@ -40,11 +40,15 @@
     opacity: 0.4;
 }
 
-#chat-enviar {
-    font-variant-numeric: tabular-nums;
-}
-
-.chat-compositor #chat-enviar[data-gallery-progress] {
-    font-size: 13px;
+/* O botão de envio mantém o texto durante o pedido. */
+.chat-compositor #chat-enviar,
+.chat-compositor #chat-recording-send {
+    width: auto;
+    min-width: 64px;
+    padding: 0 12px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
     white-space: nowrap;
 }

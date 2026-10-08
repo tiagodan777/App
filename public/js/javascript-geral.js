@@ -61,7 +61,7 @@
     var posicoesAbas = new Map();
     var animacaoEmCurso = null;
     var ESPERA_MAXIMA_RECURSO = 5000;
-    var DURACAO_NAVEGACAO = 160;
+    var DURACAO_NAVEGACAO = 100;
     var TEMPO_REAQUECER = 15000;
 
     /*
@@ -626,16 +626,10 @@
                 faseNavegacao = 'animate';
                 document.body.classList.add('margot-a-navegar');
 
-                var inicio = trocaDeAba
-                    ? { opacity: 0.8 }
-                    : {
-                          opacity: 0.8,
-                          transform: 'translate3d(' + (direcao < 0 ? '-18px' : '18px') + ',0,0)'
-                      };
-
-                var fim = trocaDeAba
-                    ? { opacity: 1 }
-                    : { opacity: 1, transform: 'translate3d(0,0,0)' };
+                // Não transforma o ancestral do chat, que usa position: fixed.
+                // A transição não muda o referencial dos elementos fixos.
+                var inicio = { opacity: 0.8 };
+                var fim = { opacity: 1 };
 
                 animacaoEmCurso = paginaNova.animate([inicio, fim], {
                     duration: duracao,
@@ -811,6 +805,8 @@
             }
 
             swipeBack.horizontal = true;
+            // Usa apenas a cache existente das abas; não guarda conversas.
+            preAquecerPagina(urlAlternativoParaVoltar());
         }
 
         if (swipeBack.horizontal) {

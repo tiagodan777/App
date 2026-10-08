@@ -36,7 +36,6 @@
     let file = null;
     let files = [];
     const previewUrls = new Set();
-    let sendProgress = null;
     let reply = null;
     let lastId = 0;
     let polling = false;
@@ -195,21 +194,27 @@
     }
 
     function state() {
-        const hasContent = Boolean(text.value.trim() || file);
+        const hasText = Boolean(text.value.trim());
+        const hasContent = hasText || Boolean(file);
         const busy = recorder.state !== 'idle';
 
         send.disabled = sending || pickingGallery || !hasContent || busy;
         send.classList.toggle('ativo', hasContent);
         send.hidden = !hasContent || busy;
         send.setAttribute('aria-label', sending ? 'A enviar mensagem' : 'Enviar mensagem');
-        send.textContent = sending ? (sendProgress || '…') : '↑';
-        send.toggleAttribute('data-gallery-progress', Boolean(sending && sendProgress));
+        send.textContent = label('Enviar', 'Send');
+        byId('chat-recording-send').textContent = label('Enviar', 'Send');
+        send.setAttribute('aria-busy', String(sending));
 
         microphone.hidden = hasContent || busy;
         microphone.disabled = sending || pickingGallery;
 
+        byId('chat-camera-open').hidden = hasText || busy;
         byId('chat-camera-open').disabled = sending || pickingGallery || busy;
-        if (galleryButton) galleryButton.disabled = sending || pickingGallery || busy;
+        if (galleryButton) {
+            galleryButton.hidden = hasText || busy;
+            galleryButton.disabled = sending || pickingGallery || busy;
+        }
         preview.querySelectorAll('button').forEach((button) => button.disabled = sending || pickingGallery);
 
         text.hidden = busy;
@@ -528,7 +533,6 @@
                     body.set('media_kind', sentFile.type.startsWith('audio/') ? 'audio' : '');
                 }
 
-                sendProgress = sentFiles.length > 1 ? (index + 1) + '/' + sentFiles.length : null;
                 state();
 
                 const data = await request(body);
@@ -554,7 +558,6 @@
             if (failure.name !== 'AbortError') showError(failure.message);
         } finally {
             sending = false;
-            sendProgress = null;
             if (alive) state();
         }
     }

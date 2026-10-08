@@ -128,24 +128,15 @@
         tocar('heySent', evento.detail || {});
     });
 
-    window.addEventListener('app:chat-message', function (evento) {
+    // A háptica acompanha o aviso mostrado, não cada mensagem recebida.
+    window.addEventListener('app:chat-aviso', function (evento) {
         var detalhe = evento.detail || {};
-        var mensagem = detalhe.message || {};
+        var emissor = String(detalhe.from_member_id || '');
 
         if (
-            window.membroId &&
-            String(mensagem.destinatario_id || '') === String(window.membroId)
-        ) {
-            tocar('messageReceived', detalhe);
-        }
-    });
-
-    window.addEventListener('app:chat-push-recebido', function (evento) {
-        var detalhe = evento.detail || {};
-
-        if (
-            !detalhe.reaction_emoji &&
-            String(detalhe.from_member_id || '') !== String(window.membroId || '')
+            emissor &&
+            emissor !== String(window.membroId || '') &&
+            emissor !== String(window.chatMembroId || '')
         ) {
             tocar('messageReceived', detalhe);
         }

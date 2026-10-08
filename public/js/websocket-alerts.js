@@ -221,6 +221,15 @@ window.MargotMessageAlerts = function (window, document, $) {
             }, 3600)
         );
 
+        if (mensagem.reaction !== true) {
+            window.dispatchEvent(new CustomEvent('app:chat-aviso', {
+                detail: {
+                    message_id: mensagem.id || 0,
+                    from_member_id: emissorId
+                }
+            }));
+        }
+
         return resumo;
     }
 
@@ -300,6 +309,7 @@ window.MargotMessageAlerts = function (window, document, $) {
         }
 
         mostrarAvisoMensagem({
+            id: mensagemId,
             emissor_id: String(dados.from_member_id || ''),
             emissor_nome: String(dados.from_name || 'Alguém'),
             emissor_foto_url: String(dados.from_photo || '/imagens/fotos-perfil/default.webp'),

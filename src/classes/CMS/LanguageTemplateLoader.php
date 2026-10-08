@@ -10,7 +10,7 @@ use Twig\Source;
 final class LanguageTemplateLoader implements LoaderInterface
 {
     private const VERSION = '20261007-reaction-push-1';
-    private const CHAT_VERSION = '20261008-gallery-notice-1';
+    private const CHAT_VERSION = '20261008-send-order-1';
     private const STYLE_VERSION = '20261006-ui-2';
     private const VISUAL_VERSION = '20261008-compact-alerts-2';
 
@@ -59,7 +59,7 @@ final class LanguageTemplateLoader implements LoaderInterface
             ) ?? $code;
         }
 
-        foreach (['js/chat.js', 'js/websocket-alerts.js'] as $asset) {
+        foreach (['js/chat.js', 'js/websocket-alerts.js', 'js/hey-vibracao.js', 'js/javascript-geral.js'] as $asset) {
             $code = preg_replace(
                 '~' . preg_quote($asset, '~') . '(?:\?v=[^"\s<>]*)?~',
                 $asset . '?v=' . self::CHAT_VERSION,
