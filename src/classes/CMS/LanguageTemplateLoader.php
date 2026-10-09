@@ -9,6 +9,7 @@ use Twig\Source;
 /** Adds presentation scripts to documents before Twig interpolates member data. */
 final class LanguageTemplateLoader implements LoaderInterface
 {
+    private const STABILITY_VERSION = '20261008-launch-1';
     private const VERSION = '20261007-reaction-push-1';
     private const CHAT_VERSION = '20261008-connection-haptic-2';
     private const STYLE_VERSION = '20261008-hey-name-motion-1';
@@ -67,6 +68,33 @@ final class LanguageTemplateLoader implements LoaderInterface
             ) ?? $code;
         }
 
+        foreach ([
+            'js/chat-viewport.js', 'js/index-mini-menu.js', 'js/today.js',
+            'js/account-confirmation.js', 'js/index-animacao.js',
+            'js/push-notifications.js', 'js/hey-vibracao.js',
+            'js/app-interactions.js', 'js/chat.js', 'estilos/theme.css'
+        ] as $asset) {
+            $code = preg_replace(
+                '~' . preg_quote($asset, '~') . '(?:\?v=[^"\s<>]*)?~',
+                $asset . '?v=' . self::STABILITY_VERSION,
+                $code
+            ) ?? $code;
+        }
+
+        // A página de confirmação usa o documento de login, fora do layout comum.
+        if ($name === 'login.html' && !str_contains($code, 'estilos/theme.css')) {
+            $code = str_replace('</head>', '<link rel="stylesheet" href="{{ doc_root }}'
+                . 'estilos/theme.css?v=' . self::STABILITY_VERSION . '"></head>', $code);
+        }
+
+        // Só antecipa o fundo nos documentos que carregam o tema correspondente.
+        if (str_contains($code, 'estilos/theme.css')) {
+            $code = str_replace('<meta charset="UTF-8">', '<meta charset="UTF-8">'
+                . '<meta name="color-scheme" content="light dark">'
+                . '<style>html,body{background:#fff}@media(prefers-color-scheme:dark){'
+                . 'html,body{background:#000;color:#f5f5f7}}</style>', $code);
+        }
+
         $position = stripos($code, '</head>');
 
         if ($position !== false) {
@@ -109,7 +137,7 @@ final class LanguageTemplateLoader implements LoaderInterface
             . ':'
             . self::VISUAL_VERSION
             . ':'
-            . self::CHAT_VERSION;
+            . self::CHAT_VERSION . ':' . self::STABILITY_VERSION;
     }
 
     public function isFresh(string $name, int $time): bool
