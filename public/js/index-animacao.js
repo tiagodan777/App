@@ -67,9 +67,10 @@
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         createGrid();
 
-        // Alterar width/height apaga o bitmap, mesmo com a animação em pausa.
-        // Pintar no mesmo frame evita mostrar um fundo vazio entre os dois tamanhos.
-        paint();
+        if (reduced) {
+            cancelAnimationFrame(animationFrame);
+            animationFrame = requestAnimationFrame(draw);
+        }
     }
 
     function scheduleResize() {
@@ -183,15 +184,11 @@
         const elapsed = lastFrame ? Math.min(now - lastFrame, 50) : FRAME_TIME;
         lastFrame = now;
 
-        time += reduced ? 0 : elapsed * 0.000045;
-        paint();
-        if (!reduced) animationFrame = requestAnimationFrame(draw);
-    }
+        const targetMix = theme.matches ? 1 : 0;
+        darkMix = targetMix;
 
-    function paint() {
-        if (!ativo || !width || !height) return;
-        darkMix = theme.matches ? 1 : 0;
         ctx.clearRect(0, 0, width, height);
+        time += reduced ? 0 : elapsed * 0.000045;
 
         const cx = width / 2;
         const cy = height / 2;
@@ -261,6 +258,7 @@
 
         }
 
+        if (!reduced) animationFrame = requestAnimationFrame(draw);
     }
 
     function visibility() {
@@ -281,11 +279,7 @@
     overlayObserver = new MutationObserver(overlayChanged);
     overlayObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
     overlayChanged();
-    function themeChanged() {
-        paint();
-        visibility();
-    }
-    theme.addEventListener('change', themeChanged);
+    theme.addEventListener('change', visibility);
     document.addEventListener('visibilitychange', visibility);
     window.addEventListener('resize', scheduleResize, { passive: true });
     window.addEventListener('orientationchange', scheduleResize, { passive: true });
@@ -301,7 +295,7 @@
     function desativarPagina() {
         ativo = false;
         overlayObserver?.disconnect();
-        theme.removeEventListener('change', themeChanged);
+        theme.removeEventListener('change', visibility);
         document.removeEventListener('visibilitychange', visibility);
 
         if (animationFrame !== null) {
