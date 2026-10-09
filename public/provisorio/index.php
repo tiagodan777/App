@@ -29,6 +29,7 @@ $sources = [
     'outside',
     'tiago',
     'provisorio',
+    'margot'
 ];
 
 $source = $_GET['src'] ?? 'direct';
