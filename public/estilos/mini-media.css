@@ -1,0 +1,154 @@
+/* Os Daylies ficam abaixo do Hey, numa linha com altura reservada. */
+body .mini-menu > .mini-menu-daylies-slot {
+    display: flex;
+    flex: 0 0 36px;
+    height: 36px;
+    min-height: 36px;
+    align-items: center;
+    justify-content: center;
+}
+
+body .mini-menu [data-daylies-mini] {
+    display: inline-flex !important;
+    flex: 0 0 auto;
+    height: 36px;
+    min-height: 36px;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 6px 14px;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    line-height: 20px;
+    white-space: nowrap;
+}
+
+body .mini-menu [data-daylies-mini][hidden] {
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* Mantém as proporções da fotografia e do vídeo na pré-visualização. */
+body .mini-menu .mini-compose-preview {
+    flex: 0 0 auto;
+    width: 100%;
+    height: 120px;
+    max-height: 120px;
+    margin: 0;
+    border: 1px solid var(--line, #dcdce3);
+    border-radius: 16px;
+    background: var(--surface-soft, #f3f3f7);
+    touch-action: manipulation;
+}
+
+body .mini-menu .mini-compose-preview > img,
+body .mini-menu .mini-compose-preview > video {
+    width: 100% !important;
+    height: 100% !important;
+    max-height: none;
+    object-fit: contain;
+}
+
+body .mini-menu .mini-compose-preview:has(.chat-voice) {
+    height: auto;
+    min-height: 56px;
+    padding: 8px 40px 8px 8px;
+    box-sizing: border-box;
+}
+
+/* Com um anexo, há espaço para a pré-visualização e para o envio. */
+body .mini-menu:has(.mini-compose-has-media, .mini-compose-preparing) > header > a > img {
+    width: 64px;
+    height: 64px;
+}
+
+body .mini-menu:has(.mini-compose-has-media, .mini-compose-preparing) > header > h1 {
+    font-size: 20px;
+}
+
+body .mini-menu .mini-compose-input {
+    flex-shrink: 0;
+}
+
+body .mini-menu .mini-compose-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 24px;
+    margin: 0;
+    color: var(--text, #17171b);
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 600;
+}
+
+body .mini-menu .mini-compose-status[hidden] {
+    display: none;
+}
+
+body .mini-menu .mini-compose-status::before {
+    content: '';
+    flex: 0 0 14px;
+    width: 14px;
+    height: 14px;
+    box-sizing: border-box;
+    border: 2px solid var(--line, #dcdce3);
+    border-top-color: var(--margot-vermelho, #ef1748);
+    border-radius: 50%;
+    animation: mini-media-enviar 800ms linear infinite;
+}
+
+body .mini-menu .mini-compose-busy .chat-media-remover {
+    opacity: 0.45;
+}
+
+@keyframes mini-media-enviar {
+    to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body .mini-menu .mini-compose-status::before {
+        animation: none;
+    }
+}
+
+@media (max-height: 800px) {
+    body .mini-menu > header {
+        margin-top: 10px;
+    }
+
+    body .mini-menu > header > a > img {
+        width: 88px;
+        height: 88px;
+    }
+
+    body .mini-menu > header > h1 {
+        font-size: 22px;
+    }
+
+    body .mini-menu:has(.mini-compose-has-media, .mini-compose-preparing) {
+        height: 92vh;
+    }
+
+    body .mini-menu:has(.mini-compose-has-media, .mini-compose-preparing) > header {
+        margin-top: 10px;
+    }
+
+    body .mini-menu:has(.mini-compose-has-media, .mini-compose-preparing) > header > a > img {
+        width: 48px;
+        height: 48px;
+    }
+
+    body .mini-menu:has(.mini-compose-has-media, .mini-compose-preparing) #enviar-hey {
+        height: 44px;
+        min-height: 44px;
+        margin-top: 10px;
+        margin-bottom: 10px;
+    }
+
+    body .mini-menu .mini-compose-preview {
+        height: 90px;
+        max-height: 90px;
+    }
+}

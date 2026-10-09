@@ -6,6 +6,15 @@ window.MargotMiniCompose = function (form, { onError, workletUrl }) {
     const media = form.querySelector('[name="media"]');
     const submit = form.querySelector('[type="submit"]');
     const controls = document.createElement('div');
+    const menu = form.closest('.mini-menu');
+    const daylies = menu.querySelector('[data-daylies-mini]');
+
+    if (daylies && !daylies.closest('.mini-menu-daylies-slot')) {
+        const slot = document.createElement('section');
+        slot.className = 'mini-menu-daylies-slot';
+        form.before(slot);
+        slot.append(daylies);
+    }
 
     controls.className = 'mini-compose-input';
     controls.innerHTML = `
@@ -34,10 +43,19 @@ window.MargotMiniCompose = function (form, { onError, workletUrl }) {
     preview.className = 'chat-media-preview mini-compose-preview';
     preview.hidden = true;
 
+    const status = document.createElement('div');
+    status.className = 'mini-compose-status';
+    status.setAttribute('role', 'status');
+    status.setAttribute('aria-live', 'polite');
+    status.setAttribute('aria-atomic', 'true');
+    status.hidden = true;
+    const statusText = document.createElement('span');
+    status.append(statusText);
+
     let viewOnce = false;
 
     form.prepend(preview);
-    form.append(controls);
+    form.append(controls, status);
 
     const microphone = controls.querySelector('[data-microphone]');
     controls.insertBefore(input, microphone);
@@ -50,7 +68,9 @@ window.MargotMiniCompose = function (form, { onError, workletUrl }) {
     let file = null,
         objectURL = null,
         recipient = '',
-        busy = false;
+        busy = false,
+        preparing = false,
+        disposed = false;
 
     const on = (el, type, handler) => el.addEventListener(type, handler, { signal });
 
@@ -58,7 +78,17 @@ window.MargotMiniCompose = function (form, { onError, workletUrl }) {
         if (recipient) drafts.set(recipient, { file, text: input.value, once: viewOnce });
     }
 
+    function statusLabel() {
+        const english = window.MargotI18n?.language === 'en';
+        if (preparing) return english ? 'Preparing video…' : 'A preparar vídeo…';
+        if (file?.type.startsWith('video/')) return english ? 'Sending video…' : 'A enviar vídeo…';
+        if (file?.type.startsWith('image/')) return english ? 'Sending photo…' : 'A enviar fotografia…';
+        return english ? 'Sending message…' : 'A enviar mensagem…';
+    }
+
     function state() {
+        if (disposed) return;
+        const locked = busy || preparing;
         const active = recorder.state !== 'idle';
 
         recording.hidden = !active;
@@ -69,9 +99,20 @@ window.MargotMiniCompose = function (form, { onError, workletUrl }) {
         controls.querySelector('[data-camera-open]').hidden = active;
         form.classList.toggle('mini-compose-recording', active);
 
-        submit.disabled = busy;
-        controls.querySelector('[data-camera-open]').disabled = busy;
-        microphone.disabled = busy;
+        submit.disabled = locked;
+        controls.querySelector('[data-camera-open]').disabled = locked;
+        microphone.disabled = locked;
+        input.readOnly = locked;
+        preview.querySelectorAll('button').forEach((button) => {
+            button.disabled = locked;
+        });
+        form.setAttribute('aria-busy', String(locked));
+        form.classList.toggle('mini-compose-has-media', Boolean(file));
+        form.classList.toggle('mini-compose-busy', locked);
+        form.classList.toggle('mini-compose-preparing', preparing);
+        status.hidden = !locked;
+        const label = locked ? statusLabel() : '';
+        if (statusText.textContent !== label) statusText.textContent = label;
     }
 
     function choose(value, once = false) {
@@ -119,7 +160,9 @@ window.MargotMiniCompose = function (form, { onError, workletUrl }) {
             remove.className = 'chat-media-remover';
             remove.textContent = '×';
             remove.setAttribute('aria-label', 'Remover anexo');
-            on(remove, 'click', () => choose(null));
+            on(remove, 'click', () => {
+                if (!busy && !preparing) choose(null);
+            });
 
             preview.append(
                 remove,
@@ -162,15 +205,22 @@ window.MargotMiniCompose = function (form, { onError, workletUrl }) {
         dialog: document.getElementById('chat-camera'),
         gallery: media,
         onFile: choose,
-        onError
+        onError,
+        onPreparing(value) {
+            if (disposed) return;
+            preparing = value;
+            state();
+        }
     });
 
     on(controls.querySelector('[data-camera-open]'), 'click', () => {
-        if (!busy) camera.open();
+        if (busy || preparing) return;
+        input.blur();
+        camera.open();
     });
 
     on(controls.querySelector('[data-microphone]'), 'click', () => {
-        if (!busy) recorder.start();
+        if (!busy && !preparing) recorder.start();
     });
 
     on(controls.querySelector('[data-cancel]'), 'click', () => recorder.cancel());
@@ -213,8 +263,6 @@ window.MargotMiniCompose = function (form, { onError, workletUrl }) {
             camera.suspend();
         }
     });
-
-    const menu = form.closest('.mini-menu');
 
     const observer = new MutationObserver(() => {
         if (menu.getAttribute('aria-hidden') === 'true') {
@@ -268,6 +316,7 @@ window.MargotMiniCompose = function (form, { onError, workletUrl }) {
         },
 
         destroy() {
+            disposed = true;
             save();
             recorder.destroy();
             camera.destroy();

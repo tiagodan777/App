@@ -22,6 +22,7 @@
         var acoesAbertas = false;
         var estiloFotosId = 'margot-mini-menu-fotos-estilo';
         var menuElemento = $menu[0];
+
         function prepararTransicaoFotos() {
             var estiloAnterior = document.getElementById(estiloFotosId);
             if (estiloAnterior) {
@@ -42,16 +43,20 @@
             ].join('\n');
             document.head.appendChild(estilo);
         }
+
         prepararTransicaoFotos();
+
         function posicaoBaseMenu() {
             return acoesAbertas ? '0%' : '15%';
         }
+
         function colocarMenuNaPosicaoBase() {
             $menu.css({
                 transform: 'translate3d(0, ' + posicaoBaseMenu() + ', 0)',
                 transition: 'transform 0.3s cubic-bezier(.22,1,.36,1)'
             });
         }
+
         function definirMiniMenuAcoes(abertas) {
             acoesAbertas = Boolean(abertas);
             $menu.toggleClass('mini-menu-acoes-abertas', acoesAbertas);
@@ -69,14 +74,20 @@
          * labels, etc. podem iniciar o swipe.
          */
         function eCampoComInteracaoNativa(alvo) {
-            return Boolean($(alvo).closest('input, textarea, select, option, [contenteditable="true"]').length);
+            return Boolean(
+                $(alvo).closest(
+                    'input, textarea, select, option, video, audio, .mini-compose-preview, [contenteditable="true"]'
+                ).length
+            );
         }
+
         function prepararFoto(elemento) {
             if (typeof window.prepararMiniMenuDaFoto === 'function') {
                 return window.prepararMiniMenuDaFoto(elemento);
             }
             return true;
         }
+
         function libertarCapturaPonteiro(evento) {
             if (!menuElemento.releasePointerCapture || ponteiroMenu === null) {
                 return;
@@ -92,12 +103,14 @@
                  */
             }
         }
+
         function limparGestoMenu(evento) {
             libertarCapturaPonteiro(evento);
             gestoMenuAtivo = false;
             aArrastarMenu = false;
             ponteiroMenu = null;
         }
+
         function abrirMenu(elemento) {
             if (!prepararFoto(elemento)) {
                 return;
@@ -117,6 +130,7 @@
                     transition: 'transform 0.3s cubic-bezier(.2,.8,.2,1)'
                 });
         }
+
         function fecharMenu() {
             aberto = false;
             acoesAbertas = false;
@@ -133,6 +147,7 @@
                     transition: 'transform 0.3s cubic-bezier(.4,0,1,1)'
                 });
         }
+
         function voltarMenu() {
             colocarMenuNaPosicaoBase();
         }
@@ -173,6 +188,7 @@
             prepararFoto(this);
             evento.stopPropagation();
         });
+
         $(document).on('pointerup.margotTapFoto', '.foto', function (evento) {
             if (!fotoSelecionada || fotoSelecionada !== this) {
                 return;
@@ -188,6 +204,7 @@
             evento.stopPropagation();
             abrirMenu(this);
         });
+
         $(document).on('pointercancel.margotTapFoto', '.foto', function () {
             fotoSelecionada = null;
         });
@@ -223,6 +240,7 @@
             menuInicioTempo = Date.now();
             ponteiroMenu = evento.pointerId;
         });
+
         $menu.on('pointermove.margotMiniMenuSwipe', function (evento) {
             if (!gestoMenuAtivo || evento.pointerId !== ponteiroMenu) {
                 return;
@@ -271,6 +289,7 @@
                     }
                 }
             }
+
             var distancia = menuAtualY - menuInicioY;
 
             /*
@@ -283,14 +302,20 @@
             if (distancia < 0) {
                 distancia *= 0.18;
             }
-            $menu.css('transform', 'translate3d(0, calc(' + posicaoBaseMenu() + ' + ' + distancia + 'px), 0)');
+
+            $menu.css(
+                'transform',
+                'translate3d(0, calc(' + posicaoBaseMenu() + ' + ' + distancia + 'px), 0)'
+            );
             evento.preventDefault();
             evento.stopPropagation();
         });
+
         $menu.on('pointerup.margotMiniMenuSwipe pointercancel.margotMiniMenuSwipe', function (evento) {
             if (!gestoMenuAtivo || evento.pointerId !== ponteiroMenu) {
                 return;
             }
+
             var estavaAArrastar = aArrastarMenu;
             var distancia = menuAtualY - menuInicioY;
             var duracao = Math.max(1, Date.now() - menuInicioTempo);
@@ -326,6 +351,7 @@
             } else {
                 voltarMenu();
             }
+
             evento.preventDefault();
             evento.stopPropagation();
         });
@@ -335,25 +361,31 @@
          */
 
         $(document).on('pointerup.margotTapFoto', function (evento) {
-            if (!aberto) {
+            // A câmara e os Daylies são diálogos fora da árvore do mini-menu.
+            // Um toque nesses diálogos não pode fechar nem limpar o compositor.
+            if (!aberto || document.querySelector('dialog[open]')) {
                 return;
             }
             if (!$(evento.target).closest('.mini-menu, .foto').length) {
                 fecharMenu();
             }
         });
+
         window.fecharMiniMenu = fecharMenu;
         window.definirMiniMenuAcoes = definirMiniMenuAcoes;
+
         function desativarPagina() {
             $(document).off('.margotTapFoto');
             $menu.off('.margotMiniMenuSwipe');
             document.removeEventListener('margot:page-leave', desativarPagina);
             document.body.classList.remove('margot-mini-menu-aberto');
             menuElemento.removeEventListener('click', bloquearCliqueDepoisDeArrasto, true);
+
             var estilo = document.getElementById(estiloFotosId);
             if (estilo) {
                 estilo.remove();
             }
+
             if (window.fecharMiniMenu === fecharMenu) {
                 delete window.fecharMiniMenu;
             }
@@ -361,6 +393,7 @@
                 delete window.definirMiniMenuAcoes;
             }
         }
+
         document.addEventListener('margot:page-leave', desativarPagina);
     });
 })(window, document, jQuery);
