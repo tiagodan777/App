@@ -1,0 +1,5 @@
+/* Mantém a forma da fotografia e os gestos; evita animar continuamente
+   a fotografia grande com recorte SVG, mesmo quando o perfil está parado. */
+body .perfil-galeria {
+    animation: none;
+}

@@ -59,9 +59,7 @@
     var recursosPreCarregados = new Map();
     var scriptsCarregados = new Map();
     var posicoesAbas = new Map();
-    var animacaoEmCurso = null;
     var ESPERA_MAXIMA_RECURSO = 5000;
-    var DURACAO_NAVEGACAO = 100;
     var TEMPO_REAQUECER = 15000;
 
     /*
@@ -508,8 +506,6 @@
 
         if ((faseNavegacao === 'fetch' || faseNavegacao === 'prepare') && controlador)
             controlador.abort();
-
-        if (animacaoEmCurso) animacaoEmCurso.cancel();
     }
 
     async function trocarPagina(url, opcoes) {
@@ -578,10 +574,6 @@
                 throw new DOMException('Navegação substituída', 'AbortError');
 
             var scripts = retirarScripts(paginaNova);
-            var trocaDeAba =
-                opcoes.aba || (eAbaPrincipal(urlRenderizada) && eAbaPrincipal(resposta.url));
-            var direcao = opcoes.direcao || 1;
-
             faseNavegacao = 'render';
 
             guardarPosicaoAba(paginaAtual);
@@ -619,28 +611,9 @@
             paginaNova.style.removeProperty('visibility');
             paginaNova.style.removeProperty('pointer-events');
 
-            var reduzido = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-            var duracao = reduzido || navegacaoPendente ? 0 : trocaDeAba ? 100 : DURACAO_NAVEGACAO;
-
-            if (duracao && paginaNova.animate) {
-                faseNavegacao = 'animate';
-                document.body.classList.add('margot-a-navegar');
-
-                // Não transforma o ancestral do chat, que usa position: fixed.
-                // A transição não muda o referencial dos elementos fixos.
-                var inicio = { opacity: 0.8 };
-                var fim = { opacity: 1 };
-
-                animacaoEmCurso = paginaNova.animate([inicio, fim], {
-                    duration: duracao,
-                    easing: 'ease-out',
-                    fill: 'both'
-                });
-
-                await animacaoEmCurso.finished.catch(function () {});
-                animacaoEmCurso.cancel();
-                animacaoEmCurso = null;
-            }
+            // A página já está preparada. Evita criar uma camada translúcida
+            // do ecrã inteiro e bloquear novos toques durante esse efeito.
+            // As animações dos componentes mantêm-se nos respetivos scripts.
 
             if (!navegacaoPendente) {
                 atualizarMenu(resposta.url);
@@ -806,6 +779,7 @@
             }
 
             swipeBack.horizontal = true;
+
             // Usa apenas a cache existente das abas; não guarda conversas.
             preAquecerPagina(urlAlternativoParaVoltar());
         }

@@ -5,12 +5,15 @@
     var ordem = [];
     var ultimasConexoes = new Map();
     var MAX_PROCESSADOS = 300;
+    var ultimaRecebidaAndroid = 0;
+    var timerRecebidaAndroid = 0;
+    var geracaoRecebidaAndroid = 0;
     var PADROES_WEB = Object.freeze({
         interaction: [12],
         shutter: [10],
         heySent: [15],
-        heyReceived: [45],
-        messageReceived: [30],
+        heyReceived: [90, 65, 90],
+        messageReceived: [90, 65, 90],
         connection: [12, 65, 18, 75, 36]
     });
 
@@ -133,6 +136,55 @@
         tocarProximo();
     }
 
+    function cancelarRecebidaAndroid() {
+        geracaoRecebidaAndroid += 1;
+        window.clearTimeout(timerRecebidaAndroid);
+        timerRecebidaAndroid = 0;
+    }
+
+    function avisoAindaVisivel(tipo, detalhe) {
+        if (document.hidden || notificacoesDesativadas()) return false;
+        if (tipo !== 'messageReceived') return true;
+
+        var emissor = String((detalhe && detalhe.from_member_id) || '');
+        return !emissor || (
+            emissor !== String(window.membroId || '') &&
+            emissor !== String(window.chatMembroId || '')
+        );
+    }
+
+    function tocarRecebidaAndroid(plugin, tipo, detalhe) {
+        var agora = Date.now();
+
+        // Várias mensagens seguidas não criam uma fila de vibrações.
+        if (agora - ultimaRecebidaAndroid < 400) return;
+        ultimaRecebidaAndroid = agora;
+        cancelarRecebidaAndroid();
+        var geracao = geracaoRecebidaAndroid;
+
+        try {
+            Promise.resolve(plugin.play({ type: tipo })).then(function () {
+                if (geracao !== geracaoRecebidaAndroid) return;
+                timerRecebidaAndroid = window.setTimeout(function () {
+                    timerRecebidaAndroid = 0;
+                    if (geracao !== geracaoRecebidaAndroid ||
+                        !avisoAindaVisivel(tipo, detalhe)) return;
+
+                    try {
+                        Promise.resolve(plugin.play({ type: tipo })).catch(function () {});
+                    } catch (erro) {
+                        // O primeiro impulso já foi reproduzido.
+                    }
+                }, 120);
+            }).catch(function () {
+                if (geracao === geracaoRecebidaAndroid &&
+                    avisoAindaVisivel(tipo, detalhe)) tocarFallback(tipo);
+            });
+        } catch (erro) {
+            if (avisoAindaVisivel(tipo, detalhe)) tocarFallback(tipo);
+        }
+    }
+
     function tocar(tipo, detalhe, interacao) {
         if (
             document.hidden ||
@@ -151,6 +203,12 @@
         var plugin = pluginNativo();
 
         if (plugin && typeof plugin.play === 'function') {
+            if (window.Capacitor?.getPlatform?.() === 'android' &&
+                (tipo === 'heyReceived' || tipo === 'messageReceived')) {
+                tocarRecebidaAndroid(plugin, tipo, detalhe);
+                return;
+            }
+
             if (tipo === 'connection') {
                 if (typeof plugin.playConnection === 'function') {
                     try {
@@ -241,12 +299,17 @@
         }
     }, true);
 
+    document.addEventListener('visibilitychange', function () {
+        if (document.hidden) cancelarRecebidaAndroid();
+    });
+
     window.MargotHaptics = Object.freeze({
         play: tocar,
         feedback: function (tipo) {
             tocar(tipo || 'interaction', null, true);
         },
         cancel: function () {
+            cancelarRecebidaAndroid();
             if (typeof navigator.vibrate === 'function') {
                 navigator.vibrate(0);
             }
