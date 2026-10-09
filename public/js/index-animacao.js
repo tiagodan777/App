@@ -67,10 +67,9 @@
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         createGrid();
 
-        if (reduced) {
-            cancelAnimationFrame(animationFrame);
-            animationFrame = requestAnimationFrame(draw);
-        }
+        // Alterar width/height apaga o bitmap, mesmo com a animação em pausa.
+        // Pintar no mesmo frame evita mostrar um fundo vazio entre os dois tamanhos.
+        paint();
     }
 
     function scheduleResize() {
@@ -184,11 +183,15 @@
         const elapsed = lastFrame ? Math.min(now - lastFrame, 50) : FRAME_TIME;
         lastFrame = now;
 
-        const targetMix = theme.matches ? 1 : 0;
-        darkMix = targetMix;
-
-        ctx.clearRect(0, 0, width, height);
         time += reduced ? 0 : elapsed * 0.000045;
+        paint();
+        if (!reduced) animationFrame = requestAnimationFrame(draw);
+    }
+
+    function paint() {
+        if (!ativo || !width || !height) return;
+        darkMix = theme.matches ? 1 : 0;
+        ctx.clearRect(0, 0, width, height);
 
         const cx = width / 2;
         const cy = height / 2;
@@ -258,7 +261,6 @@
 
         }
 
-        if (!reduced) animationFrame = requestAnimationFrame(draw);
     }
 
     function visibility() {
@@ -279,7 +281,11 @@
     overlayObserver = new MutationObserver(overlayChanged);
     overlayObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
     overlayChanged();
-    theme.addEventListener('change', visibility);
+    function themeChanged() {
+        paint();
+        visibility();
+    }
+    theme.addEventListener('change', themeChanged);
     document.addEventListener('visibilitychange', visibility);
     window.addEventListener('resize', scheduleResize, { passive: true });
     window.addEventListener('orientationchange', scheduleResize, { passive: true });
@@ -295,7 +301,7 @@
     function desativarPagina() {
         ativo = false;
         overlayObserver?.disconnect();
-        theme.removeEventListener('change', visibility);
+        theme.removeEventListener('change', themeChanged);
         document.removeEventListener('visibilitychange', visibility);
 
         if (animationFrame !== null) {

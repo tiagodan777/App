@@ -15,6 +15,7 @@
 
     var photoRemovalTimers = Object.create(null);
     var latestPeople = [];
+    var mapStateSequence = 0;
     var profileAccessTokens = Object.create(null);
 
     var RECONNECT_MIN_DELAY = 1000;
@@ -105,7 +106,7 @@
         return String(window.webSocketTokenUrl || '/websocket-token');
     }
 
-    function requestWebSocketToken() {
+    function requestWebSocketToken(csrfRetried) {
         return window
             .fetch(getWebSocketTokenUrl(), {
                 method: 'POST',
@@ -124,6 +125,22 @@
                             var sessionError = new Error('A sessão terminou.');
                             sessionError.sessionEnded = true;
                             throw sessionError;
+                        }
+                        if (response.status === 403 && data.code === 'csrf_expired') {
+                            var currentMember = String(window.membroId || '').trim();
+                            var responseMember = String(data.member_id || '').trim();
+                            if (!currentMember || responseMember !== currentMember) {
+                                var changedSession = new Error('A sessão terminou.');
+                                changedSession.sessionEnded = true;
+                                throw changedSession;
+                            }
+                            // Só repetir a obtenção do token de ligação, uma vez,
+                            // com o CSRF devolvido pelo servidor para a mesma conta.
+                            if (!csrfRetried && window.MargotCsrf &&
+                                typeof window.MargotCsrf.updateToken === 'function' &&
+                                window.MargotCsrf.updateToken(data.csrf_token) === true) {
+                                return requestWebSocketToken(true);
+                            }
                         }
                         if (!response.ok || data.success !== true) {
                             throw new Error(data.message || 'Não foi possível preparar a ligação.');
@@ -342,20 +359,7 @@
                 break;
             case 'state':
                 atualizarTokensAcessoPerfil(Array.isArray(data.people) ? data.people : []);
-                if (document.getElementById('gridCanvas')) {
-                    /*
-                     * O servidor pode ainda ter uma posição
-                     * anterior desta conta e devolver pessoas
-                     * imediatamente.
-                     *
-                     * No Android não mostramos esses dados
-                     * enquanto a autorização nativa da
-                     * localização ainda não estiver confirmada.
-                     */
-                    atualizarPessoasNoMapa(
-                        podeMostrarPessoasNoMapa() ? (Array.isArray(data.people) ? data.people : []) : []
-                    );
-                }
+                aplicarEstadoMapa(Array.isArray(data.people) ? data.people : []);
                 break;
             case 'notification':
                 window.dispatchEvent(new CustomEvent('app:hey-recebido', { detail: data }));
@@ -431,7 +435,33 @@
         agendarRemocaoFoto(membroId, $imagem, 260);
     }
 
+    function aplicarEstadoMapa(pessoas) {
+        var sequence = ++mapStateSequence;
+        if (!document.getElementById('gridCanvas')) return;
+
+        function aplicar() {
+            if (sequence !== mapStateSequence || !authenticated || sessionEnded ||
+                !document.getElementById('gridCanvas')) return;
+            atualizarPessoasNoMapa(podeMostrarPessoasNoMapa() ? pessoas : []);
+        }
+
+        if (locationTracking.isAndroidNativeApp() && !locationTracking.permissionConfirmed()) {
+            // A primeira resposta pode chegar antes da confirmação nativa.
+            // Esperar pela permissão sem perder esta resposta nem aguardar outro GPS.
+            Promise.resolve().then(function () {
+                return locationTracking.checkPermission
+                    ? locationTracking.checkPermission()
+                    : false;
+            }).then(aplicar).catch(function () {
+                // A verificação de localização mantém o mapa vazio se falhar.
+            });
+        } else {
+            aplicar();
+        }
+    }
+
     function limparMapaLocal() {
+        mapStateSequence += 1;
         if (!document.getElementById('gridCanvas')) {
             return;
         }

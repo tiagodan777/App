@@ -38,7 +38,11 @@
     var tecladoAberto = false;
     var alturaTeclado = 0;
     var baseMenuY = null;
-    var deslocamentoMenu = 0;
+    var alturaViewportAntesTeclado = 0;
+    var alturaMenuAntesTeclado = 0;
+    var minHeightAnterior = null;
+    var frameTeclado = null;
+    var observadorFormulario = null;
 
     var compose = window.MargotMiniCompose($formMensagem[0], {
         onError: function (message) {
@@ -240,67 +244,83 @@
     }
 
     function guardarPosicaoNormalMiniMenu() {
-        if (baseMenuY !== null || !$miniMenu[0]) {
-            return;
-        }
-
+        if (baseMenuY !== null || !$miniMenu[0]) return;
         baseMenuY = obterTranslateY($miniMenu[0]);
+        alturaViewportAntesTeclado = viewportAltura();
+        alturaMenuAntesTeclado = $miniMenu[0].getBoundingClientRect().height;
     }
 
-    function calcularDeslocamentoMenu(novaAlturaTeclado) {
-        if (!$formMensagem[0]) {
-            return 0;
+    function restaurarAlturaMiniMenu() {
+        if (minHeightAnterior === null || !$miniMenu[0]) return;
+        var estilo = $miniMenu[0].style;
+        if (minHeightAnterior.valor) {
+            estilo.setProperty('min-height', minHeightAnterior.valor, minHeightAnterior.prioridade);
+        } else {
+            estilo.removeProperty('min-height');
         }
+        minHeightAnterior = null;
+    }
 
-        novaAlturaTeclado = Math.max(0, Number(novaAlturaTeclado) || 0);
-
-        if (novaAlturaTeclado < 80 && eIOSNativo()) {
-            return 0;
-        }
-
-        var rect = $formMensagem[0].getBoundingClientRect();
-        var fundoNormal = rect.bottom + deslocamentoMenu;
+    function fundoVisivelMiniMenu() {
         var visual = window.visualViewport;
-        var fundoVisivel = visual
-            ? Math.min(viewportAltura(), visual.height + visual.offsetTop)
-            : viewportAltura();
-        var topoTeclado = eIOSNativo()
-            ? Math.min(fundoVisivel, viewportAltura() - novaAlturaTeclado)
-            : fundoVisivel;
-        var limite = topoTeclado - 12;
-
-        return Math.max(0, Math.ceil(fundoNormal - limite));
+        var layout = viewportAltura();
+        var androidNativo = capacitor && capacitor.isNativePlatform &&
+            capacitor.isNativePlatform() && capacitor.getPlatform() === 'android';
+        // Durante adjustResize o WebView pode reduzir primeiro innerHeight e só
+        // depois atualizar visualViewport. Não somar a redução transitória dos dois.
+        if (androidNativo && alturaViewportAntesTeclado - layout >= 80) return layout;
+        return visual ? Math.min(layout, visual.height + visual.offsetTop) : layout;
     }
 
-    function expandirMiniMenuParaTeclado(novaAlturaTeclado, animar) {
-        if (!paginaAtiva || !campoMensagemFocado || !$miniMenu[0]) {
-            return;
-        }
+    function expandirMiniMenuParaTeclado(novaAlturaTeclado) {
+        if (!paginaAtiva || !campoMensagemFocado || !$miniMenu[0] || !$formMensagem[0]) return;
+        if (!document.body.classList.contains('margot-mini-menu-aberto')) return;
 
-        novaAlturaTeclado = Math.max(0, Number(novaAlturaTeclado) || 0);
-
-        if (novaAlturaTeclado < 80 && eIOSNativo()) {
-            return;
-        }
+        guardarPosicaoNormalMiniMenu();
+        var fundoVisivel = fundoVisivelMiniMenu();
+        var alturaNativa = Math.max(0, Number(novaAlturaTeclado) || 0);
+        var reducaoViewport = Math.max(0, alturaViewportAntesTeclado - fundoVisivel);
+        // Um teclado físico pode emitir estes eventos com altura zero.
+        if (alturaNativa < 80 && reducaoViewport < 80) return;
 
         cancelarRestauracao();
-        guardarPosicaoNormalMiniMenu();
-        alturaTeclado = novaAlturaTeclado;
+        alturaTeclado = alturaNativa;
         tecladoAberto = true;
 
-        var novoDeslocamento = calcularDeslocamentoMenu(novaAlturaTeclado);
-        deslocamentoMenu = novoDeslocamento;
+        var menu = $miniMenu[0];
+        if (minHeightAnterior === null) {
+            minHeightAnterior = {
+                valor: menu.style.getPropertyValue('min-height'),
+                prioridade: menu.style.getPropertyPriority('min-height')
+            };
+        }
+        // Não deixar o vh reduzido cortar o formulário dentro do overflow:hidden.
+        menu.style.minHeight = Math.ceil(Math.max(
+            alturaMenuAntesTeclado,
+            $formMensagem[0].offsetTop + $formMensagem[0].offsetHeight + 12
+        )) + 'px';
 
-        var destinoY = (baseMenuY || 0) - novoDeslocamento;
-
+        var topoTeclado = fundoVisivel;
+        if (alturaNativa >= 80) {
+            // O Android pode já ter reduzido o WebView. Nunca subtrair duas vezes.
+            topoTeclado = Math.min(topoTeclado, alturaViewportAntesTeclado - alturaNativa);
+        }
+        var rect = $formMensagem[0].getBoundingClientRect();
+        // Usar a posição efetivamente desenhada, não o destino da animação anterior.
+        var destinoY = obterTranslateY(menu) + (topoTeclado - 12 - rect.bottom);
         $miniMenu.css({
-            transition: animar
-                ? 'transform 294ms cubic-bezier(.303,.886,.436,.976)'
-                : 'none',
-            transform: 'translate3d(0,' + destinoY + 'px,0)'
+            transition: 'none',
+            transform: 'translate3d(0,' + Math.round(destinoY) + 'px,0)'
         });
-
         document.body.classList.add('margot-mini-menu-teclado');
+    }
+
+    function agendarAjusteTeclado() {
+        if (!paginaAtiva || frameTeclado !== null) return;
+        frameTeclado = window.requestAnimationFrame(function () {
+            frameTeclado = null;
+            if (campoMensagemFocado) expandirMiniMenuParaTeclado(alturaTeclado);
+        });
     }
 
     function restaurarMiniMenuDepoisDoTeclado(animar) {
@@ -311,6 +331,18 @@
         cancelarRestauracao();
         tecladoAberto = false;
         alturaTeclado = 0;
+        if (frameTeclado !== null) {
+            window.cancelAnimationFrame(frameTeclado);
+            frameTeclado = null;
+        }
+        restaurarAlturaMiniMenu();
+        document.body.classList.remove('margot-mini-menu-teclado');
+        if (!document.body.classList.contains('margot-mini-menu-aberto')) {
+            baseMenuY = null;
+            alturaViewportAntesTeclado = 0;
+            alturaMenuAntesTeclado = 0;
+            return;
+        }
 
         var destinoY = baseMenuY;
 
@@ -326,7 +358,6 @@
         });
 
         document.body.classList.remove('margot-mini-menu-teclado');
-        deslocamentoMenu = 0;
 
         temporizadorRestauracao = window.setTimeout(function () {
             temporizadorRestauracao = null;
@@ -340,6 +371,8 @@
             }
 
             baseMenuY = null;
+            alturaViewportAntesTeclado = 0;
+            alturaMenuAntesTeclado = 0;
         }, animar ? 330 : 0);
     }
 
@@ -366,7 +399,8 @@
             return;
         }
 
-        expandirMiniMenuParaTeclado(info && info.keyboardHeight, true);
+        alturaTeclado = Math.max(0, Number(info && info.keyboardHeight) || 0);
+        expandirMiniMenuParaTeclado(alturaTeclado);
     }
 
     function tecladoAbriu(info) {
@@ -374,9 +408,8 @@
             return;
         }
 
-        window.requestAnimationFrame(function () {
-            expandirMiniMenuParaTeclado(info && info.keyboardHeight, false);
-        });
+        alturaTeclado = Math.max(0, Number(info && info.keyboardHeight) || 0);
+        expandirMiniMenuParaTeclado(alturaTeclado);
     }
 
     function tecladoVaiFechar() {
@@ -388,10 +421,10 @@
     }
 
     function tecladoFechou() {
+        restaurarMiniMenuDepoisDoTeclado(false);
         tecladoAberto = false;
         alturaTeclado = 0;
         campoMensagemFocado = false;
-        deslocamentoMenu = 0;
 
         document.body.classList.remove('margot-mini-menu-teclado');
 
@@ -402,30 +435,13 @@
         }
     }
 
-    function alturaTecladoVisualViewport() {
-        if (!window.visualViewport) {
-            return 0;
-        }
-
-        return Math.max(
-            0,
-            viewportAltura() - (
-                window.visualViewport.height + window.visualViewport.offsetTop
-            )
-        );
-    }
-
     function aoAlterarVisualViewport() {
-        if ((teclado && eIOSNativo()) || !campoMensagemFocado) {
-            return;
-        }
-
-        var altura = alturaTecladoVisualViewport();
-
-        if (altura >= 80 || (teclado && !eIOSNativo() && tecladoAberto)) {
-            expandirMiniMenuParaTeclado(altura, true);
+        if (!campoMensagemFocado) return;
+        var reducao = Math.max(0, alturaViewportAntesTeclado - fundoVisivelMiniMenu());
+        if (reducao >= 80 || alturaTeclado >= 80) {
+            expandirMiniMenuParaTeclado(alturaTeclado);
         } else if (tecladoAberto) {
-            restaurarMiniMenuDepoisDoTeclado(true);
+            restaurarMiniMenuDepoisDoTeclado(false);
         }
     }
 
@@ -875,6 +891,13 @@
         );
     }
 
+    window.addEventListener('resize', aoAlterarVisualViewport, { passive: true });
+    if ('ResizeObserver' in window && $formMensagem[0]) {
+        observadorFormulario = new ResizeObserver(function () {
+            if (tecladoAberto) agendarAjusteTeclado();
+        });
+        observadorFormulario.observe($formMensagem[0]);
+    }
     prepararTecladoNativo();
 
     function desativarPagina() {
@@ -891,6 +914,10 @@
         }
 
         cancelarRestauracao();
+        if (frameTeclado !== null) window.cancelAnimationFrame(frameTeclado);
+        if (observadorFormulario) observadorFormulario.disconnect();
+        restaurarAlturaMiniMenu();
+        window.removeEventListener('resize', aoAlterarVisualViewport);
         removerListenersTeclado();
 
         document.removeEventListener('pointerdown', interceptarToqueForaDoInput, true);

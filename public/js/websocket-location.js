@@ -118,8 +118,8 @@ window.MargotLocationTracker = function (actions) {
 
         var generation = ++locationWatchGeneration;
 
-        nativeGeolocation
-            .watchPosition(getLocationOptions(), function (position, error) {
+        Promise.resolve().then(function () {
+            return nativeGeolocation.watchPosition(getLocationOptions(), function (position, error) {
                 if (
                     generation !== locationWatchGeneration ||
                     window.disableLocationTracking
@@ -135,17 +135,15 @@ window.MargotLocationTracker = function (actions) {
                 if (position) {
                     handleLocationSuccess(position);
                 }
-            })
-            .then(function (watchId) {
+            });
+        }).then(function (watchId) {
                 if (
                     generation !== locationWatchGeneration ||
                     window.disableLocationTracking
                 ) {
-                    locationWatchStarting = false;
-
-                    return nativeGeolocation
-                        .clearWatch({ id: String(watchId) })
-                        .catch(function (error) {
+                    return Promise.resolve().then(function () {
+                        return nativeGeolocation.clearWatch({ id: String(watchId) });
+                    }).catch(function (error) {
                             console.warn(
                                 'Não foi possível terminar a localização nativa.',
                                 error
@@ -404,7 +402,9 @@ window.MargotLocationTracker = function (actions) {
         locationWatchStarting = false;
 
         if (watchId !== null && watchProvider === 'native' && nativeGeolocation) {
-            nativeGeolocation.clearWatch({ id: String(watchId) }).catch(function (error) {
+            Promise.resolve().then(function () {
+                return nativeGeolocation.clearWatch({ id: String(watchId) });
+            }).catch(function (error) {
                 console.warn('Não foi possível terminar a localização nativa.', error);
             });
         } else if (
@@ -603,6 +603,10 @@ window.MargotLocationTracker = function (actions) {
         startLocationRefresh: startLocationRefresh,
         stopLocationTracking: stopLocationTracking,
         sendLastKnownLocation: sendLastKnownLocation,
+
+        checkPermission: function () {
+            return ensureAndroidLocationPermission(getNativeGeolocation());
+        },
 
         permissionConfirmed: function () {
             return androidLocationPermissionConfirmed;
