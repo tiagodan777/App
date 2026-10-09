@@ -9,6 +9,7 @@ use Twig\Source;
 /** Adds presentation scripts to documents before Twig interpolates member data. */
 final class LanguageTemplateLoader implements LoaderInterface
 {
+    private const MINI_MEDIA_VERSION = '20261009-mini-media-1';
     private const FLUIDITY_VERSION = '20261009-fluidity-haptics-1';
     private const KEYBOARD_VERSION = '20261009-mini-keyboard-3';
     private const STABILITY_VERSION = '20261008-launch-1';
@@ -115,6 +116,27 @@ final class LanguageTemplateLoader implements LoaderInterface
             ) ?? $code;
         }
 
+        foreach ([
+            'js/index-tap-foto.js',
+            'js/mini-compose.js',
+            'js/chat-camera.js'
+        ] as $asset) {
+            $code = preg_replace(
+                '~' . preg_quote($asset, '~') . '(?:\?v=[^"\s<>]*)?~',
+                $asset . '?v=' . self::MINI_MEDIA_VERSION,
+                $code
+            ) ?? $code;
+        }
+
+        if ($name === 'index.html' && !str_contains($code, 'estilos/mini-media.css')) {
+            $code = str_replace(
+                '{% block styles %}',
+                '{% block styles %}<link rel="stylesheet" href="{{ doc_root }}estilos/mini-media.css?v='
+                . self::MINI_MEDIA_VERSION . '" data-margot-page-style>',
+                $code
+            );
+        }
+
         if ($name === 'layout.html'
             && !str_contains($code, 'estilos/fluidez.css')) {
             $code = str_replace(
@@ -195,7 +217,9 @@ final class LanguageTemplateLoader implements LoaderInterface
             . ':'
             . self::KEYBOARD_VERSION
             . ':'
-            . self::FLUIDITY_VERSION;
+            . self::FLUIDITY_VERSION
+            . ':'
+            . self::MINI_MEDIA_VERSION;
     }
 
     public function isFresh(string $name, int $time): bool
