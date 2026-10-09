@@ -9,6 +9,7 @@ use Twig\Source;
 /** Adds presentation scripts to documents before Twig interpolates member data. */
 final class LanguageTemplateLoader implements LoaderInterface
 {
+    private const KEYBOARD_VERSION = '20261009-mini-keyboard-3';
     private const STABILITY_VERSION = '20261008-launch-1';
     private const VERSION = '20261007-reaction-push-1';
     private const CHAT_VERSION = '20261008-connection-haptic-2';
@@ -81,6 +82,14 @@ final class LanguageTemplateLoader implements LoaderInterface
             ) ?? $code;
         }
 
+        foreach (['js/index-mini-menu.js', 'js/index-animacao.js', 'js/websocket-location.js', 'js/websocket.js'] as $asset) {
+            $code = preg_replace(
+                '~' . preg_quote($asset, '~') . '(?:\\?v=[^"\\s<>]*)?~',
+                $asset . '?v=' . self::KEYBOARD_VERSION,
+                $code
+            ) ?? $code;
+        }
+
         // A página de confirmação usa o documento de login, fora do layout comum.
         if ($name === 'login.html' && !str_contains($code, 'estilos/theme.css')) {
             $code = str_replace('</head>', '<link rel="stylesheet" href="{{ doc_root }}'
@@ -137,7 +146,7 @@ final class LanguageTemplateLoader implements LoaderInterface
             . ':'
             . self::VISUAL_VERSION
             . ':'
-            . self::CHAT_VERSION . ':' . self::STABILITY_VERSION;
+            . self::CHAT_VERSION . ':' . self::STABILITY_VERSION . ':' . self::KEYBOARD_VERSION;
     }
 
     public function isFresh(string $name, int $time): bool
