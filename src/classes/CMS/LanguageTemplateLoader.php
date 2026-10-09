@@ -9,6 +9,7 @@ use Twig\Source;
 /** Adds presentation scripts to documents before Twig interpolates member data. */
 final class LanguageTemplateLoader implements LoaderInterface
 {
+    private const FLUIDITY_VERSION = '20261009-fluidity-haptics-1';
     private const KEYBOARD_VERSION = '20261009-mini-keyboard-3';
     private const STABILITY_VERSION = '20261008-launch-1';
     private const VERSION = '20261007-reaction-push-1';
@@ -61,7 +62,12 @@ final class LanguageTemplateLoader implements LoaderInterface
             ) ?? $code;
         }
 
-        foreach (['js/chat.js', 'js/websocket-alerts.js', 'js/hey-vibracao.js', 'js/javascript-geral.js'] as $asset) {
+        foreach ([
+            'js/chat.js',
+            'js/websocket-alerts.js',
+            'js/hey-vibracao.js',
+            'js/javascript-geral.js'
+        ] as $asset) {
             $code = preg_replace(
                 '~' . preg_quote($asset, '~') . '(?:\?v=[^"\s<>]*)?~',
                 $asset . '?v=' . self::CHAT_VERSION,
@@ -70,10 +76,16 @@ final class LanguageTemplateLoader implements LoaderInterface
         }
 
         foreach ([
-            'js/chat-viewport.js', 'js/index-mini-menu.js', 'js/today.js',
-            'js/account-confirmation.js', 'js/index-animacao.js',
-            'js/push-notifications.js', 'js/hey-vibracao.js',
-            'js/app-interactions.js', 'js/chat.js', 'estilos/theme.css'
+            'js/chat-viewport.js',
+            'js/index-mini-menu.js',
+            'js/today.js',
+            'js/account-confirmation.js',
+            'js/index-animacao.js',
+            'js/push-notifications.js',
+            'js/hey-vibracao.js',
+            'js/app-interactions.js',
+            'js/chat.js',
+            'estilos/theme.css'
         ] as $asset) {
             $code = preg_replace(
                 '~' . preg_quote($asset, '~') . '(?:\?v=[^"\s<>]*)?~',
@@ -82,7 +94,12 @@ final class LanguageTemplateLoader implements LoaderInterface
             ) ?? $code;
         }
 
-        foreach (['js/index-mini-menu.js', 'js/index-animacao.js', 'js/websocket-location.js', 'js/websocket.js'] as $asset) {
+        foreach ([
+            'js/index-mini-menu.js',
+            'js/index-animacao.js',
+            'js/websocket-location.js',
+            'js/websocket.js'
+        ] as $asset) {
             $code = preg_replace(
                 '~' . preg_quote($asset, '~') . '(?:\\?v=[^"\\s<>]*)?~',
                 $asset . '?v=' . self::KEYBOARD_VERSION,
@@ -90,18 +107,44 @@ final class LanguageTemplateLoader implements LoaderInterface
             ) ?? $code;
         }
 
+        foreach (['js/javascript-geral.js', 'js/hey-vibracao.js'] as $asset) {
+            $code = preg_replace(
+                '~' . preg_quote($asset, '~') . '(?:\\?v=[^"\\s<>]*)?~',
+                $asset . '?v=' . self::FLUIDITY_VERSION,
+                $code
+            ) ?? $code;
+        }
+
+        if ($name === 'layout.html'
+            && !str_contains($code, 'estilos/fluidez.css')) {
+            $code = str_replace(
+                '</head>',
+                '<link rel="stylesheet" href="{{ doc_root }}estilos/fluidez.css?v='
+                . self::FLUIDITY_VERSION . '"></head>',
+                $code
+            );
+        }
+
         // A página de confirmação usa o documento de login, fora do layout comum.
         if ($name === 'login.html' && !str_contains($code, 'estilos/theme.css')) {
-            $code = str_replace('</head>', '<link rel="stylesheet" href="{{ doc_root }}'
-                . 'estilos/theme.css?v=' . self::STABILITY_VERSION . '"></head>', $code);
+            $code = str_replace(
+                '</head>',
+                '<link rel="stylesheet" href="{{ doc_root }}'
+                . 'estilos/theme.css?v=' . self::STABILITY_VERSION . '"></head>',
+                $code
+            );
         }
 
         // Só antecipa o fundo nos documentos que carregam o tema correspondente.
         if (str_contains($code, 'estilos/theme.css')) {
-            $code = str_replace('<meta charset="UTF-8">', '<meta charset="UTF-8">'
+            $code = str_replace(
+                '<meta charset="UTF-8">',
+                '<meta charset="UTF-8">'
                 . '<meta name="color-scheme" content="light dark">'
                 . '<style>html,body{background:#fff}@media(prefers-color-scheme:dark){'
-                . 'html,body{background:#000;color:#f5f5f7}}</style>', $code);
+                . 'html,body{background:#000;color:#f5f5f7}}</style>',
+                $code
+            );
         }
 
         $position = stripos($code, '</head>');
@@ -146,7 +189,13 @@ final class LanguageTemplateLoader implements LoaderInterface
             . ':'
             . self::VISUAL_VERSION
             . ':'
-            . self::CHAT_VERSION . ':' . self::STABILITY_VERSION . ':' . self::KEYBOARD_VERSION;
+            . self::CHAT_VERSION
+            . ':'
+            . self::STABILITY_VERSION
+            . ':'
+            . self::KEYBOARD_VERSION
+            . ':'
+            . self::FLUIDITY_VERSION;
     }
 
     public function isFresh(string $name, int $time): bool
