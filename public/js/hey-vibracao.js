@@ -90,11 +90,11 @@
     }
 
     function pluginNativo() {
-        return window.Capacitor &&
-            window.Capacitor.Plugins &&
-            window.Capacitor.Plugins.MargotHaptics
-            ? window.Capacitor.Plugins.MargotHaptics
-            : null;
+        var cap = window.Capacitor;
+        if (!cap?.isNativePlatform?.()) return null;
+        if (cap.Plugins?.MargotHaptics) return cap.Plugins.MargotHaptics;
+        return cap.isPluginAvailable?.('MargotHaptics')
+            ? cap.registerPlugin?.('MargotHaptics') : null;
     }
 
     function tocarOndaConexao(plugin) {

@@ -70,7 +70,9 @@
          * Usamos a altura anterior à abertura do teclado para
          * não descontar duas vezes o espaço no Android.
          */
-        const nativeBottom = keyboardHeight > 0
+        const ios = window.Capacitor?.isNativePlatform?.()
+            && window.Capacitor?.getPlatform?.() === 'ios';
+        const nativeBottom = ios && keyboardHeight > 0
             ? Math.max(0, fullHeight - keyboardHeight)
             : window.innerHeight;
 

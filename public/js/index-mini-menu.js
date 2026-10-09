@@ -254,13 +254,19 @@
 
         novaAlturaTeclado = Math.max(0, Number(novaAlturaTeclado) || 0);
 
-        if (novaAlturaTeclado < 80) {
+        if (novaAlturaTeclado < 80 && eIOSNativo()) {
             return 0;
         }
 
         var rect = $formMensagem[0].getBoundingClientRect();
         var fundoNormal = rect.bottom + deslocamentoMenu;
-        var topoTeclado = viewportAltura() - novaAlturaTeclado;
+        var visual = window.visualViewport;
+        var fundoVisivel = visual
+            ? Math.min(viewportAltura(), visual.height + visual.offsetTop)
+            : viewportAltura();
+        var topoTeclado = eIOSNativo()
+            ? Math.min(fundoVisivel, viewportAltura() - novaAlturaTeclado)
+            : fundoVisivel;
         var limite = topoTeclado - 12;
 
         return Math.max(0, Math.ceil(fundoNormal - limite));
@@ -273,7 +279,7 @@
 
         novaAlturaTeclado = Math.max(0, Number(novaAlturaTeclado) || 0);
 
-        if (novaAlturaTeclado < 80) {
+        if (novaAlturaTeclado < 80 && eIOSNativo()) {
             return;
         }
 
@@ -410,13 +416,13 @@
     }
 
     function aoAlterarVisualViewport() {
-        if (teclado || !campoMensagemFocado) {
+        if ((teclado && eIOSNativo()) || !campoMensagemFocado) {
             return;
         }
 
         var altura = alturaTecladoVisualViewport();
 
-        if (altura >= 80) {
+        if (altura >= 80 || (teclado && !eIOSNativo() && tecladoAberto)) {
             expandirMiniMenuParaTeclado(altura, true);
         } else if (tecladoAberto) {
             restaurarMiniMenuDepoisDoTeclado(true);
@@ -488,7 +494,7 @@
             ).catch(function () {});
         }
 
-        if (!teclado && window.visualViewport) {
+        if ((!teclado || !eIOSNativo()) && window.visualViewport) {
             window.requestAnimationFrame(aoAlterarVisualViewport);
         }
     });

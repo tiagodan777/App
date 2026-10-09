@@ -63,7 +63,7 @@ window.MargotChatViewport = function (page, list, content) {
                 fullHeight = window.innerHeight;
             }
 
-            const height = native && keyboardHeight
+            const height = ios && keyboardHeight
                 ? Math.min(visible, fullHeight - keyboardHeight)
                 : visible;
 

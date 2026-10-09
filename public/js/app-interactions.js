@@ -194,15 +194,22 @@
 
             lastHaptic = Date.now();
 
+            function fallback() {
+                try { navigator.vibrate?.(18); } catch (_) {}
+            }
             try {
+                if (!window.Capacitor.isPluginAvailable?.('MargotHaptics')) {
+                    fallback();
+                    return;
+                }
                 // O tipo mantém compatibilidade; a nova build usa o perfil de navegação.
                 Promise.resolve(
                     plugin('MargotHaptics')?.play({
                         type: 'heySent',
                         profile: 'navigation'
                     })
-                ).catch(() => {});
-            } catch (_) {}
+                ).catch(fallback);
+            } catch (_) { fallback(); }
         },
         true
     );

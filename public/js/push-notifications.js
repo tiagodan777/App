@@ -325,6 +325,25 @@
         }
     }
 
+    var retryTimer = null;
+    var retryCount = 0;
+    var lastRecovery = 0;
+
+    function retryRegistration() {
+        if (retryTimer || retryCount >= 3 || !memberId() || !notificationsWanted()) return;
+        var delay = [5000, 20000, 60000][retryCount++];
+        retryTimer = window.setTimeout(function () {
+            retryTimer = null;
+            if (!document.hidden && navigator.onLine !== false) register();
+        }, delay);
+    }
+
+    function registrationSynced() {
+        window.clearTimeout(retryTimer);
+        retryTimer = null;
+        retryCount = 0;
+    }
+
     async function postDevice(action, token) {
         var endpoint = String(window.pushDeviceUrl || '/push-device/');
         var currentMemberId = memberId();
@@ -333,7 +352,12 @@
             return false;
         }
 
-        var response = await window.fetch(endpoint, {
+        var controller = new AbortController();
+        var timeout = window.setTimeout(function () { controller.abort(); }, 10000);
+        var response;
+        try {
+            response = await window.fetch(endpoint, {
+            signal: controller.signal,
             method: 'POST',
             credentials: 'same-origin',
             headers: {
@@ -357,6 +381,9 @@
 
         var result = await response.json();
         return result && result.success === true;
+        } finally {
+            window.clearTimeout(timeout);
+        }
     }
 
     function deviceLanguage() {
@@ -407,21 +434,43 @@
             return true;
         }
 
+        var fingerprint = syncFingerprint(token);
         var success = await postDevice('register', token);
 
-        if (success) {
+        if (success && fingerprint === syncFingerprint(token)) {
             markSynced(token);
+            registrationSynced();
+        } else if (!success) {
+            retryRegistration();
         }
 
         return success;
     }
 
-    async function prepareAndroidChannel() {
-        /*
-         * Os canais Android são criados nativamente em MainActivity.
-         * Assim cada tipo pode ter o seu próprio padrão de vibração.
-         */
-        return;
+    async function prepareAndroidChannel(push) {
+        if (platform() !== 'android' || typeof push.listChannels !== 'function'
+            || typeof push.createChannel !== 'function') return;
+        try {
+            var result = await push.listChannels();
+            var existing = new Set((result.channels || []).map(function (item) { return item.id; }));
+            var english = deviceLanguage() !== 'pt';
+            var channels = [
+                ['margot_activity', 'Atividade', 'Activity'],
+                ['margot_hey', 'Heys', 'Heys'],
+                ['margot_message', 'Mensagens', 'Messages'],
+                ['margot_nearby', 'Pessoas por perto', 'People nearby']
+            ];
+            for (var channel of channels) {
+                if (!existing.has(channel[0])) {
+                    await push.createChannel({
+                        id: channel[0], name: english ? channel[2] : channel[1],
+                        importance: 4, visibility: 0, vibration: true
+                    });
+                }
+            }
+        } catch (error) {
+            console.warn('Não foi possível preparar os canais de notificações.', error);
+        }
     }
 
     async function prepareListeners(push) {
@@ -441,6 +490,7 @@
 
                 syncToken(token, true).catch(function (error) {
                     console.warn('Não foi possível sincronizar o token push.', error);
+                    retryRegistration();
                 });
             });
 
@@ -449,6 +499,7 @@
                     'O sistema não conseguiu registar as notificações push.',
                     error
                 );
+                retryRegistration();
             });
 
             await push.addListener(
@@ -563,7 +614,11 @@
             var token = storedToken();
 
             if (token) {
-                await syncToken(token, false);
+                try {
+                    await syncToken(token, false);
+                } catch (error) {
+                    retryRegistration();
+                }
             }
 
             await push.register();
@@ -574,6 +629,7 @@
                     'Não foi possível iniciar as notificações push.',
                     error
                 );
+                retryRegistration();
                 return false;
             })
             .finally(function () {
@@ -584,6 +640,7 @@
     }
 
     async function unregister() {
+        registrationSynced();
         var push = pushPlugin();
         var token = storedToken();
 
@@ -612,6 +669,17 @@
 
         return true;
     }
+
+    function recoverRegistration() {
+        if (document.hidden || navigator.onLine === false || !memberId()
+            || !notificationsWanted() || Date.now() - lastRecovery < 30000) return;
+        lastRecovery = Date.now();
+        retryCount = 0;
+        register();
+    }
+    window.addEventListener('online', recoverRegistration);
+    document.addEventListener('visibilitychange', recoverRegistration);
+    document.addEventListener('margot:page-ready', recoverRegistration);
 
     window.MargotPushNotifications = {
         isNative: isNative,

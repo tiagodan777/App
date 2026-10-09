@@ -314,12 +314,14 @@
                 remove.setAttribute('aria-label', label('Remover anexo', 'Remove attachment') + (many ? ' ' + (index + 1) : ''));
 
                 remove.addEventListener('click', () => {
-                    if (!sending && !pickingGallery) chooseFiles(files.filter((_, position) => position !== index), once.checked);
+                    if (!sending && !pickingGallery) chooseFiles(files.filter((item) => item !== value), once.checked);
                 }, { signal });
 
                 const item = many ? document.createElement('div') : strip;
                 if (many) item.className = 'chat-gallery-item';
 
+                item._margotFile = value;
+                item._margotPreviewUrl = objectUrl;
                 item.append(
                     remove,
                     kind === 'audio' ? window.MargotChatAudioPlayer(element, showError) : element
@@ -550,7 +552,26 @@
                     if (reply === sentReply) selectReply(null);
                 }
 
-                if (sentFile) chooseFiles(files.filter((value) => value !== sentFile), sentOnce);
+                if (sentFile) {
+                    files = files.filter((value) => value !== sentFile);
+                    file = files[0] || null;
+                    const tile = Array.from(preview.querySelectorAll('.chat-gallery-item'))
+                        .find((item) => item._margotFile === sentFile);
+                    if (tile) {
+                        URL.revokeObjectURL(tile._margotPreviewUrl);
+                        previewUrls.delete(tile._margotPreviewUrl);
+                        tile.remove();
+                    }
+                    if (!file) {
+                        clearPreview();
+                        preview.hidden = true;
+                        once.checked = false;
+                    } else {
+                        const count = preview.querySelector('.chat-gallery-count');
+                        if (count) count.textContent = files.length + label(' fotografias · máximo 10', ' photos · maximum 10');
+                    }
+                    state();
+                }
 
                 saveDraft();
                 publish({ type: 'chat_publish', message_id: data.message.id });

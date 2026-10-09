@@ -568,3 +568,265 @@
         box-shadow: 0 8px 28px #0006;
     }
 }
+/* Estabilização do lançamento: fundos mudam imediatamente, sem flashes claros. */
+html,
+body,
+.chat-pagina,
+.mensagens-pagina,
+#perfil,
+.chat-cabecalho,
+.chat-compositor,
+.chat-form,
+.chat-mensagem.recebida .chat-balao {
+    transition: none;
+}
+
+#create-account-form input,
+#create-account-form select,
+#create-account-form textarea {
+    color: var(--text);
+}
+
+#create-account-form textarea {
+    background-color: var(--surface);
+}
+
+/* Os painéis não precisam de desfocar um canvas animado por baixo. */
+@media (prefers-color-scheme: dark) {
+    #create-account-form > #introducao {
+        background: radial-gradient(circle at 16% 12%, #21172d, transparent 50%), #101014;
+        color: var(--text);
+    }
+
+    #create-account-form > #introducao > h1,
+    #create-account-form > #introducao > nav.anterior-proximo a.registar,
+    #create-account-form label,
+    #create-account-form nav.anterior-proximo > .anterior {
+        color: var(--text);
+    }
+
+    #create-account-form nav.anterior-proximo > .proximo {
+        background: var(--surface-soft);
+        color: #ff8da2;
+    }
+
+    #create-account-form input[type='text'],
+    #create-account-form input[type='email'],
+    #create-account-form input[type='tel'],
+    #create-account-form input[type='number'],
+    #create-account-form input[type='password'],
+    #create-account-form select,
+    #create-account-form textarea,
+    #nascimento nav.campos-nascimento input,
+    #nascimento nav.campos-nascimento select,
+    #sexo select,
+    #recomendacoes,
+    #meus-gostos .meu-hobbie,
+    .objetivo-opcao span,
+    .perfil-foto-adicionar {
+        background: var(--surface-soft);
+        color: var(--text);
+        border-color: #62626d;
+    }
+
+    #create-account-form input::placeholder,
+    #create-account-form textarea::placeholder {
+        color: var(--text-muted);
+        opacity: 1;
+    }
+
+    #create-account-form input:-webkit-autofill {
+        -webkit-text-fill-color: var(--text);
+        box-shadow: 0 0 0 1000px var(--surface-soft) inset;
+        caret-color: var(--text);
+    }
+
+    #recomendacoes li:hover {
+        background: #393943;
+    }
+
+    .objetivo-opcao input:checked + span {
+        background: #9f1936;
+        color: #fff;
+        border-color: #ff8da2;
+    }
+
+    .objetivo-explicacao,
+    .perfil-fotos-ajuda,
+    #create-account-form > #introducao > .margot-intro-texto,
+    #create-account-form > #introducao > .margot-intro-privacidade {
+        color: var(--text-muted);
+    }
+
+    .margot-demo-cenario {
+        background: #1c1c25;
+        border-color: var(--line);
+    }
+
+    .margot-demo-telemovel {
+        background: #30303b;
+        color: var(--text);
+        border-color: #777785;
+    }
+
+    .margot-demo-telemovel strong {
+        color: var(--text);
+    }
+
+    .margot-demo-pessoa {
+        border-color: #30303b;
+    }
+
+    .mini-menu,
+    .hoje-editor-sheet,
+    .acoes-perfil-caixa,
+    #menuPrincipal > nav > ul,
+    .mensagem-aviso,
+    .hey-aviso {
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+    }
+
+    .mini-menu {
+        background: #19191e;
+        border-color: #35353d;
+    }
+
+    .mini-menu > header > h1,
+    .mini-menu .mini-menu-perfil,
+    #chat-pagina .chat-pessoa strong,
+    #chat-pagina #chat-texto,
+    #perfil .perfil-nome,
+    .hoje-editor-sheet h2 {
+        color: var(--text);
+    }
+
+    #chat-pagina #chat-texto::placeholder,
+    .mini-menu #mensagem::placeholder {
+        color: #b2b2bd;
+        opacity: 1;
+    }
+
+    .mini-menu .mini-compose-input,
+    .mini-menu .mini-compose-preview,
+    .mini-menu .mini-compose-recording {
+        background: var(--surface-soft);
+        border-color: #62626d;
+        color: var(--text);
+    }
+
+    .mini-menu .mini-compose-input [data-camera-open],
+    .mini-menu .mini-compose-input [data-microphone] {
+        color: #fff;
+    }
+
+    .chat-form:focus-within {
+        border-color: #baa9ff;
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    #create-account-form > #editar-perfil,
+    .editar-perfil-lista,
+    .editar-area,
+    .permissao-cartao,
+    #palavra-passe .aceitacao-legal,
+    .account-confirmation .account-confirmation-spam {
+        background: var(--surface);
+        color: var(--text);
+        border-color: var(--line);
+    }
+
+    .editar-area:hover,
+    .editar-area:focus-visible,
+    .editar-perfil-fechar,
+    .editar-area-icone,
+    .permissao-icone {
+        background: var(--surface-soft);
+        color: var(--text);
+    }
+
+    .editar-perfil-cabecalho p,
+    .editar-area-texto small,
+    .permissoes-explicacao,
+    .permissao-conteudo p,
+    .permissao-estado,
+    .account-confirmation p {
+        color: var(--text-muted);
+    }
+
+    .permissao-cartao[data-ativa='true'] {
+        background: #172a20;
+        border-color: #448563;
+    }
+
+    #palavra-passe .aceitacao-legal-opcao span {
+        color: var(--text);
+    }
+
+    #palavra-passe .aceitacao-legal-opcao a,
+    .account-confirmation-edit summary,
+    .account-confirmation .account-confirmation-error {
+        color: #ff8da2;
+    }
+
+    .account-confirmation-edit input[type="email"] {
+        background: var(--surface-soft);
+        color: var(--text);
+        border-color: #62626d;
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    #create-account-form #gostos .gostos-ajuda,
+    #create-account-form #gostos [data-sugestoes-estado],
+    .perfil-fotos-explicacao,
+    .margot-demo-telemovel span {
+        color: var(--text-muted);
+    }
+
+    #create-account-form #gostos .gosto-sugestao {
+        background: var(--surface-soft);
+        color: var(--text);
+        border-color: #62626d;
+    }
+
+    #create-account-form #gostos .gosto-sugestao[aria-pressed='true'],
+    #create-account-form #gostos #meus-gostos .meu-hobbie {
+        background: #9f1936;
+        color: #fff;
+        border-color: #ff8da2;
+    }
+
+    #create-account-form #gostos [data-gostos-aviso] {
+        color: #ff8da2;
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    body.margot-auth-login > aside,
+    body.margot-auth-login > aside > a#registar {
+        background: var(--surface);
+        color: var(--text-muted);
+        border-color: var(--line);
+    }
+
+    body.margot-auth-login > aside > a#esqueci-palavra-passe,
+    .account-confirmation .account-confirmation-detail {
+        color: var(--text-muted);
+    }
+
+    body.margot-auth-login > aside > a:hover,
+    body.margot-auth-login > aside > a:focus-visible {
+        background: var(--surface-soft);
+    }
+
+    body.margot-auth-login #login-erro,
+    body.margot-auth-login > aside > a#registar > span {
+        color: #ff8da2;
+    }
+
+    body.margot-auth-login main > form > p > input:focus {
+        border-bottom-color: #ff8da2;
+    }
+}

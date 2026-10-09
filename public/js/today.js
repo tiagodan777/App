@@ -783,7 +783,9 @@
     }
 
     function updateKeyboardOffset(explicitHeight) {
-        var height = Number(explicitHeight);
+        var cap = window.Capacitor;
+        var ios = cap?.isNativePlatform?.() && cap?.getPlatform?.() === 'ios';
+        var height = ios ? Number(explicitHeight) : NaN;
 
         if (!Number.isFinite(height)) {
             height = 0;

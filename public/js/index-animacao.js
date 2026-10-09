@@ -19,7 +19,7 @@
     let resizeObserver = null;
     let ativo = true;
 
-    const FPS = 60;
+    const FPS = 30;
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const FRAME_TIME = 1000 / FPS;
     const spacing = 19.5;
@@ -32,6 +32,8 @@
      */
     const theme = matchMedia('(prefers-color-scheme: dark)');
     let darkMix = theme.matches ? 1 : 0;
+    let paused = false;
+    let overlayObserver = null;
 
     const colorYellow = [255, 215, 0];
     const colorBlue = [0, 100, 255];
@@ -172,7 +174,7 @@
     );
 
     function draw(now) {
-        if (!ativo || document.hidden) return;
+        if (!ativo || document.hidden || paused) return;
 
         if (!reduced && lastFrame && now - lastFrame < FRAME_TIME - 0.5) {
             animationFrame = requestAnimationFrame(draw);
@@ -183,28 +185,26 @@
         lastFrame = now;
 
         const targetMix = theme.matches ? 1 : 0;
-        darkMix = reduced
-            ? targetMix
-            : darkMix + (targetMix - darkMix) * Math.min(1, elapsed / 100);
+        darkMix = targetMix;
 
         ctx.clearRect(0, 0, width, height);
         time += reduced ? 0 : elapsed * 0.000045;
 
         const cx = width / 2;
         const cy = height / 2;
-        const holeTime = time * 3.5;
+        const holeTime = time * 1.25;
 
         const holeX =
             cx +
-            Math.sin(holeTime * 0.7) * (cx * 0.9) +
-            Math.cos(holeTime * 0.3) * (cx * 0.3);
+            Math.sin(holeTime * 0.7) * (cx * 0.40) +
+            Math.cos(holeTime * 0.3) * (cx * 0.10);
 
         const holeY =
             cy +
-            Math.cos(holeTime * 0.8) * (cy * 0.9) +
-            Math.sin(holeTime * 0.4) * (cy * 0.3);
+            Math.cos(holeTime * 0.8) * (cy * 0.40) +
+            Math.sin(holeTime * 0.4) * (cy * 0.10);
 
-        const holeRadius = 160;
+        const holeRadius = Math.min(100, Math.min(width, height) * 0.18);
         const holeRadiusSq = holeRadius * holeRadius;
         const edgeSoftnessInv = 1 / 60;
 
@@ -249,18 +249,13 @@
                 continue;
             }
 
-            const rgb = palette[Math.min(255, Math.round(waveValue * 255))];
+            const rgb = (darkMix ? darkPalette : palette)[Math.min(255, Math.round(waveValue * 255))];
             const roundedAlpha = Math.round(finalAlpha * 100) / 100;
             const size = 2.4 + darkMix * 0.4;
 
             ctx.fillStyle = `rgba(${rgb}, ${roundedAlpha})`;
             ctx.fillRect(finalX - size / 2, finalY - size / 2, size, size);
 
-            if (darkMix > 0.01) {
-                const night = darkPalette[Math.min(255, Math.round(waveValue * 255))];
-                ctx.fillStyle = `rgba(${night}, ${roundedAlpha * darkMix})`;
-                ctx.fillRect(finalX - size / 2, finalY - size / 2, size, size);
-            }
         }
 
         if (!reduced) animationFrame = requestAnimationFrame(draw);
@@ -269,9 +264,21 @@
     function visibility() {
         cancelAnimationFrame(animationFrame);
         lastFrame = 0;
-        if (!document.hidden) animationFrame = requestAnimationFrame(draw);
+        if (ativo && !document.hidden && !paused) animationFrame = requestAnimationFrame(draw);
     }
 
+    // Freeze the decorative canvas while a panel/input needs the main thread.
+    function overlayChanged() {
+        const next = document.body.classList.contains('margot-mini-menu-aberto')
+            || document.body.classList.contains('hoje-editor-aberto');
+        if (next !== paused) {
+            paused = next;
+            visibility();
+        }
+    }
+    overlayObserver = new MutationObserver(overlayChanged);
+    overlayObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    overlayChanged();
     theme.addEventListener('change', visibility);
     document.addEventListener('visibilitychange', visibility);
     window.addEventListener('resize', scheduleResize, { passive: true });
@@ -283,10 +290,11 @@
     }
 
     resize();
-    if (!reduced) animationFrame = requestAnimationFrame(draw);
+    visibility();
 
     function desativarPagina() {
         ativo = false;
+        overlayObserver?.disconnect();
         theme.removeEventListener('change', visibility);
         document.removeEventListener('visibilitychange', visibility);
 
