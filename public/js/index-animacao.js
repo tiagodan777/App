@@ -171,6 +171,10 @@
         (_, index) => getGradientColorRGB(index / 255, true)
     );
 
+    // Preparado uma vez: evita converter cores dentro de cada frame.
+    const paletteChannels = palette.map(rgb => rgb.split(',').map(Number));
+    const darkPaletteChannels = darkPalette.map(rgb => rgb.split(',').map(Number));
+
     function draw(now) {
         if (!ativo || document.hidden) return;
 
@@ -250,18 +254,29 @@
                 continue;
             }
 
-            const rgb = palette[Math.min(255, Math.round(waveValue * 255))];
+            const colorIndex = Math.min(255, Math.round(waveValue * 255));
             const roundedAlpha = Math.round(finalAlpha * 100) / 100;
             const size = 2.4 + darkMix * 0.4;
 
-            ctx.fillStyle = `rgba(${rgb}, ${roundedAlpha})`;
-            ctx.fillRect(finalX - size / 2, finalY - size / 2, size, size);
-
             if (darkMix > 0.01) {
-                const night = darkPalette[Math.min(255, Math.round(waveValue * 255))];
-                ctx.fillStyle = `rgba(${night}, ${roundedAlpha * darkMix})`;
-                ctx.fillRect(finalX - size / 2, finalY - size / 2, size, size);
+                // Combina as duas camadas de cor antes de desenhar o ponto.
+                const base = paletteChannels[colorIndex];
+                const night = darkPaletteChannels[colorIndex];
+                const overlayAlpha = roundedAlpha * darkMix;
+                const combinedAlpha =
+                    overlayAlpha + roundedAlpha * (1 - overlayAlpha);
+                const nightWeight = overlayAlpha / combinedAlpha;
+
+                const r = lerp(base[0], night[0], nightWeight);
+                const g = lerp(base[1], night[1], nightWeight);
+                const b = lerp(base[2], night[2], nightWeight);
+
+                ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${combinedAlpha})`;
+            } else {
+                ctx.fillStyle = `rgba(${palette[colorIndex]}, ${roundedAlpha})`;
             }
+
+            ctx.fillRect(finalX - size / 2, finalY - size / 2, size, size);
         }
 
         if (!reduced) animationFrame = requestAnimationFrame(draw);
