@@ -271,7 +271,7 @@
     actions.after(error);
 
     const relevant = () =>
-      !guidance.hidden && Boolean(guidance.textContent.trim());
+      Boolean(guidance.textContent.trim());
 
     let timers = [];
     let opening = false;
@@ -330,6 +330,7 @@
 
         img.onerror = () => {
           img.remove();
+
           q('.ml-meta small').textContent = copy(
             'Ilustração · inclui perfis de exemplo',
             'Illustration · includes example profiles'
@@ -407,6 +408,11 @@
 
     const sync = () => {
       const hide = !relevant();
+      const label = copy('Abrir definições', 'Open Settings');
+
+      if (!hide && settings.textContent !== label) {
+        settings.textContent = label;
+      }
 
       if (film.hidden !== hide) film.hidden = hide;
 
@@ -455,6 +461,7 @@
           'Abre Definições → Margot → Localização → Sempre.',
           'Open Settings → Margot → Location → Always.'
         );
+
         error.hidden = false;
       } finally {
         opening = false;
@@ -470,6 +477,7 @@
 
   const start = () => {
     scan();
+
     new MutationObserver(scan).observe(document.body, {
       childList: true
     });
