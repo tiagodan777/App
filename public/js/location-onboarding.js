@@ -1,551 +1,694 @@
 (() => {
-    'use strict';
+  'use strict';
 
-    if (window.MargotLocationOnboarding) return;
+  if (window.MargotNoticeVideo) return;
+  window.MargotNoticeVideo = true;
 
-    let release;
+  const assets = new URL('../media/', document.currentScript.src);
+  const portraits = new URL('location-demo-young.jpg', assets).href;
+  const en = () => window.MargotI18n?.language === 'en';
+  const copy = (pt, english) => en() ? english : pt;
 
-    window.MargotLocationReady = new Promise(resolve => {
-        release = resolve;
-    });
+  const style = document.createElement('style');
 
-    const native = Boolean(
-        window.Capacitor?.isNativePlatform?.()
-    );
-
-    const ios =
-        window.Capacitor?.getPlatform?.() === 'ios';
-
-    const legacyKey = 'margot-location-always-attempt-v1';
-
-    let checking = false;
-    let lastState;
-    let pill;
-    let dismissed = false;
-    let cancelled = false;
-    let attemptedAlways = false;
-    let noticeStatusPending = false;
-    let settingsGuide;
-    let closeSettingsGuide;
-    let openingNoticeSettings = false;
-
-    const authorization = state =>
-        state?.authorization ?? state?.permission;
-
-    const granted = state =>
-        (
-            ios
-                ? ['when_in_use', 'always']
-                : ['granted', 'precise', 'approximate']
-        ).includes(authorization(state)) &&
-        state?.services_enabled !== false;
-
-    const pending = state =>
-        [
-            'not_determined',
-            'prompt',
-            'prompt-with-rationale'
-        ].includes(authorization(state));
-
-    const bg = () => window.MargotBackgroundLocation;
-
-    const disabled = () =>
-        window.MargotPreferencias?.obter('localizacao') === false;
-
-    const discovery = () =>
-        Boolean(document.getElementById('gridCanvas'));
-
-    function needsAlways(state) {
-        if (
-            !ios ||
-            authorization(state) !== 'when_in_use' ||
-            attemptedAlways
-        ) {
-            return false;
-        }
-
-        try {
-            if (localStorage.getItem(legacyKey)) {
-                return false;
-            }
-        } catch (_) {}
-
-        return (
-            state.always_requested === false ||
-            (
-                state.permission_flow_version !== 2 &&
-                state.always_requested === undefined
-            )
-        );
+  style.textContent = `
+    .margot-location-pill .ml-instructions {
+      margin:14px 0 10px;
+      font:400 14px/1.45 system-ui,sans-serif;
     }
 
-    const noticeText = (pt, en) =>
-        window.MargotI18n?.language === 'en' ? en : pt;
-
-    function needsBackgroundNotice() {
-        return ios &&
-            authorization(lastState) === 'when_in_use' &&
-            granted(lastState) &&
-            !disabled() &&
-            window.MargotPreferencias?.obter('invisivel') !== true;
+    .ml-instructions strong {
+      display:block;
+      margin-top:3px;
+      font-weight:750;
     }
 
-    function explainLocationSettings() {
-        return new Promise(resolve => {
-            const dialog = document.createElement('dialog');
-            dialog.className = 'margot-location-settings-guide';
-            dialog.setAttribute('aria-labelledby', 'margot-location-settings-title');
-            dialog.setAttribute('aria-describedby', 'margot-location-settings-description');
-            dialog.innerHTML =
-                '<h2 id="margot-location-settings-title"></h2>' +
-                '<p id="margot-location-settings-description"></p>' +
-                '<ol class="margot-location-settings-steps">' +
-                '<li><p data-step-one></p>' +
-                '<div class="margot-location-settings-example" aria-hidden="true">' +
-                '<b class="margot-location-settings-pin">↗</b>' +
-                '<strong data-location-label></strong><b class="margot-location-settings-chevron">›</b>' +
-                '</div></li>' +
-                '<li><p data-step-two></p>' +
-                '<div class="margot-location-settings-example is-selected" aria-hidden="true">' +
-                '<strong data-always-label></strong><b class="margot-location-settings-check">✓</b>' +
-                '</div></li></ol>' +
-                '<p class="margot-location-settings-footnote" data-return></p>' +
-                '<button type="button" data-open-settings></button>' +
-                '<button type="button" data-guide-cancel autofocus></button>';
-
-            const text = (selector, pt, en) => {
-                dialog.querySelector(selector).textContent = noticeText(pt, en);
-            };
-            text('h2', 'São só dois passos.', 'Just two steps.');
-            text('#margot-location-settings-description', 'Nas definições da Margot:', 'In Margot settings:');
-            text('[data-step-one]', 'Toca em “Localização”.', 'Tap “Location”.');
-            text('[data-location-label]', 'Localização', 'Location');
-            text('[data-step-two]', 'Escolhe “Sempre”.', 'Choose “Always”.');
-            text('[data-always-label]', 'Sempre', 'Always');
-            text('[data-return]', 'Depois, volta à Margot.', 'Then return to Margot.');
-            text('[data-open-settings]', 'Abrir definições', 'Open Settings');
-            text('[data-guide-cancel]', 'Agora não', 'Not now');
-
-            let finished = false;
-            const finish = accepted => {
-                if (finished) return;
-                finished = true;
-                if (dialog.open) dialog.close();
-                dialog.remove();
-                settingsGuide = null;
-                closeSettingsGuide = null;
-                resolve(accepted);
-            };
-            settingsGuide = dialog;
-            closeSettingsGuide = () => finish(false);
-            dialog.querySelector('[data-open-settings]').onclick = () => finish(true);
-            dialog.querySelector('[data-guide-cancel]').onclick = () => finish(false);
-            dialog.addEventListener('cancel', event => {
-                event.preventDefault();
-                finish(false);
-            });
-            dialog.addEventListener('close', () => finish(false));
-            document.body.append(dialog);
-            try {
-                dialog.showModal();
-            } catch (_) {
-                finish(false);
-                pill.querySelector('[data-description]').textContent = noticeText(
-                    'Nas definições da Margot, toca em Localização e escolhe Sempre.',
-                    'In Margot settings, tap Location and choose Always.'
-                );
-            }
-        });
+    .ml-instructions[hidden] {
+      display:none!important;
     }
 
-    function showNotice() {
-        if (!native) return;
-
-        if (!pill) {
-            pill = document.createElement('aside');
-
-            pill.className = 'margot-location-pill';
-            pill.setAttribute('aria-label', 'Localização');
-
-            pill.innerHTML =
-                '<strong data-title></strong>' +
-                '<span data-description></span>' +
-                '<div class="margot-location-pill-actions">' +
-                '<small data-guidance></small>' +
-                '<button type="button" data-settings>Abrir definições</button>' +
-                '</div>' +
-                '<button type="button" data-close aria-label="Fechar aviso">×</button>';
-
-            pill.querySelector('[data-settings]').onclick = async () => {
-                if (
-                    (disabled() && granted(lastState)) ||
-                    pending(lastState)
-                ) {
-                    return check(true);
-                }
-
-                if (openingNoticeSettings) return;
-                openingNoticeSettings = true;
-
-                try {
-                    if (needsBackgroundNotice() && !await explainLocationSettings()) {
-                        return;
-                    }
-                    const result = await bg().openSettings();
-                    if (result === false || result?.opened === false) {
-                        throw new Error('Settings were not opened');
-                    }
-                } catch (_) {
-                    pill.querySelector('span').textContent = ios
-                        ? noticeText('Abre Definições → Margot → Localização → Sempre.', 'Open Settings → Margot → Location → Always.')
-                        : noticeText('Abre as definições da Margot → Permissões → Localização.', 'Open Margot settings → Permissions → Location.');
-                } finally {
-                    openingNoticeSettings = false;
-                }
-            };
-
-            pill.querySelector('[data-close]').onclick = () => {
-                dismissed = true;
-                pill.hidden = true;
-            };
-
-            document.body.append(pill);
-        }
-
-        const backgroundNotice = needsBackgroundNotice();
-        if (!backgroundNotice && settingsGuide) closeSettingsGuide?.();
-        pill.querySelector('[data-title]').textContent = backgroundNotice
-            ? noticeText('Não percas um olá.', 'Don’t miss a hello.')
-            : noticeText('Descobre quem está perto.', 'Discover people nearby.');
-
-        const guidance = pill.querySelector('[data-guidance]');
-        guidance.textContent = backgroundNotice
-            ? noticeText('Nas definições: Localização → Sempre', 'In Settings: Location → Always')
-            : '';
-        guidance.hidden = true;
-        pill.querySelector('span').textContent = backgroundNotice
-            ? noticeText('Sem “Sempre”, podes desaparecer ao sair da app.', 'Without “Always”, you may disappear when you leave the app.')
-            : 'Sem localização ativa, não conseguimos descobrir quem está perto de ti.';
-
-        pill.querySelector('[data-settings]').textContent =
-            disabled() && granted(lastState)
-                ? 'Alterar na Margot'
-                : pending(lastState)
-                  ? 'Continuar'
-                  : backgroundNotice
-                    ? noticeText('Ver como ativar', 'Show me how')
-                    : 'Abrir definições';
-
-        pill.hidden =
-            checking ||
-            document.hidden ||
-            dismissed ||
-            !discovery() ||
-            !lastState ||
-            lastState.available === false ||
-            (granted(lastState) && !disabled() && !backgroundNotice);
+    .margot-location-pill.ml-always-notice [data-settings] {
+      display:block;
+      width:100%;
+      min-height:48px;
+      padding:12px 16px;
+      border:0;
+      border-radius:14px;
+      background:#bb1645;
+      color:#fff;
+      font:700 14px/1.35 system-ui,sans-serif;
+      text-align:center;
+      text-decoration:none;
+      box-sizing:border-box;
     }
 
-    async function check(force = false) {
-        const ui = window.MargotPermissionUI;
-
-        if (!native || !ui) {
-            release();
-            return;
-        }
-
-        if (checking) return;
-
-        checking = true;
-        cancelled = false;
-
-        if (pill) pill.hidden = true;
-
-        try {
-            lastState = await bg().status();
-
-            if (
-                lastState.available === false ||
-                (!force && disabled()) ||
-                ['denied', 'restricted'].includes(
-                    authorization(lastState)
-                ) ||
-                lastState.services_enabled === false
-            ) {
-                return;
-            }
-
-            const first = pending(lastState);
-            const wasDisabled = disabled();
-
-            if (first) {
-                attemptedAlways = false;
-
-                try {
-                    localStorage.removeItem(legacyKey);
-                } catch (_) {}
-            }
-
-            const upgrade = needsAlways(lastState);
-
-            if (!force && !first && !upgrade) {
-                return;
-            }
-
-            if (
-                !force &&
-                !await ui.waitForContext(2000, discovery)
-            ) {
-                return;
-            }
-
-            if (cancelled) return;
-
-            ui.deferNotifications();
-
-            await ui.run(async () => {
-                if (
-                    cancelled ||
-                    (!force && !discovery())
-                ) {
-                    return;
-                }
-
-                if (
-                    force &&
-                    granted(lastState) &&
-                    disabled()
-                ) {
-                    const accepted = await ui.explain({
-                        title: 'Descobre quem está perto.',
-                        text:
-                            'A Margot vai usar a localização que já autorizaste neste dispositivo.',
-                        detail:
-                            'A tua posição exata não é mostrada às outras pessoas.'
-                    });
-
-                    if (!accepted || cancelled) return;
-
-                    window.MargotPreferencias?.definir(
-                        'localizacao',
-                        true
-                    );
-                }
-
-                if (first) {
-                    const accepted = await ui.explain({
-                        title: 'O próximo olá está perto.',
-                        text:
-                            'A localização permite descobrir pessoas que estão perto de ti.',
-                        detail:
-                            'A tua posição exata não é mostrada às outras pessoas. Escolhes a autorização no próximo ecrã.'
-                    });
-
-                    if (!accepted || cancelled) return;
-
-                    await ui.guide(
-                        'location',
-                        () => bg().requestPermission(false)
-                    );
-
-                    lastState = await bg().status();
-
-                    if (!granted(lastState) || cancelled) {
-                        return;
-                    }
-
-                    window.MargotPreferencias?.definir(
-                        'localizacao',
-                        true
-                    );
-                }
-
-                if (needsAlways(lastState) && !cancelled) {
-                    const accepted = await ui.explain({
-                        title: 'E quando guardas o telemóvel?',
-                        text:
-                            'A localização em segundo plano permite atualizar os encontros mesmo quando sais da Margot.',
-                        detail:
-                            'Podes mudar esta escolha nas definições quando quiseres.'
-                    });
-
-                    if (!accepted || cancelled) return;
-
-                    const modern =
-                        lastState.permission_flow_version === 2;
-
-                    const result = await ui.guide(
-                        'always',
-                        () =>
-                            modern
-                                ? bg().requestPermission(true)
-                                : bg().requestAlways()
-                    );
-
-                    if (
-                        result?.authenticated !== false &&
-                        !result?.cancelled
-                    ) {
-                        attemptedAlways = true;
-
-                        try {
-                            localStorage.setItem(
-                                legacyKey,
-                                '1'
-                            );
-                        } catch (_) {}
-                    }
-
-                    lastState = await bg().status();
-                } else if (
-                    force &&
-                    ios &&
-                    authorization(lastState) === 'when_in_use' &&
-                    !upgrade &&
-                    !first &&
-                    !wasDisabled &&
-                    !cancelled
-                ) {
-                    const accepted = await ui.explain({
-                        title: 'Localização em segundo plano',
-                        text:
-                            'Podes permitir a localização Sempre nas definições da Margot.',
-                        detail:
-                            'A localização durante a utilização já está disponível.',
-                        action: 'Abrir definições'
-                    });
-
-                    if (accepted && !cancelled) {
-                        await bg().openSettings();
-                    }
-                }
-            });
-        } catch (error) {
-            console.warn(
-                'Não foi possível concluir o pedido de localização.',
-                error
-            );
-        } finally {
-            checking = false;
-            release();
-            showNotice();
-        }
+    .margot-location-pill.ml-always-notice [data-settings]::after {
+      content:none;
     }
 
-    async function refresh() {
-        if (!native || checking) return;
+    .ml-film { margin:10px 0 0; }
 
-        try {
-            lastState = await bg().status();
-
-            showNotice();
-
-            if (granted(lastState) && !disabled()) {
-                await bg().start();
-            }
-        } catch (_) {}
+    .ml-film summary {
+      min-height:44px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      cursor:pointer;
+      font-weight:600;
+      font-size:14px;
+      list-style:none;
     }
 
-    window.MargotLocationOnboarding = {
-        open: () => check(true),
+    .ml-film summary::-webkit-details-marker {
+      display:none;
+    }
 
-        close: () => {
-            cancelled = true;
-            release();
-        },
+    .ml-film summary::after {
+      content:'＋';
+      margin-left:auto;
+      font-size:20px;
+      font-weight:400;
+    }
 
-        authorizationChanged: state => {
-            if (authorization(state) !== authorization(lastState)) {
-                dismissed = false;
-            }
-            lastState = state;
+    .ml-film[open] summary::after {
+      content:'−';
+    }
 
-            if (!checking) {
-                showNotice();
-            }
-        }
+    .ml-film summary:focus-visible {
+      outline:2px solid #b4214d;
+      outline-offset:3px;
+      border-radius:8px;
+    }
+
+    .ml-film-content {
+      padding:16px 12px 4px;
+      border-radius:20px;
+      color:#242428;
+      background:radial-gradient(
+        ellipse at 80% 40%,#fbeef2,transparent 70%
+      ),#f7f7f9;
+      overflow:hidden;
+    }
+
+    .ml-stage {
+      position:relative;
+      height:220px;
+      isolation:isolate;
+    }
+
+    .ml-label {
+      position:absolute;
+      top:0;
+      font:500 11px/1.3 system-ui,sans-serif;
+      color:#66616a;
+      text-align:center;
+      width:45%;
+    }
+
+    .ml-label:first-child { left:0; }
+    .ml-label:nth-child(2) { right:0; }
+
+    .ml-device {
+      position:absolute;
+      left:8%;
+      top:31px;
+      width:70px;
+      height:134px;
+      border-radius:20px;
+      padding:4px;
+      background:linear-gradient(
+        115deg,#f7f7f7,#92959a 35%,#f0f0f0 65%,#8d9095
+      );
+      box-shadow:0 12px 18px #23233320;
+      transform:rotate(-9deg);
+      box-sizing:content-box;
+    }
+
+    .ml-display {
+      height:100%;
+      border-radius:16px;
+      background:radial-gradient(
+        #ddd3dd .7px,transparent .8px
+      ) 0 0/9px 9px,#fff;
+      position:relative;
+      overflow:hidden;
+      border:1px solid #29292d;
+      box-sizing:border-box;
+    }
+
+    .ml-display::before {
+      content:'';
+      position:absolute;
+      top:6px;
+      left:24px;
+      width:22px;
+      height:6px;
+      border-radius:8px;
+      background:#242428;
+    }
+
+    .ml-display::after {
+      content:'';
+      position:absolute;
+      bottom:5px;
+      left:25px;
+      width:20px;
+      height:3px;
+      border-radius:4px;
+      background:#b9b6bd;
+    }
+
+    .ml-pocket {
+      position:absolute;
+      left:3%;
+      top:127px;
+      width:112px;
+      height:88px;
+      border-radius:5px 5px 40px 40px;
+      background:linear-gradient(130deg,#e8e9ec,#c5c8d0);
+      box-shadow:0 -2px 0 #fbfcff,inset 0 1px 3px #63697918;
+    }
+
+    .ml-pocket::after {
+      content:'';
+      position:absolute;
+      inset:7px;
+      border:1px dashed #9499a480;
+      border-top:0;
+      border-radius:0 0 33px 33px;
+    }
+
+    .ml-map {
+      position:absolute;
+      right:0;
+      top:27px;
+      width:51%;
+      height:183px;
+      border-radius:24px;
+      background:radial-gradient(
+        #cdbbcf 1px,transparent 1px
+      ) 1px 2px/17px 17px;
+    }
+
+    .ml-avatar {
+      position:absolute;
+      width:46px;
+      height:46px;
+      border-radius:50%;
+      background-color:#e3d9df;
+      background-size:300% 100%;
+      background-position:0 50%;
+      box-shadow:0 5px 13px #372b3820;
+      border:2px solid #fff;
+      box-sizing:border-box;
+      overflow:hidden;
+    }
+
+    .ml-avatar img {
+      width:100%;
+      height:100%;
+      display:block;
+      object-fit:cover;
+    }
+
+    .ml-peer-a {
+      left:4%;
+      top:18px;
+    }
+
+    .ml-peer-b {
+      right:1%;
+      bottom:12px;
+      background-position:100% 50%;
+    }
+
+    .ml-self {
+      width:60px;
+      height:60px;
+      left:35%;
+      top:67px;
+      background-position:50% 50%;
+      box-shadow:0 0 0 4px #bd285216,0 8px 18px #62253e1c;
+      z-index:1;
+    }
+
+    .ml-display .ml-self {
+      width:36px;
+      height:36px;
+      left:17px;
+      top:48px;
+      box-shadow:0 0 0 3px #bd285218;
+    }
+
+    .ml-hole {
+      position:absolute;
+      left:35%;
+      top:67px;
+      width:60px;
+      height:60px;
+      border:1px dashed #b2a6b0;
+      border-radius:50%;
+      box-sizing:border-box;
+      opacity:0;
+    }
+
+    .ml-caption {
+      min-height:42px;
+      margin:8px 0 0!important;
+      text-align:center;
+      font:600 15px/1.35 system-ui,sans-serif!important;
+    }
+
+    .ml-meta {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+    }
+
+    .ml-meta small {
+      font:400 10px/1.3 system-ui,sans-serif;
+      color:#706974;
+    }
+
+    .margot-location-pill .ml-replay {
+      min-height:44px;
+      padding:8px 0;
+      border:0;
+      background:none;
+      color:#85334e;
+      font:600 12px system-ui,sans-serif;
+      text-decoration:none;
+    }
+
+    .ml-playing .ml-device {
+      animation:ml-pocket-in 7s cubic-bezier(.22,.61,.36,1) both;
+    }
+
+    .ml-playing .ml-map .ml-self {
+      animation:ml-vanish 7s ease both;
+    }
+
+    .ml-playing .ml-hole {
+      animation:ml-hole-in 7s ease both;
+    }
+
+    @keyframes ml-pocket-in {
+      0%,15% {
+        transform:translateY(0) rotate(-9deg);
+      }
+
+      38%,100% {
+        transform:translateY(76px) rotate(0);
+        opacity:0;
+      }
+    }
+
+    @keyframes ml-vanish {
+      0%,63% {
+        opacity:1;
+        transform:scale(1);
+        filter:blur(0);
+      }
+
+      82%,100% {
+        opacity:0;
+        transform:scale(.82);
+        filter:blur(3px);
+      }
+    }
+
+    @keyframes ml-hole-in {
+      0%,65% { opacity:0; }
+      84%,100% { opacity:1; }
+    }
+
+    @media(prefers-reduced-motion:reduce) {
+      .ml-playing * {
+        animation:none!important;
+      }
+    }
+
+    .margot-location-pill .ml-error {
+      display:block;
+      font-size:13px;
+      margin-top:8px;
+    }
+
+    .margot-location-pill .ml-error[hidden],
+    .ml-film[hidden] {
+      display:none!important;
+    }
+  `;
+
+  document.head.append(style);
+
+  const mounted = new WeakSet();
+
+  function mount(pill) {
+    if (mounted.has(pill)) return;
+
+    const actions = pill.querySelector('.margot-location-pill-actions');
+    const settings = pill.querySelector('[data-settings]');
+    const guidance = pill.querySelector('[data-guidance]');
+
+    if (!actions || !settings || !guidance) return;
+
+    mounted.add(pill);
+
+    const film = document.createElement('details');
+    film.className = 'ml-film';
+
+    film.innerHTML = `
+      <summary></summary>
+
+      <div class="ml-film-content">
+        <div class="ml-stage" aria-hidden="true">
+          <span class="ml-label"></span>
+          <span class="ml-label"></span>
+
+          <div class="ml-device">
+            <div class="ml-display">
+              <div class="ml-avatar ml-self"></div>
+            </div>
+          </div>
+
+          <div class="ml-pocket"></div>
+
+          <div class="ml-map">
+            <div class="ml-avatar ml-peer-a"></div>
+            <div class="ml-avatar ml-peer-b"></div>
+            <div class="ml-hole"></div>
+            <div class="ml-avatar ml-self"></div>
+          </div>
+        </div>
+
+        <p class="ml-caption"></p>
+
+        <div class="ml-meta">
+          <small></small>
+          <button type="button" class="ml-replay"></button>
+        </div>
+      </div>
+    `;
+
+    const q = selector => film.querySelector(selector);
+
+    q('summary').textContent = copy('Ver porquê…', 'See why…');
+
+    const labels = film.querySelectorAll('.ml-label');
+
+    labels[0].textContent = copy('O teu telemóvel', 'Your phone');
+    labels[1].textContent = copy('Quem está perto', 'People nearby');
+
+    q('.ml-replay').textContent = copy('Repetir ↻', 'Replay ↻');
+
+    actions.before(film);
+
+    const instructions = document.createElement('p');
+    instructions.className = 'ml-instructions';
+    instructions.hidden = true;
+
+    actions.before(instructions);
+
+    const error = document.createElement('small');
+    error.className = 'ml-error';
+    error.hidden = true;
+    error.setAttribute('role', 'status');
+
+    actions.after(error);
+
+    const relevant = () =>
+      Boolean(guidance.textContent.trim());
+
+    let timers = [];
+    let opening = false;
+
+    const stop = () => {
+      timers.forEach(clearTimeout);
+      timers = [];
+      film.classList.remove('ml-playing');
     };
 
-    document.addEventListener('margot:page-leave', () => {
-        cancelled = true;
-        closeSettingsGuide?.();
+    function photos() {
+      const id = String(window.membroId || '');
 
-        if (pill) pill.hidden = true;
-    });
+      const entries = Array.from(
+        document.querySelectorAll('img.foto:not(.a-remover)')
+      );
 
-    const start = () => {
-        if (discovery()) dismissed = false;
-        return check();
-    };
+      const isMe = element =>
+        Boolean(id) &&
+        (element.id === id || element.dataset.membroId === id);
 
-    if (document.readyState === 'loading') {
-        document.addEventListener(
-            'DOMContentLoaded',
-            start,
-            { once: true }
-        );
-    } else {
-        queueMicrotask(start);
-    }
+      const own = entries.find(isMe);
 
-    document.addEventListener(
-        'margot:page-ready',
-        start
-    );
+      const peers = entries
+        .filter(element => !isMe(element))
+        .slice(0, 2);
 
-    // Read permission only: no GPS request, network request or tracking restart.
-    async function refreshNoticePermission() {
-        if (
-            !native || !ios || document.hidden || !discovery() ||
-            checking || noticeStatusPending || !bg()?.status
-        ) {
-            return;
-        }
+      let examples = !own || peers.length < 2;
 
-        noticeStatusPending = true;
+      function fill(target, source) {
+        target.replaceChildren();
+        target.style.backgroundImage = `url("${portraits}")`;
+
+        if (!source) return;
+
+        let url;
 
         try {
-            const state = await bg().status();
-
-            if (!document.hidden && discovery() && !checking) {
-                window.MargotLocationOnboarding.authorizationChanged(state);
-            }
+          url = new URL(source.currentSrc || source.src, location.href);
         } catch (_) {
-            // A later foreground check retries transient bridge failures.
-        } finally {
-            noticeStatusPending = false;
+          examples = true;
+          return;
         }
-    }
 
-    function resume() {
-        dismissed = false;
-        return refresh();
-    }
-
-    if (native && ios) {
-        // Fallback if a resume event is missed or the first status read fails.
-        // Hidden pages and other screens do not call the native bridge.
-        window.setInterval(refreshNoticePermission, 3000);
-        window.addEventListener('focus', refreshNoticePermission);
-        window.addEventListener('pageshow', refreshNoticePermission);
-    }
-
-    document.addEventListener(
-        'margot:permissions-resume',
-        resume
-    );
-
-    document.addEventListener('visibilitychange', () => {
-        if (!document.hidden) {
-            resume();
-        } else if (pill) {
-            closeSettingsGuide?.();
-            pill.hidden = true;
+        if (!['http:', 'https:', 'file:'].includes(url.protocol)) {
+          examples = true;
+          return;
         }
+
+        if (url.pathname.endsWith('/default.webp')) {
+          examples = true;
+          return;
+        }
+
+        const img = document.createElement('img');
+
+        img.alt = '';
+        img.decoding = 'async';
+        img.referrerPolicy = 'no-referrer';
+
+        img.onerror = () => {
+          img.remove();
+
+          q('.ml-meta small').textContent = copy(
+            'Ilustração · inclui perfis de exemplo',
+            'Illustration · includes example profiles'
+          );
+        };
+
+        img.src = url.href;
+        target.append(img);
+      }
+
+      film.querySelectorAll('.ml-self').forEach(element => {
+        fill(element, own);
+      });
+
+      fill(q('.ml-peer-a'), peers[0]);
+      fill(q('.ml-peer-b'), peers[1]);
+
+      q('.ml-meta small').textContent = examples
+        ? copy(
+            'Ilustração · inclui perfis de exemplo',
+            'Illustration · includes example profiles'
+          )
+        : copy(
+            'Ilustração com as fotos do teu mapa',
+            'Illustration using photos from your map'
+          );
+    }
+
+    function play() {
+      stop();
+
+      if (!film.open || film.hidden || pill.hidden || document.hidden) {
+        return;
+      }
+
+      photos();
+
+      q('.ml-caption').textContent = copy(
+        'Guardas o telemóvel.',
+        'You put your phone away.'
+      );
+
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        q('.ml-caption').textContent = copy(
+          'Sem “Sempre”, podes deixar de aparecer.',
+          'Without “Always”, you may stop appearing.'
+        );
+
+        return;
+      }
+
+      void film.offsetWidth;
+      film.classList.add('ml-playing');
+
+      timers.push(setTimeout(() => {
+        q('.ml-caption').textContent = copy(
+          'Algum tempo depois…',
+          'Some time later…'
+        );
+      }, 2700));
+
+      timers.push(setTimeout(() => {
+        q('.ml-caption').textContent = copy(
+          'Podem deixar de te encontrar.',
+          'People may stop finding you.'
+        );
+      }, 5400));
+    }
+
+    film.addEventListener('toggle', () => {
+      if (film.open) play();
+      else stop();
     });
 
-    window.addEventListener(
-        'margot:preferencias-alteradas',
-        showNotice
-    );
+    q('.ml-replay').onclick = play;
+
+    const sync = () => {
+      const hide = !relevant();
+
+      pill.classList.toggle('ml-always-notice', !hide);
+
+      if (instructions.hidden !== hide) {
+        instructions.hidden = hide;
+      }
+
+      if (!hide) {
+        const setText = (selector, value) => {
+          const element = pill.querySelector(selector);
+
+          if (element && element.textContent !== value) {
+            element.textContent = value;
+          }
+        };
+
+        setText(
+          '[data-title]',
+          copy(
+            'Ativa a localização “Sempre”',
+            'Allow “Always” location'
+          )
+        );
+
+        setText(
+          '[data-description]',
+          copy(
+            'Ao guardares o telemóvel no bolso, podes deixar de aparecer a quem está perto.',
+            'When you put your phone away, you may stop appearing to people nearby.'
+          )
+        );
+
+        const steps = copy(
+          'Nas definições da Margot, escolhe:<strong>Localização → Sempre</strong>',
+          'In Margot settings, choose:<strong>Location → Always</strong>'
+        );
+
+        if (instructions.innerHTML !== steps) {
+          instructions.innerHTML = steps;
+        }
+      }
+
+      const label = copy(
+        'Escolher “Sempre” nas definições',
+        'Choose “Always” in Settings'
+      );
+
+      if (!hide && settings.textContent !== label) {
+        settings.textContent = label;
+      }
+
+      if (film.hidden !== hide) {
+        film.hidden = hide;
+      }
+
+      if (hide || pill.hidden || document.hidden) {
+        stop();
+
+        if (film.open) {
+          film.open = false;
+        }
+      }
+    };
+
+    new MutationObserver(sync).observe(pill, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ['hidden']
+    });
+
+    document.addEventListener('visibilitychange', sync);
+    window.addEventListener('pagehide', stop);
+
+    settings.addEventListener('click', async event => {
+      if (
+        !relevant() ||
+        !window.MargotBackgroundLocation?.openSettings
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+
+      if (opening) return;
+
+      opening = true;
+      error.hidden = true;
+      stop();
+
+      try {
+        const result =
+          await window.MargotBackgroundLocation.openSettings();
+
+        if (result === false || result?.opened === false) {
+          throw Error();
+        }
+      } catch (_) {
+        error.textContent = copy(
+          'Abre Definições → Margot → Localização → Sempre.',
+          'Open Settings → Margot → Location → Always.'
+        );
+
+        error.hidden = false;
+      } finally {
+        opening = false;
+      }
+    }, true);
+
+    sync();
+  }
+
+  const scan = () => {
+    document.querySelectorAll('.margot-location-pill').forEach(mount);
+  };
+
+  const start = () => {
+    scan();
+
+    new MutationObserver(scan).observe(document.body, {
+      childList: true
+    });
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start, { once: true });
+  } else {
+    start();
+  }
 })();
