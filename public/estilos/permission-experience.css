@@ -197,21 +197,20 @@
     top: calc(env(safe-area-inset-top) + 10px);
     left: max(12px, env(safe-area-inset-left));
     right: max(12px, env(safe-area-inset-right));
-    max-width: 440px;
+    max-width: 420px;
     margin: 0 auto;
     box-sizing: border-box;
-    padding: 16px;
+    padding: 14px 16px 8px;
     border: 1px solid rgb(30 20 35 / 8%);
-    border-radius: 22px;
-    background: #fffafc;
+    border-radius: 18px;
+    background: #fff;
     color: #241d26;
-    box-shadow: 0 8px 28px rgb(35 20 30 / 12%);
+    box-shadow: 0 4px 18px rgb(35 20 30 / 10%);
     max-height: calc(100dvh - env(safe-area-inset-top) - 24px);
     overflow-y: auto;
     overflow-wrap: anywhere;
-    font: 13px/1.45 system-ui, sans-serif;
+    font: 13px/1.4 system-ui, sans-serif;
     text-align: left;
-    animation: permission-arrive 340ms ease both;
 }
 
 .margot-location-pill[hidden],
@@ -222,32 +221,19 @@
 .margot-location-pill [data-title] {
     display: block;
     padding-right: 32px;
-    font-size: 16px;
+    font-size: 15px;
     line-height: 1.3;
     font-weight: 750;
-    letter-spacing: -.2px;
 }
 
 .margot-location-pill [data-description] {
     display: block;
-    margin-top: 6px;
+    margin-top: 5px;
     color: #615764;
 }
 
 .margot-location-pill-actions {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 10px 12px;
-    margin-top: 12px;
-}
-
-.margot-location-pill [data-guidance] {
-    flex: 1 1 130px;
-    min-width: 0;
-    font-size: 12px;
-    line-height: 1.4;
-    color: #615764;
+    margin-top: 4px;
 }
 
 .margot-location-pill button {
@@ -260,24 +246,28 @@
 }
 
 .margot-location-pill [data-settings] {
-    flex: 0 1 auto;
+    display: block;
     max-width: 100%;
     min-height: 44px;
-    padding: 10px 16px;
-    border-radius: 999px;
-    background: #c91443;
-    color: #fff;
+    padding: 8px 0;
+    background: transparent;
+    color: #bb1645;
     font-size: 13px;
     line-height: 1.3;
-    font-weight: 700;
+    font-weight: 750;
+    text-align: left;
     text-decoration: none;
     white-space: normal;
 }
 
+.margot-location-pill [data-settings]::after {
+    content: " ›";
+}
+
 .margot-location-pill [data-close] {
     position: absolute;
-    right: 3px;
-    top: 3px;
+    right: 2px;
+    top: 2px;
     display: grid;
     place-items: center;
     width: 44px;
@@ -286,31 +276,188 @@
     border-radius: 50%;
     background: transparent;
     color: #756976;
+    font-size: 22px;
+    line-height: 1;
+}
+
+.margot-location-pill button:focus-visible,
+.margot-location-settings-guide button:focus-visible {
+    outline: 2px solid #bb1645;
+    outline-offset: 2px;
+}
+
+.margot-location-settings-guide {
+    position: fixed;
+    inset: auto 12px max(12px, env(safe-area-inset-bottom));
+    width: calc(100% - 24px);
+    max-width: 440px;
+    max-height: calc(100dvh - env(safe-area-inset-top) - 32px);
+    box-sizing: border-box;
+    margin: 0 auto;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 26px 22px 12px;
+    border: 1px solid rgb(30 20 35 / 8%);
+    border-radius: 28px;
+    background: #fff;
+    color: #241d26;
+    box-shadow: 0 12px 48px #0003;
+    font: 15px/1.45 system-ui, sans-serif;
+    text-align: left;
+    overflow-wrap: anywhere;
+}
+
+.margot-location-settings-guide::backdrop {
+    background: rgb(20 12 20 / 38%);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+}
+
+.margot-location-settings-guide h2 {
+    margin: 0;
+    font-size: 24px;
+    line-height: 1.2;
+    font-weight: 750;
+    letter-spacing: -.5px;
+}
+
+.margot-location-settings-guide > p {
+    margin: 8px 0 20px;
+    color: #615764;
+}
+
+.margot-location-settings-steps {
+    counter-reset: location-step;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.margot-location-settings-steps li {
+    counter-increment: location-step;
+    margin: 0 0 20px;
+}
+
+.margot-location-settings-steps li > p {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 10px;
+    font-weight: 650;
+}
+
+.margot-location-settings-steps li > p::before {
+    content: counter(location-step);
+    display: grid;
+    place-items: center;
+    flex: 0 0 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #f9e9ef;
+    color: #a9133c;
+    font-size: 13px;
+    font-weight: 750;
+}
+
+.margot-location-settings-example {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 56px;
+    padding: 10px 14px;
+    box-sizing: border-box;
+    border: 1px solid #e8e5eb;
+    border-radius: 14px;
+    background: #f7f6f9;
+    font-size: 17px;
+}
+
+.margot-location-settings-example strong {
+    font-weight: 500;
+}
+
+.margot-location-settings-pin {
+    display: grid;
+    place-items: center;
+    flex: 0 0 28px;
+    height: 28px;
+    background: #007aff;
+    color: white;
+    border-radius: 7px;
     font-size: 24px;
     line-height: 1;
 }
 
-.margot-location-pill button:focus-visible {
-    outline: 2px solid currentColor;
-    outline-offset: 3px;
+.margot-location-settings-chevron,
+.margot-location-settings-check {
+    margin-left: auto;
+    font-size: 24px;
 }
 
-.margot-location-pill [data-settings]:focus-visible {
-    outline-color: #c91443;
+.margot-location-settings-chevron {
+    color: #837b88;
+}
+
+.margot-location-settings-check {
+    color: #006bd6;
+}
+
+.margot-location-settings-guide > .margot-location-settings-footnote {
+    margin: 0 0 16px;
+    font-size: 13px;
+}
+
+.margot-location-settings-guide button {
+    display: block;
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 16px;
+    border: 0;
+    border-radius: 999px;
+    font: 650 15px/1.3 system-ui, sans-serif;
+    white-space: normal;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.margot-location-settings-guide [data-open-settings] {
+    background: #bb1645;
+    color: #fff;
+}
+
+.margot-location-settings-guide [data-guide-cancel] {
+    margin-top: 4px;
+    background: transparent;
+    color: #615764;
+    font-weight: 500;
 }
 
 @media (prefers-color-scheme: dark) {
-    .margot-location-pill {
+    .margot-location-pill,
+    .margot-location-settings-guide {
         background: #252128;
         color: #fff8fc;
         border-color: rgb(255 255 255 / 12%);
-        box-shadow: 0 8px 28px rgb(0 0 0 / 24%);
     }
 
     .margot-location-pill [data-description],
-    .margot-location-pill [data-guidance],
-    .margot-location-pill [data-close] {
+    .margot-location-pill [data-close],
+    .margot-location-settings-guide > p,
+    .margot-location-settings-guide [data-guide-cancel] {
         color: #d0c3ce;
+    }
+
+    .margot-location-pill [data-settings] {
+        color: #ff99b5;
+    }
+
+    .margot-location-settings-example {
+        background: #322d37;
+        border-color: #514856;
+    }
+
+    .margot-location-settings-check {
+        color: #70baff;
     }
 }
 

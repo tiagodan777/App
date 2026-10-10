@@ -24,6 +24,10 @@
     let dismissed = false;
     let cancelled = false;
     let attemptedAlways = false;
+    let noticeStatusPending = false;
+    let settingsGuide;
+    let closeSettingsGuide;
+    let openingNoticeSettings = false;
 
     const authorization = state =>
         state?.authorization ?? state?.permission;
@@ -86,6 +90,74 @@
             window.MargotPreferencias?.obter('invisivel') !== true;
     }
 
+    function explainLocationSettings() {
+        return new Promise(resolve => {
+            const dialog = document.createElement('dialog');
+            dialog.className = 'margot-location-settings-guide';
+            dialog.setAttribute('aria-labelledby', 'margot-location-settings-title');
+            dialog.setAttribute('aria-describedby', 'margot-location-settings-description');
+            dialog.innerHTML =
+                '<h2 id="margot-location-settings-title"></h2>' +
+                '<p id="margot-location-settings-description"></p>' +
+                '<ol class="margot-location-settings-steps">' +
+                '<li><p data-step-one></p>' +
+                '<div class="margot-location-settings-example" aria-hidden="true">' +
+                '<b class="margot-location-settings-pin">↗</b>' +
+                '<strong data-location-label></strong><b class="margot-location-settings-chevron">›</b>' +
+                '</div></li>' +
+                '<li><p data-step-two></p>' +
+                '<div class="margot-location-settings-example is-selected" aria-hidden="true">' +
+                '<strong data-always-label></strong><b class="margot-location-settings-check">✓</b>' +
+                '</div></li></ol>' +
+                '<p class="margot-location-settings-footnote" data-return></p>' +
+                '<button type="button" data-open-settings></button>' +
+                '<button type="button" data-guide-cancel autofocus></button>';
+
+            const text = (selector, pt, en) => {
+                dialog.querySelector(selector).textContent = noticeText(pt, en);
+            };
+            text('h2', 'São só dois passos.', 'Just two steps.');
+            text('#margot-location-settings-description', 'Nas definições da Margot:', 'In Margot settings:');
+            text('[data-step-one]', 'Toca em “Localização”.', 'Tap “Location”.');
+            text('[data-location-label]', 'Localização', 'Location');
+            text('[data-step-two]', 'Escolhe “Sempre”.', 'Choose “Always”.');
+            text('[data-always-label]', 'Sempre', 'Always');
+            text('[data-return]', 'Depois, volta à Margot.', 'Then return to Margot.');
+            text('[data-open-settings]', 'Abrir definições', 'Open Settings');
+            text('[data-guide-cancel]', 'Agora não', 'Not now');
+
+            let finished = false;
+            const finish = accepted => {
+                if (finished) return;
+                finished = true;
+                if (dialog.open) dialog.close();
+                dialog.remove();
+                settingsGuide = null;
+                closeSettingsGuide = null;
+                resolve(accepted);
+            };
+            settingsGuide = dialog;
+            closeSettingsGuide = () => finish(false);
+            dialog.querySelector('[data-open-settings]').onclick = () => finish(true);
+            dialog.querySelector('[data-guide-cancel]').onclick = () => finish(false);
+            dialog.addEventListener('cancel', event => {
+                event.preventDefault();
+                finish(false);
+            });
+            dialog.addEventListener('close', () => finish(false));
+            document.body.append(dialog);
+            try {
+                dialog.showModal();
+            } catch (_) {
+                finish(false);
+                pill.querySelector('[data-description]').textContent = noticeText(
+                    'Nas definições da Margot, toca em Localização e escolhe Sempre.',
+                    'In Margot settings, tap Location and choose Always.'
+                );
+            }
+        });
+    }
+
     function showNotice() {
         if (!native) return;
 
@@ -112,22 +184,23 @@
                     return check(true);
                 }
 
-                try {
-                    const result = await bg().openSettings();
+                if (openingNoticeSettings) return;
+                openingNoticeSettings = true;
 
-                    if (result?.opened === false) {
+                try {
+                    if (needsBackgroundNotice() && !await explainLocationSettings()) {
+                        return;
+                    }
+                    const result = await bg().openSettings();
+                    if (result === false || result?.opened === false) {
                         throw new Error('Settings were not opened');
                     }
                 } catch (_) {
                     pill.querySelector('span').textContent = ios
-                        ? noticeText(
-                            'Abre Definições → Margot → Localização → Sempre.',
-                            'Open Settings → Margot → Location → Always.'
-                        )
-                        : noticeText(
-                            'Abre as definições da Margot → Permissões → Localização.',
-                            'Open Margot settings → Permissions → Location.'
-                        );
+                        ? noticeText('Abre Definições → Margot → Localização → Sempre.', 'Open Settings → Margot → Location → Always.')
+                        : noticeText('Abre as definições da Margot → Permissões → Localização.', 'Open Margot settings → Permissions → Location.');
+                } finally {
+                    openingNoticeSettings = false;
                 }
             };
 
@@ -140,30 +213,18 @@
         }
 
         const backgroundNotice = needsBackgroundNotice();
-
+        if (!backgroundNotice && settingsGuide) closeSettingsGuide?.();
         pill.querySelector('[data-title]').textContent = backgroundNotice
             ? noticeText('Não percas um olá.', 'Don’t miss a hello.')
-            : noticeText(
-                'Descobre quem está perto.',
-                'Discover people nearby.'
-            );
+            : noticeText('Descobre quem está perto.', 'Discover people nearby.');
 
         const guidance = pill.querySelector('[data-guidance]');
-
         guidance.textContent = backgroundNotice
-            ? noticeText(
-                'Nas definições: Localização → Sempre',
-                'In Settings: Location → Always'
-            )
+            ? noticeText('Nas definições: Localização → Sempre', 'In Settings: Location → Always')
             : '';
-
-        guidance.hidden = !backgroundNotice;
-
+        guidance.hidden = true;
         pill.querySelector('span').textContent = backgroundNotice
-            ? noticeText(
-                'Sem “Sempre”, podes deixar de aparecer quando guardas o telemóvel.',
-                'Without “Always”, you may disappear when you put your phone away.'
-            )
+            ? noticeText('Sem “Sempre”, podes desaparecer ao sair da app.', 'Without “Always”, you may disappear when you leave the app.')
             : 'Sem localização ativa, não conseguimos descobrir quem está perto de ti.';
 
         pill.querySelector('[data-settings]').textContent =
@@ -171,7 +232,9 @@
                 ? 'Alterar na Margot'
                 : pending(lastState)
                   ? 'Continuar'
-                  : 'Abrir definições';
+                  : backgroundNotice
+                    ? noticeText('Ver como ativar', 'Show me how')
+                    : 'Abrir definições';
 
         pill.hidden =
             checking ||
@@ -392,6 +455,9 @@
         },
 
         authorizationChanged: state => {
+            if (authorization(state) !== authorization(lastState)) {
+                dismissed = false;
+            }
             lastState = state;
 
             if (!checking) {
@@ -402,6 +468,7 @@
 
     document.addEventListener('margot:page-leave', () => {
         cancelled = true;
+        closeSettingsGuide?.();
 
         if (pill) pill.hidden = true;
     });
@@ -426,9 +493,41 @@
         start
     );
 
+    // Read permission only: no GPS request, network request or tracking restart.
+    async function refreshNoticePermission() {
+        if (
+            !native || !ios || document.hidden || !discovery() ||
+            checking || noticeStatusPending || !bg()?.status
+        ) {
+            return;
+        }
+
+        noticeStatusPending = true;
+
+        try {
+            const state = await bg().status();
+
+            if (!document.hidden && discovery() && !checking) {
+                window.MargotLocationOnboarding.authorizationChanged(state);
+            }
+        } catch (_) {
+            // A later foreground check retries transient bridge failures.
+        } finally {
+            noticeStatusPending = false;
+        }
+    }
+
     function resume() {
         dismissed = false;
         return refresh();
+    }
+
+    if (native && ios) {
+        // Fallback if a resume event is missed or the first status read fails.
+        // Hidden pages and other screens do not call the native bridge.
+        window.setInterval(refreshNoticePermission, 3000);
+        window.addEventListener('focus', refreshNoticePermission);
+        window.addEventListener('pageshow', refreshNoticePermission);
     }
 
     document.addEventListener(
@@ -440,6 +539,7 @@
         if (!document.hidden) {
             resume();
         } else if (pill) {
+            closeSettingsGuide?.();
             pill.hidden = true;
         }
     });
