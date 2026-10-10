@@ -9,7 +9,7 @@ use Twig\Source;
 /** Adds presentation scripts to documents before Twig interpolates member data. */
 final class LanguageTemplateLoader implements LoaderInterface
 {
-    private const LOCATION_NOTICE_VERSION = '20261010-location-notice-2';
+    private const LOCATION_NOTICE_VERSION = '20261010-location-notice-3';
     private const PRESENCE_CANVAS_VERSION = '20261010-presence-canvas-1';
     private const MINI_MEDIA_VERSION = '20261009-mini-media-1';
     private const FLUIDITY_VERSION = '20261009-fluidity-haptics-1';

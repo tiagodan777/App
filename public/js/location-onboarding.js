@@ -96,8 +96,12 @@
             pill.setAttribute('aria-label', 'Localização');
 
             pill.innerHTML =
-                '<span>📍 Sem localização ativa, não conseguimos descobrir quem está perto de ti.</span>' +
+                '<strong data-title></strong>' +
+                '<span data-description></span>' +
+                '<div class="margot-location-pill-actions">' +
+                '<small data-guidance></small>' +
                 '<button type="button" data-settings>Abrir definições</button>' +
+                '</div>' +
                 '<button type="button" data-close aria-label="Fechar aviso">×</button>';
 
             pill.querySelector('[data-settings]').onclick = async () => {
@@ -110,13 +114,20 @@
 
                 try {
                     const result = await bg().openSettings();
+
                     if (result?.opened === false) {
                         throw new Error('Settings were not opened');
                     }
                 } catch (_) {
                     pill.querySelector('span').textContent = ios
-                        ? noticeText('Abre Definições → Margot → Localização → Sempre.', 'Open Settings → Margot → Location → Always.')
-                        : noticeText('Abre as definições da Margot → Permissões → Localização.', 'Open Margot settings → Permissions → Location.');
+                        ? noticeText(
+                            'Abre Definições → Margot → Localização → Sempre.',
+                            'Open Settings → Margot → Location → Always.'
+                        )
+                        : noticeText(
+                            'Abre as definições da Margot → Permissões → Localização.',
+                            'Open Margot settings → Permissions → Location.'
+                        );
                 }
             };
 
@@ -129,8 +140,30 @@
         }
 
         const backgroundNotice = needsBackgroundNotice();
+
+        pill.querySelector('[data-title]').textContent = backgroundNotice
+            ? noticeText('Não percas um olá.', 'Don’t miss a hello.')
+            : noticeText(
+                'Descobre quem está perto.',
+                'Discover people nearby.'
+            );
+
+        const guidance = pill.querySelector('[data-guidance]');
+
+        guidance.textContent = backgroundNotice
+            ? noticeText(
+                'Nas definições: Localização → Sempre',
+                'In Settings: Location → Always'
+            )
+            : '';
+
+        guidance.hidden = !backgroundNotice;
+
         pill.querySelector('span').textContent = backgroundNotice
-            ? noticeText('Sem localização “Sempre”, podes deixar de aparecer quando guardas o telemóvel e perder um olá de quem está perto.', 'Without “Always” location access, you may disappear when you put your phone away and miss a hello from someone nearby.')
+            ? noticeText(
+                'Sem “Sempre”, podes deixar de aparecer quando guardas o telemóvel.',
+                'Without “Always”, you may disappear when you put your phone away.'
+            )
             : 'Sem localização ativa, não conseguimos descobrir quem está perto de ti.';
 
         pill.querySelector('[data-settings]').textContent =
@@ -373,7 +406,10 @@
         if (pill) pill.hidden = true;
     });
 
-    const start = () => check();
+    const start = () => {
+        if (discovery()) dismissed = false;
+        return check();
+    };
 
     if (document.readyState === 'loading') {
         document.addEventListener(
