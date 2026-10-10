@@ -11,6 +11,7 @@ window.MargotLocationTracker = function (actions) {
     var locationWatchProvider = null;
     var locationWatchStarting = false;
     var locationWatchGeneration = 0;
+    var locationLifecycleGeneration = 0;
     var locationRequestPending = false;
     var locationTrackingStartedAt = 0;
 
@@ -29,88 +30,67 @@ window.MargotLocationTracker = function (actions) {
     var LOCATION_STARTUP_GRACE = 60000;
 
     async function startLocationTracking() {
+        var lifecycle = locationLifecycleGeneration;
         await window.MargotLocationReady;
 
-        if (window.disableLocationTracking || document.visibilityState !== 'visible') {
+        if (lifecycle !== locationLifecycleGeneration || window.disableLocationTracking
+            || document.visibilityState !== 'visible' || locationWatchId !== null || locationWatchStarting) {
             return;
         }
 
-        if (locationWatchId !== null || locationWatchStarting) {
-            return;
-        }
-
-        var nativeGeolocation = getNativeGeolocation();
-
-        if (isNativeApp()) {
-            if (!nativeGeolocation) {
-                mostrarMensagemTemporaria('A localização nativa não está disponível.', 'erro');
-                return;
-            }
-
-            if (window.MargotLocationOnboarding) {
-                try {
-                    const permission = await nativeGeolocation.checkPermissions();
-
-                    if (
-                        permission.location !== 'granted' &&
-                        permission.coarseLocation !== 'granted'
-                    ) {
-                        return;
-                    }
-                } catch (_) {
+        // Reservar antes da primeira verificação assíncrona impede dois arranques.
+        locationWatchStarting = true;
+        var nativeWatchPending = false;
+        var nativeGeolocation;
+        try {
+            nativeGeolocation = getNativeGeolocation();
+            if (isNativeApp()) {
+                if (!nativeGeolocation) {
+                    mostrarMensagemTemporaria('A localização nativa não está disponível.', 'erro');
                     return;
                 }
-
-                if (
-                    window.disableLocationTracking ||
-                    document.visibilityState !== 'visible'
-                ) {
+                if (window.MargotLocationOnboarding) {
+                    var permission = await nativeGeolocation.checkPermissions();
+                    if (!locationPermissionGranted(permission)) return;
+                }
+                if (isAndroidNativeApp() && !await ensureAndroidLocationPermission(nativeGeolocation)) {
                     return;
                 }
-            }
+                if (lifecycle !== locationLifecycleGeneration || window.disableLocationTracking
+                    || document.visibilityState !== 'visible') return;
 
-            if (isAndroidNativeApp()) {
-                locationWatchStarting = true;
-
-                ensureAndroidLocationPermission(nativeGeolocation).then(function (granted) {
-                    if (
-                        !granted ||
-                        window.disableLocationTracking ||
-                        document.visibilityState !== 'visible'
-                    ) {
-                        locationWatchStarting = false;
-                        return;
-                    }
-
-                    startNativeLocationWatch(nativeGeolocation);
-                });
-
+                nativeWatchPending = true;
+                startNativeLocationWatch(nativeGeolocation);
                 return;
             }
-
-            locationWatchStarting = true;
-            startNativeLocationWatch(nativeGeolocation);
-            return;
+            if (!window.isSecureContext) {
+                mostrarMensagemTemporaria('A localização exige HTTPS.', 'erro');
+                return;
+            }
+            if (!('geolocation' in navigator)) {
+                mostrarMensagemTemporaria('Este dispositivo não suporta localização.', 'erro');
+                return;
+            }
+            locationTrackingStartedAt = Date.now();
+            locationWatchProvider = 'web';
+            locationWatchId = navigator.geolocation.watchPosition(
+                function (position) {
+                    if (lifecycle === locationLifecycleGeneration) handleLocationSuccess(position);
+                },
+                function (error) {
+                    if (lifecycle === locationLifecycleGeneration) handleLocationError(error);
+                },
+                getLocationOptions()
+            );
+        } catch (error) {
+            if (lifecycle === locationLifecycleGeneration) {
+                console.warn('Não foi possível iniciar a localização.', error);
+            }
+        } finally {
+            if (!nativeWatchPending && lifecycle === locationLifecycleGeneration) {
+                locationWatchStarting = false;
+            }
         }
-
-        if (!window.isSecureContext) {
-            mostrarMensagemTemporaria('A localização exige HTTPS.', 'erro');
-            return;
-        }
-
-        if (!('geolocation' in navigator)) {
-            mostrarMensagemTemporaria('Este dispositivo não suporta localização.', 'erro');
-            return;
-        }
-
-        locationTrackingStartedAt = Date.now();
-        locationWatchProvider = 'web';
-
-        locationWatchId = navigator.geolocation.watchPosition(
-            handleLocationSuccess,
-            handleLocationError,
-            getLocationOptions()
-        );
     }
 
     function startNativeLocationWatch(nativeGeolocation) {
@@ -169,100 +149,55 @@ window.MargotLocationTracker = function (actions) {
     }
 
     async function requestCurrentLocation() {
+        var lifecycle = locationLifecycleGeneration;
         await window.MargotLocationReady;
-
-        if (
-            window.disableLocationTracking ||
-            document.visibilityState !== 'visible' ||
-            locationRequestPending
-        ) {
-            return;
-        }
-
-        var nativeGeolocation = getNativeGeolocation();
-
-        if (isNativeApp()) {
-            if (!nativeGeolocation) {
-                mostrarMensagemTemporaria('A localização nativa não está disponível.', 'erro');
-                return;
-            }
-
-            if (window.MargotLocationOnboarding) {
-                try {
-                    const permission = await nativeGeolocation.checkPermissions();
-
-                    if (
-                        permission.location !== 'granted' &&
-                        permission.coarseLocation !== 'granted'
-                    ) {
-                        return;
-                    }
-                } catch (_) {
-                    return;
-                }
-
-                if (
-                    window.disableLocationTracking ||
-                    document.visibilityState !== 'visible'
-                ) {
-                    return;
-                }
-            }
-
-            if (isAndroidNativeApp()) {
-                locationRequestPending = true;
-
-                ensureAndroidLocationPermission(nativeGeolocation).then(function (granted) {
-                    if (
-                        !granted ||
-                        window.disableLocationTracking ||
-                        document.visibilityState !== 'visible'
-                    ) {
-                        locationRequestPending = false;
-                        return;
-                    }
-
-                    requestNativeCurrentLocation(nativeGeolocation);
-                });
-
-                return;
-            }
-
-            locationRequestPending = true;
-            requestNativeCurrentLocation(nativeGeolocation);
-            return;
-        }
-
-        if (!window.isSecureContext || !('geolocation' in navigator)) {
-            return;
-        }
+        if (lifecycle !== locationLifecycleGeneration || window.disableLocationTracking
+            || document.visibilityState !== 'visible' || locationRequestPending) return;
 
         locationRequestPending = true;
-
-        navigator.geolocation.getCurrentPosition(
-            function (position) {
-                locationRequestPending = false;
-                handleLocationSuccess(position);
-            },
-            function (error) {
-                locationRequestPending = false;
-                handleLocationError(error);
-            },
-            getLocationOptions()
-        );
-    }
-
-    function requestNativeCurrentLocation(nativeGeolocation) {
-        nativeGeolocation
-            .getCurrentPosition(getLocationOptions())
-            .then(function (position) {
-                locationRequestPending = false;
-                handleLocationSuccess(position);
-            })
-            .catch(function (error) {
-                locationRequestPending = false;
-                handleLocationError(error);
+        var current = function () {
+            return lifecycle === locationLifecycleGeneration && !window.disableLocationTracking
+                && document.visibilityState === 'visible';
+        };
+        try {
+            var nativeGeolocation = getNativeGeolocation();
+            if (isNativeApp()) {
+                if (!nativeGeolocation) {
+                    mostrarMensagemTemporaria('A localização nativa não está disponível.', 'erro');
+                    return;
+                }
+                if (window.MargotLocationOnboarding) {
+                    var permission = await nativeGeolocation.checkPermissions();
+                    if (!locationPermissionGranted(permission)) return;
+                }
+                if (isAndroidNativeApp() && !await ensureAndroidLocationPermission(nativeGeolocation)) {
+                    return;
+                }
+                if (!current()) return;
+                var position = await nativeGeolocation.getCurrentPosition(getLocationOptions());
+                if (current()) handleLocationSuccess(position);
+                return;
+            }
+            if (!window.isSecureContext || !('geolocation' in navigator)) return;
+            await new Promise(function (resolve) {
+                navigator.geolocation.getCurrentPosition(
+                    function (position) {
+                        if (current()) handleLocationSuccess(position);
+                        resolve();
+                    },
+                    function (error) {
+                        if (current()) handleLocationError(error);
+                        resolve();
+                    },
+                    getLocationOptions()
+                );
             });
+        } catch (error) {
+            if (current()) handleLocationError(error);
+        } finally {
+            // Uma resposta antiga não pode libertar um pedido de um novo ciclo.
+            if (lifecycle === locationLifecycleGeneration) locationRequestPending = false;
+        }
     }
 
     function isNativeApp() {
@@ -387,7 +322,16 @@ window.MargotLocationTracker = function (actions) {
                 return;
             }
 
-            sendLastKnownLocation();
+            // O watcher pode já ter uma leitura recente; nesse caso não duplicar GPS.
+            var age = lastKnownLocation ? Date.now() - lastKnownLocation.timestamp : Infinity;
+            if (age >= 0 && age <= LOCATION_MAX_AGE) {
+                sendLastKnownLocation();
+                return;
+            }
+            // Não renovar indefinidamente coordenadas antigas quando o watcher cala.
+            requestCurrentLocation().catch(function (error) {
+                console.warn('Não foi possível atualizar a localização.', error);
+            });
         }, LOCATION_REFRESH_INTERVAL);
     }
 
@@ -397,6 +341,7 @@ window.MargotLocationTracker = function (actions) {
         var nativeGeolocation = getNativeGeolocation();
 
         locationWatchGeneration += 1;
+        locationLifecycleGeneration += 1;
         locationWatchId = null;
         locationWatchProvider = null;
         locationWatchStarting = false;

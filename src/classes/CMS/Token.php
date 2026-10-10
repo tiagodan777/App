@@ -20,8 +20,7 @@ final class Token {
     private const PROPOSITOS_TOKEN_UNICO = [
         'password_reset',
         'delete_account',
-        'email_verification',
-        'background_location'
+        'email_verification'
     ];
 
     public function __construct(Database $db) {
@@ -53,6 +52,15 @@ final class Token {
                     'DELETE
                         FROM token
                         WHERE membro_id = :membro_id AND proposito = :proposito',
+                    ['membro_id' => $membroId, 'proposito' => $proposito]
+                );
+            }
+            if ($proposito === 'background_location') {
+                // Outra sessão pode continuar a usar uma autorização ainda válida.
+                $this->db->runSQL(
+                    'DELETE FROM token
+                        WHERE membro_id = :membro_id AND proposito = :proposito
+                        AND validade <= UTC_TIMESTAMP()',
                     ['membro_id' => $membroId, 'proposito' => $proposito]
                 );
             }

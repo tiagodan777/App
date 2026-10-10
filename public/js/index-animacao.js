@@ -175,6 +175,40 @@
     const paletteChannels = palette.map(rgb => rgb.split(',').map(Number));
     const darkPaletteChannels = darkPalette.map(rgb => rgb.split(',').map(Number));
 
+    // Cache limitada a 1024 cores por tema. Não altera cores, pontos ou tempos.
+    const colorCacheKeys = [new Int32Array(1024).fill(-1), new Int32Array(1024).fill(-1)];
+    const colorCacheValues = [new Array(1024), new Array(1024)];
+
+    function pointColor(colorIndex, roundedAlpha, mix) {
+        const steady = mix <= 0.01 || mix === 1;
+        const nightMode = mix === 1 ? 1 : 0;
+        const key = colorIndex * 101 + Math.round(roundedAlpha * 100);
+        const slot = key & 1023;
+        if (steady && colorCacheKeys[nightMode][slot] === key) {
+            return colorCacheValues[nightMode][slot];
+        }
+
+        let color;
+        if (mix > 0.01) {
+            const base = paletteChannels[colorIndex];
+            const night = darkPaletteChannels[colorIndex];
+            const overlayAlpha = roundedAlpha * mix;
+            const combinedAlpha = overlayAlpha + roundedAlpha * (1 - overlayAlpha);
+            const nightWeight = overlayAlpha / combinedAlpha;
+            const r = lerp(base[0], night[0], nightWeight);
+            const g = lerp(base[1], night[1], nightWeight);
+            const b = lerp(base[2], night[2], nightWeight);
+            color = `rgba(${r}, ${g}, ${b}, ${combinedAlpha})`;
+        } else {
+            color = `rgba(${palette[colorIndex]}, ${roundedAlpha})`;
+        }
+        if (steady) {
+            colorCacheKeys[nightMode][slot] = key;
+            colorCacheValues[nightMode][slot] = color;
+        }
+        return color;
+    }
+
     function draw(now) {
         if (!ativo || document.hidden) return;
 
@@ -258,23 +292,7 @@
             const roundedAlpha = Math.round(finalAlpha * 100) / 100;
             const size = 2.4 + darkMix * 0.4;
 
-            if (darkMix > 0.01) {
-                // Combina as duas camadas de cor antes de desenhar o ponto.
-                const base = paletteChannels[colorIndex];
-                const night = darkPaletteChannels[colorIndex];
-                const overlayAlpha = roundedAlpha * darkMix;
-                const combinedAlpha =
-                    overlayAlpha + roundedAlpha * (1 - overlayAlpha);
-                const nightWeight = overlayAlpha / combinedAlpha;
-
-                const r = lerp(base[0], night[0], nightWeight);
-                const g = lerp(base[1], night[1], nightWeight);
-                const b = lerp(base[2], night[2], nightWeight);
-
-                ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${combinedAlpha})`;
-            } else {
-                ctx.fillStyle = `rgba(${palette[colorIndex]}, ${roundedAlpha})`;
-            }
+            ctx.fillStyle = pointColor(colorIndex, roundedAlpha, darkMix);
 
             ctx.fillRect(finalX - size / 2, finalY - size / 2, size, size);
         }
