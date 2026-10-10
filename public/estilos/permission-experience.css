@@ -203,7 +203,11 @@
     background: #202027;
     color: #fff;
     box-shadow: 0 6px 24px #0003;
-    padding: 13px 38px 13px 16px;
+    padding: 13px 52px 13px 16px;
+    box-sizing: border-box;
+    overflow-wrap: anywhere;
+    max-height: calc(100dvh - env(safe-area-inset-top) - 24px);
+    overflow-y: auto;
     font: 14px/1.35 system-ui, sans-serif;
     animation: permission-arrive 340ms ease both;
 }
@@ -223,7 +227,8 @@
 .margot-location-pill [data-settings] {
     display: block;
     text-decoration: underline;
-    padding: 8px 0 0;
+    padding: 8px 0;
+    min-height: 44px;
     font-weight: 700;
 }
 
@@ -231,8 +236,8 @@
     position: absolute;
     right: 4px;
     top: 4px;
-    min-width: 36px;
-    min-height: 36px;
+    min-width: 44px;
+    min-height: 44px;
     font-size: 24px;
 }
 

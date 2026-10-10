@@ -9,6 +9,7 @@ use Twig\Source;
 /** Adds presentation scripts to documents before Twig interpolates member data. */
 final class LanguageTemplateLoader implements LoaderInterface
 {
+    private const LOCATION_NOTICE_VERSION = '20261010-location-notice-2';
     private const PRESENCE_CANVAS_VERSION = '20261010-presence-canvas-1';
     private const MINI_MEDIA_VERSION = '20261009-mini-media-1';
     private const FLUIDITY_VERSION = '20261009-fluidity-haptics-1';
@@ -137,6 +138,15 @@ final class LanguageTemplateLoader implements LoaderInterface
             ) ?? $code;
         }
 
+        // Run after older asset versions so cached clients fetch the notice update.
+        foreach (['js/location-onboarding.js', 'estilos/permission-experience.css'] as $asset) {
+            $code = preg_replace(
+                '~' . preg_quote($asset, '~') . '(?:\?v=[^"\s<>]*)?~',
+                $asset . '?v=' . self::LOCATION_NOTICE_VERSION,
+                $code
+            ) ?? $code;
+        }
+
         if ($name === 'index.html' && !str_contains($code, 'estilos/mini-media.css')) {
             $code = str_replace(
                 '{% block styles %}',
@@ -230,7 +240,9 @@ final class LanguageTemplateLoader implements LoaderInterface
             . ':'
             . self::MINI_MEDIA_VERSION
             . ':'
-            . self::PRESENCE_CANVAS_VERSION;
+            . self::PRESENCE_CANVAS_VERSION
+            . ':'
+            . self::LOCATION_NOTICE_VERSION;
     }
 
     public function isFresh(string $name, int $time): bool

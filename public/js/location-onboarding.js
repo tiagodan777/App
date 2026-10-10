@@ -75,6 +75,17 @@
         );
     }
 
+    const noticeText = (pt, en) =>
+        window.MargotI18n?.language === 'en' ? en : pt;
+
+    function needsBackgroundNotice() {
+        return ios &&
+            authorization(lastState) === 'when_in_use' &&
+            granted(lastState) &&
+            !disabled() &&
+            window.MargotPreferencias?.obter('invisivel') !== true;
+    }
+
     function showNotice() {
         if (!native) return;
 
@@ -98,10 +109,14 @@
                 }
 
                 try {
-                    await bg().openSettings();
+                    const result = await bg().openSettings();
+                    if (result?.opened === false) {
+                        throw new Error('Settings were not opened');
+                    }
                 } catch (_) {
-                    pill.querySelector('span').textContent =
-                        'Abre Definições → Margot → Localização no iPhone.';
+                    pill.querySelector('span').textContent = ios
+                        ? noticeText('Abre Definições → Margot → Localização → Sempre.', 'Open Settings → Margot → Location → Always.')
+                        : noticeText('Abre as definições da Margot → Permissões → Localização.', 'Open Margot settings → Permissions → Location.');
                 }
             };
 
@@ -113,6 +128,11 @@
             document.body.append(pill);
         }
 
+        const backgroundNotice = needsBackgroundNotice();
+        pill.querySelector('span').textContent = backgroundNotice
+            ? noticeText('Sem localização “Sempre”, podes deixar de aparecer quando guardas o telemóvel e perder um olá de quem está perto.', 'Without “Always” location access, you may disappear when you put your phone away and miss a hello from someone nearby.')
+            : 'Sem localização ativa, não conseguimos descobrir quem está perto de ti.';
+
         pill.querySelector('[data-settings]').textContent =
             disabled() && granted(lastState)
                 ? 'Alterar na Margot'
@@ -122,11 +142,12 @@
 
         pill.hidden =
             checking ||
+            document.hidden ||
             dismissed ||
             !discovery() ||
             !lastState ||
             lastState.available === false ||
-            (granted(lastState) && !disabled());
+            (granted(lastState) && !disabled() && !backgroundNotice);
     }
 
     async function check(force = false) {
@@ -369,14 +390,21 @@
         start
     );
 
+    function resume() {
+        dismissed = false;
+        return refresh();
+    }
+
     document.addEventListener(
         'margot:permissions-resume',
-        refresh
+        resume
     );
 
     document.addEventListener('visibilitychange', () => {
         if (!document.hidden) {
-            refresh();
+            resume();
+        } else if (pill) {
+            pill.hidden = true;
         }
     });
 
