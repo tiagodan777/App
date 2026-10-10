@@ -14,7 +14,7 @@ class WebSocket implements MessageComponentInterface {
     use Realtime\Connections;
     use Realtime\Discovery;
     /* O iOS envia eventos de movimento/visita, não pings exatos por minuto. */
-    private const LOCALIZACAO_MAXIMA_IDADE_SEGUNDOS = 180;
+    private const LOCALIZACAO_MAXIMA_IDADE_SEGUNDOS = 600;
     private const LOCALIZACOES_PERSISTIDAS_CACHE_SEGUNDOS = 5;
     private const PERSISTENCIA_LOCALIZACAO_INTERVALO_SEGUNDOS = 5.0;
     private const TOLERANCIA_NAVEGACAO_SEGUNDOS = 8.0;

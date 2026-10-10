@@ -6,7 +6,7 @@ namespace App\CMS;
 use PDO;
 
 final class NearbyPresenceNotification {
-    private const LOCATION_MAX_AGE_SECONDS = 180;
+    private const LOCATION_MAX_AGE_SECONDS = 600;
     private const MINIMUM_NEARBY_PEOPLE = 6;
     private PDO $db;
     private PushNotification $push;
