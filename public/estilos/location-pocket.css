@@ -1,0 +1,106 @@
+/* A abertura do bolso está aproximadamente a 40% da fotografia. */
+
+.ml-film .ml-stage {
+  overflow: hidden;
+}
+
+.ml-film .ml-stage::before,
+.ml-film .ml-pocket {
+  position: absolute;
+  left: 0;
+  top: 50px;
+  width: 44%;
+  height: 170px;
+  border: 0;
+  border-radius: 16px;
+  box-sizing: border-box;
+  background-color: #29445c;
+  background-image: url('../media/denim-pocket-v1.jpg');
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  box-shadow: none;
+  pointer-events: none;
+}
+
+/* Tecido atrás do telemóvel. */
+.ml-film .ml-stage::before {
+  content: '';
+  z-index: 0;
+}
+
+/* Tecido à frente do telemóvel, desde a abertura do bolso. */
+.ml-film .ml-pocket {
+  z-index: 2;
+  clip-path: inset(40% 0 0 0);
+  -webkit-clip-path: inset(40% 0 0 0);
+}
+
+.ml-film .ml-pocket::after {
+  display: none;
+}
+
+.ml-film .ml-device {
+  left: calc(22% - 28px);
+  top: 24px;
+  width: 50px;
+  height: 90px;
+  padding: 3px;
+  border-radius: 14px;
+  z-index: 1;
+  opacity: 1;
+  transform: rotate(-5deg);
+  box-shadow: 0 5px 10px rgb(10 20 30 / 25%);
+}
+
+.ml-film .ml-display {
+  border-radius: 11px;
+}
+
+.ml-film .ml-display::before {
+  left: 17px;
+  top: 4px;
+  width: 16px;
+  height: 4px;
+}
+
+.ml-film .ml-display::after {
+  left: 17px;
+  width: 16px;
+  height: 2px;
+  bottom: 3px;
+}
+
+.ml-film .ml-display .ml-self {
+  width: 28px;
+  height: 28px;
+  left: 10px;
+  top: 31px;
+}
+
+.ml-film .ml-map {
+  z-index: 3;
+}
+
+/* O telemóvel fica oculto atrás do tecido, sem perder opacidade. */
+.ml-film.ml-playing .ml-device {
+  animation: margot-denim-in 7s cubic-bezier(.22, .61, .36, 1) both;
+}
+
+@keyframes margot-denim-in {
+  0%, 16% {
+    transform: translateY(0) rotate(-5deg);
+    opacity: 1;
+  }
+
+  43%, 100% {
+    transform: translateY(100px) rotate(0);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ml-film.ml-playing .ml-device {
+    animation: none !important;
+    transform: rotate(-5deg);
+  }
+}
