@@ -20,8 +20,25 @@ final class LanguageTemplateLoader implements LoaderInterface
     private const STYLE_VERSION = '20261008-hey-name-motion-1';
     private const VISUAL_VERSION = '20261008-compact-alerts-2';
 
+    private string $webRelease = '';
+
     public function __construct(private LoaderInterface $loader)
     {
+        // One snapshot per request keeps rendered HTML and Twig's cache key aligned.
+        $manifest = dirname(__DIR__, 3) . '/public/app-version.json';
+        try {
+            if (is_file($manifest) && is_readable($manifest) && filesize($manifest) <= 2048) {
+                $data = json_decode((string) file_get_contents($manifest), true);
+                if (is_array($data)
+                    && is_string($data['version'] ?? null)
+                    && preg_match('/\A[A-Za-z0-9_-]{1,64}\z/', $data['version']) === 1
+                    && is_bool($data['enabled'] ?? null)) {
+                    $this->webRelease = $data['version'];
+                }
+            }
+        } catch (\Throwable $error) {
+            // An unavailable manifest must not prevent the app from rendering.
+        }
     }
 
     public function getSourceContext(string $name): Source
@@ -213,6 +230,29 @@ final class LanguageTemplateLoader implements LoaderInterface
             $code = substr_replace($code, $scripts, $position, 0);
         }
 
+        if ($this->webRelease !== '') {
+            // Apply to local template assets; preserve existing resource query strings.
+            $code = preg_replace_callback(
+                '~(\{\{\s*doc_root\s*\}\}(?:js|estilos)/[^"\'\s<>?]+\.(?:js|css))(\?[^"\'\s<>]*)?(?=["\'])~',
+                function (array $match): string {
+                    $query = $match[2] ?? '';
+                    return $match[1] . $query . ($query === '' ? '?' : '&')
+                        . 'margot_release=' . $this->webRelease;
+                },
+                $code
+            ) ?? $code;
+
+            if ($name === 'layout.html') {
+                $code = str_replace(
+                    '</head>',
+                    '{% if session.id %}<script defer src="{{ doc_root }}js/app-update.js?v='
+                    . $this->webRelease . '" data-release="' . $this->webRelease
+                    . '"></script>{% endif %}</head>',
+                    $code
+                );
+            }
+        }
+
         return new Source(
             $code,
             $source->getName(),
@@ -242,7 +282,8 @@ final class LanguageTemplateLoader implements LoaderInterface
             . ':'
             . self::PRESENCE_CANVAS_VERSION
             . ':'
-            . self::LOCATION_NOTICE_VERSION;
+            . self::LOCATION_NOTICE_VERSION
+            . ':web-updater-1:' . $this->webRelease;
     }
 
     public function isFresh(string $name, int $time): bool
