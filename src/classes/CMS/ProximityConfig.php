@@ -6,7 +6,7 @@ namespace App\CMS;
 final class ProximityConfig
 {
     // Raio de proximidade da Margot, em metros.
-    public const RADIUS_METRES = 100.0;
+    public const RADIUS_METRES = 150.0;
 
     /**
      * Calcula a área de pesquisa correspondente ao raio.
