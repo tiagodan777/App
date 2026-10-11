@@ -1,564 +1,471 @@
-// Localização em primeiro plano. O transporte e o mapa são fornecidos pelo websocket.js.
+// Localização do mapa em primeiro plano; o serviço nativo mantém o segundo plano.
 window.MargotLocationTracker = function (actions) {
     'use strict';
 
-    var send = actions.send;
-    var limparMapaLocal = actions.clearMap;
-    var mostrarMensagemTemporaria = actions.showMessage;
+    const SEND_INTERVAL = 15000;
+    const REFRESH_INTERVAL = 45000;
+    const MAX_AGE = 10000;
+    const TIMEOUT = 30000;
+    const WATCH_RECOVERY = 90000;
 
-    var locationRefreshTimer = null;
-    var locationWatchId = null;
-    var locationWatchProvider = null;
-    var locationWatchStarting = false;
-    var locationWatchGeneration = 0;
-    var locationLifecycleGeneration = 0;
-    var locationRequestPending = false;
-    var locationTrackingStartedAt = 0;
+    let generation = 0;
+    let watchGeneration = 0;
+    let watch = null;
+    let watchStarting = false;
+    let watchStartedAt = 0;
+    let refreshTimer = null;
+    let request = null;
+    let lastFix = null;
+    let lastFixAt = 0;
+    let lastSentAt = -Infinity;
+    let lastErrorAt = -Infinity;
+    let nativePlugin = null;
+    let permissionConfirmed = !isAndroidNativeApp();
 
-    var lastLocationErrorAt = 0;
-    var lastLocationSentAt = 0;
-    var lastSentLatitude = null;
-    var lastSentLongitude = null;
-    var lastKnownLocation = null;
+    const foreground = () =>
+        !window.disableLocationTracking &&
+        document.visibilityState === 'visible';
 
-    var LOCATION_MIN_INTERVAL = 15000;
-    var LOCATION_REFRESH_INTERVAL = 45000;
-    var LOCATION_MIN_DISTANCE = 5;
-    var LOCATION_MAX_AGE = 10000;
-    var LOCATION_TIMEOUT = 30000;
-    var LOCATION_ERROR_COOLDOWN = 30000;
-    var LOCATION_STARTUP_GRACE = 60000;
-
-    async function startLocationTracking() {
-        var lifecycle = locationLifecycleGeneration;
-        await window.MargotLocationReady;
-
-        if (lifecycle !== locationLifecycleGeneration || window.disableLocationTracking
-            || document.visibilityState !== 'visible' || locationWatchId !== null || locationWatchStarting) {
-            return;
-        }
-
-        // Reservar antes da primeira verificação assíncrona impede dois arranques.
-        locationWatchStarting = true;
-        var nativeWatchPending = false;
-        var nativeGeolocation;
-        try {
-            nativeGeolocation = getNativeGeolocation();
-            if (isNativeApp()) {
-                if (!nativeGeolocation) {
-                    mostrarMensagemTemporaria('A localização nativa não está disponível.', 'erro');
-                    return;
-                }
-                if (window.MargotLocationOnboarding) {
-                    var permission = await nativeGeolocation.checkPermissions();
-                    if (!locationPermissionGranted(permission)) return;
-                }
-                if (isAndroidNativeApp() && !await ensureAndroidLocationPermission(nativeGeolocation)) {
-                    return;
-                }
-                if (lifecycle !== locationLifecycleGeneration || window.disableLocationTracking
-                    || document.visibilityState !== 'visible') return;
-
-                nativeWatchPending = true;
-                startNativeLocationWatch(nativeGeolocation);
-                return;
-            }
-            if (!window.isSecureContext) {
-                mostrarMensagemTemporaria('A localização exige HTTPS.', 'erro');
-                return;
-            }
-            if (!('geolocation' in navigator)) {
-                mostrarMensagemTemporaria('Este dispositivo não suporta localização.', 'erro');
-                return;
-            }
-            locationTrackingStartedAt = Date.now();
-            locationWatchProvider = 'web';
-            locationWatchId = navigator.geolocation.watchPosition(
-                function (position) {
-                    if (lifecycle === locationLifecycleGeneration) handleLocationSuccess(position);
-                },
-                function (error) {
-                    if (lifecycle === locationLifecycleGeneration) handleLocationError(error);
-                },
-                getLocationOptions()
-            );
-        } catch (error) {
-            if (lifecycle === locationLifecycleGeneration) {
-                console.warn('Não foi possível iniciar a localização.', error);
-            }
-        } finally {
-            if (!nativeWatchPending && lifecycle === locationLifecycleGeneration) {
-                locationWatchStarting = false;
-            }
-        }
-    }
-
-    function startNativeLocationWatch(nativeGeolocation) {
-        locationTrackingStartedAt = Date.now();
-
-        var generation = ++locationWatchGeneration;
-
-        Promise.resolve().then(function () {
-            return nativeGeolocation.watchPosition(getLocationOptions(), function (position, error) {
-                if (
-                    generation !== locationWatchGeneration ||
-                    window.disableLocationTracking
-                ) {
-                    return;
-                }
-
-                if (error) {
-                    handleLocationError(error);
-                    return;
-                }
-
-                if (position) {
-                    handleLocationSuccess(position);
-                }
-            });
-        }).then(function (watchId) {
-                if (
-                    generation !== locationWatchGeneration ||
-                    window.disableLocationTracking
-                ) {
-                    return Promise.resolve().then(function () {
-                        return nativeGeolocation.clearWatch({ id: String(watchId) });
-                    }).catch(function (error) {
-                            console.warn(
-                                'Não foi possível terminar a localização nativa.',
-                                error
-                            );
-                        });
-                }
-
-                locationWatchId = String(watchId);
-                locationWatchProvider = 'native';
-                locationWatchStarting = false;
-            })
-            .catch(function (error) {
-                if (generation !== locationWatchGeneration) {
-                    return;
-                }
-
-                locationWatchId = null;
-                locationWatchProvider = null;
-                locationWatchStarting = false;
-
-                handleLocationError(error);
-            });
-    }
-
-    async function requestCurrentLocation() {
-        var lifecycle = locationLifecycleGeneration;
-        await window.MargotLocationReady;
-        if (lifecycle !== locationLifecycleGeneration || window.disableLocationTracking
-            || document.visibilityState !== 'visible' || locationRequestPending) return;
-
-        locationRequestPending = true;
-        var current = function () {
-            return lifecycle === locationLifecycleGeneration && !window.disableLocationTracking
-                && document.visibilityState === 'visible';
-        };
-        try {
-            var nativeGeolocation = getNativeGeolocation();
-            if (isNativeApp()) {
-                if (!nativeGeolocation) {
-                    mostrarMensagemTemporaria('A localização nativa não está disponível.', 'erro');
-                    return;
-                }
-                if (window.MargotLocationOnboarding) {
-                    var permission = await nativeGeolocation.checkPermissions();
-                    if (!locationPermissionGranted(permission)) return;
-                }
-                if (isAndroidNativeApp() && !await ensureAndroidLocationPermission(nativeGeolocation)) {
-                    return;
-                }
-                if (!current()) return;
-                var position = await nativeGeolocation.getCurrentPosition(getLocationOptions());
-                if (current()) handleLocationSuccess(position);
-                return;
-            }
-            if (!window.isSecureContext || !('geolocation' in navigator)) return;
-            await new Promise(function (resolve) {
-                navigator.geolocation.getCurrentPosition(
-                    function (position) {
-                        if (current()) handleLocationSuccess(position);
-                        resolve();
-                    },
-                    function (error) {
-                        if (current()) handleLocationError(error);
-                        resolve();
-                    },
-                    getLocationOptions()
-                );
-            });
-        } catch (error) {
-            if (current()) handleLocationError(error);
-        } finally {
-            // Uma resposta antiga não pode libertar um pedido de um novo ciclo.
-            if (lifecycle === locationLifecycleGeneration) locationRequestPending = false;
-        }
-    }
-
-    function isNativeApp() {
-        return Boolean(
-            window.Capacitor &&
-            typeof window.Capacitor.isNativePlatform === 'function' &&
-            window.Capacitor.isNativePlatform()
-        );
-    }
+    const native = () =>
+        Boolean(window.Capacitor?.isNativePlatform?.());
 
     function isAndroidNativeApp() {
         return Boolean(
-            isNativeApp() &&
-            window.Capacitor &&
-            typeof window.Capacitor.getPlatform === 'function' &&
-            window.Capacitor.getPlatform() === 'android'
+            window.Capacitor?.isNativePlatform?.() &&
+            window.Capacitor?.getPlatform?.() === 'android'
         );
     }
 
-    var nativeGeolocationPlugin = null;
-    var androidLocationPermissionPromise = null;
-    var androidLocationPermissionConfirmed = !isAndroidNativeApp();
+    function plugin() {
+        if (!native()) return null;
 
-    function getNativeGeolocation() {
-        if (!isNativeApp() || !window.Capacitor) {
-            return null;
+        if (!nativePlugin) {
+            nativePlugin =
+                window.Capacitor.Plugins?.Geolocation ||
+                window.Capacitor.registerPlugin?.('Geolocation');
         }
 
-        if (nativeGeolocationPlugin) {
-            return nativeGeolocationPlugin;
-        }
-
-        var plugins = window.Capacitor.Plugins || {};
-
-        if (plugins.Geolocation) {
-            nativeGeolocationPlugin = plugins.Geolocation;
-            return nativeGeolocationPlugin;
-        }
-
-        if (typeof window.Capacitor.registerPlugin === 'function') {
-            nativeGeolocationPlugin = window.Capacitor.registerPlugin('Geolocation');
-            return nativeGeolocationPlugin;
-        }
-
-        return null;
+        return nativePlugin;
     }
 
-    function locationPermissionGranted(status) {
-        if (!status || typeof status !== 'object') {
-            return false;
-        }
-
-        return status.location === 'granted' || status.coarseLocation === 'granted';
-    }
-
-    function ensureAndroidLocationPermission(nativeGeolocation) {
-        if (!isAndroidNativeApp()) {
-            return Promise.resolve(true);
-        }
-
-        if (androidLocationPermissionPromise) {
-            return androidLocationPermissionPromise;
-        }
-
-        if (!nativeGeolocation || typeof nativeGeolocation.checkPermissions !== 'function') {
-            androidLocationPermissionConfirmed = false;
-            limparMapaLocal();
-            return Promise.resolve(false);
-        }
-
-        /*
-         * O pedido de autorização pertence ao fluxo de localização.
-         * Aqui apenas confirmamos se o Android já concedeu a permissão.
-         */
-        androidLocationPermissionPromise = nativeGeolocation
-            .checkPermissions()
-            .then(function (status) {
-                var granted = locationPermissionGranted(status);
-
-                androidLocationPermissionPromise = null;
-                androidLocationPermissionConfirmed = granted;
-
-                if (!granted) {
-                    limparMapaLocal();
-                }
-
-                return granted;
-            })
-            .catch(function (error) {
-                androidLocationPermissionPromise = null;
-                androidLocationPermissionConfirmed = false;
-
-                limparMapaLocal();
-
-                console.warn(
-                    'Não foi possível verificar a permissão de localização.',
-                    error
-                );
-
-                return false;
-            });
-
-        return androidLocationPermissionPromise;
-    }
-
-    function getLocationOptions() {
+    function options() {
         return {
             enableHighAccuracy: true,
-            maximumAge: LOCATION_MAX_AGE,
-            timeout: LOCATION_TIMEOUT
+            maximumAge: MAX_AGE,
+            timeout: TIMEOUT,
+            minimumUpdateInterval: SEND_INTERVAL,
+            interval: 30000
         };
     }
 
-    function startLocationRefresh() {
-        clearLocationRefreshTimer();
+    function bounded(promise, milliseconds) {
+        let timer;
 
-        locationRefreshTimer = window.setInterval(function () {
-            if (
-                document.visibilityState !== 'visible' ||
-                window.disableLocationTracking
-            ) {
-                return;
-            }
-
-            // O watcher pode já ter uma leitura recente; nesse caso não duplicar GPS.
-            var age = lastKnownLocation ? Date.now() - lastKnownLocation.timestamp : Infinity;
-            if (age >= 0 && age <= LOCATION_MAX_AGE) {
-                sendLastKnownLocation();
-                return;
-            }
-            // Não renovar indefinidamente coordenadas antigas quando o watcher cala.
-            requestCurrentLocation().catch(function (error) {
-                console.warn('Não foi possível atualizar a localização.', error);
-            });
-        }, LOCATION_REFRESH_INTERVAL);
+        return Promise.race([
+            promise,
+            new Promise((_, reject) => {
+                timer = window.setTimeout(
+                    () => reject({
+                        code: 3,
+                        message: 'Location timeout'
+                    }),
+                    milliseconds
+                );
+            })
+        ]).finally(() => window.clearTimeout(timer));
     }
 
-    function stopLocationTracking() {
-        var watchId = locationWatchId;
-        var watchProvider = locationWatchProvider;
-        var nativeGeolocation = getNativeGeolocation();
+    async function checkPermission() {
+        if (!native()) return true;
 
-        locationWatchGeneration += 1;
-        locationLifecycleGeneration += 1;
-        locationWatchId = null;
-        locationWatchProvider = null;
-        locationWatchStarting = false;
+        const cycle = generation;
 
-        if (watchId !== null && watchProvider === 'native' && nativeGeolocation) {
-            Promise.resolve().then(function () {
-                return nativeGeolocation.clearWatch({ id: String(watchId) });
-            }).catch(function (error) {
-                console.warn('Não foi possível terminar a localização nativa.', error);
-            });
-        } else if (
-            watchId !== null &&
-            watchProvider === 'web' &&
-            navigator.geolocation
-        ) {
-            navigator.geolocation.clearWatch(watchId);
-        }
+        try {
+            const geo = plugin();
+            if (!geo) return false;
 
-        clearLocationRefreshTimer();
-
-        locationRequestPending = false;
-        locationTrackingStartedAt = 0;
-        lastLocationErrorAt = 0;
-        lastLocationSentAt = 0;
-        lastSentLatitude = null;
-        lastSentLongitude = null;
-        lastKnownLocation = null;
-    }
-
-    function handleLocationSuccess(position) {
-        if (window.disableLocationTracking) {
-            return;
-        }
-
-        if (!position || !position.coords) {
-            return;
-        }
-
-        var latitude = Number(position.coords.latitude);
-        var longitude = Number(position.coords.longitude);
-        var accuracy = Number(position.coords.accuracy) || 0;
-
-        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-            return;
-        }
-
-        lastKnownLocation = {
-            latitude: latitude,
-            longitude: longitude,
-            accuracy: accuracy,
-            timestamp: Number(position.timestamp) || Date.now()
-        };
-
-        lastLocationErrorAt = 0;
-
-        var agora = Date.now();
-
-        var distancia = lastSentLatitude === null
-            ? Infinity
-            : calculateDistanceMeters(
-                lastSentLatitude,
-                lastSentLongitude,
-                latitude,
-                longitude
+            const state = await bounded(
+                geo.checkPermissions(),
+                10000
             );
 
-        var passouTempo = agora - lastLocationSentAt >= LOCATION_MIN_INTERVAL;
+            if (cycle !== generation) return false;
+
+            const granted =
+                state?.location === 'granted' ||
+                state?.coarseLocation === 'granted';
+
+            permissionConfirmed = granted;
+
+            if (!granted) actions.clearMap();
+
+            return granted;
+        } catch (error) {
+            if (cycle !== generation) return false;
+
+            permissionConfirmed = false;
+            handleError(error);
+            return false;
+        }
+    }
+
+    function usable(fix) {
+        if (!fix) return false;
+
+        const age = Date.now() - fix.timestamp;
+        return age >= -5000 && age <= MAX_AGE;
+    }
+
+    function receive(position) {
+        if (!foreground() || !position?.coords) return;
+
+        const {latitude, longitude, accuracy} = position.coords;
+        const timestamp = position.timestamp;
 
         if (
-            lastSentLatitude !== null &&
-            !passouTempo &&
-            distancia < LOCATION_MIN_DISTANCE
+            ![latitude, longitude, accuracy, timestamp]
+                .every(Number.isFinite) ||
+            Math.abs(latitude) > 90 ||
+            Math.abs(longitude) > 180 ||
+            accuracy < 0 ||
+            timestamp <= 0
         ) {
             return;
         }
+
+        const fix = {
+            latitude,
+            longitude,
+            accuracy,
+            timestamp
+        };
+
+        // Uma receção nova não torna uma captura antiga recente.
+        if (
+            !usable(fix) ||
+            (lastFix && timestamp < lastFix.timestamp)
+        ) {
+            return;
+        }
+
+        lastFix = fix;
+        lastFixAt = Date.now();
+        lastErrorAt = -Infinity;
 
         sendLastKnownLocation();
     }
 
     function sendLastKnownLocation() {
-        if (!lastKnownLocation || window.disableLocationTracking) {
+        if (!foreground() || !usable(lastFix)) return false;
+
+        // Movimento/ruído do GPS não pode contornar este limite.
+        if (Date.now() - lastSentAt < SEND_INTERVAL) return true;
+
+        if (!actions.send({type: 'location', ...lastFix})) {
             return false;
         }
 
-        if (
-            !send({
-                type: 'location',
-                latitude: lastKnownLocation.latitude,
-                longitude: lastKnownLocation.longitude,
-                accuracy: lastKnownLocation.accuracy,
-                timestamp: lastKnownLocation.timestamp
-            })
-        ) {
-            return false;
-        }
-
-        lastLocationSentAt = Date.now();
-        lastSentLatitude = lastKnownLocation.latitude;
-        lastSentLongitude = lastKnownLocation.longitude;
-
+        lastSentAt = Date.now();
         return true;
     }
 
-    function handleLocationError(error) {
-        if (window.disableLocationTracking) {
-            return;
-        }
+    function clearWatch(item) {
+        if (!item) return;
 
-        var code = error && error.code;
-        var errorMessage = String(
-            error && error.message ? error.message : ''
-        ).toLowerCase();
-
-        var mensagem = 'Não foi possível obter a localização.';
-
-        var permissionDenied =
-            code === 1 ||
-            code === 'OS-PLUG-GLOC-0003' ||
-            code === 'OS-PLUG-GLOC-0004' ||
-            errorMessage.includes('permission denied') ||
-            errorMessage.includes('not authorized');
-
-        var positionUnavailable =
-            code === 2 ||
-            code === 'OS-PLUG-GLOC-0002' ||
-            code === 'OS-PLUG-GLOC-0007' ||
-            code === 'OS-PLUG-GLOC-0008' ||
-            code === 'OS-PLUG-GLOC-0017';
-
-        var timedOut =
-            code === 3 ||
-            code === 'OS-PLUG-GLOC-0010' ||
-            errorMessage.includes('timeout') ||
-            errorMessage.includes('timed out');
-
-        if (permissionDenied) {
-            mensagem = 'A localização não foi autorizada.';
-        } else if (positionUnavailable) {
-            mensagem = 'A localização não está disponível.';
-        } else if (timedOut) {
-            mensagem = 'A localização demorou demasiado tempo.';
-
-            if (
-                lastKnownLocation ||
-                (
-                    locationTrackingStartedAt > 0 &&
-                    Date.now() - locationTrackingStartedAt < LOCATION_STARTUP_GRACE
+        if (item.native) {
+            Promise.resolve()
+                .then(() =>
+                    item.plugin.clearWatch({id: String(item.id)})
                 )
-            ) {
-                console.warn(
-                    'A atualização pontual da localização expirou; foi mantida a última posição válida.',
-                    error
+                .catch(error =>
+                    console.warn(
+                        'Não foi possível terminar o GPS.',
+                        error
+                    )
                 );
-                return;
-            }
+        } else {
+            navigator.geolocation?.clearWatch(item.id);
         }
+    }
 
-        console.warn(mensagem, error);
+    function invalidateWatch() {
+        watchGeneration++;
+        clearWatch(watch);
+        watch = null;
+        watchStarting = false;
+    }
+
+    async function startLocationTracking() {
+        const cycle = generation;
+
+        await window.MargotLocationReady;
 
         if (
-            lastLocationErrorAt > 0 &&
-            Date.now() - lastLocationErrorAt < LOCATION_ERROR_COOLDOWN
+            cycle !== generation ||
+            !foreground() ||
+            watch ||
+            watchStarting
         ) {
             return;
         }
 
-        lastLocationErrorAt = Date.now();
-        mostrarMensagemTemporaria(mensagem, 'erro');
+        watchStarting = true;
+
+        const ticket = ++watchGeneration;
+
+        const current = () =>
+            cycle === generation &&
+            ticket === watchGeneration &&
+            foreground();
+
+        try {
+            if (native()) {
+                const geo = plugin();
+
+                if (
+                    !geo ||
+                    !await checkPermission() ||
+                    !current()
+                ) {
+                    return;
+                }
+
+                watchStartedAt = Date.now();
+
+                const pending = Promise.resolve()
+                    .then(() =>
+                        geo.watchPosition(
+                            options(),
+                            (position, error) => {
+                                if (!current()) return;
+
+                                if (error) handleError(error);
+                                else receive(position);
+                            }
+                        )
+                    )
+                    .then(id => {
+                        const item = {
+                            id,
+                            native: true,
+                            plugin: geo
+                        };
+
+                        if (!current()) clearWatch(item);
+                        else watch = item;
+                    });
+
+                await bounded(pending, TIMEOUT + 5000);
+            } else {
+                if (
+                    !window.isSecureContext ||
+                    !navigator.geolocation
+                ) {
+                    return;
+                }
+
+                watchStartedAt = Date.now();
+
+                const id = navigator.geolocation.watchPosition(
+                    position => {
+                        if (current()) receive(position);
+                    },
+                    error => {
+                        if (current()) handleError(error);
+                    },
+                    options()
+                );
+
+                watch = {id, native: false};
+            }
+        } catch (error) {
+            if (current()) {
+                invalidateWatch();
+                handleError(error);
+            }
+        } finally {
+            if (ticket === watchGeneration) {
+                watchStarting = false;
+            }
+        }
     }
 
-    function calculateDistanceMeters(lat1, lng1, lat2, lng2) {
-        var raio = 6371000;
-        var latitude1 = toRadians(lat1);
-        var latitude2 = toRadians(lat2);
-        var diferencaLatitude = toRadians(lat2 - lat1);
-        var diferencaLongitude = toRadians(lng2 - lng1);
+    async function requestCurrentLocation() {
+        const cycle = generation;
 
-        var a =
-            Math.sin(diferencaLatitude / 2) ** 2 +
-            Math.cos(latitude1) *
-                Math.cos(latitude2) *
-                Math.sin(diferencaLongitude / 2) ** 2;
+        await window.MargotLocationReady;
 
-        return raio * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    }
-
-    function toRadians(valor) {
-        return (valor * Math.PI) / 180;
-    }
-
-    function clearLocationRefreshTimer() {
-        if (!locationRefreshTimer) {
+        if (
+            cycle !== generation ||
+            !foreground() ||
+            request
+        ) {
             return;
         }
 
-        window.clearInterval(locationRefreshTimer);
-        locationRefreshTimer = null;
+        // Focus, pageshow e resume podem chegar quase ao mesmo tempo.
+        if (usable(lastFix)) {
+            sendLastKnownLocation();
+            return;
+        }
+
+        const ticket = {};
+        request = ticket;
+
+        const current = () =>
+            request === ticket &&
+            cycle === generation &&
+            foreground();
+
+        try {
+            let position;
+
+            if (native()) {
+                const geo = plugin();
+
+                if (
+                    !geo ||
+                    !await checkPermission() ||
+                    !current()
+                ) {
+                    return;
+                }
+
+                position = await bounded(
+                    geo.getCurrentPosition(options()),
+                    TIMEOUT + 5000
+                );
+            } else {
+                if (
+                    !window.isSecureContext ||
+                    !navigator.geolocation
+                ) {
+                    return;
+                }
+
+                position = await bounded(
+                    new Promise((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(
+                            resolve,
+                            reject,
+                            options()
+                        );
+                    }),
+                    TIMEOUT + 5000
+                );
+            }
+
+            if (current()) receive(position);
+        } catch (error) {
+            if (current()) handleError(error);
+        } finally {
+            if (request === ticket) request = null;
+        }
+    }
+
+    function startLocationRefresh() {
+        if (refreshTimer !== null) return;
+
+        refreshTimer = window.setInterval(() => {
+            if (!foreground()) return;
+
+            if (
+                (watch || watchStarting) &&
+                Date.now() - Math.max(watchStartedAt, lastFixAt) >=
+                    WATCH_RECOVERY
+            ) {
+                invalidateWatch();
+            }
+
+            startLocationTracking();
+
+            // Um watch saudável não precisa de outro pedido GPS.
+            if (
+                watch &&
+                lastFixAt > 0 &&
+                Date.now() - lastFixAt < REFRESH_INTERVAL
+            ) {
+                return;
+            }
+
+            if (!usable(lastFix)) requestCurrentLocation();
+            else sendLastKnownLocation();
+        }, REFRESH_INTERVAL);
+    }
+
+    function stopLocationTracking() {
+        generation++;
+        invalidateWatch();
+
+        if (refreshTimer !== null) {
+            window.clearInterval(refreshTimer);
+        }
+
+        refreshTimer = null;
+        request = null;
+        lastFix = null;
+        lastFixAt = watchStartedAt = 0;
+        lastSentAt = lastErrorAt = -Infinity;
+    }
+
+    function handleError(error) {
+        if (!foreground()) return;
+
+        const code = error?.code;
+
+        const denied =
+            code === 1 ||
+            [
+                'OS-PLUG-GLOC-0003',
+                'OS-PLUG-GLOC-0004'
+            ].includes(code);
+
+        if (denied) {
+            lastFix = null;
+            actions.clearMap();
+        }
+
+        if (Date.now() - lastErrorAt < 30000) return;
+
+        lastErrorAt = Date.now();
+        console.warn('Localização:', error);
+
+        const timeout =
+            code === 3 ||
+            code === 'OS-PLUG-GLOC-0010';
+
+        if (
+            timeout &&
+            (
+                usable(lastFix) ||
+                (
+                    watchStartedAt &&
+                    Date.now() - watchStartedAt < 60000
+                )
+            )
+        ) {
+            return;
+        }
+
+        actions.showMessage(
+            denied
+                ? 'A localização não foi autorizada.'
+                : 'Não foi possível atualizar a localização. Vamos tentar novamente.',
+            'erro'
+        );
     }
 
     return {
-        startLocationTracking: startLocationTracking,
-        requestCurrentLocation: requestCurrentLocation,
-        isAndroidNativeApp: isAndroidNativeApp,
-        startLocationRefresh: startLocationRefresh,
-        stopLocationTracking: stopLocationTracking,
-        sendLastKnownLocation: sendLastKnownLocation,
-
-        checkPermission: function () {
-            return ensureAndroidLocationPermission(getNativeGeolocation());
-        },
-
-        permissionConfirmed: function () {
-            return androidLocationPermissionConfirmed;
-        },
-
-        confirmPermission: function (granted) {
-            androidLocationPermissionConfirmed = granted;
+        startLocationTracking,
+        requestCurrentLocation,
+        startLocationRefresh,
+        stopLocationTracking,
+        sendLastKnownLocation,
+        isAndroidNativeApp,
+        checkPermission,
+        permissionConfirmed: () => permissionConfirmed,
+        confirmPermission: granted => {
+            permissionConfirmed = granted === true;
         }
     };
 };

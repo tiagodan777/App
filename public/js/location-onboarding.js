@@ -25,6 +25,8 @@
     let cancelled = false;
     let attemptedAlways = false;
     let noticeStatusPending = false;
+    let noticeCheckedAt = -Infinity;
+    let refreshing = false;
     let settingsGuide;
     let closeSettingsGuide;
     let openingNoticeSettings = false;
@@ -309,6 +311,14 @@
 
         const backgroundNotice = needsBackgroundNotice();
 
+        const approximate =
+            granted(lastState) &&
+            !backgroundNotice &&
+            (
+                lastState.precise === false ||
+                lastState.permission === 'approximate'
+            );
+
         if (!backgroundNotice && settingsGuide) {
             closeSettingsGuide?.();
         }
@@ -340,7 +350,15 @@
                 'Sem “Sempre”, podes desaparecer ao sair da app.',
                 'Without “Always”, you may disappear when you leave the app.'
             )
-            : 'Sem localização ativa, não conseguimos descobrir quem está perto de ti.';
+            : approximate
+                ? noticeText(
+                    'Ativa a localização exata para descobrires quem está mesmo perto.',
+                    'Enable precise location to discover people nearby.'
+                )
+                : noticeText(
+                    'Sem localização ativa, não conseguimos descobrir quem está perto de ti.',
+                    'Enable location to discover people nearby.'
+                );
 
         pill.querySelector('[data-settings]').textContent =
             disabled() && granted(lastState)
@@ -364,7 +382,8 @@
             (
                 granted(lastState) &&
                 !disabled() &&
-                !backgroundNotice
+                !backgroundNotice &&
+                !approximate
             );
     }
 
@@ -555,17 +574,30 @@
     }
 
     async function refresh() {
-        if (!native || checking) return;
+        if (
+            !native ||
+            checking ||
+            refreshing ||
+            document.hidden
+        ) {
+            return;
+        }
+
+        refreshing = true;
 
         try {
-            lastState = await bg().status();
+            const state = await bg().status();
 
-            showNotice();
+            window.MargotLocationOnboarding
+                .authorizationChanged(state);
 
             if (granted(lastState) && !disabled()) {
                 await bg().start();
             }
-        } catch (_) {}
+        } catch (_) {
+        } finally {
+            refreshing = false;
+        }
     }
 
     window.MargotLocationOnboarding = {
@@ -579,7 +611,11 @@
         authorizationChanged: state => {
             if (
                 authorization(state) !==
-                authorization(lastState)
+                    authorization(lastState) ||
+                state?.services_enabled !==
+                    lastState?.services_enabled ||
+                state?.precise !== lastState?.precise ||
+                state?.permission !== lastState?.permission
             ) {
                 dismissed = false;
             }
@@ -608,7 +644,7 @@
         document.addEventListener(
             'DOMContentLoaded',
             start,
-            { once: true }
+            {once: true}
         );
     } else {
         queueMicrotask(start);
@@ -619,22 +655,22 @@
         start
     );
 
-    // Read permission only: no GPS request, network request
-    // or tracking restart.
+    // Consulta apenas permissões; não pede uma posição GPS.
     async function refreshNoticePermission() {
         if (
             !native ||
-            !ios ||
             document.hidden ||
             !discovery() ||
             checking ||
             noticeStatusPending ||
+            Date.now() - noticeCheckedAt < 1500 ||
             !bg()?.status
         ) {
             return;
         }
 
         noticeStatusPending = true;
+        noticeCheckedAt = Date.now();
 
         try {
             const state = await bg().status();
@@ -648,8 +684,7 @@
                     .authorizationChanged(state);
             }
         } catch (_) {
-            // A later foreground check retries transient
-            // bridge failures.
+            // Uma consulta posterior volta a tentar.
         } finally {
             noticeStatusPending = false;
         }
@@ -660,10 +695,11 @@
         return refresh();
     }
 
-    if (native && ios) {
-        // Fallback if a resume event is missed.
-        // Hidden pages and other screens skip the bridge.
-        window.setInterval(refreshNoticePermission, 3000);
+    if (native) {
+        window.setInterval(
+            refreshNoticePermission,
+            15000
+        );
 
         window.addEventListener(
             'focus',
