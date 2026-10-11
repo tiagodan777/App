@@ -8,16 +8,11 @@
     window.__margotBackgroundLocationLoaded = true;
 
     var capacitor = window.Capacitor;
-
     var plugin = capacitor && capacitor.Plugins
         ? capacitor.Plugins.BackgroundLocation
         : null;
 
-    if (
-        !plugin &&
-        capacitor &&
-        typeof capacitor.registerPlugin === 'function'
-    ) {
+    if (!plugin && capacitor && typeof capacitor.registerPlugin === 'function') {
         plugin = capacitor.registerPlugin('BackgroundLocation');
     }
 
@@ -25,11 +20,7 @@
         ? capacitor.Plugins.Geolocation
         : null;
 
-    if (
-        !geolocationPlugin &&
-        capacitor &&
-        typeof capacitor.registerPlugin === 'function'
-    ) {
+    if (!geolocationPlugin && capacitor && typeof capacitor.registerPlugin === 'function') {
         geolocationPlugin = capacitor.registerPlugin('Geolocation');
     }
 
@@ -39,31 +30,16 @@
 
     function comPrazo(promise, ms) {
         var timer;
-
-        return Promise.race([
-            promise,
-            new Promise(function (_, reject) {
-                timer = window.setTimeout(function () {
-                    reject(
-                        new Error(
-                            'A ligação à localização demorou demasiado tempo.'
-                        )
-                    );
-                }, ms);
-            })
-        ]).finally(function () {
-            window.clearTimeout(timer);
-        });
+        return Promise.race([promise, new Promise(function (_, reject) {
+            timer = window.setTimeout(function () {
+                reject(new Error('A ligação à localização demorou demasiado tempo.'));
+            }, ms);
+        })]).finally(function () { window.clearTimeout(timer); });
     }
 
     function plataformaAtual() {
-        if (
-            capacitor &&
-            typeof capacitor.getPlatform === 'function'
-        ) {
-            return String(
-                capacitor.getPlatform() || 'web'
-            ).toLowerCase();
+        if (capacitor && typeof capacitor.getPlatform === 'function') {
+            return String(capacitor.getPlatform() || 'web').toLowerCase();
         }
 
         return 'web';
@@ -74,9 +50,9 @@
     }
 
     /*
-     * A preferência do utilizador controla o serviço nativo.
-     * disableLocationTracking pode apenas desativar o mapa
-     * numa página, como o chat.
+     * A localização nativa em background depende da preferência do utilizador.
+     * A flag temporária disableLocationTracking pode apenas desativar
+     * a lógica do mapa numa página, como o chat.
      */
     function localizacaoPermitida() {
         var gestor = preferencias();
@@ -124,17 +100,14 @@
         }
 
         if (typeof capacitor.isPluginAvailable === 'function') {
-            return capacitor.isPluginAvailable(
-                'BackgroundLocation'
-            );
+            return capacitor.isPluginAvailable('BackgroundLocation');
         }
 
         return true;
     }
 
     function androidNativo() {
-        return plataformaNativa() &&
-            plataformaAtual() === 'android';
+        return plataformaNativa() && plataformaAtual() === 'android';
     }
 
     function permissaoLocalizacaoConcedida(estado) {
@@ -142,24 +115,23 @@
             return false;
         }
 
-        return estado.location === 'granted' ||
-            estado.coarseLocation === 'granted';
+        return estado.location === 'granted' || estado.coarseLocation === 'granted';
     }
 
+    /*
+     * Aguarda a preparação inicial das notificações no Android.
+     * Essa preparação consulta o estado sem abrir um pedido de autorização.
+     */
     function aguardarPermissaoNotificacoesAndroid() {
         if (!androidNativo()) {
             return Promise.resolve();
         }
 
-        if (
-            window.margotNotificationPermissionFlowManaged !== true
-        ) {
+        if (window.margotNotificationPermissionFlowManaged !== true) {
             return Promise.resolve();
         }
 
-        if (
-            window.margotNotificationPermissionFlowCompleted === true
-        ) {
+        if (window.margotNotificationPermissionFlowCompleted === true) {
             return Promise.resolve();
         }
 
@@ -186,9 +158,7 @@
                 concluir
             );
 
-            if (
-                window.margotNotificationPermissionFlowCompleted === true
-            ) {
+            if (window.margotNotificationPermissionFlowCompleted === true) {
                 concluir();
             }
         });
@@ -198,24 +168,18 @@
         window.margotAndroidLocationPermissionFlowCompleted = true;
 
         window.dispatchEvent(
-            new CustomEvent(
-                'margot:localizacao-permissao-concluida',
-                {
-                    detail: {
-                        granted: granted === true,
-                        status: estado || null
-                    }
+            new CustomEvent('margot:localizacao-permissao-concluida', {
+                detail: {
+                    granted: granted === true,
+                    status: estado || null
                 }
-            )
+            })
         );
     }
 
     function garantirPermissaoLocalizacaoAndroid() {
         if (!androidNativo()) {
-            return Promise.resolve({
-                granted: true,
-                status: null
-            });
+            return Promise.resolve({ granted: true, status: null });
         }
 
         window.margotAndroidLocationPermissionFlowManaged = true;
@@ -229,82 +193,56 @@
             typeof geolocationPlugin.checkPermissions !== 'function' ||
             typeof geolocationPlugin.requestPermissions !== 'function'
         ) {
-            return Promise.resolve({
-                granted: false,
-                status: null
-            });
+            return Promise.resolve({ granted: false, status: null });
         }
 
-        androidLocationPermissionPromise =
-            aguardarPermissaoNotificacoesAndroid()
-                .then(function () {
-                    return geolocationPlugin.checkPermissions();
-                })
-                .then(function (estado) {
-                    if (permissaoLocalizacaoConcedida(estado)) {
+        androidLocationPermissionPromise = aguardarPermissaoNotificacoesAndroid()
+            .then(function () {
+                return geolocationPlugin.checkPermissions();
+            })
+            .then(function (estado) {
+                if (permissaoLocalizacaoConcedida(estado)) {
+                    return { granted: true, status: estado };
+                }
+
+                return geolocationPlugin
+                    .requestPermissions({ permissions: ['location'] })
+                    .then(function (novoEstado) {
                         return {
-                            granted: true,
-                            status: estado
+                            granted: permissaoLocalizacaoConcedida(novoEstado),
+                            status: novoEstado
                         };
-                    }
+                    });
+            })
+            .then(function (resultado) {
+                androidLocationPermissionPromise = null;
 
-                    return geolocationPlugin
-                        .requestPermissions({
-                            permissions: ['location']
-                        })
-                        .then(function (novoEstado) {
-                            return {
-                                granted:
-                                    permissaoLocalizacaoConcedida(
-                                        novoEstado
-                                    ),
-                                status: novoEstado
-                            };
-                        });
-                })
-                .then(function (resultado) {
-                    androidLocationPermissionPromise = null;
+                publicarPermissaoLocalizacaoAndroid(
+                    resultado.granted,
+                    resultado.status
+                );
 
-                    publicarPermissaoLocalizacaoAndroid(
-                        resultado.granted,
-                        resultado.status
-                    );
+                return resultado;
+            })
+            .catch(function (erro) {
+                androidLocationPermissionPromise = null;
 
-                    return resultado;
-                })
-                .catch(function (erro) {
-                    androidLocationPermissionPromise = null;
+                console.error(
+                    'Não foi possível pedir a permissão de localização:',
+                    erro
+                );
 
-                    console.error(
-                        'Não foi possível pedir a permissão de localização:',
-                        erro
-                    );
+                publicarPermissaoLocalizacaoAndroid(false, null);
 
-                    publicarPermissaoLocalizacaoAndroid(
-                        false,
-                        null
-                    );
-
-                    return {
-                        granted: false,
-                        status: null,
-                        error: erro
-                    };
-                });
+                return { granted: false, status: null, error: erro };
+            });
 
         return androidLocationPermissionPromise;
     }
 
     function obterTokenCsrf() {
-        var elemento = document.querySelector(
-            'meta[name="csrf-token"]'
-        );
-
-        return elemento
-            ? String(
-                elemento.getAttribute('content') || ''
-            ).trim()
-            : '';
+        var elemento = document.querySelector('meta[name="csrf-token"]');
+        return elemento ? String(elemento.getAttribute('content') || '').trim() : '';
     }
 
     async function pedirTokenBackground() {
@@ -324,35 +262,24 @@
         var dados;
 
         try {
-            var pacote = await comPrazo(
-                (async function () {
-                    var response = await fetch(
-                        String(
-                            window.backgroundLocationTokenUrl ||
-                            '/background-location-token/'
-                        ),
-                        {
-                            method: 'POST',
-                            credentials: 'same-origin',
-                            cache: 'no-store',
-                            headers: headers,
-                            signal: controller.signal
-                        }
-                    );
+            var pacote = await comPrazo((async function () {
+                var response = await fetch(
+                    String(window.backgroundLocationTokenUrl || '/background-location-token/'),
+                    {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        cache: 'no-store',
+                        headers: headers,
+                        signal: controller.signal
+                    }
+                );
 
-                    var body = await response
-                        .json()
-                        .catch(function () {
-                            return {};
-                        });
+                var body = await response.json().catch(function () {
+                    return {};
+                });
 
-                    return {
-                        response: response,
-                        body: body
-                    };
-                })(),
-                15000
-            );
+                return { response: response, body: body };
+            })(), 15000);
 
             resposta = pacote.response;
             dados = pacote.body;
@@ -366,8 +293,7 @@
 
         if (!resposta.ok || !dados.success || !dados.token) {
             throw new Error(
-                dados.message ||
-                'Não foi possível ativar a localização em segundo plano.'
+                dados.message || 'Não foi possível ativar a localização em segundo plano.'
             );
         }
 
@@ -388,10 +314,7 @@
     function tokenGuardado(resultado) {
         return !!(
             resultado &&
-            (
-                resultado.token_stored === true ||
-                resultado.tokenStored === true
-            )
+            (resultado.token_stored === true || resultado.tokenStored === true)
         );
     }
 
@@ -400,32 +323,20 @@
             return estadoAtual();
         }
 
-        return plugin.setVisibility({
-            visible: !!visivel
-        });
+        return plugin.setVisibility({ visible: !!visivel });
     }
 
     async function estadoAtual() {
         if (!pluginDisponivel()) {
-            return {
-                available: false,
-                active: false
-            };
+            return { available: false, active: false };
         }
 
-        var state = await comPrazo(
-            plugin.status(),
-            10000
-        );
+        var state = await comPrazo(plugin.status(), 10000);
 
         if (androidNativo()) {
-            /*
-             * O plugin nativo já consulta GPS e permissões.
-             * checkPermissions() pode lançar uma exceção
-             * com o GPS desligado e esconder o aviso.
-             */
-            state.services_enabled =
-                state.permission !== 'disabled';
+            // O plugin nativo já consulta GPS e permissões. checkPermissions()
+            // pode lançar uma exceção com o GPS desligado e esconder o aviso.
+            state.services_enabled = state.permission !== 'disabled';
         }
 
         return state;
@@ -434,12 +345,11 @@
     var geracao = 0;
 
     function renovarToken(versao, requestAlways) {
-        if (renovacao) return renovacao;
+        if (renovacao) {
+            return renovacao;
+        }
 
-        renovacao = executarRenovacao(
-            versao,
-            requestAlways
-        ).finally(function () {
+        renovacao = executarRenovacao(versao, requestAlways).finally(function () {
             renovacao = null;
         });
 
@@ -447,25 +357,18 @@
     }
 
     async function executarRenovacao(versao, requestAlways) {
-        if (versao === undefined) versao = geracao;
+        if (versao === undefined) {
+            versao = geracao;
+        }
 
         if (!pluginDisponivel()) {
-            return {
-                available: false,
-                active: false
-            };
+            return { available: false, active: false };
         }
 
         var token = await pedirTokenBackground();
 
-        if (
-            versao !== geracao ||
-            !localizacaoPermitida()
-        ) {
-            return {
-                active: false,
-                cancelled: true
-            };
+        if (versao !== geracao || !localizacaoPermitida()) {
+            return { active: false, cancelled: true };
         }
 
         if (!token) {
@@ -482,10 +385,7 @@
             requestAlways: requestAlways === true
         });
 
-        if (
-            versao !== geracao ||
-            !localizacaoPermitida()
-        ) {
+        if (versao !== geracao || !localizacaoPermitida()) {
             return plugin.stop();
         }
 
@@ -498,10 +398,11 @@
         if (plataformaAtual() === 'ios') {
             if (state.permission_flow_version !== 2) {
                 // Compatibilidade com builds já publicados.
-                if (always || !geolocationPlugin) return state;
+                if (always || !geolocationPlugin) {
+                    return state;
+                }
 
-                const permission =
-                    await geolocationPlugin.checkPermissions();
+                const permission = await geolocationPlugin.checkPermissions();
 
                 if (
                     !permissaoLocalizacaoConcedida(permission) &&
@@ -515,31 +416,24 @@
                 return estadoAtual();
             }
 
-            return plugin.requestPermission({
-                always: always === true
-            });
+            return plugin.requestPermission({ always: always === true });
         }
 
         return garantirPermissaoLocalizacaoAndroid();
     }
 
     var inicializacao = null;
+    var ultimaConfirmacaoAndroid = 0;
 
     async function iniciar(periodico) {
         await window.MargotLocationReady;
 
         if (document.visibilityState !== 'visible') {
-            return {
-                active: false,
-                deferred: true
-            };
+            return { active: false, deferred: true };
         }
 
         if (!pluginDisponivel()) {
-            return {
-                available: false,
-                active: false
-            };
+            return { available: false, active: false };
         }
 
         if (inicializacao) {
@@ -555,7 +449,7 @@
                 }
 
                 /*
-                 * Compatibilidade com páginas sem o coordenador.
+                 * Compatibilidade com páginas sem o novo coordenador.
                  * Com o coordenador, as permissões são pedidas por ele.
                  */
                 if (
@@ -563,14 +457,10 @@
                     androidNativo() &&
                     presencaVisivel()
                 ) {
-                    var permissaoAndroid =
-                        await garantirPermissaoLocalizacaoAndroid();
+                    var permissaoAndroid = await garantirPermissaoLocalizacaoAndroid();
 
                     if (versao !== geracao) {
-                        return {
-                            active: false,
-                            cancelled: true
-                        };
+                        return { active: false, cancelled: true };
                     }
 
                     if (!permissaoAndroid.granted) {
@@ -584,9 +474,7 @@
                     if (
                         plataformaAtual() === 'ios' &&
                         (
-                            !['when_in_use', 'always'].includes(
-                                estado.authorization
-                            ) ||
+                            !['when_in_use', 'always'].includes(estado.authorization) ||
                             estado.services_enabled === false
                         )
                     ) {
@@ -596,10 +484,7 @@
                     if (
                         androidNativo() &&
                         !permissaoLocalizacaoConcedida(
-                            await comPrazo(
-                                geolocationPlugin.checkPermissions(),
-                                10000
-                            )
+                            await comPrazo(geolocationPlugin.checkPermissions(), 10000)
                         )
                     ) {
                         return estado;
@@ -607,10 +492,7 @@
                 }
 
                 if (versao !== geracao) {
-                    return {
-                        active: false,
-                        cancelled: true
-                    };
+                    return { active: false, cancelled: true };
                 }
 
                 var visivel = presencaVisivel();
@@ -625,26 +507,53 @@
                     return estado;
                 }
 
-                if (
-                    localizacaoAtiva(estado) &&
-                    estado.visible === visivel
-                ) {
+                // Android: confirmar arranque real, mesmo com active antigo.
+                if (androidNativo() && visivel && tokenGuardado(estado)) {
+                    if (
+                        document.visibilityState !== 'visible' ||
+                        !localizacaoPermitida() ||
+                        estaInvisivel()
+                    ) {
+                        return { active: false, deferred: true };
+                    }
+
+                    var agoraAndroid = Date.now();
+
+                    if (
+                        localizacaoAtiva(estado) &&
+                        estado.visible === true &&
+                        agoraAndroid - ultimaConfirmacaoAndroid < 15000
+                    ) {
+                        return estado;
+                    }
+
+                    ultimaConfirmacaoAndroid = agoraAndroid;
+
+                    // Usa o token existente e pede ao Android para iniciar
+                    // o serviço. Não pára um serviço que já esteja a correr.
+                    var estadoAndroid = await comPrazo(
+                        definirVisibilidade(true),
+                        10000
+                    );
+
+                    if (versao !== geracao) {
+                        return plugin.stop();
+                    }
+
+                    return estadoAndroid;
+                }
+
+                if (localizacaoAtiva(estado) && estado.visible === visivel) {
                     return estado;
                 }
 
-                if (
-                    tokenGuardado(estado) &&
-                    !visivel &&
-                    estado.visible === false
-                ) {
+                if (tokenGuardado(estado) && !visivel && estado.visible === false) {
                     return estado;
                 }
 
                 if (tokenGuardado(estado)) {
-                    /*
-                     * Um serviço parado pode retomar com o token existente.
-                     * No iOS "Ao usar", active=false é normal.
-                     */
+                    // Um serviço parado pode retomar com o token que já tem.
+                    // No iOS "Ao usar", active=false é normal; não rodar tokens.
                     if (
                         plataformaAtual() === 'ios' &&
                         estado.authorization === 'when_in_use' &&
@@ -656,10 +565,9 @@
 
                     ultimaRetoma = Date.now();
 
-                    var estadoSincronizado =
-                        await definirVisibilidade(
-                            presencaVisivel()
-                        );
+                    var estadoSincronizado = await definirVisibilidade(
+                        presencaVisivel()
+                    );
 
                     if (versao !== geracao) {
                         return plugin.stop();
@@ -671,19 +579,12 @@
                 var resultado = await renovarToken(versao);
                 return resultado;
             } catch (erro) {
-                console.error(
-                    'Localização em segundo plano:',
-                    erro
-                );
+                console.error('Localização em segundo plano:', erro);
 
                 return {
                     available: true,
                     active: false,
-                    error: String(
-                        erro && erro.message
-                            ? erro.message
-                            : erro
-                    )
+                    error: String(erro && erro.message ? erro.message : erro)
                 };
             } finally {
                 inicializacao = null;
@@ -694,14 +595,11 @@
     }
 
     async function parar() {
-        // Impede que um pedido pendente reinicie o serviço após logout.
+        // Invalida arranques pendentes, mesmo que o HTTP termine depois do logout.
         geracao += 1;
 
         if (!pluginDisponivel()) {
-            return {
-                available: false,
-                active: false
-            };
+            return { available: false, active: false };
         }
 
         window.MargotLocationOnboarding?.close();
@@ -721,34 +619,27 @@
         start: function () {
             return iniciar();
         },
-
         requestAlways: function () {
             return renovarToken(geracao, true);
         },
-
         stop: parar,
         status: estadoAtual,
         openSettings: abrirDefinicoes,
         requestPermission: pedirPermissao,
-
         showSettingsNotice: function () {
             window.MargotLocationOnboarding?.open();
         }
     };
 
-    if (
-        pluginDisponivel() &&
-        typeof plugin.addListener === 'function'
-    ) {
+    if (pluginDisponivel() && typeof plugin.addListener === 'function') {
         var renovarAutorizacao = function () {
-            if (document.visibilityState !== 'visible') return;
+            if (document.visibilityState !== 'visible') {
+                return;
+            }
 
             if (!localizacaoPermitida()) {
                 parar().catch(function (erro) {
-                    console.error(
-                        'Não foi possível parar a localização:',
-                        erro
-                    );
+                    console.error('Não foi possível parar a localização:', erro);
                 });
 
                 return;
@@ -766,23 +657,16 @@
             'backgroundLocationAuthorizationExpired',
             'backgroundLocationTokenExpired'
         ].forEach(function (evento) {
-            plugin.addListener(
-                evento,
-                renovarAutorizacao
-            );
+            plugin.addListener(evento, renovarAutorizacao);
         });
 
-        plugin.addListener(
-            'backgroundLocationAuthorizationChanged',
-            function (state) {
-                window.MargotLocationOnboarding
-                    ?.authorizationChanged(state);
+        plugin.addListener('backgroundLocationAuthorizationChanged', function (state) {
+            window.MargotLocationOnboarding?.authorizationChanged(state);
 
-                if (localizacaoPermitida()) {
-                    iniciar();
-                }
+            if (localizacaoPermitida()) {
+                iniciar();
             }
-        );
+        });
     }
 
     function arrancar() {
@@ -790,49 +674,32 @@
             iniciar();
         } else {
             parar().catch(function (erro) {
-                console.error(
-                    'Localização em segundo plano:',
-                    erro
-                );
+                console.error('Localização em segundo plano:', erro);
             });
         }
     }
 
     if (document.readyState === 'loading') {
-        document.addEventListener(
-            'DOMContentLoaded',
-            arrancar,
-            {once: true}
-        );
+        document.addEventListener('DOMContentLoaded', arrancar, { once: true });
     } else {
         arrancar();
     }
 
-    document.addEventListener(
-        'visibilitychange',
-        function () {
-            if (document.visibilityState === 'visible') {
-                arrancar();
-            }
+    /*
+     * Ao voltar à app, verifica o serviço e sincroniza a visibilidade.
+     * O Swift força também uma atualização de localização.
+     */
+    document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'visible') {
+            arrancar();
         }
-    );
+    });
 
-    window.addEventListener(
-        'margot:preferencias-alteradas',
-        arrancar
-    );
+    window.addEventListener('margot:preferencias-alteradas', arrancar);
+    window.addEventListener('online', arrancar);
+    document.addEventListener('margot:permissions-resume', arrancar);
 
-    window.addEventListener(
-        'online',
-        arrancar
-    );
-
-    document.addEventListener(
-        'margot:permissions-resume',
-        arrancar
-    );
-
-    // Recupera falhas transitórias enquanto a app está visível.
+    // Recupera falhas transitórias enquanto a app está visível, sem pedir permissões.
     window.setInterval(function () {
         if (
             document.visibilityState === 'visible' &&
