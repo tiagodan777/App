@@ -1,0 +1,57 @@
+/* Indicação visual do modo invisível. */
+html #menuPrincipal #alternar-invisivel[data-invisivel="true"],
+html[data-margot-invisivel="true"] #menuPrincipal #alternar-invisivel {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 1px;
+    height: 40px;
+    padding: 3px 2px;
+    border-radius: 20px;
+    background: #303038;
+    color: #ffffff;
+    opacity: 1;
+    box-shadow: inset 0 0 0 2px #60606b;
+}
+
+html #menuPrincipal #alternar-invisivel[data-invisivel="true"] .menu-invisivel-imagem,
+html[data-margot-invisivel="true"] #menuPrincipal #alternar-invisivel .menu-invisivel-imagem {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+    filter: brightness(0) invert(1);
+    opacity: 1;
+}
+
+html #menuPrincipal #alternar-invisivel[data-invisivel="true"]::after,
+html[data-margot-invisivel="true"] #menuPrincipal #alternar-invisivel::after {
+    content: "Invisível";
+    display: block;
+    flex: 0 0 auto;
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 12px;
+    letter-spacing: 0;
+    white-space: nowrap;
+    color: inherit;
+    pointer-events: none;
+}
+
+@media (prefers-color-scheme: dark) {
+    html #menuPrincipal #alternar-invisivel[data-invisivel="true"],
+    html[data-margot-invisivel="true"] #menuPrincipal #alternar-invisivel {
+        background: #e5e7eb;
+        color: #17171b;
+        opacity: 1;
+        box-shadow: inset 0 0 0 2px #ffffff;
+    }
+
+    html #menuPrincipal #alternar-invisivel[data-invisivel="true"] .menu-invisivel-imagem,
+    html[data-margot-invisivel="true"] #menuPrincipal #alternar-invisivel .menu-invisivel-imagem {
+        filter: brightness(0);
+        opacity: 1;
+    }
+}
