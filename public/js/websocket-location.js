@@ -81,7 +81,7 @@ window.MargotLocationTracker = function (actions) {
             ![latitude, longitude, accuracy, timestamp].every(Number.isFinite) ||
             Math.abs(latitude) > 90 ||
             Math.abs(longitude) > 180 ||
-            accuracy < 0 ||
+            accuracy <= 0 || accuracy > 100 ||
             timestamp <= 0
         ) {
             return false;
@@ -120,7 +120,7 @@ window.MargotLocationTracker = function (actions) {
             return true;
         }
 
-        if (!actions.send({type: 'location', ...lastFix})) {
+        if (!actions.send({type: 'location', ...lastFix, location_policy_version: 1})) {
             return false;
         }
 
@@ -336,6 +336,26 @@ window.MargotLocationTracker = function (actions) {
 
                 ticket.finish();
             }, FIX_TIMEOUT);
+
+            // Reuse only when the installed build advertised this capability.
+            if (native() && window.MargotNativeLocationCacheAvailable === true) {
+                const bg = window.Capacitor?.Plugins?.BackgroundLocation ||
+                    window.Capacitor?.registerPlugin?.('BackgroundLocation');
+                if (bg && typeof bg.getLocation === 'function') {
+                    let cachedTimer;
+                    try {
+                        const cached = await Promise.race([
+                            bg.getLocation(),
+                            new Promise(resolve => { cachedTimer = window.setTimeout(() => resolve(null),1000); })
+                        ]);
+                        if (!current()) { ticket.finish(); return; }
+                        if (cached?.available === true && receive(cached)) { ticket.finish(); return; }
+                    } catch (_) {
+                        // Old builds or unavailable native owner: normal foreground acquisition below.
+                    } finally { window.clearTimeout(cachedTimer); }
+                }
+            }
+            if (!current()) { ticket.finish(); return; }
 
             const options = {
                 enableHighAccuracy: true,

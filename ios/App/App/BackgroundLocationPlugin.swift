@@ -12,6 +12,8 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
   public let jsName = "BackgroundLocation"
 
   public let pluginMethods: [CAPPluginMethod] = [
+    CAPPluginMethod(name: "configure", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "getLocation", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "start", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "requestPermission", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "stop", returnType: CAPPluginReturnPromise),
@@ -26,13 +28,14 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
   private let pendingLocationKey = "margot.background-location.pending"
   private let visibilityKey = "margot.background-location.visible"
 
-  private let minimumSendInterval: TimeInterval = 60
-  private let minimumMovement: CLLocationDistance = 20
+  private var policy = LocationPolicy()
+  private var standardRunning = false
   private let retryDelays: [TimeInterval] = [5, 15, 30, 60, 120]
 
   private var manager: CLLocationManager!
   private var monitoring = false
   private var sending = false
+  private var sendGeneration: UInt = 0
   private var presenceVisible = true
 
   private var latestLocation: CLLocation?
@@ -140,19 +143,15 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
   }()
 
   override public func load() {
+    policy.restore()
     manager = CLLocationManager()
     manager.delegate = self
     manager.desiredAccuracy = kCLLocationAccuracyNearestTenMeters
 
-    /*
-     * Não obrigamos o utilizador a andar X metros para o Core
-     * Location poder entregar uma atualização.
-     *
-     * Isto é especialmente importante em background porque o
-     * servidor considera a idade da última localização.
-     */
+    // Keep accurate standard updates: a 150 m encounter cannot rely on visits/500 m relaunches.
+    // Savings are uploads, duplicate work, retries and invisible sessions, not a blind GPS shutdown.
     manager.distanceFilter = kCLDistanceFilterNone
-    manager.activityType = .fitness
+    manager.activityType = .other
     manager.pausesLocationUpdatesAutomatically = false
     manager.showsBackgroundLocationIndicator = false
     manager.allowsBackgroundLocationUpdates = false
@@ -201,12 +200,51 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
     session.invalidateAndCancel()
   }
 
+  @objc public func configure(_ call: CAPPluginCall) {
+    DispatchQueue.main.async { [weak self] in
+      guard let self = self, let object = call.getObject("policy") else {
+        call.reject("Política inválida."); return
+      }
+      var values = [String:Double]()
+      for (key,value) in object {
+        guard let n = value as? NSNumber, CFGetTypeID(n) != CFBooleanGetTypeID() else {
+          call.reject("Política inválida."); return
+        }
+        values[key] = n.doubleValue
+      }
+      guard self.policy.configure(values) else { call.reject("Política fora dos limites."); return }
+      UserDefaults.standard.set(values, forKey:LocationPolicy.preferencesKey)
+      call.resolve(self.statusData())
+    }
+  }
+
+  @objc public func getLocation(_ call: CAPPluginCall) {
+    DispatchQueue.main.async { [weak self] in
+      guard let self = self, self.presenceVisible, self.standardRunning,
+        let l = self.latestLocation, self.isUsableLocation(l,maxAge:10) else {
+        call.resolve(["available":false]); return
+      }
+      call.resolve(["available":true,"timestamp":l.timestamp.timeIntervalSince1970*1000,
+        "coords":["latitude":l.coordinate.latitude,"longitude":l.coordinate.longitude,
+                  "accuracy":l.horizontalAccuracy]])
+    }
+  }
+
   @objc public func start(_ call: CAPPluginCall) {
+    DispatchQueue.main.async { self.startOnMain(call) }
+  }
+
+  private func startOnMain(_ call: CAPPluginCall) {
     guard let token = validToken(call.getString("token")) else {
       call.reject("O token da localização é inválido.")
       return
     }
 
+    if readToken() != token {
+      stopMonitoring(removeToken:false)
+      policy = LocationPolicy(); policy.restore()
+      latestLocation = nil; deletePendingLocation()
+    }
     guard saveToken(token) else {
       call.reject("Não foi possível guardar a autorização da localização.")
       return
@@ -266,22 +304,36 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
   }
 
   @objc public func stop(_ call: CAPPluginCall) {
+    DispatchQueue.main.async { self.stopOnMain(call) }
+  }
+
+  private func stopOnMain(_ call: CAPPluginCall) {
+    let token = readToken()
     setPresenceVisible(false)
-
-    if readToken() != nil {
-      queueHiddenPresence()
+    stopMonitoring(removeToken:true)
+    // Send hide even if a location was in flight. Server capture ordering prevents resurrection.
+    if let token = token {
+      send(payload:["active":false,"visible":false,"app_state":currentAppStateName()],token:token)
     }
-
-    stopMonitoring(removeToken: true)
     call.resolve(statusData())
   }
 
   @objc public func status(_ call: CAPPluginCall) {
+    DispatchQueue.main.async { self.statusOnMain(call) }
+  }
+
+  private func statusOnMain(_ call: CAPPluginCall) {
     call.resolve(statusData())
   }
 
   @objc public func setVisibility(_ call: CAPPluginCall) {
+    DispatchQueue.main.async { self.setVisibilityOnMain(call) }
+  }
+
+  private func setVisibilityOnMain(_ call: CAPPluginCall) {
     let visible = call.getBool("visible") ?? true
+    let wasVisible = presenceVisible
+    let wasRunning = standardRunning
     setPresenceVisible(visible)
 
     guard readToken() != nil else {
@@ -297,9 +349,9 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
       configureMonitoring()
 
       /*
-       * Ao sair do invisível publicamos imediatamente uma posição.
+       * Repeated recovery calls must not override the stationary upload interval.
        */
-      sendBestAvailableLocationOrRequest(allowBackground: false)
+      if !wasVisible || !wasRunning { sendBestAvailableLocationOrRequest(allowBackground:false) }
     } else {
       pendingLocation = nil
       retryLocation = nil
@@ -309,6 +361,8 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
       /*
        * O utilizador tem de desaparecer imediatamente da descoberta.
        */
+      stopLocationSensors()
+      latestLocation = nil
       queueHiddenPresence()
     }
 
@@ -414,12 +468,11 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
     _ manager: CLLocationManager,
     didUpdateLocations locations: [CLLocation]
   ) {
-    let validLocations = locations.filter {
-      self.isUsableLocation($0, maxAge: 180)
+    guard presenceVisible, readToken() != nil else { return }
+    let fresh = locations.sorted { $0.timestamp < $1.timestamp }.filter {
+      policy.observe(LocationPolicy.fix($0),LocationPolicy.wallNow,LocationPolicy.elapsedNow)
     }
-
-    guard let location = validLocations.last else { return }
-
+    guard let location = fresh.last else { return }
     latestLocation = location
 
     /*
@@ -437,7 +490,7 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
       retryLocation = newest(location, retryLocation)
 
       if let retryLocation = retryLocation {
-        queueLocation(retryLocation, force: true)
+        queueLocation(retryLocation, force: false)
       }
 
       return
@@ -450,26 +503,8 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
     _ manager: CLLocationManager,
     didVisit visit: CLVisit
   ) {
-    let date =
-      visit.departureDate == .distantFuture
-      ? visit.arrivalDate
-      : visit.departureDate
-
-    let location = CLLocation(
-      coordinate: visit.coordinate,
-      altitude: 0,
-      horizontalAccuracy: visit.horizontalAccuracy,
-      verticalAccuracy: -1,
-      timestamp: date
-    )
-
-    guard isUsableLocation(location, maxAge: 900) else { return }
-
-    latestLocation = location
-
-    if presenceVisible {
-      queueLocation(location, force: true)
-    }
+    // A visit is a delayed event, not a current position.
+    requestCurrentLocationIfPossible(allowBackground:true)
   }
 
   public func locationManager(
@@ -496,6 +531,7 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
   private func configureMonitoring() {
     guard manager != nil,
       readToken() != nil,
+      presenceVisible,
       CLLocationManager.locationServicesEnabled()
     else {
       stopMonitoring(removeToken: false)
@@ -505,16 +541,14 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
     switch manager.authorizationStatus {
     case .authorizedAlways:
       manager.allowsBackgroundLocationUpdates = true
-      manager.startUpdatingLocation()
-
-      /*
-       * Usamos localização normal, mudanças significativas e visitas.
-       */
-      if CLLocationManager.significantLocationChangeMonitoringAvailable() {
-        manager.startMonitoringSignificantLocationChanges()
+      if !standardRunning {
+        manager.startUpdatingLocation()
+        standardRunning = true
+        if CLLocationManager.significantLocationChangeMonitoringAvailable() {
+          manager.startMonitoringSignificantLocationChanges()
+        }
       }
-
-      manager.startMonitoringVisits()
+      NotificationCenter.default.post(name:Notification.Name("MargotLocationPluginOwnsMonitoring"),object:nil)
       monitoring = true
 
     case .authorizedWhenInUse:
@@ -545,20 +579,31 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
 
   private func startForegroundLocationIfPossible() {
     guard UIApplication.shared.applicationState == .active,
-      manager.authorizationStatus == .authorizedWhenInUse,
-      readToken() != nil
-    else {
+      manager.authorizationStatus == .authorizedWhenInUse, presenceVisible, readToken() != nil else {
+      stopLocationSensors()
       return
     }
-
     manager.allowsBackgroundLocationUpdates = false
-    manager.startUpdatingLocation()
+    manager.stopMonitoringSignificantLocationChanges()
+    if !standardRunning { manager.startUpdatingLocation(); standardRunning = true }
     monitoring = false
+    NotificationCenter.default.post(name:Notification.Name("MargotLocationPluginOwnsMonitoring"),object:nil)
+  }
+
+  private func stopLocationSensors() {
+    manager.stopUpdatingLocation()
+    manager.stopMonitoringSignificantLocationChanges()
+    manager.stopMonitoringVisits()
+    manager.allowsBackgroundLocationUpdates = false
+    standardRunning = false
+    monitoring = false
+    NotificationCenter.default.post(name:Notification.Name("MargotLocationPluginOwnsMonitoring"),object:nil)
   }
 
   private func requestCurrentLocationIfPossible(allowBackground: Bool) {
-    guard readToken() != nil else { return }
+    guard presenceVisible, readToken() != nil else { return }
 
+    if standardRunning { return }
     let state = UIApplication.shared.applicationState
 
     switch manager.authorizationStatus {
@@ -580,20 +625,21 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
   private func sendBestAvailableLocationOrRequest(allowBackground: Bool) {
     guard presenceVisible, readToken() != nil else { return }
 
-    if let retryLocation = retryLocation {
-      queueLocation(retryLocation, force: true)
+    if let retryLocation = retryLocation, isUsableLocation(retryLocation,maxAge:90) {
+      queueLocation(newest(retryLocation,latestLocation), force:false)
       return
     }
+    retryLocation = nil
 
     if let latestLocation = latestLocation,
-      isUsableLocation(latestLocation, maxAge: 900)
+      isUsableLocation(latestLocation, maxAge: 90)
     {
       queueLocation(latestLocation, force: true)
       return
     }
 
     if let managerLocation = manager.location,
-      isUsableLocation(managerLocation, maxAge: 900)
+      isUsableLocation(managerLocation, maxAge: 90)
     {
       latestLocation = managerLocation
       queueLocation(managerLocation, force: true)
@@ -613,11 +659,10 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
       return
     }
 
-    manager.stopUpdatingLocation()
-    manager.stopMonitoringSignificantLocationChanges()
-    manager.stopMonitoringVisits()
-    manager.allowsBackgroundLocationUpdates = false
-
+    sendGeneration &+= 1
+    stopLocationSensors()
+    latestLocation = nil
+    policy = LocationPolicy(); policy.restore()
     monitoring = false
     sending = false
     pendingLocation = nil
@@ -643,40 +688,16 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
 
     guard presenceVisible else { return }
 
-    let elapsed = Date().timeIntervalSince(lastSentAt)
-    let distance = lastSentLocation?.distance(from: location) ?? minimumMovement
-
-    guard lastSentLocation == nil
-      || elapsed >= minimumSendInterval
-      || distance >= minimumMovement
-    else {
-      return
-    }
-
-    queueLocation(location, force: true)
+    queueLocation(location, force:false)
   }
 
   private func queueLocation(_ location: CLLocation, force: Bool) {
-    guard presenceVisible,
-      readToken() != nil,
-      isUsableLocation(location, maxAge: 900)
-    else {
-      return
-    }
-
-    latestLocation = location
-
-    if !force {
-      let elapsed = Date().timeIntervalSince(lastSentAt)
-      let distance = lastSentLocation?.distance(from: location) ?? minimumMovement
-
-      guard lastSentLocation == nil
-        || elapsed >= minimumSendInterval
-        || distance >= minimumMovement
-      else {
-        return
-      }
-    }
+    guard presenceVisible, readToken() != nil, isUsableLocation(location,maxAge:90) else { return }
+    latestLocation = newest(location,latestLocation)
+    guard let chosen = latestLocation,
+      policy.shouldSend(LocationPolicy.fix(chosen),LocationPolicy.wallNow,LocationPolicy.elapsedNow,force:force)
+    else { return }
+    let location = chosen
 
     if sending {
       pendingLocation = newest(location, pendingLocation)
@@ -688,7 +709,10 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
   }
 
   private func performLocationSend(_ location: CLLocation) {
-    guard let token = readToken(), presenceVisible, !sending else { return }
+    guard let token = readToken(), presenceVisible, !sending,
+      policy.shouldSend(LocationPolicy.fix(location),LocationPolicy.wallNow,LocationPolicy.elapsedNow,force:true)
+    else { return }
+    policy.attempted(LocationPolicy.elapsedNow)
 
     /*
      * Guardamos antes de enviar para permitir repetir após
@@ -699,12 +723,14 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
     retryWorkItem?.cancel()
     retryWorkItem = nil
     sending = true
+    let generation = sendGeneration
 
     send(payload: locationPayload(location), token: token) {
       [weak self] statusCode, error in
 
       DispatchQueue.main.async {
-        self?.finishLocationSending(
+        guard let self = self, self.readToken() == token, self.sendGeneration == generation else { return }
+        self.finishLocationSending(
           location,
           statusCode: statusCode,
           error: error
@@ -738,6 +764,7 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
     retryWorkItem?.cancel()
     retryWorkItem = nil
     sending = true
+    let generation = sendGeneration
 
     send(
       payload: [
@@ -748,7 +775,8 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
       token: token
     ) { [weak self] statusCode, error in
       DispatchQueue.main.async {
-        self?.finishHiddenSending(
+        guard let self = self, self.readToken() == token, self.sendGeneration == generation else { return }
+        self.finishHiddenSending(
           statusCode: statusCode,
           error: error
         )
@@ -767,10 +795,12 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
       return
     }
 
+    policy.completed(LocationPolicy.fix(location),LocationPolicy.elapsedNow,
+                     success:statusCode.map { (200...299).contains($0) } ?? false)
     if let statusCode, (200...299).contains(statusCode) {
       lastSentAt = Date()
       lastSentLocation = location
-      latestLocation = location
+      latestLocation = newest(location,latestLocation)
       retryLocation = nil
       retryAttempt = 0
       deletePendingLocation()
@@ -874,7 +904,7 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
     }
 
     let delayIndex = min(retryAttempt, retryDelays.count - 1)
-    let delay = retryDelays[delayIndex]
+    let delay = max(retryDelays[delayIndex],policy.retryDelay(LocationPolicy.elapsedNow)/1000)
 
     retryAttempt = min(retryAttempt + 1, retryDelays.count)
 
@@ -898,10 +928,12 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
 
       self.retryHidden = false
 
-      if let location = self.retryLocation {
-        self.performLocationSend(location)
+      if let location = self.retryLocation, self.isUsableLocation(location,maxAge:90) {
+        self.performLocationSend(self.newest(location,self.latestLocation))
       } else {
-        self.sendBestAvailableLocationOrRequest(allowBackground: true)
+        self.retryLocation = nil
+        self.deletePendingLocation()
+        self.requestCurrentLocationIfPossible(allowBackground:true)
       }
     }
 
@@ -941,7 +973,8 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
     retryHidden = false
 
     if let retryLocation = retryLocation {
-      performLocationSend(retryLocation)
+      queueLocation(newest(retryLocation,latestLocation),force:false)
+      scheduleRetry()
       return
     }
 
@@ -961,9 +994,8 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
     _ location: CLLocation,
     maxAge: TimeInterval
   ) -> Bool {
-    return location.horizontalAccuracy >= 0
-      && location.horizontalAccuracy <= 500
-      && abs(location.timestamp.timeIntervalSinceNow) <= maxAge
+    return LocationPolicy.usable(LocationPolicy.fix(location),LocationPolicy.wallNow)
+      && -location.timestamp.timeIntervalSinceNow <= maxAge
   }
 
   private func locationPayload(_ location: CLLocation) -> [String: Any] {
@@ -971,7 +1003,8 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
       "latitude": location.coordinate.latitude,
       "longitude": location.coordinate.longitude,
       "accuracy": location.horizontalAccuracy,
-      "timestamp": ISO8601DateFormatter().string(from: location.timestamp),
+      "timestamp": location.timestamp.timeIntervalSince1970 * 1000,
+      "location_policy_version": 1,
       "active": true,
       "visible": true,
       "app_state": currentAppStateName(),
@@ -997,7 +1030,7 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
       let longitude = payload["longitude"] as? Double,
       let accuracy = payload["accuracy"] as? Double,
       let timestamp = payload["timestamp"] as? Double,
-      abs(Date(timeIntervalSince1970: timestamp).timeIntervalSinceNow) <= 900
+      abs(Date(timeIntervalSince1970: timestamp).timeIntervalSinceNow) <= 90
     else {
       deletePendingLocation()
       return nil
@@ -1107,6 +1140,9 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
 
     return [
       "success": true,
+      "policy_version": LocationPolicy.version,
+      "diagnostics": policy.diagnostics,
+      "native_location_running": standardRunning,
       "active": monitoring,
       "visible": presenceVisible,
       "permission_flow_version": 2,

@@ -42,6 +42,7 @@ dependencies {
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
 
+    implementation "com.google.android.gms:play-services-location:21.3.0"
     implementation project(':capacitor-android')
     implementation project(':capacitor-cordova-android-plugins')
 

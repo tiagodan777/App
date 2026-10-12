@@ -22,6 +22,7 @@
 		B10000000000000000000100 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000101 /* Localizable.strings */; };
 		C0DE00000000000000000001 /* LocationRelaunchCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE00000000000000000002 /* LocationRelaunchCoordinator.swift */; };
 		C0DE00000000000000000003 /* ChatCameraPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE00000000000000000004 /* ChatCameraPlugin.swift */; };
+		BA7710000000000000000001 /* LocationPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA7710000000000000000002 /* LocationPolicy.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -45,6 +46,7 @@
 		B10000000000000000000103 /* pt */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = pt; path = pt.lproj/Localizable.strings; sourceTree = "<group>"; };
 		C0DE00000000000000000002 /* LocationRelaunchCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationRelaunchCoordinator.swift; sourceTree = "<group>"; };
 		C0DE00000000000000000004 /* ChatCameraPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatCameraPlugin.swift; sourceTree = "<group>"; };
+		BA7710000000000000000002 /* LocationPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationPolicy.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -87,6 +89,7 @@
 				50379B222058CBB4000EE86E /* capacitor.config.json */,
 				504EC3071FED79650016851F /* AppDelegate.swift */,
 				C0DE00000000000000000002 /* LocationRelaunchCoordinator.swift */,
+                BA7710000000000000000002 /* LocationPolicy.swift */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
 				504EC30E1FED79650016851F /* Assets.xcassets */,
 				504EC3101FED79650016851F /* LaunchScreen.storyboard */,
@@ -190,6 +193,7 @@
 			files = (
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 				C0DE00000000000000000001 /* LocationRelaunchCoordinator.swift in Sources */,
+                BA7710000000000000000001 /* LocationPolicy.swift in Sources */,
 				A12000032FE1000000000003 /* BackgroundLocationPlugin.swift in Sources */,
 				C0DE00000000000000000003 /* ChatCameraPlugin.swift in Sources */,
 				A12000012FE1000000000001 /* ViewController.swift in Sources */,

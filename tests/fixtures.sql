@@ -66,6 +66,8 @@ CREATE TABLE "localizacao_membro" (
     "visivel" INTEGER NOT NULL DEFAULT 1,
     "origem" TEXT NOT NULL DEFAULT 'foreground',
     "atualizada_em" TEXT NOT NULL,
+    "capturada_em" TEXT DEFAULT NULL,
+    "recebida_em" TEXT DEFAULT NULL,
     PRIMARY KEY ("membro_id"),
     FOREIGN KEY (membro_id) REFERENCES membros(id) ON DELETE CASCADE
 );

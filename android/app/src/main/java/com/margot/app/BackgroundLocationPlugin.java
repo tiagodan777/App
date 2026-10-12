@@ -7,6 +7,8 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.Settings;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
@@ -70,7 +72,26 @@ public final class BackgroundLocationPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void configure(PluginCall call) {
+        new Handler(Looper.getMainLooper()).post(() -> {
+            if (!BackgroundLocationService.configure(getContext(),call.getObject("policy"))) {
+                call.reject("Política fora dos limites."); return;
+            }
+            call.resolve(statusData());
+        });
+    }
+
+    @PluginMethod
+    public void getLocation(PluginCall call) {
+        new Handler(Looper.getMainLooper()).post(() -> call.resolve(BackgroundLocationService.cachedLocation()));
+    }
+
+    @PluginMethod
     public void start(PluginCall call) {
+        new Handler(Looper.getMainLooper()).post(() -> startOnMain(call));
+    }
+
+    private void startOnMain(PluginCall call) {
         String suppliedToken = call.getString("token");
 
         String token = suppliedToken == null ? "" : suppliedToken.trim();
@@ -104,6 +125,10 @@ public final class BackgroundLocationPlugin extends Plugin {
 
     @PluginMethod
     public void stop(PluginCall call) {
+        new Handler(Looper.getMainLooper()).post(() -> stopOnMain(call));
+    }
+
+    private void stopOnMain(PluginCall call) {
         String token = BackgroundLocationService.readToken(getContext());
 
         BackgroundLocationService.setVisible(getContext(), false);
@@ -129,11 +154,19 @@ public final class BackgroundLocationPlugin extends Plugin {
 
     @PluginMethod
     public void status(PluginCall call) {
+        new Handler(Looper.getMainLooper()).post(() -> statusOnMain(call));
+    }
+
+    private void statusOnMain(PluginCall call) {
         call.resolve(statusData());
     }
 
     @PluginMethod
     public void setVisibility(PluginCall call) {
+        new Handler(Looper.getMainLooper()).post(() -> setVisibilityOnMain(call));
+    }
+
+    private void setVisibilityOnMain(PluginCall call) {
         Boolean option = call.getBoolean("visible");
 
         if (option == null) {
@@ -246,7 +279,25 @@ public final class BackgroundLocationPlugin extends Plugin {
         try {
             BackgroundLocationService.start(getContext());
 
-            call.resolve(statusData());
+            final String token = BackgroundLocationService.readToken(getContext());
+            final long deadline = android.os.SystemClock.elapsedRealtime() + 2000;
+            final Handler handler = new Handler(Looper.getMainLooper());
+            // startForegroundService is asynchronous. Report the actual service, not a saved wish to start.
+            handler.post(new Runnable() {
+                @Override public void run() {
+                    JSObject result = statusData();
+                    if (!token.equals(BackgroundLocationService.readToken(getContext()))) {
+                        result.put("cancelled", true); call.resolve(result); return;
+                    }
+                    if (result.optBoolean("active") || !canRun()) { call.resolve(result); return; }
+                    if (android.os.SystemClock.elapsedRealtime() < deadline) {
+                        handler.postDelayed(this, 50); return;
+                    }
+                    result.put("success", false);
+                    result.put("error", "O serviço de localização não confirmou o arranque.");
+                    call.resolve(result);
+                }
+            });
         } catch (RuntimeException exception) {
             JSObject result = statusData();
 
@@ -298,6 +349,9 @@ public final class BackgroundLocationPlugin extends Plugin {
         JSObject result = new JSObject();
 
         result.put("success", true);
+        result.put("policy_version", LocationPolicy.VERSION);
+        result.put("diagnostics", BackgroundLocationService.diagnostics());
+        result.put("native_location_running", active);
 
         result.put("active", active);
 

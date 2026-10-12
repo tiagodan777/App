@@ -89,6 +89,14 @@ try {
         json_response(['success' => false, 'message' => 'A autorização expirou.'], 401);
     }
     $membroId = (string) $membroId;
+    $capturedAt = null;
+    if (!$stateOnly && $localizacaoAtiva && $visivel) {
+        try { $capturedAt = \App\CMS\LocationSample::capturedAt($dados); }
+        catch (\InvalidArgumentException $invalidSample) {
+            // Authenticated but obsolete samples are acknowledged, never retried forever or made fresh.
+            json_response(['success'=>true,'accepted'=>false,'reason'=>'invalid_location_sample']);
+        }
+    }
     $nearby = $cms->getNearbyPresenceNotification();
     if ($appEmBackground !== null) {
         try {
@@ -113,7 +121,11 @@ try {
     } catch (Throwable $erroSnapshot) {
         error_log('[background-location-snapshot-before] ' . $erroSnapshot->getMessage());
     }
-    $cms->getLocation()->saveBackground($membroId, $latitude, $longitude, $precisao, $localizacaoAtiva, $visivel);
+    $accepted = $cms->getLocation()->saveBackground($membroId,$latitude,$longitude,$precisao,
+        $localizacaoAtiva,$visivel,$capturedAt);
+    if (!$accepted) {
+        json_response(['success'=>true,'accepted'=>false,'reason'=>'duplicate_or_older_location']);
+    }
     try {
         $posicaoNova = $nearby->locationSnapshot($membroId);
         $nearby->processLocationChange($membroId, $posicaoAnterior, $posicaoNova);

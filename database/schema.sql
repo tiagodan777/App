@@ -127,7 +127,9 @@ CREATE TABLE `localizacao_membro` (
   `localizacao_ativa` tinyint(1) NOT NULL DEFAULT 1,
   `visivel` tinyint(1) NOT NULL DEFAULT 1,
   `origem` enum('foreground','background') NOT NULL DEFAULT 'foreground',
-  `atualizada_em` datetime NOT NULL
+  `atualizada_em` datetime NOT NULL,
+  `capturada_em` datetime(3) DEFAULT NULL,
+  `recebida_em` datetime(3) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------

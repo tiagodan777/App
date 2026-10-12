@@ -37,24 +37,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     return true
   }
 
-  func applicationDidBecomeActive(_ application: UIApplication) {
-    guard let coordinator = locationRelaunchCoordinator else { return }
-    /*
-     * Se o utilizador abriu entretanto a aplicação,
-     * damos alguns segundos ao plugin Capacitor normal
-     * para assumir novamente o controlo.
-     *
-     * Depois destruímos este gestor temporário para
-     * não ficarmos com dois CLLocationManager a enviar
-     * a mesma posição.
-     */
-  DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self, weak coordinator] in
-      guard let self = self, let coordinator = coordinator, self.locationRelaunchCoordinator === coordinator else {
-        return
-      }
-      coordinator.stop()
-      self.locationRelaunchCoordinator = nil
-    }
+  @objc private func locationPluginReady() {
+    locationRelaunchCoordinator?.stop()
+    locationRelaunchCoordinator = nil
   }
 
   private func prepararRelaunchDeLocalizacao(_ launchOptions: [UIApplication.LaunchOptionsKey: Any]?) {
@@ -66,6 +51,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
      * Não esperamos que o WebView/Capacitor/ViewController
      * carreguem para voltar a ligar Core Location.
      */
+    NotificationCenter.default.removeObserver(self,name:Notification.Name("MargotLocationPluginOwnsMonitoring"),object:nil)
+    NotificationCenter.default.addObserver(self,selector:#selector(locationPluginReady),
+      name:Notification.Name("MargotLocationPluginOwnsMonitoring"),object:nil)
   let coordinator = LocationRelaunchCoordinator()
     locationRelaunchCoordinator = coordinator
     coordinator.start()

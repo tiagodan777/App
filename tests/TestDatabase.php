@@ -7,6 +7,7 @@ final class TestDatabase extends App\CMS\Database {
 
     public function __construct() {
         parent::__construct('sqlite::memory:', null, null);
+        $this->sqliteCreateFunction('IF', static fn($condition, $yes, $no) => $condition ? $yes : $no);
         $this->sqliteCreateFunction('CONCAT', static fn(...$parts) => implode('', $parts));
         $this->sqliteCreateFunction('GREATEST', static fn(...$parts) => max($parts));
         $this->sqliteCreateFunction('CHAR_LENGTH', static fn($text) => mb_strlen($text));

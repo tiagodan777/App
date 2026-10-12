@@ -30,8 +30,7 @@ import UIKit
   private let keychainAccount = "background-token"
   private let visibilityKey = "margot.background-location.visible"
   private let pendingLocationKey = "margot.background-location.pending"
-  private let minimumSendInterval: TimeInterval = 60
-  private let minimumMovement: CLLocationDistance = 20
+  private let policy = LocationPolicy()
   private let retryDelays: [TimeInterval] = [2, 5, 10]
   private let manager = CLLocationManager()
   private lazy var session: URLSession = {
@@ -52,6 +51,7 @@ import UIKit
   private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
   override init() {
     super.init()
+    policy.restore()
     manager.delegate = self
     manager.desiredAccuracy = kCLLocationAccuracyNearestTenMeters
     /*
@@ -60,7 +60,7 @@ import UIKit
      * receber também deslocações curtas.
      */
   manager.distanceFilter = kCLDistanceFilterNone
-    manager.activityType = .fitness
+    manager.activityType = .other
     manager.pausesLocationUpdatesAutomatically = false
     manager.showsBackgroundLocationIndicator = false
   }
@@ -92,7 +92,7 @@ import UIKit
        */
   manager.startMonitoringSignificantLocationChanges()
     }
-    manager.startMonitoringVisits()
+
     /*
      * Segundo a documentação da Apple, quando somos relançados
      * por significant location change, manager.location pode já
@@ -100,7 +100,7 @@ import UIKit
      *
      * Só o usamos se for realmente recente.
      */
-    if let location = manager.location, isUsableLocation(location, maxAge: 180) {
+    if let location = manager.location, isUsableLocation(location, maxAge: 90) {
       considerSending(location, force: true)
       return
     }
@@ -108,7 +108,7 @@ import UIKit
      * Se havia uma posição que ficou pendente por uma falha
      * de rede muito recente, ainda podemos tentar recuperá-la.
      */
-  if let pending = readPendingLocation(maxAge: 180) { considerSending(pending, force: true) }
+  if let pending = readPendingLocation(maxAge: 90) { considerSending(pending, force: true) }
   }
 
   func stop() {
@@ -122,6 +122,7 @@ import UIKit
     manager.allowsBackgroundLocationUpdates = false
     pendingLocation = nil
     endBackgroundTask()
+    session.invalidateAndCancel()
   }
 
   func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
@@ -135,24 +136,21 @@ import UIKit
     if CLLocationManager.significantLocationChangeMonitoringAvailable() {
       manager.startMonitoringSignificantLocationChanges()
     }
-    manager.startMonitoringVisits()
+
   }
 
   func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
     guard !stopped, readVisibility() else { return }
-    let validLocations = locations.filter { self.isUsableLocation($0, maxAge: 180) }
+    let validLocations = locations.sorted { $0.timestamp < $1.timestamp }.filter {
+      policy.observe(LocationPolicy.fix($0),LocationPolicy.wallNow,LocationPolicy.elapsedNow)
+    }
     guard let location = validLocations.last else { return }
     considerSending(location, force: false)
   }
 
   func locationManager(_ manager: CLLocationManager, didVisit visit: CLVisit) {
     guard !stopped, readVisibility() else { return }
-    let date = visit.departureDate == .distantFuture ? visit.arrivalDate : visit.departureDate
-    let location = CLLocation(
-      coordinate: visit.coordinate, altitude: 0, horizontalAccuracy: visit.horizontalAccuracy, verticalAccuracy: -1,
-      timestamp: date)
-    guard isUsableLocation(location, maxAge: 900) else { return }
-    considerSending(location, force: true)
+    // Visit timestamps describe historical arrival/departure; standard updates supply a fresh fix.
   }
 
   func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
@@ -170,12 +168,11 @@ import UIKit
   }
 
   private func considerSending(_ location: CLLocation, force: Bool) {
-    guard !stopped, readVisibility(), readToken() != nil, isUsableLocation(location, maxAge: 180) else { return }
-    if !force {
-      let elapsed = Date().timeIntervalSince(lastSentAt)
-      let distance = lastSentLocation?.distance(from: location) ?? minimumMovement
-      guard lastSentLocation == nil || elapsed >= minimumSendInterval || distance >= minimumMovement else { return }
-    }
+    guard !stopped, readVisibility(), readToken() != nil, isUsableLocation(location, maxAge: 90) else { return }
+    // Keep the newest fix while an upload/backoff is pending, even when it cannot be sent yet.
+    if pendingLocation != nil || sending { pendingLocation = newest(location,pendingLocation) }
+    guard policy.shouldSend(LocationPolicy.fix(location),LocationPolicy.wallNow,LocationPolicy.elapsedNow,force:force)
+    else { return }
     if sending {
       pendingLocation = newest(location, pendingLocation)
       savePendingLocation(pendingLocation ?? location)
@@ -186,13 +183,17 @@ import UIKit
 
   private func performSend(_ location: CLLocation) {
     guard !stopped, !sending, readVisibility(), let token = readToken() else { return }
+    guard policy.shouldSend(LocationPolicy.fix(location),LocationPolicy.wallNow,LocationPolicy.elapsedNow,force:true)
+    else { return }
+    policy.attempted(LocationPolicy.elapsedNow)
     sending = true
     savePendingLocation(location)
     beginBackgroundTask()
     let payload: [String: Any] = [
       "latitude": location.coordinate.latitude, "longitude": location.coordinate.longitude,
-      "accuracy": location.horizontalAccuracy, "timestamp": ISO8601DateFormatter().string(from: location.timestamp),
+      "accuracy": location.horizontalAccuracy, "timestamp": location.timestamp.timeIntervalSince1970 * 1000,
       "active": true, "visible": true, "token": token,
+      "app_state": "background", "location_policy_version": 1,
     ]
     guard let body = try? JSONSerialization.data(withJSONObject: payload) else {
       sending = false
@@ -207,12 +208,18 @@ import UIKit
     request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
     session.dataTask(with: request) { [weak self] _, response, error in
       let statusCode = (response as? HTTPURLResponse)?.statusCode
-      DispatchQueue.main.async { self?.finishSend(location, statusCode: statusCode, error: error) }
+      DispatchQueue.main.async {
+        guard let self = self, !self.stopped, self.readToken() == token else { return }
+        self.finishSend(location, statusCode: statusCode, error: error)
+      }
     }.resume()
   }
 
   private func finishSend(_ location: CLLocation, statusCode: Int?, error: Error?) {
+    guard !stopped else { return }
     sending = false
+    policy.completed(LocationPolicy.fix(location),LocationPolicy.elapsedNow,
+                     success:statusCode.map { (200...299).contains($0) } ?? false)
     if statusCode == 401 {
       deleteToken()
       deletePendingLocation()
@@ -238,7 +245,7 @@ import UIKit
       }
     }
     endBackgroundTask()
-    if let pending = pendingLocation, isUsableLocation(pending, maxAge: 180), statusCode != nil,
+    if let pending = pendingLocation, isUsableLocation(pending, maxAge: 90), statusCode != nil,
       statusCode.map({ (200...299).contains($0) }) == true
     {
       pendingLocation = nil
@@ -247,16 +254,16 @@ import UIKit
   }
 
   private func scheduleRetry() {
-    guard !stopped, retryWorkItem == nil, let location = pendingLocation, isUsableLocation(location, maxAge: 180) else {
+    guard !stopped, retryWorkItem == nil, let location = pendingLocation, isUsableLocation(location, maxAge: 90) else {
       return
     }
     let delayIndex = min(retryAttempt, retryDelays.count - 1)
-    let delay = retryDelays[delayIndex]
+    let delay = max(retryDelays[delayIndex],policy.retryDelay(LocationPolicy.elapsedNow)/1000)
     retryAttempt = min(retryAttempt + 1, retryDelays.count)
     let workItem = DispatchWorkItem { [weak self] in
       guard let self = self, !self.stopped else { return }
       self.retryWorkItem = nil
-      guard let location = self.pendingLocation, self.isUsableLocation(location, maxAge: 180) else {
+      guard let location = self.pendingLocation, self.isUsableLocation(location, maxAge: 90) else {
         self.pendingLocation = nil
         self.deletePendingLocation()
         return
@@ -273,8 +280,8 @@ import UIKit
   }
 
   private func isUsableLocation(_ location: CLLocation, maxAge: TimeInterval) -> Bool {
-    return location.horizontalAccuracy >= 0 && location.horizontalAccuracy <= 500
-      && abs(location.timestamp.timeIntervalSinceNow) <= maxAge
+    return LocationPolicy.usable(LocationPolicy.fix(location),LocationPolicy.wallNow)
+      && -location.timestamp.timeIntervalSinceNow <= maxAge
   }
 
   private func beginBackgroundTask() {

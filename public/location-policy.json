@@ -1,0 +1,8 @@
+{
+  "moving_send_seconds": 60,
+  "stationary_send_seconds": 180,
+  "minimum_send_seconds": 5,
+  "movement_metres": 20,
+  "stationary_after_seconds": 120,
+  "android_request_seconds": 30
+}

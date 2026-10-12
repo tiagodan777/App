@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace App\CMS\Realtime;
 
 use App\CMS\ProximityConfig;
+use App\CMS\Location;
+use App\CMS\LocationSample;
 use App\CMS\PushNotification;
 use App\CMS\NearbyPresenceNotification;
 use App\Validate\Validate;
@@ -12,6 +14,8 @@ use Ratchet\ConnectionInterface;
 // Métodos de Discovery usados exclusivamente pela classe WebSocket.
 
 trait Discovery {
+    private array $nearbyConfirmation = [];
+    private int $nearbyPrunedAt = 0;
 
     private function atualizarPresenca(ConnectionInterface $conn, array $data): void {
         $membroId = $this->obterMembroDaLigacao($conn);
@@ -160,20 +164,31 @@ trait Discovery {
         if ($accuracy === false || $accuracy < 0) {
             $accuracy = 0;
         }
-        $this->localizacoes[$membroId] = [
-            'latitude' => (float) $latitude,
-            'longitude' => (float) $longitude,
-            'accuracy' => min((float) $accuracy, 10000),
-            'updated_at' => time(),
-            'source' => 'websocket'
-        ];
-        $this->persistirLocalizacaoParaProximidade(
+        try { $capturedAt = LocationSample::capturedAt($data); }
+        catch (\InvalidArgumentException $invalidSample) { return; }
+        $capturedEpoch = $capturedAt === null ? time() : (int)(new \DateTimeImmutable($capturedAt,new \DateTimeZone('UTC')))->format('U');
+        if ($capturedAt !== null && isset($this->localizacoes[$membroId])
+            && $capturedEpoch < (int)$this->localizacoes[$membroId]['updated_at']) return;
+        $accepted = $this->persistirLocalizacaoParaProximidade(
             $membroId,
             (float) $latitude,
             (float) $longitude,
             min((float) $accuracy, 10000),
-            $this->membroTemLigacaoVisivel($membroId)
+            $this->membroTemLigacaoVisivel($membroId),
+            $capturedAt
         );
+        // Native HTTP may already have persisted a newer sample. Never regress the live map.
+        if ($capturedAt !== null && !$accepted) {
+            $this->sincronizarLocalizacoesPersistidas(true);
+            return;
+        }
+        $this->localizacoes[$membroId] = [
+            'latitude' => (float) $latitude,
+            'longitude' => (float) $longitude,
+            'accuracy' => min((float) $accuracy, 10000),
+            'updated_at' => $capturedEpoch,
+            'source' => 'websocket'
+        ];
         echo sprintf(
             "[LOCATION] %s atualizou localização. Precisão: %.1f m\n",
             $membroId,
@@ -191,43 +206,25 @@ trait Discovery {
         float $latitude,
         float $longitude,
         float $accuracy,
-        bool $visivel
-    ): void {
+        bool $visivel,
+        ?string $capturedAt = null
+    ): bool {
         $agora = microtime(true);
         $ultimaPersistencia = (float) ($this->ultimaPersistenciaLocalizacaoPorMembro[$membroId] ?? 0.0);
         if (
-            $ultimaPersistencia > 0 &&
+            $capturedAt === null && $ultimaPersistencia > 0 &&
             $agora - $ultimaPersistencia < self::PERSISTENCIA_LOCALIZACAO_INTERVALO_SEGUNDOS
         ) {
-            return;
+            return true;
         }
         $this->ultimaPersistenciaLocalizacaoPorMembro[$membroId] = $agora;
         try {
             $database = $this->getDatabase();
             $nearby = new NearbyPresenceNotification($database, new PushNotification($database));
             $posicaoAnterior = $nearby->locationSnapshot($membroId);
-            /*
-             * A coluna origem da BD só permite:
-             *
-             * foreground
-             * background
-             *
-             * Portanto uma localização recebida pelo WebSocket
-             * é guardada como foreground.
-             */
-            $statement = $database->prepare("INSERT INTO localizacao_membro ( membro_id, latitude, longitude, precisao_m, localizacao_ativa, visivel,
-                origem, atualizada_em )
-                VALUES ( :member_id, :latitude, :longitude, :accuracy, 1, :visible, 'foreground', UTC_TIMESTAMP() )
-                ON DUPLICATE KEY UPDATE latitude = VALUES(latitude), longitude = VALUES(longitude), precisao_m =
-                VALUES(precisao_m), localizacao_ativa = 1, visivel = VALUES(visivel), origem = 'foreground',
-                atualizada_em = UTC_TIMESTAMP()");
-            $statement->execute([
-                'member_id' => $membroId,
-                'latitude' => $latitude,
-                'longitude' => $longitude,
-                'accuracy' => $accuracy,
-                'visible' => $visivel ? 1 : 0
-            ]);
+            $accepted = (new Location($database))->saveBackground($membroId,$latitude,$longitude,$accuracy,
+                true,$visivel,$capturedAt,'foreground');
+            if (!$accepted) return false;
             echo sprintf("[LOCATION PERSIST] %s gravado na BD. Visível=%s\n", $membroId, $visivel ? 'sim' : 'não');
             $posicaoNova = $visivel ? ['latitude' => $latitude, 'longitude' => $longitude] : null;
             /*
@@ -235,10 +232,13 @@ trait Discovery {
              * possa disparar imediatamente uma reavaliação de
              * utilizadores que estejam em background.
              */
-            $nearby->processLocationChange($membroId, $posicaoAnterior, $posicaoNova);
+            try { $nearby->processLocationChange($membroId, $posicaoAnterior, $posicaoNova); }
+            catch (\Throwable $notificationError) { error_log('[LOCATION NEARBY] '.$notificationError->getMessage()); }
+            return true;
         } catch (\Throwable $erro) {
             unset($this->ultimaPersistenciaLocalizacaoPorMembro[$membroId]);
             echo sprintf("[LOCATION PERSIST ERROR] %s: %s\n", $membroId, $erro->getMessage());
+            return false;
         }
     }
 
@@ -247,16 +247,25 @@ trait Discovery {
         bool $localizacaoAtiva,
         bool $visivel
     ): void {
+        if (!$localizacaoAtiva || !$visivel) {
+            foreach (array_keys($this->nearbyConfirmation) as $pair) {
+                if (str_starts_with($pair,$membroId.':') || str_ends_with($pair,':'.$membroId)) {
+                    unset($this->nearbyConfirmation[$pair]);
+                }
+            }
+        }
         try {
             $database = $this->getDatabase();
             $nearby = new NearbyPresenceNotification($database, new PushNotification($database));
             $posicaoAnterior = $nearby->locationSnapshot($membroId);
             $statement = $database->prepare("UPDATE localizacao_membro
-                SET localizacao_ativa = :active, visivel = :visible
+                SET localizacao_ativa = :active, visivel = :visible,
+                    capturada_em = IF(:hide_fence = 1,UTC_TIMESTAMP(3),capturada_em)
                 WHERE membro_id = :member_id");
             $statement->execute([
                 'active' => $localizacaoAtiva ? 1 : 0,
                 'visible' => $visivel ? 1 : 0,
+                'hide_fence' => (!$localizacaoAtiva || !$visivel) ? 1 : 0,
                 'member_id' => $membroId
             ]);
             echo sprintf(
@@ -344,7 +353,7 @@ trait Discovery {
                         $outraLocalizacao['latitude'],
                         $outraLocalizacao['longitude']
                     );
-                    if ($distancia > ProximityConfig::RADIUS_METRES) {
+                    if (!$this->confirmarProximidade($membroId,$outroMembroId,$minhaLocalizacao,$outraLocalizacao,$agora)) {
                         continue;
                     }
                     $tokenAcessoPerfil = $this->obterTokenAcessoPerfil($membroId, $outroMembroId);
@@ -476,12 +485,34 @@ trait Discovery {
         if (!$this->localizacaoEstaValida($primeira, $agora) || !$this->localizacaoEstaValida($segunda, $agora)) {
             return false;
         }
-        return $this->calcularDistanciaMetros(
-            $primeira['latitude'],
-            $primeira['longitude'],
-            $segunda['latitude'],
-            $segunda['longitude']
-        ) <= ProximityConfig::RADIUS_METRES;
+        return $this->confirmarProximidade($primeiroMembroId,$segundoMembroId,$primeira,$segunda,$agora);
+    }
+
+    private function confirmarProximidade(string $a, string $b, array $first, array $second, int $now): bool {
+        $key = strcmp($a,$b)<0 ? $a.':'.$b : $b.':'.$a;
+        $distance = $this->calcularDistanciaMetros($first['latitude'],$first['longitude'],$second['latitude'],$second['longitude']);
+        if ($now-$this->nearbyPrunedAt>=30) {
+            $this->nearbyConfirmation = array_filter($this->nearbyConfirmation,
+                fn($entry)=>$now-$entry['seen_at']<=self::LOCALIZACAO_MAXIMA_IDADE_SEGUNDOS);
+            $this->nearbyPrunedAt=$now;
+        }
+        if ($distance <= ProximityConfig::RADIUS_METRES) {
+            // Bound memory use. A full cache never prevents a new in-radius entry.
+            if (isset($this->nearbyConfirmation[$key]) || count($this->nearbyConfirmation)<10000) {
+                $this->nearbyConfirmation[$key] = ['seen_at'=>$now,'outside_since'=>null];
+            }
+            return true;
+        }
+        $entry = $this->nearbyConfirmation[$key] ?? null;
+        $uncertainty = min(25,max(0,(float)($first['accuracy'] ?? 0)) + max(0,(float)($second['accuracy'] ?? 0)));
+        if ($entry !== null && $distance<=ProximityConfig::RADIUS_METRES+$uncertainty) {
+            // Start the grace on the first uncertain exit, never renew it on repeated reads.
+            $entry['outside_since'] ??= $now;
+            $this->nearbyConfirmation[$key]=$entry;
+            if ($now-$entry['outside_since']<=30) return true;
+        }
+        unset($this->nearbyConfirmation[$key]);
+        return false;
     }
 
     private function localizacaoEstaValida(?array $localizacao, int $agora): bool {

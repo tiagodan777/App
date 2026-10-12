@@ -24,6 +24,29 @@
         geolocationPlugin = capacitor.registerPlugin('Geolocation');
     }
 
+    var ultimaConsultaPolicy = -Infinity;
+    var consultaPolicy = null;
+
+    function atualizarPolicy(state) {
+        window.MargotNativeLocationCacheAvailable = state?.policy_version === 'native-battery-1';
+        // Capability gated: older installed builds never receive an unknown method call.
+        if (!state || state.policy_version !== 'native-battery-1' || !plugin ||
+            typeof plugin.configure !== 'function' || consultaPolicy ||
+            Date.now() - ultimaConsultaPolicy < 3600000) return;
+        ultimaConsultaPolicy = Date.now();
+        consultaPolicy = comPrazo(fetch('/location-policy.json', {cache:'no-store',credentials:'same-origin'})
+            .then(function(response) {
+                if (!response.ok) throw new Error('Política indisponível');
+                return response.json();
+            }),5000)
+            .then(function(policy) { return comPrazo(plugin.configure({policy:policy}),5000); })
+            .catch(function() {
+                // Keep the validated on-device policy; retry after five minutes of foreground use.
+                ultimaConsultaPolicy = Date.now() - 3300000;
+            })
+            .finally(function() { consultaPolicy = null; });
+    }
+
     var androidLocationPermissionPromise = null;
     var renovacao = null;
     var ultimaRetoma = 0;
@@ -332,6 +355,7 @@
         }
 
         var state = await comPrazo(plugin.status(), 10000);
+        atualizarPolicy(state);
 
         if (androidNativo()) {
             // O plugin nativo já consulta GPS e permissões. checkPermissions()
