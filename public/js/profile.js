@@ -52,6 +52,18 @@
     var pointerDirecao = null;
     var pointerMoveu = false;
     var ignorarClickAte = 0;
+    var toqueAtivo = false;
+    var toqueMoveu = false;
+    var toqueInicioX = 0;
+    var toqueInicioY = 0;
+    var toqueInicioScroll = 0;
+    var ultimaLargura = faixa.clientWidth;
+
+    // O toque usa scroll nativo. O arrasto manual fica reservado ao rato/caneta.
+    faixa.style.touchAction = 'auto';
+    faixa.querySelectorAll('*').forEach(function (elemento) {
+        elemento.style.touchAction = 'auto';
+    });
 
     /* PATHS */
     var PATH_ILHA = [
@@ -487,7 +499,64 @@
         }, prefereMovimentoReduzido() ? 0 : 830);
     }
 
-    /* SWIPE / DRAG PRINCIPAL */
+    /* SCROLL NATIVO POR TOQUE */
+    function iniciarToque(evento) {
+        if (!evento.touches.length) return;
+
+        if (toqueAtivo) {
+            toqueMoveu = true;
+            return;
+        }
+
+        var toque = evento.touches[0];
+        toqueAtivo = true;
+        toqueMoveu = evento.touches.length > 1 || animacaoGaleriaFrame !== null;
+        toqueInicioX = toque.clientX;
+        toqueInicioY = toque.clientY;
+        toqueInicioScroll = faixa.scrollLeft;
+
+        // Um toque interrompe a animação dos botões e devolve o scroll ao sistema.
+        cancelarAnimacaoGaleria();
+        faixa.classList.remove('a-arrastar');
+    }
+
+    function moverToque(evento) {
+        if (!toqueAtivo || !evento.touches.length) return;
+
+        var toque = evento.touches[0];
+        if (
+            evento.touches.length > 1 ||
+            Math.abs(toque.clientX - toqueInicioX) > 6 ||
+            Math.abs(toque.clientY - toqueInicioY) > 6
+        ) {
+            toqueMoveu = true;
+        }
+    }
+
+    function terminarToque(evento) {
+        if (!toqueAtivo) return;
+
+        if (
+            toqueMoveu ||
+            evento.type === 'touchcancel' ||
+            Math.abs(faixa.scrollLeft - toqueInicioScroll) > 2
+        ) {
+            ignorarClickAte = window.performance.now() + 400;
+        }
+
+        if (!evento.touches.length) {
+            toqueAtivo = false;
+            toqueMoveu = false;
+        }
+        // O sistema termina a desaceleração e o encaixe. Não alterar scrollLeft aqui.
+    }
+
+    faixa.addEventListener('touchstart', iniciarToque, { passive: true });
+    faixa.addEventListener('touchmove', moverToque, { passive: true });
+    faixa.addEventListener('touchend', terminarToque, { passive: true });
+    faixa.addEventListener('touchcancel', terminarToque, { passive: true });
+
+    /* ARRASTO COM RATO / CANETA */
     function terminarPointer(evento, cancelado) {
         if (!pointerAtivo || evento.pointerId !== pointerId) return;
 
@@ -534,7 +603,8 @@
         animarGaleriaPara(destino, 380);
     }
 
-    faixa.addEventListener('pointerdown', function (evento) {
+    function iniciarPointer(evento) {
+        if (evento.pointerType === 'touch') return;
         if (pointerAtivo || evento.isPrimary === false) return;
         if (evento.pointerType === 'mouse' && evento.button !== 0) return;
 
@@ -550,9 +620,10 @@
         pointerUltimoX = evento.clientX;
         pointerInicioScroll = faixa.scrollLeft;
         pointerInicioTempo = window.performance.now();
-    });
+    }
 
-    faixa.addEventListener('pointermove', function (evento) {
+    function moverPointer(evento) {
+        if (evento.pointerType === 'touch') return;
         if (!pointerAtivo || evento.pointerId !== pointerId) return;
 
         pointerUltimoX = evento.clientX;
@@ -584,11 +655,12 @@
 
         if (evento.cancelable) evento.preventDefault();
         faixa.scrollLeft = pointerInicioScroll - deltaX;
-    });
+    }
 
     function aoTerminarPointer(evento) {
-        // A imagem perde a captura implícita quando a faixa assume o swipe.
-        // Esse evento sobe até à faixa, mas não significa que o gesto terminou.
+        if (evento.pointerType === 'touch') return;
+
+        // A perda de captura num descendente não termina o arrasto da faixa.
         if (evento.type === 'lostpointercapture' && evento.target !== faixa) {
             return;
         }
@@ -596,13 +668,16 @@
         terminarPointer(evento, evento.type !== 'pointerup');
     }
 
+    faixa.addEventListener('pointerdown', iniciarPointer);
+    faixa.addEventListener('pointermove', moverPointer);
+
     // Também termina se o rato sair da faixa ou a captura for interrompida.
     window.addEventListener('pointerup', aoTerminarPointer);
     window.addEventListener('pointercancel', aoTerminarPointer);
     faixa.addEventListener('lostpointercapture', aoTerminarPointer);
 
     /* SCROLL */
-    faixa.addEventListener('scroll', function () {
+    function aoScroll() {
         if (pointerAtivo || animacaoGaleriaFrame !== null) return;
         if (frameScroll !== null) return;
 
@@ -610,7 +685,9 @@
             frameScroll = null;
             atualizarUI(indiceMaisProximo());
         });
-    }, { passive: true });
+    }
+
+    faixa.addEventListener('scroll', aoScroll, { passive: true });
 
     /* INDICADORES */
     indicadores.forEach(function (indicador) {
@@ -657,7 +734,7 @@
             if (!lightboxAberto) return;
             if (evento.target.closest('.perfil-lightbox-media')) return;
             if (evento.target.closest('.perfil-lightbox-nav')) return;
-            if (evento.target.closest('.perfil-lightbox-fechar')) return;
+            if (evento.target.closest('.perfil-lightboxbox-fechar')) return;
 
             fecharLightbox();
         });
@@ -732,9 +809,14 @@
 
     /* RESIZE */
     function aoRedimensionar() {
-        cancelarAnimacaoGaleria();
-        faixa.classList.remove('a-arrastar');
-        faixa.scrollLeft = slides[indiceAtual].offsetLeft;
+        // A barra do Safari pode mudar a altura sem mudar a largura dos slides.
+        var largura = faixa.clientWidth;
+        if (largura > 0 && largura !== ultimaLargura) {
+            ultimaLargura = largura;
+            cancelarAnimacaoGaleria();
+            faixa.classList.remove('a-arrastar');
+            faixa.scrollLeft = slides[indiceAtual].offsetLeft;
+        }
 
         if (lightboxAberto) {
             atualizarLightboxFoto(indiceAtual);
@@ -751,6 +833,16 @@
 
     /* CLEANUP */
     function desativarPagina() {
+        faixa.removeEventListener('touchstart', iniciarToque);
+        faixa.removeEventListener('touchmove', moverToque);
+        faixa.removeEventListener('touchend', terminarToque);
+        faixa.removeEventListener('touchcancel', terminarToque);
+        faixa.removeEventListener('pointerdown', iniciarPointer);
+        faixa.removeEventListener('pointermove', moverPointer);
+        faixa.removeEventListener('scroll', aoScroll);
+        window.removeEventListener('resize', aoRedimensionar);
+        toqueAtivo = false;
+        toqueMoveu = false;
         window.removeEventListener('pointerup', aoTerminarPointer);
         window.removeEventListener('pointercancel', aoTerminarPointer);
         faixa.removeEventListener('lostpointercapture', aoTerminarPointer);
