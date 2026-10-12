@@ -12,7 +12,17 @@ function verifyBattery(bool $condition,string $name):void {
     if (!$condition) throw new RuntimeException('FAIL: '.$name);
     echo 'PASS: '.$name.PHP_EOL;
 }
-$db->exec('CREATE TEMPORARY TABLE localizacao_membro LIKE localizacao_membro');
+$db->exec(
+    'CREATE TEMPORARY TABLE margot_battery_schema LIKE localizacao_membro'
+);
+
+try {
+    $db->exec(
+        'CREATE TEMPORARY TABLE localizacao_membro LIKE margot_battery_schema'
+    );
+} finally {
+    $db->exec('DROP TEMPORARY TABLE margot_battery_schema');
+}
 try {
     $location=new App\CMS\Location($db);
     $id='00000000-0000-4000-8000-000000000001';
