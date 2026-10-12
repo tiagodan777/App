@@ -161,66 +161,9 @@
         }
     }
 
-    function ajusteRegresso(foto) {
-        const cos = Math.cos(globalRotation);
-        const sin = Math.sin(globalRotation);
-        const zoomFoto = scale < 1
-            ? Math.max(MIN_FOTO_SCALE, 1 + (scale - 1) * 0.8)
-            : 1 + (scale - 1) * FOTO_ZOOM_INTENSIDADE;
-        const largura = foto.largura || 60;
-        const altura = foto.altura || 60;
-        const extraX = largura * (zoomFoto - 1) / 2;
-        const extraY = altura * (zoomFoto - 1) / 2;
-        let minX = SAFE_LEFT + extraX;
-        let maxX = window.innerWidth - SAFE_RIGHT - largura - extraX;
-        let minY = SAFE_TOP + extraY;
-        let maxY = window.innerHeight - SAFE_BOTTOM - altura - extraY;
-        if (maxX < minX) minX = maxX = (minX + maxX) / 2;
-        if (maxY < minY) minY = maxY = (minY + maxY) / 2;
-        const x = (foto.left * cos - foto.top * sin) * scale + panX;
-        const y = (foto.left * sin + foto.top * cos) * scale + panY;
-        const dx = Math.max(minX, Math.min(x, maxX)) - x;
-        const dy = Math.max(minY, Math.min(y, maxY)) - y;
-        return {
-            x: (dx * cos + dy * sin) / scale,
-            y: (-dx * sin + dy * cos) / scale
-        };
-    }
-
-    function concluirRegresso(foto) {
-        const ajuste = ajusteRegresso(foto);
-        foto.left += ajuste.x;
-        foto.top += ajuste.y;
-    }
-
     function iniciarInerciaFoto(foto, vx, vy) {
         fotoEmInercia = foto;
-        foto.largura = foto.elemento.offsetWidth || 60;
-        foto.altura = foto.elemento.offsetHeight || 60;
-        let aRegressar = false;
         function animar() {
-            if (!foto.elemento.isConnected) {
-                fotoEmInercia = null;
-                inerciaAnimId = null;
-                return;
-            }
-            const ajuste = ajusteRegresso(foto);
-            if (aRegressar || Math.hypot(ajuste.x, ajuste.y) * scale > 0.001) {
-                aRegressar = true;
-                if (Math.hypot(ajuste.x, ajuste.y) * scale < 0.1) {
-                    concluirRegresso(foto);
-                    aplicarTransform();
-                    memorizarPosicaoFoto(foto);
-                    fotoEmInercia = null;
-                    inerciaAnimId = null;
-                    return;
-                }
-                foto.left += ajuste.x * 0.18;
-                foto.top += ajuste.y * 0.18;
-                aplicarTransform();
-                inerciaAnimId = requestAnimationFrame(animar);
-                return;
-            }
             vx *= 0.92;
             vy *= 0.92;
             if (Math.abs(vx) < 0.1 && Math.abs(vy) < 0.1) {
@@ -297,8 +240,6 @@
         cancelAnimationFrame(inerciaAnimId);
         cancelAnimationFrame(mapInerciaAnimId);
         if (fotoEmInercia) {
-            concluirRegresso(fotoEmInercia);
-            aplicarTransform();
             memorizarPosicaoFoto(fotoEmInercia);
             fotoEmInercia = null;
         }
@@ -417,23 +358,17 @@
         }
         if (Object.keys(ativos).length === 0) {
             if (fotoEmArrasto) {
-                fotoEmArrasto.largura = fotoEmArrasto.elemento.offsetWidth || 60;
-                fotoEmArrasto.altura = fotoEmArrasto.elemento.offsetHeight || 60;
-                const ajuste = ajusteRegresso(fotoEmArrasto);
-                if (Math.abs(velX) > 0.5 || Math.abs(velY) > 0.5 ||
-                    Math.hypot(ajuste.x, ajuste.y) * scale > 0.001) {
+                if (Math.abs(velX) > 0.5 || Math.abs(velY) > 0.5) {
                     iniciarInerciaFoto(fotoEmArrasto, velX, velY);
                 } else {
                     memorizarPosicaoFoto(fotoEmArrasto);
                 }
-            } else {
-                iniciarInerciaMapa();
             }
+            iniciarInerciaMapa();
             fotoEmArrasto = null;
         }
         atualizarReferencias();
     }
-
     document.addEventListener('touchstart', touchStart, { passive: false });
     document.addEventListener('touchmove', touchMove, { passive: false });
     document.addEventListener('touchend', touchEnd, { passive: false });
@@ -443,7 +378,6 @@
     function desativarPagina() {
         cancelAnimationFrame(inerciaAnimId);
         cancelAnimationFrame(mapInerciaAnimId);
-        if (fotoEmInercia) concluirRegresso(fotoEmInercia);
         fotosCache.forEach(memorizarPosicaoFoto);
         fotoEmInercia = null;
         document.removeEventListener('touchstart', touchStart);
@@ -460,6 +394,5 @@
         ativos = {};
         fotosCache = [];
     }
-
     document.addEventListener('margot:page-leave', desativarPagina);
 })();
