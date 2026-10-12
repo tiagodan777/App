@@ -151,7 +151,6 @@
 
         if (prefereMovimentoReduzido() || Math.abs(distancia) < 1) {
             faixa.scrollLeft = destino;
-            faixa.classList.remove('a-arrastar');
             atualizarUI(indice);
             return;
         }
@@ -489,7 +488,7 @@
 
     /* SWIPE / DRAG PRINCIPAL */
     function terminarPointer(evento, cancelado) {
-        if (!pointerAtivo || evento.pointerId !== pointerId) return;
+        if (!pointerAtivo) return;
 
         var largura = faixa.clientWidth || 1;
         var distancia = pointerUltimoX - pointerInicioX;
@@ -497,10 +496,8 @@
         var velocidade = distancia / tempo;
         var indiceInicio = limitarIndice(Math.round(pointerInicioScroll / largura));
         var destino = indiceMaisProximo();
-        var horizontal = pointerDirecao === 'horizontal';
-        var captura = pointerId;
 
-        if (!cancelado && horizontal) {
+        if (!cancelado && pointerDirecao === 'horizontal') {
             var limite = largura * 0.16;
 
             if (distancia < -limite || velocidade < -0.42) {
@@ -512,39 +509,37 @@
             }
         }
 
-        if (pointerMoveu || horizontal || cancelado) {
-            ignorarClickAte = window.performance.now() + 350;
+        if (pointerDirecao === 'horizontal') {
+            ignorarClickAte = window.performance.now() + 250;
+            animarGaleriaPara(destino, 380);
         }
 
-        // Limpa antes de libertar a captura: lostpointercapture pode chegar aqui.
+        if (
+            pointerId !== null &&
+            faixa.hasPointerCapture &&
+            faixa.hasPointerCapture(pointerId)
+        ) {
+            try {
+                faixa.releasePointerCapture(pointerId);
+            } catch (erro) {
+                /* sem ação */
+            }
+        }
+
         pointerAtivo = false;
         pointerId = null;
         pointerDirecao = null;
         pointerMoveu = false;
-
-        if (faixa.hasPointerCapture && faixa.hasPointerCapture(captura)) {
-            try {
-                faixa.releasePointerCapture(captura);
-            } catch (erro) {
-                /* A captura pode já ter sido libertada pelo navegador. */
-            }
-        }
-
-        // Mantém o snap suspenso até acabar a animação, inclusive após cancelamento.
-        animarGaleriaPara(destino, 380);
     }
 
     faixa.addEventListener('pointerdown', function (evento) {
-        if (pointerAtivo || evento.isPrimary === false) return;
         if (evento.pointerType === 'mouse' && evento.button !== 0) return;
 
-        var interrompeuAnimacao = animacaoGaleriaFrame !== null;
         cancelarAnimacaoGaleria();
-        faixa.classList.add('a-arrastar');
         pointerAtivo = true;
         pointerId = evento.pointerId;
         pointerDirecao = null;
-        pointerMoveu = interrompeuAnimacao;
+        pointerMoveu = false;
         pointerInicioX = evento.clientX;
         pointerInicioY = evento.clientY;
         pointerUltimoX = evento.clientX;
@@ -553,7 +548,7 @@
     });
 
     faixa.addEventListener('pointermove', function (evento) {
-        if (!pointerAtivo || evento.pointerId !== pointerId) return;
+        if (!pointerAtivo) return;
 
         pointerUltimoX = evento.clientX;
 
@@ -562,38 +557,39 @@
         var absX = Math.abs(deltaX);
         var absY = Math.abs(deltaY);
 
-        if (absX > 6 || absY > 6) pointerMoveu = true;
-
-        if (pointerDirecao === null && pointerMoveu) {
-            if (absX > 6 && absX > absY * 1.15) {
+        if (pointerDirecao === null && (absX > 6 || absY > 6)) {
+            if (absX > absY * 1.15) {
                 pointerDirecao = 'horizontal';
+                faixa.classList.add('a-arrastar');
 
                 if (faixa.setPointerCapture) {
                     try {
-                        faixa.setPointerCapture(pointerId);
+                        faixa.setPointerCapture(evento.pointerId);
                     } catch (erro) {
-                        /* O gesto continua enquanto estiver sobre a faixa. */
+                        /* sem ação */
                     }
                 }
-            } else if (absY > 6 && absY > absX * 1.15) {
+            } else {
                 pointerDirecao = 'vertical';
             }
         }
 
         if (pointerDirecao !== 'horizontal') return;
 
-        if (evento.cancelable) evento.preventDefault();
+        evento.preventDefault();
+        pointerMoveu = true;
         faixa.scrollLeft = pointerInicioScroll - deltaX;
     });
 
-    function aoTerminarPointer(evento) {
-        terminarPointer(evento, evento.type !== 'pointerup');
-    }
+    faixa.addEventListener('pointerup', function (evento) {
+        faixa.classList.remove('a-arrastar');
+        terminarPointer(evento, false);
+    });
 
-    // Também termina se o rato sair da faixa ou a captura for interrompida.
-    window.addEventListener('pointerup', aoTerminarPointer);
-    window.addEventListener('pointercancel', aoTerminarPointer);
-    faixa.addEventListener('lostpointercapture', aoTerminarPointer);
+    faixa.addEventListener('pointercancel', function (evento) {
+        faixa.classList.remove('a-arrastar');
+        terminarPointer(evento, true);
+    });
 
     /* SCROLL */
     faixa.addEventListener('scroll', function () {
@@ -727,7 +723,6 @@
     /* RESIZE */
     function aoRedimensionar() {
         cancelarAnimacaoGaleria();
-        faixa.classList.remove('a-arrastar');
         faixa.scrollLeft = slides[indiceAtual].offsetLeft;
 
         if (lightboxAberto) {
@@ -745,12 +740,6 @@
 
     /* CLEANUP */
     function desativarPagina() {
-        window.removeEventListener('pointerup', aoTerminarPointer);
-        window.removeEventListener('pointercancel', aoTerminarPointer);
-        faixa.removeEventListener('lostpointercapture', aoTerminarPointer);
-        pointerAtivo = false;
-        pointerId = null;
-        faixa.classList.remove('a-arrastar');
         photoGestures.destroy();
         cancelarAnimacaoGaleria();
         cancelarAnimacaoPath();
