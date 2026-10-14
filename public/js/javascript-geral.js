@@ -12,6 +12,55 @@
     var controlador = null;
     var urlRenderizada = window.location.href;
     var paginas = new Map();
+    var transicaoAtual = null;
+    var animacaoAtual = null;
+
+    function fecharTecladoDaPagina() {
+        var campo = document.activeElement;
+        if (!campo?.matches('input, textarea, [contenteditable]')) return;
+        campo.blur();
+        var cap = window.Capacitor;
+        if (!cap?.isNativePlatform?.()) return;
+        var teclado = cap.Plugins?.Keyboard;
+        if (!teclado && cap.isPluginAvailable?.('Keyboard')) {
+            teclado = cap.registerPlugin?.('Keyboard');
+        }
+        try { Promise.resolve(teclado?.hide?.()).catch(function () {}); }
+        catch (_) { /* O blur continua a funcionar sem o plugin. */ }
+    }
+
+    async function animarTroca(renderizar, pagina, direcao) {
+        var reduzir = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (reduzir || document.hidden) {
+            await renderizar();
+            return;
+        }
+        var raiz = document.documentElement;
+        raiz.setAttribute('data-margot-navigation', direcao < 0 ? 'back' : 'forward');
+        try {
+            if (typeof document.startViewTransition === 'function' && !window.MargotMenuMotion?.isAnimating()) {
+                // O browser guarda imagens das páginas; nunca duplicamos o DOM nem os seus IDs.
+                transicaoAtual = document.startViewTransition(renderizar);
+                transicaoAtual.ready.catch(function () {});
+                var terminada = transicaoAtual.finished.catch(function () {});
+                await transicaoAtual.updateCallbackDone;
+                if (navegacaoPendente) transicaoAtual.skipTransition();
+                await terminada;
+            } else {
+                await renderizar();
+                if (navegacaoPendente) return;
+                animacaoAtual = pagina.animate?.([
+                    { transform: 'translateX(' + (direcao < 0 ? '-100%' : '100%') + ')' },
+                    { transform: 'translateX(0)' }
+                ], { duration: 240, easing: 'cubic-bezier(.22,.72,.2,1)' });
+                await animacaoAtual?.finished.catch(function () {});
+            }
+        } finally {
+            transicaoAtual = null;
+            animacaoAtual = null;
+            raiz.removeAttribute('data-margot-navigation');
+        }
+    }
     var versaoDados = 0;
     var buscar = window.fetch.bind(window);
 
@@ -503,6 +552,8 @@
         };
 
         atualizarMenu(navegacaoPendente.url);
+        transicaoAtual?.skipTransition();
+        animacaoAtual?.cancel();
 
         if ((faseNavegacao === 'fetch' || faseNavegacao === 'prepare') && controlador)
             controlador.abort();
@@ -528,6 +579,7 @@
             return;
         }
 
+        fecharTecladoDaPagina();
         aNavegar = true;
         faseNavegacao = 'fetch';
         urlEmNavegacao = url;
@@ -576,44 +628,45 @@
             var scripts = retirarScripts(paginaNova);
             faseNavegacao = 'render';
 
-            guardarPosicaoAba(paginaAtual);
-            document.dispatchEvent(new CustomEvent('margot:page-leave'));
-
-            paginaNova.style.visibility = 'hidden';
-            paginaNova.style.pointerEvents = 'none';
-
-            paginaAtual.replaceWith(paginaNova);
-            estilos.aplicar();
-            estilos = null;
-
-            window.scrollTo(0, 0);
-            document.title = documentoNovo.title || document.title;
-            urlRenderizada = resposta.url;
-
-            if (!navegacaoPendente) {
-                if (opcoes.historico === 'push') {
-                    posicaoHistorico += 1;
-                    history.pushState({ margotPosition: posicaoHistorico }, '', resposta.url);
-                } else if (opcoes.historico === 'replace') {
-                    history.replaceState({ margotPosition: posicaoHistorico }, '', resposta.url);
-                }
+            var direcao = opcoes.direcao === -1 ? -1 : 1;
+            if (!opcoes.direcao && opcoes.aba) {
+                var de = indiceMenu(urlRenderizada);
+                var para = indiceMenu(resposta.url);
+                if (de !== null && para !== null && para < de) direcao = -1;
             }
+            await animarTroca(async function () {
+                guardarPosicaoAba(paginaAtual);
+                document.dispatchEvent(new CustomEvent('margot:page-leave'));
 
-            // Os scripts veem o URL de destino e um único DOM, mesmo com outro toque pendente.
-            await executarScripts(scripts);
-            reporPosicaoAba(paginaNova, resposta.url);
-            document.dispatchEvent(new CustomEvent('margot:page-ready'));
+                paginaNova.style.visibility = 'hidden';
+                paginaNova.style.pointerEvents = 'none';
 
-            await new Promise(function (resolver) {
-                window.requestAnimationFrame(resolver);
-            });
+                paginaAtual.replaceWith(paginaNova);
+                estilos.aplicar();
+                estilos = null;
 
-            paginaNova.style.removeProperty('visibility');
-            paginaNova.style.removeProperty('pointer-events');
+                window.scrollTo(0, 0);
+                document.title = documentoNovo.title || document.title;
+                urlRenderizada = resposta.url;
 
-            // A página já está preparada. Evita criar uma camada translúcida
-            // do ecrã inteiro e bloquear novos toques durante esse efeito.
-            // As animações dos componentes mantêm-se nos respetivos scripts.
+                if (!navegacaoPendente) {
+                    if (opcoes.historico === 'push') {
+                        posicaoHistorico += 1;
+                        history.pushState({ margotPosition: posicaoHistorico }, '', resposta.url);
+                    } else if (opcoes.historico === 'replace') {
+                        history.replaceState({ margotPosition: posicaoHistorico }, '', resposta.url);
+                    }
+                }
+
+                // Os scripts veem o URL de destino e um único DOM, mesmo com outro toque pendente.
+                await executarScripts(scripts);
+                reporPosicaoAba(paginaNova, resposta.url);
+                document.dispatchEvent(new CustomEvent('margot:page-ready'));
+
+                paginaNova.style.removeProperty('visibility');
+                paginaNova.style.removeProperty('pointer-events');
+
+            }, paginaNova, direcao);
 
             if (!navegacaoPendente) {
                 atualizarMenu(resposta.url);
@@ -649,6 +702,7 @@
     }
 
     function voltarPagina(urlAlternativo) {
+        urlAlternativo = urlAlternativo || urlAlternativoParaVoltar();
         if (aNavegar) {
             colocarNavegacaoPendente(urlAlternativo, {
                 historico: 'replace',
@@ -678,7 +732,11 @@
         }
 
         return Boolean(
-            elemento.closest('#perfil-galeria, [data-margot-no-back-swipe], dialog[open]')
+            document.querySelector('dialog[open]') ||
+            document.body.matches('.perfil-modal-aberta, .heys-abertos, .margot-mini-menu-aberto') ||
+            elemento.closest('#perfil-galeria, .perfil-lightbox, .mini-menu, .chat-balao, ' +
+                'input, textarea, select, button, a, audio, video, [contenteditable], ' +
+                '[data-margot-no-back-swipe]')
         );
     }
 
@@ -769,7 +827,7 @@
                 return;
             }
 
-            if (vertical > horizontal) {
+            if (vertical >= horizontal) {
                 limparSwipeBack();
                 return;
             }
@@ -913,17 +971,8 @@
                 ? evento.state.margotPosition
                 : posicaoHistorico - 1;
 
-        var indiceAtual = indiceMenu(urlRenderizada);
-        var indiceSeguinte = indiceMenu(window.location.href);
-
-        var direcao =
-            indiceAtual !== null && indiceSeguinte !== null && indiceAtual !== indiceSeguinte
-                ? indiceSeguinte < indiceAtual
-                    ? -1
-                    : 1
-                : proximaPosicao < posicaoHistorico
-                  ? -1
-                  : 1;
+        // O histórico determina voltar/avançar, mesmo entre abas fora da sua ordem visual.
+        var direcao = proximaPosicao < posicaoHistorico ? -1 : 1;
 
         posicaoHistorico = proximaPosicao;
         trocarPagina(window.location.href, { historico: 'pop', direcao: direcao });
@@ -952,6 +1001,10 @@
     atualizarMenu(window.location.href);
 
     window.MargotNavigation = {
+        finishAnimation: function () {
+            transicaoAtual?.skipTransition();
+            animacaoAtual?.cancel();
+        },
         navigate: trocarPagina,
         back: voltarPagina,
         prefetch: preAquecerPagina

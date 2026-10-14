@@ -152,3 +152,28 @@ body .mini-menu .mini-compose-busy .chat-media-remover {
         max-height: 90px;
     }
 }
+
+/* O texto pendente usa o botão existente, sem criar outra linha ou mover o menu. */
+body .mini-menu .mini-compose-text-pending { position: relative; opacity: .7; }
+body .mini-menu .mini-compose-text-pending > * { visibility: hidden; }
+body .mini-menu .mini-compose-text-pending::after {
+    content: '';
+    position: absolute;
+    inset: 11px;
+    border: 2px solid #ffffff66;
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: mini-media-enviar 800ms linear infinite;
+}
+body .mini-menu .mini-compose-recovery {
+    border: 0;
+    background: transparent;
+    color: var(--text, #17171b);
+    font: inherit;
+    font-size: 13px;
+    padding: 8px;
+    cursor: pointer;
+}
+@media (prefers-reduced-motion: reduce) {
+    body .mini-menu .mini-compose-text-pending::after { animation: none; }
+}

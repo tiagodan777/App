@@ -488,6 +488,10 @@
             return;
         }
 
+        // O click do perfil fecha o teclado ao navegar. Não consumir o primeiro toque
+        // nem mover a fotografia entre pointerdown e pointerup.
+        if (evento.target.closest('.mini-menu-perfil')) return;
+
         evento.preventDefault();
         evento.stopPropagation();
 
@@ -684,7 +688,7 @@
         var $form = $(this);
         var $botao = $form.find('[type="submit"]');
 
-        if (compose.recording) return;
+        if (compose.recording || compose.pending) return;
 
         var dados = new FormData(this);
         compose.fill(dados);
@@ -709,10 +713,17 @@
             return;
         }
 
+        var soTexto = !(ficheiro instanceof File && ficheiro.size);
+        var envioTexto = soTexto ? compose.beginText(id, String(dados.get('mensagem') || '')) : null;
+        if (soTexto && !envioTexto) return;
         dados.set('action', 'send');
         aEnviarMensagem = true;
-        compose.setBusy(true);
+        if (!soTexto) compose.setBusy(true);
         $botao.prop('disabled', true).attr('aria-label', 'A enviar…');
+        var controladorEnvio = soTexto ? new AbortController() : null;
+        var prazoEnvio = soTexto ? window.setTimeout(function () {
+            controladorEnvio.abort();
+        }, 30000) : null;
 
         try {
             var resposta = await fetch(
@@ -720,7 +731,9 @@
                 {
                     method: 'POST',
                     body: dados,
-                    credentials: 'same-origin'
+                    credentials: 'same-origin',
+                    signal: controladorEnvio?.signal,
+                    headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
                 }
             );
 
@@ -730,24 +743,30 @@
                 throw new Error(resultado.message || 'Não foi possível enviar a mensagem.');
             }
 
-            compose.sent(id, String(dados.get('mensagem') || ''), ficheiro);
-            aviso('Mensagem enviada.', 'sucesso');
+            if (soTexto) compose.finishText(envioTexto, true);
+            else compose.sent(id, String(dados.get('mensagem') || ''), ficheiro);
+            if (paginaAtiva && !soTexto) aviso('Mensagem enviada.', 'sucesso');
 
             if (window.AppWebSocket && window.AppWebSocket.isConnected()) {
-                window.AppWebSocket.send({
-                    type: 'chat_publish',
-                    message_id: resultado.message.id
-                });
+                try {
+                    window.AppWebSocket.send({
+                        type: 'chat_publish',
+                        message_id: resultado.message.id
+                    });
+                } catch (_) {
+                    // O servidor já confirmou a gravação; uma falha do socket não a desfaz.
+                }
             }
         } catch (erro) {
-            aviso(erro.message, 'erro');
+            if (soTexto) compose.finishText(envioTexto, false);
+            aviso(soTexto
+                ? 'Envio não confirmado. O texto foi guardado. Verifica a conversa antes de voltar a enviar.'
+                : erro.message, 'erro');
         } finally {
+            if (prazoEnvio !== null) window.clearTimeout(prazoEnvio);
             aEnviarMensagem = false;
+            // state() decide o botão conforme o destinatário atual e eventuais falhas.
             compose.setBusy(false);
-
-            if (paginaAtiva) {
-                $botao.prop('disabled', false).attr('aria-label', 'Enviar mensagem');
-            }
         }
     });
 

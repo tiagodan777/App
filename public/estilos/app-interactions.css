@@ -83,3 +83,84 @@ body a {
         transition: none;
     }
 }
+
+/* Imagens de transição, mantendo um único DOM ativo e o menu fixo. */
+[data-margot-pagina] { view-transition-name: margot-page; }
+html[data-margot-navigation] [data-margot-pagina] { pointer-events: none; }
+html[data-margot-navigation]::view-transition { pointer-events: none; }
+html[data-margot-navigation]::view-transition-group(root),
+html[data-margot-navigation]::view-transition-old(root),
+html[data-margot-navigation]::view-transition-new(root) { animation: none; }
+html[data-margot-navigation]::view-transition-old(root) { display: none; }
+html[data-margot-navigation]::view-transition-group(margot-page) { animation: none; }
+html[data-margot-navigation]::view-transition-image-pair(margot-page) { isolation: isolate; }
+html[data-margot-navigation]::view-transition-old(margot-page),
+html[data-margot-navigation]::view-transition-new(margot-page) {
+    mix-blend-mode: normal;
+    animation-duration: 240ms;
+    animation-timing-function: cubic-bezier(.22,.72,.2,1);
+    animation-fill-mode: both;
+    height: 100%;
+}
+html[data-margot-navigation='forward']::view-transition-old(margot-page) { animation-name: margot-out-left; }
+html[data-margot-navigation='forward']::view-transition-new(margot-page) { animation-name: margot-in-right; }
+html[data-margot-navigation='back']::view-transition-old(margot-page) { animation-name: margot-out-right; }
+html[data-margot-navigation='back']::view-transition-new(margot-page) { animation-name: margot-in-left; }
+@keyframes margot-in-right { from { transform: translateX(100%); } to { transform: translateX(0); } }
+@keyframes margot-out-left { from { transform: translateX(0); } to { transform: translateX(-100%); } }
+@keyframes margot-in-left { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+@keyframes margot-out-right { from { transform: translateX(0); } to { transform: translateX(100%); } }
+
+/* Só a fotografia responde ao toque; não há retângulo de realce do link. */
+body .mini-menu > header > .mini-menu-perfil {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    background: transparent;
+}
+body .mini-menu-perfil > img { transition: transform 130ms ease-out; }
+body .mini-menu-perfil:active > img { transform: scale(.96); }
+body .mini-menu-perfil:focus:not(:focus-visible) { outline: none; }
+body .mini-menu-perfil:focus-visible > img { outline: 2px solid #7657ff; outline-offset: 4px; }
+@media (prefers-reduced-motion: reduce) {
+    body .mini-menu-perfil > img { transition: none; }
+    body .mini-menu-perfil:active > img { transform: none; }
+}
+
+/* A barra mantém a posição e as dimensões de toque; só o seu desenho anima. */
+#menuPrincipal > nav > ul[data-menu-motion] {
+    position: relative;
+    isolation: isolate;
+    transform-origin: center;
+}
+#menuPrincipal > nav > ul[data-menu-motion] > li {
+    position: relative;
+    z-index: 1;
+}
+#menuPrincipal > nav > ul[data-menu-motion]::before {
+    content: '';
+    position: absolute;
+    pointer-events: none;
+    left: 0;
+    top: 50%;
+    width: var(--menu-choice-width, 0px);
+    height: var(--menu-choice-height, 40px);
+    border-radius: 35px;
+    background: rgba(255,255,255,.5);
+    transform: translate(var(--menu-choice-x, 0px), -50%);
+    opacity: 0;
+    z-index: 0;
+}
+#menuPrincipal > nav > ul[data-menu-ready='true']::before {
+    opacity: 1;
+    transition: transform 340ms cubic-bezier(.22,1.18,.32,1), width 240ms ease;
+}
+#menuPrincipal > nav > ul[data-menu-ready='true'] > li > a.active { background: transparent; }
+#menuPrincipal > nav > ul[data-menu-motion] img,
+#menuPrincipal > nav > ul[data-menu-motion] svg { transform-origin: center; }
+#menuPrincipal [data-menu-motion] #alternar-invisivel:active { transform: none; }
+@media (prefers-color-scheme: dark) {
+    #menuPrincipal > nav > ul[data-menu-motion]::before { background: #ffffff16; }
+}
+@media (prefers-reduced-motion: reduce) {
+    #menuPrincipal > nav > ul[data-menu-ready='true']::before { transition: none; }
+}

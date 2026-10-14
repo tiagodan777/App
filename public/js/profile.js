@@ -734,7 +734,7 @@
             if (!lightboxAberto) return;
             if (evento.target.closest('.perfil-lightbox-media')) return;
             if (evento.target.closest('.perfil-lightbox-nav')) return;
-            if (evento.target.closest('.perfil-lightboxbox-fechar')) return;
+            if (evento.target.closest('.perfil-lightbox-fechar')) return;
 
             fecharLightbox();
         });

@@ -64,6 +64,15 @@ window.MargotMiniCompose = function (form, { onError, workletUrl }) {
 
     const recording = controls.querySelector('.chat-recording');
     const drafts = (window.MargotMiniDrafts ||= new Map());
+    const owner = String(window.membroId || '');
+    const deliveries = (window.MargotMiniDeliveries ||= new Map());
+    const key = (id) => owner + ':' + id;
+    const recovery = document.createElement('button');
+    recovery.type = 'button';
+    recovery.className = 'mini-compose-recovery';
+    recovery.hidden = true;
+    recovery.textContent = 'Recuperar texto do envio não confirmado';
+    form.append(recovery);
 
     let file = null,
         objectURL = null,
@@ -88,13 +97,16 @@ window.MargotMiniCompose = function (form, { onError, workletUrl }) {
 
     function state() {
         if (disposed) return;
-        const locked = busy || preparing;
+        const delivery = deliveries.get(key(recipient));
+        const pending = delivery?.state === 'pending';
+        const failed = delivery?.state === 'failed';
+        const locked = busy || preparing || pending || failed;
         const active = recorder.state !== 'idle';
 
         recording.hidden = !active;
         input.hidden = active;
         microphone.hidden = active || Boolean(file || input.value.trim());
-        submit.hidden = active || !Boolean(file || input.value.trim());
+        submit.hidden = active || !Boolean(file || input.value.trim() || pending);
 
         controls.querySelector('[data-camera-open]').hidden = active;
         form.classList.toggle('mini-compose-recording', active);
@@ -102,7 +114,11 @@ window.MargotMiniCompose = function (form, { onError, workletUrl }) {
         submit.disabled = locked;
         controls.querySelector('[data-camera-open]').disabled = locked;
         microphone.disabled = locked;
-        input.readOnly = locked;
+        // Um envio de texto não altera o foco nem impede escrever a próxima mensagem.
+        input.readOnly = busy || preparing;
+        submit.classList.toggle('mini-compose-text-pending', pending);
+        submit.setAttribute('aria-label', pending ? 'A enviar mensagem' : 'Enviar mensagem');
+        recovery.hidden = !failed;
         preview.querySelectorAll('button').forEach((button) => {
             button.disabled = locked;
         });
@@ -110,8 +126,8 @@ window.MargotMiniCompose = function (form, { onError, workletUrl }) {
         form.classList.toggle('mini-compose-has-media', Boolean(file));
         form.classList.toggle('mini-compose-busy', locked);
         form.classList.toggle('mini-compose-preparing', preparing);
-        status.hidden = !locked;
-        const label = locked ? statusLabel() : '';
+        status.hidden = !(busy || preparing);
+        const label = busy || preparing ? statusLabel() : '';
         if (statusText.textContent !== label) statusText.textContent = label;
     }
 
@@ -243,6 +259,22 @@ window.MargotMiniCompose = function (form, { onError, workletUrl }) {
         keepFocus = false;
     });
 
+    on(recovery, 'click', () => {
+        const delivery = deliveries.get(key(recipient));
+        if (delivery?.state !== 'failed') return;
+        // A recuperação é explícita: nunca reenviamos um pedido de resultado incerto.
+        input.value = delivery.text + (input.value ? '\n' + input.value : '');
+        deliveries.delete(key(recipient));
+        save();
+        state();
+        input.focus({ preventScroll: true });
+    });
+
+    on(window, 'margot:mini-delivery', (event) => {
+        if (event.detail.owner !== owner) return;
+        state();
+    });
+
     on(input, 'input', () => {
         state();
         save();
@@ -302,6 +334,32 @@ window.MargotMiniCompose = function (form, { onError, workletUrl }) {
         setBusy(value) {
             busy = value;
             state();
+        },
+
+        beginText(id, text) {
+            if (deliveries.has(key(id))) return null;
+            const delivery = { owner, id, text, state: 'pending' };
+            deliveries.set(key(id), delivery);
+            if (recipient === id && input.value === text) {
+                input.value = '';
+                save();
+            }
+            state();
+            return delivery;
+        },
+
+        finishText(delivery, success) {
+            if (!delivery || deliveries.get(key(delivery.id)) !== delivery) return;
+            if (success) deliveries.delete(key(delivery.id));
+            else delivery.state = 'failed';
+            // Também atualiza o mini menu se já tiver sido desmontado e reaberto.
+            window.dispatchEvent(new CustomEvent('margot:mini-delivery', {
+                detail: { owner, id: delivery.id }
+            }));
+        },
+
+        get pending() {
+            return deliveries.has(key(recipient));
         },
 
         sent(id = recipient, sentText = input.value, sentFile = file) {

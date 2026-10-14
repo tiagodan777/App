@@ -1,4 +1,4 @@
-/* O iOS controla a animação nativa; os ajustes web são agrupados por frame. */
+/* Um só responsável pela altura: guia nativa, teclado iOS ou visualViewport. */
 window.MargotChatViewport = function (page, list, content) {
     'use strict';
 
@@ -11,10 +11,10 @@ window.MargotChatViewport = function (page, list, content) {
     ).matches;
 
     function plugin(name) {
-        if (!native || !cap.isPluginAvailable?.(name)) return null;
-
-        return cap.registerPlugin?.(name)
-            || cap.Plugins?.[name]
+        if (!native) return null;
+        if (cap.isPluginAvailable && !cap.isPluginAvailable(name)) return null;
+        return cap.Plugins?.[name]
+            || cap.registerPlugin?.(name)
             || null;
     }
 
@@ -32,6 +32,13 @@ window.MargotChatViewport = function (page, list, content) {
     let followingNative = false;
     let configuringNative = Boolean(nativeLayout);
     let reveal = true;
+    let keyboardPhase = 'closed';
+    let rotating = false;
+    const composer = page.querySelector('.chat-form');
+    const duration = reduced ? 'none' : 'height 250ms cubic-bezier(.2,.7,.2,1)';
+    if (composer && !reduced) {
+        composer.style.transition = 'padding-bottom 250ms cubic-bezier(.2,.7,.2,1)';
+    }
 
     function on(target, name, handler, options) {
         target?.addEventListener(name, handler, options);
@@ -53,26 +60,30 @@ window.MargotChatViewport = function (page, list, content) {
         const visible = visual?.height || window.innerHeight;
         const top = visual?.offsetTop || 0;
 
-        page.style.transition = 'none';
-
         if (followingNative || configuringNative) {
+            page.style.transition = 'none';
             page.style.height = '100%';
             page.style.top = '0px';
+        } else if (ios && keyboard) {
+            // Keyboard.resize=none: não somar o visualViewport ao teclado nativo.
+            // WillShow/WillHide definem o destino; DidShow/DidHide não o recalculam.
+            page.style.transition = duration;
+            page.style.height = Math.max(0, fullHeight - keyboardHeight) + 'px';
+            page.style.top = top + 'px';
         } else {
-            if (!keyboardHeight) {
-                fullHeight = window.innerHeight;
-            }
-
-            const height = ios && keyboardHeight
+            page.style.transition = 'none';
+            if (keyboardPhase === 'closed') fullHeight = Math.max(window.innerHeight, visible);
+            // No Android com resize, visible já exclui o teclado. Em overlay,
+            // DidShow dá uma alternativa sem subtrair a mesma área duas vezes.
+            const height = keyboardPhase === 'open' && keyboardHeight && visible > fullHeight - 80
                 ? Math.min(visible, fullHeight - keyboardHeight)
                 : visible;
-
             page.style.height = Math.max(0, height) + 'px';
-            page.style.top = (ios ? 0 : top) + 'px';
+            page.style.top = top + 'px';
         }
 
         const open = keyboardHeight > 0
-            || (!followingNative && visible < fullHeight - 80);
+            || (!(ios && keyboard) && !followingNative && visible < fullHeight - 80);
 
         page.classList.toggle('chat-keyboard-open', open);
 
@@ -167,8 +178,21 @@ window.MargotChatViewport = function (page, list, content) {
 
     on(visual, 'resize', schedule);
     on(visual, 'scroll', schedule);
-    on(window, 'resize', schedule);
-    on(document, 'margot:page-ready', schedule);
+    on(window, 'resize', () => {
+        if (!followingNative && !configuringNative && (keyboardPhase === 'closed' || (rotating && ios))) {
+            fullHeight = window.innerHeight;
+        }
+        rotating = false;
+        schedule();
+    });
+    on(window, 'orientationchange', () => {
+        // Espera o resize com as dimensões da nova orientação.
+        rotating = true;
+    });
+    on(document, 'margot:page-ready', () => {
+        cancelAnimationFrame(frame);
+        update();
+    });
 
     if (keyboard) {
         if (ios) {
@@ -177,31 +201,21 @@ window.MargotChatViewport = function (page, list, content) {
             }).catch(() => {});
         }
 
-        for (const [name, show] of [
-            ['keyboardWillShow', true],
-            ['keyboardDidShow', true],
-            ['keyboardWillHide', false],
-            ['keyboardDidHide', false]
+        for (const [name, phase] of [
+            ['keyboardWillShow', 'opening'],
+            ['keyboardDidShow', 'open'],
+            ['keyboardWillHide', 'closing'],
+            ['keyboardDidHide', 'closed']
         ]) {
             Promise.resolve(
                 keyboard.addListener(name, (info) => {
                     if (!alive) return;
-
-                    if (
-                        show
-                        && !keyboardHeight
-                        && !followingNative
-                    ) {
-                        fullHeight = Math.max(
-                            fullHeight,
-                            window.innerHeight
-                        );
+                    const show = phase === 'opening' || phase === 'open';
+                    if (show && keyboardPhase === 'closed' && !followingNative && !configuringNative) {
+                        fullHeight = Math.max(fullHeight, window.innerHeight);
                     }
-
-                    keyboardHeight = show
-                        ? Number(info?.keyboardHeight) || 0
-                        : 0;
-
+                    keyboardPhase = phase;
+                    keyboardHeight = show ? Number(info?.keyboardHeight) || keyboardHeight : 0;
                     schedule();
                 })
             ).then((handle) => {

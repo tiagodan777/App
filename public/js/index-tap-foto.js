@@ -115,6 +115,7 @@
             if (!prepararFoto(elemento)) {
                 return;
             }
+            if (!aberto) window.MargotHaptics?.feedback('interaction');
             aberto = true;
             acoesAbertas = false;
             gestoMenuAtivo = false;
