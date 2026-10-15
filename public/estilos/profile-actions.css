@@ -163,3 +163,51 @@
     .perfil-hoje-balao { top: 20px; }
     #mini-menu-hoje { left: calc(50% + 68px); }
 }
+
+/* Alinhar mensagens, Hey e Conectar com a idade. */
+#perfil .perfil-identidade .perfil-identidade-rodape {
+    column-gap: 8px;
+    row-gap: 8px;
+}
+
+#perfil .perfil-identidade .perfil-identidade-rodape > .perfil-acoes {
+    justify-self: start;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+#perfil .perfil-mensagem {
+    box-sizing: border-box;
+    width: 44px;
+    height: 44px;
+    padding: 10px;
+    flex: 0 0 44px;
+}
+
+#perfil .perfil-mensagem svg {
+    width: 24px;
+    height: 24px;
+    stroke-width: 1.8;
+}
+
+#perfil .perfil-mensagem .perfil-mensagem-ponto {
+    fill: currentColor;
+    stroke: none;
+}
+
+@media (min-width: 410px) {
+    #perfil .perfil-identidade .perfil-identidade-rodape {
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    #perfil .perfil-identidade .perfil-identidade-rodape > .perfil-acoes {
+        grid-column: 2;
+        grid-row: 1;
+        justify-self: end;
+    }
+
+    #perfil .perfil-identidade .perfil-identidade-rodape > [data-daylies-profile] {
+        grid-column: 1 / -1;
+        grid-row: 2;
+    }
+}
