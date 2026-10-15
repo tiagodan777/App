@@ -29,9 +29,9 @@
         catch (_) { /* O blur continua a funcionar sem o plugin. */ }
     }
 
-    async function animarTroca(renderizar, pagina, direcao) {
+    async function animarTroca(renderizar, pagina, direcao, semAnimacao) {
         var reduzir = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        if (reduzir || document.hidden) {
+        if (semAnimacao === true || reduzir || document.hidden) {
             await renderizar();
             return;
         }
@@ -666,7 +666,7 @@
                 paginaNova.style.removeProperty('visibility');
                 paginaNova.style.removeProperty('pointer-events');
 
-            }, paginaNova, direcao);
+            }, paginaNova, direcao, opcoes.aba === true);
 
             if (!navegacaoPendente) {
                 atualizarMenu(resposta.url);
@@ -893,9 +893,9 @@
      * conversa -> chat, chat -> perfil, perfil -> definições
      * e outros links internos abrirem com um reload seco.
      *
-     * Agora qualquer <a> interno elegível passa pela mesma
-     * navegação animada. Links externos, downloads, novas
-     * janelas e âncoras da própria página continuam nativos.
+     * Os links internos usam este controlador. O menu principal
+     * troca de página sem animação; os restantes mantêm a direção.
+     * Links externos, downloads, novas janelas e âncoras continuam nativos.
      */
     document.addEventListener('click', function (evento) {
         var link = evento.target.closest('a[href]');
