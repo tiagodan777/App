@@ -605,7 +605,8 @@
 
             var state = await permissionState();
 
-            if (state !== 'granted') {
+                if (state !== 'granted') {
+                if (state === 'unknown') retryRegistration();
                 return false;
             }
 
