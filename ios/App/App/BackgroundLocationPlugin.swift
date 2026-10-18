@@ -1057,6 +1057,7 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
   private func setPresenceVisible(_ visible: Bool) {
     presenceVisible = visible
     UserDefaults.standard.set(visible, forKey: visibilityKey)
+    MargotLocationPushProbe.shared.sync(visible: visible, token: readToken())
   }
 
   private func readVisibility() -> Bool {
@@ -1227,6 +1228,7 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
   }
 
   private func deleteToken() {
+    MargotLocationPushProbe.shared.sync(visible: false, token: nil)
     SecItemDelete(keychainQuery() as CFDictionary)
   }
 }

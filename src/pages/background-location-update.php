@@ -63,6 +63,11 @@ if ($stateOnly && $appEmBackground === null) {
 }
 $localizacaoAtiva = normalizarBooleanoBackgroundLocation($dados['active'] ?? true, true);
 $visivel = normalizarBooleanoBackgroundLocation($dados['visible'] ?? true, true);
+$locationPushProbe = ($dados['location_push_probe'] ?? null) === 1;
+if ($locationPushProbe && ($stateOnly || !$localizacaoAtiva || !$visivel
+    || ($dados['location_policy_version'] ?? null) !== 1)) {
+    json_response(['success' => false, 'message' => 'Pedido da extensão inválido.'], 400);
+}
 $latitude = null;
 $longitude = null;
 $precisao = null;
@@ -98,7 +103,7 @@ try {
         }
     }
     $nearby = $cms->getNearbyPresenceNotification();
-    if ($appEmBackground !== null) {
+    if (!$locationPushProbe && $appEmBackground !== null) {
         try {
             $nearby->syncAppState($membroId, $appEmBackground);
         } catch (Throwable $erroEstado) {
@@ -121,10 +126,13 @@ try {
     } catch (Throwable $erroSnapshot) {
         error_log('[background-location-snapshot-before] ' . $erroSnapshot->getMessage());
     }
-    $accepted = $cms->getLocation()->saveBackground($membroId,$latitude,$longitude,$precisao,
-        $localizacaoAtiva,$visivel,$capturedAt);
+    $accepted = $locationPushProbe
+        ? $cms->getLocation()->saveLocationPush($membroId, $token, $dados)
+        : $cms->getLocation()->saveBackground($membroId,$latitude,$longitude,$precisao,
+            $localizacaoAtiva,$visivel,$capturedAt);
     if (!$accepted) {
-        json_response(['success'=>true,'accepted'=>false,'reason'=>'duplicate_or_older_location']);
+        json_response(['success'=>true,'accepted'=>false,'reason'=> $locationPushProbe
+            ? 'inactive_revoked_or_older_location' : 'duplicate_or_older_location']);
     }
     try {
         $posicaoNova = $nearby->locationSnapshot($membroId);
@@ -136,6 +144,9 @@ try {
          * atualização da posição falhou.
          */
         error_log('[background-location-nearby] ' . $erroProximidade->getMessage());
+    }
+    if ($locationPushProbe) {
+        json_response(['success' => true, 'accepted' => true, 'location_push_probe' => 1]);
     }
     json_response(['success' => true]);
 } catch (Throwable $erro) {

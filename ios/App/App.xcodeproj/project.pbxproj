@@ -25,6 +25,8 @@
 		C0DE00000000000000000003 /* ChatCameraPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE00000000000000000004 /* ChatCameraPlugin.swift */; };
 		F1FE3CDA308558A9007AD643 /* MargotLocationProbe.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F1FE3CD3308558A9007AD643 /* MargotLocationProbe.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		F1FE3CE130855C59007AD643 /* MargotLocationPushProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1FE3CE030855C59007AD643 /* MargotLocationPushProbe.swift */; };
+		F1FE3CE3308593AD007AD643 /* LocationPushAccess.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1FE3CE2308593AD007AD643 /* LocationPushAccess.swift */; };
+		F1FE3CE4308593AD007AD643 /* LocationPushAccess.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1FE3CE2308593AD007AD643 /* LocationPushAccess.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -75,6 +77,7 @@
 		C0DE00000000000000000004 /* ChatCameraPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatCameraPlugin.swift; sourceTree = "<group>"; };
 		F1FE3CD3308558A9007AD643 /* MargotLocationProbe.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MargotLocationProbe.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		F1FE3CE030855C59007AD643 /* MargotLocationPushProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MargotLocationPushProbe.swift; path = App/MargotLocationPushProbe.swift; sourceTree = "<group>"; };
+		F1FE3CE2308593AD007AD643 /* LocationPushAccess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = LocationPushAccess.swift; path = Shared/LocationPushAccess.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -114,6 +117,7 @@
 			isa = PBXGroup;
 			children = (
 				F1FE3CE030855C59007AD643 /* MargotLocationPushProbe.swift */,
+				F1FE3CE2308593AD007AD643 /* LocationPushAccess.swift */,
 				958DCC722DB07C7200EA8C5F /* debug.xcconfig */,
 				504EC3061FED79650016851F /* App */,
 				F1FE3CD4308558A9007AD643 /* MargotLocationProbe */,
@@ -279,6 +283,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
+				F1FE3CE3308593AD007AD643 /* LocationPushAccess.swift in Sources */,
 				C0DE00000000000000000001 /* LocationRelaunchCoordinator.swift in Sources */,
 				BA7710000000000000000001 /* LocationPolicy.swift in Sources */,
 				F1FE3CE130855C59007AD643 /* MargotLocationPushProbe.swift in Sources */,
@@ -293,6 +298,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F1FE3CE4308593AD007AD643 /* LocationPushAccess.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -522,6 +528,7 @@
 				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CODE_SIGN_ENTITLEMENTS = MargotLocationProbe/MargotLocationProbe.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = ZU7R8DGBUR;
@@ -563,6 +570,7 @@
 				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CODE_SIGN_ENTITLEMENTS = MargotLocationProbe/MargotLocationProbe.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = ZU7R8DGBUR;
