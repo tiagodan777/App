@@ -14,7 +14,7 @@ final class LanguageTemplateLoader implements LoaderInterface
     private const MINI_MEDIA_VERSION = '20261009-mini-media-1';
     private const FLUIDITY_VERSION = '20261009-fluidity-haptics-1';
     private const KEYBOARD_VERSION = '20261009-mini-keyboard-3';
-    private const STABILITY_VERSION = '20261008-launch-1';
+        private const STABILITY_VERSION = '20261018-push-recovery-1';
     private const VERSION = '20261007-reaction-push-1';
     private const CHAT_VERSION = '20261008-connection-haptic-2';
     private const STYLE_VERSION = '20261008-hey-name-motion-1';
