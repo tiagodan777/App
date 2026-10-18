@@ -73,7 +73,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     didFailToRegisterForRemoteNotificationsWithError error: Error
   ) {
     NotificationCenter.default.post(
-      name: .capacitorDidFailToRegisterRemoteNotifications,
+      name: .capacitorDidFailToRegisterForRemoteNotifications,
       object: error
     )
   }
