@@ -25,6 +25,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
     prepararRecuperacaoDeLocalizacao()
+    MargotLocationPushProbe.shared.start()
     return true
   }
 
