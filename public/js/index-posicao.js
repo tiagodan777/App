@@ -335,14 +335,7 @@
 
         if (
             mapaBloqueado() ||
-            !alvo ||
-            alvo.closest(
-                'dialog, .mini-menu, #menuPrincipal, ' +
-                '#estado-ligacao, #ativar-notificacoes, ' +
-                'button, input, textarea, select, a'
-            ) ||
-            !alvo.closest('#gridCanvas, #mapa-container, .foto')
-        ) {
+            !alvo || alvo.closest('dialog, .mini-menu, #menuPrincipal, #estado-ligacao, #ativar-notificacoes')) {
             limparGestosMapa();
             return;
         }
