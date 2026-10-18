@@ -602,3 +602,263 @@
 .perfil-identidade-rodape {
     flex-wrap: wrap;
 }
+
+/* Daylies: carregamento, leitor e acessos */
+
+#daylie-viewer .daylie-stage,
+#daylie-draft .daylie-draft-preview {
+    background:
+        radial-gradient(
+            ellipse at 25% 20%,
+            #393044,
+            #17151e 65%,
+            #111015
+        );
+}
+
+#daylie-viewer .daylie-stage img {
+    opacity: 0;
+    transition: opacity 140ms ease;
+}
+
+#daylie-viewer .daylie-stage img.daylie-media-ready {
+    opacity: 1;
+}
+
+/* Evita transformar a superfície nativa do vídeo. */
+#daylie-viewer .daylie-stage video {
+    transform: none;
+    animation: none;
+}
+
+#daylie-viewer .daylie-viewer-top,
+#daylie-viewer .daylie-viewer-bottom {
+    pointer-events: none;
+}
+
+#daylie-viewer .daylie-viewer-top button,
+#daylie-viewer .daylie-viewer-bottom button,
+#daylie-viewer .daylie-caption {
+    pointer-events: auto;
+}
+
+#daylie-viewer .daylie-viewer-bottom {
+    background: linear-gradient(transparent, #0007);
+}
+
+#daylie-viewer .daylie-viewer-bottom footer {
+    justify-content: flex-end;
+}
+
+#daylie-viewer button,
+#daylie-draft [data-draft-cancel],
+body .daylie-entry-refined {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-appearance: none;
+    appearance: none;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
+}
+
+#daylie-viewer button:focus:not(:focus-visible),
+#daylie-draft [data-draft-cancel]:focus:not(:focus-visible),
+body .daylie-entry-refined:focus:not(:focus-visible) {
+    outline: none;
+    box-shadow: none;
+}
+
+#daylie-viewer:focus {
+    outline: none;
+}
+
+#daylie-viewer [data-daylie-close] {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    box-shadow: none;
+    font:
+        300 34px/1
+        -apple-system,
+        BlinkMacSystemFont,
+        sans-serif;
+    text-shadow: 0 1px 8px #0008;
+}
+
+#daylie-viewer [data-daylie-delete] {
+    background: transparent;
+    border: 0;
+    border-radius: 8px;
+    min-height: 44px;
+    padding: 10px 4px 10px 16px;
+    font-size: 13px;
+    text-shadow: 0 1px 6px #000;
+}
+
+#daylie-viewer .daylie-loading,
+#daylie-draft .daylie-loading {
+    position: absolute;
+    z-index: 2;
+    top: 45%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    max-width: calc(100% - 48px);
+    width: max-content;
+    padding: 18px 22px;
+    border-radius: 20px;
+    background: #17151ed9;
+    color: #fff;
+    font:
+        500 14px/1.4
+        -apple-system,
+        BlinkMacSystemFont,
+        sans-serif;
+    text-align: center;
+    pointer-events: none;
+}
+
+#daylie-viewer .daylie-loading::before,
+#daylie-draft .daylie-loading::before {
+    content: '';
+    width: 22px;
+    height: 22px;
+    border: 2px solid #ffffff30;
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: daylie-loading-turn 800ms linear infinite;
+}
+
+#daylie-viewer .daylie-loading.has-action::before {
+    display: none;
+}
+
+#daylie-viewer .daylie-loading button {
+    pointer-events: auto;
+    min-height: 44px;
+    padding: 10px 18px;
+    border: 1px solid #ffffff60;
+    border-radius: 24px;
+    background: #ffffff20;
+    font-size: 14px;
+}
+
+.daylie-screen-reader {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+body .daylie-entry-refined::before {
+    content: '';
+    display: inline-block;
+    flex: 0 0 auto;
+    width: 0;
+    height: 0;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-left: 7px solid currentColor;
+    margin-right: 8px;
+}
+
+/* Acesso sobre a fotografia do perfil. */
+#perfil .perfil-foto-area > [data-daylies-profile].daylie-entry-refined {
+    position: absolute;
+    z-index: 3;
+    bottom: 30px;
+    left: 24px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+    min-height: 44px;
+    padding: 11px 16px;
+    border: 1px solid #ffffff70;
+    border-radius: 24px;
+    background: #24222be6;
+    color: #fff;
+    box-shadow: 0 4px 16px #0002;
+    font:
+        600 13px/20px
+        -apple-system,
+        BlinkMacSystemFont,
+        sans-serif;
+}
+
+#perfil .perfil-foto-area > [data-daylies-profile] span {
+    margin-left: 8px;
+    color: #fff;
+    opacity: .7;
+    font-size: 11px;
+}
+
+/* Acesso abaixo do nome, antes do Hey. */
+body .mini-menu > .mini-menu-daylies-slot {
+    flex: 0 0 44px;
+    height: 44px;
+    min-height: 44px;
+    margin: 4px 0;
+}
+
+body .mini-menu > .mini-menu-daylies-slot[hidden] {
+    display: none !important;
+}
+
+body .mini-menu [data-daylies-mini].daylie-entry-refined {
+    height: 44px;
+    min-height: 44px;
+    padding: 8px 16px;
+    margin: 0;
+    border: 0;
+    border-radius: 16px;
+    background: transparent;
+    color: var(--margot-text, #18181c);
+    font:
+        600 13px/20px
+        -apple-system,
+        BlinkMacSystemFont,
+        sans-serif;
+    box-shadow: none;
+}
+
+body .mini-menu [data-daylies-mini].daylie-entry-refined::before {
+    color: #ed2147;
+}
+
+body .mini-menu [data-daylies-mini].daylie-entry-refined span {
+    color: inherit;
+    opacity: .55;
+}
+
+body .mini-menu [data-daylies-mini].daylie-entry-refined[hidden],
+#perfil .perfil-foto-area > [data-daylies-profile].daylie-entry-refined[hidden] {
+    display: none !important;
+}
+
+@keyframes daylie-loading-turn {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #daylie-viewer .daylie-stage img {
+        transition: none;
+    }
+
+    #daylie-viewer .daylie-loading::before,
+    #daylie-draft .daylie-loading::before {
+        animation: none;
+    }
+}
