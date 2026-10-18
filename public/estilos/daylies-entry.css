@@ -17,6 +17,7 @@ body .mini-menu > header > .mini-menu-perfil {
 body .mini-menu > header > h1 {
     grid-column: 1 / -1;
     grid-row: 2;
+    margin-top: 26px;
 }
 
 body .mini-menu > header > .mini-menu-daylies-slot {

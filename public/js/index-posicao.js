@@ -40,6 +40,7 @@
     let ultimoFrame = 0;
     let tempoVisual = 0;
     let regresso = null;
+    let ultimoFrameReacao = null;
     let area = null;
 
     const movimentoReduzido = matchMedia('(prefers-reduced-motion: reduce)');
@@ -47,7 +48,8 @@
     const viewport = window.visualViewport;
     const safeArea = document.createElement('div');
 
-    safeArea.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;' +
+    safeArea.style.cssText =
+        'position:fixed;visibility:hidden;pointer-events:none;' +
         'padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) ' +
         'env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)';
 
@@ -69,10 +71,7 @@
             left: x + Math.max(SAFE_LEFT, parseFloat(estilo.paddingLeft) || 0),
             top: y + Math.max(SAFE_TOP, (parseFloat(estilo.paddingTop) || 0) + 12),
             right: x + w - Math.max(SAFE_RIGHT, parseFloat(estilo.paddingRight) || 0),
-            bottom: y + h - Math.max(
-                SAFE_BOTTOM,
-                (parseFloat(estilo.paddingBottom) || 0) + 76
-            )
+            bottom: y + h - Math.max(SAFE_BOTTOM, (parseFloat(estilo.paddingBottom) || 0) + 76)
         };
 
         if (menu?.height > 0 && menu.top > area.top && menu.top < area.bottom) {
@@ -253,8 +252,14 @@
             }
         }
 
+        if (!fora.length) {
+            iniciarVisual();
+            return;
+        }
+
         const ajustes = fora.map(foto => {
             const destino = escolherPosicao(foto, colocadas);
+
             colocadas.push({ ...foto, ...destino });
 
             return {
@@ -287,6 +292,7 @@
             sobreposto() ||
             !fotosCache.length ||
             visualFrame !== null ||
+            emMovimento() ||
             (movimentoReduzido.matches && !regresso)
         ) {
             return;
@@ -298,7 +304,12 @@
     function animarVisual(now) {
         visualFrame = null;
 
-        if (!paginaAtiva || document.hidden || sobreposto()) {
+        if (
+            !paginaAtiva ||
+            document.hidden ||
+            sobreposto() ||
+            emMovimento()
+        ) {
             ultimoFrame = 0;
             return;
         }
@@ -349,11 +360,11 @@
 
             if (!movimento && !movimentoReduzido.matches) {
                 const t = tempoVisual * foto.ritmo;
-
-                const x = 4 * Math.sin(t + foto.fase) +
+                const x =
+                    4 * Math.sin(t + foto.fase) +
                     2 * Math.sin(t * 0.61 + foto.fase * 2);
-
-                const y = 4 * Math.cos(t * 0.83 + foto.fase) +
+                const y =
+                    4 * Math.cos(t * 0.83 + foto.fase) +
                     2 * Math.sin(t * 0.47 + foto.fase);
 
                 foto.oscX += (x - foto.oscX) * Math.min(1, dt * 3);
@@ -439,7 +450,18 @@
 
         for (const foto of fotosCache) {
             if (!anteriores.has(foto.elemento)) {
-                Object.assign(foto, escolherPosicao(foto, colocadas));
+                const p = noEcra(foto);
+                const b = limitesFoto(foto, 7);
+
+                if (
+                    p.x < b.minX ||
+                    p.x > b.maxX ||
+                    p.y < b.minY ||
+                    p.y > b.maxY
+                ) {
+                    Object.assign(foto, escolherPosicao(foto, colocadas));
+                }
+
                 colocadas.push(foto);
                 memorizarPosicaoFoto(foto);
             }
@@ -478,7 +500,6 @@
     function distancia(a, b) {
         const dx = b.x - a.x;
         const dy = b.y - a.y;
-
         return Math.sqrt(dx * dx + dy * dy);
     }
 
@@ -547,9 +568,28 @@
     }
 
     function aplicarTransform() {
+        const movimento = emMovimento();
+
+        if (movimento && !movimentoReduzido.matches) {
+            const now = performance.now();
+            const dt = ultimoFrameReacao === null
+                ? 0
+                : Math.min((now - ultimoFrameReacao) / 1000, 0.05);
+
+            ultimoFrameReacao = now;
+
+            for (const foto of fotosCache) {
+                if (foto === fotoEmArrasto || foto === fotoEmInercia) continue;
+
+                foto.vx += (-foto.reacaoX * 45 - foto.vx * 12) * dt;
+                foto.vy += (-foto.reacaoY * 45 - foto.vy * 12) * dt;
+                foto.reacaoX = clamp(foto.reacaoX + foto.vx * dt, -22, 22);
+                foto.reacaoY = clamp(foto.reacaoY + foto.vy * dt, -22, 22);
+            }
+        }
+
         const cosR = Math.cos(globalRotation);
         const sinR = Math.sin(globalRotation);
-
         const fotoScale = scale < 1
             ? Math.max(MIN_FOTO_SCALE, 1 + (scale - 1) * 0.8)
             : 1 + (scale - 1) * FOTO_ZOOM_INTENSIDADE;
@@ -567,7 +607,7 @@
             let posX = baseX + foto.oscX + foto.reacaoX;
             let posY = baseY + foto.oscY + foto.reacaoY;
 
-            if (!emMovimento() && !regresso && area) {
+            if (!movimento && !regresso && area) {
                 const b = limitesFoto(foto);
 
                 if (baseX >= b.minX && baseX <= b.maxX) {
@@ -605,14 +645,8 @@
         } else if (chaves.length === 2) {
             refX = (ativos[chaves[0]].x + ativos[chaves[1]].x) / 2;
             refY = (ativos[chaves[0]].y + ativos[chaves[1]].y) / 2;
-            ultimaDistancia = distancia(
-                ativos[chaves[0]],
-                ativos[chaves[1]]
-            );
-            ultimoAngulo = angulo(
-                ativos[chaves[0]],
-                ativos[chaves[1]]
-            );
+            ultimaDistancia = distancia(ativos[chaves[0]], ativos[chaves[1]]);
+            ultimoAngulo = angulo(ativos[chaves[0]], ativos[chaves[1]]);
         }
     }
 
@@ -633,8 +667,8 @@
 
             foto.left += vx;
             foto.top += vy;
-            aplicarTransform();
 
+            aplicarTransform();
             inerciaAnimId = requestAnimationFrame(animar);
         }
 
@@ -657,11 +691,7 @@
             globalRotation += mapVelRotation;
 
             if (Math.abs(mapVelScale) > 0.0001) {
-                zoomNoPonto(
-                    lastZoomCX,
-                    lastZoomCY,
-                    1 + mapVelScale
-                );
+                zoomNoPonto(lastZoomCX, lastZoomCY, 1 + mapVelScale);
             }
 
             if (Math.abs(mapVelRotation) > 0.0001) {
@@ -756,6 +786,8 @@
         }
 
         regresso = null;
+        suspenderVisual();
+        ultimoFrameReacao = performance.now();
 
         const presentes = new Set(
             Array.from(e.touches, touch => String(touch.identifier))
@@ -857,7 +889,6 @@
                 velY = velY * 0.4 + mapDy * 0.6;
             } else {
                 const target = getTargetPan();
-
                 let resX = 1;
                 let resY = 1;
 
@@ -883,22 +914,14 @@
 
             refX = currX;
             refY = currY;
-
             aplicarTransform();
         } else if (chaves.length === 2) {
             fotoEmArrasto = null;
 
             const currX = (ativos[chaves[0]].x + ativos[chaves[1]].x) / 2;
             const currY = (ativos[chaves[0]].y + ativos[chaves[1]].y) / 2;
-            const dAtual = distancia(
-                ativos[chaves[0]],
-                ativos[chaves[1]]
-            );
-            const aAtual = angulo(
-                ativos[chaves[0]],
-                ativos[chaves[1]]
-            );
-
+            const dAtual = distancia(ativos[chaves[0]], ativos[chaves[1]]);
+            const aAtual = angulo(ativos[chaves[0]], ativos[chaves[1]]);
             const deltaX = currX - refX;
             const deltaY = currY - refY;
 
@@ -979,6 +1002,7 @@
         cancelAnimationFrame(visualFrame);
         visualFrame = null;
         ultimoFrame = 0;
+        ultimoFrameReacao = null;
     }
 
     function atualizarSobreposicoes() {
@@ -1023,10 +1047,8 @@
     document.addEventListener('touchcancel', cancelarToques, { passive: true });
     document.addEventListener('margot:daylie-visibility', limparGestosMapa);
     document.addEventListener('visibilitychange', atualizarSobreposicoes);
-
     window.addEventListener('blur', atualizarSobreposicoes);
     window.addEventListener('resize', redimensionar, { passive: true });
-
     viewport?.addEventListener('resize', redimensionar, { passive: true });
     movimentoReduzido.addEventListener('change', mudarPreferencia);
 
@@ -1051,8 +1073,8 @@
         if (!paginaAtiva) return;
 
         const mudou = records.some(record =>
-            [...record.addedNodes, ...record.removedNodes].some(
-                node => node.nodeType === 1 && node.matches('.foto')
+            [...record.addedNodes, ...record.removedNodes].some(node =>
+                node.nodeType === 1 && node.matches('.foto')
             )
         );
 
@@ -1066,7 +1088,6 @@
 
     function desativarPagina() {
         paginaAtiva = false;
-
         suspenderVisual();
         limparGestosMapa();
         fotosCache.forEach(memorizarPosicaoFoto);
@@ -1077,10 +1098,8 @@
         document.removeEventListener('touchcancel', cancelarToques);
         document.removeEventListener('margot:daylie-visibility', limparGestosMapa);
         document.removeEventListener('visibilitychange', atualizarSobreposicoes);
-
         window.removeEventListener('blur', atualizarSobreposicoes);
         window.removeEventListener('resize', redimensionar);
-
         viewport?.removeEventListener('resize', redimensionar);
         movimentoReduzido.removeEventListener('change', mudarPreferencia);
 
