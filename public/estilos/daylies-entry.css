@@ -1,0 +1,94 @@
+/* A fotografia reserva o espaço antes de sabermos se existem Daylies. */
+body .mini-menu > header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    align-items: center;
+    justify-items: center;
+}
+
+body .mini-menu > header > .mini-menu-perfil {
+    grid-column: 2;
+    grid-row: 1;
+    width: auto;
+    min-width: 0;
+}
+
+body .mini-menu > header > h1 {
+    grid-column: 1 / -1;
+    grid-row: 2;
+}
+
+body .mini-menu > header > .mini-menu-daylies-slot {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: end;
+    justify-self: end;
+    position: relative;
+    z-index: 2;
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    transform: translate(20%, 20%);
+}
+
+body .mini-menu > header > .mini-menu-daylies-slot[hidden] {
+    display: none !important;
+}
+
+body .mini-menu [data-daylies-mini].daylie-entry-refined,
+#perfil .perfil-foto-area > [data-daylies-profile].daylie-entry-refined {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+    margin: 0;
+    gap: 0;
+    border: 2px solid rgba(255, 255, 255, 0.96);
+    border-radius: 50%;
+    background: #e12346;
+    color: #ffffff;
+    box-shadow: 0 3px 10px rgba(35, 16, 25, 0.18);
+    font-size: 0;
+    line-height: 0;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body .mini-menu [data-daylies-mini].daylie-entry-refined::before,
+#perfil .perfil-foto-area > [data-daylies-profile].daylie-entry-refined::before {
+    content: '';
+    display: block;
+    width: 0;
+    height: 0;
+    margin: 0 0 0 3px;
+    border: 0;
+    border-top: 7px solid transparent;
+    border-bottom: 7px solid transparent;
+    border-left: 10px solid currentColor;
+    color: #ffffff;
+}
+
+body .mini-menu [data-daylies-mini].daylie-entry-refined span,
+#perfil .perfil-foto-area > [data-daylies-profile].daylie-entry-refined span {
+    display: none !important;
+}
+
+body .mini-menu [data-daylies-mini].daylie-entry-refined[hidden],
+#perfil .perfil-foto-area > [data-daylies-profile].daylie-entry-refined[hidden] {
+    display: none !important;
+}
+
+body .mini-menu [data-daylies-mini].daylie-entry-refined:focus-visible,
+#perfil .perfil-foto-area > [data-daylies-profile].daylie-entry-refined:focus-visible {
+    outline: 3px solid #7657ff;
+    outline-offset: 3px;
+}

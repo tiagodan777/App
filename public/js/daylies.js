@@ -295,6 +295,7 @@
 
     function decorateEntry(button) {
         button.classList.add('daylie-entry-refined');
+        button.setAttribute('aria-label', words('Ver Daylies', 'View Daylies'));
 
         if (button.matches('[data-daylies-profile]')) {
             const photo = document.querySelector(
@@ -320,7 +321,7 @@
                 slot.append(button);
             }
 
-            header.after(slot);
+            header.append(slot);
             slot.hidden = button.hidden;
         }
     }

@@ -303,7 +303,9 @@
             return;
         }
 
-        if (ultimoFrame && now - ultimoFrame < 1000 / 30 - 1) {
+        const intervalo = regresso ? 1000 / 60 : 1000 / 30;
+
+        if (ultimoFrame && now - ultimoFrame < intervalo - 1) {
             iniciarVisual();
             return;
         }
@@ -318,8 +320,8 @@
         if (regresso) {
             if (regresso.inicio === null) regresso.inicio = now;
 
-            const t = clamp((now - regresso.inicio) / 300, 0, 1);
-            const ease = 1 - Math.pow(1 - t, 3);
+            const t = clamp((now - regresso.inicio) / 380, 0, 1);
+            const ease = t * t * t * (t * (t * 6 - 15) + 10);
 
             for (const a of regresso.ajustes) {
                 a.foto.left = a.left + (a.destino.left - a.left) * ease;
@@ -348,11 +350,11 @@
             if (!movimento && !movimentoReduzido.matches) {
                 const t = tempoVisual * foto.ritmo;
 
-                const x = 3 * Math.sin(t + foto.fase) +
-                    1.5 * Math.sin(t * 0.61 + foto.fase * 2);
+                const x = 4 * Math.sin(t + foto.fase) +
+                    2 * Math.sin(t * 0.61 + foto.fase * 2);
 
-                const y = 3 * Math.cos(t * 0.83 + foto.fase) +
-                    1.5 * Math.sin(t * 0.47 + foto.fase);
+                const y = 4 * Math.cos(t * 0.83 + foto.fase) +
+                    2 * Math.sin(t * 0.47 + foto.fase);
 
                 foto.oscX += (x - foto.oscX) * Math.min(1, dt * 3);
                 foto.oscY += (y - foto.oscY) * Math.min(1, dt * 3);
