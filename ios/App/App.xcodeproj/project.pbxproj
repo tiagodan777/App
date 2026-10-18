@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 60;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -20,10 +20,35 @@
 		A12000032FE1000000000003 /* BackgroundLocationPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A12000042FE1000000000004 /* BackgroundLocationPlugin.swift */; };
 		B10000000000000000000000 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000001 /* InfoPlist.strings */; };
 		B10000000000000000000100 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000101 /* Localizable.strings */; };
+		BA7710000000000000000001 /* LocationPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA7710000000000000000002 /* LocationPolicy.swift */; };
 		C0DE00000000000000000001 /* LocationRelaunchCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE00000000000000000002 /* LocationRelaunchCoordinator.swift */; };
 		C0DE00000000000000000003 /* ChatCameraPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE00000000000000000004 /* ChatCameraPlugin.swift */; };
-		BA7710000000000000000001 /* LocationPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA7710000000000000000002 /* LocationPolicy.swift */; };
+		F1FE3CDA308558A9007AD643 /* MargotLocationProbe.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F1FE3CD3308558A9007AD643 /* MargotLocationProbe.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		F1FE3CD8308558A9007AD643 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 504EC2FC1FED79650016851F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F1FE3CD2308558A9007AD643;
+			remoteInfo = MargotLocationProbe;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		F1FE3CDB308558A9007AD643 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				F1FE3CDA308558A9007AD643 /* MargotLocationProbe.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		2FAD9762203C412B000D30F8 /* config.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = config.xml; sourceTree = "<group>"; };
@@ -44,10 +69,25 @@
 		B10000000000000000000003 /* pt */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = pt; path = pt.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		B10000000000000000000102 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		B10000000000000000000103 /* pt */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = pt; path = pt.lproj/Localizable.strings; sourceTree = "<group>"; };
+		BA7710000000000000000002 /* LocationPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationPolicy.swift; sourceTree = "<group>"; };
 		C0DE00000000000000000002 /* LocationRelaunchCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationRelaunchCoordinator.swift; sourceTree = "<group>"; };
 		C0DE00000000000000000004 /* ChatCameraPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatCameraPlugin.swift; sourceTree = "<group>"; };
-		BA7710000000000000000002 /* LocationPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationPolicy.swift; sourceTree = "<group>"; };
+		F1FE3CD3308558A9007AD643 /* MargotLocationProbe.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MargotLocationProbe.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		F1FE3CDE308558A9007AD643 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = F1FE3CD2308558A9007AD643 /* MargotLocationProbe */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		F1FE3CD4308558A9007AD643 /* MargotLocationProbe */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (F1FE3CDE308558A9007AD643 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = MargotLocationProbe; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		504EC3011FED79650016851F /* Frameworks */ = {
@@ -55,6 +95,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				4D22ABE92AF431CB00220026 /* CapApp-SPM in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F1FE3CD0308558A9007AD643 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -66,6 +113,7 @@
 			children = (
 				958DCC722DB07C7200EA8C5F /* debug.xcconfig */,
 				504EC3061FED79650016851F /* App */,
+				F1FE3CD4308558A9007AD643 /* MargotLocationProbe */,
 				504EC3051FED79650016851F /* Products */,
 			);
 			sourceTree = "<group>";
@@ -74,6 +122,7 @@
 			isa = PBXGroup;
 			children = (
 				504EC3041FED79650016851F /* App.app */,
+				F1FE3CD3308558A9007AD643 /* MargotLocationProbe.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -89,7 +138,7 @@
 				50379B222058CBB4000EE86E /* capacitor.config.json */,
 				504EC3071FED79650016851F /* AppDelegate.swift */,
 				C0DE00000000000000000002 /* LocationRelaunchCoordinator.swift */,
-                BA7710000000000000000002 /* LocationPolicy.swift */,
+				BA7710000000000000000002 /* LocationPolicy.swift */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
 				504EC30E1FED79650016851F /* Assets.xcassets */,
 				504EC3101FED79650016851F /* LaunchScreen.storyboard */,
@@ -112,10 +161,12 @@
 				504EC3001FED79650016851F /* Sources */,
 				504EC3011FED79650016851F /* Frameworks */,
 				504EC3021FED79650016851F /* Resources */,
+				F1FE3CDB308558A9007AD643 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				F1FE3CD9308558A9007AD643 /* PBXTargetDependency */,
 			);
 			name = App;
 			packageProductDependencies = (
@@ -125,13 +176,35 @@
 			productReference = 504EC3041FED79650016851F /* App.app */;
 			productType = "com.apple.product-type.application";
 		};
+		F1FE3CD2308558A9007AD643 /* MargotLocationProbe */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F1FE3CDF308558A9007AD643 /* Build configuration list for PBXNativeTarget "MargotLocationProbe" */;
+			buildPhases = (
+				F1FE3CCF308558A9007AD643 /* Sources */,
+				F1FE3CD0308558A9007AD643 /* Frameworks */,
+				F1FE3CD1308558A9007AD643 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				F1FE3CD4308558A9007AD643 /* MargotLocationProbe */,
+			);
+			name = MargotLocationProbe;
+			packageProductDependencies = (
+			);
+			productName = MargotLocationProbe;
+			productReference = F1FE3CD3308558A9007AD643 /* MargotLocationProbe.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
 		504EC2FC1FED79650016851F /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastSwiftUpdateCheck = 0920;
+				LastSwiftUpdateCheck = 2710;
 				LastUpgradeCheck = 0920;
 				TargetAttributes = {
 					504EC3031FED79650016851F = {
@@ -143,6 +216,9 @@
 								enabled = 1;
 							};
 						};
+					};
+					F1FE3CD2308558A9007AD643 = {
+						CreatedOnToolsVersion = 27.1;
 					};
 				};
 			};
@@ -164,6 +240,7 @@
 			projectRoot = "";
 			targets = (
 				504EC3031FED79650016851F /* App */,
+				F1FE3CD2308558A9007AD643 /* MargotLocationProbe */,
 			);
 		};
 /* End PBXProject section */
@@ -184,6 +261,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		F1FE3CD1308558A9007AD643 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -193,7 +277,7 @@
 			files = (
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 				C0DE00000000000000000001 /* LocationRelaunchCoordinator.swift in Sources */,
-                BA7710000000000000000001 /* LocationPolicy.swift in Sources */,
+				BA7710000000000000000001 /* LocationPolicy.swift in Sources */,
 				A12000032FE1000000000003 /* BackgroundLocationPlugin.swift in Sources */,
 				C0DE00000000000000000003 /* ChatCameraPlugin.swift in Sources */,
 				A12000012FE1000000000001 /* ViewController.swift in Sources */,
@@ -201,7 +285,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		F1FE3CCF308558A9007AD643 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		F1FE3CD9308558A9007AD643 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F1FE3CD2308558A9007AD643 /* MargotLocationProbe */;
+			targetProxy = F1FE3CD8308558A9007AD643 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
 		504EC30B1FED79650016851F /* Main.storyboard */ = {
@@ -410,6 +509,86 @@
 			};
 			name = Release;
 		};
+		F1FE3CDC308558A9007AD643 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = ZU7R8DGBUR;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = MargotLocationProbe/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = MargotLocationProbe;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.margot.app.MargotLocationProbe;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		F1FE3CDD308558A9007AD643 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = ZU7R8DGBUR;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = MargotLocationProbe/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = MargotLocationProbe;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.margot.app.MargotLocationProbe;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -427,6 +606,15 @@
 			buildConfigurations = (
 				504EC3171FED79650016851F /* Debug */,
 				504EC3181FED79650016851F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F1FE3CDF308558A9007AD643 /* Build configuration list for PBXNativeTarget "MargotLocationProbe" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F1FE3CDC308558A9007AD643 /* Debug */,
+				F1FE3CDD308558A9007AD643 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
