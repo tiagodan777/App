@@ -265,7 +265,6 @@
                     definirErro('As notificações estão bloqueadas. Podes permiti-las nas definições da app.');
                 }
             } catch (erro) {
-                API.definir('notificacoes', false);
                 definirErro('Não foi possível pedir a permissão para notificações.');
             } finally {
                 aPedir.notificacoes = false;
