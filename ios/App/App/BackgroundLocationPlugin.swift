@@ -549,6 +549,7 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
         }
       }
       NotificationCenter.default.post(name:Notification.Name("MargotLocationPluginOwnsMonitoring"),object:nil)
+      manager.startMonitoringVisits()
       monitoring = true
 
     case .authorizedWhenInUse:
@@ -585,6 +586,7 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
     }
     manager.allowsBackgroundLocationUpdates = false
     manager.stopMonitoringSignificantLocationChanges()
+    manager.stopMonitoringVisits()
     if !standardRunning { manager.startUpdatingLocation(); standardRunning = true }
     monitoring = false
     NotificationCenter.default.post(name:Notification.Name("MargotLocationPluginOwnsMonitoring"),object:nil)

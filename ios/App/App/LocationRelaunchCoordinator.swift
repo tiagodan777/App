@@ -85,6 +85,7 @@ import UIKit
      */
   manager.allowsBackgroundLocationUpdates = true
     manager.startUpdatingLocation()
+    manager.startMonitoringVisits()
     if CLLocationManager.significantLocationChangeMonitoringAvailable() {
       /*
        * A Apple exige que este serviço seja iniciado novamente
@@ -133,6 +134,7 @@ import UIKit
     }
     manager.allowsBackgroundLocationUpdates = true
     manager.startUpdatingLocation()
+    manager.startMonitoringVisits()
     if CLLocationManager.significantLocationChangeMonitoringAvailable() {
       manager.startMonitoringSignificantLocationChanges()
     }
