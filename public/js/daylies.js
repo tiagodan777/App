@@ -30,7 +30,7 @@
         publishing = false,
         previousFocus;
 
-    // Reutiliza o mesmo elemento de vídeo entre Daylies.
+    // Reutilizar o mesmo elemento de vídeo entre Daylies.
     const player = document.createElement('video');
 
     let mediaVersion = 0,
@@ -39,15 +39,20 @@
         loadingTimer = 0;
 
     let profileVersion = 0,
-        draftVersion = 0,
-        nextImage;
+        draftVersion = 0;
+
+    let nextImage;
+    let warm = null;
 
     const listings = new Map();
 
-    const words = (pt, en) => (
-        window.MargotI18n?.language ||
-        (/^pt\b/i.test(navigator.language) ? 'pt' : 'en')
-    ) === 'pt' ? pt : en;
+    const words = (pt, en) =>
+        (
+            window.MargotI18n?.language ||
+            (/^pt\b/i.test(navigator.language) ? 'pt' : 'en')
+        ) === 'pt'
+            ? pt
+            : en;
 
     function statusPanel(container) {
         const panel = document.createElement('div');
@@ -71,16 +76,18 @@
     const loading = statusPanel(viewer);
     const draftLoading = statusPanel(draft);
 
-    // A navegação fica nos gestos, sem os botões inferiores.
-    viewer.querySelectorAll(
-        '[data-daylie-prev], [data-daylie-next], [data-daylie-pause]'
-    ).forEach(button => button.remove());
+    viewer
+        .querySelectorAll(
+            '[data-daylie-prev], [data-daylie-next], [data-daylie-pause]'
+        )
+        .forEach(button => button.remove());
 
     viewer.setAttribute('tabindex', '-1');
 
     const help = document.createElement('p');
     help.id = 'daylie-gesture-help';
     help.className = 'daylie-screen-reader';
+
     help.textContent = words(
         'Toca nos lados para mudar. Mantém premido para pausar. Desliza para baixo para fechar. No teclado: setas, espaço e Escape.',
         'Tap either side to navigate. Hold to pause. Swipe down to close. Keyboard: arrows, space and Escape.'
@@ -94,10 +101,12 @@
         panel.panel.classList.toggle('has-action', Boolean(action));
         panel.label.textContent = message || '';
         panel.action.hidden = !action;
+
         panel.action.textContent = words(
             'Tocar para continuar',
             'Tap to continue'
         );
+
         panel.action.onclick = action || null;
     }
 
@@ -107,7 +116,9 @@
 
         busy(
             loading,
-            value ? words('A carregar Daylie…', 'Loading Daylie…') : ''
+            value
+                ? words('A carregar Daylie…', 'Loading Daylie…')
+                : ''
         );
 
         if (value) {
@@ -138,6 +149,148 @@
         }
 
         return data;
+    }
+
+    function clearWarm(release = true) {
+        if (!warm) return;
+
+        const job = warm;
+        warm = null;
+
+        clearTimeout(job.timer);
+        clearTimeout(job.expiry);
+        job.events.abort();
+        job.observer.disconnect();
+
+        if (release && !job.node.isConnected) {
+            job.node.removeAttribute('src');
+
+            if (job.node.tagName === 'VIDEO') {
+                job.node.load();
+            }
+        }
+    }
+
+    function scheduleWarm(id, data, button) {
+        clearWarm();
+
+        const item = data.daylies[0];
+        const connection = navigator.connection;
+
+        if (
+            !item ||
+            !button ||
+            viewer.open ||
+            draft.open ||
+            document.hidden ||
+            connection?.saveData ||
+            /(^|-)2g$/.test(connection?.effectiveType || '')
+        ) {
+            return;
+        }
+
+        const node = item.tipo === 'video' ? player : new Image();
+
+        const context =
+            button.closest('.mini-menu, #perfil, dialog') || button;
+
+        const eligible = () =>
+            button.isConnected &&
+            !button.hidden &&
+            !button.closest('[hidden], [aria-hidden="true"]') &&
+            !document.hidden &&
+            (context.tagName !== 'DIALOG' || context.open) &&
+            !viewer.open &&
+            !draft.open &&
+            !cameraDialog?.open;
+
+        const job = {
+            member: id,
+            id: item.id,
+            node,
+            timer: 0,
+            expiry: 0,
+            events: new AbortController(),
+            observer: null
+        };
+
+        job.observer = new MutationObserver(() => {
+            if (warm === job && !eligible()) {
+                clearWarm();
+            }
+        });
+
+        warm = job;
+
+        job.observer.observe(context, {
+            attributes: true,
+            attributeFilter: ['hidden', 'aria-hidden']
+        });
+
+        if (context !== button) {
+            job.observer.observe(button, {
+                attributes: true,
+                attributeFilter: ['hidden']
+            });
+        }
+
+        const prepare = (intent = false) => {
+            if (warm !== job) return;
+
+            if (!eligible()) {
+                clearWarm();
+                return;
+            }
+
+            if (intent) {
+                clearTimeout(job.timer);
+            }
+
+            if (item.tipo === 'video') {
+                node.playsInline = true;
+
+                // Primeiro pedir metadados. Pedir dados de reprodução
+                // quando a pessoa interage com o botão.
+                node.preload = intent ? 'auto' : 'metadata';
+            } else {
+                node.decoding = 'async';
+            }
+
+            if (!node.hasAttribute('src')) {
+                node.src = root + 'daylie-media/' + item.id;
+            }
+        };
+
+        for (const type of ['pointerenter', 'pointerdown', 'focus']) {
+            button.addEventListener(
+                type,
+                () => prepare(true),
+                {
+                    passive: true,
+                    signal: job.events.signal
+                }
+            );
+        }
+
+        job.timer = setTimeout(() => prepare(false), 350);
+
+        job.expiry = setTimeout(() => {
+            if (warm === job) clearWarm();
+        }, 15000);
+    }
+
+    function takeWarm(item) {
+        if (!warm) return null;
+
+        const node =
+            warm.member === member &&
+            warm.id === item.id &&
+            warm.node.getAttribute('src') === root + 'daylie-media/' + item.id
+                ? warm.node
+                : null;
+
+        clearWarm(!node);
+        return node;
     }
 
     function decorateEntry(button) {
@@ -182,8 +335,7 @@
 
         if (!response.ok || !data.success) {
             throw new Error(
-                data.message ||
-                'Não foi possível carregar. Tenta novamente.'
+                data.message || 'Não foi possível carregar. Tenta novamente.'
             );
         }
 
@@ -237,6 +389,13 @@
     }
 
     function closeViewer() {
+        clearPointer();
+        clearWarm();
+
+        document.dispatchEvent(
+            new Event('margot:daylie-visibility')
+        );
+
         cancelAnimationFrame(frame);
         clearTimeout(loadingTimer);
 
@@ -245,15 +404,17 @@
         playAttempt++;
 
         mediaEvents?.abort();
-        nextImage = null;
 
+        nextImage = null;
         stopMedia(stage);
 
         items = [];
         ready = false;
         setLoading(false);
 
-        if (viewer.open) viewer.close();
+        if (viewer.open) {
+            viewer.close();
+        }
 
         if (previousFocus?.isConnected) {
             previousFocus.focus({ preventScroll: true });
@@ -281,7 +442,9 @@
         const version = mediaVersion;
         const attempt = ++playAttempt;
 
-        // Pede reprodução imediatamente, sem esperar por loadeddata.
+        // Pedir reprodução durante o gesto de abertura, sem esperar
+        // por loadeddata. Alguns leitores só carregam o primeiro frame
+        // depois de receberem play().
         video.muted = false;
         video.defaultMuted = false;
 
@@ -355,7 +518,8 @@
         if (!viewer.open) return;
 
         const video = stage.querySelector('video');
-        const running = ready && !paused && !held && !document.hidden;
+        const running =
+            ready && !paused && !held && !document.hidden;
 
         if (running) {
             elapsed += Math.min(100, now - (lastTime || now));
@@ -381,11 +545,12 @@
     }
 
     function showItem() {
+        clearPointer();
         cancelAnimationFrame(frame);
 
         const version = ++mediaVersion;
-        playAttempt++;
 
+        playAttempt++;
         mediaEvents?.abort();
         mediaEvents = new AbortController();
 
@@ -395,6 +560,7 @@
         ready = paused = held = false;
 
         const item = items[position];
+
         if (!item || !viewer.open) return;
 
         error(viewer);
@@ -420,9 +586,13 @@
 
         const isVideo = item.tipo === 'video';
 
-        const prepared = !isVideo && nextImage?.id === item.id
-            ? nextImage.node
-            : null;
+        const prepared =
+            takeWarm(item) ||
+            (
+                !isVideo && nextImage?.id === item.id
+                    ? nextImage.node
+                    : null
+            );
 
         const node = isVideo
             ? player
@@ -445,7 +615,8 @@
             ready = true;
             node.classList.add('daylie-media-ready');
 
-            // Não esconde o pedido de toque se o som foi bloqueado.
+            // Preservar o botão de reprodução se o navegador
+            // tiver bloqueado o início automático com som.
             if (
                 !paused ||
                 !loading.panel.classList.contains('has-action')
@@ -455,7 +626,11 @@
 
             const next = items[position + 1];
 
-            if (next && next.tipo !== 'video' && !nextImage) {
+            if (
+                next &&
+                next.tipo !== 'video' &&
+                !nextImage
+            ) {
                 const image = new Image();
 
                 nextImage = {
@@ -504,27 +679,37 @@
             });
 
             listen('waiting', () => {
-                if (!paused && !held) setLoading(true);
+                if (!paused && !held) {
+                    setLoading(true);
+                }
             });
 
             listen('ended', () => {
-                if (!held && !paused) advance(1);
+                if (!held && !paused) {
+                    advance(1);
+                }
             });
         } else {
             node.alt = item.legenda || 'Daylie';
             node.decoding = 'async';
-
             listen('load', display);
         }
 
-        // Os eventos ficam registados antes de atribuir a origem.
+        // Os eventos são registados antes da atribuição do src.
         stage.append(node);
 
-        if (!prepared || (node.complete && !node.naturalWidth)) {
+        if (
+            !prepared ||
+            (!isVideo && node.complete && !node.naturalWidth)
+        ) {
             node.src = root + 'daylie-media/' + item.id;
         }
 
         if (isVideo) {
+            if (node.readyState >= 2) {
+                display();
+            }
+
             setPaused(false);
         } else if (node.complete && node.naturalWidth) {
             display();
@@ -536,7 +721,9 @@
     async function open(memberId) {
         const wasOpen = viewer.open;
 
-        if (wasOpen) closeViewer();
+        if (wasOpen) {
+            closeViewer();
+        }
 
         const version = ++loadVersion;
 
@@ -552,8 +739,11 @@
 
         viewer.querySelector('.daylie-caption').textContent = '';
         viewer.querySelector('[data-daylie-delete]').hidden = true;
-
         progress.replaceChildren();
+
+        document.dispatchEvent(
+            new Event('margot:daylie-visibility')
+        );
 
         viewer.showModal();
         viewer.focus({ preventScroll: true });
@@ -562,15 +752,21 @@
         try {
             const cached = listings.get(memberId);
 
-            // Reutiliza brevemente a lista que mostrou o botão.
-            // O acesso ao ficheiro continua a ser validado pelo servidor.
-            const data = cached && Date.now() - cached.time < 15000
-                ? cached.data
-                : await request(
-                    'daylies/' + encodeURIComponent(memberId)
-                );
+            // Reutilizar brevemente a lista obtida ao mostrar o botão.
+            // O servidor continua a validar o acesso ao ficheiro.
+            const data =
+                cached && Date.now() - cached.time < 15000
+                    ? cached.data
+                    : await request(
+                        'daylies/' + encodeURIComponent(memberId)
+                    );
 
-            if (version !== loadVersion || !viewer.open) return;
+            if (
+                version !== loadVersion ||
+                !viewer.open
+            ) {
+                return;
+            }
 
             items = data.daylies;
             owner = data.owner;
@@ -588,7 +784,12 @@
 
             showItem();
         } catch (failure) {
-            if (version !== loadVersion || !viewer.open) return;
+            if (
+                version !== loadVersion ||
+                !viewer.open
+            ) {
+                return;
+            }
 
             setLoading(false);
             error(viewer, failure.message);
@@ -605,6 +806,8 @@
     }
 
     async function refreshMini(memberId) {
+        clearWarm();
+
         const version = ++miniVersion;
         const button = document.querySelector('[data-daylies-mini]');
 
@@ -630,12 +833,16 @@
             button.hidden = !data.daylies.length;
             decorateEntry(button);
             button.onclick = () => open(memberId);
+
+            scheduleWarm(memberId, data, button);
         } catch {
-            // Um perfil sem acesso não apresenta Daylies.
+            /* Um perfil sem acesso não apresenta Daylies. */
         }
     }
 
     async function refreshProfile() {
+        clearWarm();
+
         const version = ++profileVersion;
 
         const buttons = [
@@ -644,7 +851,12 @@
             )
         ];
 
-        if (!buttons.length || !window.perfilMembroId) return;
+        if (
+            !buttons.length ||
+            !window.perfilMembroId
+        ) {
+            return;
+        }
 
         const id = window.perfilMembroId;
 
@@ -673,8 +885,16 @@
                     button.hidden = !data.daylies.length;
                     button.onclick = () => open(id);
                 });
+
+            scheduleWarm(
+                id,
+                data,
+                buttons.find(
+                    button => button.isConnected && !button.hidden
+                )
+            );
         } catch {
-            // A página mantém as restantes funcionalidades.
+            /* A página mantém as restantes funcionalidades. */
         }
     }
 
@@ -682,16 +902,23 @@
         draftVersion++;
         busy(draftLoading, '');
 
-        stopMedia(draft.querySelector('.daylie-draft-preview'));
+        stopMedia(
+            draft.querySelector('.daylie-draft-preview')
+        );
 
-        if (draftUrl) URL.revokeObjectURL(draftUrl);
+        if (draftUrl) {
+            URL.revokeObjectURL(draftUrl);
+        }
 
         draftFile = draftUrl = null;
 
-        if (draft.open) draft.close();
+        if (draft.open) {
+            draft.close();
+        }
     }
 
     function review(file) {
+        clearWarm();
         clearDraft();
 
         draftFile = file;
@@ -766,6 +993,8 @@
     function create() {
         if (publishing) return;
 
+        clearWarm();
+
         if (!camera) {
             const gallery = document.createElement('input');
             gallery.type = 'file';
@@ -811,12 +1040,10 @@
 
         const publish = draft.querySelector('[data-draft-publish]');
         publish.textContent = 'A publicar…';
-
         error(draft);
 
         try {
             const form = new FormData();
-
             form.append('media', draftFile);
             form.append(
                 'caption',
@@ -850,7 +1077,9 @@
     draft.addEventListener('cancel', event => {
         event.preventDefault();
 
-        if (!publishing) clearDraft();
+        if (!publishing) {
+            clearDraft();
+        }
     });
 
     viewer.querySelector('[data-daylie-close]').onclick = closeViewer;
@@ -885,9 +1114,15 @@
 
             listings.delete(targetMember);
 
-            if (version !== loadVersion || !viewer.open) return;
+            if (
+                version !== loadVersion ||
+                !viewer.open
+            ) {
+                return;
+            }
 
             const currentId = items[position]?.id;
+
             items = items.filter(item => item.id !== itemId);
 
             if (!items.length) {
@@ -897,16 +1132,20 @@
                     item => item.id === currentId
                 );
 
-                position = currentIndex < 0
-                    ? Math.min(position, items.length - 1)
-                    : currentIndex;
+                position =
+                    currentIndex < 0
+                        ? Math.min(position, items.length - 1)
+                        : currentIndex;
 
                 showItem();
             }
 
             refreshProfile();
         } catch (failure) {
-            if (version === loadVersion && viewer.open) {
+            if (
+                version === loadVersion &&
+                viewer.open
+            ) {
                 error(viewer, failure.message);
             }
         } finally {
@@ -916,9 +1155,43 @@
 
     let pointerStart;
 
+    function clearPointer() {
+        const previous = pointerStart;
+
+        pointerStart = null;
+        held = false;
+
+        if (
+            previous &&
+            stage.hasPointerCapture?.(previous.id)
+        ) {
+            stage.releasePointerCapture(previous.id);
+        }
+    }
+
+    // Os controlos recebem os seus eventos, mas os gestos
+    // do leitor não chegam aos listeners globais do mapa.
+    for (const type of [
+        'touchstart',
+        'touchmove',
+        'touchend',
+        'touchcancel',
+        'pointerdown',
+        'pointermove',
+        'pointerup',
+        'pointercancel',
+        'click'
+    ]) {
+        viewer.addEventListener(
+            type,
+            event => event.stopPropagation()
+        );
+    }
+
     stage.addEventListener('pointerdown', event => {
         if (
             !items.length ||
+            pointerStart ||
             event.isPrimary === false ||
             event.button > 0
         ) {
@@ -926,6 +1199,7 @@
         }
 
         pointerStart = {
+            id: event.pointerId,
             x: event.clientX,
             y: event.clientY,
             time: Date.now()
@@ -938,12 +1212,19 @@
     });
 
     stage.addEventListener('pointerup', event => {
-        held = false;
+        if (
+            !pointerStart ||
+            event.pointerId !== pointerStart.id
+        ) {
+            return;
+        }
 
-        if (!pointerStart) return;
+        const start = pointerStart;
+        const dx = event.clientX - start.x;
+        const dy = event.clientY - start.y;
 
-        const dx = event.clientX - pointerStart.x;
-        const dy = event.clientY - pointerStart.y;
+        clearPointer();
+        event.preventDefault();
 
         if (dy > 100 && Math.abs(dx) < 60) {
             closeViewer();
@@ -954,26 +1235,35 @@
             loading.panel.classList.contains('has-action')
         ) {
             loading.action.click();
-        } else if (Date.now() - pointerStart.time < 250) {
+        } else if (Date.now() - start.time < 250) {
             advance(
                 event.clientX <
-                stage.getBoundingClientRect().left +
-                stage.clientWidth / 3
+                stage.getBoundingClientRect().left + stage.clientWidth / 3
                     ? -1
                     : 1
             );
         } else {
             setPaused(paused);
         }
-
-        pointerStart = null;
     });
 
-    stage.addEventListener('pointercancel', () => {
-        held = false;
-        pointerStart = null;
-        setPaused(paused);
-    });
+    function cancelPointer(event) {
+        if (
+            !pointerStart ||
+            event.pointerId !== pointerStart.id
+        ) {
+            return;
+        }
+
+        clearPointer();
+
+        if (viewer.open) {
+            setPaused(paused);
+        }
+    }
+
+    stage.addEventListener('pointercancel', cancelPointer);
+    stage.addEventListener('lostpointercapture', cancelPointer);
 
     viewer.addEventListener('keydown', event => {
         if (event.key === 'ArrowRight') {
@@ -1004,12 +1294,15 @@
     let resumeOnVisible = false;
 
     document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            clearWarm();
+        }
+
         if (!viewer.open) return;
 
         if (document.hidden) {
             resumeOnVisible = !paused;
-            held = false;
-            pointerStart = null;
+            clearPointer();
             setPaused(true);
         } else if (resumeOnVisible) {
             resumeOnVisible = false;
@@ -1024,7 +1317,9 @@
 
         closeViewer();
 
-        if (!publishing) clearDraft();
+        if (!publishing) {
+            clearDraft();
+        }
 
         camera?.close();
     });

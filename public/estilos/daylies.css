@@ -603,17 +603,16 @@
     flex-wrap: wrap;
 }
 
-/* Daylies: carregamento, leitor e acessos */
+/* Leitor e entradas dos Daylies. */
 
 #daylie-viewer .daylie-stage,
 #daylie-draft .daylie-draft-preview {
-    background:
-        radial-gradient(
-            ellipse at 25% 20%,
-            #393044,
-            #17151e 65%,
-            #111015
-        );
+    background: radial-gradient(
+        ellipse at 25% 20%,
+        #393044,
+        #17151e 65%,
+        #111015
+    );
 }
 
 #daylie-viewer .daylie-stage img {
@@ -625,7 +624,6 @@
     opacity: 1;
 }
 
-/* Evita transformar a superfície nativa do vídeo. */
 #daylie-viewer .daylie-stage video {
     transform: none;
     animation: none;
@@ -683,11 +681,7 @@ body .daylie-entry-refined:focus:not(:focus-visible) {
     border-radius: 10px;
     background: transparent;
     box-shadow: none;
-    font:
-        300 34px/1
-        -apple-system,
-        BlinkMacSystemFont,
-        sans-serif;
+    font: 300 34px/1 -apple-system, BlinkMacSystemFont, sans-serif;
     text-shadow: 0 1px 8px #0008;
 }
 
@@ -718,11 +712,7 @@ body .daylie-entry-refined:focus:not(:focus-visible) {
     border-radius: 20px;
     background: #17151ed9;
     color: #fff;
-    font:
-        500 14px/1.4
-        -apple-system,
-        BlinkMacSystemFont,
-        sans-serif;
+    font: 500 14px/1.4 -apple-system, BlinkMacSystemFont, sans-serif;
     text-align: center;
     pointer-events: none;
 }
@@ -773,7 +763,6 @@ body .daylie-entry-refined::before {
     margin-right: 8px;
 }
 
-/* Acesso sobre a fotografia do perfil. */
 #perfil .perfil-foto-area > [data-daylies-profile].daylie-entry-refined {
     position: absolute;
     z-index: 3;
@@ -789,11 +778,7 @@ body .daylie-entry-refined::before {
     background: #24222be6;
     color: #fff;
     box-shadow: 0 4px 16px #0002;
-    font:
-        600 13px/20px
-        -apple-system,
-        BlinkMacSystemFont,
-        sans-serif;
+    font: 600 13px/20px -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 #perfil .perfil-foto-area > [data-daylies-profile] span {
@@ -803,7 +788,6 @@ body .daylie-entry-refined::before {
     font-size: 11px;
 }
 
-/* Acesso abaixo do nome, antes do Hey. */
 body .mini-menu > .mini-menu-daylies-slot {
     flex: 0 0 44px;
     height: 44px;
@@ -824,11 +808,7 @@ body .mini-menu [data-daylies-mini].daylie-entry-refined {
     border-radius: 16px;
     background: transparent;
     color: var(--margot-text, #18181c);
-    font:
-        600 13px/20px
-        -apple-system,
-        BlinkMacSystemFont,
-        sans-serif;
+    font: 600 13px/20px -apple-system, BlinkMacSystemFont, sans-serif;
     box-shadow: none;
 }
 
@@ -857,6 +837,72 @@ body .mini-menu [data-daylies-mini].daylie-entry-refined[hidden],
         transition: none;
     }
 
+    #daylie-viewer .daylie-loading::before,
+    #daylie-draft .daylie-loading::before {
+        animation: none;
+    }
+}
+
+/* Isolamento dos gestos e indicador circular de carregamento. */
+
+#daylie-viewer {
+    touch-action: none;
+    overscroll-behavior: contain;
+}
+
+#daylie-viewer .daylie-loading,
+#daylie-draft .daylie-loading {
+    top: 50%;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+}
+
+#daylie-viewer .daylie-loading:not(.has-action) > span,
+#daylie-draft .daylie-loading:not(.has-action) > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+#daylie-viewer .daylie-loading::before,
+#daylie-draft .daylie-loading::before {
+    width: 30px;
+    height: 30px;
+    border: 2px solid #ffffff45;
+    border-top-color: #fff;
+    border-right-color: #fff;
+    filter: drop-shadow(0 1px 3px #0006);
+    animation:
+        daylie-ring-appear 150ms step-end both,
+        daylie-loading-turn 700ms linear infinite;
+}
+
+#daylie-viewer .daylie-loading.has-action {
+    text-shadow: 0 1px 6px #000;
+}
+
+#daylie-viewer .daylie-loading.has-action button {
+    background: #0008;
+}
+
+@keyframes daylie-ring-appear {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
     #daylie-viewer .daylie-loading::before,
     #daylie-draft .daylie-loading::before {
         animation: none;
