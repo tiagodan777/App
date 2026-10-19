@@ -9,6 +9,128 @@ declare(strict_types=1);
 const MP_ACCESS_HASH = 'd0fe54607b45442d90e737b1b43582b3e85bf31eca7fb0e04eec92cfe7b0989c';
 const MP_SESSION_SECONDS = 8 * 60 * 60;
 const MP_PAGE_SIZE = 12;
+// Contas de teste: excluídas de todas as consultas, antes da numeração.
+// Os nomes completos são comparados sem distinguir maiúsculas ou acentos.
+const MP_IGNORED_NAMES = [
+    'Paul Sinclair', 'João Carlos', 'Joana Silva', 'André Guimarães',
+    'Marta Raposo', 'Mariana Alves', 'Bárbara Ponte', 'Maria Fonteboa',
+    'Henrique Ponte', 'Fernando Batista', 'Último Teste', 'Luís Bernardo',
+    'Rodrigo Dias', 'Mafalda Costa', 'Martim Vieira', 'Tomás SHS',
+    'Inês Daniel', 'Ricardo Tiago', 'Beatriz Ferreira',
+];
+const MP_IGNORED_DATED_MEMBERS = [
+    ['name' => 'Luís Daniel', 'date' => '2026-09-17'],
+];
+
+function mp_included_members(array $ignoredIds = []): array {
+    $params = [];
+    $excluded = [];
+    $name = "TRIM(CONCAT(TRIM(COALESCE(primeiro_nome, '')), ' ', TRIM(COALESCE(ultimo_nome, '')))) COLLATE utf8mb4_unicode_ci";
+    foreach (MP_IGNORED_NAMES as $i => $fullName) {
+        $excluded[] = "$name = :excluded_name_$i";
+        $params["excluded_name_$i"] = $fullName;
+    }
+    foreach (MP_IGNORED_DATED_MEMBERS as $i => $member) {
+        // A data indicada refere-se ao dia civil nos Açores; adesao é lida em UTC.
+        $start = new DateTimeImmutable($member['date'], new DateTimeZone('Atlantic/Azores'));
+        $utc = new DateTimeZone('UTC');
+        $excluded[] = "($name = :dated_name_$i AND adesao >= :dated_start_$i AND adesao < :dated_end_$i)";
+        $params["dated_name_$i"] = $member['name'];
+        $params["dated_start_$i"] = $start->setTimezone($utc)->format('Y-m-d H:i:s');
+        $params["dated_end_$i"] = $start->modify('+1 day')->setTimezone($utc)->format('Y-m-d H:i:s');
+    }
+    if ($ignoredIds !== []) {
+        $holders = [];
+        foreach (array_values($ignoredIds) as $i => $id) {
+            $holders[] = ":ignored_id_$i";
+            $params["ignored_id_$i"] = $id;
+        }
+        $excluded[] = 'id COLLATE utf8mb4_general_ci IN (' . implode(',', $holders) . ')';
+    }
+    return ['(SELECT * FROM membros WHERE NOT (' . implode(' OR ', $excluded) . '))', $params];
+}
+
+// Ficheiro auxiliar protegido contra leitura via HTTP. Só guarda IDs, nunca
+// credenciais, nomes ou perfis. Não se executa nem se inclui o seu conteúdo.
+const MP_IGNORE_FILE = __DIR__ . '/margot-painel-ignorados.php';
+const MP_IGNORE_GUARD = "<?php http_response_code(404); exit; __halt_compiler();\n";
+
+function mp_valid_id(mixed $id): bool {
+    return is_string($id) && preg_match('/\A[a-zA-Z0-9_-]{1,36}\z/', $id) === 1;
+}
+
+function mp_read_ignored(): array {
+    clearstatcache(true, MP_IGNORE_FILE);
+    if (!file_exists(MP_IGNORE_FILE)) return [];
+    $raw = @file_get_contents(MP_IGNORE_FILE);
+    if ($raw === false) throw new RuntimeException('Não foi possível ler as contas ignoradas. Confirma as permissões de margot-painel-ignorados.php.');
+    $data = str_starts_with($raw, MP_IGNORE_GUARD) ? json_decode(substr($raw, strlen(MP_IGNORE_GUARD)), true) : null;
+    if (!is_array($data) || ($data['version'] ?? null) !== 1 || !is_array($data['ids'] ?? null)
+        || !array_is_list($data['ids']) || count($data['ids']) > 5000) {
+        throw new RuntimeException('O ficheiro de contas ignoradas está inválido. Recupera margot-painel-ignorados.php a partir de uma cópia válida; não foi substituído.');
+    }
+    foreach ($data['ids'] as $id) {
+        if (!mp_valid_id($id)) throw new RuntimeException('Foi encontrado um ID inválido no ficheiro de contas ignoradas.');
+    }
+    return array_values(array_unique($data['ids']));
+}
+
+function mp_change_ignored(string $action, string $id): array {
+    if (!in_array($action, ['ignore', 'restore'], true) || !mp_valid_id($id)) {
+        throw new InvalidArgumentException('Conta ou ação inválida.');
+    }
+    // Um bloqueio separado mantém as alterações concorrentes serializadas,
+    // mesmo quando o ficheiro de dados é substituído de forma atómica.
+    $lock = @fopen(__DIR__ . '/.margot-painel-ignorados.lock', 'c');
+    if ($lock === false) throw new RuntimeException('Não foi possível guardar a exclusão. O PHP precisa de permissão de escrita nesta pasta para criar margot-painel-ignorados.php. A conta não foi ignorada.');
+    $temp = null;
+    $stream = null;
+    try {
+        if (!flock($lock, LOCK_EX)) throw new RuntimeException('Não foi possível guardar a alteração. Tenta novamente.');
+        $ids = mp_read_ignored();
+        $previous = $ids;
+        if ($action === 'ignore' && !in_array($id, $ids, true)) $ids[] = $id;
+        if ($action === 'restore') $ids = array_values(array_filter($ids, static fn($stored) => $stored !== $id));
+        if ($ids === $previous) return $ids;
+        if (count($ids) > 5000) throw new RuntimeException('Foi atingido o limite de 5000 exclusões manuais.');
+        $bytes = MP_IGNORE_GUARD . json_encode(['version' => 1, 'ids' => $ids], JSON_THROW_ON_ERROR);
+        $temp = __DIR__ . '/.margot-ignorados-' . bin2hex(random_bytes(12)) . '.php';
+        $stream = @fopen($temp, 'x');
+        if ($stream === false) throw new RuntimeException('Não foi possível guardar a alteração. Confirma a permissão de escrita nesta pasta.');
+        @chmod($temp, 0600);
+        $offset = 0;
+        while ($offset < strlen($bytes)) {
+            $written = fwrite($stream, substr($bytes, $offset));
+            if ($written === false || $written === 0) throw new RuntimeException('Não foi possível guardar a alteração. A lista anterior foi preservada.');
+            $offset += $written;
+        }
+        if (!fflush($stream)) throw new RuntimeException('Não foi possível guardar a alteração. A lista anterior foi preservada.');
+        fclose($stream); $stream = null;
+        if (!@rename($temp, MP_IGNORE_FILE)) throw new RuntimeException('Não foi possível guardar a alteração. A lista anterior foi preservada.');
+        $temp = null;
+        return $ids;
+    } finally {
+        if (is_resource($stream)) fclose($stream);
+        if ($temp !== null && file_exists($temp)) @unlink($temp);
+        flock($lock, LOCK_UN);
+        fclose($lock);
+    }
+}
+
+function mp_ignored_list(PDO $pdo, array $ids): array {
+    if ($ids === []) return [];
+    $holders = implode(',', array_fill(0, count($ids), '?'));
+    $rows = mp_query($pdo, "SELECT id, primeiro_nome, ultimo_nome, adesao FROM membros WHERE id IN ($holders)", $ids)->fetchAll(PDO::FETCH_ASSOC);
+    $byId = [];
+    foreach ($rows as $row) $byId[$row['id']] = $row;
+    $result = [];
+    foreach (array_reverse($ids) as $id) {
+        $row = $byId[$id] ?? null;
+        $result[] = ['id' => $id, 'name' => $row ? trim($row['primeiro_nome'] . ' ' . $row['ultimo_nome']) : 'Conta já não existe',
+            'joined' => $row ? mp_iso($row['adesao']) : null];
+    }
+    return $result;
+}
 
 function mp_h(string $value): string {
     return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
@@ -100,7 +222,7 @@ function mp_epoch_filter(array $input, string $key): ?string {
     return gmdate('Y-m-d H:i:s', (int) $value);
 }
 
-function mp_members(PDO $pdo, array $input): array {
+function mp_members(PDO $pdo, array $input, array $ignoredIds = []): array {
     $q = mp_string($input, 'q');
     if (strlen($q) > 400) throw new InvalidArgumentException('A pesquisa é demasiado longa.');
     $source = mp_string($input, 'source', 'all');
@@ -141,20 +263,22 @@ function mp_members(PDO $pdo, array $input): array {
     if ($from !== null) { $terms[] = 'm.adesao >= :joined_from'; $params['joined_from'] = $from; }
     if ($until !== null) { $terms[] = 'm.adesao < :joined_until'; $params['joined_until'] = $until; }
     $where = $terms ? implode(' AND ', $terms) : '1 = 1';
+    [$included, $excludedParams] = mp_included_members($ignoredIds);
+    $params += $excludedParams;
     $joins = 'LEFT JOIN localizacao_membro l ON l.membro_id = m.id COLLATE utf8mb4_general_ci';
     $pdo->beginTransaction();
     try {
-        $counts = mp_query($pdo, 'SELECT COUNT(*) AS total, COALESCE(SUM(adesao >= :recent), 0) AS recent FROM membros',
-            ['recent' => gmdate('Y-m-d H:i:s', time() - 7 * 86400)])->fetch(PDO::FETCH_ASSOC);
+        $counts = mp_query($pdo, "SELECT COUNT(*) AS total, COALESCE(SUM(adesao >= :recent), 0) AS recent FROM $included m",
+            $excludedParams + ['recent' => gmdate('Y-m-d H:i:s', time() - 7 * 86400)])->fetch(PDO::FETCH_ASSOC);
         $locationCounts = mp_query($pdo, "SELECT
             COALESCE(SUM(CASE WHEN $available THEN 1 ELSE 0 END), 0) AS located,
             COALESCE(SUM(CASE WHEN l.origem = 'background' THEN 1 ELSE 0 END), 0) AS background
-            FROM membros m $joins")->fetch(PDO::FETCH_ASSOC);
-        $filtered = (int) mp_query($pdo, "SELECT COUNT(*) FROM membros m $joins WHERE $where", $params)->fetchColumn();
+            FROM $included m $joins", $excludedParams)->fetch(PDO::FETCH_ASSOC);
+        $filtered = (int) mp_query($pdo, "SELECT COUNT(*) FROM $included m $joins WHERE $where", $params)->fetchColumn();
         $page = min($page, max(1, (int) ceil($filtered / MP_PAGE_SIZE)));
         $offset = ($page - 1) * MP_PAGE_SIZE;
         $order = $orders[$sort];
-        // A numeração é calculada ANTES dos filtros. Os dois tipos de collation
+        // A numeração é calculada DEPOIS das exclusões e ANTES dos filtros. Os dois tipos de collation
         // existentes no esquema são explicitados apenas nas comparações.
         $rows = mp_query($pdo, "SELECT m.id, m.numero, m.primeiro_nome, m.ultimo_nome, m.nascimento,
             m.adesao, m.bio, m.genero, m.objetivo,
@@ -162,7 +286,7 @@ function mp_members(PDO $pdo, array $input): array {
             l.capturada_em, l.recebida_em, l.atualizada_em,
             e.em_background, e.atualizado_em AS app_atualizado_em
             FROM (SELECT id, primeiro_nome, ultimo_nome, nascimento, adesao, bio, genero, objetivo,
-                ROW_NUMBER() OVER (ORDER BY adesao ASC, id ASC) AS numero FROM membros) m
+                ROW_NUMBER() OVER (ORDER BY adesao ASC, id ASC) AS numero FROM $included eligible) m
             $joins
             LEFT JOIN estado_app_membro e ON e.membro_id = m.id COLLATE utf8mb4_unicode_ci
             WHERE $where ORDER BY $order LIMIT " . MP_PAGE_SIZE . " OFFSET $offset", $params)->fetchAll(PDO::FETCH_ASSOC);
@@ -249,8 +373,11 @@ $authorized = (int) ($_SESSION['mp_until'] ?? 0) > time()
     && hash_equals(MP_ACCESS_HASH, (string) ($_SESSION['mp_key_version'] ?? ''));
 $loginError = '';
 if ($method === 'POST') {
+    if (in_array($action, ['ignore', 'restore'], true) && !$authorized) {
+        mp_json(['success' => false, 'message' => 'A sessão expirou. Reabre o painel e introduz a chave de acesso.'], 401);
+    }
     if (!hash_equals((string) $_SESSION['mp_csrf'], mp_string($_POST, 'csrf'))) {
-        if ($action === 'logout') mp_json(['success' => false, 'message' => 'A sessão expirou. Atualiza a página.'], 403);
+        if (in_array($action, ['logout', 'ignore', 'restore'], true)) mp_json(['success' => false, 'message' => 'A sessão expirou. Atualiza a página.'], 403);
         $loginError = 'A página expirou. Tenta novamente.';
         http_response_code(403);
     } elseif ($action === 'login') {
@@ -276,7 +403,7 @@ if ($method === 'POST') {
         setcookie(session_name(), '', ['expires' => time() - 3600, 'path' => '/', 'secure' => true, 'httponly' => true, 'samesite' => 'Strict']);
         session_destroy();
         mp_json(['success' => true]);
-    } else {
+    } elseif (!in_array($action, ['ignore', 'restore'], true)) {
         mp_json(['success' => false, 'message' => 'Ação não permitida.'], 405);
     }
 } elseif ($method !== 'GET') {
@@ -284,12 +411,29 @@ if ($method === 'POST') {
     mp_json(['success' => false, 'message' => 'Método não permitido.'], 405);
 }
 
-if ($method === 'GET' && $action === 'data') {
+if ($method === 'GET' && in_array($action, ['ignore', 'restore'], true)) {
+    mp_json(['success' => false, 'message' => 'Esta alteração requer um pedido POST.'], 405);
+}
+if (($method === 'GET' && in_array($action, ['data', 'ignored'], true))
+    || ($method === 'POST' && in_array($action, ['ignore', 'restore'], true))) {
     if (!$authorized) mp_json(['success' => false, 'message' => 'A sessão expirou. Reabre esta página e introduz a chave de acesso.'], 401);
     session_write_close();
     try {
         $pdo = mp_database();
-        $data = mp_members($pdo, $_GET);
+        if ($method === 'POST') {
+            $id = mp_string($_POST, 'id');
+            if (!mp_valid_id($id)) throw new InvalidArgumentException('ID de conta inválido.');
+            if ($action === 'ignore') {
+                $found = mp_query($pdo, 'SELECT id FROM membros WHERE id = ?', [$id])->fetchColumn();
+                if ($found === false) throw new InvalidArgumentException('Esta conta já não existe. Atualiza o painel.');
+                $id = (string) $found;
+            }
+            $ids = mp_change_ignored($action, $id);
+            mp_json(['success' => true, 'ignoredCount' => count($ids)]);
+        }
+        $ids = mp_read_ignored();
+        if ($action === 'ignored') mp_json(['success' => true, 'members' => mp_ignored_list($pdo, $ids)]);
+        $data = mp_members($pdo, $_GET, $ids);
         mp_json(['success' => true, 'data' => $data]);
     } catch (InvalidArgumentException $error) {
         mp_json(['success' => false, 'message' => $error->getMessage()], 422);
@@ -348,7 +492,7 @@ $basePath = rtrim(str_replace('\\', '/', dirname((string) ($_SERVER['SCRIPT_NAME
     page: 1, q: '', source: 'all', from: '', to: '', sort: 'newest',
     auto: true, busy: false, closed: false, sequence: 0, members: [],
     total: 0, filtered: 0, timer: null, debounce: null, controller: null,
-    selected: null, trigger: null
+    selected: null, trigger: null, mutating: false, ignoredSequence: 0
   };
 
   const style = document.createElement('style');
@@ -356,7 +500,7 @@ $basePath = rtrim(str_replace('\\', '/', dirname((string) ($_SERVER['SCRIPT_NAME
   style.textContent = `
     :host{all:initial;display:block;position:fixed;inset:0;z-index:2147483647;color:#192b29;background:#f4f5f0;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px;line-height:1.5;color-scheme:light}
     *,*::before,*::after{box-sizing:border-box}button,input,select{font:inherit}button,a,input,select{touch-action:manipulation}button{cursor:pointer}button:disabled{cursor:default;opacity:.45}a{color:#24634c}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #bf8126;outline-offset:3px}
-    .shell{height:100dvh;overflow:auto}.wrap{max-width:1520px;margin:auto;padding:0 44px}.top{background:#fff;border-bottom:1px solid #dfe5dc}.top-inner{display:flex;justify-content:space-between;align-items:center;gap:16px;min-height:86px}.brand{font-family:Georgia,serif;font-size:35px;font-weight:bold;letter-spacing:-2px;line-height:1}.brand-dot{color:#8a9f44}.brand small{display:inline-block;margin-left:22px;padding-left:22px;border-left:1px solid #d9dfd7;font:11px/1.4 sans-serif;color:#68766a;letter-spacing:1.8px;text-transform:uppercase;vertical-align:middle}.actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.button{border:1px solid #d5ded4;border-radius:9px;background:#fff;color:#244737;padding:9px 15px;font-weight:600}.button.primary{background:#244737;color:#fff;border-color:#244737}.button.subtle{background:transparent}.intro{display:flex;justify-content:space-between;gap:20px;align-items:flex-end;padding:32px 0 22px}.eyebrow{text-transform:uppercase;letter-spacing:2px;color:#647260;font-size:10px;font-weight:700;margin:0 0 8px}h1{font-family:Georgia,serif;font-size:42px;letter-spacing:-1.5px;font-weight:normal;line-height:1.1;margin:0 0 9px}p{margin:0}.muted{color:#6c786c}.live{display:flex;align-items:center;gap:8px;font-size:12px;white-space:nowrap}.dot{width:7px;height:7px;border-radius:100%;background:#66865b;flex-shrink:0}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:0 0 24px}.stat{padding:17px 21px;background:#fff;border:1px solid #dfe5dc;border-radius:13px}.stat:first-child{background:#244737;color:#fff;border-color:#244737}.stat span{font-size:11px;letter-spacing:.6px;text-transform:uppercase}.stat strong{display:block;font-family:Georgia,serif;font-size:34px;font-weight:normal;line-height:1.35}.stat small{font-size:11px;opacity:.7}.filters{background:#fff;border:1px solid #dfe5dc;border-radius:13px;padding:18px;display:grid;grid-template-columns:2fr 1.1fr 1fr 1fr 1.3fr auto;gap:12px;align-items:end}.field{display:flex;flex-direction:column;gap:6px;min-width:0}.field label{font-size:10px;letter-spacing:.7px;font-weight:700;text-transform:uppercase;color:#677262}.field input,.field select{width:100%;min-height:41px;border:1px solid #dfe5dc;border-radius:7px;background:#fafbf8;color:#20392d;padding:8px 10px;min-width:0}.filters .button{min-height:41px}.resultbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:20px 0 16px}.resultbar strong{font-size:13px}.resultbar small{color:#6c786c;font-size:11px}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;padding-bottom:24px}.card{background:#fff;border:1px solid #dfe5dc;border-radius:14px;overflow:hidden;display:flex;flex-direction:column}.portrait{position:relative;height:190px;background:linear-gradient(135deg,#dce5d5,#efede1);display:grid;place-items:center;overflow:hidden;color:#8b9b80}.portrait img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}.initials{font:58px Georgia,serif}.photo-note{position:absolute;bottom:11px;right:12px;font-size:10px;padding:3px 8px;border-radius:5px;background:#ffffffed;color:#536344}.number{position:absolute;top:13px;left:13px;padding:3px 10px;border-radius:6px;background:#ffffffed;font-size:11px;font-weight:700;color:#244737}.origin{font-size:10px;font-weight:600;display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:5px;background:#f0f3ee;color:#516449;white-space:nowrap}.origin.bg{background:#f4eddb;color:#806020}.origin.fg{background:#eaf2eb;color:#2a694d}.origin.unknown{background:#f0f0ee;color:#767871}.portrait .origin{position:absolute;top:13px;right:13px}.card-body{padding:17px 17px 13px;flex:1;display:flex;flex-direction:column}.name{font:24px/1.2 Georgia,serif;letter-spacing:-.5px;margin:0 0 6px;overflow-wrap:anywhere}.age{color:#87927f;font-size:19px}.joined{font-size:10px;color:#7a8478}.bio{margin:12px 0;color:#5b675a;font-size:12px;min-height:36px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-wrap;overflow-wrap:anywhere}.tags{display:flex;gap:5px;flex-wrap:wrap;margin:0 0 15px}.tag{font-size:10px;color:#56614e;background:#f3f4ee;border-radius:4px;padding:3px 7px;overflow-wrap:anywhere}.location{margin-top:auto;padding-top:12px;border-top:1px solid #edf0e9;font-size:11px;color:#64745d}.location strong{display:block;font-size:11px;font-weight:600;color:#455a3e}.location small{font-size:10px}.card-bottom{display:flex;justify-content:space-between;align-items:center;gap:7px;padding:11px 17px;background:#fcfdf9;border-top:1px solid #edf0e9}.card-bottom a{font-size:10px;text-decoration:none}.detail-button{border:0;background:transparent;padding:2px 0;color:#244737;font-size:11px;font-weight:700}.footer{display:flex;justify-content:space-between;align-items:center;gap:16px;border-top:1px solid #dce3d6;padding:20px 0 30px;font-size:11px;color:#78816f}.pagination{display:flex;align-items:center;gap:12px}.notice{border:1px solid #d9bf88;background:#fff6df;color:#715c2e;padding:12px 16px;border-radius:9px;margin:17px 0;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px}.notice[hidden],.empty[hidden]{display:none}.empty{text-align:center;padding:60px 20px;background:#fff;border:1px dashed #d4ddcf;border-radius:14px;margin-bottom:24px}.empty strong{display:block;font:26px Georgia,serif;margin-bottom:8px}.auto{font-size:11px;color:#64725d;display:flex;gap:6px;align-items:center}.auto input{accent-color:#244737}.fineprint{font-size:10px;max-width:640px;color:#78816f;padding-bottom:18px}.dialog{border:1px solid #d9e1d3;border-radius:18px;padding:0;width:min(820px,94vw);max-height:90dvh;background:#fff;color:#22392d;box-shadow:0 24px 100px #0004}.dialog::backdrop{background:#13291dcc;backdrop-filter:blur(3px)}.detail-header{display:flex;align-items:center;justify-content:space-between;padding:22px 26px;border-bottom:1px solid #e4e9df}.detail-header h2{margin:0;font:29px Georgia,serif}.detail-main{padding:24px 26px}.gallery{display:flex;gap:10px;overflow:auto;margin-bottom:23px}.gallery a{min-width:145px;width:145px;height:165px;display:grid;place-items:center;background:#edf0e8;border-radius:10px;overflow:hidden;font-size:12px}.gallery img{width:100%;height:100%;object-fit:cover}.detail-bio{white-space:pre-wrap;overflow-wrap:anywhere;color:#5e6c56;margin:12px 0 16px}.details{display:grid;grid-template-columns:1fr 1fr;gap:0 24px;margin:20px 0}.details div{padding:13px 0;border-top:1px solid #e9ede5;min-width:0}.details dt{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#79866e}.details dd{font-size:13px;margin:4px 0 0;overflow-wrap:anywhere}.dialog-note{font-size:11px;color:#7a856f;background:#f5f7f0;padding:13px;border-radius:9px}.dialog-links{display:flex;gap:16px;align-items:center;margin-top:18px;font-size:12px}.busy .dot{animation:pulse 1s infinite}@keyframes pulse{50%{opacity:.2}}
+    .shell{height:100dvh;overflow:auto}.wrap{max-width:1520px;margin:auto;padding:0 44px}.top{background:#fff;border-bottom:1px solid #dfe5dc}.top-inner{display:flex;justify-content:space-between;align-items:center;gap:16px;min-height:86px}.brand{font-family:Georgia,serif;font-size:35px;font-weight:bold;letter-spacing:-2px;line-height:1}.brand-dot{color:#8a9f44}.brand small{display:inline-block;margin-left:22px;padding-left:22px;border-left:1px solid #d9dfd7;font:11px/1.4 sans-serif;color:#68766a;letter-spacing:1.8px;text-transform:uppercase;vertical-align:middle}.actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.button{border:1px solid #d5ded4;border-radius:9px;background:#fff;color:#244737;padding:9px 15px;font-weight:600}.button.primary{background:#244737;color:#fff;border-color:#244737}.button.subtle{background:transparent}.intro{display:flex;justify-content:space-between;gap:20px;align-items:flex-end;padding:32px 0 22px}.eyebrow{text-transform:uppercase;letter-spacing:2px;color:#647260;font-size:10px;font-weight:700;margin:0 0 8px}h1{font-family:Georgia,serif;font-size:42px;letter-spacing:-1.5px;font-weight:normal;line-height:1.1;margin:0 0 9px}p{margin:0}.muted{color:#6c786c}.live{display:flex;align-items:center;gap:8px;font-size:12px;white-space:nowrap}.dot{width:7px;height:7px;border-radius:100%;background:#66865b;flex-shrink:0}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:0 0 24px}.stat{padding:17px 21px;background:#fff;border:1px solid #dfe5dc;border-radius:13px}.stat:first-child{background:#244737;color:#fff;border-color:#244737}.stat span{font-size:11px;letter-spacing:.6px;text-transform:uppercase}.stat strong{display:block;font-family:Georgia,serif;font-size:34px;font-weight:normal;line-height:1.35}.stat small{font-size:11px;opacity:.7}.filters{background:#fff;border:1px solid #dfe5dc;border-radius:13px;padding:18px;display:grid;grid-template-columns:2fr 1.1fr 1fr 1fr 1.3fr auto;gap:12px;align-items:end}.field{display:flex;flex-direction:column;gap:6px;min-width:0}.field label{font-size:10px;letter-spacing:.7px;font-weight:700;text-transform:uppercase;color:#677262}.field input,.field select{width:100%;min-height:41px;border:1px solid #dfe5dc;border-radius:7px;background:#fafbf8;color:#20392d;padding:8px 10px;min-width:0}.filters .button{min-height:41px}.resultbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:20px 0 16px}.resultbar strong{font-size:13px}.resultbar small{color:#6c786c;font-size:11px}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;padding-bottom:24px}.card{background:#fff;border:1px solid #dfe5dc;border-radius:14px;overflow:hidden;display:flex;flex-direction:column}.portrait{position:relative;height:190px;background:linear-gradient(135deg,#dce5d5,#efede1);display:grid;place-items:center;overflow:hidden;color:#8b9b80}.portrait img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}.initials{font:58px Georgia,serif}.photo-note{position:absolute;bottom:11px;right:12px;font-size:10px;padding:3px 8px;border-radius:5px;background:#ffffffed;color:#536344}.number{position:absolute;top:13px;left:13px;padding:3px 10px;border-radius:6px;background:#ffffffed;font-size:11px;font-weight:700;color:#244737}.origin{font-size:10px;font-weight:600;display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:5px;background:#f0f3ee;color:#516449;white-space:nowrap}.origin.bg{background:#f4eddb;color:#806020}.origin.fg{background:#eaf2eb;color:#2a694d}.origin.unknown{background:#f0f0ee;color:#767871}.portrait .origin{position:absolute;top:13px;right:13px}.card-body{padding:17px 17px 13px;flex:1;display:flex;flex-direction:column}.name{font:24px/1.2 Georgia,serif;letter-spacing:-.5px;margin:0 0 6px;overflow-wrap:anywhere}.age{color:#87927f;font-size:19px}.joined{font-size:10px;color:#7a8478}.bio{margin:12px 0;color:#5b675a;font-size:12px;min-height:36px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-wrap;overflow-wrap:anywhere}.tags{display:flex;gap:5px;flex-wrap:wrap;margin:0 0 15px}.tag{font-size:10px;color:#56614e;background:#f3f4ee;border-radius:4px;padding:3px 7px;overflow-wrap:anywhere}.location{margin-top:auto;padding-top:12px;border-top:1px solid #edf0e9;font-size:11px;color:#64745d}.location strong{display:block;font-size:11px;font-weight:600;color:#455a3e}.location small{font-size:10px}.card-bottom{display:flex;justify-content:space-between;align-items:center;gap:7px;padding:11px 17px;background:#fcfdf9;border-top:1px solid #edf0e9}.card-bottom a{font-size:10px;text-decoration:none}.detail-button{border:0;background:transparent;padding:2px 0;color:#244737;font-size:11px;font-weight:700}.footer{display:flex;justify-content:space-between;align-items:center;gap:16px;border-top:1px solid #dce3d6;padding:20px 0 30px;font-size:11px;color:#78816f}.pagination{display:flex;align-items:center;gap:12px}.notice{border:1px solid #d9bf88;background:#fff6df;color:#715c2e;padding:12px 16px;border-radius:9px;margin:17px 0;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px}.notice[hidden],.empty[hidden]{display:none}.empty{text-align:center;padding:60px 20px;background:#fff;border:1px dashed #d4ddcf;border-radius:14px;margin-bottom:24px}.empty strong{display:block;font:26px Georgia,serif;margin-bottom:8px}.auto{font-size:11px;color:#64725d;display:flex;gap:6px;align-items:center}.auto input{accent-color:#244737}.fineprint{font-size:10px;max-width:640px;color:#78816f;padding-bottom:18px}.dialog{border:1px solid #d9e1d3;border-radius:18px;padding:0;width:min(820px,94vw);max-height:90dvh;background:#fff;color:#22392d;box-shadow:0 24px 100px #0004}.dialog::backdrop{background:#13291dcc;backdrop-filter:blur(3px)}.detail-header{display:flex;align-items:center;justify-content:space-between;padding:22px 26px;border-bottom:1px solid #e4e9df}.detail-header h2{margin:0;font:29px Georgia,serif}.detail-main{padding:24px 26px}.gallery{display:flex;gap:10px;overflow:auto;margin-bottom:23px}.gallery a{min-width:145px;width:145px;height:165px;display:grid;place-items:center;background:#edf0e8;border-radius:10px;overflow:hidden;font-size:12px}.gallery img{width:100%;height:100%;object-fit:cover}.detail-bio{white-space:pre-wrap;overflow-wrap:anywhere;color:#5e6c56;margin:12px 0 16px}.details{display:grid;grid-template-columns:1fr 1fr;gap:0 24px;margin:20px 0}.details div{padding:13px 0;border-top:1px solid #e9ede5;min-width:0}.details dt{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#79866e}.details dd{font-size:13px;margin:4px 0 0;overflow-wrap:anywhere}.dialog-note{font-size:11px;color:#7a856f;background:#f5f7f0;padding:13px;border-radius:9px}.dialog-links{display:flex;gap:16px;align-items:center;margin-top:18px;font-size:12px}.card-bottom{flex-wrap:wrap}.ignore-button{flex-basis:100%;font-size:11px;text-align:left;padding:7px 0 0;border:0;border-top:1px solid #e4e9df;background:none;color:#806020}.feedback{margin-top:16px;padding:12px 16px;border:1px solid #d4dfcc;border-radius:9px;background:#edf3e8;font-size:13px}.feedback[hidden]{display:none}.ignored-row{display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid #e4e9df;padding:15px 0}.ignored-row small{display:block;color:#6c786c;font-size:11px;overflow-wrap:anywhere}.ignored-row>div{min-width:0}.ignored-row strong{overflow-wrap:anywhere}.top-inner{flex-wrap:wrap;padding-top:12px;padding-bottom:12px}.busy .dot{animation:pulse 1s infinite}@keyframes pulse{50%{opacity:.2}}
     @media(max-width:1200px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}.filters{grid-template-columns:2fr 1fr 1fr}.wrap{padding:0 28px}}
     @media(max-width:800px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.stats{grid-template-columns:repeat(2,1fr)}.filters{grid-template-columns:1fr 1fr}.intro{display:block}.live{margin-top:15px}.brand small{display:none}.wrap{padding:0 18px}.top-inner{min-height:74px}.actions .button{padding:8px 11px}.intro h1{font-size:35px}.footer{flex-direction:column;align-items:flex-start}.resultbar small{max-width:155px;text-align:right}}
     @media(max-width:480px){.grid{grid-template-columns:1fr}.portrait{height:240px}.filters{grid-template-columns:1fr 1fr}.field:first-child{grid-column:1/-1}.actions{gap:6px}.stats{gap:9px}.stat{padding:13px 15px}.stat strong{font-size:29px}.details{grid-template-columns:1fr}.top .button{font-size:11px}.brand{font-size:30px}.detail-main,.detail-header{padding:20px}.resultbar{align-items:flex-start}}
@@ -366,13 +510,13 @@ $basePath = rtrim(str_replace('\\', '/', dirname((string) ($_SERVER['SCRIPT_NAME
   const shell = node('section', undefined, 'shell');
   shell.setAttribute('aria-label', 'Painel privado de membros da Margot');
   shell.innerHTML = `
-    <header class="top"><div class="wrap top-inner"><div class="brand">margot<span class="brand-dot">.</span><small>O teu círculo<br>Painel de membros</small></div><div class="actions"><button id="refresh" class="button primary">↻ Atualizar</button><button id="close" class="button subtle">Sair ×</button></div></div></header>
-    <main class="wrap"><section class="intro"><div><p class="eyebrow">Comunidade · painel privado</p><h1>As pessoas da Margot.</h1><p class="muted">Cada rosto, uma história. Todos os membros num só lugar.</p></div><div class="live"><span class="dot"></span><span id="status" role="status" aria-live="polite">A ligar à base de dados…</span></div></section>
-    <div class="stats"><div class="stat"><span>Total de membros</span><strong id="total">—</strong><small>Toda a comunidade</small></div><div class="stat"><span>Novos em 7 dias</span><strong id="recent">—</strong><small>Desde há sete dias</small></div><div class="stat"><span>Com localização</span><strong id="located">—</strong><small>Ativa e visível no último registo</small></div><div class="stat"><span>Origem background</span><strong id="background">—</strong><small>Última origem registada</small></div></div>
+    <header class="top"><div class="wrap top-inner"><div class="brand">margot<span class="brand-dot">.</span><small>O teu círculo<br>Painel de membros</small></div><div class="actions"><button id="ignored-open" class="button">Contas ignoradas</button><button id="refresh" class="button primary">↻ Atualizar</button><button id="close" class="button subtle">Sair ×</button></div></div></header>
+    <main class="wrap"><section class="intro"><div><p class="eyebrow">Comunidade · painel privado</p><h1>As pessoas da Margot.</h1><p class="muted">Cada rosto, uma história. Contas de teste excluídas deste painel.</p></div><div class="live"><span class="dot"></span><span id="status" role="status" aria-live="polite">A ligar à base de dados…</span></div></section>
+    <div class="stats"><div class="stat"><span>Total de membros</span><strong id="total">—</strong><small>Sem as contas de teste indicadas</small></div><div class="stat"><span>Novos em 7 dias</span><strong id="recent">—</strong><small>Desde há sete dias</small></div><div class="stat"><span>Com localização</span><strong id="located">—</strong><small>Ativa e visível no último registo</small></div><div class="stat"><span>Origem background</span><strong id="background">—</strong><small>Última origem registada</small></div></div>
     <form id="filters" class="filters"><div class="field"><label for="q">Pesquisar pessoas</label><input id="q" type="search" maxlength="100" placeholder="Nome, biografia ou gosto…" autocomplete="off"></div><div class="field"><label for="source">Última localização</label><select id="source"><option value="all">Todas as origens</option><option value="foreground">Foreground</option><option value="background">Background</option><option value="missing">Sem coordenadas disponíveis</option></select></div><div class="field"><label for="from">Adesão desde</label><input type="date" id="from"></div><div class="field"><label for="to">Adesão até</label><input type="date" id="to"></div><div class="field"><label for="sort">Organizar por</label><select id="sort"><option value="newest">Adesão · mais recentes</option><option value="oldest">Adesão · mais antigos</option><option value="name">Nome · A–Z</option><option value="location">Localização · mais recente</option></select></div><button id="clear" type="button" class="button">Limpar</button></form>
-    <div id="notice" class="notice" role="alert" hidden></div><div class="resultbar"><strong id="results">A carregar membros…</strong><label class="auto"><input id="auto" type="checkbox" checked> Atualizar a cada 30 s</label></div><div id="grid" class="grid" aria-busy="true"></div><div id="empty" class="empty" hidden><strong>Ninguém por aqui, ainda.</strong><p class="muted">Experimenta alterar os filtros de pesquisa.</p></div>
-    <footer class="footer"><span id="page-info">12 membros por página</span><div class="pagination"><button id="previous" class="button" disabled>← Anterior</button><span id="page">Página 1</span><button id="next" class="button" disabled>Seguinte →</button></div></footer><p class="fineprint"># = posição por data de adesão entre os membros existentes. Os filtros mantêm esta posição; eliminar contas antigas pode renumerá-la. Em adesões simultâneas, o ID desempata a ordem. Datas no teu fuso horário. Último registo não significa presença online.</p>
-    </main><dialog id="detail" class="dialog" aria-labelledby="detail-title"><div class="detail-header"><h2 id="detail-title">Perfil do membro</h2><button id="detail-close" class="button" aria-label="Fechar perfil">Fechar ×</button></div><div id="detail-main" class="detail-main"></div></dialog>`;
+    <div id="action-feedback" class="feedback" role="status" aria-live="polite" hidden></div><div id="notice" class="notice" role="alert" hidden></div><div class="resultbar"><strong id="results">A carregar membros…</strong><label class="auto"><input id="auto" type="checkbox" checked> Atualizar a cada 30 s</label></div><div id="grid" class="grid" aria-busy="true"></div><div id="empty" class="empty" hidden><strong>Ninguém por aqui, ainda.</strong><p class="muted">Experimenta alterar os filtros de pesquisa.</p></div>
+    <footer class="footer"><span id="page-info">12 membros por página</span><div class="pagination"><button id="previous" class="button" disabled>← Anterior</button><span id="page">Página 1</span><button id="next" class="button" disabled>Seguinte →</button></div></footer><p class="fineprint"># = posição por data de adesão, depois de excluir as contas de teste indicadas. Os filtros mantêm esta posição; eliminar contas antigas pode renumerá-la. Em adesões simultâneas, o ID desempata a ordem. Datas no teu fuso horário. Último registo não significa presença online.</p>
+    </main><dialog id="detail" class="dialog" aria-labelledby="detail-title"><div class="detail-header"><h2 id="detail-title">Perfil do membro</h2><button id="detail-close" class="button" aria-label="Fechar perfil">Fechar ×</button></div><div id="detail-main" class="detail-main"></div></dialog><dialog id="ignored-dialog" class="dialog" aria-labelledby="ignored-title"><div class="detail-header"><h2 id="ignored-title">Contas ignoradas</h2><button id="ignored-close" class="button">Fechar ×</button></div><div class="detail-main"><p class="dialog-note">Estas são as contas que ignoraste através dos botões. Podes repô-las a qualquer momento. As exclusões iniciais por nome continuam definidas no ficheiro.</p><p id="ignored-status" role="status" aria-live="polite"></p><div id="ignored-list"></div></div></dialog>`;
   root.append(shell);
 
   function localDate(value) {
@@ -401,6 +545,87 @@ $basePath = rtrim(str_replace('\\', '/', dirname((string) ($_SERVER['SCRIPT_NAME
     if (!result || result.version !== 2 || !Array.isArray(result.members)) throw new Error('Resposta inesperada do painel.');
     return result;
   }
+  function ignoreButton(member) {
+    const button = node('button', 'Ignorar conta de teste', 'ignore-button');
+    button.type = 'button'; button.dataset.ignore = member.id;
+    button.disabled = state.mutating;
+    button.setAttribute('aria-label', 'Ignorar conta de teste: ' + name(member));
+    return button;
+  }
+  async function panelRequest(action, fields) {
+    const url = new URL(endpoint), controller = new AbortController();
+    const abort = () => controller.abort();
+    lifetime.signal.addEventListener('abort', abort, { once: true });
+    const timeout = setTimeout(() => controller.abort('timeout'), 25000);
+    const options = { credentials: 'same-origin', cache: 'no-store', signal: controller.signal,
+      headers: { Accept: 'application/json' } };
+    if (fields) { options.method = 'POST'; options.body = new URLSearchParams({ action, csrf, ...fields }); }
+    else url.searchParams.set('action', action);
+    try {
+      const response = await fetch(url, options);
+      if (!response.headers.get('content-type')?.includes('application/json')) throw new Error('O servidor não devolveu uma resposta válida. Atualiza o painel.');
+      const payload = await response.json();
+      if (!response.ok || !payload.success) {
+        const error = new Error(payload.message || 'Não foi possível concluir o pedido.');
+        error.status = response.status; throw error;
+      }
+      return payload;
+    } catch (error) {
+      if (controller.signal.reason === 'timeout') throw new Error('O pedido demorou demasiado. Atualiza o painel para confirmar se a alteração ficou guardada.');
+      throw error;
+    } finally { clearTimeout(timeout); lifetime.signal.removeEventListener('abort', abort); }
+  }
+  async function loadIgnored() {
+    const sequence = ++state.ignoredSequence;
+    $('ignored-status').textContent = 'A carregar…';
+    $('ignored-list').replaceChildren();
+    try {
+      const data = await panelRequest('ignored');
+      if (state.closed || sequence !== state.ignoredSequence || !$('ignored-dialog').open) return;
+      $('ignored-status').textContent = data.members.length ? data.members.length + ' contas ignoradas pelos botões.' : 'Ainda não ignoraste contas pelos botões.';
+      const rows = data.members.map(member => {
+        const row = node('div', undefined, 'ignored-row'), text = node('div');
+        text.append(node('strong', member.name || 'Sem nome'), node('small', 'Adesão · ' + dateLabel(member.joined)), node('small', 'ID · ' + member.id));
+        const restore = node('button', 'Repor no painel', 'button');
+        restore.type = 'button'; restore.dataset.restore = member.id; restore.disabled = state.mutating;
+        restore.setAttribute('aria-label', 'Repor no painel: ' + member.name);
+        row.append(text, restore); return row;
+      });
+      $('ignored-list').replaceChildren(...rows);
+    } catch (error) {
+      if (!state.closed && sequence === state.ignoredSequence) $('ignored-status').textContent = error.message;
+    }
+  }
+  async function changeIgnored(action, id) {
+    if (state.mutating || state.closed) return;
+    state.mutating = true;
+    clearTimeout(state.timer); clearTimeout(state.debounce); state.controller?.abort(); ++state.sequence;
+    state.busy = false; shell.classList.remove('busy'); $('grid').setAttribute('aria-busy', 'false');
+    const buttons = () => root.querySelectorAll('[data-ignore], [data-restore]');
+    buttons().forEach(button => { button.disabled = true; });
+    const feedback = $('action-feedback');
+    feedback.hidden = false; feedback.textContent = 'A guardar a alteração…';
+    if ($('ignored-dialog').open) $('ignored-status').textContent = 'A guardar a alteração…';
+    try {
+      await panelRequest(action, { id });
+      if (state.closed) return;
+      if (action === 'ignore' && state.selected === id) $('detail').close();
+      const refreshed = await refresh(true);
+      if (state.closed) return;
+      feedback.textContent = (action === 'ignore' ? 'Conta ignorada.' : 'Conta reposta no painel.') +
+        (refreshed ? ' Numeração e totais atualizados.' : ' A alteração ficou guardada; clica em Atualizar para carregar os totais.');
+      if ($('ignored-dialog').open) await loadIgnored();
+    } catch (error) {
+      if (state.closed) return;
+      if (error.status === 401 || error.status === 403) clearPersonalData();
+      feedback.textContent = error.message || 'Não foi possível guardar. Atualiza o painel para confirmar o estado.';
+      if ($('ignored-dialog').open) $('ignored-status').textContent = feedback.textContent;
+    } finally {
+      state.mutating = false;
+      if (!state.closed) { buttons().forEach(button => { button.disabled = false; }); schedule(); }
+    }
+  }
+
   const nf = new Intl.NumberFormat('pt-PT');
   const fullDate = new Intl.DateTimeFormat('pt-PT', { dateStyle: 'medium', timeStyle: 'medium' });
   const shortDate = new Intl.DateTimeFormat('pt-PT', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -473,6 +698,7 @@ $basePath = rtrim(str_replace('\\', '/', dirname((string) ($_SERVER['SCRIPT_NAME
     detail.type = 'button'; detail.dataset.member = m.id;
     bottom.append(detail);
     if (url) bottom.append(link('Abrir foto ↗', url));
+    bottom.append(ignoreButton(m));
     card.append(portrait, body, bottom);
     return card;
   }
@@ -514,6 +740,7 @@ $basePath = rtrim(str_replace('\\', '/', dirname((string) ($_SERVER['SCRIPT_NAME
     const links = node('div', undefined, 'dialog-links');
     const map = mapLink(m);
     if (map) links.append(map, node('span', 'O mapa só abre quando clicas.', 'muted'));
+    links.append(ignoreButton(m));
     content.append(links);
   }
   function render(data) {
@@ -536,16 +763,17 @@ $basePath = rtrim(str_replace('\\', '/', dirname((string) ($_SERVER['SCRIPT_NAME
   function clearPersonalData() {
     state.members = []; state.selected = null;
     $('grid').replaceChildren(); $('detail-main').replaceChildren(); $('detail').close();
+    ++state.ignoredSequence; $('ignored-list').replaceChildren(); $('ignored-dialog').close();
     ['total', 'recent', 'located', 'background'].forEach(k => { $(k).textContent = '—'; });
     $('empty').hidden = true; $('results').textContent = 'Não foi possível carregar os dados.';
     $('previous').disabled = true; $('next').disabled = true;
   }
   function schedule() {
     clearTimeout(state.timer);
-    if (state.auto && !state.closed && !document.hidden) state.timer = setTimeout(refresh, CONFIG.intervaloMs);
+    if (state.auto && !state.closed && !state.mutating && !document.hidden) state.timer = setTimeout(refresh, CONFIG.intervaloMs);
   }
-  async function refresh() {
-    if (state.closed) return;
+  async function refresh(afterMutation = false) {
+    if (state.closed || state.mutating && afterMutation !== true) return false;
     clearTimeout(state.timer);
     state.controller?.abort();
     const controller = new AbortController(); state.controller = controller;
@@ -554,15 +782,15 @@ $basePath = rtrim(str_replace('\\', '/', dirname((string) ($_SERVER['SCRIPT_NAME
     state.busy = true; shell.classList.add('busy'); $('grid').setAttribute('aria-busy', 'true');
     $('status').textContent = 'A consultar a base de dados…'; $('notice').hidden = true;
     const timeout = setTimeout(() => controller.abort('timeout'), 25000);
-    let retryPage = false;
+    let succeeded = false;
     try {
       const result = await fetchMembers(snapshot, controller.signal);
       if (state.closed || sequence !== state.sequence) return;
       const pages = Math.max(1, Math.ceil(result.filtered / CONFIG.porPagina));
-      if (state.page > pages) { state.page = pages; retryPage = true; return; }
+      state.page = result.page;
       const expected = Math.min(CONFIG.porPagina, Math.max(0, result.filtered - (state.page - 1) * CONFIG.porPagina));
       if (result.members.length !== expected) throw new Error('O resultado veio incompleto. Clica em Atualizar para voltar a consultar a base.');
-      render(result);
+      render(result); succeeded = true;
       $('status').textContent = 'Atualizado às ' + new Intl.DateTimeFormat('pt-PT', { timeStyle: 'medium' }).format(new Date());
     } catch (error) {
       if (state.closed || sequence !== state.sequence || controller.signal.aborted && controller.signal.reason !== 'timeout') return;
@@ -574,9 +802,10 @@ $basePath = rtrim(str_replace('\\', '/', dirname((string) ($_SERVER['SCRIPT_NAME
       clearTimeout(timeout);
       if (!state.closed && sequence === state.sequence) {
         state.busy = false; shell.classList.remove('busy'); $('grid').setAttribute('aria-busy', 'false');
-        if (retryPage) queueMicrotask(refresh); else schedule();
+        schedule();
       }
     }
+    return succeeded;
   }
   function close() {
     if (state.closed) return;
@@ -591,6 +820,15 @@ $basePath = rtrim(str_replace('\\', '/', dirname((string) ($_SERVER['SCRIPT_NAME
     state.controller?.abort(); ++state.sequence;
     state.debounce = setTimeout(refresh, 350);
   }
+  on($('ignored-open'), 'click', () => { $('ignored-dialog').showModal(); loadIgnored(); });
+  on($('ignored-close'), 'click', () => $('ignored-dialog').close());
+  on($('ignored-dialog'), 'close', () => { ++state.ignoredSequence; $('ignored-list').replaceChildren(); $('ignored-open').focus(); });
+  on(root, 'click', e => {
+    const ignore = e.target.closest('button[data-ignore]');
+    const restore = e.target.closest('button[data-restore]');
+    if (ignore) changeIgnored('ignore', ignore.dataset.ignore);
+    else if (restore) changeIgnored('restore', restore.dataset.restore);
+  });
   on($('filters'), 'submit', e => { e.preventDefault(); clearTimeout(state.debounce); refresh(); });
   on($('q'), 'input', changeFilters);
   ['source', 'from', 'to', 'sort'].forEach(k => on($(k), 'change', changeFilters));
