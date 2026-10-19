@@ -260,7 +260,7 @@ trait Discovery {
             $posicaoAnterior = $nearby->locationSnapshot($membroId);
             $statement = $database->prepare("UPDATE localizacao_membro
                 SET localizacao_ativa = :active, visivel = :visible,
-                    capturada_em = IF(:hide_fence = 1,UTC_TIMESTAMP(3),capturada_em)
+                    recebida_em = IF(:hide_fence = 1,UTC_TIMESTAMP(3),recebida_em)
                 WHERE membro_id = :member_id");
             $statement->execute([
                 'active' => $localizacaoAtiva ? 1 : 0,

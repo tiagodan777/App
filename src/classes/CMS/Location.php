@@ -12,6 +12,15 @@ final class Location {
         $this->db = $db;
     }
 
+    public function initializePresence(string $memberId): void {
+        // A autenticação WebSocket aplica a preferência antes da primeira posição nativa.
+        // Uma linha sem coordenadas nunca é uma presença geográfica válida.
+        $statement = $this->db->prepare("INSERT IGNORE INTO localizacao_membro
+            (membro_id, localizacao_ativa, visivel, origem, atualizada_em)
+            VALUES (:member, 0, 0, 'foreground', '1970-01-01 00:00:00')");
+        $statement->execute(['member' => $memberId]);
+    }
+
     public function saveBackground(
         string $memberId,
         ?float $latitude,
@@ -26,19 +35,18 @@ final class Location {
         if ($memberId === '') {
             throw new InvalidArgumentException('Membro inválido.');
         }
-        if (!$active || !$visible) {
-            $capturedAt = (new \DateTimeImmutable('now',new \DateTimeZone('UTC')))->format('Y-m-d H:i:s.v');
-            $latitude = null;
-            $longitude = null;
-            $accuracy = null;
-        } elseif (
-            $latitude === null ||
-            $longitude === null ||
-            $latitude < -90 ||
-            $latitude > 90 ||
-            $longitude < -180 ||
-            $longitude > 180
-        ) {
+        if (!$active) {
+            $this->disable($memberId);
+            return true;
+        }
+        // Compatibilidade com versões nativas que enviavam hide sem coordenadas.
+        if (!$visible && $latitude === null && $longitude === null) {
+            $statement = $this->db->prepare('UPDATE localizacao_membro SET visivel = 0 WHERE membro_id = :member_id');
+            $statement->execute(['member_id' => $memberId]);
+            return true;
+        }
+        if ($latitude === null || $longitude === null || !is_finite($latitude) || !is_finite($longitude)
+            || abs($latitude) > 90 || abs($longitude) > 180) {
             throw new InvalidArgumentException('Coordenadas inválidas.');
         }
         if ($accuracy !== null) {
@@ -53,8 +61,8 @@ final class Location {
                 latitude=IF(VALUES(capturada_em) IS NULL OR VALUES(capturada_em)>COALESCE(capturada_em,atualizada_em),VALUES(latitude),latitude),
                 longitude=IF(VALUES(capturada_em) IS NULL OR VALUES(capturada_em)>COALESCE(capturada_em,atualizada_em),VALUES(longitude),longitude),
                 precisao_m=IF(VALUES(capturada_em) IS NULL OR VALUES(capturada_em)>COALESCE(capturada_em,atualizada_em),VALUES(precisao_m),precisao_m),
-                localizacao_ativa=IF(VALUES(capturada_em) IS NULL OR VALUES(capturada_em)>COALESCE(capturada_em,atualizada_em),VALUES(localizacao_ativa),localizacao_ativa),
-                visivel=IF(VALUES(capturada_em) IS NULL OR VALUES(capturada_em)>COALESCE(capturada_em,atualizada_em),VALUES(visivel),visivel),
+                localizacao_ativa=IF(VALUES(origem)=\'background\',localizacao_ativa,IF(VALUES(capturada_em) IS NULL OR VALUES(capturada_em)>COALESCE(capturada_em,atualizada_em),VALUES(localizacao_ativa),localizacao_ativa)),
+                visivel=IF(VALUES(origem)=\'background\',visivel,IF(VALUES(capturada_em) IS NULL OR VALUES(capturada_em)>COALESCE(capturada_em,atualizada_em),VALUES(visivel),visivel)),
                 origem=IF(VALUES(capturada_em) IS NULL OR VALUES(capturada_em)>COALESCE(capturada_em,atualizada_em),VALUES(origem),origem),
                 recebida_em=IF(VALUES(capturada_em) IS NULL OR VALUES(capturada_em)>COALESCE(capturada_em,atualizada_em),VALUES(recebida_em),recebida_em),
                 atualizada_em=IF(VALUES(capturada_em) IS NULL OR VALUES(capturada_em)>COALESCE(capturada_em,atualizada_em),VALUES(atualizada_em),atualizada_em),
@@ -62,8 +70,8 @@ final class Location {
         );
         $statement->execute([
             'member_id'=>$memberId,'latitude'=>$latitude,'longitude'=>$longitude,'accuracy'=>$accuracy,
-            'active'=>$active?1:0,'visible'=>$visible?1:0,'source'=>$source === 'foreground'?'foreground':'background',
-            'fresh_at'=>$active && $visible ? $capturedAt : null,
+            'active'=>$active?1:0,'visible'=>$source === 'foreground' && $visible?1:0,'source'=>$source === 'foreground'?'foreground':'background',
+            'fresh_at'=>$capturedAt,
             'captured_at'=>$capturedAt
         ]);
         return $statement->rowCount()>0;
@@ -82,14 +90,14 @@ final class Location {
             || abs((float)$latitude) > 90 || abs((float)$longitude) > 180) {
             throw new InvalidArgumentException('Coordenadas inválidas.');
         }
-        // Uma única operação verifica visibilidade, autorização e ordem da amostra.
+        // Uma única operação verifica recolha ativa, autorização e ordem da amostra.
         // Um hide concorrente fica sempre oculto, independentemente da ordem.
         $statement = $this->db->prepare(
             "UPDATE localizacao_membro SET
                 latitude = :latitude, longitude = :longitude, precisao_m = :accuracy,
                 origem = 'background', capturada_em = :captured_at,
                 atualizada_em = :fresh_at, recebida_em = UTC_TIMESTAMP(3)
-             WHERE membro_id = :member_id AND localizacao_ativa = 1 AND visivel = 1
+             WHERE membro_id = :member_id AND localizacao_ativa = 1
                 AND :newer_at > COALESCE(capturada_em, atualizada_em)
                 AND EXISTS (
                     SELECT 1 FROM token

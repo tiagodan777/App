@@ -5,6 +5,7 @@ enum LocationPushAccess {
   struct Grant: Codable, Equatable {
     let id: String
     let token: String
+    let probeUntil: TimeInterval?
     let expiresAt: TimeInterval
   }
 
@@ -57,16 +58,14 @@ enum LocationPushAccess {
 
   static func grant(now: TimeInterval = Date().timeIntervalSince1970) throws -> Grant? {
     guard let value: Grant = try read("grant"), validToken(value.token),
-      UUID(uuidString: value.id) != nil, value.expiresAt.isFinite,
-      value.expiresAt > now, value.expiresAt <= now + 3605 else { return nil }
+      value.id.count == 32, value.id.allSatisfy({ $0.isHexDigit }), value.expiresAt.isFinite,
+      value.expiresAt > now, value.expiresAt <= now + 2592010 else { return nil }
     return value
   }
 
-  static func allow(token: String, until: TimeInterval) throws {
+  static func allow(token: String, id: String, until: TimeInterval, probeUntil: TimeInterval?) throws {
     let old = try grant()
-    let id = old.flatMap { $0.token == token ? $0.id : nil } ?? UUID().uuidString
-    let value = Grant(id: id,
-      token: token, expiresAt: until)
+    let value = Grant(id: id, token: token, probeUntil: probeUntil, expiresAt: until)
     if old != value { try write(value, account: "grant") }
   }
 
@@ -84,17 +83,18 @@ enum LocationPushAccess {
 
   // Reserva antes de ligar o GPS. Sobrevive ao fim do processo e a novos Run.
   // Chamado apenas pela extensão, na main queue, incluindo entre instâncias.
-  static func reserveAttempt(now: TimeInterval = Date().timeIntervalSince1970) throws {
+  static func reserveAttempt(manual: Bool = false, now: TimeInterval = Date().timeIntervalSince1970) throws {
     let history: [TimeInterval] = try read("attempts") ?? []
-    try write(nextAttempts(history, now: now), account: "attempts")
+    try write(nextAttempts(history, now: now, manual: manual), account: "attempts")
   }
 
-  static func nextAttempts(_ history: [TimeInterval], now: TimeInterval) throws -> [TimeInterval] {
+  static func nextAttempts(_ history: [TimeInterval], now: TimeInterval, manual: Bool = false) throws -> [TimeInterval] {
     guard now.isFinite, history.allSatisfy({ $0.isFinite && $0 <= now }) else {
       throw Failure.budget
     }
-    let recent = history.filter { now - $0 < 3600 }.sorted()
-    guard recent.count < 3, recent.last.map({ now - $0 >= 300 }) ?? true else {
+    let recent = history.filter { now - $0 < 86400 }.sorted()
+    guard recent.count < 180, (!manual || recent.filter({ now - $0 < 3600 }).count < 3),
+      recent.last.map({ now - $0 >= (manual ? 300 : 480) }) ?? true else {
       throw Failure.budget
     }
     return recent + [now]

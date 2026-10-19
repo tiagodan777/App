@@ -64,14 +64,14 @@ if ($stateOnly && $appEmBackground === null) {
 $localizacaoAtiva = normalizarBooleanoBackgroundLocation($dados['active'] ?? true, true);
 $visivel = normalizarBooleanoBackgroundLocation($dados['visible'] ?? true, true);
 $locationPushProbe = ($dados['location_push_probe'] ?? null) === 1;
-if ($locationPushProbe && ($stateOnly || !$localizacaoAtiva || !$visivel
+if ($locationPushProbe && ($stateOnly || !$localizacaoAtiva
     || ($dados['location_policy_version'] ?? null) !== 1)) {
     json_response(['success' => false, 'message' => 'Pedido da extensão inválido.'], 400);
 }
 $latitude = null;
 $longitude = null;
 $precisao = null;
-if (!$stateOnly && $localizacaoAtiva && $visivel) {
+if (!$stateOnly && $localizacaoAtiva && ($visivel || isset($dados['latitude'], $dados['longitude']))) {
     if (
         !isset($dados['latitude'], $dados['longitude']) ||
         !is_numeric($dados['latitude']) ||
@@ -95,7 +95,7 @@ try {
     }
     $membroId = (string) $membroId;
     $capturedAt = null;
-    if (!$stateOnly && $localizacaoAtiva && $visivel) {
+    if (!$stateOnly && $localizacaoAtiva && ($visivel || isset($dados['latitude'], $dados['longitude']))) {
         try { $capturedAt = \App\CMS\LocationSample::capturedAt($dados); }
         catch (\InvalidArgumentException $invalidSample) {
             // Authenticated but obsolete samples are acknowledged, never retried forever or made fresh.
@@ -126,7 +126,10 @@ try {
     } catch (Throwable $erroSnapshot) {
         error_log('[background-location-snapshot-before] ' . $erroSnapshot->getMessage());
     }
-    $accepted = $locationPushProbe
+    // Todas as amostras nativas atuais preservam os estados público e de recolha.
+    $strictSample = $locationPushProbe || ($localizacaoAtiva && $latitude !== null
+        && ($dados['location_policy_version'] ?? null) === 1);
+    $accepted = $strictSample
         ? $cms->getLocation()->saveLocationPush($membroId, $token, $dados)
         : $cms->getLocation()->saveBackground($membroId,$latitude,$longitude,$precisao,
             $localizacaoAtiva,$visivel,$capturedAt);

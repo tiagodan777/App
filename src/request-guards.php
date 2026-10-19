@@ -22,7 +22,7 @@ function limitarRota(string $grupo, string $identificador, int $maximo, int $jan
 }
 
 $metodo = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
-$atualizacaoBackground = $page === 'background-location-update' && $metodo === 'POST';
+$atualizacaoBackground = in_array($page, ['background-location-update', 'location-recovery'], true) && $metodo === 'POST';
 if (!$atualizacaoBackground) {
     require_csrf_token();
 }
@@ -100,6 +100,6 @@ if ($page === 'today') {
     }
 }
 
-if (in_array($page, ['daylies', 'notification-preferences'], true) && $metodo !== 'GET') {
+if (in_array($page, ['daylies', 'notification-preferences', 'location-hide'], true) && $metodo !== 'GET') {
     limitarRota($page . '-write', $membroOuSessao, 40, 15 * 60);
 }

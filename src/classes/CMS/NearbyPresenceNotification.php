@@ -131,7 +131,7 @@ final class NearbyPresenceNotification {
                 INNER JOIN localizacao_membro AS lm ON lm.membro_id COLLATE utf8mb4_unicode_ci = ea.membro_id COLLATE
                 utf8mb4_unicode_ci
                 INNER JOIN membros AS m ON m.id COLLATE utf8mb4_unicode_ci = ea.membro_id COLLATE utf8mb4_unicode_ci
-                WHERE ea.membro_id = :member_id AND ea.em_background = 1 AND lm.localizacao_ativa = 1 AND lm.visivel = 1
+                WHERE ea.membro_id = :member_id AND ea.em_background = 1 AND lm.localizacao_ativa = 1
                 AND lm.latitude IS NOT NULL AND lm.longitude IS NOT NULL AND lm.atualizada_em >= DATE_SUB(
                 UTC_TIMESTAMP(), INTERVAL ' .
                 self::LOCATION_MAX_AGE_SECONDS .
@@ -164,7 +164,7 @@ final class NearbyPresenceNotification {
                 INNER JOIN localizacao_membro AS lm ON lm.membro_id COLLATE utf8mb4_unicode_ci = ea.membro_id COLLATE
                 utf8mb4_unicode_ci
                 INNER JOIN membros AS m ON m.id COLLATE utf8mb4_unicode_ci = ea.membro_id COLLATE utf8mb4_unicode_ci
-                WHERE ea.em_background = 1 AND lm.localizacao_ativa = 1 AND lm.visivel = 1 AND lm.latitude IS NOT NULL
+                WHERE ea.em_background = 1 AND lm.localizacao_ativa = 1 AND lm.latitude IS NOT NULL
                 AND lm.longitude IS NOT NULL AND lm.atualizada_em >= DATE_SUB( UTC_TIMESTAMP(), INTERVAL ' .
                 self::LOCATION_MAX_AGE_SECONDS .
                 ' SECOND

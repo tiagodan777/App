@@ -181,6 +181,8 @@ class WebSocket implements MessageComponentInterface {
         $this->visibilidadePorLigacao[$conn->resourceId] = $visivel;
         $this->ligacoesPorMembro[$membroId] ??= [];
         $this->ligacoesPorMembro[$membroId][$conn->resourceId] = $conn;
+        (new Location($this->getDatabase()))->initializePresence($membroId);
+        $this->persistirEstadoPresencaParaProximidade($membroId, $this->membroTemLigacaoComLocalizacaoAtiva($membroId), $this->membroTemLigacaoVisivel($membroId));
         if (!$this->membroTemLigacaoComLocalizacaoAtiva($membroId)) {
             unset($this->localizacoes[$membroId]);
         }

@@ -98,7 +98,7 @@
     }
 
     function presencaVisivel() {
-        return localizacaoPermitida() && !estaInvisivel();
+        return localizacaoPermitida() && (!estaInvisivel() || window.MargotLocationPrivacy?.allowsCollection() === true);
     }
 
     function plataformaNativa() {
@@ -536,7 +536,7 @@
                     if (
                         document.visibilityState !== 'visible' ||
                         !localizacaoPermitida() ||
-                        estaInvisivel()
+                        !visivel
                     ) {
                         return { active: false, deferred: true };
                     }

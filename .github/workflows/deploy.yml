@@ -62,13 +62,16 @@ jobs:
 
             php -l websocket-server.php
             php -l push-worker.php
+            php -l location-recovery-worker.php
 
             sudo install -m 0644 \
               deploy/app-push.service \
               /etc/systemd/system/app-push.service
 
+            sudo install -m 0644 deploy/app-location-recovery.service /etc/systemd/system/app-location-recovery.service
+
             sudo systemctl daemon-reload
-            sudo systemctl enable app-push
+            sudo systemctl enable app-push app-location-recovery
             sudo systemctl restart app-websocket
-            sudo systemctl restart app-push
+            sudo systemctl restart app-push app-location-recovery
             sudo systemctl reload apache2

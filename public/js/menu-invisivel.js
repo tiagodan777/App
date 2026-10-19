@@ -45,7 +45,7 @@
             }
             renderizar();
             if (novoEstado) {
-                mostrarMensagem('Modo invisível ativado. Já não apareces entre as pessoas por perto.');
+                mostrarMensagem('Modo invisível ativado. Ficas escondido dos outros. Se permitires a localização, a Margot continua a recebê-la para te avisar de pessoas visíveis por perto.');
                 return;
             }
             if (preferencias.obter('localizacao') === false) {

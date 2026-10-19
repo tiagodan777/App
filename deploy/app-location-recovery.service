@@ -1,0 +1,22 @@
+[Unit]
+Description=Margot bounded location recovery
+After=network-online.target mariadb.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/app
+EnvironmentFile=-/etc/margot/push.env
+ExecStart=/usr/bin/php /var/www/app/location-recovery-worker.php
+Restart=on-failure
+RestartSec=30
+KillSignal=SIGTERM
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

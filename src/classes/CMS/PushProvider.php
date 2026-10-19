@@ -6,6 +6,7 @@ namespace App\CMS;
 use RuntimeException;
 
 final class PushProvider {
+    use LocationPushTransport;
     private array $config;
     private ?array $fcmAccessToken = null;
     private array $apnsTokens = [];

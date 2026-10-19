@@ -208,7 +208,7 @@
   "Voltar a ficar visível": "Become visible again",
   "Modo invisível ativo": "Invisible mode on",
   "Não foi possível alterar o modo invisível.": "Could not change invisible mode.",
-  "Modo invisível ativado. Já não apareces entre as pessoas por perto.": "Invisible mode enabled. You no longer appear among nearby people.",
+  "Modo invisível ativado. Ficas escondido dos outros. Se permitires a localização, a Margot continua a recebê-la para te avisar de pessoas visíveis por perto.": "Invisible mode enabled. You stay hidden from others. If you allow location, Margot continues receiving it to tell you about visible people nearby.",
   "O modo invisível foi desativado, mas a localização continua desativada nas preferências.": "Invisible mode was disabled, but location is still turned off in your preferences.",
   "Modo invisível desativado. Voltaste a aparecer entre as pessoas por perto.": "Invisible mode disabled. You appear among nearby people again.",
   "Fotografia de": "Photo of",

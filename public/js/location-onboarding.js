@@ -88,8 +88,7 @@
         return ios &&
             authorization(lastState) === 'when_in_use' &&
             granted(lastState) &&
-            !disabled() &&
-            window.MargotPreferencias?.obter('invisivel') !== true;
+            !disabled();
     }
 
     function explainLocationSettings() {
