@@ -2,8 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>MargotLocationPushKeychainGroup</key>
-	<string>$(AppIdentifierPrefix)com.margot.locationpush</string>
 	<key>CAPACITOR_DEBUG</key>
 	<string>$(CAPACITOR_DEBUG)</string>
 	<key>CFBundleDevelopmentRegion</key>
@@ -31,6 +29,8 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>MargotLocationPushKeychainGroup</key>
+	<string>$(AppIdentifierPrefix)com.margot.locationpush</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Margot uses the camera so you can take profile photos and send photos and videos in messages.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
