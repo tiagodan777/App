@@ -4,7 +4,7 @@ declare(strict_types=1);
 /* Margot — painel temporário e independente. PHP 8.2+, PDO MySQL.
  * Colocar em public/, junto do index.php. Apagar este ficheiro para remover.
  * A chave está nas instruções entregues; apenas a hash fica neste ficheiro.
- * Não inclui o bootstrap da app nem altera tabelas ou membros.
+ * Não inclui o bootstrap da app. Só escreve na tabela própria de exclusões.
  */
 const MP_ACCESS_HASH = 'd0fe54607b45442d90e737b1b43582b3e85bf31eca7fb0e04eec92cfe7b0989c';
 const MP_SESSION_SECONDS = 8 * 60 * 60;
@@ -50,8 +50,8 @@ function mp_included_members(array $ignoredIds = []): array {
     return ['(SELECT * FROM membros WHERE NOT (' . implode(' OR ', $excluded) . '))', $params];
 }
 
-// Ficheiro auxiliar protegido contra leitura via HTTP. Só guarda IDs, nunca
-// credenciais, nomes ou perfis. Não se executa nem se inclui o seu conteúdo.
+// Compatibilidade: a versão anterior pode ter guardado IDs neste ficheiro.
+// É apenas lido, nunca escrito nem executado. As novas exclusões usam a base.
 const MP_IGNORE_FILE = __DIR__ . '/margot-painel-ignorados.php';
 const MP_IGNORE_GUARD = "<?php http_response_code(404); exit; __halt_compiler();\n";
 
@@ -59,7 +59,7 @@ function mp_valid_id(mixed $id): bool {
     return is_string($id) && preg_match('/\A[a-zA-Z0-9_-]{1,36}\z/', $id) === 1;
 }
 
-function mp_read_ignored(): array {
+function mp_legacy_ignored(): array {
     clearstatcache(true, MP_IGNORE_FILE);
     if (!file_exists(MP_IGNORE_FILE)) return [];
     $raw = @file_get_contents(MP_IGNORE_FILE);
@@ -75,47 +75,73 @@ function mp_read_ignored(): array {
     return array_values(array_unique($data['ids']));
 }
 
-function mp_change_ignored(string $action, string $id): array {
+// Esta é a única tabela em que o painel escreve. Não há alterações aos perfis.
+const MP_IGNORE_DDL = <<<'SQL'
+CREATE TABLE IF NOT EXISTS `margot_painel_exclusoes` (
+    `membro_id` VARCHAR(36) CHARACTER SET ascii COLLATE ascii_general_ci NOT NULL,
+    `ignorado` TINYINT UNSIGNED NOT NULL DEFAULT 1,
+    `atualizado_em` DATETIME(6) NOT NULL,
+    PRIMARY KEY (`membro_id`)
+) ENGINE=InnoDB;
+SQL;
+
+function mp_storage_rows(PDO $pdo): ?array {
+    try {
+        return mp_query($pdo, 'SELECT membro_id, ignorado FROM margot_painel_exclusoes ORDER BY atualizado_em ASC, membro_id ASC')->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $error) {
+        if ((string) $error->getCode() === '42S02' || (int) ($error->errorInfo[1] ?? 0) === 1146) return null;
+        throw new RuntimeException('Não foi possível ler as exclusões na base de dados. Confirma a permissão SELECT na tabela margot_painel_exclusoes. As exclusões não foram reiniciadas.', 0, $error);
+    }
+}
+
+function mp_read_ignored(PDO $pdo): array {
+    $ids = array_fill_keys(mp_legacy_ignored(), true);
+    foreach (mp_storage_rows($pdo) ?? [] as $row) {
+        $id = $row['membro_id'];
+        if (!mp_valid_id($id) || !in_array((string) $row['ignorado'], ['0', '1'], true)) {
+            throw new RuntimeException('A tabela de exclusões contém um registo inválido. Confirma margot_painel_exclusoes antes de continuar.');
+        }
+        // Repor deixa uma marca na tabela: o ficheiro antigo não volta a excluir
+        // a mesma conta. Depois de importar, o ficheiro antigo pode ser removido.
+        unset($ids[$id]);
+        if ((int) $row['ignorado'] === 1) $ids[$id] = true;
+    }
+    return array_keys($ids);
+}
+
+function mp_change_ignored(PDO $pdo, string $action, string $id): array {
     if (!in_array($action, ['ignore', 'restore'], true) || !mp_valid_id($id)) {
         throw new InvalidArgumentException('Conta ou ação inválida.');
     }
-    // Um bloqueio separado mantém as alterações concorrentes serializadas,
-    // mesmo quando o ficheiro de dados é substituído de forma atómica.
-    $lock = @fopen(__DIR__ . '/.margot-painel-ignorados.lock', 'c');
-    if ($lock === false) throw new RuntimeException('Não foi possível guardar a exclusão. O PHP precisa de permissão de escrita nesta pasta para criar margot-painel-ignorados.php. A conta não foi ignorada.');
-    $temp = null;
-    $stream = null;
-    try {
-        if (!flock($lock, LOCK_EX)) throw new RuntimeException('Não foi possível guardar a alteração. Tenta novamente.');
-        $ids = mp_read_ignored();
-        $previous = $ids;
-        if ($action === 'ignore' && !in_array($id, $ids, true)) $ids[] = $id;
-        if ($action === 'restore') $ids = array_values(array_filter($ids, static fn($stored) => $stored !== $id));
-        if ($ids === $previous) return $ids;
-        if (count($ids) > 5000) throw new RuntimeException('Foi atingido o limite de 5000 exclusões manuais.');
-        $bytes = MP_IGNORE_GUARD . json_encode(['version' => 1, 'ids' => $ids], JSON_THROW_ON_ERROR);
-        $temp = __DIR__ . '/.margot-ignorados-' . bin2hex(random_bytes(12)) . '.php';
-        $stream = @fopen($temp, 'x');
-        if ($stream === false) throw new RuntimeException('Não foi possível guardar a alteração. Confirma a permissão de escrita nesta pasta.');
-        @chmod($temp, 0600);
-        $offset = 0;
-        while ($offset < strlen($bytes)) {
-            $written = fwrite($stream, substr($bytes, $offset));
-            if ($written === false || $written === 0) throw new RuntimeException('Não foi possível guardar a alteração. A lista anterior foi preservada.');
-            $offset += $written;
+    $legacy = mp_legacy_ignored();
+    if (mp_storage_rows($pdo) === null) {
+        // A criação só ocorre num POST autenticado, com CSRF válido, e fora
+        // da transação de dados (DDL provoca commit implícito em MariaDB).
+        try {
+            $pdo->exec(MP_IGNORE_DDL);
+        } catch (PDOException $error) {
+            throw new RuntimeException('A ligação da app não conseguiu criar a tabela de exclusões. No phpMyAdmin, seleciona a base app e executa o ficheiro instalar-exclusoes.sql entregue com este painel. Depois tenta ignorar novamente. Não é necessário alterar permissões da pasta.', 0, $error);
         }
-        if (!fflush($stream)) throw new RuntimeException('Não foi possível guardar a alteração. A lista anterior foi preservada.');
-        fclose($stream); $stream = null;
-        if (!@rename($temp, MP_IGNORE_FILE)) throw new RuntimeException('Não foi possível guardar a alteração. A lista anterior foi preservada.');
-        $temp = null;
-        return $ids;
-    } finally {
-        if (is_resource($stream)) fclose($stream);
-        if ($temp !== null && file_exists($temp)) @unlink($temp);
-        flock($lock, LOCK_UN);
-        fclose($lock);
     }
+    try {
+        $pdo->beginTransaction();
+        $now = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('Y-m-d H:i:s.u');
+        foreach ($legacy as $oldId) {
+            // Nunca substitui uma decisão mais recente guardada na base.
+            mp_query($pdo, 'INSERT INTO margot_painel_exclusoes (membro_id, ignorado, atualizado_em)
+                VALUES (?, 1, ?) ON DUPLICATE KEY UPDATE membro_id = VALUES(membro_id)', [$oldId, $now]);
+        }
+        mp_query($pdo, 'INSERT INTO margot_painel_exclusoes (membro_id, ignorado, atualizado_em)
+            VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE ignorado = VALUES(ignorado), atualizado_em = VALUES(atualizado_em)',
+            [$id, $action === 'ignore' ? 1 : 0, $now]);
+        $pdo->commit();
+    } catch (Throwable $error) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        throw new RuntimeException('Não foi possível guardar a alteração na base de dados. A ligação da app precisa de SELECT, INSERT e UPDATE na tabela margot_painel_exclusoes. A alteração não foi concluída.', 0, $error);
+    }
+    return mp_read_ignored($pdo);
 }
+
 
 function mp_ignored_list(PDO $pdo, array $ids): array {
     if ($ids === []) return [];
@@ -428,10 +454,10 @@ if (($method === 'GET' && in_array($action, ['data', 'ignored'], true))
                 if ($found === false) throw new InvalidArgumentException('Esta conta já não existe. Atualiza o painel.');
                 $id = (string) $found;
             }
-            $ids = mp_change_ignored($action, $id);
+            $ids = mp_change_ignored($pdo, $action, $id);
             mp_json(['success' => true, 'ignoredCount' => count($ids)]);
         }
-        $ids = mp_read_ignored();
+        $ids = mp_read_ignored($pdo);
         if ($action === 'ignored') mp_json(['success' => true, 'members' => mp_ignored_list($pdo, $ids)]);
         $data = mp_members($pdo, $_GET, $ids);
         mp_json(['success' => true, 'data' => $data]);
