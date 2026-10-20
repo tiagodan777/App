@@ -214,7 +214,7 @@ final class LocationRecovery {
             }
             $accepted = (new Location($this->db))->saveLocationPush($member, $token, $payload);
             if ($accepted) {
-                $statement = $this->db->prepare('UPDATE location_recovery_devices SET failures = 0,
+                    $statement = $this->db->prepare('UPDATE location_recovery_devices SET failures = 0, next_at = 0,
                     request_id = NULL, request_until = 0, last_error = NULL, last_capture = :captured
                     WHERE device_key = :key');
                 $statement->execute(['captured' => LocationSample::capturedAt($payload), 'key' => $device['device_key']]);
