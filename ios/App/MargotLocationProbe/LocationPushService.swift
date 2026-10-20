@@ -19,7 +19,7 @@ final class LocationPushService: NSObject, CLLocationPushServiceExtension,
   private var stage = "idle"
 
   func didReceiveLocationPushPayload(_ payload: [String: Any], completion: @escaping () -> Void) {
-    logger.notice("LOCATION_RECOVERY_RECEIVED diagnostic=2")
+    logger.notice("LOCATION_RECOVERY_RECEIVED diagnostic=3")
     DispatchQueue.main.async { self.begin(payload, completion: completion) }
   }
 
@@ -128,7 +128,7 @@ final class LocationPushService: NSObject, CLLocationPushServiceExtension,
     stage = "gps"
     logger.notice("LOCATION_RECOVERY_GPS_START id=\(self.requestID, privacy: .public)")
     setDeadline(seconds: 10)
-    manager.requestLocation()
+    manager.startUpdatingLocation()
   }
 
   func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
@@ -138,6 +138,10 @@ final class LocationPushService: NSObject, CLLocationPushServiceExtension,
       logPermission(manager, id: requestID)
       stop("permission"); return
     }
+    guard let grant = grant, LocationPushAccess.stillAllowed(grant) else {
+      stop("access_changed_or_unavailable"); return
+    }
+    guard energyAllowsCapture else { stop(energyReason); return }
     let now = Date()
     let location = locations.filter {
       let age = now.timeIntervalSince($0.timestamp)
@@ -145,18 +149,27 @@ final class LocationPushService: NSObject, CLLocationPushServiceExtension,
         && $0.horizontalAccuracy.isFinite && $0.horizontalAccuracy > 0 && $0.horizontalAccuracy <= 100
         && age >= -2 && age <= 30 && $0.timestamp >= gpsStartedAt.addingTimeInterval(-2)
     }.max { $0.timestamp < $1.timestamp }
-    stopGPS()
     guard let location = location else {
-      logger.notice("LOCATION_RECOVERY_NO_FRESH_FIX id=\(self.requestID, privacy: .public)")
-      finish(); return
+      let latest = locations.max { $0.timestamp < $1.timestamp }
+      let age = latest.map { now.timeIntervalSince($0.timestamp) } ?? -1
+      let accuracy = latest?.horizontalAccuracy ?? -1
+      logger.notice("LOCATION_RECOVERY_WAITING_FIX id=\(self.requestID, privacy: .public) age_seconds=\(age) accuracy_m=\(accuracy)")
+      // Keep the original 10-second deadline; rejected samples do not extend it.
+      return
     }
+    stopGPS()
     upload(location)
   }
 
   func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
     guard completion != nil, manager === self.manager else { return }
-    let code = (error as NSError).code
-    logger.error("LOCATION_RECOVERY_LOCATION_ERROR id=\(self.requestID, privacy: .public) code=\(code)")
+    let failure = error as NSError
+    if failure.domain == kCLErrorDomain, failure.code == CLError.locationUnknown.rawValue {
+      logger.notice("LOCATION_RECOVERY_WAITING_FIX id=\(self.requestID, privacy: .public) reason=location_unknown")
+      // Core Location can recover; keep waiting within the existing deadline.
+      return
+    }
+    logger.error("LOCATION_RECOVERY_LOCATION_ERROR id=\(self.requestID, privacy: .public) code=\(failure.code)")
     finish()
   }
 
@@ -252,7 +265,7 @@ final class LocationPushService: NSObject, CLLocationPushServiceExtension,
   }
 
   func serviceExtensionWillTerminate() {
-    logger.notice("LOCATION_RECOVERY_SYSTEM_TERMINATE diagnostic=2")
+    logger.notice("LOCATION_RECOVERY_SYSTEM_TERMINATE diagnostic=3")
     if Thread.isMainThread { finish() }
     else { DispatchQueue.main.sync { self.finish() } }
   }
