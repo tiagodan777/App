@@ -22,7 +22,7 @@ trait LocationPushTransport {
         $headers = [
             'authorization: bearer ' . $authorization,
             'apns-topic: ' . $this->requiredConfig($config, 'topic', 'APNs topic') . '.location-query',
-            'apns-push-type: location', 'apns-priority: 10', 'apns-expiration: 0',
+            'apns-push-type: location', 'apns-priority: 10', 'apns-expiration: ' . (time() + 120),
             'content-type: application/json'
         ];
         $payload = json_encode([
