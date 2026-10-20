@@ -116,7 +116,7 @@ final class LocationRecovery {
         }
         $statement = $this->db->prepare('SELECT d.device_key FROM location_recovery_devices d
             INNER JOIN localizacao_membro lm ON lm.membro_id = d.membro_id
-            WHERE d.enabled = 1 AND d.expires_at > :now AND d.next_at <= :due
+            WHERE d.enabled = 1 AND d.expires_at > :now AND (d.next_at <= :due OR lm.capturada_em > d.last_capture)
               AND lm.localizacao_ativa = 1 AND lm.capturada_em < DATE_SUB(UTC_TIMESTAMP(3), INTERVAL 480 SECOND)'
             . $filter . ' ORDER BY d.next_at, d.device_key LIMIT 100');
         $statement->execute($parameters);
@@ -130,7 +130,11 @@ final class LocationRecovery {
     private function claim(string $key): ?array {
         $this->db->beginTransaction();
         try {
-            $statement = $this->db->prepare('SELECT next_at FROM location_recovery_devices WHERE device_key = :key FOR UPDATE');
+            $statement = $this->db->prepare('SELECT CASE WHEN lm.capturada_em > d.last_capture
+                    THEN 0 ELSE d.next_at END
+                FROM location_recovery_devices d
+                LEFT JOIN localizacao_membro lm ON lm.membro_id = d.membro_id
+                WHERE d.device_key = :key FOR UPDATE');
             $statement->execute(['key' => $key]);
             $next = $statement->fetchColumn();
             $now = time();
@@ -146,18 +150,35 @@ final class LocationRecovery {
                 $this->db->commit();
                 return null;
             }
+            $failures = $device['last_capture'] !== null && $device['captured'] > $device['last_capture']
+                ? 0 : (int) $device['failures'];
             try {
                 $history = json_decode($device['attempts_json'], true, 512, JSON_THROW_ON_ERROR);
                 if (!is_array($history)) throw new \RuntimeException('Orçamento inválido.');
                 $history = self::nextBudget($history, $now);
             } catch (\Throwable) {
-                $this->db->prepare('UPDATE location_recovery_devices SET next_at = :next WHERE device_key = :key')
-                    ->execute(['next' => $now + 3600, 'key' => $key]);
+                // Dados inválidos mantêm uma pausa conservadora. Um orçamento válido
+                // aguarda apenas até existir uma vaga, sem ultrapassar os limites.
+                $retryAt = $now + 3600;
+                if (is_array($history ?? null) && count(array_filter($history,
+                    static fn($at): bool => is_int($at) && $at >= 0 && $at <= $now)) === count($history)) {
+                    $recent = array_values(array_filter($history,
+                        static fn(int $at): bool => $now - $at < 86400));
+                    sort($recent);
+                    if ($recent) {
+                        $retryAt = max($now + 1, $recent[count($recent) - 1] + self::STALE_SECONDS);
+                        if (count($recent) >= self::MAX_DAILY) {
+                            $retryAt = max($retryAt, $recent[count($recent) - self::MAX_DAILY] + 86400);
+                        }
+                    }
+                }
+                $this->db->prepare('UPDATE location_recovery_devices SET next_at = :next,
+                    last_capture = :captured, failures = :failures WHERE device_key = :key')
+                    ->execute(['next' => $retryAt, 'captured' => $device['captured'],
+                        'failures' => $failures, 'key' => $key]);
                 $this->db->commit();
                 return null;
             }
-            $failures = $device['last_capture'] !== null && $device['captured'] > $device['last_capture']
-                ? 0 : (int) $device['failures'];
             $id = bin2hex(random_bytes(16));
             $statement = $this->db->prepare('UPDATE location_recovery_devices SET request_id = :id,
                 request_until = :until, next_at = :next, failures = :failures,
@@ -214,7 +235,7 @@ final class LocationRecovery {
             }
             $accepted = (new Location($this->db))->saveLocationPush($member, $token, $payload);
             if ($accepted) {
-                    $statement = $this->db->prepare('UPDATE location_recovery_devices SET failures = 0, next_at = 0,
+                $statement = $this->db->prepare('UPDATE location_recovery_devices SET failures = 0, next_at = 0,
                     request_id = NULL, request_until = 0, last_error = NULL, last_capture = :captured
                     WHERE device_key = :key');
                 $statement->execute(['captured' => LocationSample::capturedAt($payload), 'key' => $device['device_key']]);
