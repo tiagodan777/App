@@ -8,7 +8,7 @@ declare(strict_types=1);
  */
 const MP_ACCESS_HASH = 'd0fe54607b45442d90e737b1b43582b3e85bf31eca7fb0e04eec92cfe7b0989c';
 const MP_SESSION_SECONDS = 8 * 60 * 60;
-const MP_PAGE_SIZE = 12;
+const MP_PAGE_SIZE = 25;
 // Contas de teste: excluídas de todas as consultas, antes da numeração.
 // Os nomes completos são comparados sem distinguir maiúsculas ou acentos.
 const MP_IGNORED_NAMES = [
@@ -494,7 +494,7 @@ $basePath = rtrim(str_replace('\\', '/', dirname((string) ($_SERVER['SCRIPT_NAME
   'use strict';
   const CONFIG = Object.freeze({
     fotos: document.querySelector('meta[name="margot-photos"]').content,
-    intervaloMs: 30000, porPagina: 12
+    intervaloMs: 30000, porPagina: 25
   });
   const csrf = document.querySelector('meta[name="margot-csrf"]').content;
   const nonce = document.currentScript?.nonce || '';
