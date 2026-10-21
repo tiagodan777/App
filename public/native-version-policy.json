@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "ios": {
+    "enabled": true,
+    "minimumVersion": "1.2.5",
+    "minimumBuild": "1"
+  },
+  "android": {
+    "enabled": true,
+    "minimumBuild": "6"
+  }
+}
