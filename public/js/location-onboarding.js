@@ -403,6 +403,7 @@
 
         try {
             lastState = await bg().status();
+            if (await window.MargotWelcome?.run({ state: lastState, force })) { lastState = await bg().status(); dismissed = true; return; }
 
             if (
                 lastState.available === false ||
