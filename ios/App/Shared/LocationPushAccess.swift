@@ -2,6 +2,7 @@ import Foundation
 import Security
 
 enum LocationPushAccess {
+  static let recoveryVersion = 2
   struct Grant: Codable, Equatable {
     let id: String
     let token: String
@@ -94,7 +95,7 @@ enum LocationPushAccess {
     }
     let recent = history.filter { now - $0 < 86400 }.sorted()
     guard recent.count < 180, (!manual || recent.filter({ now - $0 < 3600 }).count < 3),
-      recent.last.map({ now - $0 >= (manual ? 300 : 480) }) ?? true else {
+      recent.last.map({ now - $0 >= (manual ? 300 : 180) }) ?? true else {
       throw Failure.budget
     }
     return recent + [now]
