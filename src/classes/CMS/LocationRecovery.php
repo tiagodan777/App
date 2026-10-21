@@ -7,7 +7,17 @@ use PDO;
 
 final class LocationRecovery {
     public const STALE_SECONDS = 480;
+    public const FAST_SECONDS = 180;
     public const MAX_DAILY = 180;
+
+    public static function interval(int $version): int {
+        return $version === 2 ? self::FAST_SECONDS : self::STALE_SECONDS;
+    }
+
+    private static function intervalSql(): string {
+        return 'CASE WHEN d.recovery_version = 2 THEN ' . self::FAST_SECONDS
+            . ' ELSE ' . self::STALE_SECONDS . ' END';
+    }
 
     public function __construct(private PDO $db) {}
 
@@ -26,8 +36,8 @@ final class LocationRecovery {
             ->execute(['cutoff' => time() - 86400]);
     }
 
-    public function register(string $member, string $token, string $apnsToken, string $environment): array {
-        if (!preg_match('/^[a-f0-9]{32,512}$/D', $apnsToken) || strlen($apnsToken) % 2 !== 0
+    public function register(string $member, string $token, string $apnsToken, string $environment, int $version = 1): array {
+        if (!in_array($version, [1, 2], true) || !preg_match('/^[a-f0-9]{32,512}$/D', $apnsToken) || strlen($apnsToken) % 2 !== 0
             || !in_array($environment, ['sandbox', 'production'], true)) {
             throw new \InvalidArgumentException('Registo inválido.');
         }
@@ -45,15 +55,15 @@ final class LocationRecovery {
         $this->db->beginTransaction();
         try {
             $statement = $this->db->prepare("INSERT INTO location_recovery_devices
-                (device_key,registration_id,membro_id,token_hash,apns_token,environment,expires_at,attempts_json)
-                VALUES (:key,:id,:member,:hash,:apns,:environment,:expires,'[]')
+                (device_key,registration_id,membro_id,token_hash,apns_token,environment,expires_at,attempts_json,recovery_version)
+                VALUES (:key,:id,:member,:hash,:apns,:environment,:expires,'[]',:version)
                 ON DUPLICATE KEY UPDATE
                     registration_id=IF(token_hash=VALUES(token_hash),registration_id,VALUES(registration_id)),
                     request_id=IF(token_hash=VALUES(token_hash),request_id,NULL),
                     membro_id=VALUES(membro_id), token_hash=VALUES(token_hash),
-                    expires_at=VALUES(expires_at), enabled=1");
+                    expires_at=VALUES(expires_at), enabled=1, recovery_version=VALUES(recovery_version)");
             $statement->execute(['key' => $key, 'id' => $id, 'member' => $member, 'hash' => $hash,
-                'apns' => $apnsToken, 'environment' => $environment, 'expires' => $expires]);
+                'apns' => $apnsToken, 'environment' => $environment, 'expires' => $expires, 'version' => $version]);
             $statement = $this->db->prepare('SELECT registration_id FROM location_recovery_devices WHERE device_key = :key');
             $statement->execute(['key' => $key]);
             $id = (string) $statement->fetchColumn();
@@ -72,7 +82,7 @@ final class LocationRecovery {
             INNER JOIN localizacao_membro lm ON lm.membro_id = d.membro_id
             WHERE d.device_key = :key AND d.enabled = 1 AND d.expires_at > :now
               AND lm.localizacao_ativa = 1 AND lm.latitude IS NOT NULL AND lm.longitude IS NOT NULL
-              AND lm.capturada_em < DATE_SUB(UTC_TIMESTAMP(3), INTERVAL 480 SECOND)
+              AND lm.capturada_em < DATE_SUB(UTC_TIMESTAMP(3), INTERVAL " . self::intervalSql() . " SECOND)
               AND EXISTS (SELECT 1 FROM token t WHERE t.token = d.token_hash
                 AND t.membro_id = d.membro_id AND t.proposito = 'background_location'
                 AND t.validade > UTC_TIMESTAMP())");
@@ -80,7 +90,10 @@ final class LocationRecovery {
         return $statement->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
-    public static function nextBudget(array $history, int $now): array {
+    public static function nextBudget(array $history, int $now, int $interval = self::STALE_SECONDS): array {
+        if (!in_array($interval, [self::FAST_SECONDS, self::STALE_SECONDS], true)) {
+            throw new \InvalidArgumentException('Intervalo inválido.');
+        }
         foreach ($history as $value) {
             if (!is_int($value) || $value > $now || $value < 0) {
                 throw new \RuntimeException('Relógio ou orçamento inválido.');
@@ -88,15 +101,18 @@ final class LocationRecovery {
         }
         $recent = array_values(array_filter($history, static fn(int $at): bool => $now - $at < 86400));
         sort($recent);
-        if (count($recent) >= self::MAX_DAILY || ($recent && $now - end($recent) < self::STALE_SECONDS)) {
+        if (count($recent) >= self::MAX_DAILY || ($recent && $now - end($recent) < $interval)) {
             throw new \RuntimeException('Orçamento esgotado.');
         }
         $recent[] = $now;
         return $recent;
     }
 
-    public static function delay(int $previousFailures): int {
-        return min(3600, self::STALE_SECONDS * (2 ** min(3, max(0, $previousFailures))));
+    public static function delay(int $previousFailures, int $interval = self::STALE_SECONDS): int {
+        if (!in_array($interval, [self::FAST_SECONDS, self::STALE_SECONDS], true)) {
+            throw new \InvalidArgumentException('Intervalo inválido.');
+        }
+        return min(3600, $interval * (2 ** min(5, max(0, $previousFailures))));
     }
 
     public function nextRequest(): ?array {
@@ -117,8 +133,8 @@ final class LocationRecovery {
         $statement = $this->db->prepare('SELECT d.device_key FROM location_recovery_devices d
             INNER JOIN localizacao_membro lm ON lm.membro_id = d.membro_id
             WHERE d.enabled = 1 AND d.expires_at > :now AND (d.next_at <= :due OR lm.capturada_em > d.last_capture)
-              AND lm.localizacao_ativa = 1 AND lm.capturada_em < DATE_SUB(UTC_TIMESTAMP(3), INTERVAL 480 SECOND)'
-            . $filter . ' ORDER BY d.next_at, d.device_key LIMIT 100');
+              AND lm.localizacao_ativa = 1 AND lm.capturada_em < DATE_SUB(UTC_TIMESTAMP(3), INTERVAL '
+            . self::intervalSql() . ' SECOND)' . $filter . ' ORDER BY d.next_at, d.device_key LIMIT 100');
         $statement->execute($parameters);
         foreach ($statement->fetchAll(PDO::FETCH_COLUMN) as $key) {
             $request = $this->claim((string) $key);
@@ -150,12 +166,13 @@ final class LocationRecovery {
                 $this->db->commit();
                 return null;
             }
+            $interval = self::interval((int) ($device['recovery_version'] ?? 1));
             $failures = $device['last_capture'] !== null && $device['captured'] > $device['last_capture']
                 ? 0 : (int) $device['failures'];
             try {
                 $history = json_decode($device['attempts_json'], true, 512, JSON_THROW_ON_ERROR);
                 if (!is_array($history)) throw new \RuntimeException('Orçamento inválido.');
-                $history = self::nextBudget($history, $now);
+                $history = self::nextBudget($history, $now, $interval);
             } catch (\Throwable) {
                 // Dados inválidos mantêm uma pausa conservadora. Um orçamento válido
                 // aguarda apenas até existir uma vaga, sem ultrapassar os limites.
@@ -166,7 +183,7 @@ final class LocationRecovery {
                         static fn(int $at): bool => $now - $at < 86400));
                     sort($recent);
                     if ($recent) {
-                        $retryAt = max($now + 1, $recent[count($recent) - 1] + self::STALE_SECONDS);
+                        $retryAt = max($now + 1, $recent[count($recent) - 1] + $interval);
                         if (count($recent) >= self::MAX_DAILY) {
                             $retryAt = max($retryAt, $recent[count($recent) - self::MAX_DAILY] + 86400);
                         }
@@ -183,7 +200,7 @@ final class LocationRecovery {
             $statement = $this->db->prepare('UPDATE location_recovery_devices SET request_id = :id,
                 request_until = :until, next_at = :next, failures = :failures,
                 attempts_json = :attempts, last_capture = :captured, last_error = NULL WHERE device_key = :key');
-            $statement->execute(['id' => $id, 'until' => $now + 180, 'next' => $now + self::delay($failures),
+            $statement->execute(['id' => $id, 'until' => $now + 180, 'next' => $now + self::delay($failures, $interval),
                 'failures' => min(1000, $failures + 1), 'attempts' => json_encode($history, JSON_THROW_ON_ERROR),
                 'captured' => $device['captured'], 'key' => $key]);
             $this->db->commit();

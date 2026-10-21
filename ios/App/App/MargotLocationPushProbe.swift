@@ -86,7 +86,8 @@ final class MargotLocationPushProbe: NSObject, CLLocationManagerDelegate, URLSes
       ?? defaultEnvironment
     guard ["sandbox", "production"].contains(environment) else { return }
     let payload: [String: Any] = ["action": "register", "token": credential,
-      "apns_token": pushToken, "environment": environment]
+      "apns_token": pushToken, "environment": environment,
+      "recovery_version": LocationPushAccess.recoveryVersion]
     guard let body = try? JSONSerialization.data(withJSONObject: payload) else { return }
     var request = URLRequest(url: URL(string: "https://margot-app.com/location-recovery/")!)
     request.httpMethod = "POST"

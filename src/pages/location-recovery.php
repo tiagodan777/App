@@ -23,8 +23,12 @@ try {
     $recovery = new App\CMS\LocationRecovery($cms->getDatabase());
     $action = $data['action'] ?? '';
     if ($action === 'register') {
+        $version = $data['recovery_version'] ?? 1;
+        if (!is_int($version) || !in_array($version, [1, 2], true)) {
+            throw new InvalidArgumentException();
+        }
         $result = $recovery->register((string) $member, $token,
-            (string) ($data['apns_token'] ?? ''), (string) ($data['environment'] ?? ''));
+            (string) ($data['apns_token'] ?? ''), (string) ($data['environment'] ?? ''), $version);
         json_response(['success' => true] + $result);
     }
     if ($action === 'check') {
