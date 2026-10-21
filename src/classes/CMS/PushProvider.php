@@ -336,6 +336,7 @@ final class PushProvider {
         if ($http2 && defined('CURL_HTTP_VERSION_2_0')) {
             $options[CURLOPT_HTTP_VERSION] = CURL_HTTP_VERSION_2_0;
         }
+        $options[CURLOPT_HEADERFUNCTION] = static function ($handle, string $line) use ($headers): int { if (in_array('apns-push-type: location', $headers, true) && preg_match('/^apns-unique-id:[ \t]*([!-~]{1,256})[ \t]*\r?\n?$/iD', $line, $m) === 1) { error_log('[LOCATION RECOVERY] apns_unique_id=' . $m[1]); } return strlen($line); };
         curl_setopt_array($curl, $options);
         $responseBody = curl_exec($curl);
         $networkError = $responseBody === false ? (string) curl_errno($curl) : '';
