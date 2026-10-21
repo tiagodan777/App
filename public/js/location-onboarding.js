@@ -403,7 +403,12 @@
 
         try {
             lastState = await bg().status();
-            if (await window.MargotWelcome?.run({ state: lastState, force })) { lastState = await bg().status(); dismissed = true; return; }
+
+            if (await window.MargotWelcome?.run({ state: lastState, force })) {
+                lastState = await bg().status();
+                dismissed = false;
+                return;
+            }
 
             if (
                 lastState.available === false ||
@@ -604,6 +609,7 @@
         open: () => check(true),
 
         close: () => {
+            window.MargotWelcome?.cancel();
             cancelled = true;
             release();
         },
