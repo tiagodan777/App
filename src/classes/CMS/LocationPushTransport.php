@@ -32,7 +32,7 @@ trait LocationPushTransport {
         ], JSON_THROW_ON_ERROR);
         $host = $environment === 'sandbox' ? 'https://api.sandbox.push.apple.com' : 'https://api.push.apple.com';
         $response = $this->apnsRequest($host, $device['apns_token'], $headers, $payload);
-        $reason = (string) ($this->decodeJsonObject($response['body'])['reason'] ?? '');
+                $reason = (string) ($this->decodeJsonObject($response['body'])['reason'] ?? ($response['status'] === 200 ? '' : 'http_' . (int) $response['status']));
         return [
             'success' => $response['status'] === 200 && $response['network_error'] === '',
             'permanent' => in_array($reason, ['BadDeviceToken', 'DeviceTokenNotForTopic', 'Unregistered'], true),

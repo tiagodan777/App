@@ -31,7 +31,7 @@ while ($running) {
                 if (!$result['success']) $recovery->failed($device, $result['permanent'], $result['error']);
                 // APNs 200 significa aceite, não localização atualizada. Só o upload limpa as falhas.
                 fwrite(STDOUT, '[LOCATION RECOVERY] id=' . $device['request_id']
-                    . ' apns=' . ($result['success'] ? 'accepted' : 'failed') . "\n");
+                        . ' apns=' . ($result['success'] ? 'accepted' : 'failed') . ' reason=' . ($result['success'] ? 'none' : $result['error']) . "\n");
             }
         }
     } catch (Throwable $error) {
