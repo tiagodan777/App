@@ -54,7 +54,8 @@
     function safeToReload() {
         if (!foreground() || navigating || Date.now() - lastActivity < 5000) return false;
         const canvas = document.getElementById('gridCanvas');
-        if (!canvas || !visible(canvas)) return false;
+        const updateGate = window.MargotNativeVersion?.getState?.() === 'update';
+        if (!updateGate && (!canvas || !visible(canvas))) return false;
         if (document.activeElement?.matches('input, textarea, select, [contenteditable]')) return false;
         if (document.querySelector('[aria-busy="true"], .mini-compose-recording, .mini-compose-preparing')) return false;
         if (document.querySelector('dialog[open]')) return false;

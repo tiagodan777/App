@@ -13,7 +13,11 @@
     const root = document.documentElement;
     let mode = 'checking';
     let pending = null;
-    let lastCheck = 0;
+    let lastCheck = -Infinity;
+    let active = !document.hidden;
+    let resumeTimer;
+    let repeatAfterCheck = false;
+    let painted = false;
     let bodyState = null;
     let app = null;
 
@@ -35,25 +39,39 @@
                          max(24px, env(safe-area-inset-right))
                          max(32px, env(safe-area-inset-bottom))
                          max(24px, env(safe-area-inset-left));
-                background: #fff; color: #202820; color-scheme: light;
+                background: #fff; color: #19191e; color-scheme: light;
                 font: 17px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             }
             :host([hidden]) { display: none !important; }
             section { width: 100%; max-width: 420px; text-align: center; }
-            h1 { margin: 0 0 16px; font-size: 27px; line-height: 1.25; }
-            p { margin: 0 0 28px; color: #505850; }
+            h1 { margin: 0 0 16px; font-size: 30px; line-height: 1.15; letter-spacing: -0.8px; }
+            .brand { margin: 0 0 28px; color: #f3153c; font-weight: 700; }
+            .symbol {
+                display: grid; place-items: center; width: 72px; height: 72px;
+                margin: 0 auto 24px; border-radius: 24px; background: #fff0f3;
+                color: #f3153c;
+            }
+            p { margin: 0 0 28px; color: #66636b; }
             a, button {
                 display: block; box-sizing: border-box; width: 100%;
                 min-height: 52px; padding: 14px 20px; border-radius: 16px;
                 font: inherit; font-weight: 600; cursor: pointer;
                 text-align: center; text-decoration: none;
             }
-            a { background: #244b3b; color: white; }
-            button { margin-top: 12px; background: white; color: #244b3b; border: 1px solid #cbd5cd; }
+            a { background: #f3153c; color: white; border: 1px solid #f3153c; }
+            a:active { background: #d91235; }
+            button { margin-top: 12px; background: white; color: #66636b; border: 1px solid #e8e5eb; }
             [hidden] { display: none !important; }
-            :focus-visible { outline: 3px solid #5276dc; outline-offset: 4px; }
+            :focus-visible { outline: 3px solid #f3153c; outline-offset: 4px; }
         </style>
         <section role="dialog" aria-modal="true" aria-labelledby="title" aria-describedby="message">
+            <p class="brand">Margot</p>
+            <div class="symbol" aria-hidden="true">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 16V3m-5 5 5-5 5 5M4 16v5h16v-5"/>
+                </svg>
+            </div>
             <h1 id="title" tabindex="-1"></h1>
             <p id="message" aria-live="polite"></p>
             <a id="update" rel="noopener noreferrer">Atualizar</a>
@@ -90,6 +108,8 @@
     }
 
     function render(next) {
+        if (painted && next === mode) return;
+        painted = true;
         mode = next;
         root.classList.toggle('margot-version-locked', next !== 'allowed');
         host.hidden = next === 'allowed';
@@ -189,11 +209,14 @@
     }
 
     function check(force = false) {
-        if (pending) return pending;
+        if (pending) {
+            if (force) repeatAfterCheck = true;
+            return pending;
+        }
         if (!force && Date.now() - lastCheck < 3000) return Promise.resolve();
         lastCheck = Date.now();
         const previous = mode;
-        render('checking');
+        if (!painted || previous === 'error') render('checking');
         pending = (async () => {
             try {
                 const rule = await policy();
@@ -213,12 +236,32 @@
                 }
                 render(outdated ? 'update' : 'allowed');
             } catch (_) {
-                render(previous === 'update' ? 'update' : 'error');
+                render(previous === 'update' ? 'update' : previous === 'allowed' ? 'allowed' : 'error');
             } finally {
                 pending = null;
+                if (repeatAfterCheck) {
+                    repeatAfterCheck = false;
+                    scheduleResumeCheck();
+                }
             }
         })();
         return pending;
+    }
+
+    function foreground() {
+        return active && !document.hidden;
+    }
+
+    function scheduleResumeCheck() {
+        clearTimeout(resumeTimer);
+        resumeTimer = setTimeout(() => {
+            if (foreground()) check(true);
+        }, 150);
+    }
+
+    function resume() {
+        active = true;
+        scheduleResumeCheck();
     }
 
     window.MargotNativeVersion = { check: () => check(true), getState: () => mode };
@@ -230,18 +273,29 @@
             title.focus({ preventScroll: true });
         }
     }, true);
-    window.addEventListener('online', () => check());
-    window.addEventListener('pageshow', event => {
-        if (event.persisted) check();
-    });
+
+    document.addEventListener('margot:permissions-resume', resume);
     document.addEventListener('visibilitychange', () => {
-        if (!document.hidden) check();
+        if (!document.hidden) resume();
     });
-    document.addEventListener('margot:page-ready', () => check());
+    document.addEventListener('margot:page-ready', () => {
+        if (foreground()) check();
+    });
+    window.addEventListener('focus', scheduleResumeCheck);
+    window.addEventListener('pageshow', resume);
+    window.addEventListener('online', scheduleResumeCheck);
+
     try {
-        Promise.resolve(getApp().addListener('appStateChange', state => {
-            if (state.isActive) check();
+        const nativeApp = getApp();
+        Promise.resolve(nativeApp.addListener('appStateChange', state => {
+            active = state.isActive === true;
+            if (active) scheduleResumeCheck();
         })).catch(() => {});
+        Promise.resolve(nativeApp.addListener('resume', resume)).catch(() => {});
     } catch (_) {}
+
+    setInterval(() => {
+        if (foreground()) check();
+    }, 60000);
     check(true);
 })();
