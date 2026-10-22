@@ -205,7 +205,7 @@
     }
 
     function renderizar() {
-        lista.replaceChildren();
+        var assinatura = JSON.stringify([estado.direcao, estado.notificacoes]), mudou = lista.dataset.margotAssinatura !== assinatura; lista.dataset.margotAssinatura = assinatura; if (mudou) lista.replaceChildren();
         var filtradas = estado.notificacoes.filter(function (item) {
             return item.direcao === estado.direcao;
         });
@@ -216,7 +216,7 @@
             limparTodos.textContent = estado.direcao === 'enviado' ? 'Limpar enviados' : 'Limpar recebidos';
         }
 
-        filtradas.forEach(function (item) {
+        if (mudou) filtradas.forEach(function (item) {
             lista.appendChild(criarItem(item));
         });
     }

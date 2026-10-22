@@ -90,6 +90,8 @@
     }
 
     function mostrarConversas(conversas) {
+        var assinatura = JSON.stringify(conversas) + new Date().toDateString();
+if ($lista.data('margotAssinatura') === assinatura) return; $lista.data('margotAssinatura', assinatura);
         $lista.empty();
         if (!conversas.length) {
             $lista.append(
