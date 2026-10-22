@@ -73,7 +73,7 @@
         botao.disabled = true;
         botao.setAttribute('aria-busy', 'true');
         botao.classList.add('a-enviar');
-        alterarEtiqueta('A enviar…');
+        alterarEtiqueta(textoInicial);
         anunciar('A enviar o Hey.');
         var enviado = window.AppWebSocket.send({ type: 'notify', destinatario_id: destinatarioId });
         if (!enviado) {
@@ -106,7 +106,7 @@
         temporizadorReposicao = window.setTimeout(function () {
             temporizadorReposicao = null;
             reporBotao();
-        }, 1600);
+        }, 0);
     }
 
     function aoFalharHey(evento) {
