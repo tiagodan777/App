@@ -317,6 +317,7 @@ CREATE TABLE `push_dispositivos` (
   `falhas_consecutivas` smallint(5) UNSIGNED NOT NULL DEFAULT 0,
   `ultimo_erro` varchar(190) DEFAULT NULL,
   `ultimo_sucesso_em` datetime(6) DEFAULT NULL,
+  `ultimo_contacto_app_em` datetime(6) DEFAULT NULL,
   `ultima_falha_em` datetime(6) DEFAULT NULL,
   `criado_em` datetime(6) NOT NULL DEFAULT current_timestamp(6),
   `atualizado_em` datetime(6) NOT NULL DEFAULT current_timestamp(6)

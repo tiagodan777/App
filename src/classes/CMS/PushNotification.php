@@ -76,6 +76,7 @@ final class PushNotification {
             }
 
             $statement->execute($parameters);
+            $this->db->prepare('UPDATE push_dispositivos SET ultimo_contacto_app_em = UTC_TIMESTAMP(6) WHERE membro_id = :member_id AND token_hash = :token_hash')->execute(['member_id' => $memberId, 'token_hash' => $tokenHash]);
             $this->db->commit();
         } catch (\Throwable $error) {
             if ($this->db->inTransaction()) {
@@ -625,7 +626,7 @@ final class PushNotification {
     private function activeDevices(string $memberId): array {
         $statement = $this->db->prepare('SELECT id, idioma
             FROM push_dispositivos
-            WHERE membro_id = :member_id AND ativo = 1');
+            WHERE membro_id = :member_id AND ativo = 1 ORDER BY ultimo_contacto_app_em DESC, id DESC');
         $statement->execute(['member_id' => $memberId]);
 
         return $statement->fetchAll(PDO::FETCH_ASSOC);
