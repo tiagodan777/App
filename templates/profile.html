@@ -211,7 +211,7 @@
 
             <article class="perfil-identidade">
                 <span class="perfil-identidade-mancha" aria-hidden="true"></span>
-                <h1>{{ membro.nome }}</h1>
+                <h1 style="font-size: {{ membro.nome|length > 28 ? 'clamp(24px, 5.8vw, 36px)' : (membro.nome|length > 18 ? 'clamp(28px, 7.2vw, 44px)' : 'clamp(34px, 9.4vw, 58px)') }}; white-space: normal; overflow-wrap: anywhere; text-overflow: clip; line-height: 1.08;">{{ membro.nome }}</h1>
 
                 <div class="perfil-identidade-rodape">
                     <span class="perfil-idade">{{ idade }}</span>
