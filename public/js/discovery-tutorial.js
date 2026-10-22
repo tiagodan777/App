@@ -28,6 +28,8 @@
 
   async function run({ host, signal, preview = false }) {
     if (session) throw new Error('Tutorial already active');
+    const readyUntil = Date.now() + 10000;
+    while (!signal.aborted && Date.now() < readyUntil && (!window.inicializarFotos || !window.fecharMiniMenu || !window.prepararMiniMenuDaFoto?.supportsTutorial)) await new Promise(resolve => setTimeout(resolve, 50));
 
     const menu = document.querySelector('.mini-menu');
     const eye = document.getElementById('alternar-invisivel');
