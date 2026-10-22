@@ -163,6 +163,8 @@
         if (!garantirWebSocket()) {
             return;
         }
+        var nome = String(document.querySelector('#perfil .perfil-identidade h1')?.textContent || 'esta pessoa').trim();
+if (!window.confirm('Desconectar de ' + nome + '?\n\nDeixam de poder enviar Heys e mensagens a qualquer distância. Voltam a aplicar-se o raio de proximidade da Margot e os limites habituais dos Heys.')) return;
         aDesligar = true;
         botao.disabled = true;
         botao.classList.add('a-desligar');
