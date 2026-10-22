@@ -1,7 +1,7 @@
 [Unit]
 Description=Margot push notification worker
 After=network-online.target mariadb.service
-Wants=network-online.target
+Wants=network-online.target app-push-worker@2.service app-push-worker@3.service app-push-worker@4.service
 
 [Service]
 Type=simple
@@ -13,7 +13,7 @@ ExecStart=/usr/bin/php /var/www/app/push-worker.php
 Restart=on-failure
 RestartSec=5
 KillSignal=SIGTERM
-TimeoutStopSec=20
+TimeoutStopSec=30
 NoNewPrivileges=true
 PrivateTmp=true
 UMask=0077

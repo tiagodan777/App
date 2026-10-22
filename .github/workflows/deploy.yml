@@ -70,6 +70,7 @@ jobs:
 
             sudo install -m 0644 deploy/app-location-recovery.service /etc/systemd/system/app-location-recovery.service
 
+            sudo install -m 0644 deploy/app-push-worker@.service /etc/systemd/system/app-push-worker@.service
             sudo systemctl daemon-reload
             sudo systemctl enable app-push app-location-recovery
             sudo systemctl restart app-websocket

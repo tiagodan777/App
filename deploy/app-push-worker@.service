@@ -1,0 +1,19 @@
+[Unit]
+Description=Margot push notification worker %i
+After=network-online.target mariadb.service app-push.service
+PartOf=app-push.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/app
+EnvironmentFile=-/etc/margot/push.env
+ExecStart=/usr/bin/php /var/www/app/push-worker.php %i
+Restart=on-failure
+RestartSec=5
+KillSignal=SIGTERM
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+UMask=0077

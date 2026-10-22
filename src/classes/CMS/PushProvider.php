@@ -7,6 +7,7 @@ use RuntimeException;
 
 final class PushProvider {
     use LocationPushTransport;
+    use ReusablePushTransport;
     private array $config;
     private ?array $fcmAccessToken = null;
     private array $apnsTokens = [];
@@ -315,7 +316,7 @@ final class PushProvider {
      * }
      */
 
-    private function curlRequest(string $url, array $headers, string $body, bool $http2 = false): array {
+    private function curlRequestSequential(string $url, array $headers, string $body, bool $http2 = false): array {
         if (!function_exists('curl_init')) {
             throw new RuntimeException('A extensão cURL do PHP não está instalada.');
         }
