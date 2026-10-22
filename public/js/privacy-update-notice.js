@@ -355,8 +355,8 @@
         );
 
         root.querySelector('.message').textContent = text(
-            'O teu perfil fica escondido. Se autorizaste a localização, a Margot continua a recebê-la para te avisar de pessoas por perto.',
-            'Your profile stays hidden. If you allowed location access, Margot continues to receive it to let you know about people nearby.'
+            'Em modo invisível, o teu perfil fica escondido e ninguém te vê entre as pessoas por perto. Se autorizaste a localização, a Margot continua a recebê-la para te avisar de pessoas próximas.',
+            'In invisible mode, your profile is hidden and you do not appear among people nearby. If you allowed location access, Margot continues to receive it to let you know about people near you.'
         );
 
         root.querySelector('.more p').textContent = text(

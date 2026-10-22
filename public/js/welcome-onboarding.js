@@ -30,7 +30,7 @@
   });
 
   const fallback = new URL('imagens/fotos-perfil/default.webp', base).href;
-  const text = (pt, en) => window.MargotI18n?.language === 'en' ? en : pt;
+  const text = (pt, en) => (window.MargotI18n?.language === 'en' ? en : pt);
   const member = () => String(window.membroId || '');
   const home = () => document.getElementById('gridCanvas');
 
@@ -38,12 +38,12 @@
     !window.MargotNativeVersion ||
     window.MargotNativeVersion.getState() === 'allowed';
 
-  const auth = state => state?.authorization ?? state?.permission;
+  const auth = (state) => state?.authorization ?? state?.permission;
 
-  const pending = state =>
+  const pending = (state) =>
     ['not_determined', 'prompt', 'prompt-with-rationale'].includes(auth(state));
 
-  const pref = key => window.MargotPreferencias?.obter(key);
+  const pref = (key) => window.MargotPreferencias?.obter(key);
   const memory = new Set();
 
   let active;
@@ -168,6 +168,36 @@
       .actions{padding-top:10px;}
       .visual{width:170px;height:170px;}
     }
+    .menu .content{min-height:400px;padding:0;overflow:visible;}
+    .menu .stage,.menu .small{opacity:.28;pointer-events:none;}
+    .sheet{position:relative;z-index:2;max-width:540px;padding:8px 16px 24px;border-radius:min(16vw,75px) min(16vw,75px) 0 0;gap:0;background:rgba(255,255,255,.975);box-shadow:0 -8px 28px #1412191c,0 -22px 55px #1412190e;}
+    .handle{position:relative;flex:none;width:114px;height:24px;margin:-8px 0 0;padding:0;border:0;background:transparent;}
+    .handle::after{content:'';position:absolute;top:8px;left:0;width:114px;height:3px;border-radius:999px;background:#17171b1f;}
+    .profile-header{display:flex;flex-direction:column;align-items:center;width:100%;margin-top:10px;gap:0;}
+    .sheet .portrait{width:min(39vw,164px);height:min(39vw,164px);border-width:2px;}
+    .sheet .person-name{margin:12px 0 0;font-size:26px;font-weight:750;line-height:1.04;}
+    .sheet .example-tag{margin:6px 0 0;line-height:1.3;}
+    .sheet .hey{min-width:148px;width:auto;height:58px;min-height:58px;padding:0 32px;margin:15px auto 0;font-size:21px;font-weight:760;box-shadow:none;}
+    .sheet .composer{flex:none;margin:16px 0 0;gap:4px;background:#f3f3f7;border-color:#17171b18;}
+    .composer .inert-icon{flex:0 0 38px;height:38px;}
+    .sheet .microphone{display:none;}
+    .composer input{font-size:16px;padding:0 6px;}
+    .send{background:#7657ff;}
+    .flying-message{position:absolute;left:50%;top:62%;pointer-events:none;padding:12px 22px;border-radius:22px 22px 22px 5px;background:var(--red);color:white;font-weight:700;opacity:0;}
+    .send-notice{flex:none;display:flex;align-items:center;gap:12px;margin:0 20px 14px;padding:14px 16px;border:1px solid #e123461c;border-radius:20px;background:#fff8f8;}
+    .notice-mark{flex:none;display:grid;place-items:center;width:34px;height:34px;background:var(--red);color:white;border-radius:50%;font-size:18px;}
+    .send-notice strong{display:block;font-size:15px;line-height:1.35;}
+    .send-notice p{font-size:13px;line-height:1.4;margin:4px 0 0;max-width:none;color:#7b626b;}
+    @media(max-height:740px){
+      .menu .instruction{padding-top:max(18px,env(safe-area-inset-top));padding-bottom:12px;}
+      .menu .content{min-height:300px;}
+      .sheet{padding-bottom:16px;}
+      .sheet .portrait{width:110px;height:110px;}
+      .sheet .person-name{font-size:24px;margin-top:10px;}
+      .sheet .hey{height:50px;min-height:50px;margin-top:12px;}
+      .sheet .composer{margin-top:12px;}
+      .send-notice{padding:10px 14px;margin-bottom:10px;}
+    }
     .tip{position:fixed;z-index:2147483000;top:max(18px,env(safe-area-inset-top));left:16px;right:16px;max-width:420px;margin:auto;padding:22px 48px 22px 22px;background:#fdfcf9;box-shadow:0 8px 35px #21151c24;border-radius:24px;}
     .tip strong{font-size:19px;}
     .tip p{font-size:16px;margin:10px 0;}
@@ -187,11 +217,11 @@
       const cap = window.Capacitor;
       if (!cap?.isNativePlatform?.()) return;
 
-      const plugin = cap.Plugins?.MargotHaptics || (
-        cap.isPluginAvailable?.('MargotHaptics')
+      const plugin =
+        cap.Plugins?.MargotHaptics ||
+        (cap.isPluginAvailable?.('MargotHaptics')
           ? cap.registerPlugin?.('MargotHaptics')
-          : null
-      );
+          : null);
 
       Promise.resolve(plugin?.play?.({ type })).catch(() => {});
     } catch (_) {}
@@ -281,7 +311,7 @@
 
     const ios = system === 'ios';
 
-    const granted = current =>
+    const granted = (current) =>
       (
         ios
           ? ['when_in_use', 'always']
@@ -327,7 +357,7 @@
       }
     };
 
-    const wait = ms => new Promise((resolve, reject) => {
+    const wait = (ms) => new Promise((resolve, reject) => {
       valid();
 
       const stop = () => {
@@ -394,6 +424,32 @@
     let watcher;
     let scene = null;
     let complete = false;
+    let menuDismissible = false;
+
+    const motion = matchMedia('(prefers-reduced-motion: reduce)');
+    const animations = new Set();
+
+    function animate(node, frames, duration = 360, delay = 0) {
+      if (motion.matches || !node?.animate || signal.aborted) return;
+
+      node.getAnimations?.().forEach((animation) => animation.cancel());
+
+      const animation = node.animate(frames, {
+        duration,
+        delay,
+        easing: 'cubic-bezier(.22,.8,.25,1)',
+        fill: 'backwards'
+      });
+
+      animations.add(animation);
+
+      if (document.hidden) animation.pause();
+
+      animation.finished.then(
+        () => animations.delete(animation),
+        () => animations.delete(animation)
+      );
+    }
 
     function mirror(now) {
       if (signal.aborted) return;
@@ -428,6 +484,26 @@
     function heading(a, b) {
       title.textContent = a;
       description.textContent = b;
+
+      animate(
+        title,
+        [
+          { opacity: 0, transform: 'translateY(16px)' },
+          { opacity: 1, transform: 'translateY(0)' }
+        ],
+        420
+      );
+
+      animate(
+        description,
+        [
+          { opacity: 0, transform: 'translateY(12px)' },
+          { opacity: 1, transform: 'translateY(0)' }
+        ],
+        420,
+        65
+      );
+
       title.focus({ preventScroll: true });
     }
 
@@ -436,6 +512,9 @@
 
       scene?.stop();
       scene = null;
+
+      menuDismissible = false;
+      root.querySelector('.send-notice')?.remove();
 
       view.className = 'view ' + mode;
       content.replaceChildren();
@@ -451,6 +530,16 @@
         : text('Começa por um olá', 'Start with a hello');
 
       heading(a, b);
+
+      animate(
+        content,
+        [
+          { opacity: 0, transform: 'translateY(20px)' },
+          { opacity: 1, transform: 'translateY(0)' }
+        ],
+        480,
+        70
+      );
 
       if (mode === 'paper') {
         const visual = document.createElement('div');
@@ -491,28 +580,36 @@
           reject(new DOMException('Interrupted', 'AbortError'));
         };
 
-        const click = event => {
+        const click = (event) => {
           const button = event.target.closest?.('[data-choice]');
-          if (!button || button.disabled) return;
+
+          const outside =
+            !button &&
+            menuDismissible &&
+            !event.target.closest?.('.sheet');
+
+          if (!outside && (!button || button.disabled)) return;
+
+          const choice = outside ? 'back' : button.dataset.choice;
 
           event.preventDefault();
           event.stopPropagation();
           cleanup();
 
           haptic(
-            button.dataset.choice === 'hey'
+            choice === 'hey'
               ? 'heySent'
-              : button.dataset.choice === 'message'
+              : choice === 'message'
                 ? 'shutter'
                 : 'interaction',
             preview
           );
 
-          root.querySelectorAll('button').forEach(node => {
+          root.querySelectorAll('button').forEach((node) => {
             node.disabled = true;
           });
 
-          resolve(button.dataset.choice);
+          resolve(choice);
         };
 
         root.addEventListener('click', click);
@@ -555,7 +652,7 @@
       const bar = document.createElement('div');
       bar.className = 'nav-bar';
 
-      original.querySelectorAll('li').forEach(item => {
+      original.querySelectorAll('li').forEach((item) => {
         const source = item.querySelector('img');
         if (!source) return;
 
@@ -578,24 +675,30 @@
       stage.className = 'stage';
       content.append(stage);
 
-      const people = [
-        { name: 'Sofia', x: .20, y: .20, phase: 0 },
-        { name: 'Alex', x: .80, y: .20, phase: 2 },
-        { name: 'Lara', x: .20, y: .80, phase: 4 },
-        { name: 'Miguel', x: .80, y: .80, phase: 3 },
-        { name: '', x: .50, y: .50, phase: 1 }
-      ].map(item => {
-        const node = document.createElement(item.name ? 'button' : 'img');
-        node.className = item.name ? 'peer' : 'self';
+      const clamp = (value, min, max) =>
+        Math.max(min, Math.min(max, value));
 
-        if (item.name) {
+      const people = [
+        { name: 'Sofia', x: .20, y: .20, phase: 0, rate: .52 },
+        { name: 'Alex', x: .80, y: .20, phase: 2, rate: .64 },
+        { name: 'Lara', x: .20, y: .80, phase: 4, rate: .47 },
+        { name: 'Miguel', x: .80, y: .80, phase: 3, rate: .59 },
+        { name: '', x: .50, y: .50, phase: 1, rate: .55 }
+      ].map((person) => {
+        const node = document.createElement(
+          person.name ? 'button' : 'img'
+        );
+
+        node.className = person.name ? 'peer' : 'self';
+
+        if (person.name) {
           node.type = 'button';
-          node.dataset.choice = item.name;
-          face(node, item.name);
+          node.dataset.choice = person.name;
+          face(node, person.name);
 
           node.setAttribute(
             'aria-label',
-            text('Abrir perfil de ', 'Open profile: ') + item.name
+            text('Abrir perfil de ', 'Open profile: ') + person.name
           );
         } else {
           ownPhoto(node);
@@ -604,12 +707,18 @@
         stage.append(node);
 
         return {
-          ...item,
+          ...person,
           node,
           dx: 0,
           dy: 0,
           vx: 0,
-          vy: 0
+          vy: 0,
+          rx: 0,
+          ry: 0,
+          rvx: 0,
+          rvy: 0,
+          ox: 0,
+          oy: 0
         };
       });
 
@@ -622,24 +731,54 @@
       let panX = 0;
       let panY = 0;
       let zoom = 1;
+      let angle = 0;
       let velocityX = 0;
       let velocityY = 0;
       let previousTime = 0;
-      let gestureDistance = 0;
-      let gestureZoom = 1;
+      let elapsed = 0;
+      let pinch;
 
-      const distance = () => {
-        const values = [...pointers.values()];
+      const two = () => {
+        const [a, b] = [...pointers.values()];
 
-        return values.length < 2
-          ? 0
-          : Math.hypot(
-              values[0].x - values[1].x,
-              values[0].y - values[1].y
-            );
+        return b
+          ? {
+              x: (a.x + b.x) / 2,
+              y: (a.y + b.y) / 2,
+              distance: Math.hypot(b.x - a.x, b.y - a.y),
+              angle: Math.atan2(b.y - a.y, b.x - a.x)
+            }
+          : null;
       };
 
-      stage.addEventListener('pointerdown', event => {
+      function react(dx, dy, source) {
+        people.forEach((person) => {
+          if (person === source) return;
+
+          const distance = source
+            ? Math.hypot(
+                person.drawX - source.drawX,
+                person.drawY - source.drawY
+              )
+            : 0;
+
+          const weight = .10 + .24 * Math.exp(-distance / 240);
+
+          person.rvx = clamp(
+            person.rvx + clamp(dx, -40, 40) * weight * 12,
+            -100,
+            100
+          );
+
+          person.rvy = clamp(
+            person.rvy + clamp(dy, -40, 40) * weight * 12,
+            -100,
+            100
+          );
+        });
+      }
+
+      stage.addEventListener('pointerdown', (event) => {
         if (event.pointerType === 'mouse' && event.button !== 0) return;
 
         pointers.set(event.pointerId, {
@@ -647,30 +786,40 @@
           y: event.clientY
         });
 
+        velocityX = velocityY = 0;
+
         if (pointers.size === 1) {
           gesture = {
             x: event.clientX,
             y: event.clientY,
-            time: performance.now(),
             startX: event.clientX,
-            startY: event.clientY
+            startY: event.clientY,
+            time: performance.now()
           };
 
           drag = people.find(
-            person => person.node === event.target.closest?.('.peer')
+            (person) =>
+              person.node === event.target.closest?.('.peer')
           ) || null;
 
+          if (drag) drag.vx = drag.vy = 0;
           moved = false;
-          velocityX = velocityY = 0;
         } else {
-          moved = true;
+          if (drag) drag.vx = drag.vy = 0;
           drag = null;
-          gestureDistance = distance();
-          gestureZoom = zoom;
+          moved = true;
+
+          pinch = {
+            ...two(),
+            zoom,
+            rotation: angle,
+            panX,
+            panY
+          };
         }
       }, { signal: events.signal });
 
-      stage.addEventListener('pointermove', event => {
+      stage.addEventListener('pointermove', (event) => {
         if (!pointers.has(event.pointerId) || !gesture) return;
 
         pointers.set(event.pointerId, {
@@ -681,14 +830,26 @@
         const now = performance.now();
 
         if (pointers.size > 1) {
-          if (gestureDistance) {
-            zoom = Math.max(
-              .75,
-              Math.min(1.45, gestureZoom * distance() / gestureDistance)
+          const current = two();
+
+          if (pinch?.distance) {
+            zoom = clamp(
+              pinch.zoom * current.distance / pinch.distance,
+              .5,
+              2
             );
+
+            angle = pinch.rotation + Math.atan2(
+              Math.sin(current.angle - pinch.angle),
+              Math.cos(current.angle - pinch.angle)
+            );
+
+            panX = pinch.panX + current.x - pinch.x;
+            panY = pinch.panY + current.y - pinch.y;
           }
 
           moved = true;
+          event.preventDefault();
         } else {
           const dx = event.clientX - gesture.x;
           const dy = event.clientY - gesture.y;
@@ -709,18 +870,21 @@
               stage.setPointerCapture(event.pointerId);
             } catch (_) {}
 
+            const dt = Math.max(8, now - gesture.time) / 1000;
+
             if (drag) {
               drag.dx += dx;
               drag.dy += dy;
-              drag.vx = drag.vy = 0;
+              drag.vx = clamp(dx / dt, -900, 900);
+              drag.vy = clamp(dy / dt, -900, 900);
             } else {
               panX += dx;
               panY += dy;
-
-              const elapsed = Math.max(8, now - gesture.time) / 1000;
-              velocityX = dx / elapsed;
-              velocityY = dy / elapsed;
+              velocityX = clamp(dx / dt, -900, 900);
+              velocityY = clamp(dy / dt, -900, 900);
             }
+
+            react(dx, dy, drag);
           }
         }
 
@@ -729,12 +893,21 @@
         gesture.time = now;
       }, { signal: events.signal });
 
-      const end = event => {
+      function end(event) {
+        if (
+          event.type === 'pointercancel' ||
+          (gesture && performance.now() - gesture.time > 90)
+        ) {
+          velocityX = velocityY = 0;
+          if (drag) drag.vx = drag.vy = 0;
+        }
+
         pointers.delete(event.pointerId);
+        drag = null;
+        pinch = null;
 
         if (!pointers.size) {
           gesture = null;
-          drag = null;
         } else {
           const remaining = [...pointers.values()][0];
 
@@ -747,18 +920,25 @@
 
           moved = true;
         }
-      };
+      }
 
       stage.addEventListener('pointerup', end, {
         signal: events.signal
       });
 
-      stage.addEventListener('pointercancel', event => {
+      stage.addEventListener('pointercancel', (event) => {
         moved = true;
         end(event);
       }, { signal: events.signal });
 
-      stage.addEventListener('click', event => {
+      stage.addEventListener('lostpointercapture', (event) => {
+        if (pointers.has(event.pointerId)) {
+          moved = true;
+          end(event);
+        }
+      }, { signal: events.signal });
+
+      stage.addEventListener('click', (event) => {
         if (!moved || event.detail === 0) return;
 
         event.preventDefault();
@@ -769,98 +949,118 @@
         signal: events.signal
       });
 
-      const reduced = matchMedia(
-        '(prefers-reduced-motion: reduce)'
-      ).matches;
-
       scene = {
         draw(now) {
           const dt = previousTime
-            ? Math.min((now - previousTime) / 1000, .04)
+            ? Math.min((now - previousTime) / 1000, .05)
             : 1 / 60;
 
           previousTime = now;
+          elapsed += dt;
 
           const width = stage.clientWidth;
           const height = stage.clientHeight;
+
           if (!width || !height) return;
 
+          const decay = Math.pow(.92, dt * 60);
+
           if (!pointers.size) {
-            panX += velocityX * dt;
-            panY += velocityY * dt;
-            velocityX *= Math.exp(-8 * dt);
-            velocityY *= Math.exp(-8 * dt);
-            panX *= Math.exp(-3 * dt);
-            panY *= Math.exp(-3 * dt);
+            if (!motion.matches) {
+              panX += velocityX * dt;
+              panY += velocityY * dt;
+            }
+
+            velocityX *= decay;
+            velocityY *= decay;
           }
+
+          panX = clamp(panX, -width * .3, width * .3);
+          panY = clamp(panY, -height * .3, height * .3);
 
           const cx = width / 2;
           const cy = height / 2;
+          const cos = Math.cos(angle);
+          const sin = Math.sin(angle);
 
-          for (const person of people) {
+          const photoScale = zoom < 1
+            ? Math.max(.45, 1 + (zoom - 1) * .8)
+            : 1 + (zoom - 1) * .25;
+
+          people.forEach((person) => {
             if (person !== drag) {
-              person.vx += (-45 * person.dx - 12 * person.vx) * dt;
-              person.vy += (-45 * person.dy - 12 * person.vy) * dt;
-              person.dx += person.vx * dt;
-              person.dy += person.vy * dt;
-            }
-
-            const floatX = reduced
-              ? 0
-              : 4 * Math.sin(now * .00055 + person.phase) +
-                2 * Math.sin(now * .00033 + person.phase * 2);
-
-            const floatY = reduced
-              ? 0
-              : 4 * Math.cos(now * .00046 + person.phase) +
-                2 * Math.sin(now * .00026 + person.phase);
-
-            person.drawX = Math.max(
-              36,
-              Math.min(
-                width - 36,
-                cx + (person.x * width - cx) * zoom +
-                  panX + person.dx + floatX
-              )
-            );
-
-            person.drawY = Math.max(
-              36,
-              Math.min(
-                height - 36,
-                cy + (person.y * height - cy) * zoom +
-                  panY + person.dy + floatY
-              )
-            );
-          }
-
-          for (let i = 0; i < people.length; i++) {
-            for (let j = i + 1; j < people.length; j++) {
-              const a = people[i];
-              const b = people[j];
-              const dx = b.drawX - a.drawX;
-              const dy = b.drawY - a.drawY;
-              const length = Math.hypot(dx, dy) || 1;
-
-              if (length >= 76) continue;
-
-              const push = (76 - length) * .5;
-
-              if (a !== drag) {
-                a.dx -= dx / length * push;
-                a.dy -= dy / length * push;
+              if (!motion.matches) {
+                person.dx += person.vx * dt;
+                person.dy += person.vy * dt;
               }
 
-              if (b !== drag) {
-                b.dx += dx / length * push;
-                b.dy += dy / length * push;
-              }
+              person.vx *= decay;
+              person.vy *= decay;
             }
-          }
 
-          people.forEach(person => {
+            person.rvx += (-person.rx * 45 - person.rvx * 12) * dt;
+            person.rvy += (-person.ry * 45 - person.rvy * 12) * dt;
+            person.rx = clamp(person.rx + person.rvx * dt, -22, 22);
+            person.ry = clamp(person.ry + person.rvy * dt, -22, 22);
+
+            if (motion.matches) {
+              person.ox = person.oy = 0;
+            } else if (!pointers.size) {
+              const t = elapsed * person.rate;
+
+              const x =
+                4 * Math.sin(t + person.phase) +
+                2 * Math.sin(t * .61 + person.phase * 2);
+
+              const y =
+                4 * Math.cos(t * .83 + person.phase) +
+                2 * Math.sin(t * .47 + person.phase);
+
+              person.ox += (x - person.ox) * Math.min(1, dt * 3);
+              person.oy += (y - person.oy) * Math.min(1, dt * 3);
+            }
+
+            const x = (person.x * width - cx) * zoom;
+            const y = (person.y * height - cy) * zoom;
+
+            const margin = Math.min(
+              36 * photoScale,
+              width / 2,
+              height / 2
+            );
+
+            const baseX = cx + x * cos - y * sin + panX;
+            const baseY = cy + x * sin + y * cos + panY;
+
+            const boundedX = clamp(
+              baseX + person.dx,
+              margin,
+              width - margin
+            );
+
+            const boundedY = clamp(
+              baseY + person.dy,
+              margin,
+              height - margin
+            );
+
+            if (boundedX !== baseX + person.dx) person.vx = 0;
+            if (boundedY !== baseY + person.dy) person.vy = 0;
+
+            person.dx = boundedX - baseX;
+            person.dy = boundedY - baseY;
+
+            person.drawX =
+              boundedX + person.ox + (motion.matches ? 0 : person.rx);
+
+            person.drawY =
+              boundedY + person.oy + (motion.matches ? 0 : person.ry);
+
             person.node.style.left = person.drawX + 'px';
             person.node.style.top = person.drawY + 'px';
+
+            person.node.style.transform =
+              'translate(-50%,-50%) scale(' + photoScale + ')';
           });
         },
 
@@ -876,43 +1076,55 @@
       const sheet = document.createElement('section');
       sheet.className = 'sheet';
 
+      sheet.setAttribute(
+        'aria-label',
+        text('Perfil de exemplo: ', 'Example profile: ') + name
+      );
+
       sheet.innerHTML = `
-        <div class="handle" aria-hidden="true"></div>
-        <div class="portrait"></div>
-        <h2 class="person-name"></h2>
-        <span class="example-tag"></span>
+        <button class="handle" type="button" data-choice="back"></button>
+
+        <header class="profile-header">
+          <div class="portrait"></div>
+          <h2 class="person-name"></h2>
+          <span class="example-tag"></span>
+        </header>
 
         <button class="hey" type="button" data-choice="hey">Hey</button>
 
         <div class="composer">
-          <span class="inert-icon" aria-hidden="true">
+          <span class="inert-icon camera" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" stroke-width="1.7">
-              <path d="M4 7h4l2-3h4l2 3h4v13H4Z"
-                stroke-linejoin="round"/>
-              <circle cx="12" cy="13" r="4"/>
+              stroke="currentColor" stroke-width="1.8">
+              <path d="M4 6h4l2-3h4l2 3h4v14H4z"/>
+              <circle cx="12" cy="12" r="4"/>
             </svg>
           </span>
 
           <input type="text" readonly tabindex="-1">
 
-          <span class="inert-icon" aria-hidden="true">
+          <span class="inert-icon microphone" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" stroke-width="1.7">
-              <rect x="9" y="3" width="6" height="12" rx="3"/>
-              <path d="M6 11v2a6 6 0 0 0 12 0v-2M12 19v3M9 22h6"/>
+              stroke="currentColor" stroke-width="1.8">
+              <rect x="9" y="2" width="6" height="13" rx="3"/>
+              <path d="M5 10v2a7 7 0 0014 0v-2M12 19v3M8 22h8"/>
             </svg>
           </span>
 
           <button class="send" type="button" data-choice="message">
             <svg viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" stroke-width="2.2"
+              stroke="currentColor" stroke-width="1.8"
               stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 20V4M5 11l7-7 7 7"/>
             </svg>
           </button>
         </div>
       `;
+
+      sheet.querySelector('.handle').setAttribute(
+        'aria-label',
+        text('Voltar à descoberta', 'Back to discovery')
+      );
 
       face(sheet.querySelector('.portrait'), name);
       sheet.querySelector('.person-name').textContent = name;
@@ -935,36 +1147,212 @@
         text('Experimentar mensagem', 'Try a message')
       );
 
+      const source = document.querySelector('.mini-menu');
+
+      [
+        ['.camera', '[data-camera-open] svg'],
+        ['.microphone', '[data-microphone] svg'],
+        ['.send', '.mini-compose-send svg']
+      ].forEach(([target, selector]) => {
+        const icon = source?.querySelector(selector)?.cloneNode(true);
+        if (!icon) return;
+
+        [icon, ...icon.querySelectorAll('*')].forEach((node) => {
+          [...node.attributes].forEach((attribute) => {
+            if (
+              attribute.name === 'id' ||
+              attribute.name === 'style' ||
+              attribute.name.startsWith('on')
+            ) {
+              node.removeAttribute(attribute.name);
+            }
+          });
+        });
+
+        icon.setAttribute('aria-hidden', 'true');
+        sheet.querySelector(target).replaceChildren(icon);
+      });
+
       content.append(sheet);
+
+      animate(
+        sheet,
+        [
+          { transform: 'translateY(105%)', opacity: .5 },
+          { transform: 'translateY(0)', opacity: 1 }
+        ],
+        520
+      );
+
+      return sheet;
+    }
+
+    async function closeMenu(sheet) {
+      animate(
+        sheet,
+        [
+          { transform: 'translateY(0)', opacity: 1 },
+          { transform: 'translateY(105%)', opacity: .5 }
+        ],
+        240
+      );
+
+      await wait(motion.matches ? 0 : 220);
+
+      sheet.remove();
+      view.className = 'view demo';
+
+      const stage = content.querySelector('.stage');
+      stage.style.removeProperty('height');
+      stage.style.removeProperty('bottom');
+
+      nav.hidden = !nav.childElementCount;
+
+      root.querySelectorAll('button').forEach((button) => {
+        button.disabled = false;
+      });
+
+      heading(
+        text('Um olá começa aqui.', 'A hello starts here.'),
+        text(
+          'Toca numa foto para conheceres o perfil.',
+          'Tap a photo to see the profile.'
+        )
+      );
+    }
+
+    async function sendExample(action, name, sheet) {
+      const hey = action === 'hey';
+      const button = sheet.querySelector(hey ? '.hey' : '.send');
+
+      animate(
+        button,
+        [
+          { transform: 'scale(1)' },
+          { transform: 'scale(.88)' },
+          { transform: 'scale(1.06)' },
+          { transform: 'scale(1)' }
+        ],
+        420
+      );
+
+      const bubble = document.createElement('div');
+      bubble.className = 'flying-message';
+      bubble.setAttribute('aria-hidden', 'true');
+      bubble.textContent = hey ? 'Hey!' : text('Olá!', 'Hi!');
+      sheet.append(bubble);
+
+      animate(
+        bubble,
+        [
+          {
+            opacity: 0,
+            transform: 'translate(-50%,20px) scale(.7)'
+          },
+          {
+            opacity: 1,
+            offset: .3,
+            transform: 'translate(-50%,-10px) scale(1)'
+          },
+          {
+            opacity: 0,
+            transform: 'translate(-50%,-100px) scale(.85)'
+          }
+        ],
+        700
+      );
+
+      await wait(motion.matches ? 0 : 680);
+      await visible();
+      bubble.remove();
+
+      heading(
+        hey
+          ? text('O teu Hey chega assim.', 'This is how your Hey arrives.')
+          : text(
+              'É assim que começa a conversa.',
+              'This is how a conversation starts.'
+            ),
+        text(
+          'A pessoa recebe um aviso e pode responder-te.',
+          'They receive a notification and can reply to you.'
+        )
+      );
+
+      const notice = document.createElement('aside');
+      notice.className = 'send-notice';
+      notice.setAttribute('role', 'status');
+      notice.setAttribute('aria-live', 'polite');
+      notice.setAttribute('aria-atomic', 'true');
+
+      notice.innerHTML =
+        '<span class="notice-mark" aria-hidden="true">✓</span>' +
+        '<div><strong></strong><p></p></div>';
+
+      notice.querySelector('strong').textContent =
+        (
+          hey
+            ? text('Hey de exemplo para ', 'Example Hey to ')
+            : text('Mensagem de exemplo para ', 'Example message to ')
+        ) + name;
+
+      notice.querySelector('p').textContent = text(
+        'É só um ensaio. Nada foi enviado.',
+        'Just a practice run. Nothing was sent.'
+      );
+
+      root.querySelector('.instruction').after(notice);
+
+      animate(
+        notice,
+        [
+          {
+            opacity: 0,
+            transform: 'translateY(-18px) scale(.96)'
+          },
+          {
+            opacity: 1,
+            transform: 'translateY(0) scale(1)'
+          }
+        ],
+        480
+      );
+
+      button.textContent = '✓';
+
+      button.setAttribute(
+        'aria-label',
+        text('Demonstração concluída', 'Demo complete')
+      );
+
+      await next();
     }
 
     async function demo() {
-      let selected;
+      screen(
+        'demo',
+        text('Um olá começa aqui.', 'A hello starts here.'),
+        text(
+          'Toca numa foto para conheceres o perfil.',
+          'Tap a photo to see the profile.'
+        )
+      );
+
+      startPeople();
+
+      const note = document.createElement('span');
+      note.className = 'small';
+
+      note.textContent = text(
+        'Perfis de exemplo · podes arrastar as fotos',
+        'Example profiles · you can drag the photos'
+      );
+
+      content.append(note);
+      navigation();
 
       while (true) {
-        screen(
-          'demo',
-          text('Um olá começa aqui.', 'A hello starts here.'),
-          text(
-            'Toca numa foto para conheceres o perfil.',
-            'Tap a photo to see the profile.'
-          )
-        );
-
-        startPeople();
-
-        const note = document.createElement('span');
-        note.className = 'small';
-
-        note.textContent = text(
-          'Perfis de exemplo · podes arrastar as fotos',
-          'Example profiles · you can drag the photos'
-        );
-
-        content.append(note);
-        navigation();
-
-        selected = await choose([
+        const selected = await choose([
           ['skip', text('Saltar demonstração', 'Skip demo'), true]
         ]);
 
@@ -974,8 +1362,15 @@
           continue;
         }
 
-        screen(
-          'menu',
+        const stage = content.querySelector('.stage');
+        stage.style.height = stage.clientHeight + 'px';
+        stage.style.bottom = 'auto';
+
+        view.className = 'view demo menu';
+        actions.replaceChildren();
+        nav.hidden = true;
+
+        heading(
           text('Dá o primeiro olá.', 'Say the first hello.'),
           text(
             'Toca em Hey ou na seta para experimentar.',
@@ -983,42 +1378,18 @@
           )
         );
 
-        showMenu(selected);
+        const sheet = showMenu(selected);
+        menuDismissible = true;
 
-        const action = await choose([
-          ['back', text('Ver outras pessoas', 'See other people'), true]
-        ]);
+        const action = await choose([]);
+        menuDismissible = false;
 
-        if (action === 'back') continue;
+        if (action === 'back') {
+          await closeMenu(sheet);
+          continue;
+        }
 
-        screen(
-          'success',
-          action === 'hey'
-            ? text('É assim que dizes olá.', 'That is how you say hello.')
-            : text(
-                'A conversa começa aqui.',
-                'The conversation starts here.'
-              ),
-          text(
-            'Esta foi uma demonstração. Nada foi enviado.',
-            'This was a demo. Nothing was sent.'
-          )
-        );
-
-        const receipt = document.createElement('div');
-        receipt.className = 'receipt';
-
-        receipt.innerHTML =
-          '<div class="portrait"></div><div class="bubble"></div>';
-
-        face(receipt.querySelector('.portrait'), selected);
-
-        receipt.querySelector('.bubble').textContent =
-          action === 'hey' ? 'Hey!' : text('Olá!', 'Hi!');
-
-        content.append(receipt);
-
-        await next();
+        await sendExample(action, selected, sheet);
         return;
       }
     }
@@ -1081,14 +1452,14 @@
       );
 
       await choose([
-        ['check', text('Já alterei — verificar', 'I changed it — check')],
+        ['check', text('Continuar', 'Continue')],
         ['later', text('Agora não', 'Not now'), true]
       ]);
 
       await visible();
     }
 
-    root.addEventListener('submit', event => {
+    root.addEventListener('submit', (event) => {
       event.preventDefault();
       event.stopPropagation();
     });
@@ -1097,13 +1468,25 @@
 
     document.addEventListener(
       'visibilitychange',
-      () => container.toggleAttribute('data-paused', document.hidden),
+      () => {
+        container.toggleAttribute('data-paused', document.hidden);
+
+        animations.forEach((animation) => {
+          if (document.hidden) animation.pause();
+          else animation.play();
+        });
+      },
       { signal }
     );
 
-    host.addEventListener('cancel', event => {
+    host.addEventListener('cancel', (event) => {
       event.preventDefault();
-      abort();
+
+      if (menuDismissible) {
+        root.querySelector('.sheet .handle')?.click();
+      } else {
+        abort();
+      }
     }, { signal });
 
     host.addEventListener('close', abort, { signal });
@@ -1220,7 +1603,7 @@
         ownPhoto(content.querySelector('img'));
 
         const choice = await choose([
-          ['always', text('Permitir Sempre', 'Allow Always')],
+          ['always', text('Continuar', 'Continue')],
           ['later', text('Agora não', 'Not now'), true]
         ]);
 
@@ -1251,12 +1634,8 @@
             );
 
             const fallbackChoice = await choose([
-              ['settings', text('Abrir Definições', 'Open Settings')],
-              [
-                'later',
-                text('Continuar sem Sempre', 'Continue without Always'),
-                true
-              ]
+              ['settings', text('Continuar', 'Continue')],
+              ['later', text('Agora não', 'Not now'), true]
             ]);
 
             if (fallbackChoice === 'settings') {
@@ -1304,10 +1683,7 @@
         );
 
         const choice = await choose([
-          [
-            'notifications',
-            text('Permitir notificações', 'Allow notifications')
-          ],
+          ['notifications', text('Continuar', 'Continue')],
           ['later', text('Agora não', 'Not now'), true]
         ]);
 
@@ -1349,10 +1725,10 @@
 
       screen(
         'paper',
-        text('Vamos ao canvas.', 'Let’s open the canvas.'),
+        text('Vamos até à descoberta.', 'Let’s discover people nearby.'),
         text(
-          'As pessoas próximas aparecem no canvas. Toca numa foto quando quiseres dizer olá.',
-          'People nearby appear on the canvas. Tap a photo whenever you want to say hello.'
+          'Na área de descoberta encontras as pessoas por perto. Toca numa foto quando quiseres dizer olá.',
+          'Find people nearby in the discovery area. Tap a photo whenever you want to say hello.'
         )
       );
 
@@ -1389,6 +1765,10 @@
       clearInterval(watcher);
       cancelAnimationFrame(frame);
       scene?.stop();
+
+      animations.forEach((animation) => animation.cancel());
+      animations.clear();
+
       host.close();
       host.remove();
       cancelActive = null;
@@ -1416,7 +1796,7 @@
   window.MargotWelcome = {
     run,
 
-    preview: platform => run({
+    preview: (platform) => run({
       preview: true,
       platform
     }),
