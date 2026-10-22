@@ -1,0 +1,956 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#faf8f5">
+  <meta name="description" content="A Margot ajuda-te a conhecer as pessoas por perto. Conhece a app, o fundador Tiago Daniel e a missão de ajudar mais pessoas a conhecerem-se.">
+
+  <title>Sobre a Margot — A app e o fundador</title>
+
+  <link rel="canonical" href="https://margot-app.com/sobre.html">
+  <link rel="icon" href="/provisorio/logo.png">
+
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="pt_PT">
+  <meta property="og:title" content="Margot — Há pessoas por perto. Falta só um olá.">
+  <meta property="og:description" content="Conhece a Margot e Tiago Daniel, o fundador com a missão de ajudar mais pessoas a conhecerem-se.">
+  <meta property="og:url" content="https://margot-app.com/sobre.html">
+  <meta property="og:image" content="https://margot-app.com/imagens/fotos-perfil/tiago.webp">
+  <meta property="og:image:alt" content="Tiago Daniel, fundador da Margot">
+
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #faf8f5;
+      --ink: #252229;
+      --muted: #6e6870;
+      --red: #e12346;
+      --line: #25222914;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      scroll-padding-top: 28px;
+    }
+
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      line-height: 1.6;
+    }
+
+    a {
+      color: inherit;
+      text-underline-offset: 4px;
+    }
+
+    a:focus-visible {
+      outline: 3px solid var(--red);
+      outline-offset: 5px;
+      border-radius: 5px;
+    }
+
+    img {
+      display: block;
+      max-width: 100%;
+    }
+
+    h1,
+    h2,
+    h3,
+    p,
+    figure {
+      margin: 0;
+    }
+
+    h1,
+    h2 {
+      font-family: Georgia, "Times New Roman", serif;
+      font-weight: 700;
+      letter-spacing: -.055em;
+      line-height: 1.06;
+      text-wrap: balance;
+    }
+
+    .wrap {
+      width: min(1120px, calc(100% - 64px));
+      margin-inline: auto;
+    }
+
+    .skip {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      z-index: 20;
+      padding: 10px 16px;
+      background: white;
+      transform: translateY(-180%);
+    }
+
+    .skip:focus {
+      transform: none;
+    }
+
+    .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 24px;
+      padding-block: 28px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 29px;
+      font-weight: 900;
+      letter-spacing: -1.4px;
+      text-decoration: none;
+    }
+
+    .brand img {
+      width: 31px;
+      height: 31px;
+      border-radius: 10px;
+    }
+
+    .top nav {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      font-size: 14px;
+    }
+
+    .top nav a {
+      text-decoration: none;
+    }
+
+    .top nav a:hover {
+      color: var(--red);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.07fr 1fr;
+      gap: 64px;
+      align-items: center;
+      padding-block: 65px 85px;
+    }
+
+    .eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin-bottom: 22px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      flex: none;
+      background: var(--red);
+      border-radius: 50%;
+    }
+
+    h1 {
+      font-size: clamp(48px, 5.7vw, 76px);
+      max-width: 12ch;
+    }
+
+    h1 em {
+      font-style: normal;
+      color: var(--red);
+    }
+
+    .intro {
+      max-width: 37ch;
+      margin-top: 25px;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.7;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      padding: 15px 24px;
+      border-radius: 999px;
+      background: var(--red);
+      color: white;
+      font-size: 15px;
+      font-weight: 650;
+      text-decoration: none;
+    }
+
+    .hero .button {
+      margin-top: 30px;
+    }
+
+    .button:hover {
+      background: #c91e3d;
+    }
+
+    .scene {
+      position: relative;
+      aspect-ratio: .94;
+      border: 1px solid #fff;
+      border-radius: 44px 90px 48px 90px;
+      overflow: hidden;
+      background: #fffdfa;
+      box-shadow: 0 22px 65px #31213d0b;
+    }
+
+    .scene::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(
+        circle,
+        #9d91e980 1px,
+        transparent 1.6px
+      );
+      background-size: 19px 19px;
+      mask-image: linear-gradient(
+        transparent,
+        #000 30%,
+        #000 70%,
+        transparent
+      );
+      transform: rotate(-8deg) scale(1.3);
+    }
+
+    .wash {
+      position: absolute;
+      width: 200px;
+      height: 190px;
+      background: #f6df9a70;
+      filter: blur(34px);
+      top: -50px;
+      right: -30px;
+      border-radius: 50%;
+    }
+
+    .scene-label {
+      position: absolute;
+      top: 29px;
+      left: 29px;
+      right: 29px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .scene-label strong {
+      color: var(--ink);
+      font-size: 14px;
+    }
+
+    .avatar {
+      position: absolute;
+      width: 75px;
+      height: 75px;
+      border: 3px solid white;
+      border-radius: 50%;
+      background-color: #eee9e7;
+      background-repeat: no-repeat;
+      box-shadow: 0 7px 20px #30223814;
+      animation: float 7s ease-in-out infinite;
+    }
+
+    .a1 {
+      left: 18%;
+      top: 27%;
+      background-image: url('/media/onboarding/sofia.jpg');
+      background-size: 180% auto;
+      background-position: 46% 44%;
+    }
+
+    .a2 {
+      right: 17%;
+      top: 39%;
+      background-image: url('/media/onboarding/alex.jpg');
+      background-size: auto 260%;
+      background-position: 56% 6%;
+      animation-delay: -2s;
+    }
+
+    .a3 {
+      left: 28%;
+      top: 60%;
+      background-image: url('/media/onboarding/lara.jpg');
+      background-size: cover;
+      background-position: 48% 28%;
+      animation-delay: -4s;
+    }
+
+    .a4 {
+      right: 12%;
+      top: 68%;
+      width: 57px;
+      height: 57px;
+      background-image: url('/media/onboarding/miguel.jpg');
+      background-size: 140% auto;
+      background-position: 49% 48%;
+      animation-delay: -1s;
+    }
+
+    .hey {
+      position: absolute;
+      left: 30%;
+      top: 21%;
+      transform: rotate(-8deg);
+      background: var(--red);
+      color: white;
+      padding: 7px 18px;
+      font-size: 19px;
+      font-weight: 750;
+      border-radius: 20px 20px 20px 4px;
+      box-shadow: 0 8px 25px #e123461c;
+    }
+
+    .scene-menu {
+      position: absolute;
+      bottom: 24px;
+      left: 24px;
+      right: 24px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      border-radius: 999px;
+      background: #eae7e2c9;
+      backdrop-filter: blur(12px);
+    }
+
+    .scene-menu img {
+      width: 22px;
+      height: 22px;
+      object-fit: contain;
+    }
+
+    .scene-menu span {
+      display: grid;
+      place-items: center;
+      width: 23%;
+      height: 36px;
+      border-radius: 999px;
+    }
+
+    .scene-menu span:first-child {
+      background: #ffffffb3;
+    }
+
+    figcaption {
+      color: var(--muted);
+      font-size: 11px;
+      margin-top: 12px;
+      text-align: center;
+    }
+
+    .how {
+      padding-block: 50px 70px;
+      border-top: 1px solid var(--line);
+    }
+
+    .section-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 28px;
+      margin-bottom: 35px;
+    }
+
+    h2 {
+      font-size: clamp(35px, 4vw, 49px);
+    }
+
+    .section-heading > p {
+      max-width: 34ch;
+      font-size: 15px;
+      color: var(--muted);
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .step {
+      border: 1px solid var(--line);
+      border-radius: 27px;
+      background: #ffffffa8;
+      padding: 28px;
+    }
+
+    .number {
+      display: grid;
+      place-items: center;
+      width: 39px;
+      height: 39px;
+      margin-bottom: 24px;
+      border-radius: 14px;
+      font-size: 13px;
+      font-weight: 750;
+      background: #eee7f7;
+    }
+
+    .step:nth-child(2) .number {
+      background: #f9e4e7;
+      color: var(--red);
+    }
+
+    .step:nth-child(3) .number {
+      background: #f7edce;
+    }
+
+    h3 {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -.025em;
+      margin-bottom: 10px;
+    }
+
+    .step p {
+      font-size: 15px;
+      color: var(--muted);
+    }
+
+    .founder {
+      padding-block: 58px 80px;
+      display: grid;
+      grid-template-columns: .9fr 1.1fr;
+      gap: 90px;
+      align-items: center;
+    }
+
+    .portrait {
+      position: relative;
+      isolation: isolate;
+      padding: 14px;
+    }
+
+    .portrait::before {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      width: 65%;
+      height: 55%;
+      top: -9px;
+      left: -12px;
+      background: #f3df9e;
+      border-radius: 60% 40% 52% 48%;
+      transform: rotate(-18deg);
+    }
+
+    .portrait::after {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      width: 43%;
+      height: 45%;
+      bottom: -6px;
+      right: -10px;
+      background: #ddd1ed;
+      border-radius: 43% 57% 65% 35%;
+    }
+
+    .portrait img {
+      width: 100%;
+      aspect-ratio: 1 / 1.08;
+      object-fit: cover;
+      object-position: 50% 45%;
+      border-radius: 45% 46% 38% 41% / 34% 36% 37% 40%;
+    }
+
+    .role {
+      display: inline-block;
+      margin-top: 15px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      background: #e1234610;
+      color: var(--red);
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .bio {
+      margin-top: 23px;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.8;
+      max-width: 44ch;
+    }
+
+    .mission {
+      margin-top: 27px;
+      padding-left: 20px;
+      border-left: 3px solid var(--red);
+    }
+
+    .mission span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 7px;
+    }
+
+    .mission p {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(25px, 2.5vw, 32px);
+      line-height: 1.25;
+      letter-spacing: -.035em;
+    }
+
+    .closing {
+      position: relative;
+      overflow: hidden;
+      padding: 50px 30px;
+      margin-block: 20px 60px;
+      border-radius: 38px;
+      text-align: center;
+      background: #efe9f4;
+    }
+
+    .closing h2 {
+      max-width: 18ch;
+      margin-inline: auto;
+    }
+
+    .closing p {
+      color: var(--muted);
+      margin-top: 16px;
+    }
+
+    .downloads {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 26px;
+    }
+
+    .downloads .button {
+      background: var(--ink);
+    }
+
+    footer {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 22px 0 max(28px, env(safe-area-inset-bottom));
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    footer nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 22px;
+    }
+
+    @keyframes float {
+      0%, 100% {
+        transform: translateY(0);
+      }
+
+      50% {
+        transform: translateY(-9px);
+      }
+    }
+
+    @media (max-width: 760px) {
+      .wrap {
+        width: calc(100% - 40px);
+      }
+
+      .top {
+        padding-top: max(22px, env(safe-area-inset-top));
+      }
+
+      .top nav {
+        gap: 18px;
+        font-size: 13px;
+      }
+
+      .brand {
+        font-size: 25px;
+      }
+
+      .brand img {
+        width: 26px;
+        height: 26px;
+      }
+
+      .hero {
+        grid-template-columns: 1fr;
+        gap: 36px;
+        padding-block: 35px 50px;
+      }
+
+      h1 {
+        font-size: clamp(46px, 11vw, 68px);
+        max-width: 13ch;
+      }
+
+      .intro {
+        font-size: 17px;
+        max-width: 38ch;
+      }
+
+      .scene {
+        width: min(100%, 460px);
+        margin-inline: auto;
+      }
+
+      .how {
+        padding-block: 38px 25px;
+      }
+
+      .section-heading {
+        display: block;
+      }
+
+      .section-heading > p {
+        margin-top: 17px;
+      }
+
+      .steps {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .step {
+        padding: 23px;
+      }
+
+      .number {
+        float: left;
+        margin: 0 17px 14px 0;
+      }
+
+      .step p {
+        clear: both;
+      }
+
+      .step h3 {
+        padding-top: 7px;
+      }
+
+      .founder {
+        grid-template-columns: 1fr;
+        gap: 40px;
+        padding-block: 48px;
+      }
+
+      .portrait {
+        width: min(100%, 370px);
+        margin-inline: auto;
+      }
+
+      .bio {
+        font-size: 16px;
+      }
+
+      .closing {
+        padding: 38px 20px;
+        margin-bottom: 35px;
+      }
+
+      .downloads {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .downloads .button {
+        width: min(100%, 260px);
+      }
+    }
+
+    @media (max-width: 360px) {
+      .top nav {
+        gap: 12px;
+      }
+
+      .wrap {
+        width: calc(100% - 32px);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
+
+      .avatar {
+        animation: none;
+      }
+    }
+  </style>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "AboutPage",
+    "url": "https://margot-app.com/sobre.html",
+    "name": "Sobre a Margot",
+    "inLanguage": "pt-PT",
+    "mainEntity": {
+      "@type": "Organization",
+      "name": "Margot",
+      "url": "https://margot-app.com/",
+      "founder": {
+        "@type": "Person",
+        "name": "Tiago Daniel",
+        "jobTitle": "Fundador da Margot",
+        "image": "https://margot-app.com/imagens/fotos-perfil/tiago.webp"
+      }
+    }
+  }
+  </script>
+</head>
+
+<body>
+  <a class="skip" href="#conteudo">Saltar para o conteúdo</a>
+
+  <div class="wrap">
+    <header class="top">
+      <a class="brand" href="/" aria-label="Margot, início">
+        <img src="/provisorio/logo.png" width="31" height="31" alt="">
+        Margot
+      </a>
+
+      <nav aria-label="Nesta página">
+        <a href="#margot">A Margot</a>
+        <a href="#fundador">O fundador</a>
+      </nav>
+    </header>
+
+    <main id="conteudo">
+      <section class="hero" id="margot" aria-labelledby="titulo">
+        <div>
+          <p class="eyebrow">Sobre a Margot</p>
+
+          <h1 id="titulo">
+            Há pessoas por perto.<br>
+            Falta só um <em>olá.</em>
+          </h1>
+
+          <p class="intro">
+            A Margot ajuda-te a conhecer as pessoas à tua volta
+            e a dar o primeiro passo para uma nova conversa.
+          </p>
+
+          <a class="button" href="#como-funciona">
+            Conhece a Margot
+            <span aria-hidden="true">↓</span>
+          </a>
+        </div>
+
+        <figure>
+          <div
+            class="scene"
+            role="img"
+            aria-label="Ilustração da descoberta na Margot, com quatro perfis de exemplo e um Hey."
+          >
+            <span class="wash" aria-hidden="true"></span>
+
+            <div class="scene-label" aria-hidden="true">
+              <strong>Pessoas por perto</strong>
+              <span>Um olá pode começar aqui.</span>
+            </div>
+
+            <span class="avatar a1" aria-hidden="true"></span>
+            <span class="avatar a2" aria-hidden="true"></span>
+            <span class="avatar a3" aria-hidden="true"></span>
+            <span class="avatar a4" aria-hidden="true"></span>
+
+            <span class="hey" aria-hidden="true">Hey</span>
+
+            <div class="scene-menu" aria-hidden="true">
+              <span>
+                <img
+                  src="/imagens/icones-menu/home.png"
+                  width="22"
+                  height="22"
+                  alt=""
+                >
+              </span>
+
+              <span>
+                <img
+                  src="/imagens/icones-menu/messages.png"
+                  width="22"
+                  height="22"
+                  alt=""
+                >
+              </span>
+
+              <span>
+                <img
+                  src="/imagens/icones-menu/user.png"
+                  width="22"
+                  height="22"
+                  alt=""
+                >
+              </span>
+
+              <span>
+                <img
+                  src="/imagens/icones-menu/eye.png"
+                  width="22"
+                  height="22"
+                  alt=""
+                >
+              </span>
+            </div>
+          </div>
+
+          <figcaption>Ilustração com perfis de exemplo.</figcaption>
+        </figure>
+      </section>
+
+      <section class="how" id="como-funciona" aria-labelledby="como-titulo">
+        <div class="section-heading">
+          <h2 id="como-titulo">Do encontro à conversa.</h2>
+
+          <p>
+            Uma forma simples de te aproximares
+            de quem está por perto.
+          </p>
+        </div>
+
+        <div class="steps">
+          <article class="step">
+            <span class="number" aria-hidden="true">01</span>
+
+            <h3>Descobre quem está perto</h3>
+
+            <p>
+              Abre a Margot e encontra as pessoas por perto
+              que também usam a app.
+            </p>
+          </article>
+
+          <article class="step">
+            <span class="number" aria-hidden="true">02</span>
+
+            <h3>Dá o primeiro olá</h3>
+
+            <p>
+              Viste alguém com quem gostavas de falar?
+              Envia um Hey ou começa uma conversa.
+            </p>
+          </article>
+
+          <article class="step">
+            <span class="number" aria-hidden="true">03</span>
+
+            <h3>Mantém a ligação</h3>
+
+            <p>
+              Se se conectarem, podem continuar a conversar,
+              mesmo quando já estão longe.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="founder" id="fundador" aria-labelledby="fundador-nome">
+        <figure class="portrait">
+          <img
+            src="/imagens/fotos-perfil/tiago.webp"
+            width="666"
+            height="719"
+            loading="lazy"
+            decoding="async"
+            alt="Tiago Daniel, fundador da Margot, junto ao rio."
+          >
+        </figure>
+
+        <div>
+          <p class="eyebrow">Quem está por trás da Margot</p>
+
+          <h2 id="fundador-nome">Tiago Daniel</h2>
+
+          <p class="role">Fundador da Margot</p>
+
+          <p class="bio">
+            Criei a Margot com uma ideia simples: tornar mais fácil
+            conhecer as pessoas que se cruzam connosco.
+            Quero ajudar mais pessoas a dar o primeiro passo
+            e transformar encontros do dia a dia em novas conversas.
+          </p>
+
+          <div class="mission">
+            <span>A minha missão</span>
+
+            <p>
+              Ajudar mais pessoas<br>
+              a conhecerem-se.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="closing" aria-labelledby="convite-titulo">
+        <h2 id="convite-titulo">
+          A próxima conversa pode estar por perto.
+        </h2>
+
+        <p>Leva a Margot contigo.</p>
+
+        <div class="downloads">
+          <a
+            class="button"
+            href="https://apps.apple.com/pt/app/margot-pessoas-por-perto/id6803648498"
+          >
+            Descarregar na App Store
+            <span aria-hidden="true">↗</span>
+          </a>
+
+          <a
+            class="button"
+            href="https://play.google.com/store/apps/details?id=com.margot.app"
+          >
+            Descarregar no Google Play
+            <span aria-hidden="true">↗</span>
+          </a>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <span>Margot · Um olá leva a outro.</span>
+
+      <nav aria-label="Informações">
+        <a href="/">Abrir a Margot</a>
+        <a href="/privacy">Privacidade</a>
+        <a href="/terms">Termos</a>
+      </nav>
+    </footer>
+  </div>
+</body>
+</html>
