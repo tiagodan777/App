@@ -216,6 +216,8 @@ final class AuthenticatedWebSocket implements MessageComponentInterface {
         if ($emissorId === '' || $destinatarioId === '') {
             return true;
         }
+        try { if ((new MemberConnection($this->getDatabase()))->areConnected($emissorId, $destinatarioId)) { return true; } }
+        catch (\Throwable $erro) { echo sprintf("[HEY CONNECTION CHECK ERROR] %s\n", $erro->getMessage()); }
         $chave = hash('sha256', $emissorId . "\0" . $destinatarioId);
         $agora = microtime(true);
         $disponivelEm = (float) ($this->heyDisponivelEm[$chave] ?? 0.0);

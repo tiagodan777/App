@@ -40,7 +40,7 @@ trait Connections {
             $this->enviarEstadosIndividuais();
             return;
         }
-        if (!$this->estaoDentroDoRaio($remetenteId, $destinatarioId)) {
+        if (!(new MemberConnection($this->getDatabase()))->areConnected($remetenteId, $destinatarioId) && !$this->estaoDentroDoRaio($remetenteId, $destinatarioId)) {
             $this->enviarErroHey($from, $destinatarioId, 'Esta pessoa já não está dentro do raio disponível.');
             $this->enviarEstadosIndividuais();
             return;
