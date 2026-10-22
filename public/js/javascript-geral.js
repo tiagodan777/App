@@ -30,7 +30,7 @@
     }
 
     async function animarTroca(renderizar, pagina, direcao, semAnimacao) {
-        var reduzir = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var reduzir = window.matchMedia('(prefers-reduced-motion: reduce)').matches || /^\/messages(?:\/|$)/.test(caminhoNormalizado(urlEmNavegacao || urlRenderizada)) || /^\/messages(?:\/|$)/.test(caminhoNormalizado(urlRenderizada));
         if (semAnimacao === true || reduzir || document.hidden) {
             await renderizar();
             return;
@@ -589,7 +589,7 @@
         var paginaNova = null;
 
         atualizarMenu(url);
-        document.body.setAttribute('aria-busy', 'true');
+        document.body.setAttribute('aria-busy', 'true'); try { window.MargotExperience?.navigationStart(url, carregarScript); } catch (_) {}
 
         try {
             var resposta = await carregarPagina(url, controlador.signal);

@@ -288,7 +288,7 @@
             !native() ||
             window.Capacitor.getPlatform() !== 'ios'
         ) {
-            return request();
+                return native() && kind === 'location' && window.MargotExperience ? window.MargotExperience.waitForLocation(request) : request();
         }
 
         const dialog = document.createElement('dialog');
@@ -311,7 +311,7 @@
         try {
             await present(dialog);
 
-            return await nativeDecision(request);
+            return await nativeDecision(kind === 'location' && window.MargotExperience ? () => window.MargotExperience.waitForLocation(request) : request);
         } finally {
             await dismiss(dialog);
 

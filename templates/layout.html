@@ -51,7 +51,7 @@
         <script src="{{ doc_root }}js/preferencias.js?v=20260916"></script>
     {% endif %}
 
-    <script src="{{ doc_root }}js/permission-experience.js?v=20260930-review-1"></script>
+    <script src="{{ doc_root }}js/permission-experience.js?v=20261022-wait-decision-1"></script>
     <script src="{{ doc_root }}js/push-notifications.js?v=20261018-push-recovery-1"></script>
 
     <div data-margot-pagina>
@@ -189,6 +189,7 @@
                 : 'ws://' + window.location.hostname + ':8080';
         </script>
 
+        <script src="{{ doc_root }}js/experience-feedback.js?v=20261022-1"></script>
         <script src="{{ doc_root }}js/hey-vibracao.js?v=20260920-video"></script>
         <script src="{{ doc_root }}js/index-notificacoes.js?v=20260928-heys-nav"></script>
         {% include 'partials/daylies.html' %}
@@ -196,8 +197,10 @@
         <script src="{{ doc_root }}js/chat-camera.js?v=20260923-camera"></script>
         <script src="{{ doc_root }}js/daylies.js?v=20261018-entry1"></script>
         <script src="{{ doc_root }}js/activity-reminders.js?v=20260921"></script>
-<script src="{{ doc_root }}js/discovery-tutorial.js?v=20261022-real-tutorial-1"></script><script src="{{ doc_root }}js/welcome-onboarding.js?v=20261022-real-tutorial-1" data-photo="{{ doc_root }}imagens/fotos-perfil/{{ session.foto_perfil|default('default.webp')|e('html_attr') }}"></script><script src="{{ doc_root }}js/location-onboarding.js?v=20261021-3"></script>
-<script src="{{ doc_root }}js/privacy-update-notice.js?v=20261022-motion-1"></script>
+        <script src="{{ doc_root }}js/discovery-tutorial.js?v=20261022-own-photo-2"></script>
+        <script src="{{ doc_root }}js/welcome-onboarding.js?v=20261022-real-tutorial-1" data-photo="{{ doc_root }}imagens/fotos-perfil/{{ session.foto_perfil|default('default.webp')|e('html_attr') }}"></script>
+        <script src="{{ doc_root }}js/location-onboarding.js?v=20261021-3"></script>
+        <script src="{{ doc_root }}js/privacy-update-notice.js?v=20261022-motion-1"></script>
         <script src="{{ doc_root }}js/location-notice-video.js?v=20261010-premium-3" defer></script>
         <script src="{{ doc_root }}js/location-privacy.js?v=20261019-1"></script>
         <script src="{{ doc_root }}js/background-location.js?v=20260929-1"></script>
@@ -205,7 +208,7 @@
         <script src="{{ doc_root }}js/websocket-alerts.js?v=20260917-chat1"></script>
         <script src="{{ doc_root }}js/websocket.js?v=20261022-real-tutorial-1"></script>
         <script src="{{ doc_root }}js/menu-invisivel.js?v=20260916"></script>
-        <script src="{{ doc_root }}js/javascript-geral.js?v=20260920-video"></script>
+        <script src="{{ doc_root }}js/javascript-geral.js?v=20261022-loading-1"></script>
     {% endif %}
 </body>
 </html>

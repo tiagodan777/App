@@ -59,6 +59,32 @@
     const undo = [];
     const photos = [];
 
+    const ownSource = document.querySelector(
+      'script[data-photo][src*="welcome-onboarding"]'
+    )?.dataset.photo;
+
+    const fallback = new URL(
+      'imagens/fotos-perfil/default.webp',
+      base
+    ).href;
+
+    let ownURL = fallback;
+
+    try {
+      const url = new URL(ownSource || fallback, location.href);
+      if (url.origin === location.origin) ownURL = url.href;
+    } catch (_) {}
+
+    const people = [
+      ...profiles,
+      [t('Tu', 'You'), ownURL, 'cover', '50% 50%', 48, 48]
+    ];
+
+    const photoURL = profile => profile === people[4]
+      ? ownURL
+      : new URL('media/onboarding/' + profile[1], base).href;
+
+    let invisible = false;
     let selected = null;
     let sent = false;
     let stage = 'people';
@@ -83,11 +109,13 @@
     }
 
     const oldValue = input.value;
+
     undo.push(() => {
       input.value = oldValue;
     });
 
     const oldName = name.textContent;
+
     undo.push(() => {
       name.textContent = oldName;
     });
@@ -103,6 +131,55 @@
 
       body.margot-demo .foto[data-margot-demo] {
         background-repeat: no-repeat;
+      }
+
+      body.margot-demo .foto[data-margot-demo-self] {
+        outline: 3px solid #e12346;
+        outline-offset: 4px;
+      }
+
+      body.margot-demo .foto[data-margot-demo-self]::after {
+        content: attr(data-label);
+        position: absolute;
+        top: calc(100% + 7px);
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 3px 9px;
+        border-radius: 20px;
+        background: #fffef9;
+        color: #211e22;
+        white-space: nowrap;
+        font: 600 12px -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+      }
+
+      body.margot-demo.demo-invisible .foto[data-margot-demo-self] {
+        opacity: .22 !important;
+        outline-style: dashed;
+      }
+
+      body.margot-demo #menuPrincipal #alternar-invisivel[data-invisivel="false"] {
+        background: transparent !important;
+        box-shadow: none !important;
+        opacity: 1;
+      }
+
+      body.margot-demo #menuPrincipal #alternar-invisivel[data-invisivel="false"]::after {
+        display: none !important;
+      }
+
+      body.margot-demo #menuPrincipal #alternar-invisivel[data-invisivel="false"] .menu-invisivel-imagem {
+        width: 26px;
+        height: 26px;
+        flex: 0 0 26px;
+        filter: none !important;
+      }
+
+      body.margot-demo #menuPrincipal #alternar-invisivel[data-invisivel="false"] .menu-invisivel-imagem-visivel {
+        display: block !important;
+      }
+
+      body.margot-demo #menuPrincipal #alternar-invisivel[data-invisivel="false"] .menu-invisivel-imagem-invisivel {
+        display: none !important;
       }
 
       body.margot-demo #acoes-perfil,
@@ -241,7 +318,8 @@
     function prepare(element) {
       if (
         stage !== 'people' ||
-        !element?.hasAttribute('data-margot-demo')
+        !element?.hasAttribute('data-margot-demo') ||
+        element.hasAttribute('data-margot-demo-self')
       ) {
         return false;
       }
@@ -324,6 +402,14 @@
       attribute(menu, 'class', menu.className);
       menu.classList.remove('perfil-proprio');
 
+      attribute(eye, 'data-invisivel', 'false');
+      attribute(eye, 'aria-pressed', 'false');
+      attribute(
+        eye,
+        'aria-label',
+        t('Experimentar modo invisível', 'Try invisible mode')
+      );
+
       attribute(form, 'action', null);
       attribute(input, 'readonly', '');
       attribute(portrait, 'src', portrait.getAttribute('src'));
@@ -342,16 +428,18 @@
 
       if (token) {
         const value = token.value;
+
         undo.push(() => {
           token.value = value;
         });
+
         token.value = '';
       }
 
       document.head.append(style);
       document.body.classList.add('margot-demo');
 
-      for (const [index, profile] of profiles.entries()) {
+      for (const [index, profile] of people.entries()) {
         const node = document.createElement('div');
 
         node.className = 'foto';
@@ -361,38 +449,62 @@
         node.dataset.left = String(innerWidth * profile[4] / 100);
         node.dataset.top = String(innerHeight * profile[5] / 100);
 
-        node.setAttribute('role', 'button');
-        node.setAttribute('tabindex', '0');
-
-        node.setAttribute(
-          'aria-label',
-          t('Perfil de exemplo: ', 'Example profile: ') + profile[0]
-        );
-
         node.style.backgroundImage =
           'url("' +
-          new URL('media/onboarding/' + profile[1], base).href +
+          photoURL(profile) +
           '")';
 
         node.style.backgroundSize = profile[2];
         node.style.backgroundPosition = profile[3];
 
-        node.addEventListener('keydown', event => {
-          if (!['Enter', ' '].includes(event.key)) return;
+        if (index === 4) {
+          node.dataset.margotDemoSelf = '';
+          node.dataset.label = t('Tu', 'You');
+          node.setAttribute('role', 'img');
+          node.setAttribute(
+            'aria-label',
+            t('O teu perfil na demonstração', 'Your profile in the demo')
+          );
 
-          stop(event);
+          const probe = new Image();
 
-          for (const type of ['pointerdown', 'pointerup']) {
-            node.dispatchEvent(
-              new PointerEvent(type, {
-                bubbles: true,
-                pointerId: 1,
-                clientX: 0,
-                clientY: 0
-              })
-            );
-          }
-        }, listeners);
+          probe.onerror = () => {
+            if (node.isConnected) {
+              node.style.backgroundImage = 'url("' + fallback + '")';
+            }
+          };
+
+          probe.src = ownURL;
+
+          undo.push(() => {
+            probe.onerror = null;
+          });
+        } else {
+          node.setAttribute('role', 'button');
+          node.setAttribute('tabindex', '0');
+
+          node.setAttribute(
+            'aria-label',
+            t('Perfil de exemplo: ', 'Example profile: ') + profile[0]
+          );
+
+          node.addEventListener('keydown', event => {
+            if (!['Enter', ' '].includes(event.key)) return;
+
+            stop(event);
+
+            for (const type of ['pointerdown', 'pointerup']) {
+              node.dispatchEvent(
+                new PointerEvent(type, {
+                  bubbles: true,
+                  pointerId: 1,
+                  clientX: 0,
+                  clientY: 0
+                })
+              );
+            }
+          }, listeners);
+        }
 
         photos.push(node);
         document.body.append(node);
@@ -428,19 +540,41 @@
 
         if (eye.contains(event.target)) {
           stop(event);
-          if (stage !== 'eye') return;
+
+          if (!['eye', 'finish'].includes(stage)) return;
 
           feedback('interaction', preview);
 
-          document.body.classList.add('demo-invisible');
-          eye.dataset.invisivel = 'true';
-          eye.setAttribute('aria-pressed', 'true');
+          invisible = !invisible;
+
+          document.body.classList.toggle('demo-invisible', invisible);
+          eye.dataset.invisivel = String(invisible);
+          eye.setAttribute('aria-pressed', String(invisible));
+          eye.setAttribute(
+            'aria-label',
+            invisible
+              ? t('Voltar a ficar visível', 'Become visible again')
+              : t('Experimentar modo invisível', 'Try invisible mode')
+          );
+
+          const self = photos[4];
+
+          self.dataset.label = invisible
+            ? t('Tu · invisível', 'You · invisible')
+            : t('Tu', 'You');
+
+          self.setAttribute('aria-label', self.dataset.label);
 
           say(
-            t(
-              'O teu perfil fica escondido. Ninguém consegue ver que estás por perto.',
-              'Your profile is hidden. Nobody can see that you are nearby.'
-            )
+            invisible
+              ? t(
+                  'Ficas escondido dos outros. Aqui, a tua foto fica esbatida só para veres a diferença.',
+                  'You are hidden from others. Your photo is faded here only to show the difference.'
+                )
+              : t(
+                  'Voltaste a ficar visível. Podes tocar no olho outra vez.',
+                  'You are visible again. You can tap the eye again.'
+                )
           );
 
           next.hidden = false;
@@ -483,8 +617,6 @@
         window.fecharMiniMenu();
 
         stage = 'eye';
-        attribute(eye, 'data-invisivel', 'false');
-        attribute(eye, 'aria-pressed', 'false');
         next.hidden = true;
 
         document.body.classList.add('demo-eye');
