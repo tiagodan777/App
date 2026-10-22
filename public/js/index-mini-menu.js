@@ -145,6 +145,7 @@
     }
 
     function prepararMiniMenu(elemento) {
+        if (window.MargotDiscoveryTutorial?.busy) return window.MargotDiscoveryTutorial.prepare(elemento);
         if (!paginaAtiva || !elemento) {
             return false;
         }
@@ -588,7 +589,7 @@
         $acoes.find('button, select, textarea').prop('disabled', ocupada);
     }
 
-    window.prepararMiniMenuDaFoto = prepararMiniMenu;
+    window.prepararMiniMenuDaFoto = Object.assign(prepararMiniMenu, { supportsTutorial: true });
 
     $(document).on('pointerdown' + NS + ' click' + NS, '.foto', function () {
         prepararMiniMenu(this);

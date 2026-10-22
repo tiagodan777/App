@@ -417,7 +417,7 @@
             fotosCache.map(foto => [foto.elemento, foto])
         );
 
-        fotosCache = Array.from(document.querySelectorAll('.foto')).map(el => {
+        fotosCache = Array.from(document.querySelectorAll(window.MargotDiscoveryTutorial?.busy ? '.foto[data-margot-demo]' : '.foto:not([data-margot-demo])')).map(el => {
             el.style.position = 'absolute';
             el.style.top = el.style.left = '0px';
             el.style.transformOrigin = 'center center';

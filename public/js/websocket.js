@@ -474,7 +474,7 @@
         var idsAtuais = pessoas.map(function (pessoa) {
             return String(pessoa.id);
         });
-        $('.foto').each(function () {
+        $('.foto:not([data-margot-demo])').each(function () {
             var $foto = $(this);
             var id = String($foto.attr('id') || '');
             if (idsAtuais.includes(id)) {

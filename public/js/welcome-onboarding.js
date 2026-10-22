@@ -1489,7 +1489,7 @@
       }
     }, { signal });
 
-    host.addEventListener('close', abort, { signal });
+    host.addEventListener('close', () => { if (!window.MargotDiscoveryTutorial?.busy) abort(); }, { signal });
 
     try {
       while (!gate()) {
@@ -1511,7 +1511,7 @@
       }, 500);
 
       if (preview || force || !read(id, 'demo')) {
-        await demo();
+        await window.MargotDiscoveryTutorial.run({ host, signal, preview });
         if (!preview) save(id, 'demo');
       }
 
