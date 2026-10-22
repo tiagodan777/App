@@ -4,12 +4,27 @@
   if (window.MargotDiscoveryInviteNotice) return;
 
   const base = new URL('../', document.currentScript.src);
+
   const text = (pt, en) =>
     window.MargotI18n?.language === 'en' ? en : pt;
 
   const dismissed = new Set();
+
   let eligibleSince = 0;
   let previousMember = '';
+
+  // Substitui apenas a antiga dica de convites.
+  // Não altera os registos de conclusão do tutorial ou permissões.
+  function retireOldTip(id) {
+    if (!id) return;
+
+    try {
+      localStorage.setItem(
+        'margot-welcome-v2:' + id + ':invite',
+        '1'
+      );
+    } catch (_) {}
+  }
 
   const host = document.createElement('aside');
   host.id = 'margot-discovery-invite';
@@ -115,7 +130,9 @@
   link.href = new URL('invite', base).href;
 
   const member = () => String(window.membroId || '');
-  const key = () => 'margot-discovery-invite-dismissed:' + member();
+
+  const key = () =>
+    'margot-discovery-invite-dismissed:' + member();
 
   function wasDismissed() {
     if (dismissed.has(member())) return true;
@@ -163,8 +180,11 @@
   });
 
   function visibleNotice(selector) {
-    return Array.from(document.querySelectorAll(selector)).some(node =>
-      !node.hidden && node.getClientRects().length > 0
+    return Array.from(
+      document.querySelectorAll(selector)
+    ).some(node =>
+      !node.hidden &&
+      node.getClientRects().length > 0
     );
   }
 
@@ -173,6 +193,7 @@
 
     if (id !== previousMember) {
       previousMember = id;
+      retireOldTip(id);
       eligibleSince = 0;
     }
 
@@ -206,7 +227,9 @@
     ).forEach(photo => {
       const person = String(photo.dataset.membroId || '');
 
-      if (person && person !== id) others.add(person);
+      if (person && person !== id) {
+        others.add(person);
+      }
     });
 
     if (blocked || others.size > 3) {
@@ -215,7 +238,10 @@
       return;
     }
 
-    if (!eligibleSince) eligibleSince = Date.now();
+    if (!eligibleSince) {
+      eligibleSince = Date.now();
+    }
+
     if (Date.now() - eligibleSince < 5000) return;
 
     host.querySelector('strong').textContent = text(
@@ -226,15 +252,21 @@
     const description = host.querySelector('span');
 
     description.replaceChildren(
-      document.createTextNode(text(
-        'Convida os teus para a Margot. ',
-        'Invite yours to Margot. '
-      ))
+      document.createTextNode(
+        text(
+          'Convida os teus para a Margot. ',
+          'Invite yours to Margot. '
+        )
+      )
     );
 
     const action = document.createElement('em');
 
-    action.textContent = text('Ver convites →', 'See invites →');
+    action.textContent = text(
+      'Ver convites →',
+      'See invites →'
+    );
+
     description.append(action);
 
     close.setAttribute(
@@ -256,6 +288,7 @@
   document.addEventListener('margot:page-ready', refresh);
   document.addEventListener('visibilitychange', refresh);
 
+  refresh();
   setInterval(refresh, 1000);
 
   window.MargotDiscoveryInviteNotice = { refresh };

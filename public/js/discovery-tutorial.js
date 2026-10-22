@@ -28,8 +28,20 @@
 
   async function run({ host, signal, preview = false }) {
     if (session) throw new Error('Tutorial already active');
+
     const readyUntil = Date.now() + 10000;
-    while (!signal.aborted && Date.now() < readyUntil && (!window.inicializarFotos || !window.fecharMiniMenu || !window.prepararMiniMenuDaFoto?.supportsTutorial)) await new Promise(resolve => setTimeout(resolve, 50));
+
+    while (
+      !signal.aborted &&
+      Date.now() < readyUntil &&
+      (
+        !window.inicializarFotos ||
+        !window.fecharMiniMenu ||
+        !window.prepararMiniMenuDaFoto?.supportsTutorial
+      )
+    ) {
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
 
     const menu = document.querySelector('.mini-menu');
     const eye = document.getElementById('alternar-invisivel');
@@ -74,7 +86,10 @@
 
     try {
       const url = new URL(ownSource || fallback, location.href);
-      if (url.origin === location.origin) ownURL = url.href;
+
+      if (url.origin === location.origin) {
+        ownURL = url.href;
+      }
     } catch (_) {}
 
     const people = [
@@ -292,8 +307,8 @@
     const next = hud.querySelector('button:not(.secondary)');
 
     hud.querySelector('small').textContent = t(
-      'Tutorial · perfis de exemplo',
-      'Tutorial · example profiles'
+      'TUTORIAL DA MARGOT',
+      'MARGOT TUTORIAL'
     );
 
     skip.textContent = t('Saltar tutorial', 'Skip tutorial');
@@ -305,7 +320,9 @@
       hint.textContent = message;
 
       if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        hint.getAnimations?.().forEach(animation => animation.cancel());
+        hint.getAnimations?.().forEach(animation => {
+          animation.cancel();
+        });
 
         hint.animate?.(
           [
@@ -327,6 +344,7 @@
       }
 
       selected = profiles[Number(element.dataset.margotDemo)];
+
       if (!selected) return false;
 
       name.textContent = selected[0];
@@ -390,7 +408,9 @@
     session = { prepare };
 
     const interrupted = () => {
-      rejectDone(new DOMException('Interrupted', 'AbortError'));
+      rejectDone(
+        new DOMException('Interrupted', 'AbortError')
+      );
     };
 
     signal.addEventListener('abort', interrupted, { once: true });
@@ -402,10 +422,12 @@
 
       attribute(menu, 'data-destinatario-id', '');
       attribute(menu, 'class', menu.className);
+
       menu.classList.remove('perfil-proprio');
 
       attribute(eye, 'data-invisivel', 'false');
       attribute(eye, 'aria-pressed', 'false');
+
       attribute(
         eye,
         'aria-label',
@@ -452,9 +474,7 @@
         node.dataset.top = String(innerHeight * profile[5] / 100);
 
         node.style.backgroundImage =
-          'url("' +
-          photoURL(profile) +
-          '")';
+          'url("' + photoURL(profile) + '")';
 
         node.style.backgroundSize = profile[2];
         node.style.backgroundPosition = profile[3];
@@ -463,16 +483,21 @@
           node.dataset.margotDemoSelf = '';
           node.dataset.label = t('Tu', 'You');
           node.setAttribute('role', 'img');
+
           node.setAttribute(
             'aria-label',
-            t('O teu perfil na demonstração', 'Your profile in the demo')
+            t(
+              'O teu perfil na demonstração',
+              'Your profile in the demo'
+            )
           );
 
           const probe = new Image();
 
           probe.onerror = () => {
             if (node.isConnected) {
-              node.style.backgroundImage = 'url("' + fallback + '")';
+              node.style.backgroundImage =
+                'url("' + fallback + '")';
             }
           };
 
@@ -487,7 +512,8 @@
 
           node.setAttribute(
             'aria-label',
-            t('Perfil de exemplo: ', 'Example profile: ') + profile[0]
+            t('Perfil de exemplo: ', 'Example profile: ') +
+            profile[0]
           );
 
           node.addEventListener('keydown', event => {
@@ -514,7 +540,7 @@
 
       document.body.append(hud);
 
-      // Respeita primeiro o bloqueio de cliques após um swipe real.
+      // Respeita o bloqueio de cliques após um swipe real.
       menu.addEventListener('click', event => {
         const target = event.target;
         const hey = target.closest?.('#enviar-hey');
@@ -549,9 +575,14 @@
 
           invisible = !invisible;
 
-          document.body.classList.toggle('demo-invisible', invisible);
+          document.body.classList.toggle(
+            'demo-invisible',
+            invisible
+          );
+
           eye.dataset.invisivel = String(invisible);
           eye.setAttribute('aria-pressed', String(invisible));
+
           eye.setAttribute(
             'aria-label',
             invisible
@@ -653,8 +684,8 @@
 
       say(
         t(
-        'Vamos experimentar a Margot. Toca numa foto: neste tutorial, nada é enviado.',
-          'Let’s try Margot. Tap a photo: nothing is sent during this tutorial.'
+          'Vamos experimentar. Toca numa foto: neste tutorial, nada é enviado.',
+          'Let’s try it. Tap a photo: nothing is sent during this tutorial.'
         )
       );
 

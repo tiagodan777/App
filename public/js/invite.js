@@ -88,7 +88,7 @@
 
     page.querySelector('[data-copy-code]')?.addEventListener(
         'click',
-        (event) => {
+        event => {
             copy(
                 event.currentTarget.textContent.trim(),
                 'Código copiado.'
@@ -102,7 +102,12 @@
     );
 
     const share = page.querySelector('[data-share-invite]');
-    const native = Boolean(window.Capacitor?.Plugins?.MargotShare || window.Capacitor?.isPluginAvailable?.('MargotShare'));
+    const cap = window.Capacitor;
+
+    const native = Boolean(
+        cap?.Plugins?.MargotShare ||
+        cap?.isPluginAvailable?.('MargotShare')
+    );
 
     if (share && !native && !navigator.share) {
         share.textContent = 'Copiar convite';
@@ -119,18 +124,29 @@
 
         try {
             if (native) {
-                const plugin = window.Capacitor.Plugins?.MargotShare || window.Capacitor.registerPlugin?.('MargotShare');
+                const plugin =
+                    cap.Plugins?.MargotShare ||
+                    cap.registerPlugin?.('MargotShare');
 
-                const result = await plugin.share({ url });
+                const result = plugin?.share
+                    ? await plugin.share({ url })
+                    : await cap.nativePromise(
+                        'MargotShare',
+                        'share',
+                        { url }
+                    );
 
-                if (!result.cancelled) {
+                if (!result?.cancelled) {
                     tell(
                         'Convite pronto. A nova conta fica associada quando usar este código.'
                     );
                 }
             } else if (navigator.share) {
                 await navigator.share({
-                    title: window.MargotI18n?.t('Um olá leva a outro · Margot') ?? 'Um olá leva a outro · Margot',
+                    title:
+                        window.MargotI18n?.t(
+                            'Um olá leva a outro · Margot'
+                        ) ?? 'Um olá leva a outro · Margot',
                     url
                 });
 
