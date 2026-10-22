@@ -102,7 +102,7 @@
     );
 
     const share = page.querySelector('[data-share-invite]');
-    const native = window.Capacitor?.isPluginAvailable?.('MargotShare');
+    const native = Boolean(window.Capacitor?.Plugins?.MargotShare || window.Capacitor?.isPluginAvailable?.('MargotShare'));
 
     if (share && !native && !navigator.share) {
         share.textContent = 'Copiar convite';
@@ -119,7 +119,7 @@
 
         try {
             if (native) {
-                const plugin = window.Capacitor.registerPlugin('MargotShare');
+                const plugin = window.Capacitor.Plugins?.MargotShare || window.Capacitor.registerPlugin?.('MargotShare');
 
                 const result = await plugin.share({ url });
 

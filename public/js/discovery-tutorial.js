@@ -653,8 +653,8 @@
 
       say(
         t(
-          'Toca numa pessoa para dizer olá.',
-          'Tap someone to say hello.'
+        'Vamos experimentar a Margot. Toca numa foto: neste tutorial, nada é enviado.',
+          'Let’s try Margot. Tap a photo: nothing is sent during this tutorial.'
         )
       );
 
