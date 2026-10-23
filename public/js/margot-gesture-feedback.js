@@ -190,7 +190,7 @@
       return;
     }
 
-    const chat = document.getElementById('chat-pagina');
+    const chat = document.getElementById('chat-pagina'); if (document.activeElement?.matches('input,textarea,[contenteditable]') || chat?.classList.contains('chat-keyboard-open')) return;
     const page = chat?.closest('[data-margot-pagina]');
     const link = chat?.querySelector('[data-margot-voltar]');
 
@@ -379,7 +379,7 @@
   });
 
   window.addEventListener('pagehide', forget);
-  window.addEventListener('resize', forget);
+  let lastWidth = innerWidth; window.addEventListener('resize', () => { cleanup(); if (Math.abs(innerWidth - lastWidth) > 2) { saved = null; owner = ''; } lastWidth = innerWidth; });
 
   invite();
 })();
