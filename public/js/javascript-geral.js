@@ -661,10 +661,11 @@
                 // Os scripts veem o URL de destino e um único DOM, mesmo com outro toque pendente.
                 await executarScripts(scripts);
                 reporPosicaoAba(paginaNova, resposta.url);
-                document.dispatchEvent(new CustomEvent('margot:page-ready'));
+                
 
                 paginaNova.style.removeProperty('visibility');
                 paginaNova.style.removeProperty('pointer-events');
+                document.dispatchEvent(new CustomEvent('margot:page-ready'));
 
             }, paginaNova, direcao, opcoes.aba === true);
 

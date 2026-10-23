@@ -4,19 +4,32 @@
   if (window.MargotInteractiveBack) return;
   window.MargotInteractiveBack = true;
 
-  let saved = null;
+  let snapshot = null;
   let owner = '';
-  let state = null;
-  let animation = null;
+  let gesture = null;
+  let layer = null;
+  let motion = null;
+  let entering = false;
 
   const member = () => String(window.membroId || '');
 
   const reduced = () =>
     matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  const css = document.createElement('style');
+  const editable = 'input,textarea,select,[contenteditable]';
 
-  css.textContent = `
+  const blocked =
+    `${editable},button,a,audio,video,[data-margot-no-back-swipe]`;
+
+  const properties = [
+    'transform',
+    'z-index',
+    'will-change'
+  ];
+
+  const style = document.createElement('style');
+
+  style.textContent = `
     [data-invitation] [data-copy-link] {
       margin-top: 20px;
     }
@@ -42,23 +55,14 @@
     }
   `;
 
-  document.head.append(css);
-
-  function invite() {
-    const page = document.querySelector('[data-invitation]');
-    const button = page?.querySelector('[data-copy-link]');
-    const status = page?.querySelector('[data-invite-status]');
-
-    if (button && status) {
-      button.after(status);
-    }
-  }
+  document.head.append(style);
 
   function capture() {
-    if (!document.getElementById('conversas-lista')) return;
-
     const source = document.querySelector('[data-margot-pagina]');
-    if (!source) return;
+
+    if (!source || !source.querySelector('#conversas-lista')) {
+      return false;
+    }
 
     const copy = source.cloneNode(true);
 
@@ -76,15 +80,13 @@
       const target = copies[index];
       const computed = getComputedStyle(node);
 
-      for (const property of computed) {
-        target.style.setProperty(
-          property,
-          computed.getPropertyValue(property)
-        );
-      }
+      for (let i = 0; i < computed.length; i++) {
+        const key = computed[i];
 
-      if (node.scrollTop) {
-        target.dataset.previewScroll = String(node.scrollTop);
+        target.style.setProperty(
+          key,
+          computed.getPropertyValue(key)
+        );
       }
 
       target.style.animation = 'none';
@@ -93,10 +95,22 @@
       target.removeAttribute('id');
       target.removeAttribute('data-margot-pagina');
 
+      target.dataset.previewScroll = String(node.scrollTop);
+
       for (const attribute of [...target.attributes]) {
         if (/^on/i.test(attribute.name)) {
           target.removeAttribute(attribute.name);
         }
+      }
+
+      if (node instanceof HTMLImageElement) {
+        target.loading = 'eager';
+
+        if (node.currentSrc) {
+          target.src = node.currentSrc;
+        }
+
+        target.removeAttribute('srcset');
       }
     });
 
@@ -104,70 +118,171 @@
       'script,dialog,iframe,object,embed'
     ).forEach(node => node.remove());
 
-    copy.inert = true;
-    copy.setAttribute('aria-hidden', 'true');
+    Object.assign(copy.style, {
+      position: 'absolute',
+      inset: '0',
+      width: '100%',
+      height: '100%',
+      margin: '0',
+      transform: 'none',
+      visibility: 'visible',
+      overflow: 'hidden'
+    });
 
-    copy.style.cssText +=
-      ';position:absolute;inset:0;width:100%;height:100%;' +
-      'margin:0;transform:none;pointer-events:none;overflow:hidden';
-
-    saved = copy;
+    snapshot = copy;
     owner = member();
+
+    return true;
   }
 
-  function cleanup() {
-    animation?.cancel();
-    animation = null;
+  function showPreview() {
+    if (layer || !snapshot || owner !== member()) return;
 
-    if (state) {
-      state.page.style.cssText = state.originalStyle;
-      state.page.inert = state.originalInert;
-      state.layer.remove();
-    }
+    layer = document.createElement('div');
+    layer.inert = true;
 
-    state = null;
+    layer.setAttribute('aria-hidden', 'true');
+    layer.dataset.margotBackPreview = '';
+
+    layer.style.cssText =
+      'position:fixed;inset:0;overflow:hidden;' +
+      'pointer-events:none;z-index:1040;' +
+      'background:var(--mensagens-fundo,#fbfafc)';
+
+    layer.append(snapshot.cloneNode(true));
+    document.body.append(layer);
+
+    layer.querySelectorAll(
+      '[data-preview-scroll]'
+    ).forEach(node => {
+      node.scrollTop = Number(node.dataset.previewScroll);
+    });
+  }
+
+  function restore(current) {
+    if (!current) return;
+
+    properties.forEach((key, index) => {
+      const [value, priority] = current.original[index];
+
+      if (value) {
+        current.chat.style.setProperty(key, value, priority);
+      } else {
+        current.chat.style.removeProperty(key);
+      }
+    });
+  }
+
+  function clear() {
+    motion?.cancel();
+    motion = null;
+
+    restore(gesture);
+
+    gesture = null;
+    entering = false;
+
+    layer?.remove();
+    layer = null;
+
     document.body.classList.remove('margot-interactive-back');
   }
 
-  async function end(commit) {
-    const current = state;
+  function record(chat) {
+    return {
+      chat,
 
-    if (!current || current.ending) return;
+      original: properties.map(key => [
+        chat.style.getPropertyValue(key),
+        chat.style.getPropertyPriority(key)
+      ]),
 
-    current.ending = true;
+      base: getComputedStyle(chat).transform,
+      dx: 0,
+      horizontal: false,
+      ending: false,
+      committed: false
+    };
+  }
 
-    const destination = commit ? innerWidth : 0;
+  function transform(current, x) {
+    const base = current.base === 'none'
+      ? ''
+      : current.base;
 
-    if (!reduced() && current.page.animate) {
-      animation = current.page.animate(
-        [
-          {
-            transform: `translate3d(${current.dx}px,0,0)`
-          },
-          {
-            transform: `translate3d(${destination}px,0,0)`
-          }
-        ],
-        {
-          duration: 180,
-          easing: 'cubic-bezier(.22,.72,.2,1)',
-          fill: 'forwards'
-        }
-      );
+    return `translate3d(${x}px,0,0) ${base}`;
+  }
 
-      await animation.finished.catch(() => {});
-    }
+  function position(current, x) {
+    current.dx = Math.max(0, Math.min(innerWidth, x));
 
-    if (state !== current) return;
+    current.chat.style.transform = transform(
+      current,
+      current.dx
+    );
+  }
 
-    if (!commit) {
-      cleanup();
+  async function animate(current, destination) {
+    if (reduced() || !current.chat.animate) {
+      position(current, destination);
       return;
     }
 
-    current.page.inert = true;
-    current.page.style.transform =
-      `translate3d(${innerWidth}px,0,0)`;
+    const animation = current.chat.animate(
+      [
+        {
+          transform: transform(current, current.dx)
+        },
+        {
+          transform: transform(current, destination)
+        }
+      ],
+      {
+        duration: 240,
+        easing: 'cubic-bezier(.22,.72,.2,1)',
+        fill: 'forwards'
+      }
+    );
+
+    motion = animation;
+
+    await animation.finished.catch(() => {});
+
+    if (gesture !== current) return;
+
+    position(current, destination);
+    animation.cancel();
+
+    if (motion === animation) {
+      motion = null;
+    }
+  }
+
+  async function finish(commit) {
+    const current = gesture;
+
+    if (!current || current.ending) return;
+
+    if (!current.horizontal) {
+      clear();
+      return;
+    }
+
+    current.ending = true;
+    current.committed = commit;
+
+    await animate(current, commit ? innerWidth : 0);
+
+    if (gesture !== current) return;
+
+    if (!commit) {
+      clear();
+      return;
+    }
+
+    if (document.activeElement?.matches(editable)) {
+      document.activeElement.blur();
+    }
 
     try {
       await window.MargotNavigation.navigate(current.url, {
@@ -175,51 +290,57 @@
         direcao: -1
       });
     } finally {
-      cleanup();
+      if (gesture === current) {
+        clear();
+      }
     }
   }
 
-  window.addEventListener('touchstart', event => {
+  function startHorizontal(current) {
+    current.horizontal = true;
+
+    showPreview();
+
+    current.chat.style.zIndex = '1041';
+    current.chat.style.willChange = 'transform';
+
+    document.body.classList.add('margot-interactive-back');
+
+    window.MargotNavigation.prefetch?.(current.url);
+  }
+
+  document.addEventListener('touchstart', event => {
+    if (entering) {
+      clear();
+    }
+
     if (
-      state ||
-      !saved ||
-      owner !== member() ||
+      gesture ||
+      event.touches.length !== 1 ||
       document.hidden ||
       document.body.hasAttribute('aria-busy')
     ) {
       return;
     }
 
-    const chat = document.getElementById('chat-pagina'); if (document.activeElement?.matches('input,textarea,[contenteditable]') || chat?.classList.contains('chat-keyboard-open')) return;
-    const page = chat?.closest('[data-margot-pagina]');
+    const chat = document.getElementById('chat-pagina');
     const link = chat?.querySelector('[data-margot-voltar]');
 
     if (
-      !page ||
+      !chat?.contains(event.target) ||
       !link ||
-      !window.MargotNavigation ||
-      event.touches.length !== 1
+      !window.MargotNavigation
     ) {
       return;
     }
 
-    if (
-      !chat.contains(event.target) ||
-      document.querySelector('dialog[open]')
-    ) {
-      return;
-    }
+    // No próprio chat, este atributo bloqueia o controlador antigo.
+    const control = event.target.closest(blocked);
+
+    if (control && control !== chat) return;
 
     if (
-      event.target.closest(
-        'input,textarea,select,button,a,audio,video,' +
-        '[contenteditable],.chat-balao,[data-margot-no-back-swipe]'
-      )
-    ) {
-      return;
-    }
-
-    if (
+      document.querySelector('dialog[open]') ||
       document.body.matches(
         '.perfil-modal-aberta,.heys-abertos,.margot-mini-menu-aberto'
       )
@@ -227,57 +348,27 @@
       return;
     }
 
+    if (!snapshot || owner !== member()) return;
+
     const touch = event.touches[0];
 
-    // A margem extrema continua reservada ao gesto nativo.
-    if (touch.clientX <= 24) return;
-
-    const layer = document.createElement('div');
-
-    layer.inert = true;
-    layer.setAttribute('aria-hidden', 'true');
-
-    layer.style.cssText =
-      'position:fixed;inset:0;overflow:hidden;' +
-      'pointer-events:none;z-index:1040;' +
-      'background:var(--mensagens-fundo,#fbfafc);' +
-      'transform:translateZ(0);display:none';
-
-    layer.append(saved.cloneNode(true));
-    document.body.append(layer);
-
-    state = {
-      page,
-      layer,
-      url: link.href,
+    gesture = Object.assign(record(chat), {
       x: touch.clientX,
       y: touch.clientY,
-      dx: 0,
       start: performance.now(),
-      horizontal: false,
-      ending: false,
-      originalStyle: page.style.cssText,
-      originalInert: page.inert
-    };
-
-    // Impede que o controlador antigo também inicie este gesto.
-    event.stopPropagation();
+      url: link.href
+    });
   }, {
-    capture: true,
     passive: true
   });
 
-  window.addEventListener('touchmove', event => {
-    const current = state;
+  document.addEventListener('touchmove', event => {
+    const current = gesture;
 
-    if (!current) return;
-
-    event.stopPropagation();
-
-    if (current.ending) return;
+    if (!current || current.ending || entering) return;
 
     if (event.touches.length !== 1) {
-      void end(false);
+      void finish(false);
       return;
     }
 
@@ -285,101 +376,172 @@
     const dy = event.touches[0].clientY - current.y;
 
     if (!current.horizontal) {
-      if (Math.max(Math.abs(dx), Math.abs(dy)) < 12) {
+      if (Math.max(Math.abs(dx), Math.abs(dy)) < 10) {
         return;
       }
 
-      if (dx <= 0 || Math.abs(dy) >= Math.abs(dx)) {
-        cleanup();
+      if (dx <= 0 || Math.abs(dy) >= dx) {
+        clear();
         return;
       }
 
-      if (dx < Math.abs(dy) * 1.2) return;
+      if (dx < Math.abs(dy) * 1.4) return;
 
-      current.horizontal = true;
-      current.layer.style.display = 'block';
+      // Não disputar um scroll que o sistema já assumiu.
+      if (!event.cancelable) {
+        clear();
+        return;
+      }
 
-      current.layer.querySelectorAll(
-        '[data-preview-scroll]'
-      ).forEach(node => {
-        node.scrollTop = Number(node.dataset.previewScroll);
-      });
-
-      current.page.style.position = 'fixed';
-      current.page.style.inset = '0';
-      current.page.style.width = '100%';
-      current.page.style.height = '100%';
-      current.page.style.overflow = 'hidden';
-      current.page.style.zIndex = '1041';
-      current.page.style.willChange = 'transform';
-
-      document.body.classList.add('margot-interactive-back');
-
-      window.MargotNavigation.prefetch?.(current.url);
+      startHorizontal(current);
     }
 
     if (event.cancelable) {
       event.preventDefault();
     }
 
-    current.dx = Math.max(0, Math.min(innerWidth, dx));
-
-    current.page.style.transform =
-      `translate3d(${current.dx}px,0,0)`;
+    position(current, dx);
   }, {
-    capture: true,
     passive: false
   });
 
-  window.addEventListener('touchend', event => {
-    const current = state;
+  document.addEventListener('touchend', event => {
+    const current = gesture;
 
-    if (!current) return;
+    if (!current || current.ending || entering) return;
 
-    event.stopPropagation();
+    const touch = event.changedTouches[0];
+
+    const dx = touch
+      ? touch.clientX - current.x
+      : current.dx;
+
+    const dy = touch
+      ? touch.clientY - current.y
+      : 0;
 
     const speed =
-      current.dx /
-      Math.max(1, performance.now() - current.start);
+      dx / Math.max(1, performance.now() - current.start);
 
-    const completed =
-      current.horizontal &&
+    const horizontal =
+      dx > 0 && dx > Math.abs(dy) * 1.4;
+
+    const commit =
+      horizontal &&
       (
-        current.dx >= innerWidth * 0.3 ||
-        (current.dx >= 60 && speed >= 0.5)
+        dx >= innerWidth * 0.3 ||
+        (dx >= 40 && speed >= 0.5)
       );
 
-    void end(completed);
+    // Um swipe rápido pode terminar sem um touchmove utilizável.
+    if (!current.horizontal && commit) {
+      startHorizontal(current);
+    }
+
+    if (current.horizontal) {
+      if (event.cancelable) {
+        event.preventDefault();
+      }
+
+      // Ao confirmar, a animação parte do último ponto desenhado.
+      if (!commit) {
+        position(current, dx);
+      }
+    }
+
+    void finish(commit);
   }, {
-    capture: true,
+    passive: false
+  });
+
+  document.addEventListener('touchcancel', () => {
+    if (!gesture?.committed) {
+      clear();
+    }
+  }, {
     passive: true
   });
 
-  window.addEventListener(
-    'touchcancel',
-    () => void end(false),
-    { capture: true, passive: true }
-  );
-
   document.addEventListener('margot:page-leave', () => {
-    capture();
-    cleanup();
+    // A pré-visualização fica até a página seguinte estar pronta.
+    if (gesture?.committed) return;
+
+    clear();
+
+    if (capture()) {
+      entering = true;
+      showPreview();
+    }
   });
 
-  document.addEventListener('margot:page-ready', invite);
+  document.addEventListener('margot:page-ready', () => {
+    const chat = document.getElementById('chat-pagina');
+
+    if (chat && snapshot && owner === member()) {
+      chat.setAttribute('data-margot-no-back-swipe', '');
+    }
+
+    if (entering && chat && !document.hidden) {
+      gesture = record(chat);
+
+      const current = gesture;
+
+      current.chat.style.zIndex = '1041';
+      current.chat.style.willChange = 'transform';
+
+      position(current, innerWidth);
+
+      void animate(current, 0).then(() => {
+        if (gesture === current) {
+          clear();
+        }
+      });
+    } else {
+      clear();
+    }
+
+    const page = document.querySelector('[data-invitation]');
+    const button = page?.querySelector('[data-copy-link]');
+    const status = page?.querySelector('[data-invite-status]');
+
+    if (button && status) {
+      button.after(status);
+    }
+  });
+
+  document.addEventListener('focusin', event => {
+    if (entering && event.target.matches(editable)) {
+      clear();
+    }
+  });
+
+  window.addEventListener('resize', () => {
+    if (!gesture?.committed) {
+      clear();
+    }
+  });
+
+  window.visualViewport?.addEventListener('resize', () => {
+    if (!gesture?.committed) {
+      clear();
+    }
+  });
 
   const forget = () => {
-    cleanup();
-    saved = null;
+    clear();
+    snapshot = null;
     owner = '';
   };
 
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) forget();
-  });
-
   window.addEventListener('pagehide', forget);
-  let lastWidth = innerWidth; window.addEventListener('resize', () => { cleanup(); if (Math.abs(innerWidth - lastWidth) > 2) { saved = null; owner = ''; } lastWidth = innerWidth; });
 
-  invite();
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      clear();
+    }
+
+    if (owner !== member()) {
+      forget();
+    }
+  });
 })();
