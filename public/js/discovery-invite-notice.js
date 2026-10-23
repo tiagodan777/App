@@ -8,6 +8,11 @@
   const text = (pt, en) =>
     window.MargotI18n?.language === 'en' ? en : pt;
 
+  // Temporário para a gravação: voltar a 3 depois do vídeo.
+  const MAX_PEOPLE = 6;
+  const MAX_DAILY_SHOWS = 2;
+  const MIN_SHOW_INTERVAL = 4 * 60 * 60 * 1000;
+  const dailyMemory = new Map();
   const dismissed = new Set();
 
   let eligibleSince = 0;
@@ -131,11 +136,66 @@
 
   const member = () => String(window.membroId || '');
 
+  function localDay() {
+    const now = new Date();
+
+    return [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, '0'),
+      String(now.getDate()).padStart(2, '0')
+    ].join('-');
+  }
+
   const key = () =>
-    'margot-discovery-invite-dismissed:' + member();
+    'margot-discovery-invite-dismissed:' + member() + ':' + localDay();
+
+  function reservePresentation() {
+    const storageKey = 'margot-discovery-invite-daily:' + member();
+    const day = localDay();
+
+    let record = { day, count: 0, lastShown: 0 };
+    let saved = null;
+
+    try {
+      saved = JSON.parse(localStorage.getItem(storageKey));
+    } catch (_) {}
+
+    // A memória mantém o limite se o armazenamento estiver indisponível.
+    for (const candidate of [saved, dailyMemory.get(storageKey)]) {
+      if (
+        candidate?.day === day &&
+        Number.isInteger(candidate.count) &&
+        candidate.count >= 0 &&
+        Number.isFinite(candidate.lastShown) &&
+        candidate.lastShown >= 0
+      ) {
+        record.count = Math.max(record.count, candidate.count);
+        record.lastShown = Math.max(record.lastShown, candidate.lastShown);
+      }
+    }
+
+    const now = Date.now();
+
+    if (
+      record.count >= MAX_DAILY_SHOWS ||
+      (record.count > 0 && now - record.lastShown < MIN_SHOW_INTERVAL)
+    ) {
+      return false;
+    }
+
+    record.count += 1;
+    record.lastShown = now;
+    dailyMemory.set(storageKey, record);
+
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(record));
+    } catch (_) {}
+
+    return true;
+  }
 
   function wasDismissed() {
-    if (dismissed.has(member())) return true;
+    if (dismissed.has(key())) return true;
 
     try {
       return sessionStorage.getItem(key()) === '1';
@@ -145,7 +205,7 @@
   }
 
   function dismiss() {
-    dismissed.add(member());
+    dismissed.add(key());
 
     try {
       sessionStorage.setItem(key(), '1');
@@ -192,6 +252,7 @@
     const id = member();
 
     if (id !== previousMember) {
+      host.hidden = true;
       previousMember = id;
       retireOldTip(id);
       eligibleSince = 0;
@@ -232,7 +293,7 @@
       }
     });
 
-    if (blocked || others.size > 3) {
+    if (blocked || others.size > MAX_PEOPLE) {
       host.hidden = true;
       eligibleSince = 0;
       return;
@@ -243,6 +304,7 @@
     }
 
     if (Date.now() - eligibleSince < 5000) return;
+    if (host.hidden && !reservePresentation()) return;
 
     host.querySelector('strong').textContent = text(
       'Um olá fica melhor com amigos.',

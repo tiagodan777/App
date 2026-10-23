@@ -34,6 +34,22 @@ public class MainActivity extends BridgeActivity {
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+
+        // Retoma apenas um serviço anteriormente pedido, se continuar autorizado.
+        // Não depende do carregamento da página ou da ligação WebSocket.
+        if (BackgroundLocationService.shouldResume(this)) {
+            try {
+                BackgroundLocationService.start(this);
+            } catch (RuntimeException exception) {
+                android.util.Log.w("MargotLocation", "Resume unavailable: "
+                    + exception.getClass().getSimpleName());
+            }
+        }
+    }
+
+    @Override
     public void onStop() {
         BackgroundLocationService.setAppInBackground(this, true);
         BackgroundLocationService.sendAppState(this, true);

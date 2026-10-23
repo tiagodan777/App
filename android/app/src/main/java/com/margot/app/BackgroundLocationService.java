@@ -203,6 +203,8 @@ public final class BackgroundLocationService extends Service implements Location
         cancelNotification(app);
     }
 
+    public static boolean shouldResume(Context context) { return !running && preferences(context).getBoolean(START_REQUESTED, false) && canRun(context); }
+
     public static boolean isRunningOrRequested(Context context) {
         return running;
     }
