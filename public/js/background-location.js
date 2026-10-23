@@ -568,6 +568,7 @@
                 }
 
                 if (localizacaoAtiva(estado) && estado.visible === visivel) {
+                    if (plataformaAtual() === 'ios' && visivel && estado.authorization === 'always' && periodico !== true) return definirVisibilidade(true);
                     return estado;
                 }
 
