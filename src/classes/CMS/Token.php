@@ -15,6 +15,7 @@ final class Token {
         'email_verification' => 86400,
         'stay_logged_id' => 1209600,
         'websocket' => 60,
+        'websocket_session' => 2592000,
         'background_location' => 2592000
     ];
     private const PROPOSITOS_TOKEN_UNICO = [
@@ -31,7 +32,7 @@ final class Token {
         return hash('sha256', $token);
     }
 
-    public function create(string $membroId, string $proposito, ?int $duracao = null): string {
+    public function create(string $membroId, string $proposito, ?int $duracao = null, ?string $sessionHash = null): string {
         $membroId = trim($membroId);
         $this->validarProposito($proposito);
         if ($membroId === '') {
@@ -40,6 +41,10 @@ final class Token {
         $duracao ??= self::DURACOES[$proposito];
         if ($duracao < 1) {
             throw new InvalidArgumentException('Duração de token inválida.');
+        }
+        if ($sessionHash !== null && (!in_array($proposito, ['websocket', 'background_location'], true)
+            || !preg_match('/^[a-f0-9]{64}$/D', $sessionHash))) {
+            throw new InvalidArgumentException('Sessão do token inválida.');
         }
         $token = bin2hex(random_bytes(32));
         $gerirTransacao = !$this->db->inTransaction();
@@ -56,6 +61,9 @@ final class Token {
                 );
             }
             if ($proposito === 'background_location') {
+                (new Location($this->db))->initializePresence($membroId);
+                $this->db->runSQL('SELECT membro_id FROM localizacao_membro
+                    WHERE membro_id = :member FOR UPDATE', ['member' => $membroId]);
                 // Outra sessão pode continuar a usar uma autorização ainda válida.
                 $this->db->runSQL(
                     'DELETE FROM token
@@ -65,13 +73,14 @@ final class Token {
                 );
             }
             $this->db->runSQL(
-                'INSERT INTO token ( token, validade, membro_id, proposito )
-                    VALUES ( :token, :validade, :membro_id, :proposito )',
+                'INSERT INTO token ( token, validade, membro_id, proposito, sessao_hash )
+                    VALUES ( :token, :validade, :membro_id, :proposito, :session_hash )',
                 [
                     'token' => self::hash($token),
                     'validade' => gmdate('Y-m-d H:i:s', time() + $duracao),
                     'membro_id' => $membroId,
-                    'proposito' => $proposito
+                    'proposito' => $proposito,
+                    'session_hash' => $sessionHash
                 ]
             );
             if ($gerirTransacao) {
@@ -98,6 +107,13 @@ final class Token {
                 LIMIT 1',
             ['token_hash' => self::hash($token), 'proposito' => $proposito]
         )->fetchColumn();
+    }
+
+    public function bindBackgroundSession(string $token, string $memberId, string $sessionHash): void {
+        if (!preg_match('/^[a-f0-9]{64}$/D', $sessionHash)) throw new InvalidArgumentException('Sessão inválida.');
+        $this->db->runSQL("UPDATE token SET sessao_hash = :session_hash WHERE token = :hash
+            AND membro_id = :member AND proposito = 'background_location' AND sessao_hash IS NULL",
+            ['session_hash' => $sessionHash, 'hash' => self::hash($token), 'member' => $memberId]);
     }
 
     public function consume(string $token, string $proposito): string|false {

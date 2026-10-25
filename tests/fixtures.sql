@@ -64,6 +64,7 @@ CREATE TABLE "localizacao_membro" (
     "precisao_m" REAL DEFAULT NULL,
     "localizacao_ativa" INTEGER NOT NULL DEFAULT 1,
     "visivel" INTEGER NOT NULL DEFAULT 1,
+    "estado_versao" INTEGER NOT NULL DEFAULT 0,
     "origem" TEXT NOT NULL DEFAULT 'foreground',
     "atualizada_em" TEXT NOT NULL,
     "capturada_em" TEXT DEFAULT NULL,
@@ -132,6 +133,8 @@ CREATE TABLE "mensagens_apagadas" (
 
 CREATE TABLE "mensagens_chat" (
     "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+    "visualizacao_unica" INTEGER NOT NULL DEFAULT 0,
+    "aberta_em" TEXT DEFAULT NULL,
     "emissor_id" TEXT NOT NULL,
     "destinatario_id" TEXT NOT NULL,
     "texto" TEXT DEFAULT NULL,
@@ -184,14 +187,32 @@ CREATE TABLE "push_dispositivos" (
     "instalacao_id" TEXT NOT NULL,
     "sessao_hash" TEXT NOT NULL,
     "versao_app" TEXT DEFAULT NULL,
+    "idioma" TEXT NOT NULL DEFAULT 'pt',
     "ativo" INTEGER NOT NULL DEFAULT 1,
     "falhas_consecutivas" INTEGER NOT NULL DEFAULT 0,
     "ultimo_erro" TEXT DEFAULT NULL,
     "ultimo_sucesso_em" TEXT DEFAULT NULL,
+    "ultimo_contacto_app_em" TEXT DEFAULT NULL,
     "ultima_falha_em" TEXT DEFAULT NULL,
     "criado_em" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "atualizado_em" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (membro_id) REFERENCES membros(id) ON DELETE CASCADE
+);
+
+CREATE TABLE "preferencias_lembretes" (
+    "membro_id" TEXT PRIMARY KEY,
+    "fuso_horario" TEXT NOT NULL DEFAULT 'UTC',
+    "proximidade" INTEGER NOT NULL DEFAULT 1,
+    "roupa" INTEGER NOT NULL DEFAULT 1
+);
+
+CREATE TABLE "lembretes_envios" (
+    "membro_id" TEXT NOT NULL,
+    "tipo" TEXT NOT NULL,
+    "dia" TEXT NOT NULL,
+    "lugar" INTEGER NOT NULL DEFAULT 0,
+    "criado_em" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (membro_id, tipo, dia, lugar)
 );
 
 CREATE TABLE "push_fila" (
@@ -227,6 +248,7 @@ CREATE TABLE "token" (
     "membro_id" TEXT NOT NULL,
     "validade" TEXT NOT NULL,
     "proposito" TEXT NOT NULL,
+    "sessao_hash" TEXT DEFAULT NULL,
     FOREIGN KEY (membro_id) REFERENCES membros(id) ON DELETE CASCADE
 );
 

@@ -15,6 +15,13 @@ final class EmailVerification {
         $this->tokens = new Token($db);
     }
 
+    public function pendingMember(string $memberId): array|false {
+        return $this->db->runSQL(
+            'SELECT id, email FROM membros WHERE id = :id AND email_verificado_em IS NULL LIMIT 1',
+            ['id' => $memberId]
+        )->fetch();
+    }
+
     public function createRequest(string $email): array|false {
         $email = $this->normalizarEmail($email);
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {

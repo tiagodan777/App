@@ -91,9 +91,14 @@ if (!$stateOnly && $localizacaoAtiva && ($visivel || isset($dados['latitude'], $
 try {
     $membroId = $cms->getToken()->getMemberId($token, 'background_location');
     if (!$membroId) {
-        json_response(['success' => false, 'message' => 'A autorização expirou.'], 401);
+        json_response(['success' => false, 'accepted' => false, 'reason' => 'authorization_revoked',
+            'message' => 'A autorização expirou.'], 401);
     }
     $membroId = (string) $membroId;
+    if (!$stateOnly && !$localizacaoAtiva) {
+        $cms->getLocation()->revokeBackgroundGrant($membroId, $token);
+        json_response(['success' => true, 'accepted' => true, 'reason' => 'grant_revoked']);
+    }
     $capturedAt = null;
     if (!$stateOnly && $localizacaoAtiva && ($visivel || isset($dados['latitude'], $dados['longitude']))) {
         try { $capturedAt = \App\CMS\LocationSample::capturedAt($dados); }
@@ -118,7 +123,7 @@ try {
                 error_log('[background-location-nearby] ' . $erroProximidade->getMessage());
             }
         }
-        json_response(['success' => true]);
+        json_response(['success' => true, 'accepted' => true]);
     }
     $posicaoAnterior = null;
     try {
@@ -134,8 +139,8 @@ try {
         : $cms->getLocation()->saveBackground($membroId,$latitude,$longitude,$precisao,
             $localizacaoAtiva,$visivel,$capturedAt);
     if (!$accepted) {
-        json_response(['success'=>true,'accepted'=>false,'reason'=> $locationPushProbe
-            ? 'inactive_revoked_or_older_location' : 'duplicate_or_older_location']);
+        json_response(['success' => true, 'accepted' => false,
+            'reason' => $cms->getLocation()->rejectionReason($membroId, $token)]);
     }
     try {
         $posicaoNova = $nearby->locationSnapshot($membroId);
@@ -151,7 +156,7 @@ try {
     if ($locationPushProbe) {
         json_response(['success' => true, 'accepted' => true, 'location_push_probe' => 1]);
     }
-    json_response(['success' => true]);
+    json_response(['success' => true, 'accepted' => true]);
 } catch (Throwable $erro) {
     error_log('[background-location-update] ' . $erro->getMessage());
     json_response(['success' => false, 'message' => 'Não foi possível atualizar a localização.'], 500);

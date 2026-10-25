@@ -6,8 +6,15 @@ on:
       - main
 
 jobs:
+  checks:
+    uses: ./.github/workflows/checks.yml
+
   deploy:
+    needs: checks
     runs-on: ubuntu-latest
+    concurrency:
+      group: margot-production
+      cancel-in-progress: false
 
     steps:
       - name: Deploy to VM
@@ -53,6 +60,20 @@ jobs:
               echo "ERRO: não foi possível obter a branch main do GitHub após 5 tentativas."
               exit 1
             fi
+
+            if [ "$(git -C "$APP_DIR" rev-parse origin/main)" != '${{ github.sha }}' ]; then
+              echo "Publicação cancelada: main avançou; aguardar os testes da nova revisão."
+              exit 1
+            fi
+
+            # Validar a versão nova contra o schema atual ANTES de trocar código.
+            # Este ficheiro só consulta information_schema; nunca aplica SQL/DDL.
+            PREFLIGHT_FILE=$(mktemp)
+            trap 'rm -f "$PREFLIGHT_FILE"' EXIT
+            git -C "$APP_DIR" show origin/main:database/check-location-state.php > "$PREFLIGHT_FILE"
+            (cd "$APP_DIR" && APP_ROOT="$APP_DIR" php "$PREFLIGHT_FILE")
+            rm -f "$PREFLIGHT_FILE"
+            trap - EXIT
 
             git -C "$APP_DIR" reset --hard origin/main
 

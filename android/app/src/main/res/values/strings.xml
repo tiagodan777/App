@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Margot</string>
-    <string name="title_activity_main">Margot</string>
-    <string name="package_name">com.margot.app</string>
-    <string name="custom_url_scheme">com.margot.app</string>
+    <string name="app_name" translatable="false">Margot</string>
+    <string name="title_activity_main" translatable="false">Margot</string>
+    <string name="package_name" translatable="false">com.margot.app</string>
+    <string name="custom_url_scheme" translatable="false">com.margot.app</string>
     <string name="background_location_channel_name">Background location</string>
     <string name="background_location_channel_description">Keeps your location up to date while Margot is in the background.</string>
     <string name="background_location_notification_title">Margot location active</string>

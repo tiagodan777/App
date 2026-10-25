@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node tests/javascript.mjs && node tests/native-javascript.mjs"
+    "test": "node tests/javascript.mjs && node tests/native-javascript.mjs && node tests/location-reliability.mjs && node tests/native-lifecycle.mjs && node tests/privacy-offline.mjs"
   },
   "repository": {
     "type": "git",

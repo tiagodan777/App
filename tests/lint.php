@@ -14,7 +14,9 @@ define('DOC_ROOT', '/');
 require $root . '/vendor/autoload.php';
 foreach (glob($root . '/src/classes/CMS/*.php') as $file) {
     $name = 'App\\CMS\\' . basename($file, '.php');
-    if (!class_exists($name)) throw new Exception("Class not found: $name");
+    if (!class_exists($name) && !trait_exists($name) && !interface_exists($name)) {
+        throw new Exception("Type not found: $name");
+    }
     new ReflectionClass($name);
 }
 echo "All CMS classes loaded\n";

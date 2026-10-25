@@ -22,7 +22,8 @@ import com.getcapacitor.annotation.PermissionCallback;
     permissions =
     {
         @Permission(alias = "location",
-            strings = {Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION})
+            strings = {Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION}),
+        @Permission(alias = "backgroundLocation", strings = {Manifest.permission.ACCESS_BACKGROUND_LOCATION})
     })
 public final class BackgroundLocationPlugin extends Plugin {
     private static final String LOCATION_PERMISSION = "location";
@@ -106,7 +107,7 @@ public final class BackgroundLocationPlugin extends Plugin {
 
         boolean visible = option != null ? option : BackgroundLocationService.isVisible(getContext());
 
-        BackgroundLocationService.saveToken(getContext(), token);
+        BackgroundLocationService.saveOwner(getContext(), token, call.getString("memberId"));
 
         BackgroundLocationService.setVisible(getContext(), visible);
 
@@ -200,6 +201,27 @@ public final class BackgroundLocationPlugin extends Plugin {
         }
 
         ensureStarted(call);
+    }
+
+    /** Called only after the member accepts the explanation in the visible UI. */
+    @PluginMethod
+    public void requestBackgroundPermission(PluginCall call) {
+        new Handler(Looper.getMainLooper()).post(() -> {
+            if (BackgroundLocationService.hasBackgroundLocationPermission(getContext())
+                || !BackgroundLocationService.hasLocationPermission(getContext())) {
+                call.resolve(statusData());
+            } else if (Build.VERSION.SDK_INT == Build.VERSION_CODES.Q) {
+                requestPermissionForAlias("backgroundLocation", call, "backgroundPermissionResult");
+            } else {
+                // Android 11+ grants "Allow all the time" only from Settings.
+                openSettings(call);
+            }
+        });
+    }
+
+    @PermissionCallback
+    private void backgroundPermissionResult(PluginCall call) {
+        if (call != null) call.resolve(statusData());
     }
 
     @PluginMethod
@@ -352,6 +374,18 @@ public final class BackgroundLocationPlugin extends Plugin {
         result.put("policy_version", LocationPolicy.VERSION);
         result.put("diagnostics", BackgroundLocationService.diagnostics());
         result.put("native_location_running", active);
+        result.put("member_id", BackgroundLocationService.readMemberId(getContext()));
+        result.put("collection_suspended", BackgroundLocationService.isCollectionSuspended(getContext()));
+        boolean backgroundPermission = BackgroundLocationService.hasBackgroundLocationPermission(getContext());
+        result.put("background_permission_granted", backgroundPermission);
+        result.put("background_permission_required", !backgroundPermission);
+        result.put("restart_after_reboot_enabled", backgroundPermission && locationGranted && locationEnabled
+            && BackgroundLocationService.isStartRequested(getContext()) && visible
+            && BackgroundLocationService.isValidToken(BackgroundLocationService.readToken(getContext())));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            result.put("background_permission_label", getContext().getPackageManager()
+                .getBackgroundPermissionOptionLabel().toString());
+        }
 
         result.put("active", active);
 

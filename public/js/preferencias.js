@@ -5,8 +5,22 @@
         window.MargotPreferencias.aplicar();
         return;
     }
-    var CHAVE = 'margot-preferencias-v1';
+    var membro = String(document.querySelector('meta[name="margot-member-id"]')?.content || window.membroId || '').trim();
+    var LEGACY = 'margot-preferencias-v1';
+    var CHAVE = 'margot-preferencias-v2:' + membro;
     var TIPOS = ['localizacao', 'notificacoes', 'invisivel'];
+
+    // Migra uma única vez para a conta autenticada, preservando escolhas de privacidade.
+    // Depois de associada, outra conta nunca herda as preferências desta instalação.
+    if (membro) {
+        try {
+            var antigo = window.localStorage.getItem(LEGACY);
+            if (antigo !== null && window.localStorage.getItem(CHAVE) === null) {
+                window.localStorage.setItem(CHAVE, antigo);
+            }
+            window.localStorage.removeItem(LEGACY);
+        } catch (_) {}
+    }
 
     function tipoValido(tipo) {
         return TIPOS.indexOf(tipo) !== -1;
@@ -34,6 +48,7 @@
     }
 
     function guardar(preferencias) {
+        if (!membro) return false;
         try {
             window.localStorage.setItem(CHAVE, JSON.stringify(preferencias));
             return true;
@@ -100,7 +115,16 @@
         estaInvisivel: estaInvisivel,
         alternarInvisivel: alternarInvisivel,
         todas: ler,
-        aplicar: aplicar
+        aplicar: aplicar,
+        sincronizarLocalizacao: function (ativa, visivel) {
+            var preferencias = ler();
+            preferencias.localizacao = ativa === true;
+            if (ativa === true) preferencias.invisivel = visivel !== true;
+            guardar(preferencias);
+            aplicar();
+            // Não volta a publicar uma preferência recebida do servidor.
+            window.dispatchEvent(new CustomEvent('margot:estado-localizacao', { detail: preferencias }));
+        }
     };
     window.addEventListener('storage', function (evento) {
         if (evento.key !== CHAVE) return;

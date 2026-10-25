@@ -9,6 +9,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="csrf-token" content="{{ csrf_token }}">
+    <meta name="margot-member-id" content="{{ session.id|default('')|e('html_attr') }}">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
     <link rel="manifest" href="{{ doc_root }}js/manifest.json">
@@ -48,11 +49,11 @@
     <script src="{{ doc_root }}js/deep-links.js?v=20260927-invite"></script>
 
     {% if session.id %}
-        <script src="{{ doc_root }}js/preferencias.js?v=20260916"></script>
+        <script src="{{ doc_root }}js/preferencias.js?v=20261025-reliability-1"></script>
     {% endif %}
 
     <script src="{{ doc_root }}js/permission-experience.js?v=20261022-wait-decision-1"></script>
-    <script src="{{ doc_root }}js/push-notifications.js?v=20261018-push-recovery-1"></script>
+    <script src="{{ doc_root }}js/push-notifications.js?v=20261025-reliability-1"></script>
 
     <div data-margot-pagina>
         {% block content %}{% endblock %}
@@ -200,14 +201,14 @@
         <script src="{{ doc_root }}js/discovery-invite-notice.js?v=20261022-2"></script>
         <script src="{{ doc_root }}js/discovery-tutorial.js?v=20261022-intro-4"></script>
         <script src="{{ doc_root }}js/welcome-onboarding.js?v=20261022-real-tutorial-1" data-photo="{{ doc_root }}imagens/fotos-perfil/{{ session.foto_perfil|default('default.webp')|e('html_attr') }}"></script>
-        <script src="{{ doc_root }}js/location-onboarding.js?v=20261021-3"></script>
+        <script src="{{ doc_root }}js/location-onboarding.js?v=20261025-reliability-1"></script>
         <script src="{{ doc_root }}js/privacy-update-notice.js?v=20261022-motion-1"></script>
         <script src="{{ doc_root }}js/location-notice-video.js?v=20261010-premium-3" defer></script>
-        <script src="{{ doc_root }}js/location-privacy.js?v=20261019-1"></script>
-        <script src="{{ doc_root }}js/background-location.js?v=20261023-recovery-sync-1"></script>
-        <script src="{{ doc_root }}js/websocket-location.js?v=20260929-1"></script>
+        <script src="{{ doc_root }}js/location-privacy.js?v=20261025-reliability-1"></script>
+        <script src="{{ doc_root }}js/background-location.js?v=20261025-reliability-1"></script>
+        <script src="{{ doc_root }}js/websocket-location.js?v=20261025-reliability-1"></script>
         <script src="{{ doc_root }}js/websocket-alerts.js?v=20260917-chat1"></script>
-        <script src="{{ doc_root }}js/websocket.js?v=20261022-real-tutorial-1"></script>
+        <script src="{{ doc_root }}js/websocket.js?v=20261025-reliability-1"></script>
         <script src="{{ doc_root }}js/menu-invisivel.js?v=20260916"></script>
         <script src="{{ doc_root }}js/javascript-geral.js?v=20261022-loading-1"></script>
         <script src="{{ doc_root }}js/margot-gesture-feedback.js?v=20261023-swipe-2"></script>

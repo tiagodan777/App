@@ -17,6 +17,17 @@ trait Discovery {
     private array $nearbyConfirmation = [];
     private int $nearbyPrunedAt = 0;
 
+    private function sincronizarEstadoCanonico(string $memberId): array {
+        $state = (new Location($this->getDatabase()))->state($memberId);
+        if ($state['revision'] > 0) {
+            foreach ($this->ligacoesPorMembro[$memberId] ?? [] as $resourceId => $connection) {
+                $this->localizacaoPorLigacao[$resourceId] = $state['active'];
+                $this->visibilidadePorLigacao[$resourceId] = $state['visible'];
+            }
+        }
+        return $state;
+    }
+
     private function atualizarPresenca(ConnectionInterface $conn, array $data): void {
         $membroId = $this->obterMembroDaLigacao($conn);
         if ($membroId === null) {
@@ -40,6 +51,8 @@ trait Discovery {
         $localizacaoMembroAtiva = $this->membroTemLigacaoComLocalizacaoAtiva($membroId);
         $visibilidadeMembro = $this->membroTemLigacaoVisivel($membroId);
         $this->persistirEstadoPresencaParaProximidade($membroId, $localizacaoMembroAtiva, $visibilidadeMembro);
+        $localizacaoAtiva = $this->localizacaoPorLigacao[$resourceId];
+        $visivel = $this->visibilidadePorLigacao[$resourceId];
         $this->cancelarSaidaAgendada($membroId);
         if (!$this->membroTemLigacaoComLocalizacaoAtiva($membroId)) {
             unset($this->localizacoes[$membroId]);
@@ -75,7 +88,8 @@ trait Discovery {
             return;
         }
         $this->faixaEtariaPorMembro[$membroId] = $faixaEtaria;
-        if ($this->membroTemLigacaoVisivel($membroId)) {
+        $state = $this->sincronizarEstadoCanonico($membroId);
+        if ($state['revision'] > 0 ? $state['visible'] : $this->membroTemLigacaoVisivel($membroId)) {
             $this->garantirPessoaVisivel($membroId, $membro);
             return;
         }
@@ -144,6 +158,7 @@ trait Discovery {
             $this->enviarErro($conn, 'A ligação não está autenticada.');
             return;
         }
+        $this->sincronizarEstadoCanonico($membroId);
         if (!($this->localizacaoPorLigacao[$conn->resourceId] ?? false)) {
             return;
         }
@@ -247,6 +262,11 @@ trait Discovery {
         bool $localizacaoAtiva,
         bool $visivel
     ): void {
+        $canonical = $this->sincronizarEstadoCanonico($membroId);
+        if ($canonical['revision'] > 0) {
+            $localizacaoAtiva = $canonical['active'];
+            $visivel = $canonical['visible'];
+        }
         if (!$localizacaoAtiva || !$visivel) {
             foreach (array_keys($this->nearbyConfirmation) as $pair) {
                 if (str_starts_with($pair,$membroId.':') || str_ends_with($pair,':'.$membroId)) {
@@ -261,13 +281,18 @@ trait Discovery {
             $statement = $database->prepare("UPDATE localizacao_membro
                 SET localizacao_ativa = :active, visivel = :visible,
                     recebida_em = IF(:hide_fence = 1,UTC_TIMESTAMP(3),recebida_em)
-                WHERE membro_id = :member_id");
+                WHERE membro_id = :member_id AND estado_versao = 0");
             $statement->execute([
                 'active' => $localizacaoAtiva ? 1 : 0,
                 'visible' => $visivel ? 1 : 0,
                 'hide_fence' => (!$localizacaoAtiva || !$visivel) ? 1 : 0,
                 'member_id' => $membroId
             ]);
+            $canonical = $this->sincronizarEstadoCanonico($membroId);
+            if ($canonical['revision'] > 0) {
+                $localizacaoAtiva = $canonical['active'];
+                $visivel = $canonical['visible'];
+            }
             echo sprintf(
                 "[PRESENCE PERSIST] %s: localização=%s, visível=%s\n",
                 $membroId,
@@ -379,99 +404,75 @@ trait Discovery {
 
     private function sincronizarLocalizacoesPersistidas(bool $forcar = false): void {
         $agora = time();
-        if (
-            !$forcar &&
-            $agora - $this->localizacoesPersistidasCarregadasEm < self::LOCALIZACOES_PERSISTIDAS_CACHE_SEGUNDOS
-        ) {
-            return;
+        if (!$forcar && $agora - $this->localizacoesPersistidasCarregadasEm < self::LOCALIZACOES_PERSISTIDAS_CACHE_SEGUNDOS) return;
+        $parameters = [];
+        $connected = [];
+        foreach (array_keys($this->ligacoesPorMembro) as $index => $memberId) {
+            $connected[] = ':connected' . $index;
+            $parameters['connected' . $index] = $memberId;
         }
-        $database = $this->getDatabase();
-        $statement = $database->prepare(
-            " SELECT lm.membro_id, lm.latitude, lm.longitude, lm.precisao_m, UNIX_TIMESTAMP(lm.atualizada_em) AS
-                atualizada_em_epoch, m.nascimento, CONCAT(m.primeiro_nome, ' ', m.ultimo_nome) AS nome, COALESCE( (
-                SELECT fp.nome_arquivo
-                FROM fotos_perfil AS fp
-                WHERE fp.membro_id COLLATE utf8mb4_unicode_ci = m.id COLLATE utf8mb4_unicode_ci AND (fp.status =
-                'completo' OR fp.status IS NULL)
-                ORDER BY fp.ordem IS NULL ASC, fp.ordem ASC, fp.id ASC
-                LIMIT 1 ), 'default.webp' ) AS foto_perfil
-                FROM localizacao_membro AS lm
-                INNER JOIN membros AS m ON m.id COLLATE utf8mb4_unicode_ci = lm.membro_id COLLATE utf8mb4_unicode_ci
-                WHERE lm.localizacao_ativa = 1 AND lm.visivel = 1 AND lm.latitude IS NOT NULL AND lm.longitude IS NOT
-                NULL AND lm.atualizada_em >= DATE_SUB( UTC_TIMESTAMP(), INTERVAL " .
-                self::LOCALIZACAO_MAXIMA_IDADE_SEGUNDOS .
-                " SECOND
-                )
-            "
+        // Inclui observadores invisíveis e estados desativados das ligações abertas.
+        // A BD é a autoridade; flags antigas de um socket não ocultam outra instalação.
+        $connectedFilter = $connected ? ' OR lm.membro_id IN (' . implode(',', $connected) . ')' : '';
+        $statement = $this->getDatabase()->prepare(
+            "SELECT lm.membro_id, lm.latitude, lm.longitude, lm.precisao_m,
+                lm.localizacao_ativa, lm.visivel, lm.estado_versao,
+                UNIX_TIMESTAMP(lm.atualizada_em) AS atualizada_em_epoch,
+                m.nascimento, CONCAT(m.primeiro_nome, ' ', m.ultimo_nome) AS nome,
+                COALESCE((SELECT fp.nome_arquivo FROM fotos_perfil fp
+                    WHERE fp.membro_id COLLATE utf8mb4_unicode_ci = m.id COLLATE utf8mb4_unicode_ci
+                      AND (fp.status = 'completo' OR fp.status IS NULL)
+                    ORDER BY fp.ordem IS NULL, fp.ordem, fp.id LIMIT 1), 'default.webp') AS foto_perfil
+             FROM localizacao_membro lm
+             INNER JOIN membros m ON m.id COLLATE utf8mb4_unicode_ci = lm.membro_id COLLATE utf8mb4_unicode_ci
+             WHERE (lm.localizacao_ativa = 1 AND lm.atualizada_em >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL "
+                . self::LOCALIZACAO_MAXIMA_IDADE_SEGUNDOS . " SECOND))" . $connectedFilter
         );
-        $statement->execute();
+        $statement->execute($parameters);
         $visiveisAgora = [];
-        foreach ($statement->fetchAll(PDO::FETCH_ASSOC) as $linha) {
-            $membroId = trim((string) ($linha['membro_id'] ?? ''));
-            $latitude = filter_var($linha['latitude'] ?? null, FILTER_VALIDATE_FLOAT);
-            $longitude = filter_var($linha['longitude'] ?? null, FILTER_VALIDATE_FLOAT);
-            $atualizadaEm = (int) ($linha['atualizada_em_epoch'] ?? 0);
-            $faixaEtaria = $this->obterFaixaEtaria((string) ($linha['nascimento'] ?? ''));
-            if (
-                $membroId === '' ||
-                $latitude === false ||
-                $longitude === false ||
-                $latitude < -90 ||
-                $latitude > 90 ||
-                $longitude < -180 ||
-                $longitude > 180 ||
-                $atualizadaEm <= 0 ||
-                $faixaEtaria === null
-            ) {
-                continue;
-            }
-            $temLigacaoAberta = !empty($this->ligacoesPorMembro[$membroId]);
-            if (
-                $temLigacaoAberta &&
-                (!$this->membroTemLigacaoVisivel($membroId) || !$this->membroTemLigacaoComLocalizacaoAtiva($membroId))
-            ) {
-                continue;
-            }
-            $visiveisAgora[$membroId] = true;
-            if (
-                !isset($this->localizacoes[$membroId]) ||
-                (int) ($this->localizacoes[$membroId]['updated_at'] ?? 0) < $atualizadaEm
-            ) {
-                $this->localizacoes[$membroId] = [
-                    'latitude' => (float) $latitude,
-                    'longitude' => (float) $longitude,
-                    'accuracy' => max(0.0, min(10000.0, (float) ($linha['precisao_m'] ?? 0))),
-                    'updated_at' => $atualizadaEm,
-                    'source' => 'background'
-                ];
-            }
-            $this->faixaEtariaPorMembro[$membroId] = $faixaEtaria;
-            if (!$this->membroTemLigacaoVisivel($membroId)) {
-                $foto = basename(trim((string) ($linha['foto_perfil'] ?? 'default.webp')));
-                if ($foto === '') {
-                    $foto = 'default.webp';
+        $localizacoesAgora = [];
+        foreach ($statement->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $memberId = (string) $row['membro_id'];
+            $active = (bool) $row['localizacao_ativa'];
+            $visible = $active && (bool) $row['visivel'];
+            if ((int) $row['estado_versao'] > 0) {
+                foreach ($this->ligacoesPorMembro[$memberId] ?? [] as $resourceId => $connection) {
+                    $this->localizacaoPorLigacao[$resourceId] = $active;
+                    $this->visibilidadePorLigacao[$resourceId] = $visible;
                 }
-                $pessoaAtual = $this->pessoas[$membroId] ?? [];
-                $this->pessoas[$membroId] = [
-                    'id' => $membroId,
-                    'membro_id' => $membroId,
-                    'nome' => trim((string) ($linha['nome'] ?? '')),
-                    'src' => '/imagens/fotos-perfil/' . rawurlencode($foto),
-                    'faixa_etaria' => $faixaEtaria,
-                    'top' => isset($pessoaAtual['top']) ? (int) $pessoaAtual['top'] : random_int(50, 600),
-                    'left' => isset($pessoaAtual['left']) ? (int) $pessoaAtual['left'] : random_int(50, 400)
-                ];
             }
-        }
-        foreach (array_keys($this->membrosVisiveisPorPersistencia) as $membroId) {
-            if (isset($visiveisAgora[$membroId])) {
+            $latitude = filter_var($row['latitude'], FILTER_VALIDATE_FLOAT);
+            $longitude = filter_var($row['longitude'], FILTER_VALIDATE_FLOAT);
+            $captured = (int) ($row['atualizada_em_epoch'] ?? 0);
+            $ageGroup = $this->obterFaixaEtaria((string) $row['nascimento']);
+            if (!$active || $latitude === false || $longitude === false || abs($latitude) > 90
+                || abs($longitude) > 180 || $captured <= 0
+                || $agora - $captured > self::LOCALIZACAO_MAXIMA_IDADE_SEGUNDOS || $ageGroup === null) {
+                unset($this->localizacoes[$memberId], $this->pessoas[$memberId]);
                 continue;
             }
-            if (!$this->membroTemLigacaoVisivel($membroId)) {
-                unset($this->pessoas[$membroId]);
+            $localizacoesAgora[$memberId] = true;
+            if (!isset($this->localizacoes[$memberId]) || (int) $this->localizacoes[$memberId]['updated_at'] <= $captured) {
+                $this->localizacoes[$memberId] = [
+                    'latitude' => (float) $latitude, 'longitude' => (float) $longitude,
+                    'accuracy' => max(0.0, min(10000.0, (float) ($row['precisao_m'] ?? 0))),
+                    'updated_at' => $captured, 'source' => 'background'
+                ];
             }
-            if (($this->localizacoes[$membroId]['source'] ?? '') === 'background') {
-                unset($this->localizacoes[$membroId]);
+            $this->faixaEtariaPorMembro[$memberId] = $ageGroup;
+            if (!$visible) {
+                unset($this->pessoas[$memberId]);
+                continue;
+            }
+            $visiveisAgora[$memberId] = true;
+            $this->garantirPessoaVisivel($memberId, $row);
+        }
+        foreach (array_keys($this->pessoas) as $memberId) {
+            if (!isset($visiveisAgora[$memberId])) unset($this->pessoas[$memberId]);
+        }
+        foreach ($this->localizacoes as $memberId => $location) {
+            if (($location['source'] ?? '') === 'background' && !isset($localizacoesAgora[$memberId])) {
+                unset($this->localizacoes[$memberId]);
             }
         }
         $this->membrosVisiveisPorPersistencia = $visiveisAgora;

@@ -10,8 +10,9 @@ $member = trim((string) ($session->id ?? ''));
 if ($member === '') json_response(['success' => false], 401);
 if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
 try {
-    // Só oculta: um pedido atrasado nunca torna alguém visível nem ativa localização.
-    $cms->getLocation()->saveBackground($member, null, null, null, true, false);
+    // Interface antiga ainda em memória: respeitar a escolha de ocultar mesmo após migração.
+    // Não se aplica a flags de visibilidade transportadas por amostras GPS nativas.
+    $cms->getLocation()->hideFromLegacyClient($member);
     json_response(['success' => true]);
 } catch (Throwable $error) {
     error_log('[location-hide] ' . get_class($error));

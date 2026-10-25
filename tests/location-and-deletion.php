@@ -14,7 +14,11 @@
     $a = $ids[0]; $b = $ids[1]; $c = $ids[2];
     $installation = '33333333-3333-4333-8333-333333333333';
     $push->registerDevice($a, 'ios', str_repeat('a',64), $installation, str_repeat('b',64));
-    foreach ($ids as $i=>$id) { $location->saveBackground($id, 38.0+$i*0.00001, -9.0, 15, true, true); }
+    foreach ($ids as $i=>$id) {
+        $location->setState($id, 0, true, true);
+        $location->saveBackground($id, 38.0+$i*0.00001, -9.0, 15, true, true);
+    }
+    (new App\CMS\ActivityReminders($db, $push))->save($a, ['timezone' => 'UTC', 'nearby' => true]);
     same(['latitude'=>38.0,'longitude'=>-9.0], $nearby->locationSnapshot($a), 'Posição guardada');
     $nearby->syncAppState($a, false);
     $nearby->evaluateMember($a);
@@ -31,8 +35,8 @@
     $nearby->syncAppState($a, true);
     $nearby->evaluateMember($a);
     same(null, $push->nextJob(), 'Cooldown persiste ao fechar e reabrir');
-    $location->saveBackground($b, 38, -9, 10, true, false);
-    same(null, $nearby->locationSnapshot($b), 'Invisibilidade remove coordenadas');
+    $location->setState($b, 1, true, false);
+    same(false, $location->state($b)['visible'], 'Invisibilidade remove presença pública');
     (new App\CMS\Safety($db))->block($a, $c);
     $nearby->evaluateMember($a);
     same(6, (int)$db->query('SELECT total_proximidade FROM estado_app_membro')->fetchColumn(), 'Invisíveis e bloqueados fora da contagem');
@@ -47,7 +51,7 @@
         catch (InvalidArgumentException) { check(true,'Coordenada inválida recusada'); }
     }
     $location->saveBackground($a, null, null, null, false, false);
-    same(null, $nearby->locationSnapshot($a), 'Desativação aceita coordenadas ausentes');
+    same(false, $location->state($a)['active'], 'Desativação aceita coordenadas ausentes');
 
     // Eliminar todas as referências, incluindo tabelas antigas sem foreign keys.
     $member->recordLegalAcceptance($a);

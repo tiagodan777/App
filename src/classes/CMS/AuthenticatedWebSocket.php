@@ -19,6 +19,7 @@ final class AuthenticatedWebSocket implements MessageComponentInterface {
     private array $origensPermitidas;
     private \SplObjectStorage $ligacoesAbertas;
     private array $ligacoesAutenticadas = [];
+    private array $sessoesPorLigacao = [];
     private array $temporizadoresAutenticacao = [];
     private array $heyDisponivelEm = [];
 
@@ -42,6 +43,13 @@ final class AuthenticatedWebSocket implements MessageComponentInterface {
         if ($this->origensPermitidas === []) {
             throw new \InvalidArgumentException('É necessária pelo menos uma origem WebSocket permitida.');
         }
+        $this->loop->addPeriodicTimer(10, function (): void {
+            foreach ($this->ligacoesAbertas as $connection) {
+                if (isset($this->ligacoesAutenticadas[$connection->resourceId])) {
+                    $this->sessaoAutorizada($connection);
+                }
+            }
+        });
     }
 
     public function onOpen(ConnectionInterface $conn): void {
@@ -88,6 +96,7 @@ final class AuthenticatedWebSocket implements MessageComponentInterface {
         }
         $autenticado = isset($this->ligacoesAutenticadas[$from->resourceId]);
         if ($autenticado) {
+            if (!$this->sessaoAutorizada($from)) return;
             if ($tipo === 'auth') {
                 $this->enviarErro($from, 'A ligação já está autenticada.');
                 $from->close();
@@ -111,20 +120,28 @@ final class AuthenticatedWebSocket implements MessageComponentInterface {
             return;
         }
         try {
-            $membroId = $this->consumirToken($token);
+            $grant = $this->consumirToken($token);
         } catch (\Throwable $erro) {
             echo sprintf("[AUTH TOKEN ERROR] Ligação %d: %s\n", $from->resourceId, $erro->getMessage());
             $this->enviarErro($from, 'Não foi possível autenticar a ligação.');
             $from->close();
             return;
         }
-        if ($membroId === false) {
+        if ($grant === false) {
             $this->enviarErro($from, 'O token de ligação expirou ou já foi utilizado.');
             $from->close();
             return;
         }
+        $membroId = $grant['member_id'];
         $this->cancelarLimiteAutenticacao($from);
         $this->ligacoesAutenticadas[$from->resourceId] = $membroId;
+        if ($grant['session_hash'] !== null) $this->sessoesPorLigacao[$from->resourceId] = $grant['session_hash'];
+        else {
+            $this->temporizadoresAutenticacao[$from->resourceId] = $this->loop->addTimer(60, function () use ($from): void {
+                unset($this->temporizadoresAutenticacao[$from->resourceId]);
+                if ($this->ligacoesAbertas->contains($from)) $from->close();
+            });
+        }
         $dados['membro_id'] = $membroId;
         unset($dados['token']);
         try {
@@ -134,7 +151,7 @@ final class AuthenticatedWebSocket implements MessageComponentInterface {
             );
             $this->aplicacao->onMessage($from, $mensagemAutenticada);
         } catch (\Throwable $erro) {
-            unset($this->ligacoesAutenticadas[$from->resourceId]);
+            unset($this->ligacoesAutenticadas[$from->resourceId], $this->sessoesPorLigacao[$from->resourceId]);
             echo sprintf("[AUTH FORWARD ERROR] Ligação %d: %s\n", $from->resourceId, $erro->getMessage());
             $this->enviarErro($from, 'Não foi possível concluir a autenticação.');
             $from->close();
@@ -143,7 +160,7 @@ final class AuthenticatedWebSocket implements MessageComponentInterface {
 
     public function onClose(ConnectionInterface $conn): void {
         $this->cancelarLimiteAutenticacao($conn);
-        unset($this->ligacoesAutenticadas[$conn->resourceId]);
+        unset($this->ligacoesAutenticadas[$conn->resourceId], $this->sessoesPorLigacao[$conn->resourceId]);
         if (!$this->ligacoesAbertas->contains($conn)) {
             return;
         }
@@ -171,15 +188,18 @@ final class AuthenticatedWebSocket implements MessageComponentInterface {
         return $database;
     }
 
-    private function consumirToken(string $token): string|false {
+    private function consumirToken(string $token): array|false {
         $database = $this->getDatabase();
         $tokenHash = hash('sha256', $token);
         try {
             $database->beginTransaction();
-            $statement = $database->prepare("SELECT t.id, t.membro_id
+            $statement = $database->prepare("SELECT t.id, t.membro_id, t.sessao_hash
                 FROM token AS t
                 INNER JOIN membros AS m ON m.id = t.membro_id
                 WHERE t.token = :token AND t.proposito = 'websocket' AND t.validade > UTC_TIMESTAMP()
+                  AND (t.sessao_hash IS NULL OR EXISTS (SELECT 1 FROM token s
+                    WHERE s.token = t.sessao_hash AND s.membro_id = t.membro_id
+                      AND s.proposito = 'websocket_session' AND s.validade > UTC_TIMESTAMP()))
                 LIMIT 1 FOR UPDATE");
             $statement->execute(['token' => $tokenHash]);
             $registo = $statement->fetch(PDO::FETCH_ASSOC);
@@ -197,13 +217,31 @@ final class AuthenticatedWebSocket implements MessageComponentInterface {
             }
             $membroId = trim((string) $registo['membro_id']);
             $database->commit();
-            return $membroId !== '' ? $membroId : false;
+            return $membroId !== '' ? ['member_id' => $membroId, 'session_hash' => $registo['sessao_hash']] : false;
         } catch (\Throwable $erro) {
             if ($database->inTransaction()) {
                 $database->rollBack();
             }
             throw $erro;
         }
+    }
+
+    private function sessaoAutorizada(ConnectionInterface $connection): bool {
+        $sessionHash = $this->sessoesPorLigacao[$connection->resourceId] ?? null;
+        // Compatibilidade apenas com tokens emitidos antes da migração (validade: 60 s).
+        if ($sessionHash === null) return true;
+        try {
+            $statement = $this->getDatabase()->prepare("SELECT 1 FROM token
+                WHERE token = :hash AND membro_id = :member
+                  AND proposito = 'websocket_session' AND validade > UTC_TIMESTAMP()");
+            $statement->execute(['hash' => $sessionHash,
+                'member' => $this->ligacoesAutenticadas[$connection->resourceId] ?? '']);
+            if ($statement->fetchColumn()) return true;
+        } catch (\Throwable $error) {
+            error_log('[websocket-session] ' . get_class($error));
+        }
+        $connection->close();
+        return false;
     }
 
     private function autorizarHey(ConnectionInterface $from, array $dados): bool {

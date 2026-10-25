@@ -22,6 +22,7 @@ window.MargotLocationTracker = function (actions) {
 
     const foreground = () =>
         !window.disableLocationTracking &&
+        (!window.MargotLocationPrivacy || window.MargotLocationPrivacy.allowsCollection() === true) &&
         document.visibilityState === 'visible';
 
     const native = () =>
@@ -240,6 +241,7 @@ window.MargotLocationTracker = function (actions) {
         const cycle = generation;
 
         await window.MargotLocationReady;
+        await window.MargotLocationState?.ready;
 
         if (cycle !== generation || !foreground()) return;
         if (request) return request.done;

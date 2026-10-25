@@ -19,6 +19,7 @@ final class LocationRelaunchCoordinator: NSObject, CLLocationManagerDelegate {
   private let keychainAccount = "background-token"
   private let visibilityKey = "margot.background-location.visible"
   private let pendingLocationKey = "margot.background-location.pending"
+  private let suspendedKey = "margot.background-location.server-suspended"
 
   private let policy = LocationPolicy()
   private let retryDelays: [TimeInterval] = [2, 5, 10]
@@ -30,7 +31,7 @@ final class LocationRelaunchCoordinator: NSObject, CLLocationManagerDelegate {
     configuration.timeoutIntervalForResource = 20
     configuration.waitsForConnectivity = false
     configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
-    return URLSession(configuration: configuration)
+    return URLSession(configuration: configuration, delegate:LocationUploadRedirectDelegate.shared, delegateQueue:nil)
   }()
 
   private let logger = Logger(
@@ -40,6 +41,7 @@ final class LocationRelaunchCoordinator: NSObject, CLLocationManagerDelegate {
 
   private var loggedFirstFix = false
   private var sending = false
+  private var uploadTask: URLSessionDataTask?
   private var stopped = false
   private var pendingLocation: CLLocation?
   private var lastSentLocation: CLLocation?
@@ -51,6 +53,10 @@ final class LocationRelaunchCoordinator: NSObject, CLLocationManagerDelegate {
   override init() {
     super.init()
     policy.restore()
+    NotificationCenter.default.addObserver(
+      self, selector:#selector(protectedDataBecameAvailable),
+      name:UIApplication.protectedDataDidBecomeAvailableNotification, object:nil
+    )
     manager.delegate = self
     manager.desiredAccuracy = kCLLocationAccuracyNearestTenMeters
 
@@ -65,6 +71,10 @@ final class LocationRelaunchCoordinator: NSObject, CLLocationManagerDelegate {
     manager.showsBackgroundLocationIndicator = false
   }
 
+  deinit { NotificationCenter.default.removeObserver(self) }
+
+  @objc private func protectedDataBecameAvailable() { start() }
+
   func start() {
     guard !stopped else { return }
 
@@ -75,7 +85,8 @@ final class LocationRelaunchCoordinator: NSObject, CLLocationManagerDelegate {
     let servicesEnabled = CLLocationManager.locationServicesEnabled()
     let alwaysAllowed = manager.authorizationStatus == .authorizedAlways
 
-    guard visible, hasToken, servicesEnabled, alwaysAllowed else {
+    guard visible, hasToken, servicesEnabled, alwaysAllowed,
+      !UserDefaults.standard.bool(forKey:suspendedKey) else {
       logger.notice("scene-recovery-1: bootstrap skipped; visible=\(visible, privacy: .public) credential=\(hasToken, privacy: .public) services=\(servicesEnabled, privacy: .public) always=\(alwaysAllowed, privacy: .public)")
       return
     }
@@ -141,10 +152,13 @@ final class LocationRelaunchCoordinator: NSObject, CLLocationManagerDelegate {
     guard !stopped else { return }
 
     guard manager.authorizationStatus == .authorizedAlways,
+      !UserDefaults.standard.bool(forKey:suspendedKey),
       readVisibility(),
       readToken() != nil
     else {
-      stop()
+      // A missing token may just mean that the first unlock has not happened yet.
+      // Keep the coordinator available for protectedDataDidBecomeAvailable.
+      manager.stopUpdatingLocation()
       return
     }
 
@@ -293,7 +307,7 @@ final class LocationRelaunchCoordinator: NSObject, CLLocationManagerDelegate {
     request.setValue("application/json", forHTTPHeaderField: "Accept")
     request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-    session.dataTask(with: request) { [weak self] _, response, error in
+    uploadTask = session.dataTask(with: request) { [weak self] data, response, error in
       let statusCode = (response as? HTTPURLResponse)?.statusCode
 
       DispatchQueue.main.async {
@@ -304,26 +318,45 @@ final class LocationRelaunchCoordinator: NSObject, CLLocationManagerDelegate {
           return
         }
 
-        self.finishSend(location, statusCode: statusCode, error: error)
+        self.uploadTask = nil
+        self.finishSend(location, reply:LocationUploadReply(data:data,statusCode:statusCode,error:error), error:error)
       }
-    }.resume()
+    }
+    uploadTask?.resume()
   }
 
   private func finishSend(
     _ location: CLLocation,
-    statusCode: Int?,
+    reply: LocationUploadReply,
     error: Error?
   ) {
     guard !stopped else { return }
-
+    let statusCode = reply.statusCode
     sending = false
     logger.notice("scene-recovery-1: upload HTTP status \(statusCode ?? 0, privacy: .public)")
 
-    policy.completed(
-      LocationPolicy.fix(location),
-      LocationPolicy.elapsedNow,
-      success: statusCode.map { (200...299).contains($0) } ?? false
-    )
+    if reply.success && !reply.accepted {
+      if reply.reason == "authorization_revoked" {
+        deleteToken()
+        deletePendingLocation()
+        stop()
+        return
+      }
+      policy.discarded(LocationPolicy.fix(location),LocationPolicy.elapsedNow)
+      pendingLocation = nil
+      retryAttempt = 0
+      deletePendingLocation()
+      endBackgroundTask()
+      logger.notice("scene-recovery-2: sample not accepted")
+      if reply.reason == "collection_disabled" {
+        UserDefaults.standard.set(true,forKey:suspendedKey)
+        MargotLocationPushProbe.shared.sync(visible:false,token:nil)
+        stop()
+      }
+      return
+    }
+
+    policy.completed(LocationPolicy.fix(location),LocationPolicy.elapsedNow,success:reply.accepted)
 
     if statusCode == 401 {
       deleteToken()
@@ -333,7 +366,7 @@ final class LocationRelaunchCoordinator: NSObject, CLLocationManagerDelegate {
       return
     }
 
-    if let statusCode = statusCode, (200...299).contains(statusCode) {
+    if reply.accepted {
       lastSentAt = Date()
       lastSentLocation = location
       retryAttempt = 0
@@ -356,8 +389,7 @@ final class LocationRelaunchCoordinator: NSObject, CLLocationManagerDelegate {
 
     if let pending = pendingLocation,
       isUsableLocation(pending, maxAge: 90),
-      statusCode != nil,
-      statusCode.map({ (200...299).contains($0) }) == true
+      reply.accepted
     {
       pendingLocation = nil
       considerSending(pending, force: false)
@@ -428,6 +460,7 @@ final class LocationRelaunchCoordinator: NSObject, CLLocationManagerDelegate {
     backgroundTask = UIApplication.shared.beginBackgroundTask(
       withName: "MargotLocationRelaunch"
     ) { [weak self] in
+      self?.uploadTask?.cancel()
       self?.endBackgroundTask()
     }
   }
@@ -528,6 +561,9 @@ final class LocationRelaunchCoordinator: NSObject, CLLocationManagerDelegate {
   }
 
   private func deleteToken() {
+    UserDefaults.standard.removeObject(forKey:suspendedKey)
+    UserDefaults.standard.removeObject(forKey:"margot.background-location.member-id")
+    MargotLocationPushProbe.shared.sync(visible:false,token:nil)
     SecItemDelete(keychainQuery() as CFDictionary)
   }
 }

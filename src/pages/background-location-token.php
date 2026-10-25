@@ -20,21 +20,28 @@ try {
     $guardado = $_SESSION['margot_background_grant'] ?? null;
     $token = is_array($guardado) ? (string) ($guardado['token'] ?? '') : '';
     $validade = is_array($guardado) ? (int) ($guardado['expires_at'] ?? 0) : 0;
+    $group = is_array($guardado) && ($guardado['member_id'] ?? '') === $membroId
+        ? (string) ($guardado['session_hash'] ?? '') : '';
+    if (!preg_match('/^[a-f0-9]{64}$/D', $group)) $group = bin2hex(random_bytes(32));
+    if ($token !== '' && ($guardado['member_id'] ?? '') === $membroId) {
+        $cms->getToken()->bindBackgroundSession($token, $membroId, $group);
+    }
     if (
         $token === '' || $validade <= time() + $margemRenovacao
         || ($guardado['member_id'] ?? '') !== $membroId
         || $cms->getToken()->getMemberId($token, 'background_location') !== $membroId
     ) {
-        $token = $cms->getToken()->create($membroId, 'background_location', $duracao);
+        $token = $cms->getToken()->create($membroId, 'background_location', $duracao, $group);
         $validade = time() + $duracao;
-        $_SESSION['margot_background_grant'] = [
-            'member_id' => $membroId, 'token' => $token, 'expires_at' => $validade
-        ];
     }
+    $_SESSION['margot_background_grant'] = [
+        'member_id' => $membroId, 'token' => $token, 'expires_at' => $validade, 'session_hash' => $group
+    ];
     if (session_status() === PHP_SESSION_ACTIVE) {
         session_write_close();
     }
-    json_response(['success' => true, 'token' => $token, 'expires_in' => max(0, $validade - time())]);
+    json_response(['success' => true, 'token' => $token, 'member_id' => $membroId,
+        'expires_in' => max(0, $validade - time())]);
 } catch (Throwable $erro) {
     if (session_status() === PHP_SESSION_ACTIVE) {
         session_write_close();

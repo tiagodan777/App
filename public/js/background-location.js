@@ -28,9 +28,10 @@
     var consultaPolicy = null;
 
     function atualizarPolicy(state) {
-        window.MargotNativeLocationCacheAvailable = state?.policy_version === 'native-battery-1';
+        var compatible = ['native-battery-1', 'native-battery-2'].includes(state?.policy_version);
+        window.MargotNativeLocationCacheAvailable = compatible;
         // Capability gated: older installed builds never receive an unknown method call.
-        if (!state || state.policy_version !== 'native-battery-1' || !plugin ||
+        if (!compatible || !plugin ||
             typeof plugin.configure !== 'function' || consultaPolicy ||
             Date.now() - ultimaConsultaPolicy < 3600000) return;
         ultimaConsultaPolicy = Date.now();
@@ -50,6 +51,14 @@
     var androidLocationPermissionPromise = null;
     var renovacao = null;
     var ultimaRetoma = 0;
+    var membroConfirmado = '';
+    var credencialConfirmadaEm = 0;
+    var membroAtual = function () { return String(window.membroId || '').trim(); };
+    var ownerKey = 'margot-native-location-owner-v1';
+    function nativeOwner(state) {
+        if (state?.member_id) return state.member_id;
+        try { return window.localStorage.getItem(ownerKey) || ''; } catch (_) { return ''; }
+    }
 
     function comPrazo(promise, ms) {
         var timer;
@@ -160,6 +169,7 @@
 
         return new Promise(function (resolve) {
             var terminou = false;
+            var timer;
 
             var concluir = function () {
                 if (terminou) {
@@ -167,6 +177,7 @@
                 }
 
                 terminou = true;
+                window.clearTimeout(timer);
 
                 window.removeEventListener(
                     'margot:notificacoes-permissao-concluida',
@@ -180,6 +191,7 @@
                 'margot:notificacoes-permissao-concluida',
                 concluir
             );
+            timer = window.setTimeout(concluir, 15000);
 
             if (window.margotNotificationPermissionFlowCompleted === true) {
                 concluir();
@@ -221,15 +233,14 @@
 
         androidLocationPermissionPromise = aguardarPermissaoNotificacoesAndroid()
             .then(function () {
-                return geolocationPlugin.checkPermissions();
+                return comPrazo(geolocationPlugin.checkPermissions(), 10000);
             })
             .then(function (estado) {
                 if (permissaoLocalizacaoConcedida(estado)) {
                     return { granted: true, status: estado };
                 }
 
-                return geolocationPlugin
-                    .requestPermissions({ permissions: ['location'] })
+                return comPrazo(geolocationPlugin.requestPermissions({ permissions: ['location'] }), 120000)
                     .then(function (novoEstado) {
                         return {
                             granted: permissaoLocalizacaoConcedida(novoEstado),
@@ -320,6 +331,9 @@
             );
         }
 
+        if (dados.member_id && dados.member_id !== membroAtual()) {
+            throw new Error('A autorização pertence a outra conta.');
+        }
         return String(dados.token);
     }
 
@@ -389,9 +403,11 @@
             return { available: false, active: false };
         }
 
+        var membro = membroAtual();
+        if (!membro) return {active: false, authenticated: false};
         var token = await pedirTokenBackground();
 
-        if (versao !== geracao || !localizacaoPermitida()) {
+        if (versao !== geracao || membro !== membroAtual() || !localizacaoPermitida()) {
             return { active: false, cancelled: true };
         }
 
@@ -403,16 +419,20 @@
             };
         }
 
-        var resultado = await plugin.start({
+        var resultado = await comPrazo(plugin.start({
             token: token,
+            memberId: membro,
             visible: presencaVisivel(),
             requestAlways: requestAlways === true
-        });
+        }), 10000);
 
         if (versao !== geracao || !localizacaoPermitida()) {
             return plugin.stop();
         }
 
+        membroConfirmado = membro;
+        credencialConfirmadaEm = Date.now();
+        try { window.localStorage.setItem(ownerKey, membro); } catch (_) {}
         return resultado;
     }
 
@@ -447,10 +467,17 @@
     }
 
     var inicializacao = null;
+    var inicializacaoGeracao = -1;
+    var inicializacaoMembro = '';
+    var paragem = null;
     var ultimaConfirmacaoAndroid = 0;
 
-    async function iniciar(periodico) {
-        await window.MargotLocationReady;
+    async function iniciar(periodico, requestAlways) {
+        if (!localizacaoPermitida()) return parar();
+        var solicitacao = geracao;
+        var solicitante = membroAtual();
+        if (paragem) await paragem;
+        if (solicitacao !== geracao || solicitante !== membroAtual()) return {active: false, cancelled: true};
 
         if (document.visibilityState !== 'visible') {
             return { active: false, deferred: true };
@@ -461,13 +488,36 @@
         }
 
         if (inicializacao) {
+            if (inicializacaoMembro !== membroAtual() && inicializacaoGeracao === geracao) geracao++;
+            if (inicializacaoGeracao !== geracao) {
+                var pedido = geracao;
+                var conta = membroAtual();
+                await inicializacao;
+                if (pedido === geracao && conta === membroAtual()) return iniciar(periodico, requestAlways);
+                return {active: false, cancelled: true};
+            }
             return inicializacao;
         }
 
         var versao = geracao;
+        inicializacaoGeracao = versao;
+        inicializacaoMembro = membroAtual();
 
         inicializacao = (async function () {
             try {
+                var estado = await estadoAtual();
+                if (versao !== geracao) return {active: false, cancelled: true};
+                if (!membroAtual()) return parar();
+                if (tokenGuardado(estado) && nativeOwner(estado) !== membroAtual()) {
+                    await plugin.stop();
+                    membroConfirmado = '';
+                }
+                await window.MargotLocationReady;
+                if (versao !== geracao) return {active: false, cancelled: true};
+                var estadoServidor = await window.MargotLocationState?.sync();
+                if (window.MargotLocationState && !estadoServidor) {
+                    return {active: false, deferred: true, reason: 'state_unconfirmed'};
+                }
                 if (!localizacaoPermitida()) {
                     return parar();
                 }
@@ -492,7 +542,6 @@
                     }
                 }
 
-                var estado = await estadoAtual();
 
                 if (window.MargotLocationOnboarding) {
                     if (
@@ -520,6 +569,13 @@
                 }
 
                 var visivel = presencaVisivel();
+
+                // Verifica a identidade na sessão antes de reutilizar credenciais nativas.
+                // A renovação diária evita depender do evento 401 para tokens de 30 dias.
+                if (requestAlways === true || membroConfirmado !== membroAtual() || estado.collection_suspended === true ||
+                    Date.now() - credencialConfirmadaEm > 86400000) {
+                    return await renovarToken(versao, requestAlways);
+                }
 
                 if (
                     periodico === true &&
@@ -622,13 +678,19 @@
     async function parar() {
         // Invalida arranques pendentes, mesmo que o HTTP termine depois do logout.
         geracao += 1;
+        membroConfirmado = '';
+        credencialConfirmadaEm = 0;
+        try { window.localStorage.removeItem(ownerKey); } catch (_) {}
 
         if (!pluginDisponivel()) {
             return { available: false, active: false };
         }
 
         window.MargotLocationOnboarding?.close();
-        return plugin.stop();
+        if (!paragem) {
+            paragem = Promise.resolve(plugin.stop()).finally(function () { paragem = null; });
+        }
+        return paragem;
     }
 
     async function abrirDefinicoes() {
@@ -645,12 +707,20 @@
             return iniciar();
         },
         requestAlways: function () {
-            return renovarToken(geracao, true);
+            return iniciar(false, true);
         },
         stop: parar,
         status: estadoAtual,
         openSettings: abrirDefinicoes,
         requestPermission: pedirPermissao,
+        requestBackgroundPermission: async function () {
+            var state = await estadoAtual();
+            if (androidNativo() && state.background_permission_required === true &&
+                typeof plugin.requestBackgroundPermission === 'function') {
+                return plugin.requestBackgroundPermission();
+            }
+            return state;
+        },
         showSettingsNotice: function () {
             window.MargotLocationOnboarding?.open();
         }
@@ -670,7 +740,8 @@
                 return;
             }
 
-            renovarToken().catch(function (erro) {
+            membroConfirmado = '';
+            iniciar().catch(function (erro) {
                 console.error(
                     'Não foi possível renovar a autorização da localização:',
                     erro
@@ -690,6 +761,11 @@
 
             if (localizacaoPermitida()) {
                 iniciar();
+            }
+        });
+        plugin.addListener('backgroundLocationRejected', function (state) {
+            if (state?.reason === 'collection_disabled' && document.visibilityState === 'visible') {
+                window.MargotLocationState?.sync(true).then(function () { iniciar(); });
             }
         });
     }

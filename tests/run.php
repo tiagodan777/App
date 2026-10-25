@@ -201,7 +201,7 @@ same(false, $tokens->consume($raw, 'websocket'), 'Token de uso único');
 $old = $tokens->create($a, 'background_location');
 $new = $tokens->create($a, 'background_location');
 
-same(false, $tokens->getMemberId($old, 'background_location'), 'Rotação revoga token anterior');
+same($a, $tokens->getMemberId($old, 'background_location'), 'Nova concessão preserva outro aparelho');
 same($a, $tokens->getMemberId($new, 'background_location'), 'Novo token ativo');
 same(false, $member->emailVerified($a), 'Email pendente');
 
@@ -231,6 +231,7 @@ require __DIR__ . '/websocket.php';
 require __DIR__ . '/accounts.php';
 require __DIR__ . '/push.php';
 require __DIR__ . '/location-and-deletion.php';
+require __DIR__ . '/location-state.php';
 require __DIR__ . '/push-provider.php';
 require __DIR__ . '/media.php';
 require __DIR__ . '/chat.php';

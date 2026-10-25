@@ -796,6 +796,7 @@
         }
     }
     window.addEventListener('margot:preferencias-alteradas', aplicarPreferenciasEmTempoReal);
+    window.addEventListener('margot:estado-localizacao', aplicarPreferenciasEmTempoReal);
     window.addEventListener('storage', function (evento) {
         if (evento.key !== 'margot-preferencias-v1' || window.MargotPreferencias) {
             return;

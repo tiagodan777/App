@@ -4,7 +4,7 @@ import java.util.Map;
 
 /** Pure policy: no timers, GPS access, persistence or network side effects. Times are milliseconds. */
 public final class LocationPolicy {
-    public static final String VERSION = "native-battery-1";
+    public static final String VERSION = "native-battery-2";
     public static final double MAX_AGE_MS = 90_000;
     public static final double MAX_ACCURACY = 100;
     public static final class Fix {
@@ -57,9 +57,9 @@ public final class LocationPolicy {
         if (latest!=null && wallNow-latest.capturedAt<60_000 && latest.accuracy<=25
             && fix.accuracy>50 && distance(latest,fix)>50) { rejected++; return false; }
         latest=fix;
-        boolean stable = fix.accuracy<=25 && (!Double.isFinite(fix.speed) || fix.speed<0.5);
+        boolean stable = fix.accuracy<=50 && (!Double.isFinite(fix.speed) || fix.speed<0.5);
         if (!stable || anchor==null || elapsedNow-previousObservation>60_000
-            || distance(anchor,fix)>15) {
+            || distance(anchor,fix)>Math.max(15,Math.min(50,anchor.accuracy+fix.accuracy))) {
             anchor=fix; anchorAt=elapsedNow; stableSamples=0; stationary=false;
         }
         stableSamples++;
@@ -73,7 +73,7 @@ public final class LocationPolicy {
         if (fix.capturedAt<=lastSent.capturedAt) return false;
         double elapsed=elapsedNow-lastSuccess;
         if (elapsed<minimumSendMs) return false;
-        return force || distance(lastSent,fix)>=movementMetres
+        return force || distance(lastSent,fix)>=Math.max(movementMetres,lastSent.accuracy+fix.accuracy)
             || elapsed >= (stationary ? stationarySendMs : movingSendMs);
     }
     public void attempted(double now) { attempts++; lastAttempt=now; }
@@ -85,6 +85,8 @@ public final class LocationPolicy {
             retryAt=now+Math.min(120_000, 5000*Math.pow(2,Math.min(5,consecutiveFailures-1)));
         }
     }
+    public void declined(double now) { failures++; retryAt=now+movingSendMs; }
+    public void motionDetected() { stationary=false; anchor=null; stableSamples=0; }
     public double retryDelay(double now) { return Math.max(0,retryAt-now); }
     public static double distance(Fix a, Fix b) {
         double p=Math.toRadians(b.latitude-a.latitude), l=Math.toRadians(b.longitude-a.longitude);

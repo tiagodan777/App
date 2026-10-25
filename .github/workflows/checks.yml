@@ -1,0 +1,72 @@
+name: Checks
+
+on:
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: PHP ${{ matrix.php }} / ${{ matrix.database }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - php: '8.2'
+            database: mariadb:10.11
+            health: healthcheck.sh --connect --innodb_initialized
+          - php: '8.3'
+            database: mysql:8.4
+            health: mysqladmin ping --silent
+    services:
+      mysql:
+        image: ${{ matrix.database }}
+        env:
+          MYSQL_ROOT_PASSWORD: margot-ci-root-only
+          MYSQL_DATABASE: margot_test_ci
+          MYSQL_USER: margot_ci
+          MYSQL_PASSWORD: margot-ci-isolated-only
+        ports:
+          - 3306/tcp
+        options: >-
+          --health-cmd="${{ matrix.health }}"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: pdo_mysql, pdo_sqlite, sqlite3, mbstring, curl, openssl, fileinfo, gd
+          tools: composer:v2
+          coverage: none
+        env:
+          fail-fast: true
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: PHP syntax, templates and architecture
+        run: composer lint
+      - name: PHP behaviour with an isolated SQLite fixture
+        run: composer test
+      - name: JavaScript behaviour and location races
+        run: npm test
+      - name: Native configuration contracts
+        run: python3 tests/native-config.py
+      - name: Location migration, mixed clients and real database semantics
+        env:
+          MARGOT_TEST_DSN: mysql:host=127.0.0.1;port=${{ job.services.mysql.ports[3306] }};dbname=margot_test_ci;charset=utf8mb4
+          MARGOT_TEST_USER: margot_ci
+          MARGOT_TEST_PASSWORD: margot-ci-isolated-only
+        run: php tests/location-state-mysql.php

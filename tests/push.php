@@ -29,6 +29,8 @@
         catch (InvalidArgumentException) { check(true, 'Registo inválido recusado'); }
     }
     $message = $messages->send($sender, $recipient, 'Olá no iPhone e Android', []);
+    $db->exec("UPDATE push_dispositivos SET ultimo_contacto_app_em = CASE WHEN plataforma='ios'
+        THEN '2026-01-02' ELSE '2026-01-01' END");
     same(2, $push->enqueueMessage($sender, $recipient, $message), 'Mensagem gera um push por dispositivo');
     same(0, $push->enqueueMessage($sender, $recipient, $message), 'Evento não duplica fila');
     $first = $push->nextJob();
@@ -65,6 +67,14 @@
     $nearby = $push->nextJob();
     same(false, $push->isDeliverable($nearby), 'Proximidade sem estado background não entrega');
     $db->runSQL('INSERT INTO estado_app_membro (membro_id,em_background,alerta_proximidade_ativo,total_proximidade) VALUES (:id,1,1,7)', ['id'=>$recipient]);
+    $location = new App\CMS\Location($db);
+    $location->saveBackground($recipient, 38, -9, 10, true, true, null, 'foreground');
+    for ($i = 0; $i < 7; $i++) {
+        $neighbor = $member->create(['primeiro_nome' => 'Neighbor', 'ultimo_nome' => (string) $i,
+            'nascimento' => '1990-01-01', 'genero' => 'F', 'email' => "neighbor$i@example.test",
+            'telefone' => '', 'password' => 'Senha1234', 'sobre_ti' => '', 'nome_seo' => "neighbor-$i"]);
+        $location->saveBackground($neighbor, 38 + $i * 0.00001, -9, 10, true, true, null, 'foreground');
+    }
     check($push->isDeliverable($nearby), 'Proximidade em background entrega');
     $db->exec('UPDATE estado_app_membro SET em_background=0');
     same(false, $push->isDeliverable($nearby), 'Abrir app cancela alerta');

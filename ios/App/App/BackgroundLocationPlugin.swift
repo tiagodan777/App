@@ -27,6 +27,9 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
   private let keychainAccount = "background-token"
   private let pendingLocationKey = "margot.background-location.pending"
   private let visibilityKey = "margot.background-location.visible"
+  private let memberKey = "margot.background-location.member-id"
+  private let suspendedKey = "margot.background-location.server-suspended"
+  private var serverSuspended: Bool { UserDefaults.standard.bool(forKey:suspendedKey) }
 
   private var policy = LocationPolicy()
   private var standardRunning = false
@@ -57,7 +60,7 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
 
   // Separar autorização de monitorização permite manter o guia até fechar o alerta.
   @objc public func requestPermission(_ call: CAPPluginCall) {
-    DispatchQueue.main.async { [weak self] in
+    DispatchQueue.main.async { [weak self, call] in
       guard let self = self else {
         call.reject("Localização indisponível.")
         return
@@ -139,7 +142,7 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
     configuration.waitsForConnectivity = false
     configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
 
-    return URLSession(configuration: configuration)
+    return URLSession(configuration: configuration, delegate: LocationUploadRedirectDelegate.shared, delegateQueue: nil)
   }()
 
   override public func load() {
@@ -181,6 +184,13 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
       self,
       selector: #selector(applicationDidEnterBackground),
       name: UIApplication.didEnterBackgroundNotification,
+      object: nil
+    )
+
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(protectedDataBecameAvailable),
+      name: UIApplication.protectedDataDidBecomeAvailableNotification,
       object: nil
     )
 
@@ -240,7 +250,11 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
       return
     }
 
-    if readToken() != token {
+    let memberId = call.getString("memberId")?.trimmingCharacters(in:.whitespacesAndNewlines)
+    let storedMember = UserDefaults.standard.string(forKey:memberKey)
+    let accountChanged = memberId.map { !$0.isEmpty && storedMember != nil && storedMember != $0 } ?? false
+    let tokenChanged = readToken() != token
+    if tokenChanged || accountChanged {
       stopMonitoring(removeToken:false)
       policy = LocationPolicy(); policy.restore()
       latestLocation = nil; deletePendingLocation()
@@ -249,6 +263,10 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
       call.reject("Não foi possível guardar a autorização da localização.")
       return
     }
+
+    UserDefaults.standard.removeObject(forKey:suspendedKey)
+    if tokenChanged || accountChanged { UserDefaults.standard.removeObject(forKey:memberKey) }
+    if let memberId = memberId, !memberId.isEmpty { UserDefaults.standard.set(memberId,forKey:memberKey) }
 
     let visible = call.getBool("visible") ?? true
     setPresenceVisible(visible)
@@ -382,6 +400,14 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
     }
   }
 
+  @objc private func protectedDataBecameAvailable() {
+    // The token is intentionally inaccessible before the first unlock after reboot.
+    // Restore native collection immediately when the Keychain becomes available.
+    configureMonitoring()
+    if presenceVisible { sendBestAvailableLocationOrRequest(allowBackground: true) }
+    else { queueHiddenPresence() }
+  }
+
   @objc private func applicationDidBecomeActive() {
     finishPermissionIfActive()
 
@@ -468,7 +494,7 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
     _ manager: CLLocationManager,
     didUpdateLocations locations: [CLLocation]
   ) {
-    guard presenceVisible, readToken() != nil else { return }
+    guard presenceVisible, !serverSuspended, readToken() != nil else { return }
     let fresh = locations.sorted { $0.timestamp < $1.timestamp }.filter {
       policy.observe(LocationPolicy.fix($0),LocationPolicy.wallNow,LocationPolicy.elapsedNow)
     }
@@ -530,6 +556,7 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
 
   private func configureMonitoring() {
     guard manager != nil,
+      !serverSuspended,
       readToken() != nil,
       presenceVisible,
       CLLocationManager.locationServicesEnabled()
@@ -580,7 +607,8 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
 
   private func startForegroundLocationIfPossible() {
     guard UIApplication.shared.applicationState == .active,
-      manager.authorizationStatus == .authorizedWhenInUse, presenceVisible, readToken() != nil else {
+      manager.authorizationStatus == .authorizedWhenInUse, !serverSuspended,
+      presenceVisible, readToken() != nil else {
       stopLocationSensors()
       return
     }
@@ -603,7 +631,7 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
   }
 
   private func requestCurrentLocationIfPossible(allowBackground: Bool) {
-    guard presenceVisible, readToken() != nil else { return }
+    guard presenceVisible, !serverSuspended, readToken() != nil else { return }
 
     if standardRunning { return }
     let state = UIApplication.shared.applicationState
@@ -625,7 +653,7 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
   }
 
   private func sendBestAvailableLocationOrRequest(allowBackground: Bool) {
-    guard presenceVisible, readToken() != nil else { return }
+    guard presenceVisible, !serverSuspended, readToken() != nil else { return }
 
     if let retryLocation = retryLocation, isUsableLocation(retryLocation,maxAge:90) {
       queueLocation(newest(retryLocation,latestLocation), force:false)
@@ -694,7 +722,7 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
   }
 
   private func queueLocation(_ location: CLLocation, force: Bool) {
-    guard presenceVisible, readToken() != nil, isUsableLocation(location,maxAge:90) else { return }
+    guard presenceVisible, !serverSuspended, readToken() != nil, isUsableLocation(location,maxAge:90) else { return }
     latestLocation = newest(location,latestLocation)
     guard let chosen = latestLocation,
       policy.shouldSend(LocationPolicy.fix(chosen),LocationPolicy.wallNow,LocationPolicy.elapsedNow,force:force)
@@ -711,7 +739,7 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
   }
 
   private func performLocationSend(_ location: CLLocation) {
-    guard let token = readToken(), presenceVisible, !sending,
+    guard let token = readToken(), presenceVisible, !serverSuspended, !sending,
       policy.shouldSend(LocationPolicy.fix(location),LocationPolicy.wallNow,LocationPolicy.elapsedNow,force:true)
     else { return }
     policy.attempted(LocationPolicy.elapsedNow)
@@ -728,13 +756,13 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
     let generation = sendGeneration
 
     send(payload: locationPayload(location), token: token) {
-      [weak self] statusCode, error in
+      [weak self] reply, error in
 
       DispatchQueue.main.async {
         guard let self = self, self.readToken() == token, self.sendGeneration == generation else { return }
         self.finishLocationSending(
           location,
-          statusCode: statusCode,
+          reply: reply,
           error: error
         )
       }
@@ -775,11 +803,11 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
         "app_state": currentAppStateName(),
       ],
       token: token
-    ) { [weak self] statusCode, error in
+    ) { [weak self] reply, error in
       DispatchQueue.main.async {
         guard let self = self, self.readToken() == token, self.sendGeneration == generation else { return }
         self.finishHiddenSending(
-          statusCode: statusCode,
+          reply: reply,
           error: error
         )
       }
@@ -788,18 +816,41 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
 
   private func finishLocationSending(
     _ location: CLLocation,
-    statusCode: Int?,
+    reply: LocationUploadReply,
     error: Error?
   ) {
+    let statusCode = reply.statusCode
     sending = false
 
     if handleUnauthorized(statusCode) {
       return
     }
 
-    policy.completed(LocationPolicy.fix(location),LocationPolicy.elapsedNow,
-                     success:statusCode.map { (200...299).contains($0) } ?? false)
-    if let statusCode, (200...299).contains(statusCode) {
+    if reply.success && !reply.accepted {
+      if reply.reason == "authorization_revoked" {
+        _ = handleUnauthorized(401)
+        return
+      }
+      policy.discarded(LocationPolicy.fix(location),LocationPolicy.elapsedNow)
+      retryLocation = nil
+      retryAttempt = 0
+      deletePendingLocation()
+      notifyListeners("backgroundLocationRejected", data:["reason":reply.reason ?? "not_accepted"])
+      if reply.reason == "collection_disabled" {
+        UserDefaults.standard.set(true,forKey:suspendedKey)
+        MargotLocationPushProbe.shared.sync(visible:false,token:nil)
+        retryWorkItem?.cancel()
+        retryWorkItem = nil
+        pendingLocation = nil
+        stopLocationSensors()
+        return
+      }
+      processPendingAfterSend()
+      return
+    }
+
+    policy.completed(LocationPolicy.fix(location),LocationPolicy.elapsedNow,success:reply.accepted)
+    if reply.accepted {
       lastSentAt = Date()
       lastSentLocation = location
       latestLocation = newest(location,latestLocation)
@@ -821,14 +872,15 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
     processPendingAfterSend()
   }
 
-  private func finishHiddenSending(statusCode: Int?, error: Error?) {
+  private func finishHiddenSending(reply: LocationUploadReply, error: Error?) {
+    let statusCode = reply.statusCode
     sending = false
 
     if handleUnauthorized(statusCode) {
       return
     }
 
-    if let statusCode, (200...299).contains(statusCode) {
+    if reply.accepted {
       retryHidden = false
       retryAttempt = 0
     } else if !presenceVisible {
@@ -1093,23 +1145,29 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
   private func send(
     payload: [String: Any],
     token: String,
-    completion: ((Int?, Error?) -> Void)? = nil
+    completion: ((LocationUploadReply, Error?) -> Void)? = nil
   ) {
     var authenticatedPayload = payload
     authenticatedPayload["token"] = token
 
     var backgroundTask = UIBackgroundTaskIdentifier.invalid
+    var uploadTask: URLSessionDataTask?
 
     if UIApplication.shared.applicationState != .active {
       backgroundTask = UIApplication.shared.beginBackgroundTask(
         withName: "MargotLocationUpload"
-      )
+      ) {
+        uploadTask?.cancel()
+        if backgroundTask != .invalid {
+          UIApplication.shared.endBackgroundTask(backgroundTask)
+          backgroundTask = .invalid
+        }
+      }
     }
 
     func finishBackgroundTask() {
-      guard backgroundTask != .invalid else { return }
-
       DispatchQueue.main.async {
+        guard backgroundTask != .invalid else { return }
         UIApplication.shared.endBackgroundTask(backgroundTask)
         backgroundTask = .invalid
       }
@@ -1119,7 +1177,7 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
       withJSONObject: authenticatedPayload
     ) else {
       finishBackgroundTask()
-      completion?(nil, nil)
+      completion?(LocationUploadReply(data:nil,statusCode:nil,error:nil), nil)
       return
     }
 
@@ -1130,12 +1188,13 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
     request.setValue("application/json", forHTTPHeaderField: "Accept")
     request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-    session.dataTask(with: request) { _, response, error in
+    uploadTask = session.dataTask(with: request) { data, response, error in
       let statusCode = (response as? HTTPURLResponse)?.statusCode
 
       finishBackgroundTask()
-      completion?(statusCode, error)
-    }.resume()
+      completion?(LocationUploadReply(data:data,statusCode:statusCode,error:error), error)
+    }
+    uploadTask?.resume()
   }
 
   private func statusData() -> [String: Any] {
@@ -1148,6 +1207,7 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
       "native_location_running": standardRunning,
       "active": monitoring,
       "visible": presenceVisible,
+      "collection_suspended": serverSuspended,
       "permission_flow_version": 2,
       "services_enabled": CLLocationManager.locationServicesEnabled(),
       "always_requested": UserDefaults.standard.bool(
@@ -1158,6 +1218,7 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
       "background_enabled": monitoring && authorization == .authorizedAlways,
       "precise": manager?.accuracyAuthorization == .fullAccuracy,
       "token_stored": readToken() != nil,
+      "member_id": UserDefaults.standard.string(forKey:memberKey) as Any? ?? NSNull(),
       "requires_settings": authorization == .authorizedWhenInUse
         || authorization == .denied
         || authorization == .restricted,
@@ -1199,15 +1260,15 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
   }
 
   private func saveToken(_ token: String) -> Bool {
-    var query = keychainQuery()
-
-    SecItemDelete(query as CFDictionary)
-
-    query[kSecValueData as String] = Data(token.utf8)
-    query[kSecAttrAccessible as String] =
-      kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
-
-    return SecItemAdd(query as CFDictionary, nil) == errSecSuccess
+    let attributes: [String:Any] = [
+      kSecValueData as String: Data(token.utf8),
+      kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+    ]
+    let query = keychainQuery()
+    let status = SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
+    if status == errSecSuccess { return true }
+    guard status == errSecItemNotFound else { return false }
+    return SecItemAdd(query.merging(attributes) { _, new in new } as CFDictionary, nil) == errSecSuccess
   }
 
   private func readToken() -> String? {
@@ -1228,6 +1289,8 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
   }
 
   private func deleteToken() {
+    UserDefaults.standard.removeObject(forKey:suspendedKey)
+    UserDefaults.standard.removeObject(forKey:memberKey)
     MargotLocationPushProbe.shared.sync(visible: false, token: nil)
     SecItemDelete(keychainQuery() as CFDictionary)
   }

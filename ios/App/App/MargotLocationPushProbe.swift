@@ -104,7 +104,8 @@ final class MargotLocationPushProbe: NSObject, CLLocationManagerDelegate, URLSes
     token: TokenRead,
     forceRegistration: Bool
   ) {
-    guard visible else {
+    guard visible,
+      !UserDefaults.standard.bool(forKey:"margot.background-location.server-suspended") else {
       disable(reason: "collection_disabled")
       return
     }

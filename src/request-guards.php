@@ -100,6 +100,9 @@ if ($page === 'today') {
     }
 }
 
+if ($page === 'location-state' && $metodo === 'POST') {
+    limitarRota('location-state', $membroOuSessao, 120, 5 * 60);
+}
 if (in_array($page, ['daylies', 'notification-preferences', 'location-hide'], true) && $metodo !== 'GET') {
     limitarRota($page . '-write', $membroOuSessao, 40, 15 * 60);
 }

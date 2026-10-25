@@ -15,6 +15,17 @@
     var listenersPromise = null;
     var registrationPromise = null;
     var permissionRequestPromise = null;
+    var registrationGeneration = 0;
+    var registrationAllowed = false;
+
+    function nativeDeadline(promise, milliseconds) {
+        var timer;
+        return Promise.race([promise, new Promise(function (_, reject) {
+            timer = window.setTimeout(function () {
+                reject(new Error('O sistema não respondeu ao pedido de notificações.'));
+            }, milliseconds || 10000);
+        })]).finally(function () { window.clearTimeout(timer); });
+    }
 
     function isNative() {
         return Boolean(
@@ -480,6 +491,7 @@
 
         listenersPromise = (async function () {
             await push.addListener('registration', function (result) {
+                if (!registrationAllowed || !memberId() || !notificationsWanted()) return;
                 var token = String((result && result.value) || '').trim();
 
                 if (!token) {
@@ -527,7 +539,7 @@
         }
 
         try {
-            var permissions = await push.checkPermissions();
+            var permissions = await nativeDeadline(push.checkPermissions());
             return String((permissions && permissions.receive) || 'prompt');
         } catch (error) {
             return 'unknown';
@@ -549,11 +561,12 @@
         iniciarFluxoPermissaoNotificacoesNativas();
 
         var estadoFinal = 'unknown';
+        var generation = registrationGeneration;
 
         permissionRequestPromise = (async function () {
-            await prepareListeners(push);
+            await nativeDeadline(prepareListeners(push));
 
-            var permissions = await push.checkPermissions();
+            var permissions = await nativeDeadline(push.checkPermissions());
             var state = String((permissions && permissions.receive) || 'prompt');
 
             if (state === 'prompt' || state === 'prompt-with-rationale') {
@@ -561,17 +574,19 @@
                     ? await window.MargotPermissionUI.run(() =>
                         window.MargotPermissionUI.guide(
                             'notifications',
-                            () => push.requestPermissions()
+                            () => nativeDeadline(push.requestPermissions(), 120000)
                         )
                     )
-                    : await push.requestPermissions();
+                    : await nativeDeadline(push.requestPermissions(), 120000);
 
                 state = String((permissions && permissions.receive) || 'denied');
             }
 
-            if (state === 'granted') {
-                await prepareAndroidChannel(push);
-                await push.register();
+            if (state === 'granted' && generation === registrationGeneration && memberId() && notificationsWanted()) {
+                await nativeDeadline(prepareAndroidChannel(push));
+                if (generation !== registrationGeneration || !notificationsWanted()) return state;
+                registrationAllowed = true;
+                await nativeDeadline(push.register());
             }
 
             estadoFinal = state;
@@ -594,6 +609,7 @@
             return registrationPromise;
         }
 
+        var generation = registrationGeneration;
         registrationPromise = (async function () {
             var push = pushPlugin();
 
@@ -601,16 +617,17 @@
                 return false;
             }
 
-            await prepareListeners(push);
+            await nativeDeadline(prepareListeners(push));
 
             var state = await permissionState();
 
-                if (state !== 'granted') {
+            if (generation !== registrationGeneration) return false;
+            if (state !== 'granted') {
                 if (state === 'unknown') retryRegistration();
                 return false;
             }
 
-            await prepareAndroidChannel(push);
+            await nativeDeadline(prepareAndroidChannel(push));
 
             var token = storedToken();
 
@@ -622,7 +639,9 @@
                 }
             }
 
-            await push.register();
+            if (generation !== registrationGeneration || !notificationsWanted() || !memberId()) return false;
+            registrationAllowed = true;
+            await nativeDeadline(push.register());
             return true;
         })()
             .catch(function (error) {
@@ -641,6 +660,8 @@
     }
 
     async function unregister() {
+        registrationGeneration++;
+        registrationAllowed = false;
         registrationSynced();
         var push = pushPlugin();
         var token = storedToken();
@@ -658,11 +679,11 @@
 
         try {
             if (push && typeof push.unregister === 'function') {
-                await push.unregister();
+                await nativeDeadline(push.unregister());
             }
 
             if (push && typeof push.removeAllDeliveredNotifications === 'function') {
-                await push.removeAllDeliveredNotifications();
+                await nativeDeadline(push.removeAllDeliveredNotifications());
             }
         } finally {
             clearLocalRegistration();

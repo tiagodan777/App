@@ -19,17 +19,24 @@ if ($membroId !== '') {
             error_log('[logout] Falha ao desativar push: ' . $error->getMessage());
         }
     }
-    foreach (['background_location', 'websocket'] as $purpose) {
-        try {
-            $cms->getToken()->deleteForMemberAndPurpose($membroId, $purpose);
-        } catch (Throwable $error) {
-            error_log('[logout] Falha ao revogar token: ' . $error->getMessage());
-        }
-    }
     try {
-        $cms->getLocation()->disable($membroId);
+        $grant = $_SESSION['margot_background_grant'] ?? null;
+        if (is_array($grant) && ($grant['member_id'] ?? '') === $membroId) {
+            $cms->getLocation()->revokeBackgroundGrant($membroId, (string) ($grant['token'] ?? ''), $grant['session_hash'] ?? null);
+        }
+        $socketSession = $_SESSION['margot_websocket_session'] ?? null;
+        if (is_array($socketSession) && ($socketSession['member_id'] ?? '') === $membroId) {
+            $cms->getToken()->delete((string) ($socketSession['token'] ?? ''));
+        }
+        foreach ($_SESSION['margot_websocket_grants'] ?? [] as $grant) {
+            if (is_array($grant) && ($grant['member_id'] ?? '') === $membroId) {
+                $cms->getToken()->delete((string) ($grant['token'] ?? ''));
+            }
+        }
     } catch (Throwable $error) {
-        error_log('[logout] Falha ao desativar localização: ' . $error->getMessage());
+        // Não afirmar que terminou a sessão enquanto a credencial nativa continua válida.
+        error_log('[logout] Falha ao revogar a autorização desta sessão: ' . get_class($error));
+        json_response(['success' => false, 'message' => 'Não foi possível terminar a sessão. Tenta novamente.'], 503);
     }
 }
 try {

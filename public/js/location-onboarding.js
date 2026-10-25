@@ -85,8 +85,9 @@
         window.MargotI18n?.language === 'en' ? en : pt;
 
     function needsBackgroundNotice() {
-        return ios &&
-            authorization(lastState) === 'when_in_use' &&
+        return (ios ? authorization(lastState) === 'when_in_use' :
+            lastState?.background_permission_required === true &&
+            lastState?.background_permission_granted !== true) &&
             granted(lastState) &&
             !disabled();
     }
@@ -145,8 +146,8 @@
 
             text(
                 '[data-step-one]',
-                'Toca em “Localização”.',
-                'Tap “Location”.'
+                ios ? 'Toca em “Localização”.' : 'Toca em “Permissões” e depois em “Localização”.',
+                ios ? 'Tap “Location”.' : 'Tap “Permissions”, then “Location”.'
             );
 
             text(
@@ -157,14 +158,14 @@
 
             text(
                 '[data-step-two]',
-                'Escolhe “Sempre”.',
-                'Choose “Always”.'
+                ios ? 'Escolhe “Sempre”.' : 'Escolhe “Permitir sempre”.',
+                ios ? 'Choose “Always”.' : 'Choose “Allow all the time”.'
             );
 
             text(
                 '[data-always-label]',
-                'Sempre',
-                'Always'
+                ios ? 'Sempre' : 'Permitir sempre',
+                ios ? 'Always' : 'Allow all the time'
             );
 
             text(
@@ -275,7 +276,9 @@
                             return;
                         }
 
-                        const result = await bg().openSettings();
+                        const result = !ios && needsBackgroundNotice()
+                            ? await bg().requestBackgroundPermission()
+                            : await bg().openSettings();
 
                         if (
                             result === false ||
@@ -346,8 +349,10 @@
 
         pill.querySelector('span').textContent = backgroundNotice
             ? noticeText(
-                'Sem “Sempre”, podes desaparecer ao sair da app.',
-                'Without “Always”, you may disappear when you leave the app.'
+                ios ? 'Sem “Sempre”, podes desaparecer ao sair da app.' :
+                    'Permite a localização sempre para a Margot poder retomar os encontros após reiniciares o telemóvel.',
+                ios ? 'Without “Always”, you may disappear when you leave the app.' :
+                    'Allow location all the time so Margot can resume nearby discovery after your phone restarts.'
             )
             : approximate
                 ? noticeText(

@@ -16,6 +16,23 @@ namespace App\CMS {
     function curl_errno($curl) { return $curl->response['network_error']; }
     function curl_getinfo($curl, $option) { return $curl->response['status']; }
     function curl_close($curl) {}
+    function curl_multi_init() { return (object) ['handles' => [], 'completed' => []]; }
+    function curl_multi_setopt($multi, $option, $value) { return true; }
+    function curl_multi_add_handle($multi, $curl) { $multi->handles[spl_object_id($curl)] = $curl; return CURLM_OK; }
+    function curl_multi_remove_handle($multi, $curl) { unset($multi->handles[spl_object_id($curl)]); return CURLM_OK; }
+    function curl_multi_exec($multi, &$running) {
+        foreach ($multi->handles as $curl) {
+            if ($curl->response !== null) continue;
+            curl_exec($curl);
+            $multi->completed[] = ['handle' => $curl, 'result' => $curl->response['network_error']];
+        }
+        $running = 0;
+        return CURLM_OK;
+    }
+    function curl_multi_info_read($multi) { return array_shift($multi->completed) ?: false; }
+    function curl_multi_select($multi, $timeout) { return 1; }
+    function curl_multi_getcontent($curl) { return $curl->response['body']; }
+    function curl_multi_close($multi) {}
 }
 namespace {
     (function () {

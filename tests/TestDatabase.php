@@ -40,7 +40,7 @@ final class TestDatabase extends App\CMS\Database {
             $sql
         );
         $sql = preg_replace('/DATE_SUB\(\s*UTC_TIMESTAMP\(\),\s*INTERVAL (\d+) SECOND\s*\)/i', "datetime('now', '-$1 seconds')", $sql);
-        $sql = preg_replace_callback('/DATE_SUB\(\s*UTC_TIMESTAMP\(6?\),\s*INTERVAL (\d+) (SECOND|MINUTE|DAY)\s*\)/i',
+        $sql = preg_replace_callback('/DATE_SUB\(\s*UTC_TIMESTAMP\([036]?\),\s*INTERVAL (\d+) (SECOND|MINUTE|HOUR|DAY)\s*\)/i',
             static fn($m) => "datetime('now', '-" . $m[1] . ' ' . strtolower($m[2]) . "s')", $sql);
         // UPDATE ... JOIN de MariaDB, equivalente apenas para este cancelamento.
         if (str_contains($sql, 'UPDATE push_fila AS q') && str_contains($sql, 'INNER JOIN push_dispositivos')) {
@@ -57,7 +57,8 @@ final class TestDatabase extends App\CMS\Database {
                 'mensagens_apagadas' => 'mensagem_id',
                 'membro_hoje' => 'membro_id',
                 'localizacao_membro' => 'membro_id',
-                'estado_app_membro' => 'membro_id'
+                'estado_app_membro' => 'membro_id',
+                'preferencias_lembretes' => 'membro_id'
             ];
             $sql = preg_replace(
                 '/ON DUPLICATE KEY UPDATE/i',

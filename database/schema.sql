@@ -126,6 +126,7 @@ CREATE TABLE `localizacao_membro` (
   `precisao_m` decimal(10,2) DEFAULT NULL,
   `localizacao_ativa` tinyint(1) NOT NULL DEFAULT 1,
   `visivel` tinyint(1) NOT NULL DEFAULT 1,
+  `estado_versao` bigint unsigned NOT NULL DEFAULT 0,
   `origem` enum('foreground','background') NOT NULL DEFAULT 'foreground',
   `atualizada_em` datetime NOT NULL,
   `capturada_em` datetime(3) DEFAULT NULL,
@@ -370,7 +371,8 @@ CREATE TABLE `token` (
   `token` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
   `membro_id` char(36) NOT NULL,
   `validade` datetime NOT NULL,
-  `proposito` varchar(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL
+  `proposito` varchar(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `sessao_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --

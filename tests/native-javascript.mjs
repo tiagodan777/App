@@ -55,13 +55,13 @@ function environment(platform='ios', options={}) {
         if (options.fetchError) throw new Error('Offline');
         return {ok:true,status:200,json:async()=>({success:true,token:'a'.repeat(64)})};
     };
-    Object.assign(window,{document,location,crypto:webcrypto,fetch,membroId:options.member===false?'':MEMBER,
+    Object.assign(window,{document,location,crypto:webcrypto,fetch,setTimeout:(fn,ms)=>{const timer=setTimeout(fn,ms);timer.unref();return timer;},clearTimeout,setInterval:()=>1,clearInterval:()=>{},membroId:options.member===false?'':MEMBER,
         localStorage:{getItem:key=>storage.get(key)||null,setItem:(key,value)=>storage.set(key,String(value)),removeItem:key=>storage.delete(key)},
         MargotPreferencias:{obter:key=>preferences[key]},Capacitor:{isNativePlatform:()=>platform!=='web',getPlatform:()=>platform,
             isPluginAvailable:()=>true,Plugins:{PushNotifications:push,BackgroundLocation:background,Geolocation:geo}}});
     const context=vm.createContext({window,document,navigator:{userAgent:platform},localStorage:window.localStorage,
         console:{warn:(...a)=>errors.push(a),error:(...a)=>errors.push(a)},URL,Request,Headers,HTMLFormElement:class {},
-        CustomEvent,Uint8Array,fetch,Date,Promise,setTimeout,clearTimeout});
+        CustomEvent,Uint8Array,fetch,Date,Promise,AbortController,setTimeout,clearTimeout});
     function load(name){vm.runInContext(source(name),context,{filename:name});}
     function event(type,detail){window.dispatchEvent(new CustomEvent(type,{detail}));}
     async function ready(){document.dispatchEvent({type:'DOMContentLoaded'}); await flush();}
@@ -94,6 +94,8 @@ for (const platform of ['ios','android']) {
 }
 for (const answer of ['granted','denied']) {
     const e=environment('android',{permission:'prompt',answer});e.load('push-notifications.js');await e.ready();
+    same(e.calls.filter(x=>x==='push.request').length,0,'Arranque não abre permissão automaticamente');
+    await e.window.MargotPushNotifications.requestPermission();await flush();
     same(e.calls.filter(x=>x==='push.request').length,1,'Pede autorização uma vez');
     same(e.calls.includes('push.register'),answer==='granted','Respeita resposta '+answer);
     same(e.window.margotNotificationPermissionFlowCompleted,true,'Fluxo termina com '+answer);
@@ -112,7 +114,7 @@ for (const answer of ['granted','denied']) {
 {
     const permission=deferred();const e=environment('android',{permission:'prompt',pushPermission:permission});
     e.load('push-notifications.js');e.load('background-location.js');await e.ready();
-    same(e.calls.includes('geo.check'),false,'Android não sobrepõe diálogos de permissões');
+    same(e.calls.includes('push.request'),false,'Preparação push não abre diálogo sem gesto');
     permission.resolve({receive:'denied'});await flush();
     check(e.calls.includes('geo.check'),'Localização prossegue mesmo com push recusado');
     same(e.calls.filter(x=>x==='background.start').length,1,'Android inicia serviço após permissões');
@@ -135,7 +137,7 @@ for(const platform of ['ios','android']) {
 {
     const e=environment('android',{location:'denied'});e.load('background-location.js');await e.ready();
     same(e.calls.includes('background.start'),false,'Sem permissão Android não inicia serviço');
-    check(e.document.getElementById('margot-background-location-overlay'),'Recusa apresenta acesso às definições');
+    same((await e.window.MargotBackgroundLocation.status()).active,false,'Recusa mantém estado inativo para onboarding');
 }
 {
     const e=environment('ios');e.load('background-location.js');await e.ready();

@@ -37,6 +37,20 @@ class Session {
         if (!$membro) {
             return false;
         }
+        $previousMember = (string) ($_SESSION['id'] ?? '');
+        if ($previousMember !== '' && $previousMember !== (string) $membro['id']) {
+            $grant = $_SESSION['margot_background_grant'] ?? null;
+            if (is_array($grant) && ($grant['member_id'] ?? '') === $previousMember) {
+                (new Location($this->db))->revokeBackgroundGrant($previousMember, (string) ($grant['token'] ?? ''), $grant['session_hash'] ?? null);
+            }
+            $tokens = new Token($this->db);
+            $socketSession = $_SESSION['margot_websocket_session'] ?? null;
+            if (is_array($socketSession)) $tokens->delete((string) ($socketSession['token'] ?? ''));
+            foreach ($_SESSION['margot_websocket_grants'] ?? [] as $grant) {
+                if (is_array($grant)) $tokens->delete((string) ($grant['token'] ?? ''));
+            }
+            unset($_SESSION['margot_background_grant'], $_SESSION['margot_websocket_grants'], $_SESSION['margot_websocket_session']);
+        }
         if (PHP_SAPI !== 'cli' && session_status() === PHP_SESSION_ACTIVE) {
             session_regenerate_id(true);
         }

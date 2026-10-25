@@ -2,7 +2,7 @@ import Foundation
 
 /// Same policy and bounds as Android LocationPolicy. No platform side effects; milliseconds.
 final class LocationPolicy {
-  static let version = "native-battery-1"
+  static let version = "native-battery-2"
   static let maxAgeMs: Double = 90_000
   static let maxAccuracy: Double = 100
   struct Fix {
@@ -47,9 +47,9 @@ final class LocationPolicy {
     if let last = latest, wallNow-last.capturedAt<60_000, last.accuracy<=25,
       fix.accuracy>50, Self.distance(last,fix)>50 { rejected += 1; return false }
     latest=fix
-    let stable = fix.accuracy<=25 && (!fix.speed.isFinite || fix.speed<0.5)
+    let stable = fix.accuracy<=50 && (!fix.speed.isFinite || fix.speed<0.5)
     if !stable || anchor == nil || elapsedNow-previousObservation>60_000
-      || anchor.map({ Self.distance($0,fix)>15 }) == true {
+      || anchor.map({ Self.distance($0,fix)>max(15,min(50,$0.accuracy+fix.accuracy)) }) == true {
       anchor=fix; anchorAt=elapsedNow; stableSamples=0; stationary=false
     }
     stableSamples += 1; previousObservation=elapsedNow
@@ -57,10 +57,12 @@ final class LocationPolicy {
     return true
   }
   func shouldSend(_ fix: Fix, _ wallNow: Double, _ elapsedNow: Double, force: Bool = false) -> Bool {
-    guard Self.usable(fix,wallNow), elapsedNow>=retryAt, elapsedNow-lastAttempt>=5000 else { return false }
+    guard Self.usable(fix,wallNow), fix.capturedAt>discardedCapture, elapsedNow>=retryAt, elapsedNow-lastAttempt>=5000 else { return false }
     guard let last = lastSent else { return true }
     guard fix.capturedAt>last.capturedAt, elapsedNow-lastSuccess>=minimumSendMs else { return false }
-    return force || Self.distance(last,fix)>=movementMetres
+    // Overlapping accuracy circles are GPS noise, not evidence of movement.
+    let movementThreshold = max(movementMetres,last.accuracy+fix.accuracy)
+    return force || Self.distance(last,fix)>=movementThreshold
       || elapsedNow-lastSuccess >= (stationary ? stationarySendMs : movingSendMs)
   }
   func attempted(_ now: Double) { attempts += 1; lastAttempt=now }
@@ -71,6 +73,14 @@ final class LocationPolicy {
       failures += 1; consecutiveFailures += 1
       retryAt=now+min(120_000,5000*pow(2,Double(min(5,consecutiveFailures-1))))
     }
+  }
+  // Acknowledged by HTTP but not stored. Suppress this sample, not newer captures.
+  // This never increments successes or refreshes an acknowledged location.
+  private var discardedCapture = -Double.greatestFiniteMagnitude
+  func discarded(_ fix: Fix, _ now: Double) {
+    discardedCapture = max(discardedCapture,fix.capturedAt)
+    failures += 1
+    retryAt = now + movingSendMs
   }
   func retryDelay(_ now: Double) -> Double { max(0,retryAt-now) }
   static func distance(_ a: Fix, _ b: Fix) -> Double {
@@ -106,3 +116,30 @@ extension LocationPolicy {
   }
 }
 #endif
+
+// A transport success alone does not prove that the server stored the sample.
+// Older server builds omit accepted on success; an explicit false always wins.
+struct LocationUploadReply {
+  let statusCode: Int?
+  let success: Bool
+  let accepted: Bool
+  let reason: String?
+
+  init(data: Data?, statusCode: Int?, error: Error?) {
+    self.statusCode = statusCode
+    let json = data.flatMap { try? JSONSerialization.jsonObject(with: $0) } as? [String:Any]
+    success = error == nil && statusCode.map { (200...299).contains($0) } == true
+      && json?["success"] as? Bool == true
+    let acceptance = json?["accepted"]
+    accepted = success && (acceptance == nil || acceptance as? Bool == true)
+    reason = json?["reason"] as? String
+  }
+}
+
+
+final class LocationUploadRedirectDelegate: NSObject, URLSessionTaskDelegate {
+  static let shared = LocationUploadRedirectDelegate()
+  func urlSession(_ session: URLSession, task: URLSessionTask,
+    willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest,
+    completionHandler: @escaping (URLRequest?) -> Void) { completionHandler(nil) }
+}

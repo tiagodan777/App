@@ -22,10 +22,7 @@ $pending = $_SESSION['pending_registration'] ?? [];
 $pendingId = is_array($pending) && (int) ($pending['expires'] ?? 0) > time()
     ? (string) ($pending['id'] ?? '') : '';
 if ($pendingId !== '') {
-    $pendingMember = $db->runSQL(
-        'SELECT id, email FROM membros WHERE id = :id AND email_verificado_em IS NULL LIMIT 1',
-        ['id' => $pendingId]
-    )->fetch();
+    $pendingMember = (new EmailVerification($db))->pendingMember($pendingId);
 }
 if (!$pendingMember) unset($_SESSION['pending_registration']);
 $correcting = $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'correct-email';
