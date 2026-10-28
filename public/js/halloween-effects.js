@@ -5,14 +5,18 @@
         window.MargotHalloweenEffects.destroy();
     }
 
+    // Estes efeitos pertencem apenas ao mapa de pessoas.
+    var map = document.getElementById('gridCanvas');
+    if (!map) return;
+
     var dark = matchMedia('(prefers-color-scheme: dark)');
     var reduce = matchMedia('(prefers-reduced-motion: reduce)');
 
     var canvas = document.createElement('canvas');
+    canvas.id = 'margot-halloween-effects';
     canvas.setAttribute('aria-hidden', 'true');
     canvas.style.cssText =
-        'position:fixed;inset:0;width:100%;height:100%;' +
-        'pointer-events:none;z-index:1200';
+        'position:fixed;pointer-events:none;z-index:20';
 
     document.body.appendChild(canvas);
 
@@ -24,6 +28,8 @@
     }
 
     var W, H;
+    var left = 0;
+    var top = 0;
     var points = [];
     var links = [];
     var actors = [];
@@ -46,21 +52,58 @@
     var events = new AbortController();
     var signal = events.signal;
 
+    function visible(element) {
+        for (
+            var node = element;
+            node instanceof Element;
+            node = node.parentElement
+        ) {
+            if (
+                node.hidden ||
+                node.getAttribute('aria-hidden') === 'true' ||
+                node.matches('dialog:not([open])')
+            ) {
+                return false;
+            }
+
+            var css = getComputedStyle(node);
+
+            if (
+                css.display === 'none' ||
+                css.visibility === 'hidden' ||
+                css.visibility === 'collapse'
+            ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     function blocked() {
-        return (
+        if (
+            !visible(map) ||
             document.body.classList.contains('hoje-editor-aberto') ||
-            !!document.querySelector(
-                'dialog[open], ' +
-                '[role="dialog"][aria-modal="true"]:not([hidden]), ' +
-                'input:focus, textarea:focus, ' +
-                '[contenteditable="true"]:focus'
-            )
+            document.body.classList.contains('margot-mini-menu-aberto')
+        ) {
+            return true;
+        }
+
+        var candidates = document.querySelectorAll(
+            'dialog[open], ' +
+            '[role="dialog"][aria-modal="true"], ' +
+            '.mini-menu, ' +
+            'input:focus, textarea:focus, select:focus, ' +
+            '[contenteditable="true"]:focus'
         );
+
+        return Array.prototype.some.call(candidates, visible);
     }
 
     function enabled() {
         return (
             !stopped &&
+            map.isConnected &&
             dark.matches &&
             !reduce.matches &&
             !document.hidden
@@ -119,8 +162,17 @@
     }
 
     function resize() {
-        W = innerWidth;
-        H = innerHeight;
+        var rect = map.getBoundingClientRect();
+
+        W = Math.max(1, rect.width);
+        H = Math.max(1, rect.height);
+        left = rect.left;
+        top = rect.top;
+
+        canvas.style.left = left + 'px';
+        canvas.style.top = top + 'px';
+        canvas.style.width = W + 'px';
+        canvas.style.height = H + 'px';
 
         var dpr = Math.min(devicePixelRatio || 1, 1.5);
 
@@ -266,14 +318,9 @@
 
             var a = points[link.a];
             var b = points[link.b];
+            var opacity = link.broken ? progress * 0.5 : 0.5;
 
-            var opacity = link.broken
-                ? progress * 0.5
-                : 0.5;
-
-            ctx.strokeStyle =
-                'rgba(231,232,246,' + opacity + ')';
-
+            ctx.strokeStyle = 'rgba(231,232,246,' + opacity + ')';
             ctx.lineWidth = 0.8;
             ctx.beginPath();
             ctx.moveTo(a.x, a.y);
@@ -305,7 +352,6 @@
                 1 - Math.min(hop, 1 - hop) / 0.12
             ) * 0.17;
 
-        // A sombra mantém a referência do chão durante os saltos.
         ctx.save();
 
         ctx.globalAlpha =
@@ -333,12 +379,8 @@
 
         for (var i = -2; i <= 2; i++) {
             var gradient = ctx.createRadialGradient(
-                i * 7 - 5,
-                -9,
-                2,
-                i * 7,
-                0,
-                30
+                i * 7 - 5, -9, 2,
+                i * 7, 0, 30
             );
 
             gradient.addColorStop(0, '#ffc85b');
@@ -357,10 +399,8 @@
         ctx.beginPath();
         ctx.moveTo(0, -23);
         ctx.quadraticCurveTo(
-            2,
-            -35,
-            9 + Math.sin(progress * 28) * 4,
-            -32
+            2, -35,
+            9 + Math.sin(progress * 28) * 4, -32
         );
         ctx.stroke();
 
@@ -424,12 +464,9 @@
             ctx.beginPath();
             ctx.moveTo(0, 0);
             ctx.bezierCurveTo(
-                side * 12,
-                -24,
-                side * 33,
-                -27,
-                side * 44,
-                -14
+                side * 12, -24,
+                side * 33, -27,
+                side * 44, -14
             );
             ctx.quadraticCurveTo(side * 30, -13, side * 30, 6);
             ctx.quadraticCurveTo(side * 17, -2, side * 13, 15);
@@ -520,13 +557,9 @@
 
                 ctx.beginPath();
                 ctx.ellipse(
-                    x,
-                    y,
-                    drop.size,
-                    drop.size,
-                    0,
-                    0,
-                    Math.PI * 2
+                    x, y,
+                    drop.size, drop.size,
+                    0, 0, Math.PI * 2
                 );
                 ctx.fill();
 
@@ -534,21 +567,15 @@
                 ctx.moveTo(x - drop.size * 0.3, y);
 
                 ctx.bezierCurveTo(
-                    x - drop.size * 0.2,
-                    y + drip * 0.6,
-                    x - 3,
-                    y + drip,
-                    x,
-                    y + drip + 5
+                    x - drop.size * 0.2, y + drip * 0.6,
+                    x - 3, y + drip,
+                    x, y + drip + 5
                 );
 
                 ctx.bezierCurveTo(
-                    x + 3,
-                    y + drip,
-                    x + drop.size * 0.2,
-                    y + drip * 0.6,
-                    x + drop.size * 0.3,
-                    y
+                    x + 3, y + drip,
+                    x + drop.size * 0.2, y + drip * 0.6,
+                    x + drop.size * 0.3, y
                 );
 
                 ctx.fill();
@@ -563,7 +590,6 @@
 
         if (!enabled()) return;
 
-        // Limita o desenho a aproximadamente 30 imagens por segundo.
         if (now - last < 32) {
             request();
             return;
@@ -597,7 +623,6 @@
 
         drawStains(now);
 
-        // A teia parada não mantém um ciclo de animação.
         if (actors.length || stains.length || now < webUntil) {
             request();
         }
@@ -653,12 +678,17 @@
             target instanceof Element &&
             !target.closest(
                 'button,a,input,textarea,select,' +
-                '[contenteditable="true"],[role="button"],video'
+                '[contenteditable="true"],[role="button"],video,' +
+                '.foto,#menuPrincipal,#heys-area,.mini-menu'
             )
         );
     }
 
     function hit(x, y) {
+        if (x < 0 || y < 0 || x > W || y > H) {
+            return false;
+        }
+
         for (var i = actors.length - 1; i >= 0; i--) {
             var actor = actors[i];
 
@@ -693,7 +723,7 @@
             return;
         }
 
-        if (hit(x, y)) {
+        if (hit(x - left, y - top)) {
             swallowedPoint = { x: x, y: y };
             swallowUntil = performance.now() + 500;
 
@@ -729,13 +759,11 @@
         }
 
         var touch = event.touches[0];
+        var x = touch.clientX - left;
+        var y = touch.clientY - top;
 
-        tear(touch.clientX, touch.clientY, previous);
-
-        previous = {
-            x: touch.clientX,
-            y: touch.clientY
-        };
+        tear(x, y, previous);
+        previous = { x: x, y: y };
 
         if (event.cancelable) {
             event.preventDefault();
@@ -750,7 +778,13 @@
 
     function end() {
         if (dragging) {
-            swallowedPoint = previous;
+            swallowedPoint = previous
+                ? {
+                    x: previous.x + left,
+                    y: previous.y + top
+                }
+                : null;
+
             swallowUntil = performance.now() + 400;
         }
 
@@ -783,12 +817,11 @@
     document.addEventListener('pointermove', function (event) {
         if (event.pointerType === 'touch' || !dragging) return;
 
-        tear(event.clientX, event.clientY, previous);
+        var x = event.clientX - left;
+        var y = event.clientY - top;
 
-        previous = {
-            x: event.clientX,
-            y: event.clientY
-        };
+        tear(x, y, previous);
+        previous = { x: x, y: y };
     }, {
         signal: signal
     });
@@ -851,11 +884,14 @@
             uiObserver.disconnect();
         }
 
+        if (sizeObserver) {
+            sizeObserver.disconnect();
+        }
+
         stopped = true;
 
         cancelAnimationFrame(raf);
         clearTimeout(timer);
-
         events.abort();
 
         dark.removeEventListener('change', sync);
@@ -877,6 +913,14 @@
     dark.addEventListener('change', sync);
     reduce.addEventListener('change', sync);
 
+    document.addEventListener('focusin', request, {
+        signal: signal
+    });
+
+    document.addEventListener('focusout', request, {
+        signal: signal
+    });
+
     document.addEventListener('visibilitychange', sync, {
         signal: signal
     });
@@ -894,20 +938,35 @@
         signal: signal
     });
 
-    // Reage à abertura/fecho de janelas sem desenho contínuo.
     var uiObserver = new MutationObserver(function () {
         request();
     });
 
     uiObserver.observe(document.body, {
         attributes: true,
+        childList: true,
         subtree: true,
         attributeFilter: [
             'class',
+            'style',
             'hidden',
             'open',
-            'aria-hidden'
+            'aria-hidden',
+            'aria-modal'
         ]
+    });
+
+    var sizeObserver = typeof ResizeObserver === 'function'
+        ? new ResizeObserver(resize)
+        : null;
+
+    if (sizeObserver) {
+        sizeObserver.observe(map);
+    }
+
+    window.addEventListener('scroll', resize, {
+        passive: true,
+        signal: signal
     });
 
     resize();
