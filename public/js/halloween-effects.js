@@ -557,70 +557,54 @@
         ctx.restore();
     }
 
-    function drawPumpkin(a,now) {
-        const p=clamp((now-a.start)/a.duration,0,1);
-        const cycle=p*a.hops;
-        const index=Math.min(a.hops-1,Math.floor(cycle));
-        const u=cycle-index;
+    function drawPumpkin(a, now) {
+    const p = clamp((now - a.start) / a.duration, 0, 1);
+    const cycle = p * a.hops;
+    const index = Math.min(a.hops - 1, Math.floor(cycle));
+    const u = cycle - index;
 
-        const air=clamp((u-.12)/.68,0,1);
-        const flying=u>=.12&&u<.80;
+    const air = clamp((u - .12) / .68, 0, 1);
+    const flying = u >= .12 && u < .80;
 
-        const lift=flying
-            ? 4*a.jumps[index]*air*(1-air)
-            : 0;
+    // Saltos baixos: subida, queda e uma pausa curta no chão.
+    const lift = flying
+        ? 4 * a.jumps[index] * air * (1 - air)
+        : 0;
 
-        const anticipation=u<.12
-            ? Math.sin(Math.PI*u/.12)*.09
-            : 0;
+    const position = (index + ease(air)) / a.hops;
 
-        const landing=u>=.80
-            ? Math.sin(Math.PI*(u-.80)/.20)*.18
-            : 0;
+    a.x = a.dir > 0
+        ? -60 + (W + 120) * position
+        : W + 60 - (W + 120) * position;
 
-        const squash=anticipation+landing;
-        const stretch=flying
-            ? Math.sin(air*Math.PI*2)*.035
-            : 0;
+    a.y = a.floor - lift - a.size / 2;
 
-        const position=(index+ease(air))/a.hops;
+    // A sombra acompanha a altura do salto.
+    ctx.save();
+    ctx.globalAlpha = .28 * (1 - lift / (a.jumps[index] * 1.4));
+    ctx.fillStyle = '#000';
 
-        a.x=a.dir>0
-            ? -60+(W+120)*position
-            : W+60-(W+120)*position;
+    ctx.beginPath();
+    ctx.ellipse(
+        a.x,
+        a.floor + 2,
+        15 - lift * .06,
+        3,
+        0,
+        0,
+        Math.PI * 2
+    );
+    ctx.fill();
+    ctx.restore();
 
-        a.y=a.floor-lift-a.size/2;
+    // Preserva as proporções originais da imagem durante todo o salto.
+    ctx.save();
+    ctx.translate(a.x, a.floor - lift);
+    sprite('pumpkin', a.dir > 0 ? 1 : 3, a.size);
+    ctx.restore();
 
-        ctx.save();
-        ctx.globalAlpha=.28*(1-lift/(a.jumps[index]*1.4));
-        ctx.fillStyle='#000';
-        ctx.beginPath();
-        ctx.ellipse(
-            a.x,a.floor+2,
-            15-lift*.06,3,0,0,Math.PI*2
-        );
-        ctx.fill();
-        ctx.restore();
-
-        ctx.save();
-        ctx.translate(a.x,a.floor-lift);
-
-        ctx.scale(
-            1.14*(1+squash-stretch*.6),
-            .96*(1-squash+stretch)
-        );
-
-        ctx.transform(
-            1,0,
-            flying?a.dir*Math.sin(air*Math.PI*2)*.045:0,
-            1,0,0
-        );
-
-        sprite('pumpkin',a.dir>0?1:3,a.size);
-        ctx.restore();
-
-        return p<1;
-    }
+    return p < 1;
+}
 
     function makeBatLayers() {
         const r=frames.bat[0],w=r[2],h=r[3];
