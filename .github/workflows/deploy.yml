@@ -66,25 +66,24 @@ jobs:
               exit 1
             fi
 
+            cd "$APP_DIR"
+
             # Consultar a estrutura da base de dados antes de publicar.
-            # Este script não altera dados nem aplica migrações.
+            # Não altera dados nem aplica migrações.
             PREFLIGHT_FILE=$(mktemp)
             trap 'rm -f "$PREFLIGHT_FILE"' EXIT
 
-            git -C "$APP_DIR" show origin/main:database/check-location-state.php > "$PREFLIGHT_FILE"
+            git show origin/main:database/check-location-state.php > "$PREFLIGHT_FILE"
 
-            # Usar a identidade dos serviços da aplicação.
-            # A configuração mantém as permissões atuais.
-            # O script entra por stdin; o temporário permanece privado.
+            # Executar como o utilizador dos serviços da aplicação.
+            # O PHP lê diretamente da entrada normal.
             sudo -n -u www-data /usr/bin/env APP_ROOT="$APP_DIR" \
-              /usr/bin/php /dev/stdin < "$PREFLIGHT_FILE"
+              /usr/bin/php < "$PREFLIGHT_FILE"
 
             rm -f "$PREFLIGHT_FILE"
             trap - EXIT
 
-            git -C "$APP_DIR" reset --hard origin/main
-
-            cd "$APP_DIR"
+            git reset --hard origin/main
 
             composer install --no-dev --optimize-autoloader
 
@@ -96,9 +95,13 @@ jobs:
               deploy/app-push.service \
               /etc/systemd/system/app-push.service
 
-            sudo install -m 0644 deploy/app-location-recovery.service /etc/systemd/system/app-location-recovery.service
+            sudo install -m 0644 \
+              deploy/app-location-recovery.service \
+              /etc/systemd/system/app-location-recovery.service
 
-            sudo install -m 0644 deploy/app-push-worker@.service /etc/systemd/system/app-push-worker@.service
+            sudo install -m 0644 \
+              deploy/app-push-worker@.service \
+              /etc/systemd/system/app-push-worker@.service
 
             sudo systemctl daemon-reload
             sudo systemctl enable app-push app-location-recovery
@@ -106,7 +109,7 @@ jobs:
             sudo systemctl restart app-push app-location-recovery
             sudo systemctl reload apache2
 
-            DEPLOYED_SHA=$(git -C "$APP_DIR" rev-parse HEAD)
+            DEPLOYED_SHA=$(git rev-parse HEAD)
             test "$DEPLOYED_SHA" = '${{ github.sha }}'
 
             echo "PUBLICAÇÃO CONCLUÍDA: $DEPLOYED_SHA"
