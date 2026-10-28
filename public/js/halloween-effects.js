@@ -24,7 +24,6 @@
     document.body.appendChild(canvas);
 
     const ctx = canvas.getContext('2d');
-
     if (!ctx) {
         canvas.remove();
         return;
@@ -51,6 +50,7 @@
     const pictures = {};
     const failures = [];
 
+    let batLayers = null;
     let W = 1;
     let H = 1;
     let left = 0;
@@ -89,19 +89,19 @@
 
     function visible(el) {
         for (
-            let node = el;
-            node instanceof Element;
-            node = node.parentElement
+            let n = el;
+            n instanceof Element;
+            n = n.parentElement
         ) {
             if (
-                node.hidden ||
-                node.getAttribute('aria-hidden') === 'true' ||
-                node.matches('dialog:not([open])')
+                n.hidden ||
+                n.getAttribute('aria-hidden') === 'true' ||
+                n.matches('dialog:not([open])')
             ) {
                 return false;
             }
 
-            const css = getComputedStyle(node);
+            const css = getComputedStyle(n);
 
             if (
                 css.display === 'none' ||
@@ -125,9 +125,7 @@
         }
 
         return [...document.querySelectorAll(
-            'dialog[open],' +
-            '[role="dialog"][aria-modal="true"],' +
-            '.mini-menu,' +
+            'dialog[open],[role="dialog"][aria-modal="true"],.mini-menu,' +
             'input:focus,textarea:focus,select:focus,' +
             '[contenteditable="true"]:focus'
         )].some(visible);
@@ -154,19 +152,27 @@
         nodes = [];
         strands = [];
 
-        const radius = Math.min(155, W * 0.38);
+        const radius = Math.min(150, W * .37);
+        const rings = [0, .10, .225, .38, .565, .77, 1];
 
         for (let ray = 0; ray < 9; ray++) {
-            const angle = Math.PI / 2 + ray * Math.PI / 16;
+            const angle =
+                Math.PI / 2 +
+                ray * Math.PI / 16 +
+                (
+                    ray === 0 || ray === 8
+                        ? 0
+                        : Math.sin(ray * 2.1) * .028
+                );
 
             for (let ring = 0; ring < 7; ring++) {
-                const x =
-                    W - 5 +
-                    Math.cos(angle) * radius * ring / 6;
+                const r =
+                    radius *
+                    rings[ring] *
+                    (1 + Math.sin(ray * 1.7 + ring * .8) * .035);
 
-                const y =
-                    WEB_TOP +
-                    Math.sin(angle) * radius * ring / 6;
+                const x = W - 6 + Math.cos(angle) * r;
+                const y = WEB_TOP + Math.sin(angle) * r;
 
                 nodes.push({
                     x,
@@ -180,16 +186,18 @@
 
                 const i = ray * 7 + ring;
 
-                if (ring) join(i - 1, i);
-                if (ray && ring) join(i - 7, i);
+                if (ring) join(i - 1, i, false, ring);
+                if (ray && ring) join(i - 7, i, true, ring);
             }
         }
     }
 
-    function join(a, b) {
+    function join(a, b, arc, ring) {
         strands.push({
             a,
             b,
+            arc,
+            ring,
             length: Math.hypot(
                 nodes[a].x - nodes[b].x,
                 nodes[a].y - nodes[b].y
@@ -199,12 +207,12 @@
     }
 
     function resize() {
-        const rect = map.getBoundingClientRect();
+        const r = map.getBoundingClientRect();
 
-        W = Math.max(1, rect.width);
-        H = Math.max(1, rect.height);
-        left = rect.left;
-        top = rect.top;
+        W = Math.max(1, r.width);
+        H = Math.max(1, r.height);
+        left = r.left;
+        top = r.top;
 
         Object.assign(canvas.style, {
             left: left + 'px',
@@ -213,11 +221,10 @@
             height: H + 'px'
         });
 
-        const dpr = Math.min(devicePixelRatio || 1, 1.5);
+        const dpr = Math.min(devicePixelRatio || 1, 2);
 
         canvas.width = Math.round(W * dpr);
         canvas.height = Math.round(H * dpr);
-
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
         actor = null;
@@ -246,353 +253,432 @@
     }
 
     function nearWeb(x, y) {
-        return strands.some(strand =>
-            !strand.cut &&
-            distance(
-                x,
-                y,
-                nodes[strand.a],
-                nodes[strand.b]
-            ) < 12
+        return strands.some(s =>
+            !s.cut &&
+            distance(x, y, nodes[s.a], nodes[s.b]) < 12
         );
     }
 
     function disturb(x, y, old) {
-        const dx = clamp(x - old.x, -24, 24);
-        const dy = clamp(y - old.y, -24, 24);
-
-        nodes.forEach(point => {
-            const strength = Math.max(
-                0,
-                1 - Math.hypot(point.x - x, point.y - y) / 40
-            );
-
-            if (!point.fixed && strength) {
-                point.x += dx * strength * 0.55;
-                point.y += dy * strength * 0.55;
-            }
-        });
-
+        const dx = clamp(x - old.x, -12, 12);
+        const dy = clamp(y - old.y, -12, 12);
         const travel = Math.hypot(x - old.x, y - old.y);
 
+        nodes.forEach(p => {
+            const k = Math.max(
+                0,
+                1 - Math.hypot(p.x - x, p.y - y) / 32
+            );
+
+            if (!p.fixed && k) {
+                p.x += dx * k * .4;
+                p.y += dy * k * .4;
+            }
+
+            delete p.rx;
+            delete p.ry;
+        });
+
         if (travel > 3) {
-            strands.forEach(strand => {
-                if (strand.cut) return;
+            strands.forEach(s => {
+                if (s.cut) return;
 
-                const steps = Math.min(40, Math.ceil(travel / 4));
+                const n = Math.min(40, Math.ceil(travel / 4));
 
-                for (let i = 0; i <= steps; i++) {
+                for (let i = 0; i <= n; i++) {
                     const hit = distance(
-                        old.x + (x - old.x) * i / steps,
-                        old.y + (y - old.y) * i / steps,
-                        nodes[strand.a],
-                        nodes[strand.b]
-                    ) < 6;
+                        old.x + (x - old.x) * i / n,
+                        old.y + (y - old.y) * i / n,
+                        nodes[s.a],
+                        nodes[s.b]
+                    );
 
-                    if (hit) {
-                        strand.cut = performance.now();
+                    if (hit < 5) {
+                        s.cut = performance.now();
                         break;
                     }
                 }
             });
         }
 
-        nodes.forEach(point => {
-            delete point.rx;
-            delete point.ry;
-        });
-
         restoreAt = performance.now() + 4000;
-        webActiveUntil = restoreAt + 1500;
+        webActiveUntil = restoreAt + 2200;
 
         request();
     }
 
     function simulateWeb() {
         for (let step = 0; step < 2; step++) {
-            nodes.forEach(point => {
-                if (point.fixed) return;
+            nodes.forEach(p => {
+                if (p.fixed) return;
 
-                const vx = (point.x - point.px) * 0.93;
-                const vy = (point.y - point.py) * 0.93;
+                const vx = clamp((p.x - p.px) * .82, -2, 2);
+                const vy = clamp((p.y - p.py) * .82, -2, 2);
 
-                point.px = point.x;
-                point.py = point.y;
+                p.px = p.x;
+                p.py = p.y;
 
-                point.x += vx;
-                point.y += vy + 0.045;
+                p.x += vx + (p.hx - p.x) * .016;
+                p.y += vy + (p.hy - p.y) * .016 + .025;
             });
 
-            for (let pass = 0; pass < 6; pass++) {
-                strands.forEach(strand => {
-                    if (strand.cut) return;
+            for (let pass = 0; pass < 5; pass++) {
+                strands.forEach(s => {
+                    if (s.cut) return;
 
-                    const a = nodes[strand.a];
-                    const b = nodes[strand.b];
+                    const a = nodes[s.a];
+                    const b = nodes[s.b];
 
                     const dx = b.x - a.x;
                     const dy = b.y - a.y;
-                    const length = Math.hypot(dx, dy) || 1;
-                    const correction =
-                        (length - strand.length) / length;
+                    const len = Math.hypot(dx, dy) || 1;
 
-                    const weight = a.fixed || b.fixed ? 1 : 0.5;
+                    const f = (len - s.length) / len * .8;
+                    const w = a.fixed || b.fixed ? 1 : .5;
 
                     if (!a.fixed) {
-                        a.x += dx * correction * weight;
-                        a.y += dy * correction * weight;
+                        a.x += dx * f * w;
+                        a.y += dy * f * w;
                     }
 
                     if (!b.fixed) {
-                        b.x -= dx * correction * weight;
-                        b.y -= dy * correction * weight;
+                        b.x -= dx * f * w;
+                        b.y -= dy * f * w;
                     }
                 });
             }
+
+            nodes.forEach(p => {
+                const dx = p.x - p.hx;
+                const dy = p.y - p.hy;
+                const d = Math.hypot(dx, dy);
+
+                if (d > 14) {
+                    p.x = p.hx + dx * 14 / d;
+                    p.y = p.hy + dy * 14 / d;
+                    p.px = p.x;
+                    p.py = p.y;
+                }
+            });
         }
     }
 
     function drawWeb(now) {
         const healing = restoreAt && now >= restoreAt;
-
-        const progress = healing
-            ? clamp((now - restoreAt) / 1400, 0, 1)
+        const t = healing
+            ? clamp((now - restoreAt) / 2100, 0, 1)
             : 0;
 
         if (healing) {
-            nodes.forEach(point => {
-                if (point.rx === undefined) {
-                    point.rx = point.x;
-                    point.ry = point.y;
+            nodes.forEach(p => {
+                if (p.rx === undefined) {
+                    p.rx = p.x;
+                    p.ry = p.y;
                 }
 
-                point.x =
-                    point.rx +
-                    (point.hx - point.rx) * ease(progress);
-
-                point.y =
-                    point.ry +
-                    (point.hy - point.ry) * ease(progress);
-
-                point.px = point.x;
-                point.py = point.y;
+                p.x = p.rx + (p.hx - p.rx) * ease(t);
+                p.y = p.ry + (p.hy - p.ry) * ease(t);
+                p.px = p.x;
+                p.py = p.y;
             });
         } else if (now < webActiveUntil) {
             simulateWeb();
         }
 
-        ctx.lineWidth = 0.85;
         ctx.lineCap = 'round';
 
-        strands.forEach(strand => {
-            const a = nodes[strand.a];
-            const b = nodes[strand.b];
+        strands.forEach(s => {
+            const a = nodes[s.a];
+            const b = nodes[s.b];
 
-            if (strand.cut && !healing) {
-                const age = (now - strand.cut) / 1000;
-                const sag = Math.min(18, age * 25);
+            let alpha = .40 + .07 * Math.sin(s.a * 1.7);
+            let grow = 1;
 
-                ctx.strokeStyle = 'rgba(224,230,248,.44)';
+            ctx.lineWidth = .65 + .10 * Math.sin(s.b * .9);
 
-                [[a, b], [b, a]].forEach(([point, other], i) => {
-                    const sway =
-                        Math.sin(age * 7 + i) *
-                        7 *
-                        Math.exp(-age * 0.8);
+            if (s.cut) {
+                if (healing) {
+                    grow = ease(clamp(
+                        (t - (s.ring - 1) * .09) / .55,
+                        0,
+                        1
+                    ));
 
-                    ctx.beginPath();
-                    ctx.moveTo(point.x, point.y);
+                    alpha *= grow;
+                } else {
+                    const recoil = ease(clamp(
+                        (now - s.cut) / 360,
+                        0,
+                        1
+                    ));
 
-                    ctx.quadraticCurveTo(
-                        point.x + (other.x - point.x) * 0.16 + sway,
-                        point.y + sag,
-                        point.x + (other.x - point.x) * 0.32 + sway,
-                        point.y + (other.y - point.y) * 0.32 + sag
-                    );
-
-                    ctx.stroke();
-                });
-
-                return;
+                    alpha *= 1 - recoil;
+                    grow = 1 - recoil * .70;
+                }
             }
 
-            const opacity = strand.cut
-                ? 0.52 * ease(progress)
-                : 0.52;
+            if (alpha < .005) return;
 
-            ctx.strokeStyle = 'rgba(229,235,255,' + opacity + ')';
+            // Cada fio é desenhado uma única vez, mesmo depois de cortado.
+            const bend = s.arc ? .035 : 0;
 
+            const cx =
+                (a.x + b.x) / 2 +
+                (W - 6 - (a.x + b.x) / 2) * bend;
+
+            const cy =
+                (a.y + b.y) / 2 +
+                (WEB_TOP - (a.y + b.y) / 2) * bend;
+
+            const ex =
+                (1 - grow) * (1 - grow) * a.x +
+                2 * (1 - grow) * grow * cx +
+                grow * grow * b.x;
+
+            const ey =
+                (1 - grow) * (1 - grow) * a.y +
+                2 * (1 - grow) * grow * cy +
+                grow * grow * b.y;
+
+            ctx.strokeStyle = 'rgba(222,231,246,' + alpha + ')';
             ctx.beginPath();
             ctx.moveTo(a.x, a.y);
+
             ctx.quadraticCurveTo(
-                (a.x + b.x) / 2,
-                (a.y + b.y) / 2 + 1.5,
-                b.x,
-                b.y
+                a.x + (cx - a.x) * grow,
+                a.y + (cy - a.y) * grow,
+                ex,
+                ey
             );
+
             ctx.stroke();
         });
 
-        if (progress === 1) {
-            makeWeb();
+        if (t === 1) {
+            strands.forEach(s => s.cut = 0);
+
+            nodes.forEach(p => {
+                delete p.rx;
+                delete p.ry;
+            });
+
             restoreAt = 0;
         }
     }
 
     function sprite(kind, view, height, alpha = 1) {
-        const rect = frames[kind][view];
-        const width = height * rect[2] / rect[3];
+        const r = frames[kind][view];
+        const width = height * r[2] / r[3];
 
         ctx.save();
         ctx.globalAlpha *= alpha;
 
         ctx.drawImage(
             pictures[kind],
-            rect[0], rect[1], rect[2], rect[3],
+            r[0], r[1], r[2], r[3],
             -width / 2, -height, width, height
         );
 
         ctx.restore();
     }
 
-    function turn(kind, sequence, phase, height) {
-        const position =
-            clamp(phase, 0, 0.9999) * (sequence.length - 1);
+    function drawPumpkin(a, now) {
+        const p = clamp((now - a.start) / 5000, 0, 1);
+        const cycle = p * 4;
 
-        const index = Math.floor(position);
+        const index = Math.min(3, Math.floor(cycle));
+        const u = cycle - index;
 
-        const blend = ease(
-            clamp((position - index - 0.65) / 0.35, 0, 1)
-        );
+        const air = clamp((u - .10) / .78, 0, 1);
+        const flying = u >= .10 && u < .88;
 
-        sprite(kind, sequence[index], height, 1 - blend);
-
-        if (blend) {
-            sprite(kind, sequence[index + 1], height, blend);
-        }
-    }
-
-    function drawPumpkin(item, now) {
-        const progress = clamp((now - item.start) / 5000, 0, 1);
-
-        const cycle = progress * 3;
-        const index = Math.min(2, Math.floor(cycle));
-        const phase = cycle - index;
-
-        const flight = 0.84;
-        const air = Math.min(1, phase / flight);
-
-        const lift = phase < flight
-            ? 4 * item.jump * air * (1 - air)
+        const lift = flying
+            ? 4 * a.jump * air * (1 - air)
             : 0;
 
-        const landing = phase >= flight
-            ? Math.sin(Math.PI * (phase - flight) / (1 - flight))
+        const anticipation = u < .10
+            ? Math.sin(Math.PI * u / .10) * .07
             : 0;
 
-        item.x = item.dir > 0
-            ? -60 + (W + 120) * progress
-            : W + 60 - (W + 120) * progress;
+        const landing = u >= .88
+            ? Math.sin(Math.PI * (u - .88) / .12) * .14
+            : 0;
 
-        item.y = item.floor - lift - 35;
+        const squash = anticipation + landing;
+
+        const stretch = flying
+            ? Math.sin(air * Math.PI * 2) * .035
+            : 0;
+
+        const position = (index + ease(air)) / 4;
+
+        a.x = a.dir > 0
+            ? -60 + (W + 120) * position
+            : W + 60 - (W + 120) * position;
+
+        a.y = a.floor - lift - 35;
 
         ctx.save();
-
-        ctx.globalAlpha =
-            0.25 * (1 - lift / (item.jump * 1.4));
-
+        ctx.globalAlpha = .28 * (1 - lift / (a.jump * 1.4));
         ctx.fillStyle = '#000';
         ctx.beginPath();
+
         ctx.ellipse(
-            item.x,
-            item.floor + 2,
-            26 - lift * 0.08,
-            5,
+            a.x,
+            a.floor + 2,
+            24 - lift * .08,
+            4,
             0,
             0,
             Math.PI * 2
         );
+
         ctx.fill();
         ctx.restore();
 
-        // A base mantém-se apoiada no chão durante a compressão.
         ctx.save();
-        ctx.translate(item.x, item.floor - lift);
-        ctx.scale(1 + landing * 0.13, 1 - landing * 0.16);
+        ctx.translate(a.x, a.floor - lift);
+
+        ctx.scale(
+            1 + squash - stretch * .6,
+            1 - squash + stretch
+        );
 
         ctx.transform(
             1,
             0,
-            item.dir * Math.sin(air * Math.PI * 2) * 0.055,
+            flying ? a.dir * Math.sin(air * Math.PI * 2) * .045 : 0,
             1,
             0,
             0
         );
 
-        const sequence = item.dir > 0
-            ? [0, 1, 2, 3, 0]
-            : [0, 3, 2, 1, 0];
-
-        turn('pumpkin', sequence, progress, 78);
+        // Uma única vista, sempre opaca.
+        sprite('pumpkin', a.dir > 0 ? 1 : 3, 78);
 
         ctx.restore();
 
-        return progress < 1;
+        return p < 1;
     }
 
-    function drawBat(item, now) {
-        const progress = clamp((now - item.start) / 6000, 0, 1);
-        const travel = W + 140;
+    function makeBatLayers() {
+        const r = frames.bat[0];
+        const w = r[2];
+        const h = r[3];
 
-        item.x = item.dir > 0
-            ? -70 + travel * progress
-            : W + 70 - travel * progress;
+        function layer(path) {
+            const c = document.createElement('canvas');
+            c.width = w;
+            c.height = h;
 
-        item.y = item.y0 + item.vertical * travel * progress;
+            const g = c.getContext('2d');
 
-        ctx.save();
-        ctx.translate(item.x, item.y);
+            g.beginPath();
+            path(g, w, h);
+            g.clip();
 
-        ctx.rotate(
-            item.dir * item.vertical * 0.10 +
-            Math.sin(progress * Math.PI * 2) * 0.08
-        );
-
-        const rect = frames.bat[item.view];
-        const height = 54;
-        const width = height * rect[2] / rect[3];
-        const flap = Math.sin((now - item.start) / 180);
-
-        // As pontas das asas movem-se mais do que o corpo.
-        for (let i = 0; i < 24; i++) {
-            const position = (i + 0.5) / 24;
-            const edge = Math.pow(Math.abs(position - 0.5) * 2, 1.4);
-
-            const scale = 1 - edge * (0.18 + 0.18 * flap);
-            const offset = edge * flap * 8;
-
-            const sourceX = rect[0] + rect[2] * i / 24;
-            const sourceWidth = rect[2] / 24;
-
-            ctx.drawImage(
+            g.drawImage(
                 pictures.bat,
-                sourceX,
-                rect[1],
-                sourceWidth,
-                rect[3],
-                -width / 2 + width * i / 24,
-                -height / 2 * scale + offset,
-                width / 24 + 0.25,
-                height * scale
+                r[0], r[1], w, h,
+                0, 0, w, h
             );
+
+            return c;
         }
 
-        ctx.restore();
+        function wing(g, mirror) {
+            const pts = [
+                [0, 0],
+                [260, 0],
+                [260, 132],
+                [342, 172],
+                [354, 250],
+                [240, 330],
+                [0, 330]
+            ];
 
-        return progress < 1;
+            pts.forEach(([x, y], i) => {
+                x = mirror ? w - x : x;
+
+                if (i) {
+                    g.lineTo(x, y);
+                } else {
+                    g.moveTo(x, y);
+                }
+            });
+
+            g.closePath();
+        }
+
+        const l = layer(g => wing(g, false));
+        const rgt = layer(g => wing(g, true));
+
+        const body = layer(g => {
+            g.ellipse(395, 179, 88, 128, 0, 0, Math.PI * 2);
+
+            g.moveTo(385, 74);
+            g.ellipse(345, 74, 43, 80, -.25, 0, Math.PI * 2);
+
+            g.moveTo(488, 74);
+            g.ellipse(445, 74, 43, 80, .25, 0, Math.PI * 2);
+        });
+
+        return {
+            left: l,
+            right: rgt,
+            body,
+            w,
+            h
+        };
     }
 
-    function splat(item) {
+    function drawBat(a, now) {
+        const p = clamp((now - a.start) / 6000, 0, 1);
+        const travel = W + 170;
+
+        a.x = a.dir > 0
+            ? -85 + travel * p
+            : W + 85 - travel * p;
+
+        const phase = (now - a.start) / 1000 * Math.PI * 2 * 2.5;
+
+        a.y =
+            a.y0 +
+            a.vertical * travel * p +
+            Math.sin(phase) * 1.5;
+
+        ctx.save();
+        ctx.translate(a.x, a.y);
+        ctx.rotate(a.dir * a.vertical * .13);
+
+        const scale = 62 / batLayers.h;
+
+        ctx.scale(scale, scale);
+        ctx.translate(-395, -165);
+
+        const flap = Math.sin(phase);
+        const angle = .78 * flap;
+
+        function wing(image, pivot, sign) {
+            ctx.save();
+            ctx.translate(pivot, 177);
+            ctx.rotate(sign * angle);
+            ctx.scale(.92 + .08 * Math.cos(phase), 1);
+            ctx.translate(-pivot, -177);
+            ctx.drawImage(image, 0, 0);
+            ctx.restore();
+        }
+
+        wing(batLayers.left, 326, 1);
+        wing(batLayers.right, 464, -1);
+
+        ctx.drawImage(batLayers.body, 0, 0);
+        ctx.restore();
+
+        return p < 1;
+    }
+
+    function splat(a) {
         const drops = Array.from({ length: 13 }, () => ({
             angle: Math.random() * Math.PI * 2,
             radius: 8 + Math.random() * 25,
@@ -601,10 +687,10 @@
         }));
 
         stains.push({
-            x: item.x,
-            y: item.y,
+            x: a.x,
+            y: a.y,
             start: performance.now(),
-            color: item.kind === 'pumpkin'
+            color: a.kind === 'pumpkin'
                 ? '255,91,0'
                 : '217,5,41',
             drops
@@ -615,70 +701,69 @@
     }
 
     function drawStains(now) {
-        stains = stains.filter(stain => {
-            const age = (now - stain.start) / 1000;
+        stains = stains.filter(s => {
+            const age = (now - s.start) / 1000;
 
             if (age >= 4) return false;
 
             const spread =
-                1 - Math.pow(1 - clamp(age / 0.22, 0, 1), 3);
+                1 - Math.pow(1 - clamp(age / .22, 0, 1), 3);
 
             const fade = clamp((4 - age) / 1.1, 0, 1);
 
             ctx.save();
             ctx.globalAlpha = fade;
-            ctx.fillStyle = 'rgb(' + stain.color + ')';
-
+            ctx.fillStyle = 'rgb(' + s.color + ')';
             ctx.beginPath();
+
             ctx.ellipse(
-                stain.x,
-                stain.y,
+                s.x,
+                s.y,
                 24 * spread,
                 20 * spread,
                 0,
                 0,
                 Math.PI * 2
             );
+
             ctx.fill();
 
-            stain.drops.forEach(drop => {
+            s.drops.forEach(d => {
                 const x =
-                    stain.x +
-                    Math.cos(drop.angle) * drop.radius * spread;
+                    s.x + Math.cos(d.angle) * d.radius * spread;
 
                 const y =
-                    stain.y +
-                    Math.sin(drop.angle) * drop.radius * spread;
+                    s.y + Math.sin(d.angle) * d.radius * spread;
 
                 const drip =
-                    drop.drip *
-                    Math.pow(clamp(age / 3.5, 0, 1), 1.65);
+                    d.drip * Math.pow(clamp(age / 3.5, 0, 1), 1.65);
 
                 ctx.beginPath();
+
                 ctx.ellipse(
                     x,
                     y,
-                    drop.size * spread,
-                    drop.size * spread,
+                    d.size * spread,
+                    d.size * spread,
                     0,
                     0,
                     Math.PI * 2
                 );
-                ctx.fill();
 
+                ctx.fill();
                 ctx.beginPath();
-                ctx.moveTo(x - drop.size * 0.3, y);
+                ctx.moveTo(x - d.size * .3, y);
 
                 ctx.bezierCurveTo(
-                    x - 2, y + drip * 0.6,
+                    x - 2, y + drip * .6,
                     x - 4, y + drip,
                     x, y + drip + 4
                 );
 
                 ctx.bezierCurveTo(
                     x + 4, y + drip,
-                    x + 2, y + drip * 0.6,
-                    x + drop.size * 0.3, y
+                    x + 2, y + drip * .6,
+                    x + d.size * .3, y
                 );
 
                 ctx.fill();
@@ -686,18 +771,20 @@
 
             ctx.fillStyle = 'rgba(255,229,185,.32)';
             ctx.beginPath();
+
             ctx.ellipse(
-                stain.x - 8,
-                stain.y - 10,
+                s.x - 8,
+                s.y - 10,
                 7 * spread,
                 3 * spread,
-                -0.4,
+                -.4,
                 0,
                 Math.PI * 2
             );
-            ctx.fill();
 
+            ctx.fill();
             ctx.restore();
+
             return true;
         });
     }
@@ -707,7 +794,7 @@
 
         if (!running) return;
 
-        if (now - last < 32) {
+        if (now - last < (actor ? 16 : 32)) {
             request();
             return;
         }
@@ -717,12 +804,15 @@
         ctx.clearRect(0, 0, W, H);
         drawWeb(now);
 
-        if (actor) {
-            const active = actor.kind === 'pumpkin'
-                ? drawPumpkin(actor, now)
-                : drawBat(actor, now);
-
-            if (!active) actor = null;
+        if (
+            actor &&
+            !(
+                actor.kind === 'pumpkin'
+                    ? drawPumpkin(actor, now)
+                    : drawBat(actor, now)
+            )
+        ) {
+            actor = null;
         }
 
         drawStains(now);
@@ -755,7 +845,7 @@
                     kind: 'pumpkin',
                     dir: pumpkinDirection,
                     start: now,
-                    floor: H * (0.42 + Math.random() * 0.32),
+                    floor: H * (.42 + Math.random() * .32),
                     jump: 48 + Math.random() * 30,
                     x: -200,
                     y: -200
@@ -764,13 +854,9 @@
                 pumpkinDirection *= -1;
                 nextKind = 'bat';
             } else {
-                const vertical = Math.random() < 0.5 ? -1 : 1;
-                const center = H * (0.4 + Math.random() * 0.2);
-                const travel = W + 140;
-
-                const views = batDirection > 0
-                    ? [3, 0, 2]
-                    : [1, 0, 2];
+                const vertical = Math.random() < .5 ? -1 : 1;
+                const center = H * (.4 + Math.random() * .2);
+                const travel = W + 170;
 
                 actor = {
                     kind: 'bat',
@@ -778,7 +864,6 @@
                     vertical,
                     start: now,
                     y0: center - vertical * travel / 2,
-                    view: views[Math.floor(Math.random() * views.length)],
                     x: -200,
                     y: -200
                 };
@@ -814,6 +899,7 @@
 
         if (running) {
             makeWeb();
+
             restoreAt = 0;
             webActiveUntil = 0;
             last = 0;
@@ -828,13 +914,13 @@
             target instanceof Element &&
             !target.closest(
                 'button,a,input,textarea,select,' +
-                '[contenteditable="true"],[role="button"],video,' +
-                '.foto,#menuPrincipal,#heys-area,.mini-menu'
+                '[contenteditable="true"],[role="button"],' +
+                'video,.foto,#menuPrincipal,#heys-area,.mini-menu'
             )
         );
     }
 
-    function start(x, y, target, event) {
+    function start(x, y, target, e) {
         if (!running || !allowed(target)) return;
 
         const px = x - left;
@@ -860,15 +946,13 @@
             swallowed = { x, y };
             swallowUntil = performance.now() + 500;
 
-            if (event.cancelable) {
-                event.preventDefault();
-            }
+            if (e.cancelable) e.preventDefault();
 
-            event.stopPropagation();
+            e.stopPropagation();
         }
     }
 
-    function move(x, y, event) {
+    function move(x, y, e) {
         if (!finger || !running) return;
 
         const px = x - left;
@@ -877,11 +961,9 @@
         disturb(px, py, finger);
         finger = { x: px, y: py };
 
-        if (event.cancelable) {
-            event.preventDefault();
-        }
+        if (e.cancelable) e.preventDefault();
 
-        event.stopPropagation();
+        e.stopPropagation();
     }
 
     function end() {
@@ -903,23 +985,23 @@
         signal
     };
 
-    document.addEventListener('touchstart', event => {
-        if (event.touches.length === 1) {
+    document.addEventListener('touchstart', e => {
+        if (e.touches.length === 1) {
             start(
-                event.touches[0].clientX,
-                event.touches[0].clientY,
-                event.target,
-                event
+                e.touches[0].clientX,
+                e.touches[0].clientY,
+                e.target,
+                e
             );
         }
     }, capture);
 
-    document.addEventListener('touchmove', event => {
-        if (event.touches.length === 1) {
+    document.addEventListener('touchmove', e => {
+        if (e.touches.length === 1) {
             move(
-                event.touches[0].clientX,
-                event.touches[0].clientY,
-                event
+                e.touches[0].clientX,
+                e.touches[0].clientY,
+                e
             );
         } else {
             end();
@@ -929,38 +1011,33 @@
     document.addEventListener('touchend', end, { signal });
     document.addEventListener('touchcancel', end, { signal });
 
-    document.addEventListener('pointerdown', event => {
-        if (event.pointerType !== 'touch') {
-            start(
-                event.clientX,
-                event.clientY,
-                event.target,
-                event
-            );
+    document.addEventListener('pointerdown', e => {
+        if (e.pointerType !== 'touch') {
+            start(e.clientX, e.clientY, e.target, e);
         }
     }, capture);
 
-    document.addEventListener('pointermove', event => {
-        if (event.pointerType !== 'touch') {
-            move(event.clientX, event.clientY, event);
+    document.addEventListener('pointermove', e => {
+        if (e.pointerType !== 'touch') {
+            move(e.clientX, e.clientY, e);
         }
     }, capture);
 
     document.addEventListener('pointerup', end, { signal });
     document.addEventListener('pointercancel', end, { signal });
 
-    document.addEventListener('click', event => {
+    document.addEventListener('click', e => {
         if (
             swallowed &&
             performance.now() < swallowUntil &&
             Math.hypot(
-                event.clientX - swallowed.x,
-                event.clientY - swallowed.y
+                e.clientX - swallowed.x,
+                e.clientY - swallowed.y
             ) < 45 &&
-            allowed(event.target)
+            allowed(e.target)
         ) {
-            event.preventDefault();
-            event.stopImmediatePropagation();
+            e.preventDefault();
+            e.stopImmediatePropagation();
         }
     }, {
         capture: true,
@@ -973,6 +1050,7 @@
 
         cancelAnimationFrame(raf);
         clearTimeout(timer);
+
         controller.abort();
 
         observer?.disconnect();
@@ -991,7 +1069,7 @@
     const api = {
         destroy,
         getState: () => ({
-            version: 4,
+            version: 5,
             running,
             ready,
             failures: failures.slice(),
@@ -1019,16 +1097,17 @@
     window.addEventListener('resize', resize, { signal });
 
     observer = new MutationObserver(records => {
-        // O movimento das fotografias não deve redesenhar a teia.
-        const relevant = records.some(record =>
-            record.target !== canvas &&
+        // As fotografias movem-se frequentemente.
+        // Isso não deve reiniciar o desenho da teia.
+        if (records.some(r =>
+            r.target !== canvas &&
             !(
-                record.target instanceof Element &&
-                record.target.closest('.foto')
+                r.target instanceof Element &&
+                r.target.closest('.foto')
             )
-        );
-
-        if (relevant) refresh();
+        )) {
+            refresh();
+        }
     });
 
     observer.observe(document.body, {
@@ -1066,7 +1145,12 @@
 
             image.onerror = () => {
                 failures.push(kind);
-                console.warn('Halloween: imagem indisponível:', kind);
+
+                console.warn(
+                    'Halloween: imagem indisponível:',
+                    kind
+                );
+
                 resolve();
             };
 
@@ -1079,6 +1163,10 @@
         if (disposed) return;
 
         ready = failures.length === 0;
+
+        if (ready) {
+            batLayers = makeBatLayers();
+        }
 
         if (ready && running) {
             schedule(30000);
