@@ -66,12 +66,19 @@ jobs:
               exit 1
             fi
 
-            # Validar a versão nova contra o schema atual ANTES de trocar código.
-            # Este ficheiro só consulta information_schema; nunca aplica SQL/DDL.
+            # Consultar a estrutura da base de dados antes de publicar.
+            # Este script não altera dados nem aplica migrações.
             PREFLIGHT_FILE=$(mktemp)
             trap 'rm -f "$PREFLIGHT_FILE"' EXIT
+
             git -C "$APP_DIR" show origin/main:database/check-location-state.php > "$PREFLIGHT_FILE"
-            (cd "$APP_DIR" && APP_ROOT="$APP_DIR" php "$PREFLIGHT_FILE")
+
+            # Usar a identidade dos serviços da aplicação.
+            # A configuração mantém as permissões atuais.
+            # O script entra por stdin; o temporário permanece privado.
+            sudo -n -u www-data /usr/bin/env APP_ROOT="$APP_DIR" \
+              /usr/bin/php /dev/stdin < "$PREFLIGHT_FILE"
+
             rm -f "$PREFLIGHT_FILE"
             trap - EXIT
 
@@ -92,8 +99,14 @@ jobs:
             sudo install -m 0644 deploy/app-location-recovery.service /etc/systemd/system/app-location-recovery.service
 
             sudo install -m 0644 deploy/app-push-worker@.service /etc/systemd/system/app-push-worker@.service
+
             sudo systemctl daemon-reload
             sudo systemctl enable app-push app-location-recovery
             sudo systemctl restart app-websocket
             sudo systemctl restart app-push app-location-recovery
             sudo systemctl reload apache2
+
+            DEPLOYED_SHA=$(git -C "$APP_DIR" rev-parse HEAD)
+            test "$DEPLOYED_SHA" = '${{ github.sha }}'
+
+            echo "PUBLICAÇÃO CONCLUÍDA: $DEPLOYED_SHA"
