@@ -41,6 +41,29 @@
     border-color: #fa164b;
 }
 
+.hw-tabs button[data-mode="halloween"] {
+    position: relative;
+    overflow: visible;
+}
+
+.hw-tabs button[data-mode="halloween"]::after {
+    content: 'NOVO';
+    position: absolute;
+    top: -8px;
+    right: 7px;
+    transform: rotate(15deg);
+    padding: 3px 6px;
+    border: 1px solid #f6bbc8;
+    border-radius: 5px;
+    background: #fff5f7;
+    color: #c81038;
+    font-size: 9px;
+    font-weight: 850;
+    letter-spacing: .06em;
+    line-height: 1.2;
+    pointer-events: none;
+}
+
 .hw-types {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -104,8 +127,22 @@
     display: flex;
     overflow-x: auto;
     gap: 7px;
-    padding: 12px 1px;
+    padding: 12px 28px 12px 1px;
     scrollbar-width: thin;
+    scroll-padding-inline: 12px;
+    overscroll-behavior-x: contain;
+    -webkit-mask-image: linear-gradient(
+        to right,
+        #000 0,
+        #000 calc(100% - 22px),
+        transparent
+    );
+    mask-image: linear-gradient(
+        to right,
+        #000 0,
+        #000 calc(100% - 22px),
+        transparent
+    );
 }
 
 .hw-filters button {
@@ -125,6 +162,15 @@
     background: #653f84;
     color: #fff;
     border-color: #653f84;
+}
+
+.hw-panel::after {
+    content: 'Desliza as categorias para os lados ↔';
+    display: block;
+    margin: 8px 0 0;
+    font-size: 11px;
+    line-height: 1.4;
+    opacity: .75;
 }
 
 .hw-count {
@@ -159,7 +205,7 @@
     border: 2px solid #794b9e;
 }
 
-.hw-card[aria-pressed=true]:after {
+.hw-card[aria-pressed=true]::after {
     content: '✓';
     position: absolute;
     top: 9px;
@@ -180,7 +226,11 @@
     width: calc(100% + 24px);
     margin: 0 -12px 12px;
     padding: 12px;
-    background: radial-gradient(ellipse at center, #e9dfef, #f8f4fa);
+    background: radial-gradient(
+        ellipse at center,
+        #e9dfef,
+        #f8f4fa
+    );
     aspect-ratio: 1/1.15;
 }
 
@@ -216,6 +266,8 @@
 .hw-mode .hoje-roupa-ajuda {
     display: none !important;
 }
+
+/* Janela de detalhe da fantasia. */
 
 .hw-detail {
     width: 420px;
@@ -257,7 +309,11 @@
     display: grid;
     place-items: center;
     padding: 18px;
-    background: radial-gradient(ellipse at center, #e9dfef, #f8f4fa);
+    background: radial-gradient(
+        ellipse at center,
+        #e9dfef,
+        #f8f4fa
+    );
 }
 
 .hw-detail-art .hw-garment {
@@ -327,6 +383,8 @@
     outline-offset: 3px;
 }
 
+/* Miniaturas usadas no editor. */
+
 .hoje-chip-icone .hw-garment {
     width: 40px;
     height: 45px;
@@ -347,32 +405,69 @@
     height: 40px;
 }
 
-@media (max-width: 600px) {
-    .hw-detail {
-        position: fixed;
-        inset: auto 0 0;
-        max-width: 100%;
-        width: 100%;
-        margin: 0;
-        border-radius: 24px 24px 0 0;
-        padding-bottom: env(safe-area-inset-bottom, 0px);
-    }
+/*
+ * Correção do atlas Sobreviventes:
+ * na segunda fila existem restos dos sapatos da fila anterior.
+ * O recorte aplica-se à grelha, ao detalhe e às miniaturas.
+ */
+.hw-garment[style*="/sobreviventes?"][style*="33.333333333333"] {
+    clip-path: inset(7% 0 0 0);
 }
 
-@media (min-width: 900px) {
-    #hoje-pecas-grid.hw-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
+/* Botão sempre acessível durante a escolha da roupa. */
+
+#hoje-roupa-concluir {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    flex-shrink: 0;
+    box-shadow:
+        0 0 0 8px #faf9fc,
+        0 -10px 25px #25232924;
 }
 
-@media (prefers-reduced-motion: reduce) {
-    .hw-controls *,
-    .hw-detail * {
-        scroll-behavior: auto !important;
-    }
+#hoje-editor-roupa {
+    padding-bottom: 8px;
+}
+
+/* Ordem visual do editor no piloto Halloween. */
+
+#hoje-editor-principal:not([hidden]) {
+    display: flex;
+    flex-direction: column;
+}
+
+#hoje-editor-principal > [data-daylie-create] {
+    order: 0;
+}
+
+#hoje-editor-principal > [data-daylies-own] {
+    order: 1;
+}
+
+#hoje-editor-principal > #hoje-abrir-roupa {
+    order: 2;
+    margin-bottom: 16px;
+}
+
+#hoje-editor-principal > .hoje-editor-intro {
+    order: 3;
+}
+
+#hoje-editor-principal > .hoje-nota-wrap {
+    order: 4;
+}
+
+#hoje-editor-principal > #hoje-editor-erro {
+    order: 5;
+}
+
+#hoje-editor-principal > .hoje-editor-acoes {
+    order: 6;
 }
 
 /* Miniatura compacta no balão Hoje. */
+
 #mini-menu-hoje.hw-status {
     width: 138px;
     min-width: 0;
@@ -489,6 +584,31 @@
 .hw-status-open:focus-visible {
     outline: 3px solid #ac80ce;
     outline-offset: 3px;
+}
+
+@media (max-width: 600px) {
+    .hw-detail {
+        position: fixed;
+        inset: auto 0 0;
+        max-width: 100%;
+        width: 100%;
+        margin: 0;
+        border-radius: 24px 24px 0 0;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+}
+
+@media (min-width: 900px) {
+    #hoje-pecas-grid.hw-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hw-controls *,
+    .hw-detail * {
+        scroll-behavior: auto !important;
+    }
 }
 
 @media (prefers-color-scheme: dark) {
