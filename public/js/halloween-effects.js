@@ -1,18 +1,21 @@
 (function () {
     'use strict';
 
-    if (window.MargotHalloweenEffects) {
-        window.MargotHalloweenEffects.destroy();
-    }
+    window.MargotHalloweenEffects?.destroy();
 
-    // Estes efeitos pertencem apenas ao mapa de pessoas.
-    var map = document.getElementById('gridCanvas');
+    const map = document.getElementById('gridCanvas');
     if (!map) return;
 
-    var dark = matchMedia('(prefers-color-scheme: dark)');
-    var reduce = matchMedia('(prefers-reduced-motion: reduce)');
+    const script = document.currentScript;
+    const assetRoot = new URL(
+        '../imagens/halloween-effects-2026/',
+        script.src
+    );
 
-    var canvas = document.createElement('canvas');
+    const dark = matchMedia('(prefers-color-scheme: dark)');
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+
+    const canvas = document.createElement('canvas');
     canvas.id = 'margot-halloween-effects';
     canvas.setAttribute('aria-hidden', 'true');
     canvas.style.cssText =
@@ -20,41 +23,73 @@
 
     document.body.appendChild(canvas);
 
-    var ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d');
 
     if (!ctx) {
         canvas.remove();
         return;
     }
 
-    var W, H;
-    var left = 0;
-    var top = 0;
-    var points = [];
-    var links = [];
-    var actors = [];
-    var stains = [];
+    const controller = new AbortController();
+    const signal = controller.signal;
 
-    var raf = 0;
-    var timer = 0;
-    var last = 0;
-    var healAt = 0;
-    var webUntil = 0;
+    const frames = {
+        pumpkin: [
+            [24, 30, 608, 570],
+            [648, 33, 553, 568],
+            [27, 644, 588, 572],
+            [663, 641, 567, 570]
+        ],
+        bat: [
+            [10, 241, 790, 304],
+            [829, 241, 413, 316],
+            [14, 717, 771, 315],
+            [798, 717, 441, 315]
+        ]
+    };
 
-    var stopped = false;
-    var dragging = false;
-    var previous = null;
-    var direction = 1;
+    const pictures = {};
+    const failures = [];
 
-    var swallowUntil = 0;
-    var swallowedPoint = null;
+    let W = 1;
+    let H = 1;
+    let left = 0;
+    let top = 0;
 
-    var events = new AbortController();
-    var signal = events.signal;
+    let nodes = [];
+    let strands = [];
+    let actor = null;
+    let stains = [];
 
-    function visible(element) {
+    let raf = 0;
+    let timer = 0;
+    let last = 0;
+    let restoreAt = 0;
+    let webActiveUntil = 0;
+
+    let running = false;
+    let disposed = false;
+    let ready = false;
+
+    let nextKind = 'pumpkin';
+    let pumpkinDirection = 1;
+    let batDirection = -1;
+
+    let finger = null;
+    let swallowed = null;
+    let swallowUntil = 0;
+
+    let observer;
+    let sizeObserver;
+
+    const WEB_TOP = 76;
+
+    const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+    const ease = x => x * x * (3 - 2 * x);
+
+    function visible(el) {
         for (
-            var node = element;
+            let node = el;
             node instanceof Element;
             node = node.parentElement
         ) {
@@ -66,7 +101,7 @@
                 return false;
             }
 
-            var css = getComputedStyle(node);
+            const css = getComputedStyle(node);
 
             if (
                 css.display === 'none' ||
@@ -89,120 +124,119 @@
             return true;
         }
 
-        var candidates = document.querySelectorAll(
-            'dialog[open], ' +
-            '[role="dialog"][aria-modal="true"], ' +
-            '.mini-menu, ' +
-            'input:focus, textarea:focus, select:focus, ' +
+        return [...document.querySelectorAll(
+            'dialog[open],' +
+            '[role="dialog"][aria-modal="true"],' +
+            '.mini-menu,' +
+            'input:focus,textarea:focus,select:focus,' +
             '[contenteditable="true"]:focus'
-        );
-
-        return Array.prototype.some.call(candidates, visible);
+        )].some(visible);
     }
 
-    function enabled() {
+    function eligible() {
         return (
-            !stopped &&
+            !disposed &&
             map.isConnected &&
             dark.matches &&
             !reduce.matches &&
-            !document.hidden
+            !document.hidden &&
+            !blocked()
         );
     }
 
-    function web() {
-        points = [];
-        links = [];
+    function request() {
+        if (running && !raf) {
+            raf = requestAnimationFrame(draw);
+        }
+    }
 
-        var radius = Math.min(145, W * 0.36);
+    function makeWeb() {
+        nodes = [];
+        strands = [];
 
-        for (var ray = 0; ray < 8; ray++) {
-            var angle = Math.PI / 2 + ray * Math.PI / 14;
+        const radius = Math.min(155, W * 0.38);
 
-            for (var ring = 0; ring < 6; ring++) {
-                var x =
+        for (let ray = 0; ray < 9; ray++) {
+            const angle = Math.PI / 2 + ray * Math.PI / 16;
+
+            for (let ring = 0; ring < 7; ring++) {
+                const x =
                     W - 5 +
-                    Math.cos(angle) * radius * ring / 5;
+                    Math.cos(angle) * radius * ring / 6;
 
-                var y =
-                    8 +
-                    Math.sin(angle) * radius * ring / 5;
+                const y =
+                    WEB_TOP +
+                    Math.sin(angle) * radius * ring / 6;
 
-                points.push({
-                    x: x,
-                    y: y,
+                nodes.push({
+                    x,
+                    y,
                     px: x,
                     py: y,
-                    homeX: x,
-                    homeY: y,
-                    fixed: ring === 0 || ring === 5
+                    hx: x,
+                    hy: y,
+                    fixed: ring === 0 || ring === 6
                 });
 
-                if (ring) {
-                    join(ray * 6 + ring - 1, ray * 6 + ring);
-                }
+                const i = ray * 7 + ring;
 
-                if (ray && ring) {
-                    join((ray - 1) * 6 + ring, ray * 6 + ring);
-                }
+                if (ring) join(i - 1, i);
+                if (ray && ring) join(i - 7, i);
             }
         }
     }
 
     function join(a, b) {
-        links.push({
-            a: a,
-            b: b,
+        strands.push({
+            a,
+            b,
             length: Math.hypot(
-                points[a].x - points[b].x,
-                points[a].y - points[b].y
+                nodes[a].x - nodes[b].x,
+                nodes[a].y - nodes[b].y
             ),
-            broken: false
+            cut: 0
         });
     }
 
     function resize() {
-        var rect = map.getBoundingClientRect();
+        const rect = map.getBoundingClientRect();
 
         W = Math.max(1, rect.width);
         H = Math.max(1, rect.height);
         left = rect.left;
         top = rect.top;
 
-        canvas.style.left = left + 'px';
-        canvas.style.top = top + 'px';
-        canvas.style.width = W + 'px';
-        canvas.style.height = H + 'px';
+        Object.assign(canvas.style, {
+            left: left + 'px',
+            top: top + 'px',
+            width: W + 'px',
+            height: H + 'px'
+        });
 
-        var dpr = Math.min(devicePixelRatio || 1, 1.5);
+        const dpr = Math.min(devicePixelRatio || 1, 1.5);
 
         canvas.width = Math.round(W * dpr);
         canvas.height = Math.round(H * dpr);
 
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-        actors = [];
+        actor = null;
         stains = [];
-        healAt = 0;
-        webUntil = 0;
+        finger = null;
+        restoreAt = 0;
+        webActiveUntil = 0;
 
-        web();
+        makeWeb();
         request();
     }
 
     function distance(x, y, a, b) {
-        var dx = b.x - a.x;
-        var dy = b.y - a.y;
-        var n = dx * dx + dy * dy;
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const n = dx * dx + dy * dy;
 
-        var t = n
-            ? Math.max(
-                0,
-                Math.min(
-                    1,
-                    ((x - a.x) * dx + (y - a.y) * dy) / n
-                )
-            )
+        const t = n
+            ? clamp(((x - a.x) * dx + (y - a.y) * dy) / n, 0, 1)
             : 0;
 
         return Math.hypot(
@@ -211,159 +245,268 @@
         );
     }
 
-    function tear(x, y, old) {
-        var changed = false;
-
-        links.forEach(function (link) {
-            if (link.broken) return;
-
-            var a = points[link.a];
-            var b = points[link.b];
-            var hit = distance(x, y, a, b) < 11;
-
-            if (old) {
-                var steps = Math.min(
-                    30,
-                    Math.ceil(Math.hypot(x - old.x, y - old.y) / 5)
-                );
-
-                for (var k = 1; !hit && k <= steps; k++) {
-                    hit = distance(
-                        old.x + (x - old.x) * k / steps,
-                        old.y + (y - old.y) * k / steps,
-                        a,
-                        b
-                    ) < 11;
-                }
-            }
-
-            if (!hit) return;
-
-            link.broken = true;
-            changed = true;
-
-            [a, b].forEach(function (p) {
-                if (p.fixed) return;
-
-                p.px = p.x - (old ? x - old.x : 6) * 0.35;
-                p.py = p.y - 5;
-            });
-        });
-
-        if (changed) {
-            healAt = performance.now() + 4000;
-            webUntil = healAt + 1200;
-            request();
-        }
+    function nearWeb(x, y) {
+        return strands.some(strand =>
+            !strand.cut &&
+            distance(
+                x,
+                y,
+                nodes[strand.a],
+                nodes[strand.b]
+            ) < 12
+        );
     }
 
-    function physics(dt) {
-        points.forEach(function (p) {
-            if (p.fixed) return;
+    function disturb(x, y, old) {
+        const dx = clamp(x - old.x, -24, 24);
+        const dy = clamp(y - old.y, -24, 24);
 
-            var vx = (p.x - p.px) * 0.94;
-            var vy = (p.y - p.py) * 0.94;
+        nodes.forEach(point => {
+            const strength = Math.max(
+                0,
+                1 - Math.hypot(point.x - x, point.y - y) / 40
+            );
 
-            p.px = p.x;
-            p.py = p.y;
-
-            p.x += vx;
-            p.y += vy + 90 * dt * dt;
+            if (!point.fixed && strength) {
+                point.x += dx * strength * 0.55;
+                point.y += dy * strength * 0.55;
+            }
         });
 
-        for (var pass = 0; pass < 5; pass++) {
-            links.forEach(function (link) {
-                if (link.broken) return;
+        const travel = Math.hypot(x - old.x, y - old.y);
 
-                var a = points[link.a];
-                var b = points[link.b];
+        if (travel > 3) {
+            strands.forEach(strand => {
+                if (strand.cut) return;
 
-                var dx = b.x - a.x;
-                var dy = b.y - a.y;
-                var length = Math.hypot(dx, dy) || 1;
-                var correction = (length - link.length) / length;
-                var weight = a.fixed || b.fixed ? 1 : 0.5;
+                const steps = Math.min(40, Math.ceil(travel / 4));
 
-                if (!a.fixed) {
-                    a.x += dx * correction * weight;
-                    a.y += dy * correction * weight;
-                }
+                for (let i = 0; i <= steps; i++) {
+                    const hit = distance(
+                        old.x + (x - old.x) * i / steps,
+                        old.y + (y - old.y) * i / steps,
+                        nodes[strand.a],
+                        nodes[strand.b]
+                    ) < 6;
 
-                if (!b.fixed) {
-                    b.x -= dx * correction * weight;
-                    b.y -= dy * correction * weight;
+                    if (hit) {
+                        strand.cut = performance.now();
+                        break;
+                    }
                 }
             });
+        }
+
+        nodes.forEach(point => {
+            delete point.rx;
+            delete point.ry;
+        });
+
+        restoreAt = performance.now() + 4000;
+        webActiveUntil = restoreAt + 1500;
+
+        request();
+    }
+
+    function simulateWeb() {
+        for (let step = 0; step < 2; step++) {
+            nodes.forEach(point => {
+                if (point.fixed) return;
+
+                const vx = (point.x - point.px) * 0.93;
+                const vy = (point.y - point.py) * 0.93;
+
+                point.px = point.x;
+                point.py = point.y;
+
+                point.x += vx;
+                point.y += vy + 0.045;
+            });
+
+            for (let pass = 0; pass < 6; pass++) {
+                strands.forEach(strand => {
+                    if (strand.cut) return;
+
+                    const a = nodes[strand.a];
+                    const b = nodes[strand.b];
+
+                    const dx = b.x - a.x;
+                    const dy = b.y - a.y;
+                    const length = Math.hypot(dx, dy) || 1;
+                    const correction =
+                        (length - strand.length) / length;
+
+                    const weight = a.fixed || b.fixed ? 1 : 0.5;
+
+                    if (!a.fixed) {
+                        a.x += dx * correction * weight;
+                        a.y += dy * correction * weight;
+                    }
+
+                    if (!b.fixed) {
+                        b.x -= dx * correction * weight;
+                        b.y -= dy * correction * weight;
+                    }
+                });
+            }
         }
     }
 
     function drawWeb(now) {
-        var rebuilding = healAt && now >= healAt;
+        const healing = restoreAt && now >= restoreAt;
 
-        var progress = rebuilding
-            ? Math.min(1, (now - healAt) / 1000)
+        const progress = healing
+            ? clamp((now - restoreAt) / 1400, 0, 1)
             : 0;
 
-        if (rebuilding) {
-            points.forEach(function (p) {
-                p.x += (p.homeX - p.x) * 0.12;
-                p.y += (p.homeY - p.y) * 0.12;
-                p.px = p.x;
-                p.py = p.y;
+        if (healing) {
+            nodes.forEach(point => {
+                if (point.rx === undefined) {
+                    point.rx = point.x;
+                    point.ry = point.y;
+                }
+
+                point.x =
+                    point.rx +
+                    (point.hx - point.rx) * ease(progress);
+
+                point.y =
+                    point.ry +
+                    (point.hy - point.ry) * ease(progress);
+
+                point.px = point.x;
+                point.py = point.y;
             });
+        } else if (now < webActiveUntil) {
+            simulateWeb();
         }
 
-        links.forEach(function (link) {
-            if (link.broken && !rebuilding) return;
+        ctx.lineWidth = 0.85;
+        ctx.lineCap = 'round';
 
-            var a = points[link.a];
-            var b = points[link.b];
-            var opacity = link.broken ? progress * 0.5 : 0.5;
+        strands.forEach(strand => {
+            const a = nodes[strand.a];
+            const b = nodes[strand.b];
 
-            ctx.strokeStyle = 'rgba(231,232,246,' + opacity + ')';
-            ctx.lineWidth = 0.8;
+            if (strand.cut && !healing) {
+                const age = (now - strand.cut) / 1000;
+                const sag = Math.min(18, age * 25);
+
+                ctx.strokeStyle = 'rgba(224,230,248,.44)';
+
+                [[a, b], [b, a]].forEach(([point, other], i) => {
+                    const sway =
+                        Math.sin(age * 7 + i) *
+                        7 *
+                        Math.exp(-age * 0.8);
+
+                    ctx.beginPath();
+                    ctx.moveTo(point.x, point.y);
+
+                    ctx.quadraticCurveTo(
+                        point.x + (other.x - point.x) * 0.16 + sway,
+                        point.y + sag,
+                        point.x + (other.x - point.x) * 0.32 + sway,
+                        point.y + (other.y - point.y) * 0.32 + sag
+                    );
+
+                    ctx.stroke();
+                });
+
+                return;
+            }
+
+            const opacity = strand.cut
+                ? 0.52 * ease(progress)
+                : 0.52;
+
+            ctx.strokeStyle = 'rgba(229,235,255,' + opacity + ')';
+
             ctx.beginPath();
             ctx.moveTo(a.x, a.y);
-            ctx.lineTo(b.x, b.y);
+            ctx.quadraticCurveTo(
+                (a.x + b.x) / 2,
+                (a.y + b.y) / 2 + 1.5,
+                b.x,
+                b.y
+            );
             ctx.stroke();
         });
 
         if (progress === 1) {
-            web();
-            healAt = 0;
+            makeWeb();
+            restoreAt = 0;
         }
     }
 
-    function pumpkin(actor, now) {
-        var progress = (now - actor.start) / 2600;
-        var hop = (progress * 3) % 1;
+    function sprite(kind, view, height, alpha = 1) {
+        const rect = frames[kind][view];
+        const width = height * rect[2] / rect[3];
 
-        actor.x = actor.dir > 0
-            ? -48 + (W + 96) * progress
-            : W + 48 - (W + 96) * progress;
+        ctx.save();
+        ctx.globalAlpha *= alpha;
 
-        actor.y =
-            actor.floor -
-            4 * actor.jump * hop * (1 - hop);
+        ctx.drawImage(
+            pictures[kind],
+            rect[0], rect[1], rect[2], rect[3],
+            -width / 2, -height, width, height
+        );
 
-        var squash =
-            Math.max(
-                0,
-                1 - Math.min(hop, 1 - hop) / 0.12
-            ) * 0.17;
+        ctx.restore();
+    }
+
+    function turn(kind, sequence, phase, height) {
+        const position =
+            clamp(phase, 0, 0.9999) * (sequence.length - 1);
+
+        const index = Math.floor(position);
+
+        const blend = ease(
+            clamp((position - index - 0.65) / 0.35, 0, 1)
+        );
+
+        sprite(kind, sequence[index], height, 1 - blend);
+
+        if (blend) {
+            sprite(kind, sequence[index + 1], height, blend);
+        }
+    }
+
+    function drawPumpkin(item, now) {
+        const progress = clamp((now - item.start) / 5000, 0, 1);
+
+        const cycle = progress * 3;
+        const index = Math.min(2, Math.floor(cycle));
+        const phase = cycle - index;
+
+        const flight = 0.84;
+        const air = Math.min(1, phase / flight);
+
+        const lift = phase < flight
+            ? 4 * item.jump * air * (1 - air)
+            : 0;
+
+        const landing = phase >= flight
+            ? Math.sin(Math.PI * (phase - flight) / (1 - flight))
+            : 0;
+
+        item.x = item.dir > 0
+            ? -60 + (W + 120) * progress
+            : W + 60 - (W + 120) * progress;
+
+        item.y = item.floor - lift - 35;
 
         ctx.save();
 
         ctx.globalAlpha =
-            0.2 *
-            (1 - (actor.floor - actor.y) / (actor.jump * 1.25));
+            0.25 * (1 - lift / (item.jump * 1.4));
 
         ctx.fillStyle = '#000';
         ctx.beginPath();
         ctx.ellipse(
-            actor.x,
-            actor.floor + 29,
-            24,
+            item.x,
+            item.floor + 2,
+            26 - lift * 0.08,
             5,
             0,
             0,
@@ -372,194 +515,154 @@
         ctx.fill();
         ctx.restore();
 
+        // A base mantém-se apoiada no chão durante a compressão.
         ctx.save();
-        ctx.translate(actor.x, actor.y);
-        ctx.rotate(actor.dir * Math.sin(progress * 22) * 0.12);
-        ctx.scale(1 + squash, 1 - squash);
+        ctx.translate(item.x, item.floor - lift);
+        ctx.scale(1 + landing * 0.13, 1 - landing * 0.16);
 
-        for (var i = -2; i <= 2; i++) {
-            var gradient = ctx.createRadialGradient(
-                i * 7 - 5, -9, 2,
-                i * 7, 0, 30
-            );
-
-            gradient.addColorStop(0, '#ffc85b');
-            gradient.addColorStop(0.45, '#f58116');
-            gradient.addColorStop(1, '#a93806');
-
-            ctx.fillStyle = gradient;
-            ctx.beginPath();
-            ctx.ellipse(i * 7, 0, 15, 25, 0, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
-        ctx.strokeStyle = '#577638';
-        ctx.lineWidth = 6;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(0, -23);
-        ctx.quadraticCurveTo(
-            2, -35,
-            9 + Math.sin(progress * 28) * 4, -32
+        ctx.transform(
+            1,
+            0,
+            item.dir * Math.sin(air * Math.PI * 2) * 0.055,
+            1,
+            0,
+            0
         );
-        ctx.stroke();
 
-        ctx.fillStyle = '#38221a';
+        const sequence = item.dir > 0
+            ? [0, 1, 2, 3, 0]
+            : [0, 3, 2, 1, 0];
 
-        ctx.beginPath();
-        ctx.moveTo(-16, -6);
-        ctx.lineTo(-6, -6);
-        ctx.lineTo(-11, -15);
-        ctx.closePath();
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.moveTo(6, -6);
-        ctx.lineTo(16, -6);
-        ctx.lineTo(11, -15);
-        ctx.closePath();
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.moveTo(-15, 7);
-        ctx.lineTo(-5, 11);
-        ctx.lineTo(0, 6);
-        ctx.lineTo(5, 11);
-        ctx.lineTo(15, 7);
-        ctx.quadraticCurveTo(0, 26, -15, 7);
-        ctx.fill();
+        turn('pumpkin', sequence, progress, 78);
 
         ctx.restore();
 
         return progress < 1;
     }
 
-    function bat(actor, now) {
-        var progress = (now - actor.start) / 2600;
+    function drawBat(item, now) {
+        const progress = clamp((now - item.start) / 6000, 0, 1);
+        const travel = W + 140;
 
-        actor.x = actor.dir > 0
-            ? -50 + (W + 100) * progress
-            : W + 50 - (W + 100) * progress;
+        item.x = item.dir > 0
+            ? -70 + travel * progress
+            : W + 70 - travel * progress;
 
-        actor.y =
-            actor.y0 +
-            actor.vertical * (W + 100) * progress;
+        item.y = item.y0 + item.vertical * travel * progress;
 
         ctx.save();
-        ctx.translate(actor.x, actor.y);
-        ctx.rotate(actor.vertical * actor.dir * Math.PI / 4);
+        ctx.translate(item.x, item.y);
 
-        var flap =
-            0.45 +
-            0.55 * Math.abs(Math.sin((now - actor.start) / 85));
+        ctx.rotate(
+            item.dir * item.vertical * 0.10 +
+            Math.sin(progress * Math.PI * 2) * 0.08
+        );
 
-        ctx.scale(1, flap);
+        const rect = frames.bat[item.view];
+        const height = 54;
+        const width = height * rect[2] / rect[3];
+        const flap = Math.sin((now - item.start) / 180);
 
-        var gradient = ctx.createLinearGradient(0, -18, 0, 18);
-        gradient.addColorStop(0, '#82708e');
-        gradient.addColorStop(1, '#322739');
-        ctx.fillStyle = gradient;
+        // As pontas das asas movem-se mais do que o corpo.
+        for (let i = 0; i < 24; i++) {
+            const position = (i + 0.5) / 24;
+            const edge = Math.pow(Math.abs(position - 0.5) * 2, 1.4);
 
-        [-1, 1].forEach(function (side) {
-            ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.bezierCurveTo(
-                side * 12, -24,
-                side * 33, -27,
-                side * 44, -14
+            const scale = 1 - edge * (0.18 + 0.18 * flap);
+            const offset = edge * flap * 8;
+
+            const sourceX = rect[0] + rect[2] * i / 24;
+            const sourceWidth = rect[2] / 24;
+
+            ctx.drawImage(
+                pictures.bat,
+                sourceX,
+                rect[1],
+                sourceWidth,
+                rect[3],
+                -width / 2 + width * i / 24,
+                -height / 2 * scale + offset,
+                width / 24 + 0.25,
+                height * scale
             );
-            ctx.quadraticCurveTo(side * 30, -13, side * 30, 6);
-            ctx.quadraticCurveTo(side * 17, -2, side * 13, 15);
-            ctx.lineTo(0, 8);
-            ctx.fill();
-        });
-
-        ctx.restore();
-
-        ctx.save();
-        ctx.translate(actor.x, actor.y);
-        ctx.fillStyle = '#392c40';
-
-        ctx.beginPath();
-        ctx.ellipse(0, 0, 7, 14, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.moveTo(-6, -8);
-        ctx.lineTo(-7, -20);
-        ctx.lineTo(0, -13);
-        ctx.lineTo(7, -20);
-        ctx.lineTo(6, -8);
-        ctx.fill();
-
-        ctx.fillStyle = '#ffd899';
-        ctx.fillRect(-4, -9, 2, 2);
-        ctx.fillRect(2, -9, 2, 2);
+        }
 
         ctx.restore();
 
         return progress < 1;
     }
 
-    function splat(actor) {
-        var drops = [];
-
-        for (var i = 0; i < 15; i++) {
-            drops.push({
-                angle: Math.random() * Math.PI * 2,
-                radius: 15 + Math.random() * 60,
-                size: 3 + Math.random() * 10,
-                drip: 20 + Math.random() * 95
-            });
-        }
+    function splat(item) {
+        const drops = Array.from({ length: 13 }, () => ({
+            angle: Math.random() * Math.PI * 2,
+            radius: 8 + Math.random() * 25,
+            size: 7 + Math.random() * 9,
+            drip: 20 + Math.random() * 55
+        }));
 
         stains.push({
-            x: actor.x,
-            y: actor.y,
+            x: item.x,
+            y: item.y,
             start: performance.now(),
-            color: actor.kind === 'pumpkin'
-                ? '244,113,22'
-                : '165,35,55',
-            drops: drops
+            color: item.kind === 'pumpkin'
+                ? '255,91,0'
+                : '217,5,41',
+            drops
         });
 
-        actors = actors.filter(function (item) {
-            return item !== actor;
-        });
-
+        actor = null;
         request();
     }
 
     function drawStains(now) {
-        stains = stains.filter(function (stain) {
-            var age = (now - stain.start) / 1000;
+        stains = stains.filter(stain => {
+            const age = (now - stain.start) / 1000;
 
-            if (age >= 3.4) return false;
+            if (age >= 4) return false;
 
-            var spread = Math.min(1, age * 7);
-            var fade = Math.min(1, (3.4 - age) / 1.2);
+            const spread =
+                1 - Math.pow(1 - clamp(age / 0.22, 0, 1), 3);
 
-            ctx.fillStyle =
-                'rgba(' + stain.color + ',' + (0.78 * fade) + ')';
+            const fade = clamp((4 - age) / 1.1, 0, 1);
 
-            stain.drops.forEach(function (drop) {
-                var x =
+            ctx.save();
+            ctx.globalAlpha = fade;
+            ctx.fillStyle = 'rgb(' + stain.color + ')';
+
+            ctx.beginPath();
+            ctx.ellipse(
+                stain.x,
+                stain.y,
+                24 * spread,
+                20 * spread,
+                0,
+                0,
+                Math.PI * 2
+            );
+            ctx.fill();
+
+            stain.drops.forEach(drop => {
+                const x =
                     stain.x +
                     Math.cos(drop.angle) * drop.radius * spread;
 
-                var y =
+                const y =
                     stain.y +
                     Math.sin(drop.angle) * drop.radius * spread;
 
-                var drip =
+                const drip =
                     drop.drip *
-                    Math.pow(Math.min(1, age / 3.4), 1.8);
+                    Math.pow(clamp(age / 3.5, 0, 1), 1.65);
 
                 ctx.beginPath();
                 ctx.ellipse(
-                    x, y,
-                    drop.size, drop.size,
-                    0, 0, Math.PI * 2
+                    x,
+                    y,
+                    drop.size * spread,
+                    drop.size * spread,
+                    0,
+                    0,
+                    Math.PI * 2
                 );
                 ctx.fill();
 
@@ -567,113 +670,160 @@
                 ctx.moveTo(x - drop.size * 0.3, y);
 
                 ctx.bezierCurveTo(
-                    x - drop.size * 0.2, y + drip * 0.6,
-                    x - 3, y + drip,
-                    x, y + drip + 5
+                    x - 2, y + drip * 0.6,
+                    x - 4, y + drip,
+                    x, y + drip + 4
                 );
 
                 ctx.bezierCurveTo(
-                    x + 3, y + drip,
-                    x + drop.size * 0.2, y + drip * 0.6,
+                    x + 4, y + drip,
+                    x + 2, y + drip * 0.6,
                     x + drop.size * 0.3, y
                 );
 
                 ctx.fill();
             });
 
+            ctx.fillStyle = 'rgba(255,229,185,.32)';
+            ctx.beginPath();
+            ctx.ellipse(
+                stain.x - 8,
+                stain.y - 10,
+                7 * spread,
+                3 * spread,
+                -0.4,
+                0,
+                Math.PI * 2
+            );
+            ctx.fill();
+
+            ctx.restore();
             return true;
         });
     }
 
-    function frame(now) {
+    function draw(now) {
         raf = 0;
 
-        if (!enabled()) return;
+        if (!running) return;
 
         if (now - last < 32) {
             request();
             return;
         }
 
-        var dt = Math.min((now - last) / 1000 || 0.033, 0.04);
         last = now;
 
         ctx.clearRect(0, 0, W, H);
-
-        if (blocked()) {
-            actors = [];
-            stains = [];
-            dragging = false;
-            return;
-        }
-
-        if (now < webUntil) {
-            physics(dt);
-        }
-
         drawWeb(now);
 
-        actors = actors.filter(function (actor) {
-            if (now < actor.start) return true;
+        if (actor) {
+            const active = actor.kind === 'pumpkin'
+                ? drawPumpkin(actor, now)
+                : drawBat(actor, now);
 
-            return actor.kind === 'pumpkin'
-                ? pumpkin(actor, now)
-                : bat(actor, now);
-        });
+            if (!active) actor = null;
+        }
 
         drawStains(now);
 
-        if (actors.length || stains.length || now < webUntil) {
+        if (actor || stains.length || now < webActiveUntil) {
             request();
         }
     }
 
-    function request() {
-        if (!raf && enabled()) {
-            raf = requestAnimationFrame(frame);
+    function schedule(delay = 15000) {
+        clearTimeout(timer);
+        timer = 0;
+
+        if (!running || !ready) return;
+
+        timer = setTimeout(() => {
+            timer = 0;
+
+            if (!running) return;
+
+            if (actor || stains.length) {
+                schedule();
+                return;
+            }
+
+            const now = performance.now();
+
+            if (nextKind === 'pumpkin') {
+                actor = {
+                    kind: 'pumpkin',
+                    dir: pumpkinDirection,
+                    start: now,
+                    floor: H * (0.42 + Math.random() * 0.32),
+                    jump: 48 + Math.random() * 30,
+                    x: -200,
+                    y: -200
+                };
+
+                pumpkinDirection *= -1;
+                nextKind = 'bat';
+            } else {
+                const vertical = Math.random() < 0.5 ? -1 : 1;
+                const center = H * (0.4 + Math.random() * 0.2);
+                const travel = W + 140;
+
+                const views = batDirection > 0
+                    ? [3, 0, 2]
+                    : [1, 0, 2];
+
+                actor = {
+                    kind: 'bat',
+                    dir: batDirection,
+                    vertical,
+                    start: now,
+                    y0: center - vertical * travel / 2,
+                    view: views[Math.floor(Math.random() * views.length)],
+                    x: -200,
+                    y: -200
+                };
+
+                batDirection *= -1;
+                nextKind = 'pumpkin';
+            }
+
+            request();
+            schedule();
+        }, delay);
+    }
+
+    function refresh() {
+        const next = eligible();
+
+        if (next === running) return;
+
+        running = next;
+
+        cancelAnimationFrame(raf);
+        raf = 0;
+
+        clearTimeout(timer);
+        timer = 0;
+
+        actor = null;
+        stains = [];
+        finger = null;
+
+        canvas.hidden = !running;
+        ctx.clearRect(0, 0, W, H);
+
+        if (running) {
+            makeWeb();
+            restoreAt = 0;
+            webActiveUntil = 0;
+            last = 0;
+
+            request();
+            schedule(30000);
         }
     }
 
-    function schedule() {
-        clearTimeout(timer);
-
-        if (!enabled()) return;
-
-        timer = setTimeout(function () {
-            if (enabled() && !blocked()) {
-                var now = performance.now();
-
-                actors.push({
-                    kind: 'pumpkin',
-                    dir: direction,
-                    start: now,
-                    floor: H * (0.35 + Math.random() * 0.4),
-                    jump: 40 + Math.random() * 45,
-                    x: -100,
-                    y: -100
-                });
-
-                var vertical = Math.random() < 0.5 ? -1 : 1;
-
-                actors.push({
-                    kind: 'bat',
-                    dir: -direction,
-                    vertical: vertical,
-                    start: now + 700,
-                    y0: vertical > 0 ? H * 0.15 : H * 0.85,
-                    x: -100,
-                    y: -100
-                });
-
-                direction *= -1;
-                request();
-            }
-
-            schedule();
-        }, 30000);
-    }
-
-    function allowedTarget(target) {
+    function allowed(target) {
         return (
             target instanceof Element &&
             !target.closest(
@@ -684,47 +834,30 @@
         );
     }
 
-    function hit(x, y) {
-        if (x < 0 || y < 0 || x > W || y > H) {
-            return false;
-        }
-
-        for (var i = actors.length - 1; i >= 0; i--) {
-            var actor = actors[i];
-
-            if (
-                performance.now() >= actor.start &&
-                Math.hypot(x - actor.x, y - actor.y) < 40
-            ) {
-                splat(actor);
-                return true;
-            }
-        }
-
-        if (
-            x > W - Math.min(145, W * 0.36) - 12 &&
-            y < 170
-        ) {
-            dragging = true;
-            previous = { x: x, y: y };
-            tear(x, y, null);
-            return true;
-        }
-
-        return false;
-    }
-
     function start(x, y, target, event) {
+        if (!running || !allowed(target)) return;
+
+        const px = x - left;
+        const py = y - top;
+
+        if (px < 0 || py < 0 || px > W || py > H) return;
+
+        let caught = false;
+
         if (
-            !enabled() ||
-            blocked() ||
-            !allowedTarget(target)
+            actor &&
+            Math.hypot(px - actor.x, py - actor.y) < 46
         ) {
-            return;
+            splat(actor);
+            caught = true;
+        } else if (nearWeb(px, py)) {
+            finger = { x: px, y: py };
+            disturb(px + 2, py + 2, finger);
+            caught = true;
         }
 
-        if (hit(x - left, y - top)) {
-            swallowedPoint = { x: x, y: y };
+        if (caught) {
+            swallowed = { x, y };
             swallowUntil = performance.now() + 500;
 
             if (event.cancelable) {
@@ -735,72 +868,68 @@
         }
     }
 
-    document.addEventListener('touchstart', function (event) {
-        if (event.touches.length !== 1) return;
+    function move(x, y, event) {
+        if (!finger || !running) return;
 
-        start(
-            event.touches[0].clientX,
-            event.touches[0].clientY,
-            event.target,
-            event
-        );
-    }, {
-        capture: true,
-        passive: false,
-        signal: signal
-    });
+        const px = x - left;
+        const py = y - top;
 
-    document.addEventListener('touchmove', function (event) {
-        if (!dragging) return;
-
-        if (event.touches.length !== 1) {
-            dragging = false;
-            return;
-        }
-
-        var touch = event.touches[0];
-        var x = touch.clientX - left;
-        var y = touch.clientY - top;
-
-        tear(x, y, previous);
-        previous = { x: x, y: y };
+        disturb(px, py, finger);
+        finger = { x: px, y: py };
 
         if (event.cancelable) {
             event.preventDefault();
         }
 
         event.stopPropagation();
-    }, {
-        capture: true,
-        passive: false,
-        signal: signal
-    });
+    }
 
     function end() {
-        if (dragging) {
-            swallowedPoint = previous
-                ? {
-                    x: previous.x + left,
-                    y: previous.y + top
-                }
-                : null;
+        if (finger) {
+            swallowed = {
+                x: finger.x + left,
+                y: finger.y + top
+            };
 
             swallowUntil = performance.now() + 400;
         }
 
-        dragging = false;
-        previous = null;
+        finger = null;
     }
 
-    document.addEventListener('touchend', end, {
-        signal: signal
-    });
+    const capture = {
+        capture: true,
+        passive: false,
+        signal
+    };
 
-    document.addEventListener('touchcancel', end, {
-        signal: signal
-    });
+    document.addEventListener('touchstart', event => {
+        if (event.touches.length === 1) {
+            start(
+                event.touches[0].clientX,
+                event.touches[0].clientY,
+                event.target,
+                event
+            );
+        }
+    }, capture);
 
-    document.addEventListener('pointerdown', function (event) {
+    document.addEventListener('touchmove', event => {
+        if (event.touches.length === 1) {
+            move(
+                event.touches[0].clientX,
+                event.touches[0].clientY,
+                event
+            );
+        } else {
+            end();
+        }
+    }, capture);
+
+    document.addEventListener('touchend', end, { signal });
+    document.addEventListener('touchcancel', end, { signal });
+
+    document.addEventListener('pointerdown', event => {
         if (event.pointerType !== 'touch') {
             start(
                 event.clientX,
@@ -809,93 +938,48 @@
                 event
             );
         }
-    }, {
-        capture: true,
-        signal: signal
-    });
+    }, capture);
 
-    document.addEventListener('pointermove', function (event) {
-        if (event.pointerType === 'touch' || !dragging) return;
-
-        var x = event.clientX - left;
-        var y = event.clientY - top;
-
-        tear(x, y, previous);
-        previous = { x: x, y: y };
-    }, {
-        signal: signal
-    });
-
-    document.addEventListener('pointercancel', end, {
-        signal: signal
-    });
-
-    document.addEventListener('pointerup', function (event) {
+    document.addEventListener('pointermove', event => {
         if (event.pointerType !== 'touch') {
-            end();
+            move(event.clientX, event.clientY, event);
         }
-    }, {
-        signal: signal
-    });
+    }, capture);
 
-    document.addEventListener('click', function (event) {
+    document.addEventListener('pointerup', end, { signal });
+    document.addEventListener('pointercancel', end, { signal });
+
+    document.addEventListener('click', event => {
         if (
+            swallowed &&
             performance.now() < swallowUntil &&
-            swallowedPoint &&
             Math.hypot(
-                event.clientX - swallowedPoint.x,
-                event.clientY - swallowedPoint.y
+                event.clientX - swallowed.x,
+                event.clientY - swallowed.y
             ) < 45 &&
-            allowedTarget(event.target)
+            allowed(event.target)
         ) {
             event.preventDefault();
             event.stopImmediatePropagation();
         }
     }, {
         capture: true,
-        signal: signal
+        signal
     });
 
-    function sync() {
-        cancelAnimationFrame(raf);
-        raf = 0;
-
-        clearTimeout(timer);
-        actors = [];
-        stains = [];
-        end();
-
-        canvas.hidden = !enabled();
-        ctx.clearRect(0, 0, W, H);
-
-        if (enabled()) {
-            web();
-            healAt = 0;
-            webUntil = 0;
-            last = 0;
-
-            request();
-            schedule();
-        }
-    }
-
     function destroy() {
-        if (uiObserver) {
-            uiObserver.disconnect();
-        }
-
-        if (sizeObserver) {
-            sizeObserver.disconnect();
-        }
-
-        stopped = true;
+        disposed = true;
+        running = false;
 
         cancelAnimationFrame(raf);
         clearTimeout(timer);
-        events.abort();
+        controller.abort();
 
-        dark.removeEventListener('change', sync);
-        reduce.removeEventListener('change', sync);
+        observer?.disconnect();
+        sizeObserver?.disconnect();
+
+        dark.removeEventListener('change', refresh);
+        reduce.removeEventListener('change', refresh);
 
         canvas.remove();
 
@@ -904,45 +988,50 @@
         }
     }
 
-    var api = {
-        destroy: destroy
+    const api = {
+        destroy,
+        getState: () => ({
+            version: 4,
+            running,
+            ready,
+            failures: failures.slice(),
+            dark: dark.matches,
+            reducedMotion: reduce.matches,
+            active: actor?.kind || null
+        })
     };
 
     window.MargotHalloweenEffects = api;
 
-    dark.addEventListener('change', sync);
-    reduce.addEventListener('change', sync);
+    dark.addEventListener('change', refresh);
+    reduce.addEventListener('change', refresh);
 
-    document.addEventListener('focusin', request, {
-        signal: signal
-    });
-
-    document.addEventListener('focusout', request, {
-        signal: signal
-    });
-
-    document.addEventListener('visibilitychange', sync, {
-        signal: signal
-    });
+    document.addEventListener('visibilitychange', refresh, { signal });
+    document.addEventListener('focusin', refresh, { signal });
+    document.addEventListener('focusout', refresh, { signal });
 
     document.addEventListener('margot:page-leave', destroy, {
         once: true,
-        signal: signal
+        signal
     });
 
-    window.addEventListener('resize', resize, {
-        signal: signal
+    window.addEventListener('blur', end, { signal });
+    window.addEventListener('resize', resize, { signal });
+
+    observer = new MutationObserver(records => {
+        // O movimento das fotografias não deve redesenhar a teia.
+        const relevant = records.some(record =>
+            record.target !== canvas &&
+            !(
+                record.target instanceof Element &&
+                record.target.closest('.foto')
+            )
+        );
+
+        if (relevant) refresh();
     });
 
-    window.addEventListener('blur', end, {
-        signal: signal
-    });
-
-    var uiObserver = new MutationObserver(function () {
-        request();
-    });
-
-    uiObserver.observe(document.body, {
+    observer.observe(document.body, {
         attributes: true,
         childList: true,
         subtree: true,
@@ -950,25 +1039,49 @@
             'class',
             'style',
             'hidden',
-            'open',
             'aria-hidden',
-            'aria-modal'
+            'aria-modal',
+            'open'
         ]
     });
 
-    var sizeObserver = typeof ResizeObserver === 'function'
+    sizeObserver = typeof ResizeObserver === 'function'
         ? new ResizeObserver(resize)
         : null;
 
-    if (sizeObserver) {
-        sizeObserver.observe(map);
-    }
-
-    window.addEventListener('scroll', resize, {
-        passive: true,
-        signal: signal
-    });
+    sizeObserver?.observe(map);
 
     resize();
-    sync();
+    canvas.hidden = true;
+    refresh();
+
+    Promise.all(['pumpkin', 'bat'].map(kind =>
+        new Promise(resolve => {
+            const image = new Image();
+
+            image.onload = () => {
+                pictures[kind] = image;
+                resolve();
+            };
+
+            image.onerror = () => {
+                failures.push(kind);
+                console.warn('Halloween: imagem indisponível:', kind);
+                resolve();
+            };
+
+            image.src = new URL(
+                kind + '-turnaround.png',
+                assetRoot
+            ).href;
+        })
+    )).then(() => {
+        if (disposed) return;
+
+        ready = failures.length === 0;
+
+        if (ready && running) {
+            schedule(30000);
+        }
+    });
 })();
