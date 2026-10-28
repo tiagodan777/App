@@ -1,0 +1,2 @@
+# As imagens são enviadas pela rota PHP que verifica a conta autenticada.
+Require all denied

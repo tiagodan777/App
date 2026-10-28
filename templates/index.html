@@ -3,6 +3,9 @@
 {% block styles %}
 <link rel="stylesheet" href="{{ doc_root }}estilos/chat.css?v=20260923-camera" data-margot-page-style>
 <link rel="stylesheet" href="{{ doc_root }}estilos/today.css?v=20261017-menu1" data-margot-page-style>
+{% if halloween_enabled %}
+<link rel="stylesheet" href="{{ doc_root }}estilos/today-halloween.css?v=hw26-pilot-1" data-margot-page-style>
+{% endif %}
 {% endblock %}
 
 {% block content %}
@@ -17,7 +20,10 @@
             </a>
 
             <h1></h1>
-            <button type="button" class="daylie-entry" data-daylies-mini hidden>Ver Daylies <span>24h</span></button>
+
+            <button type="button" class="daylie-entry" data-daylies-mini hidden>
+                Ver Daylies <span>24h</span>
+            </button>
 
             <button
                 type="button"
@@ -36,70 +42,82 @@
         </header>
 
         <section id="acoes-perfil" class="acoes-perfil" aria-hidden="true" hidden>
-            <button type="button" class="acoes-perfil-fundo" aria-label="Fechar opções" data-fechar-acoes></button>
+            <button
+                type="button"
+                class="acoes-perfil-fundo"
+                aria-label="Fechar opções"
+                data-fechar-acoes
+            ></button>
 
-            <div class="acoes-perfil-caixa" role="dialog" aria-modal="true" aria-labelledby="acoes-perfil-titulo" tabindex="-1">
+            <div
+                class="acoes-perfil-caixa"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="acoes-perfil-titulo"
+                tabindex="-1"
+            >
                 <div id="acoes-perfil-principal">
                     <header class="acoes-perfil-cabecalho">
                         <h2 id="acoes-perfil-titulo">Opções</h2>
 
-                        <button type="button" class="acoes-perfil-fechar" aria-label="Fechar" data-fechar-acoes>×</button>
+                        <button
+                            type="button"
+                            class="acoes-perfil-fechar"
+                            aria-label="Fechar"
+                            data-fechar-acoes
+                        >×</button>
                     </header>
 
-                    <button type="button" id="bloquear-membro" class="acao-perfil acao-perfil-perigosa">
+                    <button
+                        type="button"
+                        id="bloquear-membro"
+                        class="acao-perfil acao-perfil-perigosa"
+                    >
                         <strong>Bloquear</strong>
-
                         <span>Deixam de aparecer um ao outro entre as pessoas por perto.</span>
                     </button>
 
                     <button type="button" id="abrir-denuncia" class="acao-perfil">
                         <strong>Denunciar</strong>
-
                         <span>Envia uma denúncia privada.</span>
                     </button>
 
-                    <button type="button" class="acao-perfil-cancelar" data-fechar-acoes>Cancelar</button>
+                    <button
+                        type="button"
+                        class="acao-perfil-cancelar"
+                        data-fechar-acoes
+                    >Cancelar</button>
                 </div>
 
                 <form id="form-denuncia" class="form-denuncia" hidden>
                     <header class="acoes-perfil-cabecalho">
-                        <button type="button" id="voltar-denuncia" class="acoes-perfil-voltar" aria-label="Voltar">‹</button>
+                        <button
+                            type="button"
+                            id="voltar-denuncia"
+                            class="acoes-perfil-voltar"
+                            aria-label="Voltar"
+                        >‹</button>
 
                         <h2>Denunciar perfil</h2>
 
-                        <button type="button" class="acoes-perfil-fechar" aria-label="Fechar" data-fechar-acoes>×</button>
+                        <button
+                            type="button"
+                            class="acoes-perfil-fechar"
+                            aria-label="Fechar"
+                            data-fechar-acoes
+                        >×</button>
                     </header>
 
                     <label for="denuncia-motivo">Motivo</label>
 
                     <select name="motivo" id="denuncia-motivo" required>
-                        <option value="">
-                            Escolhe um motivo
-                        </option>
-
-                        <option value="comportamento_inadequado">
-                            Comportamento inadequado
-                        </option>
-
-                        <option value="assedio">
-                            Assédio
-                        </option>
-
-                        <option value="perfil_falso">
-                            Perfil falso
-                        </option>
-
-                        <option value="spam">
-                            Spam
-                        </option>
-
-                        <option value="seguranca">
-                            Questão de segurança
-                        </option>
-
-                        <option value="outro">
-                            Outro
-                        </option>
+                        <option value="">Escolhe um motivo</option>
+                        <option value="comportamento_inadequado">Comportamento inadequado</option>
+                        <option value="assedio">Assédio</option>
+                        <option value="perfil_falso">Perfil falso</option>
+                        <option value="spam">Spam</option>
+                        <option value="seguranca">Questão de segurança</option>
+                        <option value="outro">Outro</option>
                     </select>
 
                     <label for="denuncia-mensagem">
@@ -121,25 +139,49 @@
         </section>
 
         <section id="mini-menu-hoje" class="mini-menu-hoje" aria-hidden="true" hidden>
-            <div class="mini-menu-hoje-topo">
-                Hoje
-            </div>
-
+            <div class="mini-menu-hoje-topo">Hoje</div>
             <p data-hoje-nota hidden></p>
-
             <div class="hoje-chips" data-hoje-roupa hidden></div>
         </section>
 
         <button type="button" class="ola" id="enviar-hey">Hey</button>
 
-        <form action="" method="post" enctype="multipart/form-data" class="mini-menu-mensagem">
-            <input type="hidden" name="profile_access_token" id="mini-menu-profile-access-token" value="">
+        <form
+            action=""
+            method="post"
+            enctype="multipart/form-data"
+            class="mini-menu-mensagem"
+        >
+            <input
+                type="hidden"
+                name="profile_access_token"
+                id="mini-menu-profile-access-token"
+                value=""
+            >
 
-            <input type="file" name="media" id="mini-menu-media" accept="image/*,video/*" hidden>
+            <input
+                type="file"
+                name="media"
+                id="mini-menu-media"
+                accept="image/*,video/*"
+                hidden
+            >
 
-            <input type="text" name="mensagem" id="mensagem" maxlength="2000" autocomplete="off" autocapitalize="sentences" placeholder="Mensagem…">
+            <input
+                type="text"
+                name="mensagem"
+                id="mensagem"
+                maxlength="2000"
+                autocomplete="off"
+                autocapitalize="sentences"
+                placeholder="Mensagem…"
+            >
 
-            <button type="submit" class="mini-compose-send" aria-label="Enviar mensagem"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20V4M5 11l7-7 7 7"></path></svg></button>
+            <button type="submit" class="mini-compose-send" aria-label="Enviar mensagem">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 20V4M5 11l7-7 7 7"></path>
+                </svg>
+            </button>
         </form>
     </div>
 
@@ -156,7 +198,10 @@
                 if (!form || !form.matches('.mini-menu-mensagem')) return;
 
                 var miniMenu = form.closest('.mini-menu');
-                var inputToken = form.querySelector('input[name="profile_access_token"]');
+                var inputToken = form.querySelector(
+                    'input[name="profile_access_token"]'
+                );
+
                 if (!miniMenu || !inputToken) return;
 
                 var destinatarioId = String(
@@ -169,8 +214,11 @@
                 }
 
                 var fotografia = document.getElementById(destinatarioId);
+
                 inputToken.value = fotografia
-                    ? String(fotografia.getAttribute('data-profile-access-token') || '').trim()
+                    ? String(
+                        fotografia.getAttribute('data-profile-access-token') || ''
+                    ).trim()
                     : '';
             }, true);
         })();
@@ -178,7 +226,15 @@
 
     <script src="{{ doc_root }}js/index-posicao.js?v=20261022-real-tutorial-1"></script>
     <script src="{{ doc_root }}js/today-clothes.js?v=20260916"></script>
-    <script src="{{ doc_root }}js/today.js?v=20260921"></script>
+
+    {% if halloween_enabled %}
+    <script
+        src="{{ doc_root }}js/today-halloween.js?v=hw26-pilot-1"
+        data-catalog-url="{{ doc_root }}halloween/catalog"
+    ></script>
+    {% endif %}
+
+    <script src="{{ doc_root }}js/today.js?v=hw26-pilot-1"></script>
     <script src="{{ doc_root }}js/chat-recorder.js?v=20260920-video"></script>
     <script src="{{ doc_root }}js/chat-camera.js?v=20260923-camera"></script>
     <script src="{{ doc_root }}js/chat-audio-player.js?v=20260920-video"></script>

@@ -16,7 +16,11 @@
     },
     "scripts": {
         "lint": "@php tests/lint.php",
-        "test": "@php tests/run.php",
+        "test": [
+            "@php tests/run.php",
+            "@php tests/halloween.php",
+            "@php tests/halloween-templates.php"
+        ],
         "db:check": "@php database/check.php"
     }
 }

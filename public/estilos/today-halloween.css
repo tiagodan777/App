@@ -1,0 +1,512 @@
+.hw-garment {
+    display: inline-block;
+    width: 100%;
+    aspect-ratio: 8/9;
+    background-repeat: no-repeat;
+    background-size: 300% 400%;
+    vertical-align: middle;
+    flex-shrink: 0;
+}
+
+.hw-controls {
+    margin: 0 0 18px;
+    color: inherit;
+}
+
+.hw-controls [hidden] {
+    display: none !important;
+}
+
+.hw-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.hw-tabs button {
+    flex: 1;
+    border: 1px solid #d6d0dc;
+    border-radius: 13px;
+    background: transparent;
+    color: inherit;
+    padding: 12px;
+    font: inherit;
+    min-height: 44px;
+    font-weight: 650;
+}
+
+.hw-tabs button[aria-pressed=true] {
+    background: #fa164b;
+    color: white;
+    border-color: #fa164b;
+}
+
+.hw-types {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.hw-types button {
+    padding: 15px 12px;
+    min-height: 100px;
+    text-align: left;
+    border-radius: 16px;
+    border: 2px solid #e5dfea;
+    background: #f7f3fa;
+    color: #32233f;
+    font: inherit;
+}
+
+.hw-types button[aria-pressed=true] {
+    border-color: #74469a;
+    background: #efe4f8;
+}
+
+.hw-types strong {
+    display: block;
+    font-size: 15px;
+    line-height: 1.3;
+}
+
+.hw-types small {
+    display: block;
+    margin-top: 7px;
+    font-size: 11px;
+    line-height: 1.4;
+    color: #73677c;
+}
+
+.hw-search {
+    display: block;
+}
+
+.hw-search > span {
+    display: block;
+    font-size: 12px;
+    margin-bottom: 7px;
+}
+
+.hw-search input {
+    width: 100%;
+    min-height: 46px;
+    border: 1px solid #d6d0dc;
+    border-radius: 12px;
+    padding: 10px 12px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 16px;
+}
+
+.hw-filters {
+    display: flex;
+    overflow-x: auto;
+    gap: 7px;
+    padding: 12px 1px;
+    scrollbar-width: thin;
+}
+
+.hw-filters button {
+    flex-shrink: 0;
+    white-space: nowrap;
+    font: inherit;
+    font-size: 12px;
+    border: 1px solid #d6d0dc;
+    border-radius: 30px;
+    min-height: 44px;
+    padding: 8px 12px;
+    background: transparent;
+    color: inherit;
+}
+
+.hw-filters button[aria-pressed=true] {
+    background: #653f84;
+    color: #fff;
+    border-color: #653f84;
+}
+
+.hw-count {
+    font-size: 12px;
+    margin: 0 !important;
+    opacity: .75;
+}
+
+#hoje-pecas-grid.hw-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.hw-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    text-align: left;
+    min-width: 0;
+    padding: 0 12px 14px;
+    border: 1px solid #e6dfe9;
+    border-radius: 16px;
+    background: #fff;
+    color: #28222d;
+    overflow: hidden;
+    font: inherit;
+}
+
+.hw-card[aria-pressed=true] {
+    border: 2px solid #794b9e;
+}
+
+.hw-card[aria-pressed=true]:after {
+    content: '✓';
+    position: absolute;
+    top: 9px;
+    right: 9px;
+    background: #74469a;
+    color: #fff;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    display: grid;
+    place-items: center;
+    font-size: 13px;
+}
+
+.hw-card-art {
+    display: grid;
+    place-items: center;
+    width: calc(100% + 24px);
+    margin: 0 -12px 12px;
+    padding: 12px;
+    background: radial-gradient(ellipse at center, #e9dfef, #f8f4fa);
+    aspect-ratio: 1/1.15;
+}
+
+.hw-card strong {
+    font-size: 14px;
+    line-height: 1.3;
+    font-weight: 650;
+}
+
+.hw-kind {
+    display: block;
+    font-size: 10px;
+    color: #74469a;
+    line-height: 1.3;
+    margin-bottom: 6px;
+}
+
+.hw-source {
+    display: block;
+    font-size: 11px;
+    line-height: 1.5;
+    color: #776b80;
+    margin: 5px 0 0;
+}
+
+.hw-empty {
+    grid-column: 1/-1;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.a-escolher-cor .hw-controls,
+.hw-mode .hoje-roupa-ajuda {
+    display: none !important;
+}
+
+.hw-detail {
+    width: 420px;
+    max-width: calc(100% - 28px);
+    max-height: 90vh;
+    max-height: 90dvh;
+    margin: auto;
+    padding: 0;
+    border: 0;
+    border-radius: 24px;
+    background: white;
+    color: #28222d;
+    box-shadow: 0 25px 90px #0004;
+    overscroll-behavior: contain;
+}
+
+.hw-detail::backdrop {
+    background: #21152e99;
+    backdrop-filter: blur(4px);
+}
+
+.hw-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 2;
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+    border: 1px solid #e6dfe9;
+    border-radius: 50%;
+    background: #fffffff0;
+    color: #28222d;
+    font-size: 28px;
+    font-weight: 300;
+}
+
+.hw-detail-art {
+    display: grid;
+    place-items: center;
+    padding: 18px;
+    background: radial-gradient(ellipse at center, #e9dfef, #f8f4fa);
+}
+
+.hw-detail-art .hw-garment {
+    height: 28vh;
+    height: 28dvh;
+    width: auto;
+    aspect-ratio: 8/9;
+}
+
+.hw-detail-content {
+    padding: 20px 22px 24px;
+}
+
+.hw-detail-content h2 {
+    font-size: 25px;
+    line-height: 1.2;
+    margin: 0;
+}
+
+.hw-detail-content .hw-source {
+    font-size: 13px;
+    margin-top: 8px;
+}
+
+.hw-detail-hint {
+    font-size: 13px;
+    line-height: 1.5;
+    color: #776b80;
+    margin: 14px 0;
+}
+
+.hw-choose {
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 16px;
+    border: 0;
+    border-radius: 13px;
+    background: #fa164b;
+    color: #fff;
+    font: inherit;
+    font-weight: 650;
+}
+
+.hw-error {
+    font-size: 13px;
+    color: #b52243;
+    line-height: 1.5;
+    margin: 12px 0;
+}
+
+.hw-error:empty {
+    display: none;
+}
+
+.hw-controls button,
+.hw-card,
+.hw-close,
+.hw-choose {
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.hw-controls button:focus-visible,
+.hw-card:focus-visible,
+.hw-detail button:focus-visible {
+    outline: 3px solid #ac80ce;
+    outline-offset: 3px;
+}
+
+.hoje-chip-icone .hw-garment {
+    width: 40px;
+    height: 45px;
+}
+
+.hoje-chip--compacto .hoje-chip-icone .hw-garment {
+    width: 33px;
+    height: 37px;
+}
+
+.hoje-roupa-selecionada-icone .hw-garment {
+    width: 32px;
+    height: 36px;
+}
+
+.hoje-opcao-roupa-icone .hw-garment {
+    width: 35px;
+    height: 40px;
+}
+
+@media (max-width: 600px) {
+    .hw-detail {
+        position: fixed;
+        inset: auto 0 0;
+        max-width: 100%;
+        width: 100%;
+        margin: 0;
+        border-radius: 24px 24px 0 0;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+}
+
+@media (min-width: 900px) {
+    #hoje-pecas-grid.hw-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hw-controls *,
+    .hw-detail * {
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Miniatura compacta no balão Hoje. */
+#mini-menu-hoje.hw-status {
+    width: 138px;
+    min-width: 0;
+    max-width: 138px;
+}
+
+.perfil-hoje-balao.hw-status {
+    width: 192px;
+    max-width: calc(100% - 28px);
+}
+
+#mini-menu-hoje.hw-status .hoje-chips,
+.perfil-hoje-balao.hw-status .hoje-chips {
+    max-width: none;
+    display: block;
+}
+
+.hw-status-open {
+    display: flex !important;
+    align-items: center;
+    gap: 7px;
+    width: 100%;
+    min-height: 54px;
+    margin: 0;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 8px;
+    background: transparent !important;
+    color: #343239 !important;
+    text-align: left;
+    font: inherit;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.hw-status-open .hw-garment {
+    width: 44px;
+    height: 50px;
+    flex: 0 0 44px;
+}
+
+.perfil-hoje-balao .hw-status-open .hw-garment {
+    width: 53px;
+    height: 60px;
+    flex-basis: 53px;
+}
+
+.hw-status-caption {
+    min-width: 0;
+}
+
+.hw-status-caption strong {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    font-size: 11px;
+    line-height: 1.25;
+    font-weight: 700;
+}
+
+.hw-status-caption small {
+    display: block;
+    font-size: 9px;
+    line-height: 1.4;
+    margin-top: 5px;
+    color: #775a89;
+}
+
+.perfil-foto-area:has(.perfil-hoje-balao.hw-status:not([hidden])) {
+    --hoje-reserva-perfil: 80px;
+}
+
+.perfil-foto-area:has(.perfil-hoje-balao.hw-status.tem-nota:not([hidden])) {
+    --hoje-reserva-perfil: 110px;
+}
+
+.hw-worn-list {
+    list-style: none;
+    padding: 0;
+    margin: 16px 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.hw-worn-list li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    line-height: 1.4;
+    min-width: 0;
+}
+
+.hw-worn-icon {
+    width: 45px;
+    height: 50px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+}
+
+.hw-worn-icon .hw-garment {
+    width: 44px;
+    height: 50px;
+}
+
+.hw-worn-icon svg {
+    width: 40px;
+    height: 40px;
+}
+
+.hw-status-open:focus-visible {
+    outline: 3px solid #ac80ce;
+    outline-offset: 3px;
+}
+
+@media (prefers-color-scheme: dark) {
+    .hw-status-open {
+        color: #f5f5f7 !important;
+    }
+
+    .hw-status-caption small {
+        color: #d2b8e3;
+    }
+
+    .hw-controls {
+        color: #f5f5f7;
+    }
+
+    .hw-tabs button,
+    .hw-filters button,
+    .hw-search input {
+        border-color: #6a6074;
+    }
+}

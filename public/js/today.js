@@ -1,6 +1,8 @@
 (function (window, document) {
     'use strict';
 
+    var halloween = window.MargotHalloween || null;
+    var pageActive = true;
     var PIECES = window.MargotClothes.pieces;
     var COLORS = window.MargotClothes.colors;
     var pieceMeta = window.MargotClothes.piece;
@@ -29,8 +31,19 @@
         return document.getElementById(id);
     }
 
+    function wardrobeHeaders() {
+        var headers = {Accept: 'application/json'};
+
+        if (halloween && halloween.enabled) {
+            headers['X-Margot-Wardrobe'] = halloween.version;
+        }
+
+        return headers;
+    }
+
     function apiBase() {
-        return String(window.todayUrl || API_BASE_FALLBACK).replace(/\/+$/, '') + '/';
+        return String(window.todayUrl || API_BASE_FALLBACK)
+            .replace(/\/+$/, '') + '/';
     }
 
     function apiUrl(memberId) {
@@ -39,7 +52,10 @@
 
     function validStatus(status) {
         return Boolean(
-            status && (text(status.note) || (Array.isArray(status.clothes) && status.clothes.length))
+            status && (
+                text(status.note) ||
+                (Array.isArray(status.clothes) && status.clothes.length)
+            )
         );
     }
 
@@ -50,7 +66,9 @@
         var result = [];
 
         items.forEach(function (item) {
-            if (!item || typeof item !== 'object' || result.length >= 5) return;
+            if (!item || typeof item !== 'object' || result.length >= 5) {
+                return;
+            }
 
             var type = text(item.type).toLowerCase();
             var color = text(item.color).toLowerCase();
@@ -58,9 +76,12 @@
             if (
                 !type ||
                 seen[type] ||
-                !PIECES.some(function (piece) {
-                    return piece.type === type;
-                })
+                (
+                    !PIECES.some(function (piece) {
+                        return piece.type === type;
+                    }) &&
+                    !(halloween && halloween.find(type))
+                )
             ) {
                 return;
             }
@@ -75,7 +96,7 @@
             }
 
             seen[type] = true;
-            result.push({ type: type, color: color });
+            result.push({type: type, color: color});
         });
 
         return result;
@@ -91,25 +112,43 @@
             return Promise.resolve(cached.status);
         }
 
-        return window
-            .fetch(apiUrl(memberId), {
-                method: 'GET',
-                credentials: 'same-origin',
-                headers: { Accept: 'application/json' }
+        return Promise.resolve(halloween ? halloween.ready : null)
+            .then(function () {
+                if (!pageActive) throw new Error('page_left');
+
+                return window.fetch(apiUrl(memberId), {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    headers: wardrobeHeaders()
+                });
             })
             .then(function (response) {
-                if (!response.ok) throw new Error('today_' + response.status);
+                if (!response.ok) {
+                    throw new Error('today_' + response.status);
+                }
+
                 return response.json();
             })
             .then(function (payload) {
-                var status = payload && payload.success ? payload.today || null : null;
-                cache.set(memberId, { at: Date.now(), status: status });
+                if (!pageActive) throw new Error('page_left');
+
+                var status = payload && payload.success
+                    ? payload.today || null
+                    : null;
+
+                cache.set(memberId, {
+                    at: Date.now(),
+                    status: status
+                });
+
                 return status;
             });
     }
 
     function clearNode(node) {
-        while (node && node.firstChild) node.removeChild(node.firstChild);
+        while (node && node.firstChild) {
+            node.removeChild(node.firstChild);
+        }
     }
 
     function createClothingChip(item, compact) {
@@ -119,17 +158,30 @@
         var icon = document.createElement('span');
         var label = document.createElement('span');
 
-        chip.className = compact ? 'hoje-chip hoje-chip--compacto' : 'hoje-chip';
+        chip.className = compact
+            ? 'hoje-chip hoje-chip--compacto'
+            : 'hoje-chip';
+
         icon.className = 'hoje-chip-icone';
         label.className = 'hoje-chip-texto';
 
-        icon.appendChild(createGarmentIcon(piece.type, text(item.color), 'hoje-chip-garment'));
+        icon.appendChild(
+            createGarmentIcon(
+                piece.type,
+                text(item.color),
+                'hoje-chip-garment'
+            )
+        );
 
         label.textContent = compact
             ? color.label || piece.label
             : piece.label + (color.label ? ' · ' + color.label : '');
 
-        chip.setAttribute('aria-label', piece.label + (color.label ? ', ' + color.label : ''));
+        chip.setAttribute(
+            'aria-label',
+            piece.label + (color.label ? ', ' + color.label : '')
+        );
+
         chip.appendChild(icon);
         chip.appendChild(label);
 
@@ -187,19 +239,27 @@
 
         window.requestAnimationFrame(function () {
             window.requestAnimationFrame(function () {
-                if (box.hidden || box.getAttribute('aria-hidden') === 'true') return;
+                if (
+                    box.hidden ||
+                    box.getAttribute('aria-hidden') === 'true'
+                ) {
+                    return;
+                }
+
                 box.classList.add('a-visivel');
             });
         });
     }
 
     function renderStatusBox(box, status, compact) {
-        if (!box) return;
+        if (!pageActive || !box) return;
 
         var note = box.querySelector('[data-hoje-nota]');
         var clothes = box.querySelector('[data-hoje-roupa]');
         var hasStatus = validStatus(status);
         var isMiniMenu = box.id === 'mini-menu-hoje';
+
+        if (halloween) halloween.decorateStatus(box, null);
 
         if (!hasStatus) {
             if (isMiniMenu) {
@@ -222,7 +282,9 @@
         if (clothes) {
             clearNode(clothes);
 
-            var items = Array.isArray(status.clothes) ? status.clothes : [];
+            var items = Array.isArray(status.clothes)
+                ? status.clothes
+                : [];
 
             items.forEach(function (item) {
                 clothes.appendChild(createClothingChip(item, compact));
@@ -230,6 +292,8 @@
 
             clothes.hidden = items.length === 0;
         }
+
+        if (halloween) halloween.decorateStatus(box, status);
 
         if (isMiniMenu) {
             showMiniMenuStatus(box);
@@ -254,21 +318,32 @@
         load(memberId, false)
             .then(function (status) {
                 var menu = document.querySelector('.mini-menu');
-                var selected = menu ? text(menu.getAttribute('data-destinatario-id')) : '';
 
-                if (requestId !== miniMenuRequest || selected !== memberId) return;
+                var selected = menu
+                    ? text(menu.getAttribute('data-destinatario-id'))
+                    : '';
+
+                if (
+                    requestId !== miniMenuRequest ||
+                    selected !== memberId
+                ) {
+                    return;
+                }
 
                 box.classList.remove('a-carregar');
                 renderStatusBox(box, status, true);
             })
             .catch(function () {
                 if (requestId !== miniMenuRequest) return;
+
                 box.classList.remove('a-carregar');
                 renderStatusBox(box, null, true);
             });
     }
 
     function renderProfile(status) {
+        if (!pageActive) return;
+
         var box = byId('perfil-hoje-balao');
         var add = byId('perfil-hoje-adicionar');
 
@@ -277,11 +352,16 @@
 
         if (box) {
             renderStatusBox(box, profileStatus, false);
-            box.classList.toggle('tem-nota', Boolean(text(profileStatus && profileStatus.note)));
+
+            box.classList.toggle(
+                'tem-nota',
+                Boolean(text(profileStatus && profileStatus.note))
+            );
         }
 
         if (add) {
             add.classList.toggle('ativo', validStatus(profileStatus));
+
             add.setAttribute(
                 'aria-label',
                 validStatus(profileStatus)
@@ -307,6 +387,8 @@
     }
 
     function showMessage(message, type) {
+        if (!pageActive) return;
+
         var error = byId('hoje-editor-erro');
 
         if (error) {
@@ -314,22 +396,27 @@
             error.hidden = !text(message);
         }
 
-        if (message && type === 'erro' && typeof window.mostrarMensagemTemporaria === 'function') {
+        if (
+            message &&
+            type === 'erro' &&
+            typeof window.mostrarMensagemTemporaria === 'function'
+        ) {
             window.mostrarMensagemTemporaria(message, 'erro');
         }
     }
 
     function selectedPiece(type) {
-        return (
-            clothesDraft.find(function (item) {
-                return item.type === type;
-            }) || null
-        );
+        return clothesDraft.find(function (item) {
+            return item.type === type;
+        }) || null;
     }
 
     function editorSheet() {
         var editor = byId('hoje-editor');
-        return editor ? editor.querySelector('.hoje-editor-sheet') : null;
+
+        return editor
+            ? editor.querySelector('.hoje-editor-sheet')
+            : null;
     }
 
     function setSheetScroll(top, smooth) {
@@ -364,7 +451,10 @@
 
         if (grid) {
             grid.hidden = false;
-            grid.classList.remove('hoje-pecas-sair', 'hoje-pecas-regressar');
+            grid.classList.remove(
+                'hoje-pecas-sair',
+                'hoje-pecas-regressar'
+            );
         }
 
         if (selected) selected.hidden = clothesDraft.length === 0;
@@ -372,7 +462,10 @@
 
         if (area) {
             area.hidden = true;
-            area.classList.remove('hoje-cores-entrar', 'hoje-cores-sair');
+            area.classList.remove(
+                'hoje-cores-entrar',
+                'hoje-cores-sair'
+            );
         }
     }
 
@@ -391,13 +484,18 @@
         clothesScrollBeforeColor = sheet ? sheet.scrollTop : 0;
 
         var editorTitle = byId('hoje-editor-titulo');
-        if (editorTitle) editorTitle.textContent = 'Escolhe a cor';
+
+        if (editorTitle) {
+            editorTitle.textContent = 'Escolhe a cor';
+        }
 
         showMessage('', '');
         view.classList.add('a-escolher-cor');
         grid.classList.add('hoje-pecas-sair');
 
-        if (colorTransitionTimer) window.clearTimeout(colorTransitionTimer);
+        if (colorTransitionTimer) {
+            window.clearTimeout(colorTransitionTimer);
+        }
 
         colorTransitionTimer = window.setTimeout(function () {
             if (help) help.hidden = true;
@@ -433,13 +531,18 @@
         area.classList.remove('hoje-cores-entrar');
         area.classList.add('hoje-cores-sair');
 
-        if (colorTransitionTimer) window.clearTimeout(colorTransitionTimer);
+        if (colorTransitionTimer) {
+            window.clearTimeout(colorTransitionTimer);
+        }
 
         colorTransitionTimer = window.setTimeout(function () {
             activePiece = '';
 
             var editorTitle = byId('hoje-editor-titulo');
-            if (editorTitle) editorTitle.textContent = 'Roupa de hoje';
+
+            if (editorTitle) {
+                editorTitle.textContent = 'Roupa de hoje';
+            }
 
             renderColorGrid();
             renderPieceGrid();
@@ -474,6 +577,23 @@
         var grid = byId('hoje-pecas-grid');
         if (!grid) return;
 
+        if (
+            halloween &&
+            halloween.render(
+                grid,
+                clothesDraft,
+                function (next) {
+                    clothesDraft = normalizeClothes(next);
+                    renderPieceGrid();
+                    renderSelectedClothes();
+                    renderClothingSummary();
+                },
+                renderPieceGrid
+            )
+        ) {
+            return;
+        }
+
         clearNode(grid);
 
         PIECES.forEach(function (piece) {
@@ -488,6 +608,7 @@
             button.classList.toggle('selecionada', Boolean(chosen));
 
             icon.className = 'hoje-peca-icone';
+
             icon.appendChild(
                 createGarmentIcon(
                     piece.type,
@@ -539,6 +660,7 @@
 
         if (preview) {
             clearNode(preview);
+
             preview.appendChild(
                 createGarmentIcon(
                     activePiece,
@@ -555,11 +677,26 @@
 
             button.type = 'button';
             button.className = 'hoje-cor';
-            button.classList.toggle('selecionada', Boolean(chosen && chosen.color === color.key));
-            button.setAttribute('aria-label', piece.label + ', ' + color.label);
+
+            button.classList.toggle(
+                'selecionada',
+                Boolean(chosen && chosen.color === color.key)
+            );
+
+            button.setAttribute(
+                'aria-label',
+                piece.label + ', ' + color.label
+            );
 
             sample.className = 'hoje-cor-amostra';
-            sample.appendChild(createGarmentIcon(activePiece, color.key, 'hoje-cor-garment'));
+
+            sample.appendChild(
+                createGarmentIcon(
+                    activePiece,
+                    color.key,
+                    'hoje-cor-garment'
+                )
+            );
 
             label.className = 'hoje-cor-label';
             label.textContent = color.label;
@@ -575,9 +712,15 @@
                 });
 
                 if (index >= 0) {
-                    clothesDraft[index] = { type: type, color: color.key };
+                    clothesDraft[index] = {
+                        type: type,
+                        color: color.key
+                    };
                 } else {
-                    clothesDraft.push({ type: type, color: color.key });
+                    clothesDraft.push({
+                        type: type,
+                        color: color.key
+                    });
                 }
 
                 grid.querySelectorAll('.hoje-cor').forEach(function (item) {
@@ -588,7 +731,14 @@
 
                 if (preview) {
                     clearNode(preview);
-                    preview.appendChild(createGarmentIcon(type, color.key, 'hoje-cores-peca-garment'));
+
+                    preview.appendChild(
+                        createGarmentIcon(
+                            type,
+                            color.key,
+                            'hoje-cores-peca-garment'
+                        )
+                    );
                 }
 
                 window.setTimeout(function () {
@@ -617,17 +767,28 @@
 
             button.type = 'button';
             button.className = 'hoje-roupa-selecionada-item';
+
             button.setAttribute(
                 'aria-label',
-                'Remover ' + piece.label + (color.label ? ' ' + color.label : '')
+                'Remover ' + piece.label +
+                    (color.label ? ' ' + color.label : '')
             );
 
             icon.className = 'hoje-roupa-selecionada-icone';
-            icon.appendChild(createGarmentIcon(item.type, item.color, 'hoje-selecionada-garment'));
+
+            icon.appendChild(
+                createGarmentIcon(
+                    item.type,
+                    item.color,
+                    'hoje-selecionada-garment'
+                )
+            );
+
             icon.setAttribute('aria-hidden', 'true');
 
             label.className = 'hoje-roupa-selecionada-label';
-            label.textContent = piece.label + (color.label ? ' · ' + color.label : '');
+            label.textContent = piece.label +
+                (color.label ? ' · ' + color.label : '');
 
             remove.className = 'hoje-roupa-selecionada-remover';
             remove.textContent = '×';
@@ -642,7 +803,9 @@
                     return entry.type !== item.type;
                 });
 
-                if (activePiece === item.type) activePiece = '';
+                if (activePiece === item.type) {
+                    activePiece = '';
+                }
 
                 renderPieceGrid();
                 renderColorGrid();
@@ -657,7 +820,10 @@
     function renderClothingSummary() {
         var summary = byId('hoje-roupa-resumo');
         var button = byId('hoje-abrir-roupa');
-        var preview = button ? button.querySelector('.hoje-opcao-roupa-icone') : null;
+
+        var preview = button
+            ? button.querySelector('.hoje-opcao-roupa-icone')
+            : null;
 
         if (!summary || !button) return;
 
@@ -666,10 +832,14 @@
 
             var previewItem = clothesDraft.length
                 ? clothesDraft[0]
-                : { type: 'tshirt', color: '' };
+                : {type: 'tshirt', color: ''};
 
             preview.appendChild(
-                createGarmentIcon(previewItem.type, previewItem.color, 'hoje-opcao-garment')
+                createGarmentIcon(
+                    previewItem.type,
+                    previewItem.color,
+                    'hoje-opcao-garment'
+                )
             );
         }
 
@@ -679,14 +849,13 @@
             return;
         }
 
-        summary.textContent = clothesDraft
-            .map(function (item) {
-                var piece = pieceMeta(item.type);
-                var color = colorMeta(item.color);
+        summary.textContent = clothesDraft.map(function (item) {
+            var piece = pieceMeta(item.type);
+            var color = colorMeta(item.color);
 
-                return piece.label + (color.label ? ' ' + color.label.toLowerCase() : '');
-            })
-            .join(' · ');
+            return piece.label +
+                (color.label ? ' ' + color.label.toLowerCase() : '');
+        }).join(' · ');
 
         button.classList.add('tem-roupa');
     }
@@ -694,14 +863,24 @@
     function animateEditorView(node, direction) {
         if (!node) return;
 
-        node.classList.remove('hoje-view-entra-direita', 'hoje-view-entra-esquerda');
+        node.classList.remove(
+            'hoje-view-entra-direita',
+            'hoje-view-entra-esquerda'
+        );
+
         void node.offsetWidth;
+
         node.classList.add(
-            direction === 'back' ? 'hoje-view-entra-esquerda' : 'hoje-view-entra-direita'
+            direction === 'back'
+                ? 'hoje-view-entra-esquerda'
+                : 'hoje-view-entra-direita'
         );
 
         window.setTimeout(function () {
-            node.classList.remove('hoje-view-entra-direita', 'hoje-view-entra-esquerda');
+            node.classList.remove(
+                'hoje-view-entra-direita',
+                'hoje-view-entra-esquerda'
+            );
         }, 240);
     }
 
@@ -751,7 +930,9 @@
             updateCounter();
         }
 
-        if (deleteButton) deleteButton.hidden = !validStatus(status);
+        if (deleteButton) {
+            deleteButton.hidden = !validStatus(status);
+        }
 
         renderClothingSummary();
         renderSelectedClothes();
@@ -771,6 +952,8 @@
     }
 
     function setEditorBusy(busy) {
+        if (!pageActive) return;
+
         var editor = byId('hoje-editor');
         if (!editor) return;
 
@@ -784,7 +967,9 @@
 
     function updateKeyboardOffset(explicitHeight) {
         var cap = window.Capacitor;
-        var ios = cap?.isNativePlatform?.() && cap?.getPlatform?.() === 'ios';
+        var ios = cap?.isNativePlatform?.() &&
+            cap?.getPlatform?.() === 'ios';
+
         var height = ios ? Number(explicitHeight) : NaN;
 
         if (!Number.isFinite(height)) {
@@ -801,19 +986,38 @@
         }
 
         keyboardOffset = Math.max(0, Math.round(height));
-        document.documentElement.style.setProperty('--hoje-teclado', keyboardOffset + 'px');
+
+        document.documentElement.style.setProperty(
+            '--hoje-teclado',
+            keyboardOffset + 'px'
+        );
     }
 
     function setEditorDrag(editor, distance) {
         if (!editor) return;
 
         var sheet = editor.querySelector('.hoje-editor-sheet');
-        var max = sheet ? Math.max(260, sheet.getBoundingClientRect().height) : 520;
-        var amount = Math.max(0, Math.min(Number(distance) || 0, max));
-        var backdrop = Math.max(0.12, 1 - (amount / max) * 0.9);
+
+        var max = sheet
+            ? Math.max(260, sheet.getBoundingClientRect().height)
+            : 520;
+
+        var amount = Math.max(
+            0,
+            Math.min(Number(distance) || 0, max)
+        );
+
+        var backdrop = Math.max(
+            0.12,
+            1 - (amount / max) * 0.9
+        );
 
         editor.style.setProperty('--hoje-arrasto', amount + 'px');
-        editor.style.setProperty('--hoje-fundo-opacidade', String(backdrop));
+
+        editor.style.setProperty(
+            '--hoje-fundo-opacidade',
+            String(backdrop)
+        );
     }
 
     function clearEditorDrag(editor) {
@@ -825,7 +1029,9 @@
     }
 
     function bindEditorSwipe(editor) {
-        var sheet = editor && editor.querySelector('.hoje-editor-sheet');
+        var sheet = editor &&
+            editor.querySelector('.hoje-editor-sheet');
+
         if (!sheet) return;
 
         var state = {
@@ -844,76 +1050,82 @@
             state.startedAt = 0;
         }
 
-        sheet.addEventListener(
-            'touchstart',
-            function (event) {
-                if (
-                    !editorOpen ||
-                    keyboardOffset > 0 ||
-                    !event.touches ||
-                    event.touches.length !== 1 ||
-                    sheet.scrollTop > 1
-                ) {
-                    return;
-                }
+        sheet.addEventListener('touchstart', function (event) {
+            if (
+                !editorOpen ||
+                keyboardOffset > 0 ||
+                !event.touches ||
+                event.touches.length !== 1 ||
+                sheet.scrollTop > 1
+            ) {
+                return;
+            }
 
-                var target = event.target;
+            var target = event.target;
 
-                if (
-                    target &&
-                    target.closest &&
-                    target.closest('textarea, input, select, button, a, [contenteditable="true"]')
-                ) {
-                    return;
-                }
+            if (
+                target &&
+                target.closest &&
+                target.closest(
+                    'textarea, input, select, button, a, [contenteditable="true"]'
+                )
+            ) {
+                return;
+            }
 
-                state.tracking = true;
-                state.dragging = false;
-                state.startY = event.touches[0].clientY;
-                state.currentY = state.startY;
-                state.startedAt = Date.now();
-            },
-            { passive: true }
-        );
+            state.tracking = true;
+            state.dragging = false;
+            state.startY = event.touches[0].clientY;
+            state.currentY = state.startY;
+            state.startedAt = Date.now();
+        }, {passive: true});
 
-        sheet.addEventListener(
-            'touchmove',
-            function (event) {
-                if (!state.tracking || !event.touches || event.touches.length !== 1) return;
+        sheet.addEventListener('touchmove', function (event) {
+            if (
+                !state.tracking ||
+                !event.touches ||
+                event.touches.length !== 1
+            ) {
+                return;
+            }
 
-                var current = event.touches[0].clientY;
-                var delta = current - state.startY;
+            var current = event.touches[0].clientY;
+            var delta = current - state.startY;
 
-                if (!state.dragging && delta <= 7) return;
+            if (!state.dragging && delta <= 7) return;
 
-                if (delta < 0 || sheet.scrollTop > 1) {
-                    reset();
-                    return;
-                }
+            if (delta < 0 || sheet.scrollTop > 1) {
+                reset();
+                return;
+            }
 
-                state.dragging = true;
-                state.currentY = current;
+            state.dragging = true;
+            state.currentY = current;
 
-                editor.classList.add('a-arrastar');
-                setEditorDrag(editor, delta);
-                event.preventDefault();
-            },
-            { passive: false }
-        );
+            editor.classList.add('a-arrastar');
+            setEditorDrag(editor, delta);
+            event.preventDefault();
+        }, {passive: false});
 
         function finish(event) {
             if (!state.tracking) return;
 
             var endY = state.currentY || state.startY;
 
-            if (event && event.changedTouches && event.changedTouches.length) {
+            if (
+                event &&
+                event.changedTouches &&
+                event.changedTouches.length
+            ) {
                 endY = event.changedTouches[0].clientY;
             }
 
             var distance = Math.max(0, endY - state.startY);
             var elapsed = Math.max(1, Date.now() - state.startedAt);
             var velocity = distance / elapsed;
-            var shouldClose = state.dragging && (distance >= 110 || velocity >= 0.62);
+
+            var shouldClose = state.dragging &&
+                (distance >= 110 || velocity >= 0.62);
 
             if (shouldClose) {
                 editor.classList.remove('a-arrastar');
@@ -933,11 +1145,13 @@
             reset();
         }
 
-        sheet.addEventListener('touchend', finish, { passive: true });
-        sheet.addEventListener('touchcancel', finish, { passive: true });
+        sheet.addEventListener('touchend', finish, {passive: true});
+        sheet.addEventListener('touchcancel', finish, {passive: true});
     }
 
     function openEditor() {
+        if (!pageActive) return;
+
         var editor = byId('hoje-editor');
         var note = byId('hoje-nota-input');
 
@@ -948,9 +1162,13 @@
             : loadProfile(false);
 
         promise.then(function (status) {
+            if (!pageActive) return;
+
             fillEditor(status);
 
-            if (editorOpenFrame) window.cancelAnimationFrame(editorOpenFrame);
+            if (editorOpenFrame) {
+                window.cancelAnimationFrame(editorOpenFrame);
+            }
 
             editor.classList.remove('aberto', 'a-arrastar');
             clearEditorDrag(editor);
@@ -974,8 +1192,12 @@
             });
 
             window.setTimeout(function () {
-                if (editorOpen && note && !window.matchMedia('(pointer: coarse)').matches) {
-                    note.focus({ preventScroll: true });
+                if (
+                    editorOpen &&
+                    note &&
+                    !window.matchMedia('(pointer: coarse)').matches
+                ) {
+                    note.focus({preventScroll: true});
                 }
             }, 340);
         });
@@ -998,18 +1220,18 @@
         document.body.classList.remove('hoje-editor-aberto');
 
         editorOpen = false;
+
+        if (halloween) halloween.closeDetail();
+
         activePiece = '';
         updateKeyboardOffset(0);
 
-        window.setTimeout(
-            function () {
-                if (!editorOpen) {
-                    editor.hidden = true;
-                    clearEditorDrag(editor);
-                }
-            },
-            fromDrag ? 260 : 280
-        );
+        window.setTimeout(function () {
+            if (!editorOpen) {
+                editor.hidden = true;
+                clearEditorDrag(editor);
+            }
+        }, fromDrag ? 260 : 280);
     }
 
     function saveEditor() {
@@ -1021,61 +1243,64 @@
         setEditorBusy(true);
         showMessage('', '');
 
-        window
-            .fetch(apiUrl(memberId), {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: {
-                    Accept: 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    note: note.value.trim(),
-                    clothes: clothesDraft.map(function (item) {
-                        return { type: item.type, color: item.color };
-                    })
+        window.fetch(apiUrl(memberId), {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: Object.assign(
+                wardrobeHeaders(),
+                {'Content-Type': 'application/json'}
+            ),
+            body: JSON.stringify({
+                note: note.value.trim(),
+                clothes: clothesDraft.map(function (item) {
+                    return {type: item.type, color: item.color};
                 })
             })
-            .then(function (response) {
-                return response
-                    .json()
-                    .catch(function () {
-                        return null;
-                    })
-                    .then(function (payload) {
-                        if (!response.ok || !payload || !payload.success) {
-                            throw new Error(
-                                payload && payload.message
-                                    ? payload.message
-                                    : 'Não foi possível guardar.'
-                            );
-                        }
-
-                        return payload.today || null;
-                    });
-            })
-            .then(function (status) {
-                cache.set(memberId, { at: Date.now(), status: status });
-                renderProfile(status);
-                closeEditor();
-
-                if (status) window.MargotDaylies?.celebrate('Pronto para hoje!');
-
-                if (typeof window.mostrarMensagemTemporaria === 'function') {
-                    window.mostrarMensagemTemporaria('Atualizado para hoje.', 'sucesso');
+        }).then(function (response) {
+            return response.json().catch(function () {
+                return null;
+            }).then(function (payload) {
+                if (!response.ok || !payload || !payload.success) {
+                    throw new Error(
+                        payload && payload.message
+                            ? payload.message
+                            : 'Não foi possível guardar.'
+                    );
                 }
-            })
-            .catch(function (error) {
-                showMessage(
-                    error && error.message && !/^today_/.test(error.message)
-                        ? error.message
-                        : 'Não foi possível guardar. Tenta novamente.',
-                    'erro'
-                );
-            })
-            .finally(function () {
-                setEditorBusy(false);
+
+                return payload.today || null;
             });
+        }).then(function (status) {
+            if (!pageActive) return;
+
+            cache.set(memberId, {
+                at: Date.now(),
+                status: status
+            });
+
+            renderProfile(status);
+            closeEditor();
+
+            if (status) {
+                window.MargotDaylies?.celebrate('Pronto para hoje!');
+            }
+
+            if (typeof window.mostrarMensagemTemporaria === 'function') {
+                window.mostrarMensagemTemporaria(
+                    'Atualizado para hoje.',
+                    'sucesso'
+                );
+            }
+        }).catch(function (error) {
+            showMessage(
+                error && error.message && !/^today_/.test(error.message)
+                    ? error.message
+                    : 'Não foi possível guardar. Tenta novamente.',
+                'erro'
+            );
+        }).finally(function () {
+            setEditorBusy(false);
+        });
     }
 
     function deleteEditor() {
@@ -1085,44 +1310,42 @@
         setEditorBusy(true);
         showMessage('', '');
 
-        window
-            .fetch(apiUrl(memberId), {
-                method: 'DELETE',
-                credentials: 'same-origin',
-                headers: { Accept: 'application/json' }
-            })
-            .then(function (response) {
-                return response
-                    .json()
-                    .catch(function () {
-                        return null;
-                    })
-                    .then(function (payload) {
-                        if (!response.ok || !payload || !payload.success) {
-                            throw new Error(
-                                payload && payload.message
-                                    ? payload.message
-                                    : 'Não foi possível apagar.'
-                            );
-                        }
-                    });
-            })
-            .then(function () {
-                cache.set(memberId, { at: Date.now(), status: null });
-                renderProfile(null);
-                closeEditor();
-            })
-            .catch(function (error) {
-                showMessage(
-                    error && error.message
-                        ? error.message
-                        : 'Não foi possível apagar. Tenta novamente.',
-                    'erro'
-                );
-            })
-            .finally(function () {
-                setEditorBusy(false);
+        window.fetch(apiUrl(memberId), {
+            method: 'DELETE',
+            credentials: 'same-origin',
+            headers: {Accept: 'application/json'}
+        }).then(function (response) {
+            return response.json().catch(function () {
+                return null;
+            }).then(function (payload) {
+                if (!response.ok || !payload || !payload.success) {
+                    throw new Error(
+                        payload && payload.message
+                            ? payload.message
+                            : 'Não foi possível apagar.'
+                    );
+                }
             });
+        }).then(function () {
+            if (!pageActive) return;
+
+            cache.set(memberId, {
+                at: Date.now(),
+                status: null
+            });
+
+            renderProfile(null);
+            closeEditor();
+        }).catch(function (error) {
+            showMessage(
+                error && error.message
+                    ? error.message
+                    : 'Não foi possível apagar. Tenta novamente.',
+                'erro'
+            );
+        }).finally(function () {
+            setEditorBusy(false);
+        });
     }
 
     function bindEditor() {
@@ -1151,9 +1374,15 @@
         }
 
         if (bubble && bubble.dataset.editable === '1') {
-            bubble.addEventListener('click', openEditor);
+            bubble.addEventListener('click', function (event) {
+                if (!event.target.closest('button')) {
+                    openEditor();
+                }
+            });
 
             bubble.addEventListener('keydown', function (event) {
+                if (event.target.closest('button')) return;
+
                 if (event.key === 'Enter' || event.key === ' ') {
                     event.preventDefault();
                     openEditor();
@@ -1220,33 +1449,31 @@
 
         if (window.visualViewport) {
             window.visualViewport.addEventListener('resize', function () {
-                if (editorOpen) {
-                    updateKeyboardOffset();
-                }
+                if (editorOpen) updateKeyboardOffset();
             });
 
             window.visualViewport.addEventListener('scroll', function () {
-                if (editorOpen) {
-                    updateKeyboardOffset();
-                }
+                if (editorOpen) updateKeyboardOffset();
             });
         }
 
         try {
             var capacitor = window.Capacitor;
-            var keyboard = capacitor && capacitor.Plugins && capacitor.Plugins.Keyboard;
+            var keyboard = capacitor &&
+                capacitor.Plugins &&
+                capacitor.Plugins.Keyboard;
 
             if (keyboard && typeof keyboard.addListener === 'function') {
                 keyboard.addListener('keyboardWillShow', function (info) {
                     if (editorOpen) {
-                        updateKeyboardOffset(Number(info && info.keyboardHeight) || 0);
+                        updateKeyboardOffset(
+                            Number(info && info.keyboardHeight) || 0
+                        );
                     }
                 });
 
                 keyboard.addListener('keyboardWillHide', function () {
-                    if (editorOpen) {
-                        updateKeyboardOffset(0);
-                    }
+                    if (editorOpen) updateKeyboardOffset(0);
                 });
             }
         } catch (error) {}
@@ -1270,8 +1497,14 @@
         openEditor: openEditor
     };
 
+    document.addEventListener('margot:page-leave', function () {
+        pageActive = false;
+        closeEditor();
+        cache.clear();
+    }, {once: true});
+
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init, { once: true });
+        document.addEventListener('DOMContentLoaded', init, {once: true});
     } else {
         init();
     }
