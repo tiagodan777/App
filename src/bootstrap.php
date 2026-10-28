@@ -38,6 +38,10 @@ if ($session->id === '' && $cookie->token !== '') {
 $twig->addGlobal('cookie', $cookie);
 $twig->addGlobal('session', $session);
 $twig->addGlobal('csrf_token', csrf_token());
+$twig->addGlobal(
+    'halloween_effects_enabled',
+    (new App\CMS\HalloweenWardrobe())->allowed((string) $session->id)
+);
 if (DEV === true) {
     $twig->addExtension(new Twig\Extension\DebugExtension());
 }
