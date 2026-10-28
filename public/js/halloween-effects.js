@@ -272,7 +272,6 @@
 
         canvas.width = Math.round(W * dpr);
         canvas.height = Math.round(H * dpr);
-
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
         actors = [];
@@ -326,6 +325,10 @@
 
         const type = ['shutter', 'interaction', 'heySent'][level];
 
+        profile ||= level === 2
+            ? 'navigation'
+            : level === 1 ? 'selection' : undefined;
+
         try {
             const cap = window.Capacitor;
 
@@ -355,20 +358,22 @@
         }
     }
 
-    function captureHaptic(kind, completed = false) {
+    function captureHaptic(kind, milestone = 0) {
         clearPulses();
 
         haptic(
             2,
             100,
-            kind === 'pumpkin' || completed
+            kind === 'pumpkin' || milestone
                 ? 'navigation'
                 : undefined
         );
 
-        const pattern = completed
-            ? [[180, 0], [380, 2]]
-            : [[kind === 'pumpkin' ? 190 : 130, 0]];
+        const pattern = milestone === 2
+            ? [[170, 1], [360, 2], [620, 2]]
+            : milestone === 1
+                ? [[180, 1], [390, 2]]
+                : [[kind === 'pumpkin' ? 190 : 130, 0]];
 
         pattern.forEach(([delay, level]) => {
             const id = setTimeout(() => {
@@ -377,7 +382,7 @@
                 haptic(
                     level,
                     100,
-                    completed && level === 2
+                    milestone && level === 2
                         ? 'navigation'
                         : undefined
                 );
@@ -412,6 +417,86 @@
             }));
     }
 
+    function segmentNear(ax, ay, bx, by, p, q) {
+        const cross = (x, y, u, v) => x * v - y * u;
+
+        const dx = bx - ax, dy = by - ay;
+        const ex = q.x - p.x, ey = q.y - p.y;
+        const den = cross(dx, dy, ex, ey);
+
+        if (Math.abs(den) > .00001) {
+            const t = cross(p.x - ax, p.y - ay, ex, ey) / den;
+            const u = cross(p.x - ax, p.y - ay, dx, dy) / den;
+
+            if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
+                return true;
+            }
+        }
+
+        const a = { x: ax, y: ay };
+        const b = { x: bx, y: by };
+
+        return Math.min(
+            distance(ax, ay, p, q),
+            distance(bx, by, p, q),
+            distance(p.x, p.y, a, b),
+            distance(q.x, q.y, a, b)
+        ) < 12;
+    }
+
+    function tearWeb(x, y, speed, travel, now) {
+        if (travel < 3 || now - lastTear < 110) return 0;
+
+        const pull = webPull();
+
+        if (
+            pull < 45 &&
+            !(speed > .55 && finger.travel > 28)
+        ) return 0;
+
+        const grips = new Set(finger.grips.map(g => g.i));
+
+        const candidates = strands.filter(s => {
+            if (s.cut) return false;
+
+            const a = nodes[s.a], b = nodes[s.b];
+
+            const stretched =
+                (grips.has(s.a) || grips.has(s.b)) &&
+                pull > 45 &&
+                Math.hypot(b.x - a.x, b.y - a.y) >
+                    s.length * 1.25 + 2;
+
+            return stretched || segmentNear(
+                finger.x, finger.y,
+                x, y,
+                a, b
+            );
+        });
+
+        candidates.sort((a, b) =>
+            distance(x, y, nodes[a.a], nodes[a.b]) -
+            distance(x, y, nodes[b.a], nodes[b.b])
+        );
+
+        const chosen = candidates.slice(0, 3);
+
+        chosen.forEach(s => {
+            const a = nodes[s.a], b = nodes[s.b];
+
+            s.cut = now;
+            s.mx = (a.x + b.x) / 2;
+            s.my = (a.y + b.y) / 2;
+        });
+
+        if (chosen.length) {
+            lastTear = now;
+            haptic(2, 130);
+        }
+
+        return chosen.length;
+    }
+
     function disturb(x, y) {
         const now = performance.now();
         const travel = Math.hypot(x - finger.x, y - finger.y);
@@ -420,18 +505,13 @@
         finger.speed = speed;
         finger.travel += travel;
 
-        if (
-            travel > 1.5 &&
-            finger.travel > 7 &&
-            finger.grips.length
-        ) {
-            const tension = webPull() / 90;
+        const torn = tearWeb(x, y, speed, travel, now);
 
-            const level =
-                tension > .65 || speed > .85 ? 2 :
-                tension > .25 || speed > .30 ? 1 : 0;
+        if (!torn && travel > 1.5 && finger.travel > 7) {
+            const tension = webPull() / 85;
+            const level = tension > .55 || speed > .7 ? 2 : 1;
 
-            haptic(level, [280, 220, 170][level]);
+            haptic(level, level === 2 ? 160 : 210);
         }
 
         finger.x = x;
@@ -461,7 +541,7 @@
             nodes.forEach(p => {
                 if (p.fixed) return;
 
-                const damping = finger ? .955 : .94;
+                const damping = finger ? .965 : .95;
                 const vx = clamp((p.x - p.px) * damping, -8, 8);
                 const vy = clamp((p.y - p.py) * damping, -8, 8);
 
@@ -469,7 +549,7 @@
                 p.py = p.y;
 
                 const pull = Math.hypot(p.x - p.hx, p.y - p.hy);
-                const spring = .003 + Math.min(pull, 120) * .00004;
+                const spring = .004 + Math.min(pull, 120) * .000045;
 
                 p.x += vx + (p.hx - p.x) * spring;
                 p.y += vy + (p.hy - p.y) * spring;
@@ -483,51 +563,13 @@
                     const d = Math.hypot(dx, dy);
 
                     const k = d
-                        ? 180 * (1 - Math.exp(-d / 180)) / d
+                        ? 200 * (1 - Math.exp(-d / 200)) / d
                         : 0;
 
                     p.x += (p.hx + dx * k - p.x) * .40;
                     p.y += (p.hy + dy * k - p.y) * .40;
                 });
             }
-
-            strands.forEach(s => {
-                if (s.cut) return;
-
-                const a = nodes[s.a], b = nodes[s.b];
-                const len = Math.hypot(b.x - a.x, b.y - a.y);
-
-                const displacement = Math.max(
-                    Math.hypot(a.x - a.hx, a.y - a.hy),
-                    Math.hypot(b.x - b.hx, b.y - b.hy)
-                );
-
-                const stressed =
-                    finger &&
-                    displacement > 48 &&
-                    len > s.length * 1.55 + 3;
-
-                if (!stressed) {
-                    s.stressedAt = 0;
-                    return;
-                }
-
-                s.stressedAt ||= now;
-
-                if (
-                    now - s.stressedAt >= 80 &&
-                    now - lastTear >= 110 &&
-                    now - finger.at < 150 &&
-                    finger.speed > .35
-                ) {
-                    s.cut = now;
-                    s.mx = (a.x + b.x) / 2;
-                    s.my = (a.y + b.y) / 2;
-                    lastTear = now;
-
-                    haptic(2, 130);
-                }
-            });
 
             for (let pass = 0; pass < 3; pass++) {
                 strands.forEach(s => {
@@ -543,7 +585,7 @@
                         1
                     );
 
-                    const stiffness = .035 + .13 * tension * tension;
+                    const stiffness = .03 + .13 * tension * tension;
                     const f = (len - s.length) / len * stiffness;
                     const w = a.fixed || b.fixed ? 1 : .5;
 
@@ -563,9 +605,9 @@
                 const dx = p.x - p.hx, dy = p.y - p.hy;
                 const d = Math.hypot(dx, dy);
 
-                if (d > 150) {
-                    p.x = p.hx + dx * 150 / d;
-                    p.y = p.hy + dy * 150 / d;
+                if (d > 170) {
+                    p.x = p.hx + dx * 170 / d;
+                    p.y = p.hy + dy * 170 / d;
                     p.px = p.x;
                     p.py = p.y;
                 }
@@ -599,17 +641,17 @@
 
         strands.forEach(s => {
             const a = nodes[s.a], b = nodes[s.b];
-            let alpha = .42 + .07 * Math.sin(s.a * 1.7);
+            let alpha = .66 + .08 * Math.sin(s.a * 1.7);
             let grow = 1;
 
-            ctx.lineWidth = .65 + .12 * Math.sin(s.b * .9);
+            ctx.lineWidth = .90 + .14 * Math.sin(s.b * .9);
 
             if (s.cut && !healing) {
                 const age = clamp((now - s.cut) / 1300, 0, 1);
                 if (age === 1) return;
 
                 ctx.strokeStyle =
-                    'rgba(222,231,246,' +
+                    'rgba(193,157,255,' +
                     alpha * (1 - ease(age)) + ')';
 
                 [a, b].forEach((p, i) => {
@@ -667,7 +709,7 @@
                 2 * (1 - grow) * grow * cy +
                 grow * grow * b.y;
 
-            ctx.strokeStyle = 'rgba(222,231,246,' + alpha + ')';
+            ctx.strokeStyle = 'rgba(193,157,255,' + alpha + ')';
             ctx.beginPath();
             ctx.moveTo(a.x, a.y);
 
@@ -744,7 +786,6 @@
         ctx.fill();
         ctx.restore();
 
-        // Mantém a forma original da abóbora.
         ctx.save();
         ctx.translate(a.x, a.floor - lift);
         sprite('pumpkin', a.dir > 0 ? 1 : 3, a.size);
@@ -1105,7 +1146,7 @@
             lastPhysics = performance.now();
 
             request();
-            schedule(hunt && hunt.count() < 5 ? 4000 : 30000);
+            schedule(hunt && hunt.total() < 20 ? 4000 : 30000);
         }
     }
 
@@ -1134,13 +1175,13 @@
         );
 
         if (hit) {
-            const completed = hunt?.capture() || false;
-            captureHaptic(hit.kind, completed);
+            const milestone = hunt?.capture(hit.kind) || 0;
+
+            captureHaptic(hit.kind, milestone);
             splat(hit);
             caught = true;
         } else if (nearWeb(px, py)) {
             const grips = grab(px, py);
-            if (!grips.length) return;
 
             finger = {
                 x: px,
@@ -1152,7 +1193,7 @@
             };
 
             clearPulses();
-            haptic(0, 120);
+            haptic(1, 120);
             lastPhysics = performance.now();
             physicsDebt = 0;
 
@@ -1183,7 +1224,7 @@
             const pull = webPull();
 
             if (pull > 18) {
-                haptic(pull > 65 ? 1 : 0, 150);
+                haptic(pull > 65 ? 2 : 1, 150);
             }
 
             swallowed = {
@@ -1287,8 +1328,9 @@
             memberId
         )) return null;
 
-        const key = 'margot:halloween-hunt:2026:' + memberId;
+        const key = 'margot:halloween-hunt:2026:dual:' + memberId;
         const memory = window.__margotHalloweenProgress ||= new Map();
+        const kinds = ['pumpkin', 'bat'];
 
         const valid = items => Array.isArray(items)
             ? items.filter(x =>
@@ -1297,21 +1339,32 @@
             )
             : [];
 
-        const merge = (...lists) =>
-            [...new Set(lists.flatMap(valid))].sort().slice(0, 5);
+        const merge = (...states) => Object.fromEntries(
+            kinds.map(kind => [
+                kind,
+                [...new Set(
+                    states.flatMap(state => valid(state?.[kind]))
+                )].sort().slice(0, 10)
+            ])
+        );
 
         const read = () => {
             try {
-                return valid(JSON.parse(
-                    localStorage.getItem(key) || '[]'
+                return merge(JSON.parse(
+                    localStorage.getItem(key) || '{}'
                 ));
             } catch (_) {
-                return [];
+                return merge();
             }
         };
 
-        let ids = merge(read(), memory.get(key) || []);
-        let popTimer = 0;
+        let ids = merge(read(), memory.get(key));
+        let enabled = false;
+        let lastKind = 'pumpkin';
+
+        let closeTimer = 0;
+        let fadeTimer = 0;
+        let burstTimer = 0;
 
         const host = document.createElement('div');
         host.id = 'margot-halloween-progress';
@@ -1324,75 +1377,162 @@
 :host {
     position: fixed;
     z-index: 21;
-    top: calc(env(safe-area-inset-top, 0px) + ${map ? '14px' : '68px'});
+    top: calc(env(safe-area-inset-top, 0px) + ${map ? '12px' : '68px'});
     left: 50%;
     transform: translateX(-50%);
-    width: min(190px, calc(100vw - 140px));
+    width: min(270px, calc(100vw - 72px));
     pointer-events: none;
     color: #fff;
-    font: 500 12px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font: 500 12px/1.25 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    opacity: 1;
+    transition: opacity 260ms, translate 260ms;
 }
 :host([hidden]) {
     display: none !important;
 }
+:host(.leaving) {
+    opacity: 0;
+    translate: 0 -8px;
+}
 .card {
+    --accent: #ff8b48;
+    position: relative;
     box-sizing: border-box;
-    padding: 10px 12px 11px;
-    border-radius: 22px;
-    background: rgba(28, 28, 32, .88);
-    border: 1px solid rgba(255, 255, 255, .14);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, .2);
+    padding: 14px 16px 15px;
+    border-radius: 26px;
+    background: rgba(25, 24, 31, .94);
+    border: 1px solid rgba(255, 255, 255, .17);
+    box-shadow: 0 8px 28px #0005;
     -webkit-backdrop-filter: blur(18px);
     backdrop-filter: blur(18px);
 }
+.card.bat {
+    --accent: #b88aff;
+}
+.card.all {
+    --accent: #dbbaff;
+}
+.title {
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: -.2px;
+    margin: 0 0 3px;
+}
+.message {
+    font-size: 12px;
+    color: #d9d5e2;
+    margin: 0 0 12px;
+    min-height: 15px;
+}
 .row {
+    margin-top: 10px;
+}
+.labels {
     display: flex;
-    align-items: center;
     justify-content: space-between;
+    align-items: center;
     gap: 8px;
-    margin-bottom: 7px;
-}
-.label {
-    font-size: 10px;
-    letter-spacing: .2px;
-    color: rgba(255, 255, 255, .82);
-    white-space: nowrap;
-}
-.count {
+    margin-bottom: 5px;
     font-size: 11px;
-    font-weight: 700;
+    color: #eeeaf4;
+}
+.number {
+    font-weight: 750;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
 }
+.dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-right: 6px;
+    background: #ff8b48;
+}
+.bat-row .dot {
+    background: #b387ff;
+}
 .track {
-    height: 7px;
+    height: 8px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, .14);
+    background: #ffffff1c;
     overflow: hidden;
 }
 .fill {
     height: 100%;
+    width: 0%;
     border-radius: inherit;
-    background: linear-gradient(90deg, #ffad64, #ff623f);
-    transform: scaleX(0);
-    transform-origin: left center;
-    transition:
-        transform 420ms cubic-bezier(.2, .75, .25, 1),
-        background 300ms;
+    background: linear-gradient(90deg, #ffb15e, #ff6b31);
+    transition: width 440ms cubic-bezier(.18, .8, .25, 1);
 }
-.done .fill {
-    background: #32d74b;
+.bat-row .fill {
+    background: linear-gradient(90deg, #d0adff, #9865ff);
 }
-.done .label {
-    color: #c1f4cf;
+.burst {
+    position: absolute;
+    inset: 0;
+    overflow: visible;
+    pointer-events: none;
+}
+.spark {
+    position: absolute;
+    left: 50%;
+    top: 30%;
+    width: 5px;
+    height: 8px;
+    border-radius: 2px;
+    background: var(--color);
+    animation: hw-spark 1150ms cubic-bezier(.12, .6, .2, 1) forwards;
+    animation-delay: var(--delay);
+    opacity: 0;
+}
+.flare {
+    position: absolute;
+    inset: -5px;
+    border: 2px solid var(--accent);
+    border-radius: 30px;
+    box-shadow: 0 0 25px var(--accent);
+    animation: hw-flare 850ms ease-out forwards;
 }
 .pop {
-    animation: hw-progress-pop 430ms ease-out;
+    animation: hw-pop 480ms ease-out;
 }
-@keyframes hw-progress-pop {
-    0% { transform: scale(1); }
-    35% { transform: scale(1.045); }
+.win {
+    animation: hw-win 700ms cubic-bezier(.2, .8, .3, 1);
+}
+@keyframes hw-pop {
+    0% { transform: translateY(-7px) scale(.97); }
+    45% { transform: translateY(0) scale(1.025); }
     100% { transform: scale(1); }
+}
+@keyframes hw-win {
+    0% { transform: scale(.94); }
+    38% { transform: scale(1.08); }
+    65% { transform: scale(.99); }
+    100% { transform: scale(1); }
+}
+@keyframes hw-spark {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(.5);
+    }
+    15% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+        transform:
+            translate(
+                calc(-50% + var(--dx)),
+                calc(-50% + var(--dy))
+            )
+            rotate(var(--spin))
+            scale(.4);
+    }
+}
+@keyframes hw-flare {
+    0% { opacity: .8; transform: scale(.95); }
+    100% { opacity: 0; transform: scale(1.22); }
 }
 .sr {
     position: absolute;
@@ -1403,25 +1543,53 @@
     white-space: nowrap;
 }
 @media (prefers-reduced-motion: reduce) {
-    .fill { transition: none; }
-    .pop { animation: none; }
+    .fill, :host {
+        transition: none;
+    }
+    .pop, .win, .spark, .flare {
+        animation: none;
+    }
 }
 </style>
 <div class="card">
-    <div class="row">
-        <span class="label">Caça de Halloween</span>
-        <span class="count">0/5</span>
+    <div class="title">Boa apanhada!</div>
+    <div class="message"></div>
+
+    <div class="row pumpkin-row">
+        <div class="labels">
+            <span><i class="dot"></i>Abóboras</span>
+            <span class="number">0/10</span>
+        </div>
+        <div
+            class="track"
+            role="progressbar"
+            aria-label="Abóboras"
+            aria-valuemin="0"
+            aria-valuemax="10"
+            aria-valuenow="0"
+        >
+            <div class="fill"></div>
+        </div>
     </div>
-    <div
-        class="track"
-        role="progressbar"
-        aria-label="Capturas de Halloween"
-        aria-valuemin="0"
-        aria-valuemax="5"
-        aria-valuenow="0"
-    >
-        <div class="fill"></div>
+
+    <div class="row bat-row">
+        <div class="labels">
+            <span><i class="dot"></i>Morcegos</span>
+            <span class="number">0/10</span>
+        </div>
+        <div
+            class="track"
+            role="progressbar"
+            aria-label="Morcegos"
+            aria-valuemin="0"
+            aria-valuemax="10"
+            aria-valuenow="0"
+        >
+            <div class="fill"></div>
+        </div>
     </div>
+
+    <div class="burst" aria-hidden="true"></div>
 </div>
 <span
     class="sr"
@@ -1433,64 +1601,187 @@
         document.body.appendChild(host);
 
         const card = shadow.querySelector('.card');
-        const label = shadow.querySelector('.label');
-        const count = shadow.querySelector('.count');
-        const track = shadow.querySelector('.track');
-        const fill = shadow.querySelector('.fill');
+        const title = shadow.querySelector('.title');
+        const message = shadow.querySelector('.message');
         const live = shadow.querySelector('.sr');
+        const burst = shadow.querySelector('.burst');
+
+        function counts() {
+            return {
+                pumpkin: ids.pumpkin.length,
+                bat: ids.bat.length
+            };
+        }
 
         function save() {
-            memory.set(key, ids.slice());
+            memory.set(key, merge(ids));
 
             try {
                 localStorage.setItem(key, JSON.stringify(ids));
             } catch (_) {}
         }
 
-        function paint(announce = false) {
-            const n = ids.length;
+        function paint() {
+            kinds.forEach(kind => {
+                const n = ids[kind].length;
+                const row = shadow.querySelector('.' + kind + '-row');
 
-            count.textContent = n + '/5';
-            label.textContent = n === 5
-                ? 'Caça concluída ✓'
-                : 'Caça de Halloween';
+                row.querySelector('.number').textContent = n + '/10';
 
-            track.setAttribute('aria-valuenow', String(n));
-            track.setAttribute(
-                'aria-valuetext',
-                n === 5
-                    ? 'Caça concluída'
-                    : n + ' de 5 capturas'
-            );
+                const track = row.querySelector('.track');
+                track.setAttribute('aria-valuenow', String(n));
+                track.setAttribute('aria-valuetext', n + ' de 10');
 
-            fill.style.transform = 'scaleX(' + (n / 5) + ')';
-            card.classList.toggle('done', n === 5);
+                row.querySelector('.fill').style.width = (n * 10) + '%';
+            });
+        }
 
-            if (announce) {
-                live.textContent = n === 5
-                    ? 'Caça concluída. Cinco capturas!'
-                    : 'Apanhado! ' + n + ' de cinco.';
+        function remaining(kind) {
+            const n = 10 - ids[kind].length;
 
-                card.classList.remove('pop');
-                void card.offsetWidth;
-                card.classList.add('pop');
+            const noun = kind === 'pumpkin'
+                ? n === 1 ? 'abóbora' : 'abóboras'
+                : n === 1 ? 'morcego' : 'morcegos';
 
-                clearTimeout(popTimer);
+            return n === 1
+                ? 'Só falta 1 ' + noun + '!'
+                : 'Só faltam ' + n + ' ' + noun + '!';
+        }
 
-                popTimer = setTimeout(() => {
-                    card.classList.remove('pop');
-                }, 450);
+        function words(kind, milestone) {
+            const other = kind === 'pumpkin' ? 'bat' : 'pumpkin';
+
+            if (ids.pumpkin.length === 10 && ids.bat.length === 10) {
+                title.textContent = 'HALLOWEEN DOMINADO!';
+                message.textContent =
+                    '10 abóboras. 10 morcegos. Caça completa.';
+            } else if (milestone === 1) {
+                title.textContent = kind === 'pumpkin'
+                    ? 'ABÓBORAS DOMINADAS!'
+                    : 'MORCEGOS DOMINADOS!';
+
+                message.textContent = remaining(other);
+            } else {
+                title.textContent = ids[kind].length === 10
+                    ? 'Esse grupo já está completo!'
+                    : 'Boa apanhada!';
+
+                message.textContent = remaining(
+                    ids[kind].length < 10 ? kind : other
+                );
             }
+        }
+
+        function clearTimers() {
+            clearTimeout(closeTimer);
+            clearTimeout(fadeTimer);
+            clearTimeout(burstTimer);
+        }
+
+        function hide() {
+            clearTimers();
+
+            host.hidden = true;
+            host.classList.remove('leaving');
+            card.classList.remove('pop', 'win');
+            burst.replaceChildren();
+            live.textContent = '';
+        }
+
+        function celebrate(kind, milestone) {
+            burst.replaceChildren();
+
+            if (!milestone) return;
+
+            const halo = document.createElement('span');
+            halo.className = 'flare';
+            burst.appendChild(halo);
+
+            const palette = milestone === 2
+                ? ['#ffad60', '#b88aff', '#fff3ce']
+                : kind === 'pumpkin'
+                    ? ['#ff9b48', '#ffcf80', '#fff0ce']
+                    : ['#ad7bff', '#dec8ff', '#f6edff'];
+
+            const amount = milestone === 2 ? 30 : 20;
+
+            for (let i = 0; i < amount; i++) {
+                const particle = document.createElement('i');
+                particle.className = 'spark';
+
+                const angle = Math.PI * 2 * i / amount;
+                const radius = random(65, 145);
+
+                particle.style.setProperty(
+                    '--dx',
+                    Math.cos(angle) * radius + 'px'
+                );
+
+                particle.style.setProperty(
+                    '--dy',
+                    (Math.sin(angle) * radius * .65 + 25) + 'px'
+                );
+
+                particle.style.setProperty(
+                    '--spin',
+                    random(-180, 180) + 'deg'
+                );
+
+                particle.style.setProperty(
+                    '--delay',
+                    random(0, 90) + 'ms'
+                );
+
+                particle.style.setProperty(
+                    '--color',
+                    palette[i % palette.length]
+                );
+
+                burst.appendChild(particle);
+            }
+
+            burstTimer = setTimeout(() => {
+                burst.replaceChildren();
+            }, 1300);
+        }
+
+        function show(kind, milestone) {
+            if (!enabled) return;
+
+            clearTimers();
+
+            host.classList.remove('leaving');
+            host.hidden = false;
+
+            card.classList.remove('pop', 'win', 'bat', 'all');
+            card.classList.toggle('bat', kind === 'bat');
+            card.classList.toggle('all', milestone === 2);
+
+            void card.offsetWidth;
+
+            paint();
+            words(kind, milestone);
+            card.classList.add(milestone ? 'win' : 'pop');
+
+            live.textContent =
+                title.textContent + ' ' + message.textContent;
+
+            celebrate(kind, milestone);
+
+            closeTimer = setTimeout(() => {
+                host.classList.add('leaving');
+                fadeTimer = setTimeout(hide, 280);
+            }, milestone ? 7500 : 5000);
         }
 
         window.addEventListener('storage', e => {
             if (e.key !== key) return;
 
-            const combined = merge(ids, read());
+            ids = merge(ids, read());
+            paint();
 
-            if (JSON.stringify(combined) !== JSON.stringify(ids)) {
-                ids = combined;
-                paint();
+            if (!host.hidden) {
+                words(lastKind, 0);
             }
 
             if (JSON.stringify(ids) !== JSON.stringify(read())) {
@@ -1502,41 +1793,53 @@
         paint();
 
         return {
-            capture() {
-                ids = merge(ids, read());
+            capture(kind) {
+                if (!kinds.includes(kind)) return 0;
 
-                if (ids.length === 5) {
-                    paint();
-                    return false;
+                ids = merge(ids, read());
+                const before = ids[kind].length;
+
+                if (before < 10) {
+                    const id =
+                        window.crypto?.randomUUID?.() ||
+                        Date.now().toString(36) + '-' +
+                        Math.random().toString(36).slice(2) +
+                        '-capture';
+
+                    ids = merge(ids, { [kind]: [id] });
+                    save();
                 }
 
-                const id =
-                    window.crypto?.randomUUID?.() ||
-                    Date.now().toString(36) + '-' +
-                    Math.random().toString(36).slice(2) +
-                    '-capture';
+                const completed =
+                    before < 10 &&
+                    ids[kind].length === 10;
 
-                ids = merge(ids, [id]);
+                const milestone = completed
+                    ? ids.pumpkin.length === 10 && ids.bat.length === 10
+                        ? 2
+                        : 1
+                    : 0;
 
-                save();
-                paint(true);
+                lastKind = kind;
+                show(kind, milestone);
 
-                return ids.length === 5;
+                return milestone;
             },
 
-            count: () => ids.length,
+            total: () => ids.pumpkin.length + ids.bat.length,
+
+            counts,
 
             setVisible(value) {
-                host.hidden = !value;
+                enabled = value;
 
                 if (!value) {
-                    clearTimeout(popTimer);
-                    card.classList.remove('pop');
+                    hide();
                 }
             },
 
             destroy() {
-                clearTimeout(popTimer);
+                hide();
                 host.remove();
             }
         };
@@ -1547,8 +1850,8 @@
     const api = {
         destroy,
         getState: () => ({
-            version: 10,
-            progress: hunt?.count() ?? null,
+            version: 11,
+            progress: hunt?.counts() ?? null,
             running,
             ready,
             failures: failures.slice(),
@@ -1639,7 +1942,7 @@
         if (ready) batLayers = makeBatLayers();
 
         if (ready && running) {
-            schedule(hunt && hunt.count() < 5 ? 4000 : 30000);
+            schedule(hunt && hunt.total() < 20 ? 4000 : 30000);
         }
     });
 })();
