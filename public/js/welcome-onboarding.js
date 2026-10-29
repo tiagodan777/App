@@ -70,6 +70,21 @@
     } catch (_) {}
   }
 
+  // Remember an explicit Android choice, not a grant. Never authorises tracking.
+  const noticeChoice = (state) => 'location-choice-v1:' + JSON.stringify([
+    auth(state) ?? null,
+    state?.services_enabled ?? null,
+    state?.precise ?? null,
+    state?.background_permission_required ?? null,
+    state?.background_permission_granted ?? null,
+    pref('localizacao') ?? null
+  ]);
+
+  function locationNoticeDeferred(state) {
+    return window.Capacitor?.getPlatform?.() === 'android' &&
+      Boolean(member()) && read(member(), noticeChoice(state));
+  }
+
   function ownPhoto(img) {
     let src = fallback;
 
@@ -310,6 +325,7 @@
       : window.Capacitor?.getPlatform?.();
 
     const ios = system === 'ios';
+    const android = system === 'android';
 
     const granted = (current) =>
       (
@@ -328,7 +344,15 @@
       )
     ) return false;
 
-    if (!preview && !force && read(id, 'complete') && !pending(state)) {
+    const needsAndroidBackground = (current) => android && granted(current) &&
+      current?.background_permission_required === true &&
+      current?.background_permission_granted !== true;
+
+    const backgroundOnly = !preview && !force && read(id, 'complete') &&
+      needsAndroidBackground(state) && !read(id, 'android-background-intro-v1');
+
+    if (!preview && !force && read(id, 'complete') && !backgroundOnly &&
+        (!pending(state) || locationNoticeDeferred(state))) {
       inviteLater(id);
       return true;
     }
@@ -339,7 +363,9 @@
     let simulated = {
       authorization: 'not_determined',
       permission_flow_version: 2,
-      always_requested: false
+      always_requested: false,
+      background_permission_required: android,
+      background_permission_granted: false
     };
 
     const status = async () =>
@@ -1422,6 +1448,91 @@
       await visible();
     }
 
+    function pocketScene() {
+      content.innerHTML =
+        '<div class="pocket-scene" aria-hidden="true">' +
+        '<div class="phone"><img></div><div class="pocket"></div></div>';
+      ownPhoto(content.querySelector('img'));
+    }
+
+    function deferAndroidNotice(current) {
+      if (!preview && android) save(id, noticeChoice(current));
+    }
+
+    async function androidSettings() {
+      valid();
+      if (preview) {
+        simulated.background_permission_granted = true;
+        simulated.background_permission_required = false;
+        return;
+      }
+
+      // Check again after the choice: permissions/account may have changed.
+      const fresh = await status();
+      valid();
+      if (!needsAndroidBackground(fresh) || pref('localizacao') === false) return;
+
+      screen(
+        'paper',
+        text('Depois, volta à Margot.', 'Then return to Margot.'),
+        text(
+          'Permissões → Localização → Permitir sempre. Podes voltar sem alterar nada.',
+          'Permissions → Location → Allow all the time. You can return without changing anything.'
+        )
+      );
+      pocketScene();
+
+      let opened = false;
+      let left = false;
+      let resumed = false;
+      let finished = false;
+      const choices = choose([
+        ['check', text('Já voltei', 'I’m back')],
+        ['later', text('Agora não', 'Not now'), true]
+      ]);
+      const checkReturn = () => {
+        if (!finished && !signal.aborted && member() === id &&
+            opened && resumed && !document.hidden) {
+          root.querySelector('[data-choice="check"]')?.click();
+        }
+      };
+      const visibility = () => {
+        if (document.hidden) left = true;
+        else if (left) { resumed = true; checkReturn(); }
+      };
+      const resume = () => { resumed = true; checkReturn(); };
+      document.addEventListener('visibilitychange', visibility);
+      document.addEventListener('margot:permissions-resume', resume);
+
+      // The return controls stay usable even if the native bridge does not answer.
+      Promise.resolve().then(() => {
+        valid();
+        if (finished) return false;
+        return bg.openSettings();
+      }).then((value) => {
+        if (finished || signal.aborted) return;
+        if (value === false || value?.opened === false) throw Error('Settings unavailable');
+        opened = true;
+        checkReturn();
+      }).catch(() => {
+        if (!finished && !signal.aborted) {
+          description.textContent = text(
+            'Podes continuar. Para ativar mais tarde: Definições do telemóvel → Apps → Margot → Permissões → Localização → Permitir sempre.',
+            'You can continue. To enable later: Phone settings → Apps → Margot → Permissions → Location → Allow all the time.'
+          );
+        }
+      });
+
+      try {
+        await choices;
+        await visible();
+      } finally {
+        finished = true;
+        document.removeEventListener('visibilitychange', visibility);
+        document.removeEventListener('margot:permissions-resume', resume);
+      }
+    }
+
     async function settings() {
       if (preview) {
         simulated.authorization = ios ? 'always' : 'granted';
@@ -1510,7 +1621,7 @@
         if (member() !== id || !home() || !gate()) abort();
       }, 500);
 
-      if (preview || force || !read(id, 'demo')) {
+      if (!backgroundOnly && (preview || force || !read(id, 'demo'))) {
         await window.MargotDiscoveryTutorial.run({ host, signal, preview });
         if (!preview) save(id, 'demo');
       }
@@ -1554,7 +1665,7 @@
             window.MargotPreferencias?.definir('localizacao', true);
           }
 
-          await result(
+          if (!android) await result(
             granted(state),
             granted(state)
               ? text('Localização ativa.', 'Location enabled.')
@@ -1573,10 +1684,44 @@
                 )
           );
         }
+
+        if (android) {
+          state = await status();
+          valid();
+          if (!granted(state) || pref('localizacao') === false) deferAndroidNotice(state);
+        }
       }
 
       state = await status();
       valid();
+
+      if (needsAndroidBackground(state) && (preview || pref('localizacao') !== false) &&
+          (preview || force || !read(id, 'android-background-intro-v1'))) {
+        screen(
+          'paper',
+          text('E com o telemóvel no bolso?', 'And with your phone in your pocket?'),
+          text(
+            'Permite a localização sempre para ajudar a Margot a retomar os encontros após reiniciares o telemóvel. Podes mudar esta escolha nas definições.',
+            'Allow location all the time to help Margot resume nearby discovery after restarting your phone. You can change this choice in settings.'
+          )
+        );
+        pocketScene();
+
+        const choice = await choose([
+          ['settings', text('Ir às definições', 'Go to settings')],
+          ['later', text('Agora não', 'Not now'), true]
+        ]);
+        valid();
+        if (!preview) save(id, 'android-background-intro-v1');
+        deferAndroidNotice(state);
+        if (choice === 'settings') await androidSettings();
+        state = await status();
+        valid();
+        if (needsAndroidBackground(state) || !granted(state)) deferAndroidNotice(state);
+        // No second prompt or warning card after declining or returning unchanged.
+      }
+
+      if (backgroundOnly) return true;
 
       if (
         ios &&
@@ -1795,6 +1940,7 @@
 
   window.MargotWelcome = {
     run,
+    locationNoticeDeferred,
 
     preview: (platform) => run({
       preview: true,

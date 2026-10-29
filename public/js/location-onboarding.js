@@ -380,6 +380,7 @@
             checking ||
             document.hidden ||
             dismissed ||
+            window.MargotWelcome?.locationNoticeDeferred?.(lastState) === true ||
             !discovery() ||
             !lastState ||
             lastState.available === false ||
