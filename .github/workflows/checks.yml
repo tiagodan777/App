@@ -70,3 +70,9 @@ jobs:
           MARGOT_TEST_USER: margot_ci
           MARGOT_TEST_PASSWORD: margot-ci-isolated-only
         run: php tests/location-state-mysql.php
+      - name: Halloween migration and account progress on the real database
+        env:
+          MARGOT_TEST_DSN: mysql:host=127.0.0.1;port=${{ job.services.mysql.ports[3306] }};dbname=margot_test_ci;charset=utf8mb4
+          MARGOT_TEST_USER: margot_ci
+          MARGOT_TEST_PASSWORD: margot-ci-isolated-only
+        run: php tests/halloween-hunt.php

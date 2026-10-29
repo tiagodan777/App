@@ -19,7 +19,8 @@
         "test": [
             "@php tests/run.php",
             "@php tests/halloween.php",
-            "@php tests/halloween-templates.php"
+            "@php tests/halloween-templates.php",
+            "@php tests/halloween-hunt.php"
         ],
         "db:check": "@php database/check.php"
     }

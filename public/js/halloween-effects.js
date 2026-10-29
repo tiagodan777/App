@@ -66,9 +66,9 @@
 
     let W = 1, H = 1, left = 0, top = 0;
     let nodes = [], strands = [], actors = [], stains = [];
-    let raf = 0, timer = 0, last = 0, webActiveUntil = 0;
+    let raf = 0, last = 0, webActiveUntil = 0;
     let running = false, disposed = false, ready = false;
-    let nextKind = 'pumpkin', pumpkinDirection = 1, batDirection = -1;
+    let pumpkinDirection = 1, batDirection = -1;
     let finger = null, swallowed = null, swallowUntil = 0;
     let observer;
 
@@ -81,8 +81,6 @@
     let lastPhysics = 0;
     let previousFloor = .7;
     let previousCenter = .5;
-    let lastGroup = -2;
-    let passages = 0;
 
     const WEB_TOP = 76;
     const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
@@ -1444,12 +1442,12 @@
         drawWeb(now);
 
         actors = actors.filter(a =>
-            now < a.start ||
+            huntClient?.canShow(a) && (now < a.start ||
             (
                 a.kind === 'pumpkin'
                     ? drawPumpkin(a, now)
                     : drawBat(a, now)
-            )
+            ))
         );
 
         drawStains(now);
@@ -1512,52 +1510,6 @@
         return a;
     }
 
-    function schedule(delay = 15000) {
-        clearTimeout(timer);
-        timer = 0;
-
-        if (!running || !ready) return;
-
-        timer = setTimeout(() => {
-            timer = 0;
-
-            if (!running) return;
-
-            if (actors.length || stains.length || builders.length) {
-                schedule();
-                return;
-            }
-
-            passages++;
-
-            const group =
-                passages - lastGroup >= 3 &&
-                Math.random() < .18;
-
-            const count = group
-                ? Math.random() < .25 ? 3 : 2
-                : 1;
-
-            if (group) {
-                lastGroup = passages;
-            }
-
-            actors = Array.from({ length: count }, (_, i) =>
-                newActor(
-                    i === 0
-                        ? nextKind
-                        : Math.random() < .5 ? 'pumpkin' : 'bat',
-                    i
-                )
-            );
-
-            nextKind = nextKind === 'pumpkin' ? 'bat' : 'pumpkin';
-
-            request();
-            schedule();
-        }, delay);
-    }
-
     function refresh() {
         const next = eligible();
 
@@ -1565,13 +1517,11 @@
 
         running = next;
         hunt?.setVisible(running && ready);
+        huntClient?.setActive(running && ready);
 
         clearPulses();
         cancelAnimationFrame(raf);
         raf = 0;
-
-        clearTimeout(timer);
-        timer = 0;
 
         stopRepairs();
 
@@ -1593,7 +1543,6 @@
             lastPhysics = performance.now();
 
             request();
-            schedule(hunt && hunt.total() < 20 ? 4000 : 30000);
         }
     }
 
@@ -1625,9 +1574,8 @@
         );
 
         if (hit) {
-            const milestone = hunt?.capture(hit.kind) || 0;
-
-            captureHaptic(hit.kind, milestone);
+            if (!huntClient?.capture(hit)) return;
+            captureHaptic(hit.kind);
             splat(hit);
             caught = true;
         } else if (nearWeb(px, py)) {
@@ -1762,7 +1710,7 @@
         stopRepairs();
         clearPulses();
         cancelAnimationFrame(raf);
-        clearTimeout(timer);
+        huntClient?.destroy();
         controller.abort();
         observer?.disconnect();
 
@@ -1782,41 +1730,10 @@
             return null;
         }
 
-        const key = 'margot:halloween-hunt:2026:dual:' + memberId;
-        const memory = window.__margotHalloweenProgress ||= new Map();
         const kinds = ['pumpkin', 'bat'];
-
-        const valid = items => Array.isArray(items)
-            ? items.filter(x =>
-                typeof x === 'string' &&
-                /^[a-z0-9-]{8,90}$/i.test(x)
-            )
-            : [];
-
-        const merge = (...states) => Object.fromEntries(
-            kinds.map(kind => [
-                kind,
-                [
-                    ...new Set(
-                        states.flatMap(state => valid(state?.[kind]))
-                    )
-                ].sort().slice(0, 10)
-            ])
-        );
-
-        const read = () => {
-            try {
-                return merge(JSON.parse(
-                    localStorage.getItem(key) || '{}'
-                ));
-            } catch (_) {
-                return merge();
-            }
-        };
-
-        let ids = merge(read(), memory.get(key));
+        let progress = { pumpkin: 0, bat: 0 };
+        let campaign = null;
         let enabled = false;
-        let lastKind = 'pumpkin';
 
         let closeTimer = 0;
         let fadeTimer = 0;
@@ -2036,23 +1953,12 @@
         const burst = shadow.querySelector('.burst');
 
         function counts() {
-            return {
-                pumpkin: ids.pumpkin.length,
-                bat: ids.bat.length
-            };
-        }
-
-        function save() {
-            memory.set(key, merge(ids));
-
-            try {
-                localStorage.setItem(key, JSON.stringify(ids));
-            } catch (_) {}
+            return { ...progress };
         }
 
         function paint() {
             kinds.forEach(kind => {
-                const n = ids[kind].length;
+                const n = progress[kind];
                 const row = shadow.querySelector('.' + kind + '-row');
 
                 row.querySelector('.number').textContent = n + '/10';
@@ -2066,7 +1972,7 @@
         }
 
         function remaining(kind) {
-            const n = 10 - ids[kind].length;
+            const n = 10 - progress[kind];
 
             const noun = kind === 'pumpkin'
                 ? n === 1 ? 'abóbora' : 'abóboras'
@@ -2080,7 +1986,7 @@
         function words(kind, milestone) {
             const other = kind === 'pumpkin' ? 'bat' : 'pumpkin';
 
-            if (ids.pumpkin.length === 10 && ids.bat.length === 10) {
+            if (progress.pumpkin === 10 && progress.bat === 10) {
                 title.textContent = 'HALLOWEEN DOMINADO!';
                 message.textContent =
                     '10 abóboras. 10 morcegos. Caça completa.';
@@ -2091,12 +1997,12 @@
 
                 message.textContent = remaining(other);
             } else {
-                title.textContent = ids[kind].length === 10
+                title.textContent = progress[kind] === 10
                     ? 'Esse grupo já está completo!'
                     : 'Boa apanhada!';
 
                 message.textContent = remaining(
-                    ids[kind].length < 10 ? kind : other
+                    progress[kind] < 10 ? kind : other
                 );
             }
         }
@@ -2201,58 +2107,25 @@
             }, milestone ? 7500 : 5000);
         }
 
-        window.addEventListener('storage', e => {
-            if (e.key !== key) return;
-
-            ids = merge(ids, read());
-            paint();
-
-            if (!host.hidden) {
-                words(lastKind, 0);
-            }
-
-            if (JSON.stringify(ids) !== JSON.stringify(read())) {
-                save();
-            }
-        }, { signal });
-
-        save();
         paint();
 
         return {
-            capture(kind) {
-                if (!kinds.includes(kind)) return 0;
-
-                ids = merge(ids, read());
-                const before = ids[kind].length;
-
-                if (before < 10) {
-                    const id = window.crypto?.randomUUID?.() ||
-                        Date.now().toString(36) + '-' +
-                        Math.random().toString(36).slice(2) +
-                        '-capture';
-
-                    ids = merge(ids, { [kind]: [id] });
-                    save();
-                }
-
-                const completed =
-                    before < 10 && ids[kind].length === 10;
-
-                const milestone = completed
-                    ? ids.pumpkin.length === 10 && ids.bat.length === 10
-                        ? 2
-                        : 1
-                    : 0;
-
-                lastKind = kind;
-                show(kind, milestone);
-
-                return milestone;
+            update(state) {
+                if (campaign !== state.campaign_id) hide();
+                campaign = state.campaign_id;
+                progress = { ...state.counts };
+                paint();
             },
-
-            total: () => ids.pumpkin.length + ids.bat.length,
+            confirm: show,
             counts,
+
+            failure() {
+                if (!enabled) return;
+                show('pumpkin', 0);
+                title.textContent = 'Captura por confirmar';
+                message.textContent = 'Não foi possível confirmar. Tenta na próxima ronda.';
+                live.textContent = title.textContent + ' ' + message.textContent;
+            },
 
             setVisible(value) {
                 enabled = value;
@@ -2267,15 +2140,43 @@
     }
 
     const hunt = createHunt();
+    const huntClient = window.MargotHalloweenHunt?.create({
+        memberId,
+        endpoint: script.getAttribute('data-hunt'),
+        isEligible: () => running && ready && eligible(),
+        onState(state) {
+            hunt?.setVisible(!!state && running && ready);
+            if (state) hunt?.update(state);
+            actors = state ? actors.filter(a => huntClient.canShow(a)) : [];
+            request();
+        },
+        onObject(object) {
+            if (!running || !ready || !eligible() || object.remainingMs < 600) return false;
+            const actor = Object.assign(newActor(object.kind, 0), object);
+            actor.duration = Math.min(actor.duration, object.remainingMs - 150);
+            actors.push(actor);
+            request();
+            return true;
+        },
+        onCapture(kind, milestone) {
+            hunt?.confirm(kind, milestone);
+            if (running && milestone) captureHaptic(kind, milestone);
+        },
+        onFailure() {
+            hunt?.setVisible(running && ready && eligible());
+            hunt?.failure();
+        }
+    });
 
     const api = {
         destroy,
 
         getState: () => ({
-            version: 12,
+            version: 13,
             builders: builders.length,
             damagedThreads: strands.filter(s => s.cut).length,
             progress: hunt?.counts() ?? null,
+            hunt: huntClient?.getState() ?? null,
             running,
             ready,
             failures: failures.slice(),
@@ -2389,13 +2290,11 @@
 
         ready = !!(pictures.pumpkin && pictures.bat);
         hunt?.setVisible(running && ready);
+        huntClient?.setActive(running && ready);
 
         if (ready) {
             batLayers = makeBatLayers();
         }
 
-        if (ready && running) {
-            schedule(hunt && hunt.total() < 20 ? 4000 : 30000);
-        }
     });
 })();
