@@ -30,32 +30,22 @@
     function atualizarPolicy(state) {
         var compatible = ['native-battery-1', 'native-battery-2'].includes(state?.policy_version);
         window.MargotNativeLocationCacheAvailable = compatible;
-
+        // Capability gated: older installed builds never receive an unknown method call.
         if (!compatible || !plugin ||
             typeof plugin.configure !== 'function' || consultaPolicy ||
             Date.now() - ultimaConsultaPolicy < 3600000) return;
-
         ultimaConsultaPolicy = Date.now();
-
-        consultaPolicy = comPrazo(
-            fetch('/location-policy.json', {
-                cache: 'no-store',
-                credentials: 'same-origin'
-            }).then(function (response) {
+        consultaPolicy = comPrazo(fetch('/location-policy.json', {cache:'no-store',credentials:'same-origin'})
+            .then(function(response) {
                 if (!response.ok) throw new Error('Política indisponível');
                 return response.json();
-            }),
-            5000
-        )
-            .then(function (policy) {
-                return comPrazo(plugin.configure({policy: policy}), 5000);
-            })
-            .catch(function () {
+            }),5000)
+            .then(function(policy) { return comPrazo(plugin.configure({policy:policy}),5000); })
+            .catch(function() {
+                // Keep the validated on-device policy; retry after five minutes of foreground use.
                 ultimaConsultaPolicy = Date.now() - 3300000;
             })
-            .finally(function () {
-                consultaPolicy = null;
-            });
+            .finally(function() { consultaPolicy = null; });
     }
 
     var androidLocationPermissionPromise = null;
@@ -63,34 +53,20 @@
     var ultimaRetoma = 0;
     var membroConfirmado = '';
     var credencialConfirmadaEm = 0;
-    var membroAtual = function () {
-        return String(window.membroId || '').trim();
-    };
+    var membroAtual = function () { return String(window.membroId || '').trim(); };
     var ownerKey = 'margot-native-location-owner-v1';
-
     function nativeOwner(state) {
         if (state?.member_id) return state.member_id;
-
-        try {
-            return window.localStorage.getItem(ownerKey) || '';
-        } catch (_) {
-            return '';
-        }
+        try { return window.localStorage.getItem(ownerKey) || ''; } catch (_) { return ''; }
     }
 
     function comPrazo(promise, ms) {
         var timer;
-
-        return Promise.race([
-            promise,
-            new Promise(function (_, reject) {
-                timer = window.setTimeout(function () {
-                    reject(new Error('A ligação à localização demorou demasiado tempo.'));
-                }, ms);
-            })
-        ]).finally(function () {
-            window.clearTimeout(timer);
-        });
+        return Promise.race([promise, new Promise(function (_, reject) {
+            timer = window.setTimeout(function () {
+                reject(new Error('A ligação à localização demorou demasiado tempo.'));
+            }, ms);
+        })]).finally(function () { window.clearTimeout(timer); });
     }
 
     function plataformaAtual() {
@@ -131,8 +107,7 @@
     }
 
     function presencaVisivel() {
-        return localizacaoPermitida() &&
-            (!estaInvisivel() || window.MargotLocationPrivacy?.allowsCollection() === true);
+        return localizacaoPermitida() && (!estaInvisivel() || window.MargotLocationPrivacy?.allowsCollection() === true);
     }
 
     function plataformaNativa() {
@@ -172,8 +147,7 @@
             return false;
         }
 
-        return estado.location === 'granted' ||
-            estado.coarseLocation === 'granted';
+        return estado.location === 'granted' || estado.coarseLocation === 'granted';
     }
 
     /*
@@ -217,7 +191,6 @@
                 'margot:notificacoes-permissao-concluida',
                 concluir
             );
-
             timer = window.setTimeout(concluir, 15000);
 
             if (window.margotNotificationPermissionFlowCompleted === true) {
@@ -241,7 +214,7 @@
 
     function garantirPermissaoLocalizacaoAndroid() {
         if (!androidNativo()) {
-            return Promise.resolve({granted: true, status: null});
+            return Promise.resolve({ granted: true, status: null });
         }
 
         window.margotAndroidLocationPermissionFlowManaged = true;
@@ -255,32 +228,25 @@
             typeof geolocationPlugin.checkPermissions !== 'function' ||
             typeof geolocationPlugin.requestPermissions !== 'function'
         ) {
-            return Promise.resolve({granted: false, status: null});
+            return Promise.resolve({ granted: false, status: null });
         }
 
         androidLocationPermissionPromise = aguardarPermissaoNotificacoesAndroid()
             .then(function () {
-                return comPrazo(
-                    geolocationPlugin.checkPermissions(),
-                    10000
-                );
+                return comPrazo(geolocationPlugin.checkPermissions(), 10000);
             })
             .then(function (estado) {
                 if (permissaoLocalizacaoConcedida(estado)) {
-                    return {granted: true, status: estado};
+                    return { granted: true, status: estado };
                 }
 
-                return comPrazo(
-                    geolocationPlugin.requestPermissions({
-                        permissions: ['location']
-                    }),
-                    120000
-                ).then(function (novoEstado) {
-                    return {
-                        granted: permissaoLocalizacaoConcedida(novoEstado),
-                        status: novoEstado
-                    };
-                });
+                return comPrazo(geolocationPlugin.requestPermissions({ permissions: ['location'] }), 120000)
+                    .then(function (novoEstado) {
+                        return {
+                            granted: permissaoLocalizacaoConcedida(novoEstado),
+                            status: novoEstado
+                        };
+                    });
             })
             .then(function (resultado) {
                 androidLocationPermissionPromise = null;
@@ -302,11 +268,7 @@
 
                 publicarPermissaoLocalizacaoAndroid(false, null);
 
-                return {
-                    granted: false,
-                    status: null,
-                    error: erro
-                };
+                return { granted: false, status: null, error: erro };
             });
 
         return androidLocationPermissionPromise;
@@ -314,10 +276,7 @@
 
     function obterTokenCsrf() {
         var elemento = document.querySelector('meta[name="csrf-token"]');
-
-        return elemento
-            ? String(elemento.getAttribute('content') || '').trim()
-            : '';
+        return elemento ? String(elemento.getAttribute('content') || '').trim() : '';
     }
 
     async function pedirTokenBackground() {
@@ -339,10 +298,7 @@
         try {
             var pacote = await comPrazo((async function () {
                 var response = await fetch(
-                    String(
-                        window.backgroundLocationTokenUrl ||
-                        '/background-location-token/'
-                    ),
+                    String(window.backgroundLocationTokenUrl || '/background-location-token/'),
                     {
                         method: 'POST',
                         credentials: 'same-origin',
@@ -356,10 +312,7 @@
                     return {};
                 });
 
-                return {
-                    response: response,
-                    body: body
-                };
+                return { response: response, body: body };
             })(), 15000);
 
             resposta = pacote.response;
@@ -374,15 +327,13 @@
 
         if (!resposta.ok || !dados.success || !dados.token) {
             throw new Error(
-                dados.message ||
-                'Não foi possível ativar a localização em segundo plano.'
+                dados.message || 'Não foi possível ativar a localização em segundo plano.'
             );
         }
 
         if (dados.member_id && dados.member_id !== membroAtual()) {
             throw new Error('A autorização pertence a outra conta.');
         }
-
         return String(dados.token);
     }
 
@@ -400,10 +351,7 @@
     function tokenGuardado(resultado) {
         return !!(
             resultado &&
-            (
-                resultado.token_stored === true ||
-                resultado.tokenStored === true
-            )
+            (resultado.token_stored === true || resultado.tokenStored === true)
         );
     }
 
@@ -412,20 +360,20 @@
             return estadoAtual();
         }
 
-        return plugin.setVisibility({visible: !!visivel});
+        return plugin.setVisibility({ visible: !!visivel });
     }
 
     async function estadoAtual() {
         if (!pluginDisponivel()) {
-            return {available: false, active: false};
+            return { available: false, active: false };
         }
 
         var state = await comPrazo(plugin.status(), 10000);
-
         atualizarPolicy(state);
 
         if (androidNativo()) {
-            // O plugin nativo já consulta GPS e permissões.
+            // O plugin nativo já consulta GPS e permissões. checkPermissions()
+            // pode lançar uma exceção com o GPS desligado e esconder o aviso.
             state.services_enabled = state.permission !== 'disabled';
         }
 
@@ -439,10 +387,7 @@
             return renovacao;
         }
 
-        renovacao = executarRenovacao(
-            versao,
-            requestAlways
-        ).finally(function () {
+        renovacao = executarRenovacao(versao, requestAlways).finally(function () {
             renovacao = null;
         });
 
@@ -455,23 +400,15 @@
         }
 
         if (!pluginDisponivel()) {
-            return {available: false, active: false};
+            return { available: false, active: false };
         }
 
         var membro = membroAtual();
-
-        if (!membro) {
-            return {active: false, authenticated: false};
-        }
-
+        if (!membro) return {active: false, authenticated: false};
         var token = await pedirTokenBackground();
 
-        if (
-            versao !== geracao ||
-            membro !== membroAtual() ||
-            !localizacaoPermitida()
-        ) {
-            return {active: false, cancelled: true};
+        if (versao !== geracao || membro !== membroAtual() || !localizacaoPermitida()) {
+            return { active: false, cancelled: true };
         }
 
         if (!token) {
@@ -495,11 +432,7 @@
 
         membroConfirmado = membro;
         credencialConfirmadaEm = Date.now();
-
-        try {
-            window.localStorage.setItem(ownerKey, membro);
-        } catch (_) {}
-
+        try { window.localStorage.setItem(ownerKey, membro); } catch (_) {}
         return resultado;
     }
 
@@ -527,9 +460,7 @@
                 return estadoAtual();
             }
 
-            return plugin.requestPermission({
-                always: always === true
-            });
+            return plugin.requestPermission({ always: always === true });
         }
 
         return garantirPermissaoLocalizacaoAndroid();
@@ -542,117 +473,51 @@
     var ultimaConfirmacaoAndroid = 0;
 
     async function iniciar(periodico, requestAlways) {
-        if (!localizacaoPermitida()) {
-            return parar();
-        }
-
+        if (!localizacaoPermitida()) return parar();
         var solicitacao = geracao;
         var solicitante = membroAtual();
-
-        if (paragem) {
-            await paragem;
-        }
-
-        if (
-            solicitacao !== geracao ||
-            solicitante !== membroAtual()
-        ) {
-            return {active: false, cancelled: true};
-        }
+        if (paragem) await paragem;
+        if (solicitacao !== geracao || solicitante !== membroAtual()) return {active: false, cancelled: true};
 
         if (document.visibilityState !== 'visible') {
-            return {active: false, deferred: true};
+            return { active: false, deferred: true };
         }
 
         if (!pluginDisponivel()) {
-            return {available: false, active: false};
+            return { available: false, active: false };
         }
 
         if (inicializacao) {
-            if (
-                inicializacaoMembro !== membroAtual() &&
-                inicializacaoGeracao === geracao
-            ) {
-                geracao++;
-            }
-
+            if (inicializacaoMembro !== membroAtual() && inicializacaoGeracao === geracao) geracao++;
             if (inicializacaoGeracao !== geracao) {
                 var pedido = geracao;
                 var conta = membroAtual();
-
                 await inicializacao;
-
-                if (
-                    pedido === geracao &&
-                    conta === membroAtual()
-                ) {
-                    return iniciar(periodico, requestAlways);
-                }
-
+                if (pedido === geracao && conta === membroAtual()) return iniciar(periodico, requestAlways);
                 return {active: false, cancelled: true};
             }
-
             return inicializacao;
         }
 
         var versao = geracao;
-
         inicializacaoGeracao = versao;
         inicializacaoMembro = membroAtual();
 
         inicializacao = (async function () {
             try {
                 var estado = await estadoAtual();
-
-                if (versao !== geracao) {
-                    return {active: false, cancelled: true};
-                }
-
-                if (!membroAtual()) {
-                    return parar();
-                }
-
-                if (
-                    tokenGuardado(estado) &&
-                    nativeOwner(estado) !== membroAtual()
-                ) {
+                if (versao !== geracao) return {active: false, cancelled: true};
+                if (!membroAtual()) return parar();
+                if (tokenGuardado(estado) && nativeOwner(estado) !== membroAtual()) {
                     await plugin.stop();
                     membroConfirmado = '';
                 }
-
                 await window.MargotLocationReady;
-
-                if (
-                    versao !== geracao ||
-                    solicitante !== membroAtual()
-                ) {
-                    return {active: false, cancelled: true};
+                if (versao !== geracao) return {active: false, cancelled: true};
+                var estadoServidor = await window.MargotLocationState?.sync();
+                if (window.MargotLocationState && !estadoServidor) {
+                    return {active: false, deferred: true, reason: 'state_unconfirmed'};
                 }
-
-                // O tutorial pode ter alterado a permissão.
-                estado = await estadoAtual();
-
-                if (
-                    versao !== geracao ||
-                    solicitante !== membroAtual()
-                ) {
-                    return {active: false, cancelled: true};
-                }
-
-                var estadoServidor =
-                    await window.MargotLocationState?.sync();
-
-                if (
-                    window.MargotLocationState &&
-                    !estadoServidor
-                ) {
-                    return {
-                        active: false,
-                        deferred: true,
-                        reason: 'state_unconfirmed'
-                    };
-                }
-
                 if (!localizacaoPermitida()) {
                     return parar();
                 }
@@ -666,11 +531,10 @@
                     androidNativo() &&
                     presencaVisivel()
                 ) {
-                    var permissaoAndroid =
-                        await garantirPermissaoLocalizacaoAndroid();
+                    var permissaoAndroid = await garantirPermissaoLocalizacaoAndroid();
 
                     if (versao !== geracao) {
-                        return {active: false, cancelled: true};
+                        return { active: false, cancelled: true };
                     }
 
                     if (!permissaoAndroid.granted) {
@@ -678,13 +542,12 @@
                     }
                 }
 
+
                 if (window.MargotLocationOnboarding) {
                     if (
                         plataformaAtual() === 'ios' &&
                         (
-                            !['when_in_use', 'always'].includes(
-                                estado.authorization
-                            ) ||
+                            !['when_in_use', 'always'].includes(estado.authorization) ||
                             estado.services_enabled === false
                         )
                     ) {
@@ -694,10 +557,7 @@
                     if (
                         androidNativo() &&
                         !permissaoLocalizacaoConcedida(
-                            await comPrazo(
-                                geolocationPlugin.checkPermissions(),
-                                10000
-                            )
+                            await comPrazo(geolocationPlugin.checkPermissions(), 10000)
                         )
                     ) {
                         return estado;
@@ -705,25 +565,16 @@
                 }
 
                 if (versao !== geracao) {
-                    return {active: false, cancelled: true};
+                    return { active: false, cancelled: true };
                 }
 
                 var visivel = presencaVisivel();
 
-                /*
-                 * Verifica a identidade na sessão antes de reutilizar
-                 * credenciais nativas. Renova diariamente.
-                 */
-                if (
-                    requestAlways === true ||
-                    membroConfirmado !== membroAtual() ||
-                    estado.collection_suspended === true ||
-                    Date.now() - credencialConfirmadaEm > 86400000
-                ) {
-                    return await renovarToken(
-                        versao,
-                        requestAlways
-                    );
+                // Verifica a identidade na sessão antes de reutilizar credenciais nativas.
+                // A renovação diária evita depender do evento 401 para tokens de 30 dias.
+                if (requestAlways === true || membroConfirmado !== membroAtual() || estado.collection_suspended === true ||
+                    Date.now() - credencialConfirmadaEm > 86400000) {
+                    return await renovarToken(versao, requestAlways);
                 }
 
                 if (
@@ -736,18 +587,14 @@
                     return estado;
                 }
 
-                // Android: confirmar arranque real.
-                if (
-                    androidNativo() &&
-                    visivel &&
-                    tokenGuardado(estado)
-                ) {
+                // Android: confirmar arranque real, mesmo com active antigo.
+                if (androidNativo() && visivel && tokenGuardado(estado)) {
                     if (
                         document.visibilityState !== 'visible' ||
                         !localizacaoPermitida() ||
                         !visivel
                     ) {
-                        return {active: false, deferred: true};
+                        return { active: false, deferred: true };
                     }
 
                     var agoraAndroid = Date.now();
@@ -762,6 +609,8 @@
 
                     ultimaConfirmacaoAndroid = agoraAndroid;
 
+                    // Usa o token existente e pede ao Android para iniciar
+                    // o serviço. Não pára um serviço que já esteja a correr.
                     var estadoAndroid = await comPrazo(
                         definirVisibilidade(true),
                         10000
@@ -774,31 +623,18 @@
                     return estadoAndroid;
                 }
 
-                if (
-                    localizacaoAtiva(estado) &&
-                    estado.visible === visivel
-                ) {
-                    if (
-                        plataformaAtual() === 'ios' &&
-                        visivel &&
-                        estado.authorization === 'always' &&
-                        periodico !== true
-                    ) {
-                        return definirVisibilidade(true);
-                    }
-
+                if (localizacaoAtiva(estado) && estado.visible === visivel) {
+                    if (plataformaAtual() === 'ios' && visivel && estado.authorization === 'always' && periodico !== true) return definirVisibilidade(true);
                     return estado;
                 }
 
-                if (
-                    tokenGuardado(estado) &&
-                    !visivel &&
-                    estado.visible === false
-                ) {
+                if (tokenGuardado(estado) && !visivel && estado.visible === false) {
                     return estado;
                 }
 
                 if (tokenGuardado(estado)) {
+                    // Um serviço parado pode retomar com o token que já tem.
+                    // No iOS "Ao usar", active=false é normal; não rodar tokens.
                     if (
                         plataformaAtual() === 'ios' &&
                         estado.authorization === 'when_in_use' &&
@@ -810,10 +646,9 @@
 
                     ultimaRetoma = Date.now();
 
-                    var estadoSincronizado =
-                        await definirVisibilidade(
-                            presencaVisivel()
-                        );
+                    var estadoSincronizado = await definirVisibilidade(
+                        presencaVisivel()
+                    );
 
                     if (versao !== geracao) {
                         return plugin.stop();
@@ -823,22 +658,14 @@
                 }
 
                 var resultado = await renovarToken(versao);
-
                 return resultado;
             } catch (erro) {
-                console.error(
-                    'Localização em segundo plano:',
-                    erro
-                );
+                console.error('Localização em segundo plano:', erro);
 
                 return {
                     available: true,
                     active: false,
-                    error: String(
-                        erro && erro.message
-                            ? erro.message
-                            : erro
-                    )
+                    error: String(erro && erro.message ? erro.message : erro)
                 };
             } finally {
                 inicializacao = null;
@@ -849,28 +676,20 @@
     }
 
     async function parar() {
+        // Invalida arranques pendentes, mesmo que o HTTP termine depois do logout.
         geracao += 1;
         membroConfirmado = '';
         credencialConfirmadaEm = 0;
-
-        try {
-            window.localStorage.removeItem(ownerKey);
-        } catch (_) {}
+        try { window.localStorage.removeItem(ownerKey); } catch (_) {}
 
         if (!pluginDisponivel()) {
-            return {available: false, active: false};
+            return { available: false, active: false };
         }
 
         window.MargotLocationOnboarding?.close();
-
         if (!paragem) {
-            paragem = Promise.resolve(
-                plugin.stop()
-            ).finally(function () {
-                paragem = null;
-            });
+            paragem = Promise.resolve(plugin.stop()).finally(function () { paragem = null; });
         }
-
         return paragem;
     }
 
@@ -880,7 +699,6 @@
         }
 
         await plugin.openSettings();
-
         return true;
     }
 
@@ -897,15 +715,10 @@
         requestPermission: pedirPermissao,
         requestBackgroundPermission: async function () {
             var state = await estadoAtual();
-
-            if (
-                androidNativo() &&
-                state.background_permission_required === true &&
-                typeof plugin.requestBackgroundPermission === 'function'
-            ) {
+            if (androidNativo() && state.background_permission_required === true &&
+                typeof plugin.requestBackgroundPermission === 'function') {
                 return plugin.requestBackgroundPermission();
             }
-
             return state;
         },
         showSettingsNotice: function () {
@@ -913,10 +726,7 @@
         }
     };
 
-    if (
-        pluginDisponivel() &&
-        typeof plugin.addListener === 'function'
-    ) {
+    if (pluginDisponivel() && typeof plugin.addListener === 'function') {
         var renovarAutorizacao = function () {
             if (document.visibilityState !== 'visible') {
                 return;
@@ -924,17 +734,13 @@
 
             if (!localizacaoPermitida()) {
                 parar().catch(function (erro) {
-                    console.error(
-                        'Não foi possível parar a localização:',
-                        erro
-                    );
+                    console.error('Não foi possível parar a localização:', erro);
                 });
 
                 return;
             }
 
             membroConfirmado = '';
-
             iniciar().catch(function (erro) {
                 console.error(
                     'Não foi possível renovar a autorização da localização:',
@@ -947,39 +753,21 @@
             'backgroundLocationAuthorizationExpired',
             'backgroundLocationTokenExpired'
         ].forEach(function (evento) {
-            plugin.addListener(
-                evento,
-                renovarAutorizacao
-            );
+            plugin.addListener(evento, renovarAutorizacao);
         });
 
-        plugin.addListener(
-            'backgroundLocationAuthorizationChanged',
-            function (state) {
-                window.MargotLocationOnboarding
-                    ?.authorizationChanged(state);
+        plugin.addListener('backgroundLocationAuthorizationChanged', function (state) {
+            window.MargotLocationOnboarding?.authorizationChanged(state);
 
-                if (localizacaoPermitida()) {
-                    iniciar();
-                }
+            if (localizacaoPermitida()) {
+                iniciar();
             }
-        );
-
-        plugin.addListener(
-            'backgroundLocationRejected',
-            function (state) {
-                if (
-                    state?.reason === 'collection_disabled' &&
-                    document.visibilityState === 'visible'
-                ) {
-                    window.MargotLocationState
-                        ?.sync(true)
-                        .then(function () {
-                            iniciar();
-                        });
-                }
+        });
+        plugin.addListener('backgroundLocationRejected', function (state) {
+            if (state?.reason === 'collection_disabled' && document.visibilityState === 'visible') {
+                window.MargotLocationState?.sync(true).then(function () { iniciar(); });
             }
-        );
+        });
     }
 
     function arrancar() {
@@ -987,48 +775,32 @@
             iniciar();
         } else {
             parar().catch(function (erro) {
-                console.error(
-                    'Localização em segundo plano:',
-                    erro
-                );
+                console.error('Localização em segundo plano:', erro);
             });
         }
     }
 
     if (document.readyState === 'loading') {
-        document.addEventListener(
-            'DOMContentLoaded',
-            arrancar,
-            {once: true}
-        );
+        document.addEventListener('DOMContentLoaded', arrancar, { once: true });
     } else {
         arrancar();
     }
 
-    document.addEventListener(
-        'visibilitychange',
-        function () {
-            if (document.visibilityState === 'visible') {
-                arrancar();
-            }
+    /*
+     * Ao voltar à app, verifica o serviço e sincroniza a visibilidade.
+     * O Swift força também uma atualização de localização.
+     */
+    document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'visible') {
+            arrancar();
         }
-    );
+    });
 
-    window.addEventListener(
-        'margot:preferencias-alteradas',
-        arrancar
-    );
+    window.addEventListener('margot:preferencias-alteradas', arrancar);
+    window.addEventListener('online', arrancar);
+    document.addEventListener('margot:permissions-resume', arrancar);
 
-    window.addEventListener(
-        'online',
-        arrancar
-    );
-
-    document.addEventListener(
-        'margot:permissions-resume',
-        arrancar
-    );
-
+    // Recupera falhas transitórias enquanto a app está visível, sem pedir permissões.
     window.setInterval(function () {
         if (
             document.visibilityState === 'visible' &&
