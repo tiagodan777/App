@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 return [
-    'mode' => 'pilot',
+    'mode' => 'public',
 
     'testers' => [
         'bcad0cb1-9cec-11f1-9863-42010a840002', // Tiago Daniel
