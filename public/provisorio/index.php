@@ -35,7 +35,8 @@ $sources = [
     'tomas-silva',
     'andre-vieira',
     'andre-matos',
-    'sonia-daniel'
+    'sonia-daniel',
+    'medicina',
 ];
 
 $source = $_GET['src'] ?? 'direct';
