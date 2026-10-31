@@ -23,18 +23,18 @@ return [
         'winner_email' => 'tiagoamdaniel488@gmail.com',
 
         'notify_campaigns' => [
-            'hw26-hunt-v1-pilot-20s-test-1400-reset-2',
+            'hw26-hunt-v1-pilot-20s-test-1700-decoys-1',
             'hw26-hunt-v1-public',
         ],
 
-        'pilot_run' => 'test-1400-reset-2',
+        'pilot_run' => 'test-1700-decoys-1',
         'pilot_interval_seconds' => 20,
         'public_interval_seconds' => 180,
 
         'timezone' => 'Atlantic/Azores',
 
         'pilot_starts_at' => '2026-10-31 11:07:00',
-        'pilot_ends_at' => '2026-10-31 14:00:00',
+        'pilot_ends_at' => '2026-10-31 17:00:00',
 
         'public_starts_at' => '2026-10-31 22:00:00',
         'public_ends_at' => '2026-11-01 03:30:00',

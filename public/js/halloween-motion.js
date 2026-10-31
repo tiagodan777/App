@@ -107,5 +107,9 @@
     }
 
     createWithMotion.motionVersion = 16;
-    hunt.create = createWithMotion;
+
+    window.MargotHalloweenHunt = Object.freeze({
+        ...hunt,
+        create: createWithMotion
+    });
 })();
