@@ -34,14 +34,14 @@ return [
             'hw26-waves-v20-public',
         ],
 
-        'pilot_run' => 'test-waves-20-a',
+        'pilot_run' => 'test-waves-20-b',
         'pilot_interval_seconds' => 20,
         'public_interval_seconds' => 180,
 
         'timezone' => 'Atlantic/Azores',
 
         'pilot_starts_at' => '2026-10-31 18:15:00',
-        'pilot_ends_at' => '2026-10-31 18:30:00',
+        'pilot_ends_at' => '2026-10-31 18:45:00',
 
         'public_starts_at' => '2026-10-31 22:00:00',
         'public_ends_at' => '2026-11-01 03:30:00',
