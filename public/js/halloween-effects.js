@@ -7,12 +7,10 @@
     const page = document.querySelector(
         '#gridCanvas,#mensagens-pagina,#chat-pagina,#perfil'
     );
-
     if (!page) return;
 
     const script = document.currentScript;
     const assets = script?.getAttribute('data-assets');
-
     if (!assets) return;
 
     const assetRoot = new URL(assets, document.baseURI);
@@ -30,7 +28,6 @@
     document.body.appendChild(canvas);
 
     const ctx = canvas.getContext('2d');
-
     if (!ctx) {
         canvas.remove();
         return;
@@ -77,7 +74,6 @@
     let hapticPlugin;
     let physicsDebt = 0;
     let lastTear = -1000;
-
     let lastPhysics = 0;
     let previousFloor = .7;
     let previousCenter = .5;
@@ -89,7 +85,6 @@
 
     function different(previous, a, b, gap) {
         const x = random(a, b);
-
         return Math.abs(x - previous) >= gap
             ? x
             : previous < (a + b) / 2 ? b : a;
@@ -108,14 +103,12 @@
             ) return false;
 
             const css = getComputedStyle(n);
-
             if (
                 css.display === 'none' ||
                 css.visibility === 'hidden' ||
                 css.visibility === 'collapse'
             ) return false;
         }
-
         return true;
     }
 
@@ -158,7 +151,6 @@
         stopRepairs();
         nodes = [];
         strands = [];
-
         if (!map) return;
 
         function web(cx, cy, radius, rays, rings, start, sweep, flat, seed) {
@@ -266,7 +258,6 @@
         });
 
         const dpr = Math.min(devicePixelRatio || 1, 2);
-
         canvas.width = Math.round(W * dpr);
         canvas.height = Math.round(H * dpr);
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -277,7 +268,6 @@
         webActiveUntil = 0;
         lastPhysics = performance.now();
         physicsDebt = 0;
-
         clearPulses();
         makeWeb();
         request();
@@ -287,7 +277,6 @@
         const dx = b.x - a.x;
         const dy = b.y - a.y;
         const n = dx * dx + dy * dy;
-
         const t = n
             ? clamp(((x - a.x) * dx + (y - a.y) * dy) / n, 0, 1)
             : 0;
@@ -317,11 +306,9 @@
         level = clamp(Math.round(level), 0, 2);
 
         if (now - lastHaptic < interval) return;
-
         lastHaptic = now;
 
         const type = ['shutter', 'interaction', 'heySent'][level];
-
         profile ||= level === 2
             ? 'navigation'
             : level === 1 ? 'selection' : undefined;
@@ -367,15 +354,14 @@
         );
 
         const pattern = milestone === 2
-            ? [[170, 1], [360, 2], [620, 2]]
+            ? [[140, 2], [310, 1], [490, 2], [750, 2]]
             : milestone === 1
-                ? [[180, 1], [390, 2]]
-                : [[kind === 'pumpkin' ? 190 : 130, 0]];
+                ? [[140, 1], [300, 2], [520, 2]]
+                : [[120, 1], [270, 2]];
 
         pattern.forEach(([delay, level]) => {
             const id = setTimeout(() => {
                 pulseTimers.delete(id);
-
                 haptic(
                     level,
                     100,
@@ -416,12 +402,10 @@
 
     function segmentNear(ax, ay, bx, by, p, q) {
         const cross = (x, y, u, v) => x * v - y * u;
-
         const dx = bx - ax;
         const dy = by - ay;
         const ex = q.x - p.x;
         const ey = q.y - p.y;
-
         const den = cross(dx, dy, ex, ey);
 
         if (Math.abs(den) > .00001) {
@@ -478,7 +462,6 @@
         chosen.forEach(s => {
             const a = nodes[s.a];
             const b = nodes[s.b];
-
             s.cut = now;
             s.mx = (a.x + b.x) / 2;
             s.my = (a.y + b.y) / 2;
@@ -499,13 +482,14 @@
 
         const cx = (a.x + b.x) / 2 +
             (s.cx - (a.x + b.x) / 2) * bend;
-
         const cy = (a.y + b.y) / 2 +
             (s.cy - (a.y + b.y) / 2) * bend;
 
         return {
-            x: (1 - t) ** 2 * a.x + 2 * (1 - t) * t * cx + t * t * b.x,
-            y: (1 - t) ** 2 * a.y + 2 * (1 - t) * t * cy + t * t * b.y,
+            x: (1 - t) ** 2 * a.x +
+                2 * (1 - t) * t * cx + t * t * b.x,
+            y: (1 - t) ** 2 * a.y +
+                2 * (1 - t) * t * cy + t * t * b.y,
             cx,
             cy,
             a
@@ -649,7 +633,6 @@
         if (Math.abs(dx) + Math.abs(dy) < .001) return;
 
         const target = Math.atan2(dy, dx) + Math.PI / 2;
-
         const delta = Math.atan2(
             Math.sin(target - b.angle),
             Math.cos(target - b.angle)
@@ -720,7 +703,6 @@
                     b.begin = s.weave.progress;
                     b.phase = 'weave';
                     b.since = now;
-
                     b.duration =
                         clamp(s.length / 55 * 1000, 420, 1500) *
                         (1 - b.begin);
@@ -740,7 +722,6 @@
 
                 faceSpider(b, dx, dy, dt);
                 b.gait += Math.hypot(dx, dy) * .13;
-
                 b.x = p.x;
                 b.y = p.y;
                 s.weave.progress = progress;
@@ -762,9 +743,7 @@
             return true;
         });
 
-        if (!builders.length) {
-            repairJobs = [];
-        }
+        if (!builders.length) repairJobs = [];
     }
 
     function drawSpider(b, now) {
@@ -789,7 +768,6 @@
 
                 const stride = Math.sin(phase) *
                     (busy && i === 0 ? 2.1 : 3.2);
-
                 const lift = Math.max(0, Math.cos(phase));
 
                 const hip = {
@@ -829,7 +807,6 @@
                 function bone(a, z, r0, r1) {
                     const length =
                         Math.hypot(z.x - a.x, z.y - a.y) || 1;
-
                     const nx = -(z.y - a.y) / length;
                     const ny = (z.x - a.x) / length;
                     const mx = (a.x + z.x) / 2;
@@ -852,14 +829,12 @@
                     ctx.beginPath();
                     ctx.moveTo(a.x + nx * r0, a.y + ny * r0);
                     ctx.lineTo(z.x + nx * r1, z.y + ny * r1);
-
                     ctx.quadraticCurveTo(
                         z.x + ny * r1,
                         z.y - nx * r1,
                         z.x - nx * r1,
                         z.y - ny * r1
                     );
-
                     ctx.lineTo(a.x - nx * r0, a.y - ny * r0);
                     ctx.closePath();
                     ctx.fill();
@@ -891,13 +866,7 @@
         const bob = Math.sin(b.gait * 2) * .35;
 
         if (spiderBody) {
-            ctx.drawImage(
-                spiderBody,
-                -14,
-                -20 + bob,
-                28,
-                42
-            );
+            ctx.drawImage(spiderBody, -14, -20 + bob, 28, 42);
         } else {
             const fill = ctx.createRadialGradient(
                 -4, 2, 1, 0, 5, 13
@@ -911,7 +880,6 @@
             ctx.beginPath();
             ctx.ellipse(0, 6 + bob, 10, 13, 0, 0, Math.PI * 2);
             ctx.fill();
-
             ctx.beginPath();
             ctx.ellipse(0, -9 + bob, 7, 8, 0, 0, Math.PI * 2);
             ctx.fill();
@@ -933,8 +901,7 @@
 
             ctx.beginPath();
             ctx.ellipse(
-                0,
-                -19,
+                0, -19,
                 3 + loop * .3,
                 2,
                 loop * .2,
@@ -960,7 +927,6 @@
         if (!torn && travel > 1.5 && finger.travel > 7) {
             const tension = webPull() / 85;
             const level = tension > .55 || speed > .7 ? 2 : 1;
-
             haptic(level, level === 2 ? 160 : 210);
         }
 
@@ -1025,11 +991,8 @@
                     const len = Math.hypot(dx, dy) || 1;
 
                     const tension = clamp(
-                        (len / s.length - 1) / 1.2,
-                        0,
-                        1
+                        (len / s.length - 1) / 1.2, 0, 1
                     );
-
                     const stiffness = .03 + .13 * tension * tension;
                     const f = (len - s.length) / len * stiffness;
                     const w = a.fixed || b.fixed ? 1 : .5;
@@ -1079,7 +1042,6 @@
 
             if (s.cut && !s.weave) {
                 const age = clamp((now - s.cut) / 1300, 0, 1);
-
                 if (age === 1) return;
 
                 ctx.strokeStyle =
@@ -1090,31 +1052,24 @@
                     const k = 1 - ease(age) * .85;
                     const ex = p.x + (s.mx - p.x) * k;
                     const ey = p.y + (s.my - p.y) * k;
-
                     const wave =
                         Math.sin(age * 12 + i * Math.PI) *
                         (1 - age) * 7;
 
                     ctx.beginPath();
                     ctx.moveTo(p.x, p.y);
-
                     ctx.quadraticCurveTo(
                         (p.x + ex) / 2 + wave,
                         (p.y + ey) / 2 + age * 10,
-                        ex,
-                        ey
+                        ex, ey
                     );
-
                     ctx.stroke();
                 });
 
                 return;
             }
 
-            if (s.cut) {
-                grow = s.weave.progress;
-            }
-
+            if (s.cut) grow = s.weave.progress;
             if (alpha < .005) return;
 
             const p = silkPoint(s, grow, s.weave?.from || 0);
@@ -1122,14 +1077,11 @@
             ctx.strokeStyle = 'rgba(193,157,255,' + alpha + ')';
             ctx.beginPath();
             ctx.moveTo(p.a.x, p.a.y);
-
             ctx.quadraticCurveTo(
                 p.a.x + (p.cx - p.a.x) * grow,
                 p.a.y + (p.cy - p.a.y) * grow,
-                p.x,
-                p.y
+                p.x, p.y
             );
-
             ctx.stroke();
         });
 
@@ -1142,19 +1094,18 @@
 
         ctx.save();
         ctx.globalAlpha *= alpha;
-
         ctx.drawImage(
             pictures[kind],
             r[0], r[1], r[2], r[3],
             -width / 2, -height, width, height
         );
-
         ctx.restore();
     }
 
     function drawPumpkin(a, now) {
         const p = clamp((now - a.start) / a.duration, 0, 1);
-        const cycle = p * a.hops;
+        const travel = p + .055 * Math.sin(2 * Math.PI * p);
+        const cycle = travel * a.hops;
         const index = Math.min(a.hops - 1, Math.floor(cycle));
         const u = cycle - index;
         const air = clamp((u - .12) / .68, 0, 1);
@@ -1164,13 +1115,16 @@
             ? 4 * a.jumps[index] * air * (1 - air)
             : 0;
 
-        const position = (index + ease(air)) / a.hops;
+        const position =
+            a.points[index] +
+            ease(air) * (a.points[index + 1] - a.points[index]);
 
         a.x = a.dir > 0
             ? -60 + (W + 120) * position
             : W + 60 - (W + 120) * position;
 
-        a.y = a.floor - lift - a.size / 2;
+        const ground = a.floor;
+        a.y = ground - lift - a.size / 2;
 
         ctx.save();
         ctx.globalAlpha = .28 * (
@@ -1180,21 +1134,25 @@
         ctx.beginPath();
         ctx.ellipse(
             a.x,
-            a.floor + 2,
+            ground + 2,
             15 - lift * .06,
-            3,
-            0,
-            0,
-            Math.PI * 2
+            3, 0, 0, Math.PI * 2
         );
         ctx.fill();
         ctx.restore();
 
         ctx.save();
-        ctx.translate(a.x, a.floor - lift);
-        sprite('pumpkin', a.dir > 0 ? 1 : 3, a.size);
-        ctx.restore();
+        ctx.translate(a.x, ground - lift);
 
+        sprite(
+            'pumpkin',
+            a.dir * Math.sign(
+                a.points[index + 1] - a.points[index]
+            ) > 0 ? 1 : 3,
+            a.size
+        );
+
+        ctx.restore();
         return p < 1;
     }
 
@@ -1212,7 +1170,6 @@
             g.beginPath();
             path(g, w, h);
             g.clip();
-
             g.drawImage(
                 pictures.bat,
                 r[0], r[1], w, h,
@@ -1246,10 +1203,8 @@
 
         const body = layer(g => {
             g.ellipse(395, 179, 88, 128, 0, 0, Math.PI * 2);
-
             g.moveTo(385, 74);
             g.ellipse(345, 74, 43, 80, -.25, 0, Math.PI * 2);
-
             g.moveTo(488, 74);
             g.ellipse(445, 74, 43, 80, .25, 0, Math.PI * 2);
         });
@@ -1266,10 +1221,19 @@
     function drawBat(a, now) {
         const p = clamp((now - a.start) / a.duration, 0, 1);
         const travel = W + 170;
+        const path = p + .055 * Math.sin(2 * Math.PI * p);
+
+        const sway = Math.sin(p * Math.PI) *
+            Math.sin(p * Math.PI * 2 * a.turns + a.phase) *
+            a.weave;
+
+        const loopX = Math.sin(p * Math.PI) ** 2 *
+            Math.sin(p * Math.PI * 2 * a.loops) *
+            a.loopRadius;
 
         a.x = a.dir > 0
-            ? -85 + travel * p
-            : W + 85 - travel * p;
+            ? -85 + travel * path + sway + loopX
+            : W + 85 - travel * path + sway + loopX;
 
         const phase =
             (now - a.start) / 1000 *
@@ -1279,9 +1243,15 @@
             a.y0 +
             (a.y1 - a.y0) * p +
             Math.sin(p * Math.PI) * a.bend +
-            Math.sin(p * Math.PI * 2) * a.wave;
+            Math.sin(p * Math.PI) *
+                Math.sin(p * Math.PI * 2 * a.turns + a.phase) *
+                a.wave +
+            Math.sin(p * Math.PI) ** 2 *
+                Math.cos(p * Math.PI * 2 * a.loops) *
+                a.loopRadius;
 
         ctx.save();
+        a.y = clamp(a.y, 85, H - 110);
         ctx.translate(a.x, a.y);
 
         ctx.rotate(
@@ -1297,7 +1267,6 @@
         );
 
         const scale = a.size / batLayers.h;
-
         ctx.scale(scale, scale);
         ctx.translate(-395, -165);
 
@@ -1316,7 +1285,6 @@
 
         wing(batLayers.left, 326, 1);
         wing(batLayers.right, 464, -1);
-
         ctx.drawImage(batLayers.body, 0, 0);
         ctx.restore();
 
@@ -1346,12 +1314,10 @@
     function drawStains(now) {
         stains = stains.filter(s => {
             const age = (now - s.start) / 1000;
-
             if (age >= 6) return false;
 
             const spread =
                 1 - Math.pow(1 - clamp(age / .22, 0, 1), 3);
-
             const fade = clamp((6 - age) / 1.8, 0, 1);
 
             ctx.save();
@@ -1370,10 +1336,8 @@
             s.drops.forEach(d => {
                 const x =
                     s.x + Math.cos(d.angle) * d.radius * spread;
-
                 const y =
                     s.y + Math.sin(d.angle) * d.radius * spread;
-
                 const drip =
                     d.drip *
                     Math.pow(clamp(age / 5, 0, 1), 1.65);
@@ -1389,19 +1353,16 @@
 
                 ctx.beginPath();
                 ctx.moveTo(x - d.size * .3, y);
-
                 ctx.bezierCurveTo(
                     x - 2, y + drip * .6,
                     x - 4, y + drip,
                     x, y + drip + 4
                 );
-
                 ctx.bezierCurveTo(
                     x + 4, y + drip,
                     x + 2, y + drip * .6,
                     x + d.size * .3, y
                 );
-
                 ctx.fill();
             });
 
@@ -1417,15 +1378,14 @@
                 Math.PI * 2
             );
             ctx.fill();
-
             ctx.restore();
+
             return true;
         });
     }
 
     function draw(now) {
         raf = 0;
-
         if (!running) return;
 
         if (
@@ -1437,17 +1397,18 @@
         }
 
         last = now;
-
         ctx.clearRect(0, 0, W, H);
         drawWeb(now);
 
         actors = actors.filter(a =>
-            huntClient?.canShow(a) && (now < a.start ||
-            (
-                a.kind === 'pumpkin'
-                    ? drawPumpkin(a, now)
-                    : drawBat(a, now)
-            ))
+            huntClient?.canShow(a) && (
+                now < a.start ||
+                (
+                    a.kind === 'pumpkin'
+                        ? drawPumpkin(a, now)
+                        : drawBat(a, now)
+                )
+            )
         );
 
         drawStains(now);
@@ -1461,7 +1422,13 @@
     }
 
     function newActor(kind, index) {
+        const difficulty = Math.random();
+        const tier = difficulty < .30
+            ? 0
+            : difficulty < .75 ? 1 : 2;
+
         const a = {
+            tier,
             kind,
             start: performance.now() + index * 550,
             x: -200,
@@ -1475,13 +1442,29 @@
                 dir: pumpkinDirection,
                 floor: H * previousFloor,
                 size: random(43, 49),
-                duration: random(7200, 8500),
-                hops: Math.floor(random(6, 9))
+                duration: tier === 0
+                    ? random(4700, 5900)
+                    : tier === 1
+                        ? random(3500, 4700)
+                        : random(2900, 3800),
+                hops: tier === 0 ? 5 : tier === 1 ? 7 : 8
             });
 
             a.jumps = Array.from(
                 { length: a.hops },
                 () => random(14, 24)
+            );
+
+            const routes = [
+                [0, .16, .37, .61, .82, 1],
+                [0, .18, .39, .27, .54, .70, .88, 1],
+                [0, .23, .47, .30, .64, .48, .76, .90, 1]
+            ];
+
+            a.points = routes[tier].map((value, i, route) =>
+                i === 0 || i === route.length - 1
+                    ? value
+                    : value + random(-.025, .025)
             );
 
             pumpkinDirection *= -1;
@@ -1496,12 +1479,38 @@
             Object.assign(a, {
                 dir: batDirection,
                 size: random(31, 37),
-                duration: random(6200, 7800),
-                flaps: random(2.2, 2.9),
-                y0: clamp(H * previousCenter - span / 2, 90, H - 120),
-                y1: clamp(H * previousCenter + span / 2, 90, H - 120),
-                bend: random(-45, 45),
-                wave: random(-12, 12)
+                duration: tier === 0
+                    ? random(4200, 5400)
+                    : tier === 1
+                        ? random(3200, 4300)
+                        : random(2600, 3600),
+                flaps: random(4.0, 5.4),
+                y0: clamp(
+                    H * previousCenter - span / 2,
+                    90,
+                    H - 120
+                ),
+                y1: clamp(
+                    H * previousCenter + span / 2,
+                    90,
+                    H - 120
+                ),
+                bend: random(-95, 95),
+                wave: random(22, 45),
+                phase: random(0, Math.PI * 2),
+                weave: random(14, 29),
+                turns: tier === 0
+                    ? random(.7, 1.1)
+                    : random(1.4, 2.5),
+                loops: tier === 2 ? random(1.8, 2.4) : 1,
+                loopRadius: tier === 0
+                    ? 0
+                    : Math.min(
+                        W * .20,
+                        tier === 1
+                            ? random(25, 45)
+                            : random(65, 90)
+                    )
             });
 
             batDirection *= -1;
@@ -1512,7 +1521,6 @@
 
     function refresh() {
         const next = eligible();
-
         if (next === running) return;
 
         running = next;
@@ -1522,14 +1530,11 @@
         clearPulses();
         cancelAnimationFrame(raf);
         raf = 0;
-
         stopRepairs();
-
         actors = [];
         stains = [];
         finger = null;
         canvas.hidden = !running;
-
         ctx.clearRect(0, 0, W, H);
 
         if (running) {
@@ -1541,7 +1546,6 @@
 
             last = 0;
             lastPhysics = performance.now();
-
             request();
         }
     }
@@ -1575,6 +1579,7 @@
 
         if (hit) {
             if (!huntClient?.capture(hit)) return;
+
             captureHaptic(hit.kind);
             splat(hit);
             caught = true;
@@ -1594,10 +1599,8 @@
 
             clearPulses();
             haptic(1, 120);
-
             lastPhysics = performance.now();
             physicsDebt = 0;
-
             disturb(px, py);
             caught = true;
         }
@@ -1633,7 +1636,6 @@
 
             swallowUntil = performance.now() + 400;
             webActiveUntil = performance.now() + 2200;
-
             planRepairs();
             request();
         }
@@ -1706,17 +1708,14 @@
     function destroy() {
         disposed = true;
         running = false;
-
         stopRepairs();
         clearPulses();
         cancelAnimationFrame(raf);
         huntClient?.destroy();
         controller.abort();
         observer?.disconnect();
-
         dark.removeEventListener('change', refresh);
         reduce.removeEventListener('change', refresh);
-
         canvas.remove();
         hunt?.destroy();
 
@@ -1734,7 +1733,6 @@
         let progress = { pumpkin: 0, bat: 0 };
         let campaign = null;
         let enabled = false;
-
         let closeTimer = 0;
         let fadeTimer = 0;
         let burstTimer = 0;
@@ -1747,134 +1745,134 @@
 
         shadow.innerHTML = `
 <style>
-:host{
-    position:fixed;
-    z-index:21;
-    top:calc(env(safe-area-inset-top,0px) + ${map ? '12px' : '68px'});
-    left:50%;
-    transform:translateX(-50%);
-    width:min(270px,calc(100vw - 72px));
-    pointer-events:none;
-    color:#fff;
-    font:500 12px/1.25 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-    opacity:1;
-    transition:opacity 260ms,translate 260ms;
+:host {
+    position: fixed;
+    z-index: 21;
+    top: calc(env(safe-area-inset-top,0px) + ${map ? '12px' : '68px'});
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(350px,calc(100vw - 32px));
+    pointer-events: none;
+    color: #fff;
+    font: 500 12px/1.25 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    opacity: 1;
+    transition: opacity 260ms,translate 260ms;
 }
-:host([hidden]){display:none!important}
-:host(.leaving){opacity:0;translate:0 -8px}
-.card{
-    --accent:#ff8b48;
-    position:relative;
-    box-sizing:border-box;
-    padding:14px 16px 15px;
-    border-radius:26px;
-    background:rgba(25,24,31,.94);
-    border:1px solid rgba(255,255,255,.17);
-    box-shadow:0 8px 28px #0005;
-    -webkit-backdrop-filter:blur(18px);
-    backdrop-filter:blur(18px);
+:host([hidden]) { display: none!important }
+:host(.leaving) { opacity: 0; translate: 0 -8px }
+.card {
+    --accent: #ff8b48;
+    position: relative;
+    box-sizing: border-box;
+    padding: 20px 22px 22px;
+    border-radius: 26px;
+    background: rgba(25,24,31,.94);
+    border: 1px solid rgba(255,255,255,.17);
+    box-shadow: 0 8px 28px #0005;
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
 }
-.card.bat{--accent:#b88aff}
-.card.all{--accent:#dbbaff}
-.title{
-    font-size:14px;
-    font-weight:800;
-    letter-spacing:-.2px;
-    margin:0 0 3px;
+.card.bat { --accent: #b88aff }
+.card.all { --accent: #dbbaff }
+.title {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -.2px;
+    margin: 0 0 3px;
 }
-.message{
-    font-size:12px;
-    color:#d9d5e2;
-    margin:0 0 12px;
-    min-height:15px;
+.message {
+    font-size: 14px;
+    color: #e9e3f5;
+    margin: 0 0 12px;
+    min-height: 15px;
 }
-.row{margin-top:10px}
-.labels{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    gap:8px;
-    margin-bottom:5px;
-    font-size:11px;
-    color:#eeeaf4;
+.row { margin-top: 14px }
+.labels {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 5px;
+    font-size: 13px;
+    color: #eeeaf4;
 }
-.number{
-    font-weight:750;
-    font-variant-numeric:tabular-nums;
-    white-space:nowrap;
+.number {
+    font-weight: 750;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 }
-.dot{
-    display:inline-block;
-    width:6px;
-    height:6px;
-    border-radius:50%;
-    margin-right:6px;
-    background:#ff8b48;
+.dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-right: 6px;
+    background: #ff8b48;
 }
-.bat-row .dot{background:#b387ff}
-.track{
-    height:8px;
-    border-radius:999px;
-    background:#ffffff1c;
-    overflow:hidden;
+.bat-row .dot { background: #b387ff }
+.track {
+    height: 12px;
+    border-radius: 999px;
+    background: #ffffff1c;
+    overflow: hidden;
 }
-.fill{
-    height:100%;
-    width:0%;
-    border-radius:inherit;
-    background:linear-gradient(90deg,#ffb15e,#ff6b31);
-    transition:width 440ms cubic-bezier(.18,.8,.25,1);
+.fill {
+    height: 100%;
+    width: 0%;
+    border-radius: inherit;
+    background: linear-gradient(90deg,#ffb15e,#ff6b31);
+    transition: width 440ms cubic-bezier(.18,.8,.25,1);
 }
-.bat-row .fill{
-    background:linear-gradient(90deg,#d0adff,#9865ff);
+.bat-row .fill {
+    background: linear-gradient(90deg,#d0adff,#9865ff);
 }
-.burst{
-    position:absolute;
-    inset:0;
-    overflow:visible;
-    pointer-events:none;
+.burst {
+    position: absolute;
+    inset: 0;
+    overflow: visible;
+    pointer-events: none;
 }
-.spark{
-    position:absolute;
-    left:50%;
-    top:30%;
-    width:5px;
-    height:8px;
-    border-radius:2px;
-    background:var(--color);
-    animation:hw-spark 1150ms cubic-bezier(.12,.6,.2,1) forwards;
-    animation-delay:var(--delay);
-    opacity:0;
+.spark {
+    position: absolute;
+    left: 50%;
+    top: 30%;
+    width: 5px;
+    height: 8px;
+    border-radius: 2px;
+    background: var(--color);
+    animation: hw-spark 1150ms cubic-bezier(.12,.6,.2,1) forwards;
+    animation-delay: var(--delay);
+    opacity: 0;
 }
-.flare{
-    position:absolute;
-    inset:-5px;
-    border:2px solid var(--accent);
-    border-radius:30px;
-    box-shadow:0 0 25px var(--accent);
-    animation:hw-flare 850ms ease-out forwards;
+.flare {
+    position: absolute;
+    inset: -5px;
+    border: 2px solid var(--accent);
+    border-radius: 30px;
+    box-shadow: 0 0 25px var(--accent);
+    animation: hw-flare 850ms ease-out forwards;
 }
-.pop{animation:hw-pop 480ms ease-out}
-.win{animation:hw-win 700ms cubic-bezier(.2,.8,.3,1)}
-@keyframes hw-pop{
-    0%{transform:translateY(-7px) scale(.97)}
-    45%{transform:translateY(0) scale(1.025)}
-    100%{transform:scale(1)}
+.pop { animation: hw-pop 480ms ease-out }
+.win { animation: hw-win 700ms cubic-bezier(.2,.8,.3,1) }
+@keyframes hw-pop {
+    0% { transform: translateY(-7px) scale(.97) }
+    45% { transform: translateY(0) scale(1.025) }
+    100% { transform: scale(1) }
 }
-@keyframes hw-win{
-    0%{transform:scale(.94)}
-    38%{transform:scale(1.08)}
-    65%{transform:scale(.99)}
-    100%{transform:scale(1)}
+@keyframes hw-win {
+    0% { transform: scale(.94) }
+    38% { transform: scale(1.08) }
+    65% { transform: scale(.99) }
+    100% { transform: scale(1) }
 }
-@keyframes hw-spark{
-    0%{
-        opacity:0;
-        transform:translate(-50%,-50%) scale(.5);
+@keyframes hw-spark {
+    0% {
+        opacity: 0;
+        transform: translate(-50%,-50%) scale(.5);
     }
-    15%{opacity:1}
-    100%{
-        opacity:0;
+    15% { opacity: 1 }
+    100% {
+        opacity: 0;
         transform:
             translate(
                 calc(-50% + var(--dx)),
@@ -1884,21 +1882,21 @@
             scale(.4);
     }
 }
-@keyframes hw-flare{
-    0%{opacity:.8;transform:scale(.95)}
-    100%{opacity:0;transform:scale(1.22)}
+@keyframes hw-flare {
+    0% { opacity: .8; transform: scale(.95) }
+    100% { opacity: 0; transform: scale(1.22) }
 }
-.sr{
-    position:absolute;
-    width:1px;
-    height:1px;
-    overflow:hidden;
-    clip-path:inset(50%);
-    white-space:nowrap;
+.sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
 }
-@media(prefers-reduced-motion:reduce){
-    .fill,:host{transition:none}
-    .pop,.win,.spark,.flare{animation:none}
+@media(prefers-reduced-motion:reduce) {
+    .fill,:host { transition: none }
+    .pop,.win,.spark,.flare { animation: none }
 }
 </style>
 <div class="card">
@@ -1996,6 +1994,9 @@
                     : 'MORCEGOS DOMINADOS!';
 
                 message.textContent = remaining(other);
+            } else if (progress[kind] === 5) {
+                title.textContent = 'METADE APANHADA!';
+                message.textContent = remaining(kind);
             } else {
                 title.textContent = progress[kind] === 10
                     ? 'Esse grupo já está completo!'
@@ -2025,8 +2026,6 @@
         function celebrate(kind, milestone) {
             burst.replaceChildren();
 
-            if (!milestone) return;
-
             const halo = document.createElement('span');
             halo.className = 'flare';
             burst.appendChild(halo);
@@ -2037,35 +2036,33 @@
                     ? ['#ff9b48', '#ffcf80', '#fff0ce']
                     : ['#ad7bff', '#dec8ff', '#f6edff'];
 
-            for (let i = 0; i < (milestone === 2 ? 30 : 20); i++) {
+            const count = milestone === 2
+                ? 44
+                : milestone ? 30 : 14;
+
+            for (let i = 0; i < count; i++) {
                 const particle = document.createElement('i');
                 particle.className = 'spark';
 
-                const angle =
-                    Math.PI * 2 * i / (milestone === 2 ? 30 : 20);
-
-                const radius = random(65, 145);
+                const angle = Math.PI * 2 * i / count;
+                const radius = random(85, milestone ? 195 : 140);
 
                 particle.style.setProperty(
                     '--dx',
                     (Math.cos(angle) * radius) + 'px'
                 );
-
                 particle.style.setProperty(
                     '--dy',
                     (Math.sin(angle) * radius * .65 + 25) + 'px'
                 );
-
                 particle.style.setProperty(
                     '--spin',
                     random(-180, 180) + 'deg'
                 );
-
                 particle.style.setProperty(
                     '--delay',
                     random(0, 90) + 'ms'
                 );
-
                 particle.style.setProperty(
                     '--color',
                     palette[i % palette.length]
@@ -2094,12 +2091,12 @@
 
             paint();
             words(kind, milestone);
-            card.classList.add(milestone ? 'win' : 'pop');
+            card.classList.add(milestone > 0 ? 'win' : 'pop');
 
             live.textContent =
                 title.textContent + ' ' + message.textContent;
 
-            celebrate(kind, milestone);
+            if (milestone !== -1) celebrate(kind, milestone);
 
             closeTimer = setTimeout(() => {
                 host.classList.add('leaving');
@@ -2112,26 +2109,27 @@
         return {
             update(state) {
                 if (campaign !== state.campaign_id) hide();
+
                 campaign = state.campaign_id;
                 progress = { ...state.counts };
                 paint();
             },
             confirm: show,
             counts,
-
             failure() {
                 if (!enabled) return;
-                show('pumpkin', 0);
-                title.textContent = 'Captura por confirmar';
-                message.textContent = 'Não foi possível confirmar. Tenta na próxima ronda.';
-                live.textContent = title.textContent + ' ' + message.textContent;
-            },
 
+                show('pumpkin', -1);
+                title.textContent = 'Captura por confirmar';
+                message.textContent =
+                    'Não foi possível confirmar. Tenta na próxima ronda.';
+                live.textContent =
+                    title.textContent + ' ' + message.textContent;
+            },
             setVisible(value) {
                 enabled = value;
                 if (!value) hide();
             },
-
             destroy() {
                 hide();
                 host.remove();
@@ -2140,28 +2138,52 @@
     }
 
     const hunt = createHunt();
+
     const huntClient = window.MargotHalloweenHunt?.create({
         memberId,
         endpoint: script.getAttribute('data-hunt'),
         isEligible: () => running && ready && eligible(),
+
         onState(state) {
             hunt?.setVisible(!!state && running && ready);
+
             if (state) hunt?.update(state);
-            actors = state ? actors.filter(a => huntClient.canShow(a)) : [];
+
+            actors = state
+                ? actors.filter(a => huntClient.canShow(a))
+                : [];
+
             request();
         },
+
         onObject(object) {
-            if (!running || !ready || !eligible() || object.remainingMs < 600) return false;
-            const actor = Object.assign(newActor(object.kind, 0), object);
-            actor.duration = Math.min(actor.duration, object.remainingMs - 150);
+            if (
+                !running ||
+                !ready ||
+                !eligible() ||
+                object.remainingMs < 600
+            ) return false;
+
+            const actor = Object.assign(
+                newActor(object.kind, 0),
+                object
+            );
+
+            actor.duration = Math.min(
+                actor.duration,
+                object.remainingMs - 150
+            );
+
             actors.push(actor);
             request();
             return true;
         },
+
         onCapture(kind, milestone) {
             hunt?.confirm(kind, milestone);
-            if (running && milestone) captureHaptic(kind, milestone);
+            if (running) captureHaptic(kind, milestone);
         },
+
         onFailure() {
             hunt?.setVisible(running && ready && eligible());
             hunt?.failure();
@@ -2170,9 +2192,8 @@
 
     const api = {
         destroy,
-
         getState: () => ({
-            version: 13,
+            version: 15,
             builders: builders.length,
             damagedThreads: strands.filter(s => s.cut).length,
             progress: hunt?.counts() ?? null,
@@ -2192,7 +2213,12 @@
     dark.addEventListener('change', refresh);
     reduce.addEventListener('change', refresh);
 
-    document.addEventListener('visibilitychange', refresh, { signal });
+    document.addEventListener(
+        'visibilitychange',
+        refresh,
+        { signal }
+    );
+
     document.addEventListener('focusin', refresh, { signal });
 
     document.addEventListener('focusout', () => {
@@ -2295,6 +2321,5 @@
         if (ready) {
             batLayers = makeBatLayers();
         }
-
     });
 })();
