@@ -30,7 +30,7 @@ return [
         'winner_email' => 'tiagoamdaniel488@gmail.com',
 
         'notify_campaigns' => [
-            'hw26-waves-v20-pilot-test-waves-20-a',
+            'hw26-waves-v20-pilot-test-waves-20-b',
             'hw26-waves-v20-public',
         ],
 

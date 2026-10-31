@@ -365,7 +365,7 @@ fails(
     410
 );
 
-$settings['hunt']['pilot_run'] = 'test-waves-20-b';
+$settings['hunt']['pilot_run'] .= '-next';
 $fresh = new HalloweenWaves($db, $settings, $clock);
 
 fails(fn() => $fresh->startRound($a, $pc), 409);
