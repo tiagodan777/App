@@ -9,6 +9,7 @@ return [
         '2eca97ae-a46c-11f1-9863-42010a840002', // Marta Raposo
         '3ccf53b0-a46f-11f1-9863-42010a840002', // Henrique Ponte
         'd737e08e-b2c1-11f1-9863-42010a840002', // Isabel Sousa
+        '15c51c61-9e21-11f1-9863-42010a840002', // Luís Daniel
     ],
 
     'hunt' => [
@@ -28,7 +29,7 @@ return [
             'hw26-hunt-v1-public',
         ],
 
-        'pilot_run_2' => 'test-1730-decoys-2',
+        'pilot_run_3' => 'test-1730-decoys-2',
         'pilot_interval_seconds' => 20,
         'public_interval_seconds' => 180,
 
