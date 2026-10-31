@@ -1,0 +1,13 @@
+[Unit]
+Description=Margot Halloween winner notification
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/app
+ExecStart=/usr/bin/php /var/www/app/halloween-winner-mail.php
+TimeoutStartSec=90
+NoNewPrivileges=true
+PrivateTmp=true

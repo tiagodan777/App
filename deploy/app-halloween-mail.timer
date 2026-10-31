@@ -1,0 +1,10 @@
+[Unit]
+Description=Check Margot Halloween winner every minute
+
+[Timer]
+OnBootSec=60
+OnUnitInactiveSec=60
+Unit=app-halloween-mail.service
+
+[Install]
+WantedBy=timers.target
