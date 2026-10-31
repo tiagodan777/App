@@ -70,9 +70,9 @@ final class HalloweenAnnouncements
         ) {
             $event = 'winner';
 
-            $message = 'O desafio de Halloween terminou: '
-                . 'já temos vencedor/a! '
-                . 'Obrigado por participares. 🎃🦇';
+            $message = 'Já foi encontrado o vencedor do desafio de Halloween. '
+            . 'Entra na Margot para veres o teu resultado. '
+            . 'Obrigado por participares!';
         } elseif (
             !$winner
             && $now >= $c['starts_at_ms']

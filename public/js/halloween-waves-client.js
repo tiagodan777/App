@@ -130,8 +130,8 @@
             const message = document.createElement('span');
 
             message.textContent = value.winner.is_you
-                ? '🎉 Completaste o desafio em primeiro lugar! A Margot vai confirmar contigo o prémio.'
-                : '🎃 O desafio terminou — já temos vencedor/a! Obrigado por participares.';
+            ? 'Ganhaste! Foste a primeira pessoa a apanhar 10 abóboras e 10 morcegos. Vamos contactar-te para entregar o prémio.'
+            : 'Alguém foi mais rápido que tu! O desafio terminou. Obrigado por participares.';
 
             const close = document.createElement('button');
             close.type = 'button';
