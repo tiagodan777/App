@@ -187,6 +187,7 @@ final class HalloweenWaves
             'next_round_at_ms' => null,
             'round' => null,
             'winner' => null,
+            'wave_notice' => null,
         ];
 
         if (!$allowed) {
@@ -209,6 +210,15 @@ final class HalloweenWaves
                     ? 'scheduled'
                     : 'active'
             );
+
+        if (!$s['winner'] && ($this->settings['hunt']['automatic_announcements_enabled'] ?? true)) {
+            foreach ($c['notices'] as $notice) {
+                if ($now >= $notice['notify_at_ms'] && $now < $notice['wave_at_ms']) {
+                    $s['wave_notice'] = $notice;
+                    break;
+                }
+            }
+        }
 
         $p = $this->sql(
             'SELECT pumpkins, bats, completed_at

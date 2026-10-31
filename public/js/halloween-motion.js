@@ -5,7 +5,7 @@
 
     if (
         !base?.create ||
-        base.create.motionVersion === 20
+        base.create.motionVersion === 21
     ) return;
 
     function motion(object) {
@@ -37,8 +37,8 @@
                         : 3;
 
         const duration = random(
-            [8000, 7600, 6900, 6100][tier],
-            [9000, 8700, 8200, 7700][tier]
+            [7600, 7220, 6555, 5795][tier],
+            [8550, 8265, 7790, 7315][tier]
         );
 
         if (object.kind === 'pumpkin') {
@@ -152,7 +152,7 @@
         });
     }
 
-    create.motionVersion = 20;
+    create.motionVersion = 21;
 
     window.MargotHalloweenHunt = Object.freeze({
         ...base,

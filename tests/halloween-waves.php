@@ -34,6 +34,8 @@ $c = '3ccf53b0-a46f-11f1-9863-42010a840002';
 
 $settings = require __DIR__ . '/../config/halloween.php';
 $settings['mode'] = 'public';
+$settings['hunt']['announcements_enabled'] = true;
+$settings['hunt']['automatic_announcements_enabled'] = true;
 
 $cal = HalloweenCalendar::build($settings);
 $start = $cal['starts_at_ms'];
@@ -72,7 +74,7 @@ foreach ($cal['waves'] as $wave) {
         $all[$o['kind']]++;
         $tiers[$o['difficulty']]++;
 
-        if ($o['opens_at_ms'] < $start + 5400000) {
+        if ($o['opens_at_ms'] < $start + 81 * 60000) {
             $before[$o['kind']]++;
         }
 
@@ -89,7 +91,7 @@ foreach ($cal['waves'] as $wave) {
 
 check(
     $before === ['pumpkin' => 10, 'bat' => 9],
-    'no completion before 23:30'
+    '19 opportunities before 23:21'
 );
 check(
     $all['pumpkin'] >= 20 && $all['bat'] >= 20,
@@ -101,10 +103,17 @@ check(
 );
 check(min($tiers) > 0, 'four difficulties');
 
+check(count($cal['notices']) === 7, 'seven public reminders');
+foreach ($cal['notices'] as $notice) {
+    check($notice['wave_at_ms'] - $notice['notify_at_ms'] === 60000, 'one minute warning');
+    check(in_array($notice['wave_at_ms'], array_column($cal['waves'], 'started_at_ms'), true), 'notice linked to real wave');
+    check($notice['notify_at_ms'] < $start + 180 * 60000, 'all notices before 01:00');
+}
+
 echo 'PUBLIC CALENDAR ' . json_encode([
     'waves' => count($cal['waves']),
     'objects' => $all,
-    'before_2330' => $before,
+    'before_2321' => $before,
     'tiers' => $tiers,
     'trios' => $triples,
     'pairs' => $pairs,
@@ -309,8 +318,8 @@ foreach ($cal['waves'] as $wave) {
 }
 
 check(
-    $winAt === $start + 90 * 60000 + 100,
-    'first possible win 23:30'
+    $winAt === $start + 81 * 60000 + 100,
+    'first possible win 23:21'
 );
 
 check($hunt->state($b)['phase'] === 'ended', 'global end');
@@ -339,6 +348,7 @@ check($hunt->state($a)['phase'] === 'ended', 'end boundary');
 
 $settings['mode'] = 'pilot';
 $settings['testers'] = [$a];
+$settings['hunt']['automatic_announcements_enabled'] = false;
 $pilot = HalloweenCalendar::build($settings);
 $now = $pilot['starts_at_ms'];
 
@@ -402,6 +412,7 @@ use App\CMS\HalloweenAnnouncements;
 $settings['mode'] = 'pilot';
 $settings['hunt']['pilot_run'] = 'control-test';
 $settings['testers'] = [$a];
+$settings['hunt']['automatic_announcements_enabled'] = false;
 
 $cal = HalloweenCalendar::build($settings);
 $pc = $cal['campaign_id'];
@@ -521,6 +532,8 @@ fails(
 );
 
 $settings['mode'] = 'public';
+$settings['hunt']['announcements_enabled'] = true;
+$settings['hunt']['automatic_announcements_enabled'] = true;
 $control = new HalloweenControl($db, $settings);
 
 $db->exec(
@@ -615,6 +628,7 @@ foreach ([
 
 $settings['mode'] = 'pilot';
 $settings['testers'] = [$a];
+$settings['hunt']['automatic_announcements_enabled'] = false;
 $cal = HalloweenCalendar::build($settings);
 $now = $cal['starts_at_ms'] + 120000;
 $control = new HalloweenControl($db, $settings);
@@ -695,6 +709,8 @@ check(
 );
 
 $settings['mode'] = 'public';
+$settings['hunt']['announcements_enabled'] = true;
+$settings['hunt']['automatic_announcements_enabled'] = true;
 $now = $start + 30 * 60000;
 $job = new HalloweenAnnouncements($db, $settings);
 $control = new HalloweenControl($db, $settings);
@@ -702,6 +718,14 @@ $control = new HalloweenControl($db, $settings);
 $input['campaign_id'] = $campaign;
 $input['request_id'] = str_repeat('6', 32);
 $control->submit($a, $input, $now);
+
+$quiet = $settings;
+$quiet['hunt']['automatic_announcements_enabled'] = false;
+$quietJob = new HalloweenAnnouncements($db, $quiet);
+check($quietJob->run($send, true, $start)['event'] === null,
+    'rehearsal suppresses automatic reminders');
+check($quietJob->run($send, true, $now)['eligible'] === 2,
+    'rehearsal retains explicit manual pushes');
 
 check(
     $job->run($send, false, $now)['sent'] === 2,
@@ -715,11 +739,20 @@ check(
     'expired manual push skipped'
 );
 
+$noticeAt = HalloweenCalendar::build($settings)['notices'][0]['notify_at_ms'];
+check($job->run($send, true, $noticeAt)['eligible'] === 2, 'public first pre-start warning');
+check($job->run($send, false, $noticeAt)['sent'] === 2, 'public warning delivered via mocked transport');
+check($job->run($send, false, $noticeAt + 1000)['sent'] === 0, 'warning not repeated');
+check($job->run($send, true, $noticeAt + 20000)['event'] === null, 'late warning skipped');
+
 $db->prepare(
     'UPDATE halloween_hunt_awards
      SET membro_id=?,completed_at=?
      WHERE campaign_id=?'
 )->execute([$a, '2026-11-01 01:02:00', $campaign]);
+
+check($quietJob->run($send, true, $now)['event'] === null,
+    'rehearsal suppresses automatic winner announcement');
 
 check(
     $job->run($send, false, $now)['sent'] === 2,

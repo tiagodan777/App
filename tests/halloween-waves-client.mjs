@@ -23,7 +23,7 @@ const flush = async () => {
     }
 };
 
-function harness() {
+function harness(withNotice = false) {
     let now = 0;
     let seq = 0;
     let issued = false;
@@ -63,6 +63,7 @@ function harness() {
     });
 
     const state = () => ({
+        wave_notice: withNotice && now < 20000 ? {wave_at_ms: 20000} : null,
         protocol: 2,
         campaign_id: 'pilot-test',
         mode: 'pilot',
@@ -296,6 +297,21 @@ function harness() {
         'account mismatch stops'
     );
 
+    h.client.destroy();
+}
+
+
+{
+    const h = harness(true);
+    h.client.setActive(true);
+    await flush();
+    await h.advance(1000);
+    ok(h.notices.length === 1, 'upcoming wave banner shown');
+    ok(h.notices[0].textContent.includes('19 s'), 'banner uses server countdown');
+    await h.advance(16000);
+    ok(h.notices[0].textContent.includes('3…'), 'three second countdown');
+    await h.advance(3000);
+    ok(h.notices[0].removed, 'countdown removed at wave start');
     h.client.destroy();
 }
 

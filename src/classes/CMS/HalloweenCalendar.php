@@ -52,17 +52,17 @@ final class HalloweenCalendar
             . ($mode === 'pilot' ? 'pilot-' : '')
             . $run;
 
-        // 19 oportunidades antes de 23:30:
+        // 19 oportunidades antes de 23:21:
         // 10 abóboras e 9 morcegos.
         $minutes = [
-            0, 6, 12, 19, 25,
-            32, 38, 44, 50, 57,
-            64, 71, 79, 88, 90,
+            0, 5, 11, 17, 23,
+            29, 34, 40, 45, 51,
+            58, 64, 71, 79, 81,
         ];
 
-        for ($m = 95, $i = 0; $m < 329; $i++) {
+        for ($m = 86, $i = 0; $m < 329; $i++) {
             $minutes[] = $m;
-            $m += [4, 5, 4, 6, 5][$i % 5];
+            $m += [4, 4, 3, 5, 4][$i % 5];
         }
 
         $waves = [];
@@ -177,7 +177,22 @@ final class HalloweenCalendar
             }
         }
 
+        $notices = [];
+        $noticeIndices = $mode === 'pilot'
+            ? [0, 2, 4, 6, 8, 10, 12]
+            : [0, 3, 6, 14, 20, 27, 36];
+        foreach ($noticeIndices as $index) {
+            if (!isset($waves[$index])) continue;
+            $wave = $waves[$index];
+            $notices[] = [
+                'id' => 'wave-' . $wave['id'],
+                'wave_at_ms' => $wave['started_at_ms'],
+                'notify_at_ms' => $wave['started_at_ms'] - 60000,
+            ];
+        }
+
         return [
+            'notices' => $notices,
             'campaign_id' => $campaign,
             'mode' => $mode,
             'starts_at_ms' => $start,

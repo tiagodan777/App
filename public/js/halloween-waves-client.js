@@ -151,7 +151,31 @@
             document.body.append(winnerNotice);
         }
 
+        let waveNotice = null;
+        function clearWaveNotice() {
+            waveNotice?.remove();
+            waveNotice = null;
+        }
+        function showWaveNotice() {
+            const notice = state?.wave_notice;
+            const left = notice ? Math.ceil((notice.wave_at_ms - serverNow()) / 1000) : 0;
+            if (!enabled() || !available || state?.winner || !Number.isFinite(left) || left <= 0 || left > 60) {
+                clearWaveNotice();
+                return;
+            }
+            if (!waveNotice) {
+                waveNotice = document.createElement('div');
+                waveNotice.setAttribute('role', 'status');
+                waveNotice.style.cssText = 'position:fixed;z-index:100000;pointer-events:none;top:calc(env(safe-area-inset-top,0px) + 65px);left:8%;width:84%;box-sizing:border-box;padding:14px 18px;border-radius:22px;background:#241c30ed;color:#fff;text-align:center;font:600 15px/1.4 system-ui;box-shadow:0 8px 25px #0004';
+                document.body.append(waveNotice);
+            }
+            const label = left <= 3 ? String(left) + '… 🎃🦇'
+                : 'Uma vaga está quase a chegar 🎃🦇 · ' + left + ' s';
+            if (waveNotice.textContent !== label) waveNotice.textContent = label;
+        }
+
         function stop() {
+            clearWaveNotice();
             winnerNotice?.remove();
             winnerNotice = null;
             stopped = true;
@@ -495,6 +519,7 @@
 
             if (disposed || stopped) return;
 
+            showWaveNotice();
             const visible = enabled();
             const now = clock();
 
@@ -544,7 +569,7 @@
 
             if (!visible && !captures.length) return;
 
-            const events = [now + 30000];
+            const events = [now + (state?.wave_notice && visible ? 200 : 30000)];
 
             if (retryAt > now) {
                 events.push(retryAt);
@@ -663,6 +688,7 @@
 
             destroy() {
                 disposed = true;
+                clearWaveNotice();
 
                 winnerNotice?.remove();
                 winnerNotice = null;

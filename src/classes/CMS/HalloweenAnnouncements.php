@@ -59,12 +59,14 @@ final class HalloweenAnnouncements
             [$c['campaign_id']]
         )->fetchColumn();
 
+        $automatic = $this->settings['hunt']['automatic_announcements_enabled'] ?? true;
         $events = [];
         $event = null;
         $message = '';
 
         if (
-            $winner
+            $automatic
+            && $winner
             && $now >= $c['starts_at_ms']
             && $now < $c['ends_at_ms'] + 3600000
         ) {
@@ -73,28 +75,15 @@ final class HalloweenAnnouncements
             $message = 'Já foi encontrado o vencedor do desafio de Halloween. '
             . 'Entra na Margot para veres o teu resultado. '
             . 'Obrigado por participares!';
-        } elseif (
-            !$winner
-            && $now >= $c['starts_at_ms']
-            && $now < $c['ends_at_ms']
-        ) {
-            $minutes = $c['mode'] === 'pilot'
-                ? [0, 4, 9]
-                : [0, 95, 160];
-
-            foreach ($minutes as $i => $minute) {
-                $at = $c['starts_at_ms'] + $minute * 60000;
-
-                // Não enviar lembretes antigos se o serviço
-                // só arrancar depois da respetiva janela.
-                if ($now >= $at && $now < $at + 60000) {
-                    $event = 'reminder-' . $i;
-
-                    $message = 'Halloween na Margot 🎃🦇 '
-                        . 'Apanha 10 abóboras e 10 morcegos '
-                        . 'durante o desafio. '
-                        . 'Abre a app para participar!';
-
+        } elseif ($automatic && !$winner) {
+            foreach ($c['notices'] as $notice) {
+                // Janela curta: nunca enviar um aviso depois de começar a vaga.
+                if ($now >= $notice['notify_at_ms']
+                    && $now < $notice['notify_at_ms'] + 20000) {
+                    $event = 'reminder-' . $notice['id'];
+                    $message = 'Uma vaga está quase a chegar 🎃🦇 '
+                        . 'Daqui a um minuto, há abóboras e morcegos '
+                        . 'à solta na Margot. Preparado?';
                     break;
                 }
             }
