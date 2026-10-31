@@ -2,7 +2,6 @@
 declare(strict_types=1);
 
 return [
-    // pilot: contas de teste; off: desligado; public: lançamento público.
     'mode' => 'pilot',
 
     'testers' => [
@@ -13,7 +12,6 @@ return [
     ],
 
     'hunt' => [
-        // As tabelas de halloween-hunt-extras.sql têm de existir primeiro.
         'extras_enabled' => true,
 
         'pilot_min_seconds' => 20,
@@ -25,23 +23,18 @@ return [
         'winner_email' => 'tiagoamdaniel488@gmail.com',
 
         'notify_campaigns' => [
-            'hw26-hunt-v1-pilot-20s-test-1055',
+            'hw26-hunt-v1-pilot-20s-test-1107',
             'hw26-hunt-v1-public',
         ],
 
-        // Para outro ensaio a zero, mudar este identificador e o correspondente
-        // identificador em notify_campaigns. O histórico anterior é preservado.
-        'pilot_run' => 'test-1055',
-
+        'pilot_run' => 'test-1107',
         'pilot_interval_seconds' => 20,
-
-        // Intervalo de compatibilidade para rondas antigas sem prazo persistido.
         'public_interval_seconds' => 180,
 
         'timezone' => 'Atlantic/Azores',
 
-        'pilot_starts_at' => '2026-10-31 10:55:00',
-        'pilot_ends_at' => '2026-10-31 11:05:00',
+        'pilot_starts_at' => '2026-10-31 11:07:00',
+        'pilot_ends_at' => '2026-10-31 11:17:00',
 
         'public_starts_at' => '2026-10-31 22:00:00',
         'public_ends_at' => '2026-11-01 03:33:00',
