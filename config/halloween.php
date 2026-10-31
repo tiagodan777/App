@@ -28,7 +28,7 @@ return [
             'hw26-hunt-v1-public',
         ],
 
-        'pilot_run' => 'test-1730-decoys-2',
+        'pilot_run_2' => 'test-1730-decoys-2',
         'pilot_interval_seconds' => 20,
         'public_interval_seconds' => 180,
 
