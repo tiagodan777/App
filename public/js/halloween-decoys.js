@@ -3,43 +3,59 @@
 
     const base = window.MargotHalloweenHunt;
 
-    if (!base?.create || base.create.decoysVersion === 17) return;
+    if (!base?.create || base.create.decoysVersion === 18) return;
 
     const random = (a, b) => a + Math.random() * (b - a);
+    const script = document.currentScript;
 
-    const drawings = [
-        [
-            'um fantasma',
-            '<path fill="url(#margotDecoyBody17)" d="M16 65V30C16 5 64 5 64 30V65L54 59L44 67L34 59L24 67Z"/>' +
-            '<ellipse cx="32" cy="31" rx="4" ry="7" fill="#282139"/>' +
-            '<ellipse cx="48" cy="31" rx="4" ry="7" fill="#282139"/>' +
-            '<ellipse cx="40" cy="48" rx="5" ry="6" fill="#665578"/>'
-        ],
-        [
-            'uma bruxa',
-            '<path d="M7 61L72 47" stroke="#b97c39" stroke-width="4"/>' +
-            '<path d="M8 56L2 69L24 64L20 53Z" fill="#e6ad59"/>' +
-            '<path d="M36 33L21 57Q42 66 61 54L48 35Z" fill="#8449c5"/>' +
-            '<circle cx="42" cy="29" r="10" fill="#b0d788"/>' +
-            '<path d="M45 28L59 31L47 34" fill="#b0d788"/>' +
-            '<path d="M22 22L35 2L48 8L42 11L52 22Z" fill="#402552"/>' +
-            '<path d="M18 23Q39 31 61 23" stroke="#a36ae1" stroke-width="5"/>' +
-            '<circle cx="45" cy="27" r="2" fill="#262035"/>'
-        ],
-        [
-            'uma caveira',
-            '<path fill="url(#margotDecoyBody17)" d="M16 29C16 3 64 3 64 29V43L54 49V63H26V49L16 43Z"/>' +
-            '<ellipse cx="29" cy="32" rx="8" ry="9" fill="#35283f"/>' +
-            '<ellipse cx="51" cy="32" rx="8" ry="9" fill="#35283f"/>' +
-            '<path d="M40 40L35 49H45Z" fill="#35283f"/>' +
-            '<path d="M34 54V63M46 54V63" stroke="#8d7d9b" stroke-width="3"/>'
-        ]
-    ];
+    const assets = new URL(
+        script?.dataset.assets || '../imagens/halloween-effects-2026/',
+        script?.src || document.baseURI
+    );
+
+    const sprites = [
+        {
+            name: 'um fantasma',
+            file: 'ghost-turnaround-v18.png',
+            size: 72
+        },
+        {
+            name: 'uma bruxa',
+            file: 'witch-turnaround-v18.png',
+            size: 88
+        },
+        {
+            name: 'uma caveira',
+            file: 'skull-turnaround-v18.png',
+            size: 66
+        }
+    ].map(sprite => {
+        const image = new Image();
+
+        const entry = {
+            ...sprite,
+            ready: false,
+            url: new URL(sprite.file, assets).href
+        };
+
+        image.onload = () => {
+            entry.ready = image.naturalWidth > 0;
+        };
+
+        image.onerror = () => {
+            entry.ready = false;
+        };
+
+        image.src = entry.url;
+
+        return entry;
+    });
 
     function create(options) {
         let state = null;
         let syncedAt = 0;
         let disposed = false;
+        let previousSprite = null;
 
         let timer = 0;
         let frame = 0;
@@ -53,7 +69,8 @@
             const now =
                 state?.server_now_ms + performance.now() - syncedAt;
 
-            return !disposed &&
+            return (
+                !disposed &&
                 !document.hidden &&
                 state?.phase === 'active' &&
                 !state.completed_at &&
@@ -65,7 +82,8 @@
                     state.ends_at_ms === null ||
                     now < state.ends_at_ms
                 ) &&
-                options.isEligible();
+                options.isEligible()
+            );
         }
 
         function clearActor() {
@@ -138,9 +156,23 @@
         }
 
         function spawn() {
-            const [name, drawing] =
-                drawings[Math.floor(random(0, drawings.length))];
+            const ready = sprites.filter(sprite => sprite.ready);
 
+            if (!ready.length) return;
+
+            const alternatives = ready.filter(
+                sprite => sprite !== previousSprite
+            );
+
+            const pool = alternatives.length ? alternatives : ready;
+
+            const sprite = pool[
+                Math.floor(random(0, pool.length))
+            ];
+
+            previousSprite = sprite;
+
+            const {name, size} = sprite;
             const button = document.createElement('button');
 
             button.type = 'button';
@@ -150,44 +182,30 @@
                 `Apanhar ${name}, não conta para o desafio`
             );
 
-            button.innerHTML = `
-                <svg
-                    viewBox="0 0 80 80"
-                    width="64"
-                    height="64"
-                    aria-hidden="true"
-                >
-                    <defs>
-                        <radialGradient
-                            id="margotDecoyBody17"
-                            cx="30%"
-                            cy="25%"
-                            r="80%"
-                        >
-                            <stop stop-color="#fff"/>
-                            <stop offset=".65" stop-color="#ded3ed"/>
-                            <stop offset="1" stop-color="#9784ae"/>
-                        </radialGradient>
-                    </defs>
-                    ${drawing}
-                </svg>
-            `;
-
             button.style.cssText = [
                 'position:fixed',
                 'left:0',
                 'top:0',
-                'width:64px',
-                'height:64px',
+                `width:${size}px`,
+                `height:${size}px`,
                 'padding:0',
                 'border:0',
-                'background:transparent',
+                'border-radius:0',
+                'appearance:none',
+                'background-color:transparent',
                 'z-index:99990',
                 'touch-action:manipulation',
-                'filter:drop-shadow(0 5px 5px #0005)',
+                'filter:drop-shadow(0 4px 4px #0005)',
                 'will-change:transform',
-                'cursor:pointer'
+                'cursor:pointer',
+                'overflow:hidden',
+                '-webkit-tap-highlight-color:transparent'
             ].join(';');
+
+            button.style.backgroundImage = `url("${sprite.url}")`;
+            button.style.backgroundSize = '200% 200%';
+            button.style.backgroundRepeat = 'no-repeat';
+            button.style.backgroundPosition = '0% 0%';
 
             actor = button;
             document.body.append(button);
@@ -202,11 +220,15 @@
             });
 
             const started = performance.now();
-            const duration = random(4700, 6800);
-            const reverse = Math.random() < .5;
+            const duration = random(5200, 7800);
+            const reverse = Math.random() < 0.5;
             const phase = random(0, Math.PI * 2);
-            const lane = random(.25, .65);
+            const lane = random(0.25, 0.65);
             const turns = random(1.5, 3);
+
+            let previousX = null;
+            let previousView = -1;
+            let viewChangedAt = -Infinity;
 
             function draw(now) {
                 if (actor !== button) return;
@@ -223,13 +245,13 @@
 
                 const travel =
                     p +
-                    .15 *
+                    0.15 *
                     Math.sin(p * Math.PI * 2 * turns) *
                     Math.sin(Math.PI * p);
 
                 const x =
-                    -64 +
-                    (width + 64) *
+                    -size +
+                    (width + size) *
                     (reverse ? 1 - travel : travel);
 
                 const y = Math.max(
@@ -241,10 +263,44 @@
                     )
                 );
 
-                const rotation = Math.sin(p * Math.PI * 6) * 18;
+                const dx = previousX === null
+                    ? (reverse ? -1 : 1)
+                    : x - previousX;
+
+                previousX = x;
+
+                const turning =
+                    Math.abs(
+                        Math.sin(p * Math.PI * 2 * turns)
+                    ) < 0.18;
+
+                const view = turning
+                    ? (Math.cos(p * Math.PI * 2) > 0 ? 0 : 2)
+                    : (dx < 0 ? 1 : 3);
+
+                // Cada quadrante contém uma vista completa.
+                // A mudança é direta para não mostrar partes das outras vistas.
+                if (
+                    view !== previousView &&
+                    now - viewChangedAt >= 180
+                ) {
+                    button.style.backgroundPosition = [
+                        '0% 0%',
+                        '100% 0%',
+                        '0% 100%',
+                        '100% 100%'
+                    ][view];
+
+                    previousView = view;
+                    viewChangedAt = now;
+                }
+
+                const rotation =
+                    Math.sin(p * Math.PI * 6) * 12;
 
                 button.style.transform =
-                    `translate3d(${x}px,${y}px,0) rotate(${rotation}deg)`;
+                    `translate3d(${x}px,${y}px,0) ` +
+                    `rotate(${rotation}deg)`;
 
                 frame = requestAnimationFrame(draw);
             }
@@ -258,14 +314,17 @@
             if (!eligible()) {
                 clearActor();
                 clearToast();
-            } else if (!actor && performance.now() >= nextAt) {
+            } else if (
+                !actor &&
+                performance.now() >= nextAt
+            ) {
                 spawn();
 
-                nextAt = performance.now() + (
-                    state.mode === 'pilot'
-                        ? random(18000, 32000)
-                        : random(35000, 65000)
-                );
+                const delay = state.mode === 'pilot'
+                    ? random(10000, 18000)
+                    : random(18000, 32000);
+
+                nextAt = performance.now() + delay;
             }
 
             timer = setTimeout(tick, 500);
@@ -307,7 +366,7 @@
         };
     }
 
-    create.decoysVersion = 17;
+    create.decoysVersion = 18;
     create.motionVersion = base.create.motionVersion;
 
     window.MargotHalloweenHunt = Object.freeze({
