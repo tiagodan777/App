@@ -1,0 +1,11 @@
+[Unit]
+Description=Check Margot Halloween announcements
+
+[Timer]
+OnBootSec=30s
+OnUnitInactiveSec=20s
+AccuracySec=1s
+Unit=app-halloween-announcements.service
+
+[Install]
+WantedBy=timers.target

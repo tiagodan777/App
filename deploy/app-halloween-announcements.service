@@ -1,0 +1,16 @@
+[Unit]
+Description=Margot Halloween announcements
+After=network-online.target mariadb.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/app
+EnvironmentFile=-/etc/margot/push.env
+ExecStart=/usr/bin/php /var/www/app/halloween-announcements.php --send
+NoNewPrivileges=true
+PrivateTmp=true
+UMask=0077
+TimeoutStartSec=180

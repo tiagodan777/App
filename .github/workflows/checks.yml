@@ -13,6 +13,7 @@ jobs:
     name: PHP ${{ matrix.php }} / ${{ matrix.database }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
+
     strategy:
       fail-fast: false
       matrix:
@@ -23,6 +24,7 @@ jobs:
           - php: '8.3'
             database: mysql:8.4
             health: mysqladmin ping --silent
+
     services:
       mysql:
         image: ${{ matrix.database }}
@@ -38,10 +40,12 @@ jobs:
           --health-interval=5s
           --health-timeout=5s
           --health-retries=20
+
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
@@ -50,29 +54,44 @@ jobs:
           coverage: none
         env:
           fail-fast: true
+
       - uses: actions/setup-node@v7
         with:
           node-version: '24'
           package-manager-cache: false
+
       - name: Install PHP dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
+
       - name: PHP syntax, templates and architecture
         run: composer lint
+
       - name: PHP behaviour with an isolated SQLite fixture
         run: composer test
+
       - name: JavaScript behaviour and location races
         run: npm test
+
       - name: Native configuration contracts
         run: python3 tests/native-config.py
+
       - name: Location migration, mixed clients and real database semantics
         env:
           MARGOT_TEST_DSN: mysql:host=127.0.0.1;port=${{ job.services.mysql.ports[3306] }};dbname=margot_test_ci;charset=utf8mb4
           MARGOT_TEST_USER: margot_ci
           MARGOT_TEST_PASSWORD: margot-ci-isolated-only
         run: php tests/location-state-mysql.php
+
       - name: Halloween migration and account progress on the real database
         env:
           MARGOT_TEST_DSN: mysql:host=127.0.0.1;port=${{ job.services.mysql.ports[3306] }};dbname=margot_test_ci;charset=utf8mb4
           MARGOT_TEST_USER: margot_ci
           MARGOT_TEST_PASSWORD: margot-ci-isolated-only
         run: php tests/halloween-hunt.php
+
+      - name: Halloween waves and concurrent first winner
+        env:
+          MARGOT_TEST_DSN: mysql:host=127.0.0.1;port=${{ job.services.mysql.ports[3306] }};dbname=margot_test_ci;charset=utf8mb4
+          MARGOT_TEST_USER: margot_ci
+          MARGOT_TEST_PASSWORD: margot-ci-isolated-only
+        run: php tests/halloween-waves-mysql.php

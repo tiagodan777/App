@@ -1,10 +1,14 @@
 {% if halloween_effects_enabled|default(false) %}
-<script src="{{ doc_root }}js/halloween-hunt.js?v=20261031-20s"></script>
-
-<script src="{{ doc_root }}js/halloween-motion.js?v=20261031-decoys-17"></script>
+<script
+    src="{{ doc_root }}js/halloween-waves-client.js?v=20261031-waves-20"
+></script>
 
 <script
-    src="{{ doc_root }}js/halloween-decoys.js?v=20261031-sprites-18"
+    src="{{ doc_root }}js/halloween-motion.js?v=20261031-waves-20"
+></script>
+
+<script
+    src="{{ doc_root }}js/halloween-decoys.js?v=20261031-waves-20"
     data-assets="{{ doc_root }}imagens/halloween-effects-2026/"
 ></script>
 

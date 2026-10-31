@@ -3,7 +3,7 @@
 
     const base = window.MargotHalloweenHunt;
 
-    if (!base?.create || base.create.decoysVersion === 18) return;
+    if (!base?.create || base.create.decoysVersion === 20) return;
 
     const random = (a, b) => a + Math.random() * (b - a);
     const script = document.currentScript;
@@ -279,7 +279,6 @@
                     : (dx < 0 ? 1 : 3);
 
                 // Cada quadrante contém uma vista completa.
-                // A mudança é direta para não mostrar partes das outras vistas.
                 if (
                     view !== previousView &&
                     now - viewChangedAt >= 180
@@ -320,9 +319,13 @@
             ) {
                 spawn();
 
-                const delay = state.mode === 'pilot'
-                    ? random(10000, 18000)
-                    : random(18000, 32000);
+                const r = Math.random();
+
+                const delay = r < .55
+                    ? random(9000, 19000)
+                    : r < .90
+                        ? random(22000, 42000)
+                        : random(50000, 70000);
 
                 nextAt = performance.now() + delay;
             }
@@ -366,7 +369,7 @@
         };
     }
 
-    create.decoysVersion = 18;
+    create.decoysVersion = 20;
     create.motionVersion = base.create.motionVersion;
 
     window.MargotHalloweenHunt = Object.freeze({

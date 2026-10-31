@@ -1,27 +1,28 @@
 {
-    "name": "app/app",
-    "description": "Social network",
-    "type": "project",
-    "license": "proprietary",
-    "autoload": {
-        "psr-4": {
-            "App\\": "src/classes/"
-        }
-    },
-    "minimum-stability": "stable",
-    "require": {
-        "twig/twig": "^3.27",
-        "cboden/ratchet": "^0.4.4",
-        "phpmailer/phpmailer": "^7.1"
-    },
-    "scripts": {
-        "lint": "@php tests/lint.php",
-        "test": [
-            "@php tests/run.php",
-            "@php tests/halloween.php",
-            "@php tests/halloween-templates.php",
-            "@php tests/halloween-hunt.php"
-        ],
-        "db:check": "@php database/check.php"
+  "name": "app/app",
+  "description": "Social network",
+  "type": "project",
+  "license": "proprietary",
+  "autoload": {
+    "psr-4": {
+      "App\\": "src/classes/"
     }
+  },
+  "minimum-stability": "stable",
+  "require": {
+    "twig/twig": "^3.27",
+    "cboden/ratchet": "^0.4.4",
+    "phpmailer/phpmailer": "^7.1"
+  },
+  "scripts": {
+    "lint": "@php tests/lint.php",
+    "test": [
+      "@php tests/run.php",
+      "@php tests/halloween.php",
+      "@php tests/halloween-templates.php",
+      "@php tests/halloween-hunt.php",
+      "@php tests/halloween-waves.php"
+    ],
+    "db:check": "@php database/check.php"
+  }
 }
