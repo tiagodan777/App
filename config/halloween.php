@@ -23,11 +23,11 @@ return [
         'winner_email' => 'tiagoamdaniel488@gmail.com',
 
         'notify_campaigns' => [
-            'hw26-hunt-v1-pilot-20s-test-1400-reset-1',
+            'hw26-hunt-v1-pilot-20s-test-1400-reset-2',
             'hw26-hunt-v1-public',
         ],
 
-        'pilot_run' => 'test-1400-reset-1',
+        'pilot_run' => 'test-1400-reset-2',
         'pilot_interval_seconds' => 20,
         'public_interval_seconds' => 180,
 
