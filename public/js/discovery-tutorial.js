@@ -371,8 +371,8 @@
 
       say(
         t(
-          'Experimenta um Hey ou uma mensagem.',
-          'Try a Hey or a message.'
+          'Experimenta um Boo! ou uma mensagem.',
+          'Try a Boo! or a message.'
         )
       );
 
@@ -390,7 +390,7 @@
       );
 
       const message = kind === 'hey'
-        ? t('Hey de exemplo para ', 'Example Hey for ')
+        ? t('Boo! de exemplo para ', 'Example Boo! for ')
         : t('Mensagem de exemplo para ', 'Example message for ');
 
       const receipt =

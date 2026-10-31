@@ -1090,7 +1090,7 @@
           <span class="example-tag"></span>
         </header>
 
-        <button class="hey" type="button" data-choice="hey">Hey</button>
+        <button class="hey" type="button" data-choice="hey">Boo!</button>
 
         <div class="composer">
           <span class="inert-icon camera" aria-hidden="true">
@@ -1239,7 +1239,7 @@
       const bubble = document.createElement('div');
       bubble.className = 'flying-message';
       bubble.setAttribute('aria-hidden', 'true');
-      bubble.textContent = hey ? 'Hey!' : text('Olá!', 'Hi!');
+      bubble.textContent = hey ? 'Boo!' : text('Olá!', 'Hi!');
       sheet.append(bubble);
 
       animate(
@@ -1268,7 +1268,7 @@
 
       heading(
         hey
-          ? text('O teu Hey chega assim.', 'This is how your Hey arrives.')
+          ? text('O teu Boo! chega assim.', 'This is how your Boo! arrives.')
           : text(
               'É assim que começa a conversa.',
               'This is how a conversation starts.'
@@ -1292,7 +1292,7 @@
       notice.querySelector('strong').textContent =
         (
           hey
-            ? text('Hey de exemplo para ', 'Example Hey to ')
+            ? text('Boo! de exemplo para ', 'Example Boo! to ')
             : text('Mensagem de exemplo para ', 'Example message to ')
         ) + name;
 
@@ -1373,8 +1373,8 @@
         heading(
           text('Dá o primeiro olá.', 'Say the first hello.'),
           text(
-            'Toca em Hey ou na seta para experimentar.',
-            'Tap Hey or the arrow to try it.'
+            'Toca em Boo! ou na seta para experimentar.',
+            'Tap Boo! or the arrow to try it.'
           )
         );
 
@@ -1677,8 +1677,8 @@
           'paper',
           text('Recebe os teus olás.', 'Receive your hellos.'),
           text(
-            'As notificações avisam-te quando recebes um Hey ou uma mensagem.',
-            'Notifications let you know when you receive a Hey or a message.'
+            'As notificações avisam-te quando recebes um Boo! ou uma mensagem.',
+            'Notifications let you know when you receive a Boo! or a message.'
           )
         );
 

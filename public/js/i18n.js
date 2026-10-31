@@ -33,8 +33,8 @@
 
     // These expressions are restricted to UI text; captures are never translated.
     var patterns = [
-        [/^(.+) enviou-te um Hey\.$/, '$1 sent you a Hey.'],
-        [/^(.+) recebeu o teu Hey$/, '$1 received your Hey'],
+        [/^(.+) enviou-te um Boo!$/, '$1 sent you a Boo!'],
+        [/^(.+) recebeu o teu Boo!$/, '$1 received your Boo!'],
         [/^Mudar tom de pele, opção (\d+) de (\d+)$/, 'Change skin tone, option $1 of $2'],
         [/^(\d+) fotografias$/, '$1 photos'],
         [/^Remover (.+)$/, 'Remove $1'],
@@ -56,10 +56,10 @@
         [/^Desconectar de (.+)$/, 'Disconnect from $1'],
         [/^Conectar com (.+)$/, 'Connect with $1'],
         [/^(.+) ainda não adicionou fotografias$/, '$1 has not added any photos yet'],
-        [/^Podes enviar outro Hey dentro de (\d+) minuto(s?)\.$/, 'You can send another Hey in $1 minute$2.'],
-        [/^Podes enviar outro Hey dentro de (\d+) segundo(s?)\.$/, 'You can send another Hey in $1 second$2.'],
+        [/^Podes enviar outro Boo! dentro de (\d+) minuto(s?)\.$/, 'You can send another Boo! in $1 minute$2.'],
+        [/^Podes enviar outro Boo! dentro de (\d+) segundo(s?)\.$/, 'You can send another Boo! in $1 second$2.'],
         [/^Reagir (.+)$/, 'React $1'],
-        [/^(\d+) Hey(s?) por ler$/, '$1 unread Hey$2'],
+        [/^(\d+) Boo! por ler$/, '$1 unread Boo!'],
         [/^Foto de perfil (\d+)$/, 'Profile photo $1'],
         [/^Ver mensagem original: ([\s\S]*)$/, 'View original message: $1']
     ];

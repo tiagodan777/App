@@ -19,7 +19,7 @@ final class Locale {
         'A página expirou.' => 'The page has expired.',
         'A tua conta Margot e os dados associados foram eliminados definitivamente.' => 'Your Margot account and associated data have been permanently deleted.',
         'A tua conta Margot foi eliminada' => 'Your Margot account has been deleted',
-        'Abre a app e manda-lhes um Hey.' => 'Open the app and send them a Hey.',
+        'Abre a app e manda-lhes um Boo!' => 'Open the app and send them a Boo!',
         'Alterar a minha password' => 'Change my password',
         'Alterar a password da Margot' => 'Change your Margot password',
         'Atualiza a página e tenta novamente.' => 'Refresh the page and try again.',
@@ -101,7 +101,7 @@ final class Locale {
             return [$title, 'Reacted with ' . (string) $data['reaction_emoji'] . ' to your message.'];
         }
         if ($type === 'hey') {
-            $title = (string) ($data['from_name'] ?? '') . ' sent you a Hey!';
+            $title = (string) ($data['from_name'] ?? '') . ' sent you a Boo!';
         } elseif ($type === 'nearby') {
             $title = 'There are ' . (int) ($data['nearby_count'] ?? 0) . ' people using Margot nearby 👀';
         } elseif ($type === 'clothes') {

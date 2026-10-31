@@ -10,7 +10,7 @@
     var temporizadorReposicao = null;
     var temporizadorConfirmacao = null;
     var aEnviar = false;
-    var textoInicial = etiqueta ? etiqueta.textContent : 'Hey';
+    var textoInicial = etiqueta ? etiqueta.textContent : 'Boo!';
 
     function detalheCorresponde(evento) {
         var detalhe = evento && evento.detail ? evento.detail : {};
@@ -74,11 +74,11 @@
         botao.setAttribute('aria-busy', 'true');
         botao.classList.add('a-enviar');
         alterarEtiqueta(textoInicial);
-        anunciar('A enviar o Hey.');
+        anunciar('A enviar o Boo!');
         var enviado = window.AppWebSocket.send({ type: 'notify', destinatario_id: destinatarioId });
         if (!enviado) {
             reporBotao();
-            mostrarMensagem('Não foi possível enviar o Hey.', 'erro');
+            mostrarMensagem('Não foi possível enviar o Boo!', 'erro');
             return;
         }
         temporizadorConfirmacao = window.setTimeout(function () {
@@ -99,7 +99,7 @@
         botao.classList.remove('a-enviar');
         // botao.classList.add('enviado');
         // alterarEtiqueta('Enviado');
-        anunciar('Hey enviado com sucesso.');
+        anunciar('Boo! enviado com sucesso.');
         if (temporizadorReposicao !== null) {
             window.clearTimeout(temporizadorReposicao);
         }
@@ -114,7 +114,7 @@
             return;
         }
         reporBotao();
-        mostrarMensagem('Não foi possível enviar o Hey.', 'erro');
+        mostrarMensagem('Não foi possível enviar o Boo!', 'erro');
     }
 
     function desativarPagina() {

@@ -10,7 +10,7 @@
     <string name="background_location_notification_text">Your location is being updated in the background.</string>
     <string name="channel_activity_name">Margot activity</string>
     <string name="channel_activity_description">General Margot notifications</string>
-    <string name="channel_hey_description">Heys received on Margot</string>
+    <string name="channel_hey_description">Boo! received on Margot</string>
     <string name="channel_message_name">Messages</string>
     <string name="channel_message_description">Messages received on Margot</string>
     <string name="channel_nearby_name">People nearby</string>

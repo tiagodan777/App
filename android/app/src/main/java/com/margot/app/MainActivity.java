@@ -81,7 +81,7 @@ public class MainActivity extends BridgeActivity {
 
         NotificationChannel hey = new NotificationChannel(
             CHANNEL_HEY,
-            "Heys",
+            "Boo!",
             NotificationManager.IMPORTANCE_HIGH
         );
 

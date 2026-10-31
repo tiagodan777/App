@@ -670,7 +670,7 @@
 
         if (!enviado) {
             libertarHey();
-            aviso('Não foi possível enviar o Hey.', 'erro');
+            aviso('Não foi possível enviar o Boo!', 'erro');
             return;
         }
 

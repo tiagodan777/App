@@ -467,7 +467,7 @@
             var english = deviceLanguage() !== 'pt';
             var channels = [
                 ['margot_activity', 'Atividade', 'Activity'],
-                ['margot_hey', 'Heys', 'Heys'],
+                ['margot_hey', 'Boo!', 'Boo!'],
                 ['margot_message', 'Mensagens', 'Messages'],
                 ['margot_nearby', 'Pessoas por perto', 'People nearby']
             ];

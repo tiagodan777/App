@@ -523,7 +523,7 @@
   "A tua posição está a ser atualizada em segundo plano.": "Your location is being updated in the background.",
   "Atividade da Margot": "Margot activity",
   "Notificações gerais da Margot": "General Margot notifications",
-  "Heys recebidos na Margot": "Heys received on Margot",
+  "Boo! recebidos na Margot": "Boo! received on Margot",
   "Mensagens recebidas na Margot": "Messages received on Margot",
   "Avisos quando há várias pessoas com a Margot por perto": "Alerts when several people using Margot are nearby",
   "Convite inválido.": "Invalid invitation.",

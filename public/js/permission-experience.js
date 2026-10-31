@@ -411,7 +411,7 @@
                     icon: '👋',
                     title: 'Não percas um olá.',
                     text:
-                        'Recebe um aviso quando alguém te enviar um Hey ou uma mensagem.',
+                        'Recebe um aviso quando alguém te enviar um Boo! ou uma mensagem.',
                     detail:
                         'No próximo ecrã, escolhes se a Margot te pode enviar notificações.'
                 });
