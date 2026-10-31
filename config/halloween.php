@@ -42,7 +42,7 @@ return [
         'timezone' => 'Atlantic/Azores',
 
         'pilot_starts_at' => '2026-10-31 21:18:00',
-        'pilot_ends_at' => '2026-10-31 21:30:00',
+        'pilot_ends_at' => '2026-10-31 21:50:00',
 
         'public_starts_at' => '2026-10-31 22:00:00',
         'public_ends_at' => '2026-11-01 03:30:00',
