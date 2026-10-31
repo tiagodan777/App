@@ -31,18 +31,18 @@ return [
         'winner_email' => 'tiagoamdaniel488@gmail.com',
 
         'notify_campaigns' => [
-            'hw26-waves-v20-pilot-notices-2006',
+            'hw26-waves-v20-pilot-notices-2118',
             'hw26-waves-v20-public',
         ],
 
-        'pilot_run' => 'notices-2006',
+        'pilot_run' => 'notices-2118',
         'pilot_interval_seconds' => 20,
         'public_interval_seconds' => 180,
 
         'timezone' => 'Atlantic/Azores',
 
-        'pilot_starts_at' => '2026-10-31 20:06:00',
-        'pilot_ends_at' => '2026-10-31 20:20:00',
+        'pilot_starts_at' => '2026-10-31 21:18:00',
+        'pilot_ends_at' => '2026-10-31 21:30:00',
 
         'public_starts_at' => '2026-10-31 22:00:00',
         'public_ends_at' => '2026-11-01 03:30:00',

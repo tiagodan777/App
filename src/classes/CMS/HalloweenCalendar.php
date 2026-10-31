@@ -185,7 +185,7 @@ final class HalloweenCalendar
             if (!isset($waves[$index])) continue;
             $wave = $waves[$index];
             $notices[] = [
-                'id' => 'wave-' . $wave['id'],
+                'id' => 'wave-' . substr($wave['id'], 0, 16),
                 'wave_at_ms' => $wave['started_at_ms'],
                 'notify_at_ms' => $wave['started_at_ms'] - 60000,
             ];

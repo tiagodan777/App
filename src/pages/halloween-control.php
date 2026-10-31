@@ -390,7 +390,7 @@ $command = isset($_GET['command'])
                     name="message"
                     maxlength="180"
                     required
-                >🎃🦇 O desafio de Halloween está na Margot! Apanha 10 abóboras e 10 morcegos e conhece quem está por perto.</textarea>
+                >3…2…1… 🎃🦇 ABÓBORAS E MORCEGOS NA MARGOT DENTRO DE MOMENTOS!</textarea>
             </label>
 
             <small>
