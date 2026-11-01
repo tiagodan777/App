@@ -33,7 +33,7 @@
     {% block styles %}{% endblock %}
 
     <link rel="stylesheet" href="{{ doc_root }}estilos/photo-viewer.css?v=20260920-video">
-    <link rel="stylesheet" href="{{ doc_root }}estilos/theme.css?v=20261031-boo-2">
+    <link rel="stylesheet" href="{{ doc_root }}estilos/theme.css?v=20261101-hey-restored-1">
     <link rel="stylesheet" href="{{ doc_root }}estilos/app-interactions.css?v=20260927-scroll-keyboard-2">
     <link rel="stylesheet" href="{{ doc_root }}estilos/permission-experience.css?v=20260929-fluidez-2">
     <link rel="stylesheet" href="{{ doc_root }}estilos/location-pocket.css?v=20261010-pocket-1">
@@ -121,22 +121,22 @@
 
         <button type="button" id="ativar-notificacoes" aria-hidden="true" tabindex="-1" hidden></button>
 
-        <button type="button" id="abrir-heys" class="heys-abrir" aria-label="Abrir Boo!" aria-controls="heys-area" aria-expanded="false">
+        <button type="button" id="abrir-heys" class="heys-abrir" aria-label="Abrir Heys" aria-controls="heys-area" aria-expanded="false">
             <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M6.4 10.7V6.2a1.35 1.35 0 0 1 2.7 0v3.2-5a1.35 1.35 0 0 1 2.7 0v5-3.8a1.35 1.35 0 0 1 2.7 0v4.1-2.5a1.35 1.35 0 0 1 2.7 0v6.1c0 4-2.7 7.2-6.7 7.2h-.4c-2.5 0-4.5-1.1-5.8-3L1.8 14a1.45 1.45 0 0 1 2.3-1.7l2.3 2.6"></path>
             </svg>
 
-            <span id="heys-contador" class="heys-contador" aria-label="0 Boo! por ler" hidden>0</span>
+            <span id="heys-contador" class="heys-contador" aria-label="0 Heys por ler" hidden>0</span>
         </button>
 
         <div id="heys-area" class="heys-area" aria-hidden="true">
-            <button type="button" id="heys-fundo" class="heys-fundo" aria-label="Fechar Boo!" tabindex="-1"></button>
+            <button type="button" id="heys-fundo" class="heys-fundo" aria-label="Fechar Heys" tabindex="-1"></button>
 
             <section id="heys-painel" class="heys-painel" role="dialog" aria-modal="true" aria-labelledby="heys-titulo" tabindex="-1">
                 <header class="heys-cabecalho">
                     <div>
                         <p>Atividade</p>
-                        <h1 id="heys-titulo">Boo!</h1>
+                        <h1 id="heys-titulo">Heys</h1>
                     </div>
 
                     <button type="button" id="fechar-heys" class="heys-fechar" aria-label="Fechar">
@@ -146,7 +146,7 @@
                     </button>
                 </header>
 
-                <nav class="heys-separadores" role="tablist" aria-label="Tipo de Boo!">
+                <nav class="heys-separadores" role="tablist" aria-label="Tipo de Hey">
                     <button type="button" id="heys-tab-recebidos" class="ativo" role="tab" aria-selected="true" data-direcao="recebido">Recebidos</button>
 
                     <button type="button" id="heys-tab-enviados" role="tab" aria-selected="false" data-direcao="enviado">Enviados</button>
@@ -163,7 +163,7 @@
                 </div>
 
                 <div id="heys-vazio" class="heys-estado" hidden>
-                    Ainda não existem Boo!
+                    Ainda não existem Heys.
                 </div>
 
                 <div id="heys-erro" class="heys-estado heys-estado-erro" role="alert" hidden></div>

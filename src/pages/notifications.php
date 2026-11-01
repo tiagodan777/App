@@ -21,7 +21,7 @@ try {
                 !in_array($direcao, ['recebido', 'enviado'], true) ||
                 ($notificationId !== null && $notificationId < 1)
             ) {
-                $message = $acao === 'hide_one' ? 'O Boo! indicado não é válido.' : 'A lista indicada não é válida.';
+                $message = $acao === 'hide_one' ? 'O Hey indicado não é válido.' : 'A lista indicada não é válida.';
                 json_response(['success' => false, 'message' => $message], 422);
             }
             $notifications->hide($membroId, $direcao, $notificationId);
@@ -40,5 +40,5 @@ try {
     ]);
 } catch (Throwable $erro) {
     error_log('[notifications] ' . $erro->getMessage());
-    json_response(['success' => false, 'message' => 'Não foi possível carregar os Boo!'], 500);
+    json_response(['success' => false, 'message' => 'Não foi possível carregar os Heys.'], 500);
 }

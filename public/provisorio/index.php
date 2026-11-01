@@ -397,7 +397,7 @@ function qrEscape(string $text): string
         <div class="meeting" aria-hidden="true">
             <span class="person person-peach">🙂</span>
             <span class="hello-bubble">
-                Boo! <span>👋</span>
+                Hey <span>👋</span>
             </span>
             <span class="person person-lilac">😊</span>
         </div>

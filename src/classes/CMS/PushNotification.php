@@ -135,7 +135,7 @@ final class PushNotification {
         return $this->enqueue(
             $recipientId,
             'hey',
-            $sender['name'] . ' mandou-te um Boo!',
+            $sender['name'] . ' mandou-te um Hey!',
             'Toca para ver o perfil.',
             '/profile/' . rawurlencode($senderId),
             [
@@ -157,7 +157,7 @@ final class PushNotification {
             $recipientId,
             'nearby',
             'Há ' . $nearbyCount . ' pessoas com a Margot aqui perto 👀',
-            'Abre a app e manda-lhes um Boo!',
+                'Abre a app e manda-lhes um Hey.',
             '/',
             ['type' => 'nearby', 'nearby_count' => (string) $nearbyCount],
             $key ?? ('nearby:' . $recipientId . ':' . bin2hex(random_bytes(8)))
@@ -440,7 +440,7 @@ final class PushNotification {
                 (string) ($language ?? 'pt'),
                 'nearby',
                 'Há ' . $count . ' pessoas com a Margot aqui perto 👀',
-                'Abre a app e manda-lhes um Boo!',
+                'Abre a app e manda-lhes um Hey.',
                 $data,
                 true
             );

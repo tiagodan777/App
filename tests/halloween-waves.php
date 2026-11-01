@@ -34,6 +34,7 @@ $c = '3ccf53b0-a46f-11f1-9863-42010a840002';
 
 $settings = require __DIR__ . '/../config/halloween.php';
 $settings['mode'] = 'public';
+$settings['hunt']['waves_enabled'] = true;
 $settings['hunt']['announcements_enabled'] = true;
 $settings['hunt']['automatic_announcements_enabled'] = true;
 
@@ -532,6 +533,7 @@ fails(
 );
 
 $settings['mode'] = 'public';
+$settings['hunt']['waves_enabled'] = true;
 $settings['hunt']['announcements_enabled'] = true;
 $settings['hunt']['automatic_announcements_enabled'] = true;
 $control = new HalloweenControl($db, $settings);
@@ -709,6 +711,7 @@ check(
 );
 
 $settings['mode'] = 'public';
+$settings['hunt']['waves_enabled'] = true;
 $settings['hunt']['announcements_enabled'] = true;
 $settings['hunt']['automatic_announcements_enabled'] = true;
 $now = $start + 30 * 60000;

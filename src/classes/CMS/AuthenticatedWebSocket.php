@@ -310,7 +310,7 @@ final class AuthenticatedWebSocket implements MessageComponentInterface {
                     [
                         'type' => 'notification_not_delivered',
                         'destinatario_id' => $destinatarioId,
-                        'message' => 'Podes enviar outro Boo! dentro de ' . $espera . '.'
+                        'message' => 'Podes enviar outro Hey dentro de ' . $espera . '.'
                     ],
                     JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
                 )

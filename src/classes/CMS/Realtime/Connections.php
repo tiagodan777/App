@@ -16,7 +16,7 @@ trait Connections {
             $this->enviarErroHey(
                 $from,
                 trim((string) ($data['destinatario_id'] ?? '')),
-                'Tens de estar autenticado para enviar um Boo!'
+                'Tens de estar autenticado para enviar um Hey.'
             );
             return;
         }
@@ -27,7 +27,7 @@ trait Connections {
             return;
         }
         if ($destinatarioId === $remetenteId) {
-            $this->enviarErroHey($from, $destinatarioId, 'Não podes enviar um Boo! para ti próprio.');
+            $this->enviarErroHey($from, $destinatarioId, 'Não podes enviar um Hey para ti próprio.');
             return;
         }
         if ($this->membrosEstaoBloqueados($remetenteId, $destinatarioId)) {
@@ -65,8 +65,8 @@ trait Connections {
                 'type' => 'notification',
                 'notification_id' => $notificacaoId,
                 'notification_type' => 'hey',
-                'title' => 'Recebeste um Boo!',
-                'body' => sprintf('%s enviou-te um Boo!', (string) ($remetente['nome'] ?? 'Alguém')),
+                'title' => 'Recebeste um Hey!',
+                'body' => sprintf('%s enviou-te um Hey.', (string) ($remetente['nome'] ?? 'Alguém')),
                 'from_member_id' => $remetenteId,
                 'from_name' => (string) ($remetente['nome'] ?? 'Alguém'),
                 'from_photo' => (string) ($remetente['src'] ?? '/imagens/fotos-perfil/default.webp'),
@@ -83,9 +83,9 @@ trait Connections {
             'deliveries' => $numeroEntregas,
             'message' =>
                 $numeroEntregas > 0
-                    ? sprintf('%s recebeu o teu Boo!', (string) ($destinatario['nome'] ?? 'A outra pessoa'))
+                    ? sprintf('%s recebeu o teu Hey.', (string) ($destinatario['nome'] ?? 'A outra pessoa'))
                     : sprintf(
-                        'Boo! enviado. %s vai vê-lo quando voltar à Margot.',
+                        'Hey enviado. %s vai vê-lo quando voltar à Margot.',
                         (string) ($destinatario['nome'] ?? 'A outra pessoa')
                     )
         ]);

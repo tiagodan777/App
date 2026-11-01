@@ -114,7 +114,7 @@
         var total = Math.max(0, numero(valor));
         contador.textContent = total > 99 ? '99+' : String(total);
         contador.hidden = total === 0;
-        contador.setAttribute('aria-label', total + (total === 1 ? ' Boo! por ler' : ' Boo! por ler'));
+        contador.setAttribute('aria-label', total + (total === 1 ? ' Hey por ler' : ' Heys por ler'));
     }
 
     function dataLocal(valor) {
@@ -181,9 +181,9 @@
         linkNome.href = perfil;
 
         if (item.direcao === 'enviado') {
-            frase.append('Enviaste um Boo! a ', linkNome, '.');
+            frase.append('Enviaste um Hey a ', linkNome, '.');
         } else {
-            frase.append(linkNome, ' enviou-te um Boo!');
+            frase.append(linkNome, ' enviou-te um Hey.');
         }
 
         var momento = criarElemento('time', 'hey-item-data', dataLocal(item.criada_em));
@@ -194,7 +194,7 @@
         botaoLimpar.type = 'button';
         botaoLimpar.dataset.notificationId = String(numero(item.id));
         botaoLimpar.dataset.direction = item.direcao;
-        botaoLimpar.setAttribute('aria-label', 'Limpar este Boo!');
+        botaoLimpar.setAttribute('aria-label', 'Limpar este Hey');
         botaoLimpar.innerHTML =
             '<svg viewBox="0 0 24 24" aria-hidden="true">' +
             '<path d="M6 6l12 12M18 6 6 18"></path>' +
@@ -331,7 +331,7 @@
             return;
         }
         var dados = Object.assign(
-            { titulo: 'Boo!', mensagem: '', foto: '', url: '', tipo: 'hey', icone: '', duracao: 3800 },
+            { titulo: 'Hey', mensagem: '', foto: '', url: '', tipo: 'hey', icone: '', duracao: 3800 },
             opcoes || {}
         );
 
@@ -521,7 +521,7 @@
 
             var dados = await resposta.json();
             if (!dados.success) {
-                throw new Error(dados.message || 'Não foi possível carregar os Boo!');
+                throw new Error(dados.message || 'Não foi possível carregar os Heys.');
             }
 
             var recebidas = Array.isArray(dados.notifications) ? dados.notifications : [];
@@ -531,16 +531,16 @@
                     var id = numero(item.id);
                     if (item.direcao === 'recebido' && !item.lida && !estado.idsConhecidos.has(id)) {
                         var nome = texto(item.outro_nome) || 'Alguém';
-                        var mensagem = nome + ' enviou-te um Boo!';
+        var mensagem = nome + ' enviou-te um Hey.';
                         var perfil = urlPerfil(item.outro_membro_id);
 
                         mostrarAviso({
-                            titulo: 'Recebeste um Boo!',
+            titulo: 'Recebeste um Hey!',
                             mensagem: mensagem,
                             foto: texto(item.outro_foto_url),
                             url: perfil
                         });
-                        mostrarNotificacaoSistema('Recebeste um Boo!', mensagem, texto(item.outro_foto_url), perfil);
+                        mostrarNotificacaoSistema('Recebeste um Hey!', mensagem, texto(item.outro_foto_url), perfil);
                     }
                 });
             }
@@ -558,7 +558,7 @@
         } catch (falha) {
             console.error(falha);
             if (estado.aberto) {
-                mostrarEstado(erro, true, 'Não foi possível carregar os Boo!');
+                mostrarEstado(erro, true, 'Não foi possível carregar os Heys.');
             }
             return false;
         } finally {
@@ -677,7 +677,7 @@
             definirContador(0);
             renderizar();
         } catch (falha) {
-            console.warn('Não foi possível marcar os Boo! como lidos.', falha);
+            console.warn('Não foi possível marcar os Heys como lidos.', falha);
         }
     }
 
@@ -934,18 +934,18 @@
         }
 
         var nome = texto(dados.from_name) || 'Alguém';
-        var mensagem = nome + ' enviou-te um Boo!';
+        var mensagem = nome + ' enviou-te um Hey.';
         var perfil = urlPerfil(dados.from_member_id);
 
         mostrarAviso({
-            titulo: 'Recebeste um Boo!',
+            titulo: 'Recebeste um Hey!',
             mensagem: mensagem,
             foto: texto(dados.from_photo),
             url: perfil,
             tipo: 'recebido'
         });
 
-        mostrarNotificacaoSistema('Recebeste um Boo!', mensagem, texto(dados.from_photo), perfil);
+        mostrarNotificacaoSistema('Recebeste um Hey!', mensagem, texto(dados.from_photo), perfil);
         definirContador(numero(contador.textContent) + 1);
 
         window.setTimeout(function () {
@@ -962,7 +962,7 @@
             'A outra pessoa';
 
         mostrarAviso({
-            titulo: nome + ' recebeu o teu Boo!',
+            titulo: nome + ' recebeu o teu Hey',
             mensagem: '',
             tipo: 'enviado',
             icone: 'seta-cima',

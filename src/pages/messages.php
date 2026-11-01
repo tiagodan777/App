@@ -274,7 +274,7 @@ try {
     ) {
         json_response([
             'success' => false,
-            'message' => 'Já enviaste duas mensagens. Quando a outra pessoa responder ou te enviar um Boo!, podes continuar.'
+            'message' => 'Já enviaste duas mensagens. Quando a outra pessoa responder ou te enviar um Hey, podes continuar.'
         ], 429);
     }
 

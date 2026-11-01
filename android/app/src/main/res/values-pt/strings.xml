@@ -6,7 +6,7 @@
     <string name="background_location_notification_text">A tua posição está a ser atualizada em segundo plano.</string>
     <string name="channel_activity_name">Atividade da Margot</string>
     <string name="channel_activity_description">Notificações gerais da Margot</string>
-    <string name="channel_hey_description">Boo! recebidos na Margot</string>
+    <string name="channel_hey_description">Heys recebidos na Margot</string>
     <string name="channel_message_name">Mensagens</string>
     <string name="channel_message_description">Mensagens recebidas na Margot</string>
     <string name="channel_nearby_name">Pessoas por perto</string>
