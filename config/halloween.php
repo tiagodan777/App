@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 return [
-    'mode' => 'public',
+    'mode' => 'off',
 
     'testers' => [
         'bcad0cb1-9cec-11f1-9863-42010a840002', // Tiago Daniel
@@ -17,10 +17,10 @@ return [
     ],
 
     'hunt' => [
-        'extras_enabled' => true,
-        'waves_enabled' => true,
-        'announcements_enabled' => true,
-        'automatic_announcements_enabled' => true,
+        'extras_enabled' => false,
+        'waves_enabled' => false,
+        'announcements_enabled' => false,
+        'automatic_announcements_enabled' => false,
 
         'pilot_min_seconds' => 20,
         'pilot_max_seconds' => 20,
