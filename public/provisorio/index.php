@@ -144,6 +144,22 @@ function qrEscape(string $text): string
 <html lang="<?= $pt ? 'pt-PT' : 'en' ?>">
 <head>
     <meta charset="utf-8">
+    <?php if (isset($nativeEntryUrl)): ?>
+    <script>
+        // Capacitor injeta a ponte nativa antes dos scripts da página.
+        // Só a entrada pública da app reencaminha para o registo/login.
+        (() => {
+            const cap = window.Capacitor;
+            if (!cap?.isNativePlatform?.()) return;
+            const platform = cap.getPlatform?.();
+            if (platform !== 'ios' && platform !== 'android') return;
+            const target = new URL(<?= json_encode($nativeEntryUrl, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>, location.origin);
+            target.search = location.search;
+            document.documentElement.style.visibility = 'hidden';
+            location.replace(target.href);
+        })();
+    </script>
+    <?php endif; ?>
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#faf8f5">
     <meta name="description" content="<?= qrEscape($copy['intro']) ?>">

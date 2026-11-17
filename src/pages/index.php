@@ -5,6 +5,7 @@ declare(strict_types=1);
 // Sessões válidas (incluindo as recuperadas por cookie) continuam na aplicação.
 if (trim((string) ($session->id ?? '')) === '') {
     $landingConnection = $db;
+    $nativeEntryUrl = DOC_ROOT . 'create-account/';
     require APP_ROOT . '/public/provisorio/index.php';
     return;
 }
