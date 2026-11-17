@@ -51,6 +51,10 @@
       display: none !important;
     }
 
+    [data-margot-back-preview] .mensagens-pagina::-webkit-scrollbar {
+      display: none;
+    }
+
     /* Nesta transição, o chat e a lista precisam de partilhar a mesma ordem de camadas. */
     body:has(> [data-margot-back-preview]) > [data-margot-pagina]:has(#chat-pagina) {
       view-transition-name: none;
@@ -66,7 +70,7 @@
 
   document.head.append(style);
 
-  function visualCopy(source) {
+  function visualCopy(source, outsideViewport = new Set()) {
     const copy = source.cloneNode(true);
 
     const originals = [
@@ -81,24 +85,33 @@
 
     originals.forEach((node, index) => {
       const target = copies[index];
+      const row = node.closest('.conversa-item');
+      if (row && row !== node && outsideViewport.has(row)) return;
       const computed = getComputedStyle(node);
+      const declarations = [];
+
+      if (target.style.cssText) declarations.push(target.style.cssText);
 
       for (let i = 0; i < computed.length; i++) {
         const key = computed[i];
-
-        target.style.setProperty(
-          key,
-          computed.getPropertyValue(key)
-        );
+        declarations.push(`${key}:${computed.getPropertyValue(key)}`);
       }
 
+      // Escreve os estilos de uma só vez para evitar centenas de alterações por elemento.
+      target.style.cssText = declarations.join(';');
       target.style.animation = 'none';
       target.style.transition = 'none';
 
       target.removeAttribute('id');
       target.removeAttribute('data-margot-pagina');
 
-      target.dataset.previewScroll = String(node.scrollTop);
+      if (node.scrollTop) target.dataset.previewScroll = String(node.scrollTop);
+
+      if (outsideViewport.has(node)) {
+        // Mantém o espaço para repor o scroll sem copiar o conteúdo que não se vê.
+        target.style.visibility = 'hidden';
+        target.replaceChildren();
+      }
 
       for (const attribute of [...target.attributes]) {
         if (/^on/i.test(attribute.name)) {
@@ -126,8 +139,16 @@
 
   function capture() {
     const source = document.querySelector('[data-margot-pagina]');
-    if (!source?.querySelector('#conversas-lista')) return false;
-    const copy = visualCopy(source);
+    const list = source?.querySelector('#conversas-lista');
+    if (!list) return false;
+
+    const outsideViewport = new Set();
+    for (const row of list.querySelectorAll('.conversa-item')) {
+      const { top, bottom } = row.getBoundingClientRect();
+      if (bottom < -160 || top > innerHeight + 160) outsideViewport.add(row);
+    }
+
+    const copy = visualCopy(source, outsideViewport);
     const menu = document.getElementById('menuPrincipal');
     if (menu && getComputedStyle(menu).display !== 'none') {
       copy.append(visualCopy(menu));
@@ -164,7 +185,7 @@
       'pointer-events:none;z-index:1040;' +
       'background:var(--mensagens-fundo,#fbfafc)';
 
-    layer.append(snapshot.cloneNode(true));
+    layer.append(snapshot);
     document.body.append(layer);
 
     layer.querySelectorAll(

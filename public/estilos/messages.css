@@ -31,10 +31,14 @@ body {
     margin: 0 auto;
     overflow-x: hidden;
     overflow-y: auto;
+    scrollbar-width: none;
     overscroll-behavior-y: auto;
     -webkit-overflow-scrolling: touch;
     color: var(--mensagens-texto);
     background: var(--mensagens-fundo);
+}
+.mensagens-pagina::-webkit-scrollbar {
+    display: none;
 }
 /* FUNDO */
 .mensagens-fundo { position: fixed; z-index: 0; inset: 0; overflow: hidden; pointer-events: none; }

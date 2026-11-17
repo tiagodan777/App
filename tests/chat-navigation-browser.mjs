@@ -255,12 +255,19 @@ try {
   await page.context().close();
   page = await fresh();
   await check('list scroll position is preserved in preview and after going back', async () => {
+    assert.equal(await page.locator('#mensagens-pagina').evaluate(e => getComputedStyle(e).scrollbarWidth), 'none');
     await page.locator('#mensagens-pagina').evaluate(e => { e.scrollTop = 400; });
     const scroll = await page.locator('#mensagens-pagina').evaluate(e => e.scrollTop);
+    assert.ok(scroll > 0, 'The list still scrolls with its scrollbar hidden');
+    const row = '[href="/messages/8"]';
+    const liveTop = await page.locator('#conversas-lista ' + row).evaluate(e => e.getBoundingClientRect().top);
     await page.evaluate(() => MargotNavigation.navigate('/messages/1', { historico: 'push' }));
     await touch(page, 'touchstart', 40);
     await touch(page, 'touchmove', 180);
     assert.equal(await page.locator('[data-margot-back-preview] .mensagens-pagina').evaluate(e => e.scrollTop), scroll);
+    const previewRow = page.locator('[data-margot-back-preview] ' + row);
+    assert.match(await previewRow.textContent(), /Pessoa 8/);
+    assert.ok(Math.abs(await previewRow.evaluate(e => e.getBoundingClientRect().top) - liveTop) <= 1);
     await page.waitForTimeout(150);
     await touch(page, 'touchend', 180);
     await settled(page, '/messages');
