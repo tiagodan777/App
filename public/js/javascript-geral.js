@@ -619,6 +619,7 @@
                 return;
             }
 
+            window.MargotChatMotion?.previewMessages(paginaNova);
             faseNavegacao = 'prepare';
 
             // Descarrega em paralelo; só executa depois de existir um único DOM da página.

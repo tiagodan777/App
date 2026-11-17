@@ -1,7 +1,8 @@
 <?php
 declare(strict_types=1);
 
-// Página independente: não carrega sessões, Twig ou o bootstrap da app.
+// Partilhada pela entrada pública e pelos links de campanha.
+// O acesso direto continua independente de sessões e do bootstrap da app.
 header('Cache-Control: no-store');
 header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: no-referrer');
@@ -44,6 +45,10 @@ $source = is_string($source)
     ? strtolower(trim($source))
     : 'other';
 
+if ($source === '') {
+    $source = 'direct';
+}
+
 if (!in_array($source, [...$sources, 'direct'], true)) {
     $source = 'other';
 }
@@ -51,26 +56,28 @@ if (!in_array($source, [...$sources, 'direct'], true)) {
 try {
     // Apenas um contador agregado.
     // Não guarda IP, cookies ou dados de contas.
-    (static function (string $source): void {
-        $root = dirname(__DIR__, 2);
+    (static function (string $source, ?PDO $connection): void {
+        if ($connection === null) {
+            $root = dirname(__DIR__, 2);
 
-        if (!defined('APP_ROOT')) {
-            define('APP_ROOT', $root);
+            if (!defined('APP_ROOT')) {
+                define('APP_ROOT', $root);
+            }
+
+            $config = $root . '/config/config.local.php';
+
+            if (!is_file($config)) {
+                $config = $root . '/config/config.php';
+            }
+
+            require $config;
+
+            $connection = new PDO($dsn, $username, $password, [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_EMULATE_PREPARES => false,
+                PDO::ATTR_TIMEOUT => 2,
+            ]);
         }
-
-        $config = $root . '/config/config.local.php';
-
-        if (!is_file($config)) {
-            $config = $root . '/config/config.php';
-        }
-
-        require $config;
-
-        $connection = new PDO($dsn, $username, $password, [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_EMULATE_PREPARES => false,
-            PDO::ATTR_TIMEOUT => 2,
-        ]);
 
         $statement = $connection->prepare(
             'INSERT INTO qr_provisorio_diario (
@@ -89,7 +96,7 @@ try {
         $statement->execute([
             'origem' => $source,
         ]);
-    })($source);
+    })($source, $landingConnection ?? null);
 } catch (Throwable $error) {
     // Continua a mostrar a página se o contador estiver indisponível.
     error_log(
@@ -109,6 +116,9 @@ $copy = $pt ? [
     'download' => 'Descarrega a Margot e descobre quem está por perto.',
     'apple' => 'Descarregar na App Store',
     'google' => 'Descarregar no Google Play',
+    'register' => 'Criar conta na web',
+    'login' => 'Entrar',
+    'about' => 'Sobre a Margot',
 ] : [
     'line1' => 'See someone?',
     'line2' => 'Margot helps you say hi.',
@@ -116,6 +126,9 @@ $copy = $pt ? [
     'download' => 'Get Margot and discover who’s nearby.',
     'apple' => 'Download on the App Store',
     'google' => 'Get it on Google Play',
+    'register' => 'Create an account on the web',
+    'login' => 'Log in',
+    'about' => 'About Margot',
 ];
 
 function qrEscape(string $text): string
@@ -340,6 +353,25 @@ function qrEscape(string $text): string
             transform: scale(.98);
         }
 
+        .web-links {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 12px 22px;
+            margin-top: 24px;
+            font-size: 14px;
+        }
+
+        .web-links a {
+            color: #65606d;
+            text-underline-offset: 4px;
+        }
+
+        .web-links a:focus-visible {
+            outline: 3px solid #7251be;
+            outline-offset: 5px;
+        }
+
         @media (max-width: 420px) {
             h1 {
                 font-size: clamp(38px, 11vw, 46px);
@@ -508,6 +540,11 @@ function qrEscape(string $text): string
                     </g>
                 </svg>
             </a>
+        </nav>
+        <nav class="web-links" aria-label="<?= $pt ? 'Acesso web e informações' : 'Web access and information' ?>">
+            <a href="/create-account/"><?= qrEscape($copy['register']) ?></a>
+            <a href="/login"><?= qrEscape($copy['login']) ?></a>
+            <a href="/sobre.html"><?= qrEscape($copy['about']) ?></a>
         </nav>
     </main>
 </body>

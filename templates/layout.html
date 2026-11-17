@@ -30,6 +30,10 @@
         <script src="{{ doc_root }}js/navegacao-documento.js?v=20260929-auth3"></script>
     {% endif %}
 
+    {% if session.id %}
+        <link rel="stylesheet" href="{{ doc_root }}estilos/chat.css?v=20260927-build">
+    {% endif %}
+
     {% block styles %}{% endblock %}
 
     <link rel="stylesheet" href="{{ doc_root }}estilos/photo-viewer.css?v=20260920-video">
@@ -190,6 +194,11 @@
                 : 'ws://' + window.location.hostname + ':8080';
         </script>
 
+        <template id="margot-chat-opening-template">
+            {% include 'partials/chat-header.html' %}
+            <section class="chat-mensagens" inert><p role="status"></p></section>
+            {% include 'partials/chat-composer.html' %}
+        </template>
         <template id="margot-chat-resources">
             {% include 'partials/chat-styles.html' %}
             {% include 'partials/chat-scripts.html' %}
@@ -215,7 +224,7 @@
         <script src="{{ doc_root }}js/websocket.js?v=20261025-reliability-1"></script>
         <script src="{{ doc_root }}js/menu-invisivel.js?v=20260916"></script>
         <script src="{{ doc_root }}js/javascript-geral.js?v=20261022-loading-1"></script>
-        <script src="{{ doc_root }}js/margot-gesture-feedback.js?v=20261117-chat-motion-4"></script>
+        <script src="{{ doc_root }}js/margot-gesture-feedback.js?v=20261117-chat-motion-5"></script>
         <script src="{{ doc_root }}js/chat-entry-motion.js?v=20261023-swipe-2"></script>
     {% endif %}
 </body>

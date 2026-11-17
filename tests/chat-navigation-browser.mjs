@@ -12,6 +12,7 @@ import { fileURLToPath } from 'node:url';
 const { chromium, webkit } = await import(process.env.MARGOT_PLAYWRIGHT_MODULE || 'playwright');
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 let delay = 0;
+let assetDelay = 0;
 const requests = [];
 const rows = Array.from({ length: 20 }, (_, i) => ({
   chat_url: `/messages/${i + 1}`, outro_id: i + 1, id: i + 1,
@@ -20,15 +21,22 @@ const rows = Array.from({ length: 20 }, (_, i) => ({
 }));
 const script = name => `<script src="/js/${name}.js"></script>`;
 const style = name => `<link rel="stylesheet" data-margot-page-style href="/estilos/${name}.css">`;
+// Reuse the actual chat chrome; a simplified fixture missed layout jumps.
+const header = (await readFile(resolve(root, 'templates/partials/chat-header.html'), 'utf8'))
+  .replaceAll('{{ doc_root }}', '/').replaceAll('{{ outro.perfil_url }}', '/profile/1')
+  .replaceAll('{{ outro.foto_url }}', '/avatar.svg').replaceAll('{{ outro.nome }}', 'Pessoa 1');
+const composer = (await readFile(resolve(root, 'templates/partials/chat-composer.html'), 'utf8'))
+  .replaceAll('{{ doc_root }}', '/').replaceAll('{{ outro.id }}', '1');
 function html(path) {
   const chat = /^\/messages\/\d+/.test(path);
   const list = path === '/messages';
   const content = chat ? `<main id="chat-pagina" class="chat-pagina">
-    <header class="chat-cabecalho"><a class="chat-voltar" data-margot-voltar href="/messages">Voltar</a><strong>Pessoa 1</strong></header>
+    ${header}
     <section id="chat-mensagens" class="chat-mensagens"><div id="chat-mensagens-conteudo">
       ${Array.from({ length: 18 }, (_, i) => `<article class="chat-mensagem"><div class="chat-balao">Mensagem ${i}</div></article>`).join('')}
-    </div></section><form class="chat-form"><textarea placeholder="Mensagem"></textarea><button>Enviar</button></form>
-    </main>${script('chat-viewport')}<script>
+    </div></section>${composer}
+    </main>${script('chat-test-ready')}${script('chat-viewport')}<script>
+      document.getElementById('chat-enviar').hidden = true;
       (() => { const stop = MargotChatViewport(document.getElementById('chat-pagina'),document.getElementById('chat-mensagens'),document.getElementById('chat-mensagens-conteudo'));
       document.addEventListener('margot:page-leave',()=>stop.destroy(),{once:true});
       })();
@@ -39,11 +47,12 @@ function html(path) {
   return `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Teste Margot</title>
     <style>body{margin:0;font:16px Arial}*{box-sizing:border-box}#menuPrincipal{position:fixed;bottom:0;width:100%;padding:20px;background:#eee}body:has(#chat-pagina) #menuPrincipal{display:none}</style>
     <link rel="stylesheet" href="/estilos/style.css"><link rel="stylesheet" href="/estilos/theme.css"><link rel="stylesheet" href="/estilos/app-interactions.css">
-    ${style(chat ? 'chat' : 'messages')}${script('jquery-4.0.0')}</head><body>
+    <link rel="stylesheet" href="/estilos/chat.css">${chat ? '' : style('messages')}${script('jquery-4.0.0')}</head><body>
     ${script('app-interactions')}
     <div data-margot-pagina>${content}</div><nav id="menuPrincipal"><a href="/index">Início</a><a href="/messages">Mensagens</a></nav>
     <script>window.membroId=1;window.messagesUrl='/messages';window.requestIdleCallback=()=>0;</script>
-    <template id="margot-chat-resources">${style('chat')}${script('chat-viewport')}</template>
+    <template id="margot-chat-opening-template">${header}<section class="chat-mensagens" inert><p role="status"></p></section>${composer}</template>
+    <template id="margot-chat-resources">${script('chat-viewport')}</template>
     ${script('experience-feedback')}${script('javascript-geral')}${script('margot-gesture-feedback')}
     </body></html>`;
 }
@@ -57,6 +66,10 @@ const server = createServer(async (req, res) => {
     } else if (url.searchParams.get('api') === 'conversations') {
       res.setHeader('Content-Type', 'application/json');
       res.end(JSON.stringify({ success: true, conversations: rows }));
+    } else if (url.pathname === '/js/chat-test-ready.js') {
+      await new Promise(r => setTimeout(r, assetDelay));
+      res.setHeader('Content-Type', 'text/javascript');
+      res.end('/* fixture: optional chat dependency */');
     } else if (/^\/(js|estilos)\/[a-zA-Z0-9_.-]+$/.test(url.pathname)) {
       res.setHeader('Content-Type', extname(url.pathname) === '.js' ? 'text/javascript' : 'text/css');
       res.end(await readFile(resolve(root, 'public', '.' + url.pathname)));
@@ -78,6 +91,7 @@ let checks = 0;
 async function check(name, fn) { await fn(); checks++; console.log(`PASS ${name}`); }
 async function fresh(options = {}) {
   delay = 0;
+  assetDelay = 0;
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, ...options });
   await context.route('**/*', route => new URL(route.request().url()).origin === origin ? route.continue() : route.abort());
   const page = await context.newPage();
@@ -320,6 +334,46 @@ try {
     await settled(page, '/messages/1');
     assert.equal(await page.evaluate(() => motionLog.length), 0);
     assert.equal(await page.locator('#margot-page-loading').isVisible(), false);
+  });
+  await page.context().close();
+  page = await fresh();
+  for (const colorScheme of ['light', 'dark']) {
+    await page.emulateMedia({ colorScheme });
+    await check(`header and composer keep their geometry and colour (${colorScheme})`, async () => {
+      delay = 900;
+      await page.locator('.conversa-item').first().tap();
+      await page.waitForFunction(() => !document.querySelector('[data-margot-chat-opening]').getAnimations().some(a => a.playState === 'running'));
+      const measure = selector => page.locator(selector).evaluate(root => {
+        const selectors = ['.chat-cabecalho', '.chat-voltar', '.chat-pessoa img', '.chat-pessoa strong', '.chat-pessoa small', '.chat-form', '.chat-compositor', 'textarea'];
+        return selectors.map(selector => {
+          const el = root.querySelector(selector), rect = el.getBoundingClientRect(), css = getComputedStyle(el);
+          return { x: rect.x, y: rect.y, w: rect.width, h: rect.height, color: css.color, background: css.backgroundColor };
+        });
+      });
+      const before = await measure('[data-margot-chat-opening]');
+      assert.equal(await page.locator('[data-margot-chat-opening] [id]').count(), 0);
+      assert.equal(await page.evaluate(() => document.elementFromPoint(180, innerHeight - 40)?.closest('[data-margot-chat-opening]') !== null), true, 'Opening covers the bottom navigation');
+      await settled(page, '/messages/1');
+      const after = await measure('#chat-pagina');
+      before.forEach((box, i) => {
+        for (const key of ['x', 'y', 'w', 'h']) assert.ok(Math.abs(box[key] - after[i][key]) < 1, `${i} ${key}: ${box[key]} -> ${after[i][key]}`);
+        assert.equal(box.color, after[i].color, `element ${i} color`);
+        assert.equal(box.background, after[i].background, `element ${i} background`);
+      });
+      await page.locator('[data-margot-voltar]').tap();
+      await settled(page, '/messages');
+    });
+  }
+  await page.context().close();
+  page = await fresh();
+  await check('authorized messages appear before slow chat dependencies finish loading', async () => {
+    assetDelay = 1000;
+    await page.locator('.conversa-item').first().tap();
+    await page.waitForSelector('[data-margot-chat-opening] .chat-mensagem');
+    assert.equal(await page.locator('#chat-pagina').count(), 0);
+    assert.equal(await page.locator('[data-margot-chat-opening] .chat-mensagem').count(), 18);
+    assert.equal(await page.locator('[data-margot-chat-opening] .chat-mensagens').evaluate(e => e.inert && getComputedStyle(e).opacity === '1'), true);
+    await settled(page, '/messages/1');
   });
   await page.context().close();
   page = await fresh();

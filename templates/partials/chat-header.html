@@ -1,0 +1,20 @@
+    <header class="chat-cabecalho">
+        <a href="{{ doc_root }}messages" class="chat-voltar" data-margot-voltar aria-label="Voltar às mensagens">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M15 5l-7 7 7 7"></path>
+            </svg>
+        </a>
+
+        <a href="{{ outro.perfil_url }}" class="chat-pessoa">
+            <img
+                src="{{ outro.foto_url }}"
+                alt="Fotografia de {{ outro.nome }}"
+                onerror="this.onerror=null;this.src='{{ doc_root }}imagens/fotos-perfil/default.webp';"
+                draggable="false"
+            >
+            <span>
+                <strong>{{ outro.nome }}</strong>
+                <small id="chat-estado">Margot</small>
+            </span>
+        </a>
+    </header>

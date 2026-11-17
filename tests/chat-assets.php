@@ -18,7 +18,7 @@ if (!preg_match('~<template id="margot-chat-resources">(.*?)</template>~s', $lis
 }
 $manifest = $match[1];
 preg_match_all('~(?:src|href)="([^" ]+\.(?:js|css)[^"]*)"~', $manifest, $matches);
-if (count($matches[1]) !== 11) throw new RuntimeException('Expected 8 scripts and 3 styles');
+if (count($matches[1]) !== 10) throw new RuntimeException('Expected 8 scripts and 2 page styles');
 $activeChat = preg_replace('~<template\b.*?</template>~s', '', $chat);
 foreach ($matches[1] as $url) {
     if (!str_contains($activeChat, '"' . $url . '"')) {
@@ -28,4 +28,4 @@ foreach ($matches[1] as $url) {
         throw new RuntimeException('Unversioned resource: ' . $url);
     }
 }
-echo "PASS: 11 preload URLs exactly match the rendered chat, including release versions.\n";
+echo "PASS: 10 preload URLs exactly match the rendered chat, including release versions.\n";

@@ -694,14 +694,14 @@ body,
 
     .mini-menu > header > h1,
     .mini-menu .mini-menu-perfil,
-    #chat-pagina .chat-pessoa strong,
-    #chat-pagina #chat-texto,
+    .chat-pagina .chat-pessoa strong,
+    .chat-pagina .chat-compositor textarea,
     #perfil .perfil-nome,
     .hoje-editor-sheet h2 {
         color: var(--text);
     }
 
-    #chat-pagina #chat-texto::placeholder,
+    .chat-pagina .chat-compositor textarea::placeholder,
     .mini-menu #mensagem::placeholder {
         color: #b2b2bd;
         opacity: 1;
