@@ -2,7 +2,11 @@ import Foundation
 
 /// Same policy and bounds as Android LocationPolicy. No platform side effects; milliseconds.
 final class LocationPolicy {
-  static let version = "native-battery-2"
+  static let version = "native-battery-3"
+  // Enabled only by a server policy deployed with temporal proximity matching.
+  private(set) var transportAlignment = false
+  static let transportSendMs: Double = 10_000
+  private var transportUntilCapture = -Double.greatestFiniteMagnitude
   static let maxAgeMs: Double = 90_000
   static let maxAccuracy: Double = 100
   struct Fix {
@@ -22,7 +26,9 @@ final class LocationPolicy {
     let keys = ["moving_send_seconds", "stationary_send_seconds", "minimum_send_seconds",
       "movement_metres", "stationary_after_seconds", "android_request_seconds"]
     let low: [Double] = [15,60,5,10,60,10], high: [Double] = [60,240,30,25,300,30]
-    guard values.count == 6 else { return false }
+    let alignment = values["transport_alignment_version"] ?? 0
+    guard (values.count == 6 || (values.count == 7 && values["transport_alignment_version"] != nil)),
+      alignment == 0 || alignment == 1 else { return false }
     var v = [Double]()
     for i in 0..<6 {
       guard let n = values[keys[i]], n.isFinite, n >= low[i], n <= high[i] else { return false }
@@ -31,7 +37,14 @@ final class LocationPolicy {
     guard v[2] <= v[0], v[1] >= v[0] else { return false }
     movingSendMs=v[0]*1000; stationarySendMs=v[1]*1000; minimumSendMs=v[2]*1000
     movementMetres=v[3]; stationaryAfterMs=v[4]*1000; androidRequestMs=v[5]*1000
+    transportAlignment = alignment == 1
     return true
+  }
+  func inTransport(_ fix: Fix?, _ wallNow: Double) -> Bool {
+    guard transportAlignment, let fix = fix, Self.usable(fix,wallNow) else { return false }
+    return fix.accuracy <= 25 && fix.speed.isFinite && fix.speed >= 0 && fix.speed <= 55
+      && (fix.speed >= 5 || fix.capturedAt <= transportUntilCapture)
+      && wallNow-fix.capturedAt <= 15_000
   }
   static func usable(_ fix: Fix?, _ wallNow: Double) -> Bool {
     guard let f = fix else { return false }
@@ -46,6 +59,11 @@ final class LocationPolicy {
     }
     if let last = latest, wallNow-last.capturedAt<60_000, last.accuracy<=25,
       fix.accuracy>50, Self.distance(last,fix)>50 { rejected += 1; return false }
+    // Two more short-interval samples after stopping let the server observe the
+    // stop before returning to the normal stationary heartbeat.
+    if transportAlignment && fix.accuracy<=25 && fix.speed>=5 && fix.speed<=55 {
+      transportUntilCapture=fix.capturedAt+20_000
+    }
     latest=fix
     let stable = fix.accuracy<=50 && (!fix.speed.isFinite || fix.speed<0.5)
     if !stable || anchor == nil || elapsedNow-previousObservation>60_000
@@ -59,7 +77,11 @@ final class LocationPolicy {
   func shouldSend(_ fix: Fix, _ wallNow: Double, _ elapsedNow: Double, force: Bool = false) -> Bool {
     guard Self.usable(fix,wallNow), fix.capturedAt>discardedCapture, elapsedNow>=retryAt, elapsedNow-lastAttempt>=5000 else { return false }
     guard let last = lastSent else { return true }
-    guard fix.capturedAt>last.capturedAt, elapsedNow-lastSuccess>=minimumSendMs else { return false }
+    guard fix.capturedAt>last.capturedAt else { return false }
+    // Limit radio uploads in transport, including forced/resume callbacks. Measure
+    // from the attempt, not its ACK: a slow ACK must not turn 10 s callbacks into 20 s.
+    if inTransport(fix,wallNow) { return elapsedNow-lastAttempt >= Self.transportSendMs }
+    guard elapsedNow-lastSuccess>=minimumSendMs else { return false }
     // Overlapping accuracy circles are GPS noise, not evidence of movement.
     let movementThreshold = max(movementMetres,last.accuracy+fix.accuracy)
     return force || Self.distance(last,fix)>=movementThreshold
@@ -106,7 +128,8 @@ extension LocationPolicy {
     }
   }
   var diagnostics: [String:Any] {
-    var data: [String:Any] = ["policy_version":Self.version, "mode":stationary ? "stationary" : "moving_or_unknown",
+    var data: [String:Any] = ["policy_version":Self.version, "mode":inTransport(latest,Self.wallNow) ? "transport" : (stationary ? "stationary" : "moving_or_unknown"),
+     "transport_alignment_enabled":transportAlignment, "transport_send_seconds":Self.transportSendMs/1000,
      "locations_received":received, "locations_rejected":rejected,
      "upload_attempts":attempts, "upload_successes":successes, "upload_failures":failures,
      "stationary_send_seconds":stationarySendMs/1000, "moving_send_seconds":movingSendMs/1000]

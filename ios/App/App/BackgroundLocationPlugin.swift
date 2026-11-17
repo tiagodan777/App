@@ -194,6 +194,11 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
       object: nil
     )
 
+    NotificationCenter.default.addObserver(
+      self, selector: #selector(powerStateDidChange),
+      name: .NSProcessInfoPowerStateDidChange, object: nil
+    )
+
     configureMonitoring()
 
     if !presenceVisible {
@@ -408,6 +413,27 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
     else { queueHiddenPresence() }
   }
 
+  @objc private func powerStateDidChange() {
+    // Power notifications can arrive off the main queue.
+    DispatchQueue.main.async { [weak self] in
+      guard let self = self, !ProcessInfo.processInfo.isLowPowerModeEnabled else { return }
+      self.resumeMonitoringIfStale()
+      self.sendBestAvailableLocationOrRequest(allowBackground: true)
+    }
+  }
+
+  private func resumeMonitoringIfStale() {
+    // A local running flag cannot prove Core Location is still delivering fixes.
+    // Restart only after a stale interval, while preserving wake monitoring.
+    if standardRunning,
+      latestLocation.map({ isUsableLocation($0, maxAge: 90) }) != true {
+      manager.stopUpdatingLocation()
+      standardRunning = false
+    }
+    configureMonitoring()
+    MargotLocationPushProbe.shared.refreshIfNeeded()
+  }
+
   @objc private func applicationDidBecomeActive() {
     finishPermissionIfActive()
 
@@ -416,7 +442,7 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
      * pessoas próximas se ela ainda estiver na fila.
      */
     sendAppStateOnly(background: false)
-    configureMonitoring()
+    resumeMonitoringIfStale()
 
     if !presenceVisible {
       queueHiddenPresence()
@@ -495,6 +521,7 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
     didUpdateLocations locations: [CLLocation]
   ) {
     guard presenceVisible, !serverSuspended, readToken() != nil else { return }
+    MargotLocationPushProbe.shared.refreshIfNeeded()
     let fresh = locations.sorted { $0.timestamp < $1.timestamp }.filter {
       policy.observe(LocationPolicy.fix($0),LocationPolicy.wallNow,LocationPolicy.elapsedNow)
     }
@@ -759,7 +786,10 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
       [weak self] reply, error in
 
       DispatchQueue.main.async {
-        guard let self = self, self.readToken() == token, self.sendGeneration == generation else { return }
+        guard let self = self, self.sendGeneration == generation else { return }
+        // A temporarily unreadable Keychain must not leave this session busy forever.
+        self.sending = false
+        guard self.readToken() == token else { return }
         self.finishLocationSending(
           location,
           reply: reply,
@@ -805,7 +835,9 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
       token: token
     ) { [weak self] reply, error in
       DispatchQueue.main.async {
-        guard let self = self, self.readToken() == token, self.sendGeneration == generation else { return }
+        guard let self = self, self.sendGeneration == generation else { return }
+        self.sending = false
+        guard self.readToken() == token else { return }
         self.finishHiddenSending(
           reply: reply,
           error: error

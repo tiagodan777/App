@@ -42,6 +42,11 @@ final class MargotLocationPushProbe: NSObject, CLLocationManagerDelegate, URLSes
       name: UIApplication.protectedDataDidBecomeAvailableNotification,
       object: nil
     )
+
+    NotificationCenter.default.addObserver(
+      self, selector: #selector(powerStateDidChange),
+      name: .NSProcessInfoPowerStateDidChange, object: nil
+    )
   }
 
   func start() {
@@ -74,6 +79,28 @@ final class MargotLocationPushProbe: NSObject, CLLocationManagerDelegate, URLSes
       token: readAppToken(),
       forceRegistration: true
     )
+  }
+
+  // Background location callbacks are opportunities to renew the finite grant.
+  // This does not schedule or assume background execution at a fixed interval.
+  func refreshIfNeeded() {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { self.refreshIfNeeded() }
+      return
+    }
+    guard !registering, Date() >= nextRegistration else { return }
+    reconcile(
+      visible: UserDefaults.standard.object(forKey: "margot.background-location.visible") as? Bool ?? false,
+      token: readAppToken(),
+      forceRegistration: false
+    )
+  }
+
+  @objc private func powerStateDidChange() {
+    DispatchQueue.main.async { [weak self] in
+      guard !ProcessInfo.processInfo.isLowPowerModeEnabled else { return }
+      self?.refreshIfNeeded()
+    }
   }
 
   // visible autoriza a recolha; a presença pública continua a ser decidida pelo servidor.
@@ -396,7 +423,8 @@ final class MargotLocationPushProbe: NSObject, CLLocationManagerDelegate, URLSes
       forKey: "margot.background-location.visible"
     ) as? Bool ?? false
 
-    guard collecting else {
+    guard collecting,
+      !UserDefaults.standard.bool(forKey: "margot.background-location.server-suspended") else {
       disable(reason: "collection_disabled")
       return false
     }

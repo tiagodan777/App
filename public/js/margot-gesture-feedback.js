@@ -10,6 +10,9 @@
   let layer = null;
   let motion = null;
   let entering = false;
+  let transitioning = false;
+  let blockClickUntil = 0;
+  let viewportWidth = innerWidth;
 
   const member = () => String(window.membroId || '');
 
@@ -19,12 +22,13 @@
   const editable = 'input,textarea,select,[contenteditable]';
 
   const blocked =
-    `${editable},button,a,audio,video,[data-margot-no-back-swipe]`;
+    `${editable},button,a,audio,video,.chat-balao,[data-margot-no-back-swipe]`;
 
   const properties = [
     'transform',
     'z-index',
-    'will-change'
+    'will-change',
+    'box-shadow'
   ];
 
   const style = document.createElement('style');
@@ -57,13 +61,7 @@
 
   document.head.append(style);
 
-  function capture() {
-    const source = document.querySelector('[data-margot-pagina]');
-
-    if (!source || !source.querySelector('#conversas-lista')) {
-      return false;
-    }
-
+  function visualCopy(source) {
     const copy = source.cloneNode(true);
 
     const originals = [
@@ -117,6 +115,18 @@
     copy.querySelectorAll(
       'script,dialog,iframe,object,embed'
     ).forEach(node => node.remove());
+
+    return copy;
+  }
+
+  function capture() {
+    const source = document.querySelector('[data-margot-pagina]');
+    if (!source?.querySelector('#conversas-lista')) return false;
+    const copy = visualCopy(source);
+    const menu = document.getElementById('menuPrincipal');
+    if (menu && getComputedStyle(menu).display !== 'none') {
+      copy.append(visualCopy(menu));
+    }
 
     Object.assign(copy.style, {
       position: 'absolute',
@@ -223,7 +233,7 @@
   }
 
   async function animate(current, destination) {
-    if (reduced() || !current.chat.animate) {
+    if (document.hidden || reduced() || !current.chat.animate) {
       position(current, destination);
       return;
     }
@@ -285,14 +295,12 @@
     }
 
     try {
-      await window.MargotNavigation.navigate(current.url, {
-        historico: 'replace',
-        direcao: -1
-      });
+      await window.MargotNavigation.backTo(current.url);
     } finally {
       if (gesture === current) {
         clear();
       }
+      blockClickUntil = performance.now() + 500;
     }
   }
 
@@ -303,6 +311,7 @@
 
     current.chat.style.zIndex = '1041';
     current.chat.style.willChange = 'transform';
+    current.chat.style.boxShadow = '-12px 0 32px rgba(0,0,0,.12)';
 
     document.body.classList.add('margot-interactive-back');
 
@@ -310,11 +319,8 @@
   }
 
   document.addEventListener('touchstart', event => {
-    if (entering) {
-      clear();
-    }
-
     if (
+      entering ||
       gesture ||
       event.touches.length !== 1 ||
       document.hidden ||
@@ -322,6 +328,9 @@
     ) {
       return;
     }
+
+    // Um toque novo é uma intenção nova; o click do gesto anterior não é.
+    blockClickUntil = 0;
 
     const chat = document.getElementById('chat-pagina');
     const link = chat?.querySelector('[data-margot-voltar]');
@@ -355,7 +364,7 @@
     gesture = Object.assign(record(chat), {
       x: touch.clientX,
       y: touch.clientY,
-      start: performance.now(),
+      samples: [{ x: 0, time: performance.now() }],
       url: link.href
     });
   }, {
@@ -401,6 +410,7 @@
     }
 
     position(current, dx);
+    sample(current, dx);
   }, {
     passive: false
   });
@@ -420,8 +430,10 @@
       ? touch.clientY - current.y
       : 0;
 
-    const speed =
-      dx / Math.max(1, performance.now() - current.start);
+    const now = performance.now();
+    const recent = current.samples.filter(point => now - point.time <= 120);
+    const first = recent[0];
+    const speed = first ? (dx - first.x) / Math.max(1, now - first.time) : 0;
 
     const horizontal =
       dx > 0 && dx > Math.abs(dy) * 1.4;
@@ -429,8 +441,8 @@
     const commit =
       horizontal &&
       (
-        dx >= innerWidth * 0.3 ||
-        (dx >= 40 && speed >= 0.5)
+        (dx >= innerWidth * 0.3 && speed >= -0.15) ||
+        (dx >= 48 && speed >= 0.5)
       );
 
     // Um swipe rápido pode terminar sem um touchmove utilizável.
@@ -443,10 +455,8 @@
         event.preventDefault();
       }
 
-      // Ao confirmar, a animação parte do último ponto desenhado.
-      if (!commit) {
-        position(current, dx);
-      }
+      position(current, dx);
+      blockClickUntil = performance.now() + 700;
     }
 
     void finish(commit);
@@ -462,16 +472,66 @@
     passive: true
   });
 
-  document.addEventListener('margot:page-leave', () => {
-    // A pré-visualização fica até a página seguinte estar pronta.
-    if (gesture?.committed) return;
+  function sample(current, x) {
+    const time = performance.now();
+    current.samples.push({ x, time });
+    current.samples = current.samples.filter(point => time - point.time <= 120);
+  }
 
-    clear();
-
-    if (capture()) {
-      entering = true;
-      showPreview();
+  // Impede que o click sintetizado depois do swipe abra a conversa por baixo.
+  document.addEventListener('click', event => {
+    if (gesture?.horizontal || performance.now() < blockClickUntil) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
     }
+  }, true);
+
+  window.MargotChatMotion = {
+    handles(page) {
+      return Boolean(page.querySelector('#chat-pagina') ||
+        (document.getElementById('chat-pagina') && page.querySelector('#conversas-lista')));
+    },
+    async transition(render, page) {
+      transitioning = true;
+      window.MargotExperience?.navigationReady();
+      const incoming = page.querySelector('#chat-pagina');
+      const outgoing = document.getElementById('chat-pagina');
+      try {
+        if (incoming) {
+          clear();
+          capture();
+          entering = true;
+          showPreview();
+          await render();
+          gesture = record(incoming);
+          incoming.style.zIndex = '1041';
+          incoming.style.willChange = 'transform';
+          incoming.style.boxShadow = '-12px 0 32px rgba(0,0,0,.12)';
+          position(gesture, innerWidth);
+          await animate(gesture, 0);
+        } else if (outgoing) {
+          // Um swipe confirmado já levou o chat para fora do ecrã.
+          if (!gesture?.committed) {
+            clear();
+            gesture = record(outgoing);
+            gesture.ending = true;
+            showPreview();
+            outgoing.style.zIndex = '1041';
+            outgoing.style.willChange = 'transform';
+            outgoing.style.boxShadow = '-12px 0 32px rgba(0,0,0,.12)';
+            if (layer) await animate(gesture, innerWidth);
+          }
+          await render();
+        }
+      } finally {
+        clear();
+        transitioning = false;
+      }
+    }
+  };
+
+  document.addEventListener('margot:page-leave', () => {
+    if (!transitioning) clear();
   });
 
   document.addEventListener('margot:page-ready', () => {
@@ -479,25 +539,6 @@
 
     if (chat && snapshot && owner === member()) {
       chat.setAttribute('data-margot-no-back-swipe', '');
-    }
-
-    if (entering && chat && !document.hidden) {
-      gesture = record(chat);
-
-      const current = gesture;
-
-      current.chat.style.zIndex = '1041';
-      current.chat.style.willChange = 'transform';
-
-      position(current, innerWidth);
-
-      void animate(current, 0).then(() => {
-        if (gesture === current) {
-          clear();
-        }
-      });
-    } else {
-      clear();
     }
 
     const page = document.querySelector('[data-invitation]');
@@ -509,22 +550,11 @@
     }
   });
 
-  document.addEventListener('focusin', event => {
-    if (entering && event.target.matches(editable)) {
-      clear();
-    }
-  });
-
   window.addEventListener('resize', () => {
-    if (!gesture?.committed) {
-      clear();
-    }
-  });
-
-  window.visualViewport?.addEventListener('resize', () => {
-    if (!gesture?.committed) {
-      clear();
-    }
+    // O teclado e as barras do Safari alteram a altura, não a direção do gesto.
+    if (innerWidth === viewportWidth) return;
+    viewportWidth = innerWidth;
+    clear();
   });
 
   const forget = () => {

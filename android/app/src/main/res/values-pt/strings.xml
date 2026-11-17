@@ -15,4 +15,6 @@
     <string name="share_invitation">Partilhar convite</string>
     <string name="share_invalid">Convite inválido.</string>
     <string name="share_unavailable">Não foi possível abrir a partilha agora.</string>
+    <string name="background_location_resume_title">Localização da Margot em pausa</string>
+    <string name="background_location_resume_text">Ativa a localização do telemóvel e abre a Margot para retomar.</string>
 </resources>

@@ -129,8 +129,18 @@ try {
         throw new InvalidArgumentException();
     }
 
-    $nearby = $cms->getNearbyPresenceNotification();
-    $before = $nearby->locationSnapshot((string) $member);
+    // Os avisos de proximidade são auxiliares: uma falha não pode impedir
+    // a extensão de entregar uma amostra de localização válida.
+    $nearby = null;
+    $before = null;
+    $snapshotAvailable = false;
+    try {
+        $nearby = $cms->getNearbyPresenceNotification();
+        $before = $nearby->locationSnapshot((string) $member);
+        $snapshotAvailable = true;
+    } catch (Throwable $error) {
+        error_log('[location-recovery-nearby] ' . get_class($error));
+    }
 
     $accepted = $recovery->upload(
         (string) $member,
@@ -140,7 +150,7 @@ try {
 
     $trace($accepted ? 'upload_accepted' : 'upload_declined');
 
-    if ($accepted) {
+    if ($accepted && $snapshotAvailable) {
         try {
             // A extensão não altera foreground/background nem a visibilidade.
             $nearby->processLocationChange(

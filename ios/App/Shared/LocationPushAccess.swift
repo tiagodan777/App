@@ -86,7 +86,18 @@ enum LocationPushAccess {
   // Chamado apenas pela extensão, na main queue, incluindo entre instâncias.
   static func reserveAttempt(manual: Bool = false, now: TimeInterval = Date().timeIntervalSince1970) throws {
     let history: [TimeInterval] = try read("attempts") ?? []
-    try write(nextAttempts(history, now: now, manual: manual), account: "attempts")
+    let normalized = try normalizedAttempts(history, now: now)
+    // Persist a backwards-clock adjustment even if this attempt is rate limited.
+    // Otherwise every subsequent push would encounter the same future timestamp.
+    if normalized != history { try write(normalized, account: "attempts") }
+    try write(nextAttempts(normalized, now: now, manual: manual), account: "attempts")
+  }
+
+  static func normalizedAttempts(_ history: [TimeInterval], now: TimeInterval) throws -> [TimeInterval] {
+    guard now.isFinite, history.allSatisfy({ $0.isFinite }) else { throw Failure.budget }
+    // Keep every recent reservation and its budget cost after a clock rollback.
+    // Future entries become recent, rather than bypassing limits or blocking forever.
+    return history.map { min($0, now) }.filter { now - $0 < 86400 }.sorted()
   }
 
   static func nextAttempts(_ history: [TimeInterval], now: TimeInterval, manual: Bool = false) throws -> [TimeInterval] {

@@ -28,7 +28,7 @@
     var consultaPolicy = null;
 
     function atualizarPolicy(state) {
-        var compatible = ['native-battery-1', 'native-battery-2'].includes(state?.policy_version);
+        var compatible = ['native-battery-1', 'native-battery-2', 'native-battery-3'].includes(state?.policy_version);
         window.MargotNativeLocationCacheAvailable = compatible;
         // Capability gated: older installed builds never receive an unknown method call.
         if (!compatible || !plugin ||
@@ -40,7 +40,11 @@
                 if (!response.ok) throw new Error('Política indisponível');
                 return response.json();
             }),5000)
-            .then(function(policy) { return comPrazo(plugin.configure({policy:policy}),5000); })
+            .then(function(policy) {
+                // Older builds validate exactly six fields and keep their existing cadence.
+                if (state?.policy_version !== 'native-battery-3') delete policy.transport_alignment_version;
+                return comPrazo(plugin.configure({policy:policy}),5000);
+            })
             .catch(function() {
                 // Keep the validated on-device policy; retry after five minutes of foreground use.
                 ultimaConsultaPolicy = Date.now() - 3300000;

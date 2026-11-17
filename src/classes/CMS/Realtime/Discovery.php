@@ -6,6 +6,7 @@ namespace App\CMS\Realtime;
 use App\CMS\ProximityConfig;
 use App\CMS\Location;
 use App\CMS\LocationSample;
+use App\CMS\TemporalProximity;
 use App\CMS\PushNotification;
 use App\CMS\NearbyPresenceNotification;
 use App\Validate\Validate;
@@ -16,6 +17,20 @@ use Ratchet\ConnectionInterface;
 trait Discovery {
     private array $nearbyConfirmation = [];
     private int $nearbyPrunedAt = 0;
+    private ?TemporalProximity $temporalProximity = null;
+
+    private function locationTimeline(): TemporalProximity {
+        return $this->temporalProximity ??= new TemporalProximity();
+    }
+
+    private function clearProximityHistory(string $memberId): void {
+        $this->locationTimeline()->forget($memberId);
+        foreach (array_keys($this->nearbyConfirmation) as $pair) {
+            if (str_starts_with($pair,$memberId.':') || str_ends_with($pair,':'.$memberId)) {
+                unset($this->nearbyConfirmation[$pair]);
+            }
+        }
+    }
 
     private function sincronizarEstadoCanonico(string $memberId): array {
         $state = (new Location($this->getDatabase()))->state($memberId);
@@ -158,7 +173,7 @@ trait Discovery {
             $this->enviarErro($conn, 'A ligação não está autenticada.');
             return;
         }
-        $this->sincronizarEstadoCanonico($membroId);
+        $canonical = $this->sincronizarEstadoCanonico($membroId);
         if (!($this->localizacaoPorLigacao[$conn->resourceId] ?? false)) {
             return;
         }
@@ -181,9 +196,9 @@ trait Discovery {
         }
         try { $capturedAt = LocationSample::capturedAt($data); }
         catch (\InvalidArgumentException $invalidSample) { return; }
-        $capturedEpoch = $capturedAt === null ? time() : (int)(new \DateTimeImmutable($capturedAt,new \DateTimeZone('UTC')))->format('U');
+        $capturedEpoch = $capturedAt === null ? microtime(true) : (float)(new \DateTimeImmutable($capturedAt,new \DateTimeZone('UTC')))->format('U.u');
         if ($capturedAt !== null && isset($this->localizacoes[$membroId])
-            && $capturedEpoch < (int)$this->localizacoes[$membroId]['updated_at']) return;
+            && $capturedEpoch < (float)$this->localizacoes[$membroId]['updated_at']) return;
         $accepted = $this->persistirLocalizacaoParaProximidade(
             $membroId,
             (float) $latitude,
@@ -202,8 +217,10 @@ trait Discovery {
             'longitude' => (float) $longitude,
             'accuracy' => min((float) $accuracy, 10000),
             'updated_at' => $capturedEpoch,
+            'revision' => $canonical['revision'],
             'source' => 'websocket'
         ];
+        $this->locationTimeline()->observe($membroId, $this->localizacoes[$membroId]);
         echo sprintf(
             "[LOCATION] %s atualizou localização. Precisão: %.1f m\n",
             $membroId,
@@ -268,11 +285,7 @@ trait Discovery {
             $visivel = $canonical['visible'];
         }
         if (!$localizacaoAtiva || !$visivel) {
-            foreach (array_keys($this->nearbyConfirmation) as $pair) {
-                if (str_starts_with($pair,$membroId.':') || str_ends_with($pair,':'.$membroId)) {
-                    unset($this->nearbyConfirmation[$pair]);
-                }
-            }
+            $this->clearProximityHistory($membroId);
         }
         try {
             $database = $this->getDatabase();
@@ -372,13 +385,8 @@ trait Discovery {
                     if (!$this->localizacaoEstaValida($outraLocalizacao, $agora)) {
                         continue;
                     }
-                    $distancia = $this->calcularDistanciaMetros(
-                        $minhaLocalizacao['latitude'],
-                        $minhaLocalizacao['longitude'],
-                        $outraLocalizacao['latitude'],
-                        $outraLocalizacao['longitude']
-                    );
-                    if (!$this->confirmarProximidade($membroId,$outroMembroId,$minhaLocalizacao,$outraLocalizacao,$agora)) {
+                    $distancia = null;
+                    if (!$this->confirmarProximidade($membroId,$outroMembroId,$minhaLocalizacao,$outraLocalizacao,$agora,$distancia)) {
                         continue;
                     }
                     $tokenAcessoPerfil = $this->obterTokenAcessoPerfil($membroId, $outroMembroId);
@@ -435,6 +443,11 @@ trait Discovery {
             $memberId = (string) $row['membro_id'];
             $active = (bool) $row['localizacao_ativa'];
             $visible = $active && (bool) $row['visivel'];
+            if (isset($this->localizacoes[$memberId])
+                && ($this->localizacoes[$memberId]['revision'] ?? 0) !== (int)$row['estado_versao']) {
+                $this->clearProximityHistory($memberId);
+                $this->localizacoes[$memberId]['revision'] = (int)$row['estado_versao'];
+            }
             if ((int) $row['estado_versao'] > 0) {
                 foreach ($this->ligacoesPorMembro[$memberId] ?? [] as $resourceId => $connection) {
                     $this->localizacaoPorLigacao[$resourceId] = $active;
@@ -443,22 +456,24 @@ trait Discovery {
             }
             $latitude = filter_var($row['latitude'], FILTER_VALIDATE_FLOAT);
             $longitude = filter_var($row['longitude'], FILTER_VALIDATE_FLOAT);
-            $captured = (int) ($row['atualizada_em_epoch'] ?? 0);
+            $captured = (float) ($row['atualizada_em_epoch'] ?? 0);
             $ageGroup = $this->obterFaixaEtaria((string) $row['nascimento']);
             if (!$active || $latitude === false || $longitude === false || abs($latitude) > 90
                 || abs($longitude) > 180 || $captured <= 0
                 || $agora - $captured > self::LOCALIZACAO_MAXIMA_IDADE_SEGUNDOS || $ageGroup === null) {
                 unset($this->localizacoes[$memberId], $this->pessoas[$memberId]);
+                $this->clearProximityHistory($memberId);
                 continue;
             }
             $localizacoesAgora[$memberId] = true;
-            if (!isset($this->localizacoes[$memberId]) || (int) $this->localizacoes[$memberId]['updated_at'] <= $captured) {
+            if (!isset($this->localizacoes[$memberId]) || (float) $this->localizacoes[$memberId]['updated_at'] <= $captured) {
                 $this->localizacoes[$memberId] = [
                     'latitude' => (float) $latitude, 'longitude' => (float) $longitude,
                     'accuracy' => max(0.0, min(10000.0, (float) ($row['precisao_m'] ?? 0))),
-                    'updated_at' => $captured, 'source' => 'background'
+                    'updated_at' => $captured, 'source' => 'background', 'revision' => (int)$row['estado_versao']
                 ];
             }
+            $this->locationTimeline()->observe($memberId, $this->localizacoes[$memberId]);
             $this->faixaEtariaPorMembro[$memberId] = $ageGroup;
             if (!$visible) {
                 unset($this->pessoas[$memberId]);
@@ -476,6 +491,7 @@ trait Discovery {
             }
         }
         $this->membrosVisiveisPorPersistencia = $visiveisAgora;
+        $this->locationTimeline()->retain($localizacoesAgora);
         $this->localizacoesPersistidasCarregadasEm = $agora;
     }
 
@@ -489,9 +505,13 @@ trait Discovery {
         return $this->confirmarProximidade($primeiroMembroId,$segundoMembroId,$primeira,$segunda,$agora);
     }
 
-    private function confirmarProximidade(string $a, string $b, array $first, array $second, int $now): bool {
+    private function confirmarProximidade(string $a, string $b, array $first, array $second, int $now, ?float &$distance = null): bool {
         $key = strcmp($a,$b)<0 ? $a.':'.$b : $b.':'.$a;
-        $distance = $this->calcularDistanciaMetros($first['latitude'],$first['longitude'],$second['latitude'],$second['longitude']);
+        $distance = $this->locationTimeline()->distance($a,$b,$first,$second,$now);
+        if ($distance === null) {
+            unset($this->nearbyConfirmation[$key]);
+            return false;
+        }
         if ($now-$this->nearbyPrunedAt>=30) {
             $this->nearbyConfirmation = array_filter($this->nearbyConfirmation,
                 fn($entry)=>$now-$entry['seen_at']<=self::LOCALIZACAO_MAXIMA_IDADE_SEGUNDOS);

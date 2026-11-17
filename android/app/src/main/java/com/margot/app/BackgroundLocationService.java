@@ -37,6 +37,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.PowerManager;
 import android.os.SystemClock;
 import java.io.IOException;
 import java.io.ByteArrayOutputStream;
@@ -76,8 +77,11 @@ public final class BackgroundLocationService extends Service implements Location
     private LocationPolicy policy = new LocationPolicy();
     private FusedLocationProviderClient fused;
     private boolean fusedRegistered;
+    private double registeredRequestMs;
+    private TransportPhasePolicy transportPhase = new TransportPhasePolicy();
     private volatile boolean destroyed;
     private LocationAcquisitionPolicy acquisition = new LocationAcquisitionPolicy(SystemClock.elapsedRealtime());
+    private LocationAcquisitionRecovery recovery = new LocationAcquisitionRecovery(SystemClock.elapsedRealtime());
     private SensorManager sensorManager;
     private Sensor motionSensor;
     private boolean motionArmed;
@@ -86,7 +90,22 @@ public final class BackgroundLocationService extends Service implements Location
         @Override public void onReceive(Context context, Intent intent) {
             if (destroyed || !running) return;
             if (!hasTrackingConsent(context)) { stopUnavailable(); return; }
-            if (isLocationEnabled(context)) refreshAcquisition(true);
+            String action = intent == null ? null : intent.getAction();
+            if (PowerManager.ACTION_DEVICE_IDLE_MODE_CHANGED.equals(action)
+                || PowerManager.ACTION_POWER_SAVE_MODE_CHANGED.equals(action)) {
+                // Only an existing foreground service recovers here. This is not an
+                // exemption permitting a new service to start from the background.
+                PowerManager power = (PowerManager) getSystemService(Context.POWER_SERVICE);
+                boolean exiting = power != null && (PowerManager.ACTION_DEVICE_IDLE_MODE_CHANGED.equals(action)
+                    ? !power.isDeviceIdleMode() : !power.isPowerSaveMode());
+                if (exiting && !isDeviceIdle()) {
+                    recovery.received(SystemClock.elapsedRealtime());
+                    transportPhase.recovered();
+                    refreshAcquisition(true);
+                }
+                return;
+            }
+            if (isLocationEnabled(context)) { transportPhase.recovered(); refreshAcquisition(true); }
             else { removeLocationUpdates(); disarmMotion(); }
         }
     };
@@ -97,6 +116,7 @@ public final class BackgroundLocationService extends Service implements Location
                 if (destroyed || !canRun(BackgroundLocationService.this)) return;
                 acquisition.motion(SystemClock.elapsedRealtime());
                 policy.motionDetected();
+                transportPhase.recovered();
                 refreshAcquisition(true);
             });
         }
@@ -116,12 +136,17 @@ public final class BackgroundLocationService extends Service implements Location
         @Override public void run() {
             if (destroyed || !running) return;
             refreshAcquisition(false);
-            if (acquisition.beginBurst(SystemClock.elapsedRealtime())) requestPrecisionBurst();
+            if (destroyed || !running) return;
+            if (recovery.shouldRecover(SystemClock.elapsedRealtime(), canRun(BackgroundLocationService.this)
+                && !isDeviceIdle())) { transportPhase.recovered(); refreshAcquisition(true); }
+            if (destroyed || !running) return;
+            if (!isDeviceIdle() && acquisition.beginBurst(SystemClock.elapsedRealtime())) requestPrecisionBurst();
             mainHandler.postDelayed(this, 30_000);
         }
     };
     private String ownerToken = "";
     private String ownerMemberId = "";
+    private long ownerSelectedAtNanos;
     private volatile int generation;
     private int registrationGeneration;
     private final LocationCallback fusedCallback = new LocationCallback() {
@@ -161,18 +186,20 @@ public final class BackgroundLocationService extends Service implements Location
         if (sensorManager != null) motionSensor = sensorManager.getDefaultSensor(Sensor.TYPE_SIGNIFICANT_MOTION);
         IntentFilter providerFilter = new IntentFilter(LocationManager.MODE_CHANGED_ACTION);
         providerFilter.addAction(LocationManager.PROVIDERS_CHANGED_ACTION);
+        providerFilter.addAction(PowerManager.ACTION_DEVICE_IDLE_MODE_CHANGED);
+        providerFilter.addAction(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(providerEvents, providerFilter, Context.RECEIVER_NOT_EXPORTED);
         } else {
             registerReceiver(providerEvents, providerFilter);
         }
         providerReceiverRegistered = true;
-        createNotificationChannel();
+        createNotificationChannel(this);
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (!canRun(this)) {
+        if (!isStartRequested(this) || !canRun(this)) {
             stopUnavailable();
             return START_NOT_STICKY;
         }
@@ -182,10 +209,7 @@ public final class BackgroundLocationService extends Service implements Location
             String token = readToken(this);
             String memberId = readMemberId(this);
             if (!token.equals(ownerToken) || !memberId.equals(ownerMemberId)) {
-                generation++; ownerToken = token; ownerMemberId = memberId; sending = false; lastUsableLocation = null;
-                policy = new LocationPolicy(); restorePolicy(); mainHandler.removeCallbacks(retry);
-                acquisition = new LocationAcquisitionPolicy(SystemClock.elapsedRealtime());
-                removeLocationUpdates(); disarmMotion();
+                resetOwner(token, memberId);
             }
             registerLocationUpdates();
             running = true;
@@ -225,11 +249,16 @@ public final class BackgroundLocationService extends Service implements Location
 
     @Override
     public void onLocationChanged(Location location) {
-        if (destroyed || !canRun(this) || !usable(location)) return;
+        if (destroyed || !ownsCurrentSession() || !canRun(this) || !usable(location)
+            || location.getElapsedRealtimeNanos() < ownerSelectedAtNanos) return;
         if (!policy.observe(fix(location),System.currentTimeMillis(),SystemClock.elapsedRealtime())) return;
+        recovery.received(SystemClock.elapsedRealtime());
         boolean wasQuiet = acquisition.quiet;
         acquisition.observe(fix(location), SystemClock.elapsedRealtime());
         lastUsableLocation = new Location(location);
+        transportPhase.observe(fix(location),System.currentTimeMillis(),SystemClock.elapsedRealtime(),
+            policy.transportAlignment && policy.androidRequestMs==TransportPhasePolicy.BASE_INTERVAL_MS
+                && fusedRegistered && hasFineLocationPermission(this) && !acquisition.quiet);
         refreshAcquisition(wasQuiet != acquisition.quiet);
         if (!sending) sendLocation(new Location(location));
     }
@@ -276,6 +305,8 @@ public final class BackgroundLocationService extends Service implements Location
     public static void stop(Context context) {
         Context app = context.getApplicationContext();
         setStartRequested(app, false);
+        BackgroundLocationService service = instance;
+        if (service != null) service.stopUnavailable();
         app.stopService(new Intent(app, BackgroundLocationService.class));
         cancelNotification(app);
     }
@@ -290,7 +321,13 @@ public final class BackgroundLocationService extends Service implements Location
                 == PackageManager.PERMISSION_GRANTED;
     }
 
-    public static boolean shouldResume(Context context) { return !running && preferences(context).getBoolean(START_REQUESTED, false) && canRun(context); }
+    public static boolean hasPendingResume(Context context) {
+        return !running && isStartRequested(context) && hasTrackingConsent(context);
+    }
+
+    public static boolean shouldResume(Context context) {
+        return hasPendingResume(context) && isLocationEnabled(context);
+    }
 
     public static boolean isRunningOrRequested(Context context) {
         return running;
@@ -301,6 +338,13 @@ public final class BackgroundLocationService extends Service implements Location
     }
 
     public static void saveOwner(Context context, String token, String memberId) {
+        String normalizedMemberId = memberId == null ? "" : memberId.trim();
+        BackgroundLocationService service = instance;
+        if (service != null && (!token.equals(service.ownerToken)
+            || !normalizedMemberId.equals(service.ownerMemberId))) {
+            // Invalidate the old cache and queued uploads before publishing new credentials.
+            service.resetOwner(token, normalizedMemberId);
+        }
         SharedPreferences.Editor editor = preferences(context).edit().putString(TOKEN, token)
             .putBoolean(COLLECTION_SUSPENDED, false);
         if (memberId == null || memberId.trim().isEmpty()) editor.remove(MEMBER_ID);
@@ -321,6 +365,8 @@ public final class BackgroundLocationService extends Service implements Location
     }
 
     public static void clearToken(Context context) {
+        BackgroundLocationService service = instance;
+        if (service != null) service.resetOwner("", "");
         preferences(context).edit().remove(TOKEN).remove(MEMBER_ID).remove(COLLECTION_SUSPENDED).apply();
     }
 
@@ -452,9 +498,13 @@ public final class BackgroundLocationService extends Service implements Location
         preferences(context).edit().putString(POLICY,object.toString()).apply();
         BackgroundLocationService service = instance;
         if (service != null) {
-            double previous = service.policy.androidRequestMs;
+            double previous = service.desiredRequestInterval();
+            boolean previousAlignment = service.policy.transportAlignment;
             service.policy.configure(values);
-            if (previous != service.policy.androidRequestMs && running) {
+            if (!service.policy.transportAlignment || service.policy.androidRequestMs!=TransportPhasePolicy.BASE_INTERVAL_MS)
+                service.transportPhase.reset();
+            if ((previous != service.desiredRequestInterval()
+                || previousAlignment != service.policy.transportAlignment) && running) {
                 service.removeLocationUpdates();
                 try { service.registerLocationUpdates(); } catch (RuntimeException error) { service.stopUnavailable(); }
             }
@@ -470,7 +520,7 @@ public final class BackgroundLocationService extends Service implements Location
     public static JSObject cachedLocation() {
         JSObject result = new JSObject(); result.put("available",false);
         BackgroundLocationService service = instance;
-        if (service == null || !running || !canRun(service)) return result;
+        if (service == null || !running || !service.ownsCurrentSession() || !canRun(service)) return result;
         Location l = service.lastUsableLocation;
         if (!usable(l) || System.currentTimeMillis()-l.getTime()>10_000) return result;
         JSObject coords = new JSObject();
@@ -494,6 +544,17 @@ public final class BackgroundLocationService extends Service implements Location
         result.put("provider",service.fusedRegistered?"fused":"platform");
         result.put("acquisition_mode",service.acquisition.quiet?"balanced_with_bursts":"high_accuracy");
         result.put("motion_sensor_available",service.motionSensor != null);
+        result.put("acquisition_recoveries",service.recovery.recoveries);
+        result.put("transport_alignment_enabled",p.transportAlignment);
+        result.put("transport_send_seconds",LocationPolicy.TRANSPORT_SEND_MS/1000);
+        result.put("transport",p.inTransport(p.latest,System.currentTimeMillis()));
+        result.put("request_interval_seconds",service.registeredRequestMs/1000);
+        result.put("transport_phase_version",1);
+        result.put("transport_capture_period_seconds",TransportPhasePolicy.PERIOD_MS/1000);
+        result.put("transport_phase_active",service.transportPhase.active);
+        result.put("transport_phase_adjustments",service.transportPhase.adjustments);
+        result.put("transport_phase_misses",service.transportPhase.misses);
+        result.put("transport_aligned_captures",service.transportPhase.alignedCaptures);
         return result;
     }
 
@@ -516,25 +577,54 @@ public final class BackgroundLocationService extends Service implements Location
         }
     }
 
-    private void createNotificationChannel() {
+    private static void createNotificationChannel(Context context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
             return;
         }
 
-        NotificationManager manager = getSystemService(NotificationManager.class);
+        NotificationManager manager = context.getSystemService(NotificationManager.class);
 
         if (manager == null) {
             return;
         }
 
         NotificationChannel channel = new NotificationChannel(
-            CHANNEL_ID, getString(R.string.background_location_channel_name), NotificationManager.IMPORTANCE_LOW);
-        channel.setDescription(getString(R.string.background_location_channel_description));
+            CHANNEL_ID, context.getString(R.string.background_location_channel_name), NotificationManager.IMPORTANCE_LOW);
+        channel.setDescription(context.getString(R.string.background_location_channel_description));
         channel.enableVibration(false);
         channel.setSound(null, null);
         channel.setShowBadge(false);
         channel.setLockscreenVisibility(Notification.VISIBILITY_PRIVATE);
         manager.createNotificationChannel(channel);
+    }
+
+    public static void notifyResumeRequired(Context context) {
+        if (!hasPendingResume(context)) return;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+            && context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) return;
+        NotificationManager manager = context.getSystemService(NotificationManager.class);
+        if (manager == null || !manager.areNotificationsEnabled()) return;
+        createNotificationChannel(context);
+        Intent openApp = new Intent(context, MainActivity.class)
+            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        PendingIntent action = PendingIntent.getActivity(context, 0, openApp,
+            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        Notification.Builder builder = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+            ? new Notification.Builder(context, CHANNEL_ID)
+            : new Notification.Builder(context).setPriority(Notification.PRIORITY_LOW);
+        String text = context.getString(R.string.background_location_resume_text);
+        Notification notification = builder.setSmallIcon(android.R.drawable.ic_menu_mylocation)
+            .setContentTitle(context.getString(R.string.background_location_resume_title))
+            .setContentText(text).setStyle(new Notification.BigTextStyle().bigText(text))
+            .setContentIntent(action).setAutoCancel(true).setOnlyAlertOnce(true)
+            .setShowWhen(false).setVisibility(Notification.VISIBILITY_PRIVATE).build();
+        try {
+            // A tap opens the activity directly; it may then start the location service legally.
+            manager.notify(NOTIFICATION_ID, notification);
+        } catch (SecurityException denied) {
+            // Notification permission can change between checking it and posting.
+        }
     }
 
     private Notification buildNotification() {
@@ -564,44 +654,62 @@ public final class BackgroundLocationService extends Service implements Location
             .build();
     }
 
+    private double desiredRequestInterval() {
+        return transportPhase.active ? Math.max(policy.androidRequestMs,transportPhase.requestMs)
+            : policy.requestInterval(System.currentTimeMillis());
+    }
+
     private void registerLocationUpdates() {
         if (updatesRegistered || destroyed) return;
         if (GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(this) == ConnectionResult.SUCCESS) {
             fused = LocationServices.getFusedLocationProviderClient(this);
-            LocationRequest request = new LocationRequest.Builder(acquisition.quiet ? Priority.PRIORITY_BALANCED_POWER_ACCURACY : Priority.PRIORITY_HIGH_ACCURACY,
-                (long)policy.androidRequestMs)
-                .setMinUpdateIntervalMillis((long)policy.androidRequestMs)
-                .setMinUpdateDistanceMeters(0).setMaxUpdateDelayMillis(0)
-                .setMaxUpdateAgeMillis(10_000).setWaitForAccurateLocation(true).build();
-            updatesRegistered = true;
-            fusedRegistered = true;
-            int registration = ++registrationGeneration;
-            try {
-                fused.requestLocationUpdates(request,fusedCallback,Looper.getMainLooper())
-                    .addOnFailureListener(error -> mainHandler.post(() -> {
-                        if (destroyed || registration != registrationGeneration || !fusedRegistered) return;
-                        removeLocationUpdates();
-                        try { registerFallback(); } catch (RuntimeException unavailable) { stopUnavailable(); }
-                    }));
-            } catch (SecurityException denied) {
-                // Permission may be revoked between canRun() and the provider request.
-                removeLocationUpdates();
-                throw denied;
-            }
+            registerFusedRequest(desiredRequestInterval());
             return;
         }
+        transportPhase.reset();
         registerFallback();
+    }
+
+    private void registerFusedRequest(double interval) {
+        registeredRequestMs = Math.max(policy.androidRequestMs,interval);
+        LocationRequest request = new LocationRequest.Builder(acquisition.quiet
+            ? Priority.PRIORITY_BALANCED_POWER_ACCURACY : Priority.PRIORITY_HIGH_ACCURACY,
+            (long)registeredRequestMs)
+            .setMinUpdateIntervalMillis((long)registeredRequestMs)
+            .setMinUpdateDistanceMeters(0).setMaxUpdateDelayMillis(0)
+            .setMaxUpdateAgeMillis(10_000).setWaitForAccurateLocation(true).build();
+        updatesRegistered = true;
+        fusedRegistered = true;
+        int registration = ++registrationGeneration;
+        try {
+            // The same callback replaces its request. Phase correction changes
+            // only the interval; no explicit remove/re-add or extra listener is used.
+            fused.requestLocationUpdates(request,fusedCallback,Looper.getMainLooper())
+                .addOnFailureListener(error -> mainHandler.post(() -> {
+                    if (destroyed || registration != registrationGeneration || !fusedRegistered) return;
+                    removeLocationUpdates();
+                    transportPhase.fail(SystemClock.elapsedRealtime());
+                    try { registerFallback(); } catch (RuntimeException unavailable) { stopUnavailable(); }
+                }));
+        } catch (SecurityException denied) {
+            removeLocationUpdates();
+            throw denied;
+        }
     }
 
     private void registerFallback() {
         if (locationManager == null || destroyed) return;
+        transportPhase.reset();
+        registeredRequestMs = policy.requestInterval(System.currentTimeMillis());
         // Without Google Play Services preserve GPS + network coverage, including indoors.
         // The normal fused path uses one request and lets Android combine the sources.
         boolean registered = registerProvider(LocationManager.NETWORK_PROVIDER);
         if ((!acquisition.quiet || !registered) && hasFineLocationPermission(this)) {
             registered = registerProvider(LocationManager.GPS_PROVIDER) || registered;
         }
-        if (!registered) throw new IllegalStateException("Não existe um fornecedor de localização disponível.");
+        // A provider can be temporarily unavailable even while location is enabled.
+        // Keep the existing service so provider events and bounded recovery can retry.
+        if (!registered) return;
         updatesRegistered = true;
         Location cached = newestLastKnownLocation();
         if (cached != null) onLocationChanged(cached);
@@ -611,7 +719,7 @@ public final class BackgroundLocationService extends Service implements Location
         try {
             if (!locationManager.isProviderEnabled(provider)) return false;
             // No distance gate: a stationary member still needs genuinely fresh presence.
-            locationManager.requestLocationUpdates(provider,(long)policy.androidRequestMs,0,
+            locationManager.requestLocationUpdates(provider,(long)registeredRequestMs,0,
                 this,Looper.getMainLooper());
             return true;
         } catch (IllegalArgumentException | SecurityException exception) { return false; }
@@ -660,7 +768,10 @@ public final class BackgroundLocationService extends Service implements Location
     }
 
     private void refreshAcquisition(boolean force) {
-        if (destroyed || !running || !canRun(this)) return;
+        if (destroyed || !running) return;
+        if (!isStartRequested(this) || !hasTrackingConsent(this)) { stopUnavailable(); return; }
+        if (!isLocationEnabled(this)) { removeLocationUpdates(); disarmMotion(); return; }
+        if (!ownsCurrentSession()) return;
         boolean background = isAppInBackground(this);
         if (background && (policy.stationary || acquisition.quiet) && !motionArmed
             && sensorManager != null && motionSensor != null) {
@@ -669,9 +780,16 @@ public final class BackgroundLocationService extends Service implements Location
         // Without a working motion wake-up, keep precision instead of risking missed encounters.
         boolean changed = acquisition.update(background && motionArmed, policy.stationary,
             policy.latest, SystemClock.elapsedRealtime());
+        if (acquisition.quiet || !policy.transportAlignment
+            || policy.androidRequestMs!=TransportPhasePolicy.BASE_INTERVAL_MS) transportPhase.reset();
         if (changed || force) {
             removeLocationUpdates();
             try { registerLocationUpdates(); } catch (RuntimeException error) { stopUnavailable(); return; }
+        } else if (registeredRequestMs != desiredRequestInterval()) {
+            try {
+                if (fusedRegistered && fused!=null) registerFusedRequest(desiredRequestInterval());
+                else { removeLocationUpdates(); registerLocationUpdates(); }
+            } catch (RuntimeException error) { stopUnavailable(); return; }
         }
         if (!acquisition.quiet) disarmMotion();
     }
@@ -714,8 +832,10 @@ public final class BackgroundLocationService extends Service implements Location
     private void sendLocation(Location location) {
         String token = readToken(this);
 
-        if (destroyed || sending || !canRun(this) || !usable(location)
-            || !policy.shouldSend(fix(location),System.currentTimeMillis(),SystemClock.elapsedRealtime(),false)) {
+        if (destroyed || sending || !ownsCurrentSession() || !canRun(this) || !usable(location)
+            || location.getElapsedRealtimeNanos() < ownerSelectedAtNanos
+            || !transportPhase.permitsUpload(fix(location),policy.lastSent)
+            || !policy.shouldSend(fix(location),System.currentTimeMillis(),SystemClock.elapsedRealtime(),transportPhase.forceUpload())) {
             return;
         }
 
@@ -760,7 +880,7 @@ public final class BackgroundLocationService extends Service implements Location
             Location sentLocation = new Location(location);
 
             mainHandler.post(() -> {
-                if (!destroyed && requestGeneration == generation && token.equals(readToken(this))) {
+                if (!destroyed && requestGeneration == generation && ownsCurrentSession()) {
                     finishSend(token,response,sentLocation);
                 }
             });
@@ -787,6 +907,7 @@ public final class BackgroundLocationService extends Service implements Location
         boolean success = response.accepted;
         if (!success && !response.retryable) policy.declined(SystemClock.elapsedRealtime());
         else policy.completed(fix(sentLocation),SystemClock.elapsedRealtime(),success);
+        if (success && transportPhase.acknowledged(fix(sentLocation))) refreshAcquisition(false);
         mainHandler.removeCallbacks(retry);
         if (!success && response.retryable && canRun(this)) {
             mainHandler.postDelayed(retry,(long)policy.retryDelay(SystemClock.elapsedRealtime()));
@@ -809,6 +930,8 @@ public final class BackgroundLocationService extends Service implements Location
         // A temporary provider/OS failure must not erase the member's choice.
         // Explicit stop, invisibility, logout and revoked tokens still clear it.
         running = false;
+        generation++;
+        sending = false;
         mainHandler.removeCallbacks(acquisitionTick);
         mainHandler.removeCallbacks(stopFallbackBurst);
         disarmMotion();
@@ -820,19 +943,43 @@ public final class BackgroundLocationService extends Service implements Location
 
     private static void expireAuthorization(Context context, String rejectedToken) {
         Context app = context.getApplicationContext();
+        // Compare and clear on the same thread as login/logout. A late response
+        // from an old token must never clear a newly selected account.
+        new Handler(Looper.getMainLooper()).post(() -> {
+            if (!rejectedToken.equals(readToken(app))) return;
+            clearToken(app);
+            stop(app);
+            Intent event = new Intent(ACTION_AUTHORIZATION_EXPIRED);
+            event.setPackage(app.getPackageName());
+            app.sendBroadcast(event);
+        });
+    }
 
-        if (!rejectedToken.equals(readToken(app))) {
-            return;
-        }
+    private boolean ownsCurrentSession() {
+        return isStartRequested(this) && ownerToken.equals(readToken(this))
+            && ownerMemberId.equals(readMemberId(this));
+    }
 
-        clearToken(app);
-        stop(app);
+    private void resetOwner(String token, String memberId) {
+        generation++;
+        ownerToken = token;
+        ownerMemberId = memberId;
+        ownerSelectedAtNanos = SystemClock.elapsedRealtimeNanos();
+        sending = false;
+        lastUsableLocation = null;
+        mainHandler.removeCallbacks(retry);
+        policy = new LocationPolicy();
+        transportPhase = new TransportPhasePolicy();
+        restorePolicy();
+        acquisition = new LocationAcquisitionPolicy(SystemClock.elapsedRealtime());
+        recovery = new LocationAcquisitionRecovery(SystemClock.elapsedRealtime());
+        removeLocationUpdates();
+        disarmMotion();
+    }
 
-        Intent event = new Intent(ACTION_AUTHORIZATION_EXPIRED);
-
-        event.setPackage(app.getPackageName());
-
-        app.sendBroadcast(event);
+    private boolean isDeviceIdle() {
+        PowerManager power = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        return power != null && power.isDeviceIdleMode();
     }
 
     private static LocationUploadResult post(String token, JSONObject body) {

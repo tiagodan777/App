@@ -14,6 +14,7 @@
     var paginas = new Map();
     var transicaoAtual = null;
     var animacaoAtual = null;
+    var retornoHistorico = null;
 
     function fecharTecladoDaPagina() {
         var campo = document.activeElement;
@@ -30,6 +31,10 @@
     }
 
     async function animarTroca(renderizar, pagina, direcao, semAnimacao) {
+        if (!semAnimacao && window.MargotChatMotion?.handles(pagina)) {
+            await window.MargotChatMotion.transition(renderizar, pagina);
+            return;
+        }
         var reduzir = window.matchMedia('(prefers-reduced-motion: reduce)').matches || /^\/messages(?:\/|$)/.test(caminhoNormalizado(urlEmNavegacao || urlRenderizada)) || /^\/messages(?:\/|$)/.test(caminhoNormalizado(urlRenderizada));
         if (semAnimacao === true || reduzir || document.hidden) {
             await renderizar();
@@ -647,12 +652,13 @@
 
                 window.scrollTo(0, 0);
                 document.title = documentoNovo.title || document.title;
+                var urlAnterior = urlRenderizada;
                 urlRenderizada = resposta.url;
 
                 if (!navegacaoPendente) {
                     if (opcoes.historico === 'push') {
                         posicaoHistorico += 1;
-                        history.pushState({ margotPosition: posicaoHistorico }, '', resposta.url);
+                        history.pushState({ margotPosition: posicaoHistorico, margotPrevious: urlAnterior }, '', resposta.url);
                     } else if (opcoes.historico === 'replace') {
                         history.replaceState({ margotPosition: posicaoHistorico }, '', resposta.url);
                     }
@@ -697,27 +703,42 @@
             if (navegacaoPendente) {
                 var pendente = navegacaoPendente;
                 navegacaoPendente = null;
-                trocarPagina(pendente.url, pendente.opcoes);
+                if (pendente.opcoes.historico === 'back') {
+                    if (!ePaginaAtual(pendente.url)) await voltarPagina(pendente.url);
+                    else atualizarMenu(pendente.url);
+                } else {
+                    await trocarPagina(pendente.url, pendente.opcoes);
+                }
             }
         }
     }
 
     function voltarPagina(urlAlternativo) {
+        if (retornoHistorico) return retornoHistorico.promise;
         urlAlternativo = urlAlternativo || urlAlternativoParaVoltar();
         if (aNavegar) {
             colocarNavegacaoPendente(urlAlternativo, {
-                historico: 'replace',
+                historico: 'back',
                 direcao: -1
             });
             return;
         }
 
         if (posicaoHistorico > 0) {
+            var resolver;
+            var promise = new Promise(function (resolve) { resolver = resolve; });
+            retornoHistorico = { promise: promise, resolve: resolver };
             history.back();
-            return;
+            return promise;
         }
 
-        trocarPagina(urlAlternativo, { historico: 'replace', direcao: -1 });
+        return trocarPagina(urlAlternativo, { historico: 'replace', direcao: -1 });
+    }
+
+    // O gesto revela a lista de conversas, mesmo se o chat veio de outra página.
+    function voltarPara(url) {
+        if (history.state?.margotPrevious && chavePagina(history.state.margotPrevious) === chavePagina(url)) return voltarPagina(url);
+        return trocarPagina(url, { historico: 'replace', direcao: -1 });
     }
 
     /*
@@ -966,7 +987,7 @@
         });
     });
 
-    window.addEventListener('popstate', function (evento) {
+    window.addEventListener('popstate', async function (evento) {
         var proximaPosicao =
             evento.state && Number.isFinite(evento.state.margotPosition)
                 ? evento.state.margotPosition
@@ -976,7 +997,13 @@
         var direcao = proximaPosicao < posicaoHistorico ? -1 : 1;
 
         posicaoHistorico = proximaPosicao;
-        trocarPagina(window.location.href, { historico: 'pop', direcao: direcao });
+        var retorno = retornoHistorico;
+        try {
+            await trocarPagina(window.location.href, { historico: 'pop', direcao: direcao });
+        } finally {
+            if (retornoHistorico === retorno) retornoHistorico = null;
+            retorno?.resolve();
+        }
     });
 
     document.addEventListener(
@@ -1008,6 +1035,9 @@
         },
         navigate: trocarPagina,
         back: voltarPagina,
+        backTo: voltarPara,
+        isLoading: function () { return faseNavegacao === 'fetch' || faseNavegacao === 'prepare'; },
         prefetch: preAquecerPagina
     };
+    window.MargotExperience?.prepareChat(carregarScript);
 })(window, document);

@@ -28,8 +28,9 @@ final class LocationPushService: NSObject, CLLocationPushServiceExtension,
   }
 
   private var energyAllowsCapture: Bool {
-    !ProcessInfo.processInfo.isLowPowerModeEnabled &&
-      ProcessInfo.processInfo.thermalState.rawValue <
+    // Low Power Mode is not an authorization revocation. Keep the existing
+    // capture deadline and daily budget; let iOS decide when to deliver a push.
+    ProcessInfo.processInfo.thermalState.rawValue <
       ProcessInfo.ThermalState.serious.rawValue
   }
 
@@ -557,9 +558,7 @@ final class LocationPushService: NSObject, CLLocationPushServiceExtension,
   }
 
   private var energyReason: String {
-    ProcessInfo.processInfo.isLowPowerModeEnabled
-      ? "low_power_mode"
-      : "thermal_state"
+    "thermal_state"
   }
 
   private func reject(

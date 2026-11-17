@@ -43,6 +43,9 @@ final class LocationRelaunchCoordinator: NSObject, CLLocationManagerDelegate {
   private var sending = false
   private var uploadTask: URLSessionDataTask?
   private var stopped = false
+  private var paused = false
+  private var sendGeneration = 0
+  private var acceptLocationsAfter = Date.distantPast
   private var pendingLocation: CLLocation?
   private var lastSentLocation: CLLocation?
   private var lastSentAt = Date.distantPast
@@ -56,6 +59,10 @@ final class LocationRelaunchCoordinator: NSObject, CLLocationManagerDelegate {
     NotificationCenter.default.addObserver(
       self, selector:#selector(protectedDataBecameAvailable),
       name:UIApplication.protectedDataDidBecomeAvailableNotification, object:nil
+    )
+    NotificationCenter.default.addObserver(
+      self, selector:#selector(powerStateDidChange),
+      name:.NSProcessInfoPowerStateDidChange, object:nil
     )
     manager.delegate = self
     manager.desiredAccuracy = kCLLocationAccuracyNearestTenMeters
@@ -75,6 +82,17 @@ final class LocationRelaunchCoordinator: NSObject, CLLocationManagerDelegate {
 
   @objc private func protectedDataBecameAvailable() { start() }
 
+  @objc private func powerStateDidChange() {
+    DispatchQueue.main.async { [weak self] in
+      guard let self = self, !self.stopped,
+        !ProcessInfo.processInfo.isLowPowerModeEnabled else { return }
+      if self.manager.location.map({ self.isUsableLocation($0, maxAge: 90) }) != true {
+        self.manager.stopUpdatingLocation()
+      }
+      self.start()
+    }
+  }
+
   func start() {
     guard !stopped else { return }
 
@@ -87,11 +105,15 @@ final class LocationRelaunchCoordinator: NSObject, CLLocationManagerDelegate {
 
     guard visible, hasToken, servicesEnabled, alwaysAllowed,
       !UserDefaults.standard.bool(forKey:suspendedKey) else {
+      pause()
       logger.notice("scene-recovery-1: bootstrap skipped; visible=\(visible, privacy: .public) credential=\(hasToken, privacy: .public) services=\(servicesEnabled, privacy: .public) always=\(alwaysAllowed, privacy: .public)")
       return
     }
 
+    if paused { acceptLocationsAfter = Date() }
+    paused = false
     logger.notice("scene-recovery-1: native location start requested")
+    MargotLocationPushProbe.shared.refreshIfNeeded()
 
     // Retoma a recolha normal antes de o WebView estar disponível.
     manager.allowsBackgroundLocationUpdates = true
@@ -133,8 +155,12 @@ final class LocationRelaunchCoordinator: NSObject, CLLocationManagerDelegate {
     guard !stopped else { return }
 
     stopped = true
+    sendGeneration &+= 1
     retryWorkItem?.cancel()
     retryWorkItem = nil
+    uploadTask?.cancel()
+    uploadTask = nil
+    sending = false
     manager.stopUpdatingLocation()
 
     if !preserveWakeMonitoring {
@@ -148,39 +174,51 @@ final class LocationRelaunchCoordinator: NSObject, CLLocationManagerDelegate {
     session.invalidateAndCancel()
   }
 
-  func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+  private var collectionAuthorized: Bool {
+    return CLLocationManager.locationServicesEnabled()
+      && manager.authorizationStatus == .authorizedAlways
+      && readVisibility()
+      && !UserDefaults.standard.bool(forKey:suspendedKey)
+  }
+
+  // Permissions and global services can be restored in this same process.
+  // Only stop() relinquishes ownership and invalidates the reusable session.
+  private func pause() {
     guard !stopped else { return }
+    paused = true
+    sendGeneration &+= 1
+    retryWorkItem?.cancel()
+    retryWorkItem = nil
+    uploadTask?.cancel()
+    uploadTask = nil
+    sending = false
+    manager.stopUpdatingLocation()
+    manager.stopMonitoringSignificantLocationChanges()
+    manager.stopMonitoringVisits()
+    manager.allowsBackgroundLocationUpdates = false
+    pendingLocation = nil
+    retryAttempt = 0
+    deletePendingLocation()
+    endBackgroundTask()
+  }
 
-    guard manager.authorizationStatus == .authorizedAlways,
-      !UserDefaults.standard.bool(forKey:suspendedKey),
-      readVisibility(),
-      readToken() != nil
-    else {
-      // A missing token may just mean that the first unlock has not happened yet.
-      // Keep the coordinator available for protectedDataDidBecomeAvailable.
-      manager.stopUpdatingLocation()
-      return
-    }
-
-    manager.allowsBackgroundLocationUpdates = true
-    manager.startUpdatingLocation()
-    manager.startMonitoringVisits()
-
-    if CLLocationManager.significantLocationChangeMonitoringAvailable() {
-      manager.startMonitoringSignificantLocationChanges()
-    }
+  func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+    start()
   }
 
   func locationManager(
     _ manager: CLLocationManager,
     didUpdateLocations locations: [CLLocation]
   ) {
-    guard !stopped, readVisibility() else { return }
+    guard !stopped, !paused else { return }
+    guard collectionAuthorized else { pause(); return }
+    guard readToken() != nil else { return }
+    MargotLocationPushProbe.shared.refreshIfNeeded()
 
     let validLocations = locations.sorted {
       $0.timestamp < $1.timestamp
     }.filter {
-      policy.observe(
+      isUsableLocation($0, maxAge: 90) && policy.observe(
         LocationPolicy.fix($0),
         LocationPolicy.wallNow,
         LocationPolicy.elapsedNow
@@ -213,7 +251,7 @@ final class LocationRelaunchCoordinator: NSObject, CLLocationManagerDelegate {
     let locationError = error as? CLError
 
     if locationError?.code == .denied {
-      stop()
+      pause()
       return
     }
 
@@ -227,13 +265,9 @@ final class LocationRelaunchCoordinator: NSObject, CLLocationManagerDelegate {
   }
 
   private func considerSending(_ location: CLLocation, force: Bool) {
-    guard !stopped,
-      readVisibility(),
-      readToken() != nil,
-      isUsableLocation(location, maxAge: 90)
-    else {
-      return
-    }
+    guard !stopped, !paused else { return }
+    guard collectionAuthorized else { pause(); return }
+    guard readToken() != nil, isUsableLocation(location, maxAge: 90) else { return }
 
     // Keep the newest fix while an upload/backoff is pending,
     // even when it cannot be sent yet.
@@ -260,13 +294,10 @@ final class LocationRelaunchCoordinator: NSObject, CLLocationManagerDelegate {
   }
 
   private func performSend(_ location: CLLocation) {
-    guard !stopped,
-      !sending,
-      readVisibility(),
-      let token = readToken()
-    else {
-      return
-    }
+    guard !stopped, !paused else { return }
+    guard collectionAuthorized else { pause(); return }
+    guard !sending, let token = readToken(),
+      isUsableLocation(location, maxAge: 90) else { return }
 
     guard policy.shouldSend(
       LocationPolicy.fix(location),
@@ -307,18 +338,20 @@ final class LocationRelaunchCoordinator: NSObject, CLLocationManagerDelegate {
     request.setValue("application/json", forHTTPHeaderField: "Accept")
     request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
+    let generation = sendGeneration
     uploadTask = session.dataTask(with: request) { [weak self] data, response, error in
       let statusCode = (response as? HTTPURLResponse)?.statusCode
 
       DispatchQueue.main.async {
-        guard let self = self,
-          !self.stopped,
-          self.readToken() == token
-        else {
+        guard let self = self, !self.stopped,
+          self.sendGeneration == generation else { return }
+        guard self.collectionAuthorized else { self.pause(); return }
+        self.uploadTask = nil
+        self.sending = false
+        guard self.readToken() == token else {
+          self.endBackgroundTask()
           return
         }
-
-        self.uploadTask = nil
         self.finishSend(location, reply:LocationUploadReply(data:data,statusCode:statusCode,error:error), error:error)
       }
     }
@@ -397,7 +430,7 @@ final class LocationRelaunchCoordinator: NSObject, CLLocationManagerDelegate {
   }
 
   private func scheduleRetry() {
-    guard !stopped,
+    guard !stopped, !paused, collectionAuthorized, readToken() != nil,
       retryWorkItem == nil,
       let location = pendingLocation,
       isUsableLocation(location, maxAge: 90)
@@ -414,7 +447,7 @@ final class LocationRelaunchCoordinator: NSObject, CLLocationManagerDelegate {
     retryAttempt = min(retryAttempt + 1, retryDelays.count)
 
     let workItem = DispatchWorkItem { [weak self] in
-      guard let self = self, !self.stopped else { return }
+      guard let self = self, !self.stopped, !self.paused else { return }
 
       self.retryWorkItem = nil
 
@@ -448,7 +481,7 @@ final class LocationRelaunchCoordinator: NSObject, CLLocationManagerDelegate {
     _ location: CLLocation,
     maxAge: TimeInterval
   ) -> Bool {
-    return LocationPolicy.usable(
+    return location.timestamp >= acceptLocationsAfter && LocationPolicy.usable(
       LocationPolicy.fix(location),
       LocationPolicy.wallNow
     ) && -location.timestamp.timeIntervalSinceNow <= maxAge

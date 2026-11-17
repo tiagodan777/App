@@ -3,7 +3,6 @@
 
   if (window.MargotExperience) return;
 
-  const base = new URL('../', document.currentScript.src);
   const text = (pt, en) =>
     window.MargotI18n?.language === 'en' ? en : pt;
 
@@ -295,7 +294,6 @@
 
     if (previous) {
       previousInert = previous.inert;
-      previous.inert = true;
     }
 
     let skeleton = bone('title');
@@ -327,11 +325,14 @@
 
     // Não mostra um ecrã intermédio nas transições rápidas.
     revealTimer = setTimeout(() => {
-      if (!document.body.hasAttribute('aria-busy')) return;
+      if (!document.body.hasAttribute('aria-busy') ||
+          !window.MargotNavigation?.isLoading() ||
+          document.body.classList.contains('margot-interactive-back')) return;
 
+      if (previous) previous.inert = true;
       panel.hidden = false;
       status.textContent = text('A carregar…', 'Loading…');
-    }, 250);
+    }, 900);
 
     timer = setTimeout(() => {
       status.textContent = text(
@@ -366,46 +367,35 @@
       return;
     }
 
+    // O mesmo partial gera o chat e esta lista inerte, incluindo as versões
+    // aplicadas pelo servidor. URLs antigos criavam uma segunda cache inútil.
+    const resources = document.getElementById('margot-chat-resources')?.content;
+    if (!resources) return;
     warmed = true;
 
     if (!cssWarmed) {
       cssWarmed = true;
 
-      [
-        'chat.css?v=20260927-build',
-        'chat-social.css?v=20260928-1',
-        'chat-gallery.css?v=20261008-camera-dark-1',
-        'messages.css?v=20260916'
-      ].forEach(file => {
+      resources.querySelectorAll('link[href]').forEach(resource => {
         const link = document.createElement('link');
 
         link.rel = 'preload';
         link.as = 'style';
-        link.href = new URL('estilos/' + file, base).href;
+        link.href = new URL(resource.getAttribute('href'), location.href).href;
 
         document.head.append(link);
       });
     }
 
-    const files = [
-      'chat-viewport.js?v=20260927-scroll-keyboard-2',
-      'chat-recorder.js?v=20260920-video',
-      'chat-camera.js?v=20260923-camera',
-      'chat-emoji-data.js?v=20260928-1',
-      'chat-social.js?v=20260928-1',
-      'chat-reactions.js?v=20261007-video-hold-1',
-      'chat-audio-player.js?v=20260920-video',
-      'chat.js?v=20261007-gallery-1'
-    ];
+    const files = [...resources.querySelectorAll('script[src]')].map(
+      resource => new URL(resource.getAttribute('src'), location.href).href
+    );
 
     let index = 0;
 
     async function next() {
       while (index < files.length && !document.hidden) {
-        const url = new URL(
-          'js/' + files[index++],
-          base
-        ).href;
+        const url = files[index++];
 
         try {
           await loadScript(url);
@@ -421,6 +411,7 @@
 
   // Deixa a transição lateral visível assim que a página está pronta.
   document.addEventListener('margot:page-ready', finish);
+  document.addEventListener('margot:page-leave', finish);
 
   document.addEventListener('margot:page-ready', () => {
     if (window.requestIdleCallback) {
@@ -437,6 +428,11 @@
 
   window.MargotExperience = {
     waitForLocation,
+    navigationReady: finish,
+    prepareChat(scriptLoader) {
+      loadScript = scriptLoader;
+      warmChat();
+    },
     navigationStart
   };
 })();

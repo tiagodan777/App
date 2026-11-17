@@ -19,4 +19,6 @@
     <string name="share_invitation">Share invitation</string>
     <string name="share_invalid">Invalid invitation.</string>
     <string name="share_unavailable">Could not open sharing right now.</string>
+    <string name="background_location_resume_title">Margot location paused</string>
+    <string name="background_location_resume_text">Turn on your phone’s location, then open Margot to resume.</string>
 </resources>

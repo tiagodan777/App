@@ -88,6 +88,35 @@ public class LocationReliabilityTest {
         assertTrue(p.shouldSend(fix(0, 10, 60_000, 0), WALL + 60_000, 60_000, false));
     }
 
+    @Test public void silentProviderRecoveryIsBoundedAndFreshFixResetsIt() {
+        LocationAcquisitionRecovery recovery = new LocationAcquisitionRecovery(0);
+        assertFalse(recovery.shouldRecover(179_999, true));
+        assertTrue(recovery.shouldRecover(180_000, true));
+        assertFalse(recovery.shouldRecover(180_001, true));
+        assertTrue(recovery.shouldRecover(360_000, true));
+        assertFalse(recovery.shouldRecover(719_999, true));
+        assertTrue(recovery.shouldRecover(720_000, true));
+        assertTrue(recovery.shouldRecover(1_440_000, true));
+        assertFalse(recovery.shouldRecover(2_339_999, true));
+        assertTrue(recovery.shouldRecover(2_340_000, true));
+        assertEquals(5, recovery.recoveries);
+        recovery.received(2_350_000);
+        assertFalse(recovery.shouldRecover(2_529_999, true));
+        assertTrue(recovery.shouldRecover(2_530_000, true));
+    }
+
+    @Test public void recoveryDoesNotFightPowerRestrictionsOrCatchUpInALoop() {
+        LocationAcquisitionRecovery recovery = new LocationAcquisitionRecovery(0);
+        assertFalse(recovery.shouldRecover(86_400_000, false));
+        assertEquals(0, recovery.recoveries);
+        assertTrue(recovery.shouldRecover(86_400_000, true));
+        assertFalse(recovery.shouldRecover(86_400_001, true));
+        // A power-mode exit starts a fresh grace period for the new request.
+        recovery.received(86_500_000);
+        assertFalse(recovery.shouldRecover(86_679_999, true));
+        assertTrue(recovery.shouldRecover(86_680_000, true));
+    }
+
     @Test public void onlyAnApplicationAcknowledgementIsSuccessful() {
         assertTrue(new LocationUploadResult(200, true, true).accepted);
         assertFalse(new LocationUploadResult(200, true, false).accepted);

@@ -143,7 +143,8 @@ function harness({member = 'member-a', storage = new Map(), serverState,
             return reply({success: true, member_id: window.membroId, token: 'a'.repeat(64)});
         }
         if (url === '/location-policy.json') return reply({moving_send_seconds: 60, stationary_send_seconds: 180,
-            minimum_send_seconds: 5, movement_metres: 20, stationary_after_seconds: 120, android_request_seconds: 30});
+            minimum_send_seconds: 5, movement_metres: 20, stationary_after_seconds: 120, android_request_seconds: 30,
+            transport_alignment_version: 1});
         if (url === '/push-device/') return reply({success: true});
         throw new Error(`Unexpected mocked HTTP request: ${url}`);
     }
@@ -282,7 +283,7 @@ test('suspended policy-v2 native tracking revalidates the grant and keeps cache 
 });
 
 for (const platform of ['ios', 'android']) {
-    for (const policyVersion of [null, 'native-battery-1']) {
+    for (const policyVersion of [null, 'native-battery-1', 'native-battery-2', 'native-battery-3']) {
         test(`new web state works with ${platform} old native ${policyVersion || 'without capabilities'}`, async () => {
             const h = harness({platform, legacyNative: true, policyVersion});
             await h.prepare();
@@ -291,6 +292,11 @@ for (const platform of ['ios', 'android']) {
             assert.equal(h.storage.get('margot-native-location-owner-v1'), 'member-a');
             assert.equal(h.window.MargotNativeLocationCacheAvailable, policyVersion !== null);
             assert.equal(h.calls.filter(call => call.kind === 'configure').length, policyVersion ? 1 : 0);
+            if (policyVersion) {
+                const policy = h.calls.find(call => call.kind === 'configure').policy;
+                assert.equal(policy.transport_alignment_version, policyVersion === 'native-battery-3' ? 1 : undefined);
+                assert.equal(Object.keys(policy).length, policyVersion === 'native-battery-3' ? 7 : 6);
+            }
             const grants = h.calls.filter(call => call.url === '/background-location-token/').length;
             await h.window.MargotBackgroundLocation.start(); await flush();
             assert.equal(h.calls.filter(call => call.url === '/background-location-token/').length, grants,

@@ -1,9 +1,7 @@
 {% extends 'layout.html' %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ doc_root }}estilos/chat.css?v=20260927-build" data-margot-page-style>
-<link rel="stylesheet" href="{{ doc_root }}estilos/chat-social.css?v=20260928-1" data-margot-page-style>
-<link rel="stylesheet" href="{{ doc_root }}estilos/chat-gallery.css?v=20261008-camera-dark-1" data-margot-page-style>
+{% include 'partials/chat-styles.html' %}
 {% endblock %}
 
 {% block content %}
@@ -201,13 +199,6 @@ window.webSocketUrl = window.location.protocol === 'https:'
     : 'ws://' + window.location.hostname + ':8080';
 </script>
 
-<script src="{{ doc_root }}js/chat-viewport.js?v=20260927-scroll-keyboard-2"></script>
-<script src="{{ doc_root }}js/chat-recorder.js?v=20260920-video"></script>
-<script src="{{ doc_root }}js/chat-camera.js?v=20260923-camera"></script>
-<script src="{{ doc_root }}js/chat-emoji-data.js?v=20260928-1"></script>
-<script src="{{ doc_root }}js/chat-social.js?v=20260928-1"></script>
-<script src="{{ doc_root }}js/chat-reactions.js?v=20261007-video-hold-1"></script>
-<script src="{{ doc_root }}js/chat-audio-player.js?v=20260920-video"></script>
-<script src="{{ doc_root }}js/chat.js?v=20261007-gallery-1"></script>
+{% include 'partials/chat-scripts.html' %}
 {% include 'partials/halloween-effects.html' %}
 {% endblock %}

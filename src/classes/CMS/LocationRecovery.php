@@ -54,12 +54,19 @@ final class LocationRecovery {
         $id = bin2hex(random_bytes(16));
         $this->db->beginTransaction();
         try {
+            // As condições usam o dono/grant anteriores: atribuir membro_id e
+            // token_hash só no fim. O orçamento do dispositivo mantém-se.
             $statement = $this->db->prepare("INSERT INTO location_recovery_devices
                 (device_key,registration_id,membro_id,token_hash,apns_token,environment,expires_at,attempts_json,recovery_version)
                 VALUES (:key,:id,:member,:hash,:apns,:environment,:expires,'[]',:version)
                 ON DUPLICATE KEY UPDATE
-                    registration_id=IF(token_hash=VALUES(token_hash),registration_id,VALUES(registration_id)),
-                    request_id=IF(token_hash=VALUES(token_hash),request_id,NULL),
+                    registration_id=IF(token_hash=VALUES(token_hash) AND membro_id=VALUES(membro_id),registration_id,VALUES(registration_id)),
+                    request_id=IF(token_hash=VALUES(token_hash) AND membro_id=VALUES(membro_id),request_id,NULL),
+                    request_until=IF(token_hash=VALUES(token_hash) AND membro_id=VALUES(membro_id),request_until,0),
+                    next_at=IF(token_hash=VALUES(token_hash) AND membro_id=VALUES(membro_id),next_at,0),
+                    failures=IF(token_hash=VALUES(token_hash) AND membro_id=VALUES(membro_id),failures,0),
+                    last_capture=IF(token_hash=VALUES(token_hash) AND membro_id=VALUES(membro_id),last_capture,NULL),
+                    last_error=IF(token_hash=VALUES(token_hash) AND membro_id=VALUES(membro_id),last_error,NULL),
                     membro_id=VALUES(membro_id), token_hash=VALUES(token_hash),
                     expires_at=VALUES(expires_at), enabled=1, recovery_version=VALUES(recovery_version)");
             $statement->execute(['key' => $key, 'id' => $id, 'member' => $member, 'hash' => $hash,
@@ -230,7 +237,16 @@ final class LocationRecovery {
         $statement->execute(['registration' => $registration, 'id' => $id,
             'member' => $member, 'hash' => Token::hash($token), 'now' => time()]);
         $key = $statement->fetchColumn();
-        return $key ? $this->eligible((string) $key) : null;
+        $device = $key ? $this->eligible((string) $key) : null;
+        // O registo pode mudar entre as duas leituras. A elegibilidade tem de
+        // pertencer ao mesmo pedido e dono, antes de acordar o GPS.
+        return $device !== null
+            && $device['registration_id'] === $registration
+            && $device['request_id'] === $id
+            && $device['membro_id'] === $member
+            && $device['token_hash'] === Token::hash($token)
+            && (int) $device['request_until'] >= time()
+                ? $device : null;
     }
 
     public function shouldCapture(string $member, string $token, array $payload): bool {

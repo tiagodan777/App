@@ -4,5 +4,6 @@
   "minimum_send_seconds": 5,
   "movement_metres": 20,
   "stationary_after_seconds": 120,
-  "android_request_seconds": 30
+  "android_request_seconds": 30,
+  "transport_alignment_version": 1
 }
