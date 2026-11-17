@@ -51,6 +51,11 @@
       display: none !important;
     }
 
+    /* Nesta transição, o chat e a lista precisam de partilhar a mesma ordem de camadas. */
+    body:has(> [data-margot-back-preview]) > [data-margot-pagina]:has(#chat-pagina) {
+      view-transition-name: none;
+    }
+
     @media (prefers-color-scheme: dark) {
       [data-invitation] [data-invite-status]:not(:empty) {
         background: #402730;

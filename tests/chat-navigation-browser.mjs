@@ -144,6 +144,23 @@ try {
     assert.equal(await page.locator('[data-margot-back-preview]').count(), 1);
     assert.equal(await page.locator('[data-margot-back-preview] nav').count(), 1);
     assert.equal(await page.locator('[data-margot-back-preview] [id]').count(), 0);
+    const visibleLayers = await page.evaluate(() => {
+      const preview = document.querySelector('[data-margot-back-preview]');
+      preview.inert = false;
+      preview.style.pointerEvents = 'auto';
+      try {
+        return [40, 250].map(x => {
+          const target = document.elementFromPoint(x, 300);
+          if (target?.closest('#chat-pagina')) return 'chat';
+          if (target?.closest('[data-margot-back-preview]')) return 'list';
+          return 'other';
+        });
+      } finally {
+        preview.inert = true;
+        preview.style.pointerEvents = 'none';
+      }
+    });
+    assert.deepEqual(visibleLayers, ['list', 'chat']);
     await page.setViewportSize({ width: 390, height: 650 });
     await page.evaluate(() => visualViewport.dispatchEvent(new Event('resize')));
     assert.ok(Math.abs(await left(page) - 110) < 2);
