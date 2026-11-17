@@ -10,6 +10,7 @@
   let layer = null;
   let motion = null;
   let entering = false;
+  let opening = null;
   let transitioning = false;
   let blockClickUntil = 0;
   let viewportWidth = innerWidth;
@@ -55,6 +56,72 @@
       display: none;
     }
 
+    [data-margot-chat-opening] {
+      position: fixed;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(100%, 820px);
+      height: 100dvh;
+      z-index: 1042;
+      background: var(--margot-fundo, #fff);
+      color: var(--text, #18181c);
+    }
+
+    [data-margot-chat-opening] .chat-cabecalho {
+      box-sizing: border-box;
+      min-height: 70px;
+      padding: calc(env(safe-area-inset-top, 0px) + 8px) 14px 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--line, #0000000c);
+    }
+
+    [data-margot-chat-opening] button {
+      display: grid;
+      place-items: center;
+      flex: 0 0 40px;
+      height: 40px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: inherit;
+    }
+
+    [data-margot-chat-opening] button svg {
+      width: 23px;
+      height: 23px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    [data-margot-chat-opening] img {
+      flex: 0 0 44px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    [data-margot-chat-opening] strong {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 15px;
+    }
+
+    [data-margot-chat-opening] [role="status"] {
+      margin: 24px 16px;
+      text-align: center;
+      color: var(--text-muted, #767680);
+      font-size: 14px;
+    }
+
     /* Nesta transição, o chat e a lista precisam de partilhar a mesma ordem de camadas. */
     body:has(> [data-margot-back-preview]) > [data-margot-pagina]:has(#chat-pagina) {
       view-transition-name: none;
@@ -69,6 +136,56 @@
   `;
 
   document.head.append(style);
+
+  function startOpening(link, cancel) {
+    if (opening || reduced() || document.hidden || !link.isConnected ||
+        !link.closest('#conversas-lista') || !Element.prototype.animate) return;
+
+    const panel = document.createElement('aside');
+    const english = window.MargotI18n?.language === 'en';
+    panel.dataset.margotChatOpening = '';
+    panel.innerHTML = `
+      <header class="chat-cabecalho">
+        <button type="button" data-margot-cancel-chat>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+        </button>
+        <img alt="" hidden>
+        <strong></strong>
+      </header>
+      <p role="status"></p>`;
+
+    const back = panel.querySelector('button');
+    back.setAttribute('aria-label', english ? 'Back to messages' : 'Voltar às mensagens');
+    back.addEventListener('click', cancel);
+    panel.querySelector('strong').textContent =
+      link.dataset.membroNome || link.querySelector('strong')?.textContent.trim() || '';
+
+    const photo = link.querySelector('img');
+    if (photo?.currentSrc || photo?.src) {
+      const avatar = panel.querySelector('img');
+      avatar.src = photo.currentSrc || photo.src;
+      avatar.hidden = false;
+    }
+
+    document.body.append(panel);
+    const animation = panel.animate([
+      { transform: 'translateX(calc(-50% + 100vw))' },
+      { transform: 'translateX(-50%)' }
+    ], { duration: 240, easing: 'cubic-bezier(.22,.72,.2,1)' });
+    const timer = setTimeout(() => {
+      panel.querySelector('[role="status"]').textContent =
+        english ? 'Loading messages…' : 'A carregar mensagens…';
+    }, 320);
+    opening = { panel, animation, timer };
+  }
+
+  function stopOpening() {
+    if (!opening) return;
+    clearTimeout(opening.timer);
+    opening.animation.cancel();
+    opening.panel.remove();
+    opening = null;
+  }
 
   function visualCopy(source, outsideViewport = new Set()) {
     const copy = source.cloneNode(true);
@@ -513,6 +630,8 @@
   }, true);
 
   window.MargotChatMotion = {
+    startOpening,
+    stopOpening,
     handles(page) {
       return Boolean(page.querySelector('#chat-pagina') ||
         (document.getElementById('chat-pagina') && page.querySelector('#conversas-lista')));
@@ -528,13 +647,26 @@
           capture();
           entering = true;
           showPreview();
-          await render();
-          gesture = record(incoming);
-          incoming.style.zIndex = '1041';
-          incoming.style.willChange = 'transform';
-          incoming.style.boxShadow = '-12px 0 32px rgba(0,0,0,.12)';
-          position(gesture, innerWidth);
-          await animate(gesture, 0);
+          if (opening) {
+            const pending = opening;
+            pending.panel.inert = true;
+            incoming.style.visibility = 'hidden';
+            try {
+              await render();
+              await pending.animation.finished.catch(() => {});
+            } finally {
+              incoming.style.removeProperty('visibility');
+              stopOpening();
+            }
+          } else {
+            await render();
+            gesture = record(incoming);
+            incoming.style.zIndex = '1041';
+            incoming.style.willChange = 'transform';
+            incoming.style.boxShadow = '-12px 0 32px rgba(0,0,0,.12)';
+            position(gesture, innerWidth);
+            await animate(gesture, 0);
+          }
         } else if (outgoing) {
           // Um swipe confirmado já levou o chat para fora do ecrã.
           if (!gesture?.committed) {
@@ -584,6 +716,7 @@
   });
 
   const forget = () => {
+    stopOpening();
     clear();
     snapshot = null;
     owner = '';
@@ -593,6 +726,7 @@
 
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
+      stopOpening();
       clear();
     }
 

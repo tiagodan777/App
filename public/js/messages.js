@@ -355,7 +355,7 @@ if ($lista.data('margotAssinatura') === assinatura) return; $lista.data('margotA
             return;
         }
         evento.preventDefault();
-        window.MargotNavigation.navigate(url.href, { historico: 'push', direcao: 1 });
+        window.MargotNavigation.navigate(url.href, { historico: 'push', direcao: 1, conversa: link });
     }
 
     function aoReceberContagem(evento) {

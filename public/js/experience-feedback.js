@@ -327,6 +327,7 @@
     revealTimer = setTimeout(() => {
       if (!document.body.hasAttribute('aria-busy') ||
           !window.MargotNavigation?.isLoading() ||
+          document.querySelector('[data-margot-chat-opening]') ||
           document.body.classList.contains('margot-interactive-back')) return;
 
       if (previous) previous.inert = true;

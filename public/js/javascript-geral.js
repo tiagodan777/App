@@ -597,7 +597,13 @@
         document.body.setAttribute('aria-busy', 'true'); try { window.MargotExperience?.navigationStart(url, carregarScript); } catch (_) {}
 
         try {
-            var resposta = await carregarPagina(url, controlador.signal);
+            var pedido = carregarPagina(url, controlador.signal);
+            if (opcoes.conversa) {
+                window.MargotChatMotion?.startOpening(opcoes.conversa, function () {
+                    if (faseNavegacao === 'fetch' || faseNavegacao === 'prepare') controlador?.abort();
+                });
+            }
+            var resposta = await pedido;
 
             if (controlador.signal.aborted)
                 throw new DOMException('Navegação substituída', 'AbortError');
@@ -685,6 +691,7 @@
                 window.location.assign(destino);
             }
         } finally {
+            window.MargotChatMotion?.stopOpening();
             if (estilos) estilos.cancelar();
 
             if (paginaNova) {

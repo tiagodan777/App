@@ -84,9 +84,11 @@ async function fresh(options = {}) {
   page.on('pageerror', e => errors.push(e.message));
   await page.addInitScript(() => {
     window.motionLog = [];
+    window.openingLog = [];
     const original = Element.prototype.animate;
     Element.prototype.animate = function (frames, options) {
       if (this.id === 'chat-pagina') motionLog.push({ frames, options });
+      if (this.hasAttribute('data-margot-chat-opening')) openingLog.push({ frames, options });
       return original.call(this, frames, options);
     };
   });
@@ -94,7 +96,8 @@ async function fresh(options = {}) {
   return page;
 }
 async function settled(page, path) {
-  await page.waitForFunction(path => location.pathname === path && !document.body.hasAttribute('aria-busy') && !document.querySelector('[data-margot-back-preview]'), path);
+  await page.waitForFunction(path => location.pathname === path && !document.body.hasAttribute('aria-busy') &&
+    !document.querySelector('[data-margot-back-preview], [data-margot-chat-opening]'), path);
 }
 async function open(page) {
   await page.locator('.conversa-item').first().tap();
@@ -130,9 +133,11 @@ try {
   });
   await check('entry slides from right, no duplicate chat or loading overlay', async () => {
     await open(page);
-    const log = await page.evaluate(() => motionLog);
-    assert.match(log[0].frames[0].transform, /390px/);
-    assert.match(log[0].frames[1].transform, /translate3d\(0px/);
+    const log = await page.evaluate(() => openingLog);
+    assert.equal(log.length, 1);
+    assert.match(log[0].frames[0].transform, /100vw/);
+    assert.equal(log[0].frames[1].transform, 'translateX(-50%)');
+    assert.equal(await page.evaluate(() => motionLog.length), 0, 'Chat does not slide a second time');
     assert.equal(await page.locator('#chat-pagina').count(), 1);
     assert.equal(await page.locator('#margot-page-loading').isVisible(), false);
     assert.equal(requests.filter(url => url === '/js/chat-viewport.js').length, 1);
@@ -246,7 +251,7 @@ try {
   await page.context().close();
   page = await fresh();
   await check('back during entry animation finishes on the list without duplicating history', async () => {
-    await page.locator('.conversa-item').first().tap();
+    await page.evaluate(() => { void MargotNavigation.navigate('/messages/1', { historico: 'push' }); });
     await page.waitForFunction(() => motionLog.length > 0);
     await page.locator('[data-margot-voltar]').evaluate(e => e.click());
     await settled(page, '/messages');
@@ -297,20 +302,42 @@ try {
   }
   await page.context().close();
   page = await fresh();
-  await check('a 650ms navigation keeps current page visible and never flashes skeleton', async () => {
+  await check('chat slides in while the 650ms response is still pending', async () => {
     delay = 650;
-    await page.locator('.conversa-item').first().tap();
-    await page.waitForTimeout(350);
+    const openingStartedOnClick = await page.locator('.conversa-item').first().evaluate(link => {
+      link.click();
+      return openingLog.length === 1 && location.pathname === '/messages';
+    });
+    assert.ok(openingStartedOnClick);
+    const opening = page.locator('[data-margot-chat-opening]');
+    assert.equal(await opening.locator('strong').textContent(), 'Pessoa 1');
+    await page.waitForFunction(() => {
+      const stage = document.querySelector('[data-margot-chat-opening]');
+      return stage && stage.getBoundingClientRect().left < 350;
+    });
+    assert.equal(await page.locator('#chat-pagina').count(), 0);
     assert.equal(await page.locator('#margot-page-loading').isVisible(), false);
-    assert.equal(await page.locator('[data-margot-pagina]').evaluate(e => e.inert), false);
     await settled(page, '/messages/1');
+    assert.equal(await page.evaluate(() => motionLog.length), 0);
     assert.equal(await page.locator('#margot-page-loading').isVisible(), false);
+  });
+  await page.context().close();
+  page = await fresh();
+  await check('back cancels a pending chat without opening it or changing history', async () => {
+    delay = 1000;
+    await page.locator('.conversa-item').first().tap();
+    await page.locator('[data-margot-cancel-chat]').tap();
+    await settled(page, '/messages');
+    assert.equal(await page.evaluate(() => history.state.margotPosition), 0);
+    assert.equal(await page.locator('#chat-pagina').count(), 0);
+    delay = 0;
+    await open(page);
   });
   await page.context().close();
   page = await fresh();
   await check('genuinely slow request shows skeleton and restores interactive page afterwards', async () => {
     delay = 1400;
-    await page.locator('.conversa-item').first().tap();
+    await page.evaluate(() => { void MargotNavigation.navigate('/messages/1', { historico: 'push' }); });
     await page.waitForTimeout(1000);
     assert.equal(await page.locator('#margot-page-loading').isVisible(), true);
     assert.equal(await page.locator('[data-margot-pagina]').evaluate(e => e.inert), true);
