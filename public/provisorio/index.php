@@ -116,7 +116,8 @@ $copy = $pt ? [
     'download' => 'Descarrega a Margot e descobre quem está por perto.',
     'apple' => 'Descarregar na App Store',
     'google' => 'Descarregar no Google Play',
-    'register' => 'Criar conta na web',
+    'web' => 'Usa a Margot no navegador',
+    'register' => 'Criar conta',
     'login' => 'Entrar',
     'about' => 'Sobre a Margot',
 ] : [
@@ -126,7 +127,8 @@ $copy = $pt ? [
     'download' => 'Get Margot and discover who’s nearby.',
     'apple' => 'Download on the App Store',
     'google' => 'Get it on Google Play',
-    'register' => 'Create an account on the web',
+    'web' => 'Use Margot in your browser',
+    'register' => 'Create an account',
     'login' => 'Log in',
     'about' => 'About Margot',
 ];
@@ -369,21 +371,62 @@ function qrEscape(string $text): string
             transform: scale(.98);
         }
 
-        .web-links {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 12px 22px;
-            margin-top: 24px;
-            font-size: 14px;
+        .web-access {
+            width: min(100%, 400px);
+            margin: 20px auto 24px;
+            padding: 20px;
+            border: 1px solid #e8dfe4;
+            border-radius: 20px;
+            background: #ffffffd9;
+            box-shadow: 0 8px 28px #49365108;
         }
 
-        .web-links a {
+        .web-access h2 {
+            margin: 0 0 16px;
+            font-size: 20px;
+            line-height: 1.35;
+        }
+
+        .web-actions {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .web-actions a {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 48px;
+            padding: 12px 8px;
+            border: 1px solid #c51c42;
+            border-radius: 12px;
+            color: #b8173a;
+            background: #fff;
+            font-size: 16px;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .web-actions .web-register {
+            color: #fff;
+            background: #c51c42;
+        }
+
+        .web-actions a:hover {
+            box-shadow: 0 4px 12px #c51c4226;
+        }
+
+        .about-link {
+            display: inline-block;
+            margin-top: 22px;
             color: #65606d;
+            font-size: 14px;
             text-underline-offset: 4px;
         }
 
-        .web-links a:focus-visible {
+        .web-actions a:focus-visible,
+        .about-link:focus-visible {
             outline: 3px solid #7251be;
             outline-offset: 5px;
         }
@@ -449,6 +492,14 @@ function qrEscape(string $text): string
             </span>
             <span class="person person-lilac">😊</span>
         </div>
+
+        <section class="web-access" aria-labelledby="web-access-title">
+            <h2 id="web-access-title"><?= qrEscape($copy['web']) ?></h2>
+            <nav class="web-actions" aria-labelledby="web-access-title">
+                <a class="web-register" href="/create-account/"><?= qrEscape($copy['register']) ?></a>
+                <a href="/login"><?= qrEscape($copy['login']) ?></a>
+            </nav>
+        </section>
 
         <p class="download">
             <?= qrEscape($copy['download']) ?>
@@ -557,11 +608,7 @@ function qrEscape(string $text): string
                 </svg>
             </a>
         </nav>
-        <nav class="web-links" aria-label="<?= $pt ? 'Acesso web e informações' : 'Web access and information' ?>">
-            <a href="/create-account/"><?= qrEscape($copy['register']) ?></a>
-            <a href="/login"><?= qrEscape($copy['login']) ?></a>
-            <a href="/sobre.html"><?= qrEscape($copy['about']) ?></a>
-        </nav>
+        <a class="about-link" href="/sobre.html"><?= qrEscape($copy['about']) ?></a>
     </main>
 </body>
 </html>
