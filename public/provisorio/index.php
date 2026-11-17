@@ -116,7 +116,7 @@ $copy = $pt ? [
     'download' => 'Descarrega a Margot e descobre quem está por perto.',
     'apple' => 'Descarregar na App Store',
     'google' => 'Descarregar no Google Play',
-    'web' => 'Usa a Margot no navegador',
+    'web' => 'Na web',
     'register' => 'Criar conta',
     'login' => 'Entrar',
     'about' => 'Sobre a Margot',
@@ -127,7 +127,7 @@ $copy = $pt ? [
     'download' => 'Get Margot and discover who’s nearby.',
     'apple' => 'Download on the App Store',
     'google' => 'Get it on Google Play',
-    'web' => 'Use Margot in your browser',
+    'web' => 'On the web',
     'register' => 'Create an account',
     'login' => 'Log in',
     'about' => 'About Margot',
@@ -371,50 +371,67 @@ function qrEscape(string $text): string
             transform: scale(.98);
         }
 
-        .web-access {
-            width: min(100%, 400px);
-            margin: 20px auto 24px;
-            padding: 20px;
-            border: 1px solid #e8dfe4;
-            border-radius: 20px;
-            background: #ffffffd9;
-            box-shadow: 0 8px 28px #49365108;
-        }
-
-        .web-access h2 {
-            margin: 0 0 16px;
-            font-size: 20px;
-            line-height: 1.35;
-        }
-
         .web-actions {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 10px;
+            position: absolute;
+            top: 24px;
+            right: max(28px, calc((100vw - 1120px) / 2));
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            font-size: 15px;
+        }
+
+        .web-actions span {
+            color: #65606d;
         }
 
         .web-actions a {
-            display: flex;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-height: 48px;
-            padding: 12px 8px;
-            border: 1px solid #c51c42;
-            border-radius: 12px;
-            color: #b8173a;
-            background: #fff;
-            font-size: 16px;
-            font-weight: 700;
+            min-height: 44px;
+            color: #25222b;
+            font-weight: 600;
             text-decoration: none;
         }
 
         .web-actions .web-register {
+            padding: 0 22px;
+            border-radius: 24px;
             color: #fff;
             background: #c51c42;
         }
 
         .web-actions a:hover {
-            box-shadow: 0 4px 12px #c51c4226;
+            text-decoration: underline;
+            text-underline-offset: 4px;
+        }
+
+        @media (min-width: 601px) {
+            body { padding-top: 96px; }
+        }
+
+        @media (max-width: 600px) {
+            .web-actions {
+                position: static;
+                justify-content: center;
+                flex-wrap: wrap;
+                gap: 0 16px;
+                margin-top: 18px;
+                font-size: 14px;
+            }
+
+            .web-actions .web-register {
+                padding: 0;
+                border-radius: 0;
+                background: none;
+                color: #25222b;
+            }
+
+            .web-actions a {
+                text-decoration: underline;
+                text-underline-offset: 4px;
+            }
         }
 
         .about-link {
@@ -492,14 +509,6 @@ function qrEscape(string $text): string
             </span>
             <span class="person person-lilac">😊</span>
         </div>
-
-        <section class="web-access" aria-labelledby="web-access-title">
-            <h2 id="web-access-title"><?= qrEscape($copy['web']) ?></h2>
-            <nav class="web-actions" aria-labelledby="web-access-title">
-                <a class="web-register" href="/create-account/"><?= qrEscape($copy['register']) ?></a>
-                <a href="/login"><?= qrEscape($copy['login']) ?></a>
-            </nav>
-        </section>
 
         <p class="download">
             <?= qrEscape($copy['download']) ?>
@@ -607,6 +616,11 @@ function qrEscape(string $text): string
                     </g>
                 </svg>
             </a>
+        </nav>
+        <nav class="web-actions" aria-label="<?= $pt ? 'Acesso pela web' : 'Web access' ?>">
+            <span><?= qrEscape($copy['web']) ?></span>
+            <a href="/login"><?= qrEscape($copy['login']) ?></a>
+            <a class="web-register" href="/create-account/"><?= qrEscape($copy['register']) ?></a>
         </nav>
         <a class="about-link" href="/sobre.html"><?= qrEscape($copy['about']) ?></a>
     </main>
