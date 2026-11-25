@@ -89,6 +89,10 @@ public final class LocationPolicy {
         stationary=stable && stableSamples>=3 && elapsedNow-anchorAt>=stationaryAfterMs;
         return true;
     }
+    public boolean sustainedRest() {
+        return stationary && anchor != null && latest != null
+            && latest.capturedAt - anchor.capturedAt >= Math.max(180_000, stationaryAfterMs);
+    }
     public boolean shouldSend(Fix fix, double wallNow, double elapsedNow, boolean force) {
         if (!usable(fix,wallNow) || elapsedNow<retryAt || elapsedNow-lastAttempt<5000) return false;
         if (lastSent==null) return true;

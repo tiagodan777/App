@@ -33,6 +33,7 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
 
   private var policy = LocationPolicy()
   private var standardRunning = false
+  private lazy var stationaryMonitor = StationaryLocationMonitor(manager: manager)
   private let retryDelays: [TimeInterval] = [5, 15, 30, 60, 120]
 
   private var manager: CLLocationManager!
@@ -151,8 +152,6 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
     manager.delegate = self
     manager.desiredAccuracy = kCLLocationAccuracyNearestTenMeters
 
-    // Keep accurate standard updates: a 150 m encounter cannot rely on visits/500 m relaunches.
-    // Savings are uploads, duplicate work, retries and invisible sessions, not a blind GPS shutdown.
     manager.distanceFilter = kCLDistanceFilterNone
     manager.activityType = .other
     manager.pausesLocationUpdatesAutomatically = false
@@ -435,6 +434,8 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
   }
 
   @objc private func applicationDidBecomeActive() {
+    stationaryMonitor.reset()
+    policy.resetRestEvidence()
     finishPermissionIfActive()
 
     /*
@@ -523,7 +524,12 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
     guard presenceVisible, !serverSuspended, readToken() != nil else { return }
     MargotLocationPushProbe.shared.refreshIfNeeded()
     let fresh = locations.sorted { $0.timestamp < $1.timestamp }.filter {
-      policy.observe(LocationPolicy.fix($0),LocationPolicy.wallNow,LocationPolicy.elapsedNow)
+      let fix = LocationPolicy.fix($0)
+      let now = LocationPolicy.wallNow
+      let accepted = policy.observe(fix, now, LocationPolicy.elapsedNow)
+      stationaryMonitor.observe(fix, accepted: accepted, policy: policy,
+        background: UIApplication.shared.applicationState == .background, now: now)
+      return accepted
     }
     guard let location = fresh.last else { return }
     latestLocation = location
@@ -648,6 +654,8 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
   }
 
   private func stopLocationSensors() {
+    stationaryMonitor.reset()
+    policy.resetRestEvidence()
     manager.stopUpdatingLocation()
     manager.stopMonitoringSignificantLocationChanges()
     manager.stopMonitoringVisits()
@@ -752,7 +760,8 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
     guard presenceVisible, !serverSuspended, readToken() != nil, isUsableLocation(location,maxAge:90) else { return }
     latestLocation = newest(location,latestLocation)
     guard let chosen = latestLocation,
-      policy.shouldSend(LocationPolicy.fix(chosen),LocationPolicy.wallNow,LocationPolicy.elapsedNow,force:force)
+      policy.shouldSend(LocationPolicy.fix(chosen), LocationPolicy.wallNow, LocationPolicy.elapsedNow,
+                        force: force, resting: stationaryMonitor.isResting)
     else { return }
     let location = chosen
 
@@ -767,7 +776,8 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
 
   private func performLocationSend(_ location: CLLocation) {
     guard let token = readToken(), presenceVisible, !serverSuspended, !sending,
-      policy.shouldSend(LocationPolicy.fix(location),LocationPolicy.wallNow,LocationPolicy.elapsedNow,force:true)
+      policy.shouldSend(LocationPolicy.fix(location), LocationPolicy.wallNow, LocationPolicy.elapsedNow,
+                        force: true, resting: stationaryMonitor.isResting)
     else { return }
     policy.attempted(LocationPolicy.elapsedNow)
 
@@ -1237,6 +1247,7 @@ public final class BackgroundLocationPlugin: CAPPlugin, CAPBridgedPlugin, CLLoca
       "policy_version": LocationPolicy.version,
       "diagnostics": policy.diagnostics,
       "native_location_running": standardRunning,
+      "stationary_acquisition": stationaryMonitor.isResting,
       "active": monitoring,
       "visible": presenceVisible,
       "collection_suspended": serverSuspended,

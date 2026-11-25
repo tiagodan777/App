@@ -5,7 +5,10 @@ import Security
 // These adapters are substituted only in the runner's temporary source copies.
 // Production coordinator methods, policy decisions, token parsing, and upload
 // response handling execute unchanged. Network tasks record data in memory.
-enum TestClock { static var elapsedNow: Double = 100_000 }
+enum TestClock {
+  static var elapsedNow: Double = 100_000
+  static var wall: Double?
+}
 final class TestUserDefaults {
   static let standard = TestUserDefaults()
   var values = [String: Any]()
@@ -51,6 +54,8 @@ struct TestBackgroundTaskIdentifier: Hashable {
 }
 final class TestApplication {
   static let shared = TestApplication()
+  enum State { case active, background }
+  var applicationState = State.background
   static let protectedDataDidBecomeAvailableNotification = Notification.Name("TestProtectedDataAvailable")
   static let didBecomeActiveNotification = Notification.Name("TestDidBecomeActive")
   private var sequence = 0
@@ -315,7 +320,55 @@ struct LocationRelaunchTests {
     }
   }
 
+  static func testStationaryAcquisition() {
+    for exit in ["walk", "train", "foreground", "handoff", "denied"] {
+      let (coordinator, manager) = started()
+      let base = Date().timeIntervalSince1970 * 1000
+      TestApplication.shared.applicationState = .background
+      func receive(_ seconds: Int, _ metres: Double = 0, _ speed: Double = 0, _ accuracy: Double = 10) {
+        TestClock.elapsedNow = Double(seconds) * 1000
+        TestClock.wall = base + TestClock.elapsedNow
+        let location = CLLocation(coordinate: .init(latitude: 38 + metres/111195, longitude: -27),
+          altitude: 0, horizontalAccuracy: accuracy, verticalAccuracy: -1, course: -1, speed: speed,
+          timestamp: Date(timeIntervalSince1970: TestClock.wall! / 1000))
+        coordinator.locationManager(manager, didUpdateLocations: [location])
+        TestDispatchQueue.main.drain()
+      }
+      for t in stride(from: 0, through: 150, by: 30) { receive(t) }
+      expect(manager.desiredAccuracy == kCLLocationAccuracyNearestTenMeters, "Early rest stays precise")
+      receive(181)
+      expect(manager.desiredAccuracy == kCLLocationAccuracyHundredMeters && manager.distanceFilter == 30,
+        "Stable background readings lower actual sensor effort")
+      expect(manager.updating && manager.significant && manager.visits, "Movement wake services remain armed")
+      TestClock.wall = base + 361_000
+      TestDispatchQueue.main.fireTimers()
+      expect(manager.desiredAccuracy == kCLLocationAccuracyNearestTenMeters, "A stale heartbeat briefly checks precision")
+      if exit == "walk" {
+        // No fix during the precise check: the timeout must still release high accuracy.
+        TestDispatchQueue.main.fireTimers()
+      } else { receive(362) }
+      expect(manager.desiredAccuracy == kCLLocationAccuracyHundredMeters, "Precision check is bounded")
+      switch exit {
+      case "walk": receive(370, 65, -1, 25)
+      case "train": receive(370, 10, 20, 35)
+      case "foreground":
+        TestApplication.shared.applicationState = .active
+        receive(370)
+      case "denied": deny(coordinator, manager)
+      default: coordinator.stop(preserveWakeMonitoring: true)
+      }
+      TestDispatchQueue.main.fireTimers()
+      expect(manager.desiredAccuracy == kCLLocationAccuracyNearestTenMeters
+        && manager.distanceFilter == kCLDistanceFilterNone, "Leave rest on " + exit)
+      if exit == "denied" || exit == "handoff" { expect(!manager.updating, "No restart after " + exit) }
+      coordinator.stop()
+      TestClock.wall = nil
+      TestApplication.shared.applicationState = .background
+    }
+  }
+
   static func main() {
+    testStationaryAcquisition()
     testDenialResumesAndRejectsOldCompletion()
     testPendingRetryCannotEscapePause()
     testResumeGates()

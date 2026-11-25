@@ -46,7 +46,10 @@ clock = "static var elapsedNow: Double { ProcessInfo.processInfo.systemUptime*10
 if policy.count(clock) != 1:
     raise SystemExit("Policy clock changed; review the explicit test adapter.")
 policy = policy.replace(clock, "static var elapsedNow: Double { TestClock.elapsedNow }")
-policy = re.sub(r"\bUserDefaults\b", "TestUserDefaults", policy)
+policy = policy.replace("static var wallNow: Double { Date().timeIntervalSince1970*1000 }",
+                        "static var wallNow: Double { TestClock.wall ?? Date().timeIntervalSince1970*1000 }")
+for dependency in ("UserDefaults", "CLLocationManager", "DispatchQueue"):
+    policy = re.sub(r"\b" + dependency + r"\b", adapters[dependency], policy)
 
 with tempfile.TemporaryDirectory(prefix="margot-relaunch-tests-") as temp:
     directory = Path(temp)

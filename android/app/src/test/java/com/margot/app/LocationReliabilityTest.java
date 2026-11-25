@@ -62,12 +62,35 @@ public class LocationReliabilityTest {
         LocationPolicy.Fix still = fix(0, 20, 0, 0);
         a.update(false, true, still, 120_000); assertFalse(a.quiet);
         a.update(true, true, still, 120_000); assertTrue(a.quiet);
-        assertFalse(a.beginBurst(239_999)); assertTrue(a.beginBurst(240_000));
-        assertFalse(a.beginBurst(240_001));
-        a.observe(fix(100, 20, 250_000, 1), 250_000); assertFalse(a.quiet);
-        a.update(true, true, still, 260_000); assertFalse(a.quiet);
-        a.update(true, true, still, 370_000); assertTrue(a.quiet);
-        a.motion(375_000); assertFalse(a.quiet);
+        assertFalse(a.beginBurst(299_999, 180_000)); assertTrue(a.beginBurst(300_000, 180_000));
+        assertFalse(a.beginBurst(300_001, 180_000));
+        a.observe(fix(100, 20, 310_000, 1), 310_000); assertFalse(a.quiet);
+        a.update(true, true, still, 320_000); assertFalse(a.quiet);
+        a.update(true, true, still, 435_000); assertTrue(a.quiet);
+        a.motion(440_000); assertFalse(a.quiet);
+    }
+
+    @Test public void threeMinutesOfEvidenceBeforeReducingSensorEffort() {
+        LocationPolicy p = new LocationPolicy();
+        for (int t=0; t<=180_000; t+=30_000) {
+            assertTrue(p.observe(fix(0, 10, t, 0), WALL+t, t));
+            assertEquals(t == 180_000, p.sustainedRest());
+        }
+        assertTrue(p.observe(fix(100, 10, 210_000, 12), WALL+210_000, 210_000));
+        assertFalse(p.sustainedRest());
+    }
+
+    @Test public void recentBalancedSampleAvoidsPrecisionBurstAndPrematureRecovery() {
+        LocationAcquisitionPolicy a = new LocationAcquisitionPolicy(0);
+        LocationPolicy.Fix still = fix(0, 20, 180_000, 0);
+        a.observe(still, 180_000);
+        a.update(true, true, still, 180_000);
+        assertFalse(a.allowsRecovery(360_000, 180_000));
+        a.observe(fix(0, 35, 360_000, -1), 360_000);
+        assertFalse(a.beginBurst(360_000, 180_000));
+        assertFalse(a.beginBurst(540_000, 180_000));
+        assertTrue(a.beginBurst(570_000, 180_000));
+        assertTrue(a.allowsRecovery(600_000, 180_000));
     }
 
     @Test public void unknownPositionNeverBecomesStationaryBecauseTimePassed() {

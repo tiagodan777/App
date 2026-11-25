@@ -2,14 +2,17 @@ package com.margot.app;
 
 /** Chooses sensor effort independently of upload frequency. All times are monotonic ms. */
 public final class LocationAcquisitionPolicy {
-    public static final long BURST_MS = 20_000, BURST_INTERVAL_MS = 120_000;
+    public static final long BURST_MS = 20_000;
     private double movingUntil, lastBurstAt = -Double.MAX_VALUE;
+    private double lastUsableAt, lastPreciseAt = -Double.MAX_VALUE;
     private LocationPolicy.Fix quietAnchor;
     public boolean quiet;
 
     public LocationAcquisitionPolicy(double now) { movingUntil = now; }
 
     public void observe(LocationPolicy.Fix fix, double now) {
+        lastUsableAt = now;
+        if (fix.accuracy <= 50) lastPreciseAt = now;
         if (quiet && (fix.speed >= 0.8 || (quietAnchor != null
             && LocationPolicy.distance(quietAnchor, fix)
                 >= Math.max(20, quietAnchor.accuracy + fix.accuracy)))) motion(now);
@@ -35,8 +38,14 @@ public final class LocationAcquisitionPolicy {
         return previous != quiet;
     }
 
-    public boolean beginBurst(double now) {
-        if (!quiet || now - lastBurstAt < BURST_INTERVAL_MS) return false;
+    public boolean allowsRecovery(double now, double quietInterval) {
+        // Give the balanced request and its bounded precision check time to deliver.
+        return !quiet || now - lastUsableAt > quietInterval + BURST_MS + 30_000;
+    }
+
+    public boolean beginBurst(double now, double quietInterval) {
+        // Balanced readings can arrive just after the requested interval.
+        if (!quiet || now - lastBurstAt < quietInterval || now - lastPreciseAt < quietInterval + 15_000) return false;
         lastBurstAt = now;
         return true;
     }

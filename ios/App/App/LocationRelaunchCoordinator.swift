@@ -22,6 +22,7 @@ final class LocationRelaunchCoordinator: NSObject, CLLocationManagerDelegate {
   private let suspendedKey = "margot.background-location.server-suspended"
 
   private let policy = LocationPolicy()
+  private lazy var stationaryMonitor = StationaryLocationMonitor(manager: manager)
   private let retryDelays: [TimeInterval] = [2, 5, 10]
   private let manager = CLLocationManager()
 
@@ -161,6 +162,7 @@ final class LocationRelaunchCoordinator: NSObject, CLLocationManagerDelegate {
     uploadTask?.cancel()
     uploadTask = nil
     sending = false
+    stationaryMonitor.reset()
     manager.stopUpdatingLocation()
 
     if !preserveWakeMonitoring {
@@ -186,6 +188,8 @@ final class LocationRelaunchCoordinator: NSObject, CLLocationManagerDelegate {
   private func pause() {
     guard !stopped else { return }
     paused = true
+    stationaryMonitor.reset()
+    policy.resetRestEvidence()
     sendGeneration &+= 1
     retryWorkItem?.cancel()
     retryWorkItem = nil
@@ -218,11 +222,13 @@ final class LocationRelaunchCoordinator: NSObject, CLLocationManagerDelegate {
     let validLocations = locations.sorted {
       $0.timestamp < $1.timestamp
     }.filter {
-      isUsableLocation($0, maxAge: 90) && policy.observe(
-        LocationPolicy.fix($0),
-        LocationPolicy.wallNow,
-        LocationPolicy.elapsedNow
-      )
+      guard $0.timestamp >= acceptLocationsAfter else { return false }
+      let fix = LocationPolicy.fix($0)
+      let now = LocationPolicy.wallNow
+      let accepted = policy.observe(fix, now, LocationPolicy.elapsedNow)
+      stationaryMonitor.observe(fix, accepted: accepted, policy: policy,
+        background: UIApplication.shared.applicationState == .background, now: now)
+      return accepted
     }
 
     guard let location = validLocations.last else { return }
@@ -279,7 +285,7 @@ final class LocationRelaunchCoordinator: NSObject, CLLocationManagerDelegate {
       LocationPolicy.fix(location),
       LocationPolicy.wallNow,
       LocationPolicy.elapsedNow,
-      force: force
+      force: force, resting: stationaryMonitor.isResting
     ) else {
       return
     }
@@ -303,7 +309,7 @@ final class LocationRelaunchCoordinator: NSObject, CLLocationManagerDelegate {
       LocationPolicy.fix(location),
       LocationPolicy.wallNow,
       LocationPolicy.elapsedNow,
-      force: true
+      force: true, resting: stationaryMonitor.isResting
     ) else {
       return
     }

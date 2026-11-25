@@ -74,10 +74,26 @@ final class LocationPolicy {
     stationary=stable && stableSamples>=3 && elapsedNow-anchorAt>=stationaryAfterMs
     return true
   }
-  func shouldSend(_ fix: Fix, _ wallNow: Double, _ elapsedNow: Double, force: Bool = false) -> Bool {
+  var sustainedRest: Bool {
+    guard stationary, let first = anchor, let last = latest else { return false }
+    return last.capturedAt - first.capturedAt >= max(180_000, stationaryAfterMs)
+  }
+
+  func resetRestEvidence() {
+    anchor = nil
+    stableSamples = 0
+    stationary = false
+  }
+
+  func shouldSend(_ fix: Fix, _ wallNow: Double, _ elapsedNow: Double, force: Bool = false,
+                  resting: Bool = false) -> Bool {
     guard Self.usable(fix,wallNow), fix.capturedAt>discardedCapture, elapsedNow>=retryAt, elapsedNow-lastAttempt>=5000 else { return false }
     guard let last = lastSent else { return true }
     guard fix.capturedAt>last.capturedAt else { return false }
+    if resting {
+      // Use capture time: a slow ACK must not cost a whole stationary interval.
+      return fix.accuracy <= 50 && fix.capturedAt - last.capturedAt >= stationarySendMs - 1000
+    }
     // Limit radio uploads in transport, including forced/resume callbacks. Measure
     // from the attempt, not its ACK: a slow ACK must not turn 10 s callbacks into 20 s.
     if inTransport(fix,wallNow) { return elapsedNow-lastAttempt >= Self.transportSendMs }
@@ -114,6 +130,85 @@ final class LocationPolicy {
 
 #if canImport(CoreLocation)
 import CoreLocation
+/// Both native location owners use the same acquisition settings. Core Location schedules
+/// delivery; the timer is a best-effort freshness check while the process can run.
+final class StationaryLocationMonitor {
+  private let manager: CLLocationManager
+  private var anchor: LocationPolicy.Fix?
+  private var timer: DispatchWorkItem?
+  private var checkingSince: Double?
+  private var latestGoodCapture: Double?
+  var isResting: Bool { anchor != nil }
+
+  init(manager: CLLocationManager) { self.manager = manager }
+  deinit { timer?.cancel() }
+
+  func reset() {
+    timer?.cancel()
+    timer = nil
+    anchor = nil
+    checkingSince = nil
+    latestGoodCapture = nil
+    manager.desiredAccuracy = kCLLocationAccuracyNearestTenMeters
+    manager.distanceFilter = kCLDistanceFilterNone
+  }
+
+  func observe(_ fix: LocationPolicy.Fix, accepted: Bool, policy: LocationPolicy,
+               background: Bool, now: Double) {
+    guard background else {
+      if isResting { reset(); policy.resetRestEvidence() }
+      return
+    }
+    guard now - fix.capturedAt <= 15_000, now - fix.capturedAt >= -5000,
+          fix.accuracy.isFinite, fix.accuracy > 0,
+          abs(fix.latitude) <= 90, abs(fix.longitude) <= 180 else { return }
+    if let anchor {
+      guard fix.capturedAt > anchor.capturedAt else { return }
+      // Even a coarse fix can wake acquisition. Only accepted samples go to the server.
+      if (fix.accuracy <= 100 && fix.speed >= 0.8)
+          || LocationPolicy.distance(anchor, fix) > max(25, anchor.accuracy + fix.accuracy) {
+        reset()
+        policy.resetRestEvidence()
+        return
+      }
+      guard accepted, fix.accuracy <= 50 else { return }
+      latestGoodCapture = fix.capturedAt
+      if let checkingSince, fix.capturedAt >= checkingSince {
+        reduceAccuracy(interval: policy.stationarySendMs / 1000)
+      }
+    } else if accepted && policy.sustainedRest {
+      anchor = fix
+      latestGoodCapture = fix.capturedAt
+      reduceAccuracy(interval: policy.stationarySendMs / 1000)
+    }
+  }
+
+  private func reduceAccuracy(interval: TimeInterval) {
+    checkingSince = nil
+    manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
+    manager.distanceFilter = 30
+    schedule(after: interval) { [weak self] in
+      guard let self, self.isResting else { return }
+      let now = LocationPolicy.wallNow
+      if let capture = self.latestGoodCapture, now - capture <= 30_000 {
+        self.reduceAccuracy(interval: interval)
+        return
+      }
+      self.checkingSince = now
+      self.manager.desiredAccuracy = kCLLocationAccuracyNearestTenMeters
+      self.manager.distanceFilter = kCLDistanceFilterNone
+      self.schedule(after: 15) { [weak self] in self?.reduceAccuracy(interval: interval) }
+    }
+  }
+
+  private func schedule(after delay: TimeInterval, _ action: @escaping () -> Void) {
+    timer?.cancel()
+    let work = DispatchWorkItem(block: action)
+    timer = work
+    DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
+  }
+}
+
 extension LocationPolicy {
   static let preferencesKey = "margot.location.policy.v1"
   static func fix(_ l: CLLocation) -> Fix {

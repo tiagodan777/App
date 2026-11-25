@@ -137,10 +137,15 @@ public final class BackgroundLocationService extends Service implements Location
             if (destroyed || !running) return;
             refreshAcquisition(false);
             if (destroyed || !running) return;
-            if (recovery.shouldRecover(SystemClock.elapsedRealtime(), canRun(BackgroundLocationService.this)
-                && !isDeviceIdle())) { transportPhase.recovered(); refreshAcquisition(true); }
+            long now = SystemClock.elapsedRealtime();
+            boolean awake = !isDeviceIdle();
+            if (recovery.shouldRecover(now, awake && canRun(BackgroundLocationService.this)
+                    && acquisition.allowsRecovery(now, policy.stationarySendMs))) {
+                transportPhase.recovered();
+                refreshAcquisition(true);
+            }
             if (destroyed || !running) return;
-            if (!isDeviceIdle() && acquisition.beginBurst(SystemClock.elapsedRealtime())) requestPrecisionBurst();
+            if (awake && acquisition.beginBurst(now, policy.stationarySendMs)) requestPrecisionBurst();
             mainHandler.postDelayed(this, 30_000);
         }
     };
@@ -655,6 +660,7 @@ public final class BackgroundLocationService extends Service implements Location
     }
 
     private double desiredRequestInterval() {
+        if (acquisition.quiet) return policy.stationarySendMs;
         return transportPhase.active ? Math.max(policy.androidRequestMs,transportPhase.requestMs)
             : policy.requestInterval(System.currentTimeMillis());
     }
@@ -700,7 +706,7 @@ public final class BackgroundLocationService extends Service implements Location
     private void registerFallback() {
         if (locationManager == null || destroyed) return;
         transportPhase.reset();
-        registeredRequestMs = policy.requestInterval(System.currentTimeMillis());
+        registeredRequestMs = desiredRequestInterval();
         // Without Google Play Services preserve GPS + network coverage, including indoors.
         // The normal fused path uses one request and lets Android combine the sources.
         boolean registered = registerProvider(LocationManager.NETWORK_PROVIDER);
@@ -773,12 +779,13 @@ public final class BackgroundLocationService extends Service implements Location
         if (!isLocationEnabled(this)) { removeLocationUpdates(); disarmMotion(); return; }
         if (!ownsCurrentSession()) return;
         boolean background = isAppInBackground(this);
-        if (background && (policy.stationary || acquisition.quiet) && !motionArmed
+        boolean sustainedRest = policy.sustainedRest() && LocationPolicy.usable(policy.latest, System.currentTimeMillis());
+        if (background && (sustainedRest || acquisition.quiet) && !motionArmed
             && sensorManager != null && motionSensor != null) {
             motionArmed = sensorManager.requestTriggerSensor(motionListener, motionSensor);
         }
         // Without a working motion wake-up, keep precision instead of risking missed encounters.
-        boolean changed = acquisition.update(background && motionArmed, policy.stationary,
+        boolean changed = acquisition.update(background && motionArmed, sustainedRest,
             policy.latest, SystemClock.elapsedRealtime());
         if (acquisition.quiet || !policy.transportAlignment
             || policy.androidRequestMs!=TransportPhasePolicy.BASE_INTERVAL_MS) transportPhase.reset();
