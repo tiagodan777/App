@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 use App\CMS\EmailVerification;
 use App\CMS\Member;
+use App\CMS\PartnershipCampaign;
 use App\CMS\Invitation;
 use App\Email\Email;
 use App\Validate\Validate;
@@ -19,6 +20,8 @@ $base = rtrim((string) DOC_ROOT, '/') . '/';
 
 $invitationCode = '';
 $invitationSource = 'codigo';
+$campaignSlug = $editing ? null : PartnershipCampaign::slug($_GET['espaco'] ?? null);
+$campaignSource = PartnershipCampaign::source($_GET['src'] ?? 'direct', $campaignSlug);
 
 if (!$editing) {
     $fromLink = $_GET['convite'] ?? '';
@@ -117,7 +120,19 @@ if ($method !== 'POST') {
         }
     }
 
+    $registrationQuery = [];
+    if ($invitationCode !== '') {
+        $registrationQuery['convite'] = $invitationCode;
+    }
+    if ($campaignSlug !== null) {
+        $registrationQuery['espaco'] = $campaignSlug;
+        $registrationQuery['src'] = $campaignSource;
+    }
+    $registrationUrl = $base . 'create-account'
+        . ($registrationQuery ? '?' . http_build_query($registrationQuery) : '');
+
     echo $twig->render('create-account.html', [
+        'registration_url' => $registrationUrl,
         'modo_edicao' => $editing,
         'membro_id_edicao' => $editing ? $memberId : '',
         'dados_iniciais' => $data,
@@ -285,6 +300,15 @@ if ($editing) {
         'success' => true,
         'redirect' => $base . 'profile/' . rawurlencode($savedId)
     ]);
+}
+
+if ($campaignSlug !== null) {
+    try {
+        (new PartnershipCampaign($db))->recordRegistration($savedId, $campaignSlug, $campaignSource);
+    } catch (Throwable $error) {
+        // Falhas na medição não impedem a criação de contas nem a verificação de email.
+        error_log('[margot-campaign] Registo: ' . get_class($error));
+    }
 }
 
 if (session_status() === PHP_SESSION_ACTIVE) session_regenerate_id(true);

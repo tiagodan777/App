@@ -187,7 +187,7 @@
 
 {% block content %}
 <form
-    action="{{ doc_root }}create-account{{ convite_ativo|default('') ? '?convite=' ~ convite_ativo : '' }}"
+    action="{{ registration_url|default(doc_root ~ 'create-account')|e('html_attr') }}"
     method="post"
     enctype="multipart/form-data"
     id="create-account-form"

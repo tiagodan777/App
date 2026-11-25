@@ -1,6 +1,13 @@
 <?php
-require_once dirname(__DIR__) . '/src/bootstrap.php';
 $path = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?: '/');
+
+if (preg_match('~^/espacos/([a-z0-9-]{1,64})/?$~D', $path, $campaignPath)) {
+    $campaignSlug = $campaignPath[1];
+    require __DIR__ . '/provisorio/index.php';
+    return;
+}
+
+require_once dirname(__DIR__) . '/src/bootstrap.php';
 $path = mb_strtolower($path);
 $path = substr($path, strlen(DOC_ROOT));
 $path = trim($path, '/');

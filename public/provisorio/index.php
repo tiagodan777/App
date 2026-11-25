@@ -1,6 +1,10 @@
 <?php
 declare(strict_types=1);
 
+use App\CMS\PartnershipCampaign;
+
+require_once dirname(__DIR__, 2) . '/src/classes/CMS/PartnershipCampaign.php';
+
 // Partilhada pela entrada pública e pelos links de campanha.
 // O acesso direto continua independente de sessões e do bootstrap da app.
 header('Cache-Control: no-store');
@@ -17,92 +21,51 @@ if (!in_array($method, ['GET', 'HEAD'], true)) {
 
 header('Content-Type: text/html; charset=utf-8');
 
+$publicEntry = isset($nativeEntryUrl);
+$legacy = !$publicEntry && !isset($campaignSlug);
+$campaignSlug ??= $legacy ? 'provisorio' : (array_key_exists('src', $_GET) ? 'site-margot' : null);
+$campaign = $legacy ? ['slug' => 'provisorio', 'nome' => '', 'localidade' => ''] : null;
+$source = PartnershipCampaign::source($_GET['src'] ?? 'direct', $campaignSlug);
+
+if ($campaignSlug !== null) {
+    try {
+        $connection = $landingConnection ?? PartnershipCampaign::openLandingConnection();
+        $tracking = new PartnershipCampaign($connection);
+
+        if (!$legacy) {
+            $campaign = $tracking->activeSpace($campaignSlug);
+            if ($campaign === null && !$publicEntry) {
+                http_response_code(404);
+                if ($method === 'GET') {
+                    echo 'Espaço não encontrado.';
+                }
+                return;
+            }
+        }
+
+        if ($method === 'GET' && $campaign !== null) {
+            $tracking->recordVisit($campaignSlug, $source, $legacy);
+        }
+    } catch (Throwable $error) {
+        // A página de downloads continua acessível durante uma falha de medição.
+        error_log('[margot-campaign] Visita: ' . get_class($error));
+    }
+}
+
 if ($method === 'HEAD') {
     exit;
 }
 
-$sources = [
-    'screen',
-    'entrance',
-    'bar',
-    'table',
-    'wc',
-    'outside',
-    'tiago',
-    'provisorio',
-    'margot',
-    'tomas-dias',
-    'rodrigo-reis',
-    'tomas-silva',
-    'andre-vieira',
-    'andre-matos',
-    'sonia-daniel',
-    'medicina',
-];
-
-$source = $_GET['src'] ?? 'direct';
-$source = is_string($source)
-    ? strtolower(trim($source))
-    : 'other';
-
-if ($source === '') {
-    $source = 'direct';
+$registerUrl = '/create-account/';
+if ($campaign !== null) {
+    $registerUrl .= '?' . http_build_query([
+        'espaco' => $campaign['slug'],
+        'src' => $source,
+    ]);
 }
-
-if (!in_array($source, [...$sources, 'direct'], true)) {
-    $source = 'other';
-}
-
-try {
-    // Apenas um contador agregado.
-    // Não guarda IP, cookies ou dados de contas.
-    (static function (string $source, ?PDO $connection): void {
-        if ($connection === null) {
-            $root = dirname(__DIR__, 2);
-
-            if (!defined('APP_ROOT')) {
-                define('APP_ROOT', $root);
-            }
-
-            $config = $root . '/config/config.local.php';
-
-            if (!is_file($config)) {
-                $config = $root . '/config/config.php';
-            }
-
-            require $config;
-
-            $connection = new PDO($dsn, $username, $password, [
-                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_EMULATE_PREPARES => false,
-                PDO::ATTR_TIMEOUT => 2,
-            ]);
-        }
-
-        $statement = $connection->prepare(
-            'INSERT INTO qr_provisorio_diario (
-                dia_utc,
-                origem,
-                total
-            )
-            VALUES (
-                UTC_DATE(),
-                :origem,
-                1
-            )
-            ON DUPLICATE KEY UPDATE total = total + 1'
-        );
-
-        $statement->execute([
-            'origem' => $source,
-        ]);
-    })($source, $landingConnection ?? null);
-} catch (Throwable $error) {
-    // Continua a mostrar a página se o contador estiver indisponível.
-    error_log(
-        '[margot-qr] Falha no contador: ' . get_class($error)
-    );
-}
+$spaceLabel = !$publicEntry && !$legacy && $campaign !== null
+    ? implode(' · ', array_filter([$campaign['nome'], $campaign['localidade']]))
+    : '';
 
 $pt = preg_match(
     '/^pt(?:-|,|;|$)/i',
@@ -166,7 +129,7 @@ function qrEscape(string $text): string
     <meta name="theme-color" content="#faf8f5">
     <meta name="description" content="<?= qrEscape($copy['intro']) ?>">
 
-    <title>Margot — <?= qrEscape($copy['line1'] . ' ' . $copy['line2']) ?></title>
+    <title>Margot — <?= qrEscape($spaceLabel !== '' ? $spaceLabel : $copy['line1'] . ' ' . $copy['line2']) ?></title>
 
     <link rel="icon" href="/provisorio/logo.png">
 
@@ -329,6 +292,13 @@ function qrEscape(string $text): string
             white-space: nowrap;
             font-size: 17px;
             font-weight: 700;
+        }
+
+        .campaign-space {
+            margin: 0 0 12px;
+            font-size: .9rem;
+            font-weight: 600;
+            color: #615b69;
         }
 
         .download {
@@ -495,6 +465,9 @@ function qrEscape(string $text): string
     </header>
 
     <main>
+        <?php if ($spaceLabel !== ''): ?>
+        <p class="campaign-space"><?= qrEscape($spaceLabel) ?></p>
+        <?php endif; ?>
         <h1>
             <span><?= qrEscape($copy['line1']) ?></span>
             <span class="hello">
@@ -620,7 +593,7 @@ function qrEscape(string $text): string
         <nav class="web-actions" aria-label="<?= $pt ? 'Acesso pela web' : 'Web access' ?>">
             <span><?= qrEscape($copy['web']) ?></span>
             <a href="/login"><?= qrEscape($copy['login']) ?></a>
-            <a class="web-register" href="/create-account/"><?= qrEscape($copy['register']) ?></a>
+            <a class="web-register" href="<?= qrEscape($registerUrl) ?>"><?= qrEscape($copy['register']) ?></a>
         </nav>
         <a class="about-link" href="/sobre.html"><?= qrEscape($copy['about']) ?></a>
     </main>
