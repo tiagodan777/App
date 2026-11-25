@@ -79,4 +79,45 @@ for (const piece of window.MargotClothes.pieces) {
 }
 const multicolor = window.MargotClothes.icon('tshirt', 'multicolor', 'roupa-teste');
 equal(multicolor.children[0].tagName, 'defs');
-console.log(`OK: ${checks} verificações JavaScript (sintaxe, localização, avisos e roupas).`);
+function campaignPage(url, state, { prerendering = false, nativeEntry = false } = {}) {
+    const requests = [];
+    const events = new Map();
+    const listen = (event, handler) => events.set(event, handler);
+    const page = {
+        currentScript: { dataset: { entradaPublica: nativeEntry ? '1' : undefined } },
+        visibilityState: state,
+        prerendering,
+        addEventListener: listen
+    };
+    vm.runInNewContext(source('campanha-visita.js'), {
+        document: page,
+        window: {
+            location: { href: url },
+            Capacitor: nativeEntry ? { isNativePlatform: () => true } : undefined,
+            addEventListener: listen
+        },
+        fetch: async (target, options) => {
+            requests.push([target, options.method, options.headers['X-Margot-Campaign-Visit']]);
+        }
+    });
+    return { page, requests, fire: event => events.get(event)?.() };
+}
+
+const screenUrl = 'https://margot-app.com/espacos/cafe-pioledo/?src=screen';
+const screen = campaignPage(screenUrl, 'visible');
+const facebook = campaignPage('https://margot-app.com/espacos/cafe-pioledo/?src=facebook', 'hidden');
+const xots = campaignPage('https://margot-app.com/espacos/xots/?src=tiktok', 'visible', { prerendering: true });
+screen.fire('pageshow');
+screen.fire('visibilitychange');
+facebook.fire('pageshow');
+xots.fire('pageshow');
+equal(screen.requests, [[screenUrl, 'POST', '1']]);
+equal(facebook.requests, []);
+equal(xots.requests, []);
+xots.page.prerendering = false;
+xots.fire('prerenderingchange');
+xots.fire('pageshow');
+equal(xots.requests, [['https://margot-app.com/espacos/xots/?src=tiktok', 'POST', '1']]);
+equal(campaignPage('https://margot-app.com/?src=screen', 'visible', { nativeEntry: true }).requests, []);
+
+console.log(`OK: ${checks} verificações JavaScript (sintaxe, localização, avisos, roupas e campanhas).`);

@@ -12,14 +12,15 @@ header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: no-referrer');
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+$visitRequest = $method === 'POST'
+    && ($_SERVER['HTTP_X_MARGOT_CAMPAIGN_VISIT'] ?? '') === '1'
+    && ($_SERVER['HTTP_SEC_FETCH_SITE'] ?? 'same-origin') === 'same-origin';
 
-if (!in_array($method, ['GET', 'HEAD'], true)) {
-    header('Allow: GET, HEAD');
+if (!in_array($method, ['GET', 'HEAD'], true) && !$visitRequest) {
+    header('Allow: GET, HEAD, POST');
     http_response_code(405);
-    exit;
+    return;
 }
-
-header('Content-Type: text/html; charset=utf-8');
 
 $publicEntry = isset($nativeEntryUrl);
 $legacy = !$publicEntry && !isset($campaignSlug);
@@ -27,33 +28,39 @@ $campaignSlug ??= $legacy ? 'provisorio' : (array_key_exists('src', $_GET) ? 'si
 $campaign = $legacy ? ['slug' => 'provisorio', 'nome' => '', 'localidade' => ''] : null;
 $source = PartnershipCampaign::source($_GET['src'] ?? 'direct', $campaignSlug);
 
-if ($campaignSlug !== null) {
+if ($visitRequest) {
     try {
-        $connection = $landingConnection ?? PartnershipCampaign::openLandingConnection();
-        $tracking = new PartnershipCampaign($connection);
+        $tracking = new PartnershipCampaign($landingConnection ?? PartnershipCampaign::openLandingConnection());
+        $tracking->recordVisit($campaignSlug, $source, $legacy);
+        http_response_code(204);
+    } catch (Throwable $error) {
+        http_response_code(503);
+        error_log('[margot-campaign] Visita: ' . get_class($error));
+    }
+    return;
+}
 
-        if (!$legacy) {
-            $campaign = $tracking->activeSpace($campaignSlug);
-            if ($campaign === null && !$publicEntry) {
-                http_response_code(404);
-                if ($method === 'GET') {
-                    echo 'Espaço não encontrado.';
-                }
-                return;
+header('Content-Type: text/html; charset=utf-8');
+
+if ($campaignSlug !== null && !$legacy) {
+    try {
+        $tracking = new PartnershipCampaign($landingConnection ?? PartnershipCampaign::openLandingConnection());
+        $campaign = $tracking->activeSpace($campaignSlug);
+        if ($campaign === null && !$publicEntry) {
+            http_response_code(404);
+            if ($method === 'GET') {
+                echo 'Espaço não encontrado.';
             }
-        }
-
-        if ($method === 'GET' && $campaign !== null) {
-            $tracking->recordVisit($campaignSlug, $source, $legacy);
+            return;
         }
     } catch (Throwable $error) {
         // A página de downloads continua acessível durante uma falha de medição.
-        error_log('[margot-campaign] Visita: ' . get_class($error));
+        error_log('[margot-campaign] Espaço: ' . get_class($error));
     }
 }
 
 if ($method === 'HEAD') {
-    exit;
+    return;
 }
 
 $registerUrl = '/create-account/';
@@ -597,5 +604,8 @@ function qrEscape(string $text): string
         </nav>
         <a class="about-link" href="/sobre.html"><?= qrEscape($copy['about']) ?></a>
     </main>
+    <?php if ($campaign !== null): ?>
+    <script src="/js/campanha-visita.js"<?= $publicEntry ? ' data-entrada-publica="1"' : '' ?>></script>
+    <?php endif; ?>
 </body>
 </html>
