@@ -248,12 +248,12 @@
         const maiorAltura = Math.max(...fotos.map(foto => foto.altura));
         let grelha = null;
 
-        // Usa o mesmo passo entre centros. As filas com menos fotos ficam centradas.
+        // Cada foto fica numa zona própria, com espaço para variar a posição.
         for (let linhas = 1; linhas <= fotos.length; linhas++) {
             const colunas = Math.ceil(fotos.length / linhas);
             const passoX = largura / colunas;
             const passoY = altura / linhas;
-            const margem = Math.min(16, passoX / 3, passoY / 3);
+            const margem = Math.min(24, passoX / 3, passoY / 3);
             const espaco = Math.min((passoX - margem) / maiorLargura, (passoY - margem) / maiorAltura);
 
             if (!grelha || espaco > grelha.espaco) {
@@ -263,6 +263,11 @@
 
         limparGestosMapa();
         const escalaFinal = Math.min(1, grelha.espaco / escalaDoZoom());
+        const escalaVisivel = escalaDoZoom() * escalaFinal;
+        // A oscilação do mapa pode deslocar cada foto até 6 px por eixo.
+        const separacao = 16 * escalaFinal;
+        const folgaX = Math.max(0, grelha.passoX - maiorLargura * escalaVisivel - separacao) / 2;
+        const folgaY = Math.max(0, grelha.passoY - maiorAltura * escalaVisivel - separacao) / 2;
         const ajustes = [];
         const ordenadas = fotos.map(foto => {
             absorverDeslocamento(foto);
@@ -274,10 +279,12 @@
             const inicio = Math.round(linha * fotos.length / grelha.linhas);
             const fim = Math.round((linha + 1) * fotos.length / grelha.linhas);
             const fila = ordenadas.slice(inicio, fim).sort((a, b) => a.x - b.x);
-            const y = area.top + (linha + .5) * grelha.passoY;
+            const centroY = area.top + (linha + .5) * grelha.passoY;
 
             fila.forEach(({ foto }, coluna) => {
-                const x = area.left + largura / 2 + (coluna - (fila.length - 1) / 2) * grelha.passoX;
+                const centroX = area.left + largura / 2 + (coluna - (fila.length - 1) / 2) * grelha.passoX;
+                const x = centroX + (Math.random() * 2 - 1) * folgaX;
+                const y = centroY + (Math.random() * 2 - 1) * folgaY;
                 const destino = noMapa(x - foto.largura / 2, y - foto.altura / 2);
                 ajustes.push({ foto, left: foto.left, top: foto.top, destino });
             });
