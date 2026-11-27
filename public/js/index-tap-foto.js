@@ -45,8 +45,9 @@
 
                 @keyframes mini-menu-foto-saida {
                     0% { --mini-menu-foto-escala: 1; }
-                    24% { --mini-menu-foto-escala: 1.04; }
-                    100% { --mini-menu-foto-escala: .86; }
+                    22% { --mini-menu-foto-escala: 1.04; }
+                    62% { --mini-menu-foto-escala: .9; }
+                    100% { --mini-menu-foto-escala: .84; }
                 }
 
                 body.margot-mini-menu-aberto .foto {
@@ -54,9 +55,9 @@
                     visibility: visible !important;
                     opacity: 0 !important;
                     pointer-events: none !important;
-                    --mini-menu-foto-escala: ${escalaAnimada ? '.86' : '1'};
-                    animation: ${escalaAnimada ? 'mini-menu-foto-saida 105ms ease-out' : 'none'};
-                    transition: opacity 105ms cubic-bezier(.42, 0, .65, 1) !important;
+                    --mini-menu-foto-escala: ${escalaAnimada ? '.84' : '1'};
+                    animation: ${escalaAnimada ? 'mini-menu-foto-saida 220ms ease-out' : 'none'};
+                    transition: opacity ${escalaAnimada ? '105ms ease-in 115ms' : '120ms ease-out'} !important;
                 }
 
                 @media (prefers-reduced-motion: reduce) {
