@@ -52,6 +52,12 @@ body:has(#gridCanvas) {
 }
 
 /* CANVAS */
+#mapa-container {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+}
+
 #gridCanvas {
     position: fixed;
     inset: 0;

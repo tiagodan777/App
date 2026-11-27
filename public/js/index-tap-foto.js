@@ -56,8 +56,8 @@
                     opacity: 0 !important;
                     pointer-events: none !important;
                     --mini-menu-foto-escala: ${escalaAnimada ? '.84' : '1'};
-                    animation: ${escalaAnimada ? 'mini-menu-foto-saida 220ms ease-out' : 'none'};
-                    transition: opacity ${escalaAnimada ? '105ms ease-in 115ms' : '120ms ease-out'} !important;
+                    animation: ${escalaAnimada ? 'mini-menu-foto-saida 165ms ease-out' : 'none'};
+                    transition: opacity ${escalaAnimada ? '95ms ease-in 70ms' : '120ms ease-out'} !important;
                 }
 
                 @media (prefers-reduced-motion: reduce) {

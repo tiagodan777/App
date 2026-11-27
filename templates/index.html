@@ -9,7 +9,9 @@
 {% endblock %}
 
 {% block content %}
-    <canvas id="gridCanvas"></canvas>
+    <div id="mapa-container">
+        <canvas id="gridCanvas"></canvas>
+    </div>
 
     <div class="mini-menu" data-destinatario-id="" aria-hidden="true">
         <div id="barra"></div>
@@ -224,7 +226,7 @@
         })();
     </script>
 
-    <script src="{{ doc_root }}js/index-posicao.js?v=20261127-mini-menu-fotos"></script>
+    <script src="{{ doc_root }}js/index-posicao.js?v=20261127-mapa-distribuicao-2"></script>
     <script src="{{ doc_root }}js/today-clothes.js?v=20260916"></script>
 
     {% if halloween_enabled %}

@@ -11,7 +11,7 @@ final class LanguageTemplateLoader implements LoaderInterface
 {
     private const LOCATION_NOTICE_VERSION = '20261010-location-notice-5';
     private const PRESENCE_CANVAS_VERSION = '20261010-presence-canvas-1';
-    private const MINI_MEDIA_VERSION = '20261127-mini-menu-fotos-3';
+    private const MINI_MEDIA_VERSION = '20261127-mini-menu-fotos-4';
     private const FLUIDITY_VERSION = '20261009-fluidity-haptics-1';
     private const KEYBOARD_VERSION = '20261009-mini-keyboard-3';
         private const STABILITY_VERSION = '20261018-push-recovery-1';

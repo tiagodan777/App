@@ -1,7 +1,8 @@
 (() => {
     'use strict';
 
-    if (!document.getElementById('gridCanvas')) return;
+    const mapa = document.getElementById('mapa-container');
+    if (!mapa) return;
 
     let ativos = {};
     let scale = 1;
@@ -42,6 +43,12 @@
     let regresso = null;
     let ultimoFrameReacao = null;
     let area = null;
+    let escalaDistribuicao = 1;
+    let cliqueVazio = false;
+    let toqueVazio = null;
+    let ultimoToqueVazio = null;
+    const DURACAO_DISTRIBUICAO = 270;
+    const INTERVALO_DUPLO_TOQUE = 300;
 
     const movimentoReduzido = matchMedia('(prefers-reduced-motion: reduce)');
     const miniMenu = document.querySelector('.mini-menu');
@@ -79,10 +86,14 @@
         }
     }
 
-    function escalaFoto() {
+    function escalaDoZoom() {
         return scale < 1
             ? Math.max(MIN_FOTO_SCALE, 1 + (scale - 1) * 0.8)
             : 1 + (scale - 1) * FOTO_ZOOM_INTENSIDADE;
+    }
+
+    function escalaFoto() {
+        return escalaDoZoom() * escalaDistribuicao;
     }
 
     function limitesFoto(foto, margem = 0) {
@@ -222,6 +233,78 @@
         iniciarVisual();
     }
 
+    function espalharFotos() {
+        if (!paginaAtiva || document.hidden || sobreposto() || window.MargotDiscoveryTutorial?.busy) return;
+
+        const fotos = fotosCache.filter(foto => !foto.elemento.classList.contains('a-remover'));
+        if (fotos.length < 2) return;
+
+        atualizarArea();
+        const largura = area.right - area.left;
+        const altura = area.bottom - area.top;
+        if (largura <= 0 || altura <= 0) return;
+
+        const maiorLargura = Math.max(...fotos.map(foto => foto.largura));
+        const maiorAltura = Math.max(...fotos.map(foto => foto.altura));
+        let grelha = null;
+
+        // Usa o mesmo passo entre centros. As filas com menos fotos ficam centradas.
+        for (let linhas = 1; linhas <= fotos.length; linhas++) {
+            const colunas = Math.ceil(fotos.length / linhas);
+            const passoX = largura / colunas;
+            const passoY = altura / linhas;
+            const margem = Math.min(16, passoX / 3, passoY / 3);
+            const espaco = Math.min((passoX - margem) / maiorLargura, (passoY - margem) / maiorAltura);
+
+            if (!grelha || espaco > grelha.espaco) {
+                grelha = { linhas, passoX, passoY, espaco };
+            }
+        }
+
+        limparGestosMapa();
+        const escalaFinal = Math.min(1, grelha.espaco / escalaDoZoom());
+        const ajustes = [];
+        const ordenadas = fotos.map(foto => {
+            absorverDeslocamento(foto);
+            const p = noEcra(foto);
+            return { foto, x: p.x + foto.largura / 2, y: p.y + foto.altura / 2 };
+        }).sort((a, b) => a.y - b.y);
+
+        for (let linha = 0; linha < grelha.linhas; linha++) {
+            const inicio = Math.round(linha * fotos.length / grelha.linhas);
+            const fim = Math.round((linha + 1) * fotos.length / grelha.linhas);
+            const fila = ordenadas.slice(inicio, fim).sort((a, b) => a.x - b.x);
+            const y = area.top + (linha + .5) * grelha.passoY;
+
+            fila.forEach(({ foto }, coluna) => {
+                const x = area.left + largura / 2 + (coluna - (fila.length - 1) / 2) * grelha.passoX;
+                const destino = noMapa(x - foto.largura / 2, y - foto.altura / 2);
+                ajustes.push({ foto, left: foto.left, top: foto.top, destino });
+            });
+        }
+
+        if (movimentoReduzido.matches) {
+            escalaDistribuicao = escalaFinal;
+            for (const ajuste of ajustes) {
+                Object.assign(ajuste.foto, ajuste.destino);
+                memorizarPosicaoFoto(ajuste.foto);
+            }
+            aplicarTransform();
+            return;
+        }
+
+        regresso = { inicio: null, ajustes, escalaInicial: escalaDistribuicao, escalaFinal };
+        iniciarVisual();
+    }
+
+    function cliqueNoMapa(evento) {
+        const vazio = evento.target === mapa && evento.button === 0;
+        if (evento.detail === 2 && vazio && cliqueVazio) {
+            espalharFotos();
+        }
+        cliqueVazio = evento.detail === 1 && vazio;
+    }
+
     function garantirVisiveis() {
         if (
             !paginaAtiva ||
@@ -328,11 +411,17 @@
         ultimoFrame = now;
         tempoVisual += dt;
 
+        const aEspalhar = regresso?.escalaFinal !== undefined;
         if (regresso) {
             if (regresso.inicio === null) regresso.inicio = now;
 
-            const t = clamp((now - regresso.inicio) / 380, 0, 1);
-            const ease = t * t * t * (t * (t * 6 - 15) + 10);
+            const duracao = aEspalhar ? DURACAO_DISTRIBUICAO : 380;
+            const t = clamp((now - regresso.inicio) / duracao, 0, 1);
+            const ease = aEspalhar ? 1 - (1 - t) ** 3 : t * t * t * (t * (t * 6 - 15) + 10);
+
+            if (aEspalhar) {
+                escalaDistribuicao = regresso.escalaInicial + (regresso.escalaFinal - regresso.escalaInicial) * ease;
+            }
 
             for (const a of regresso.ajustes) {
                 a.foto.left = a.left + (a.destino.left - a.left) * ease;
@@ -358,7 +447,7 @@
             foto.reacaoX = clamp(foto.reacaoX + foto.vx * dt, -22, 22);
             foto.reacaoY = clamp(foto.reacaoY + foto.vy * dt, -22, 22);
 
-            if (!movimento && !movimentoReduzido.matches) {
+            if (!aEspalhar && !movimento && !movimentoReduzido.matches) {
                 const t = tempoVisual * foto.ritmo;
                 const x =
                     4 * Math.sin(t + foto.fase) +
@@ -410,6 +499,10 @@
     }
 
     function inicializarFotos() {
+        // O mapa reúne as fotos que o WebSocket e o tutorial inserem no body.
+        document.querySelectorAll('body > .foto').forEach(elemento => mapa.appendChild(elemento));
+        // A pesquisa abaixo já inclui as fotos movidas durante esta chamada.
+        fotosObserver.takeRecords();
         atualizarArea();
         regresso = null;
 
@@ -417,7 +510,7 @@
             fotosCache.map(foto => [foto.elemento, foto])
         );
 
-        fotosCache = Array.from(document.querySelectorAll(window.MargotDiscoveryTutorial?.busy ? '.foto[data-margot-demo]' : '.foto:not([data-margot-demo])')).map(el => {
+        fotosCache = Array.from(mapa.querySelectorAll(window.MargotDiscoveryTutorial?.busy ? '.foto[data-margot-demo]' : '.foto:not([data-margot-demo])')).map(el => {
             el.style.position = 'absolute';
             el.style.top = el.style.left = '0px';
             el.style.transformOrigin = 'center center';
@@ -590,9 +683,7 @@
 
         const cosR = Math.cos(globalRotation);
         const sinR = Math.sin(globalRotation);
-        const fotoScale = scale < 1
-            ? Math.max(MIN_FOTO_SCALE, 1 + (scale - 1) * 0.8)
-            : 1 + (scale - 1) * FOTO_ZOOM_INTENSIDADE;
+        const fotoScale = escalaFoto();
 
         for (const foto of fotosCache) {
             const ox = foto.left * scale;
@@ -604,8 +695,8 @@
             const baseX = foto.rx + panX;
             const baseY = foto.ry + panY;
 
-            let posX = baseX + foto.oscX + foto.reacaoX;
-            let posY = baseY + foto.oscY + foto.reacaoY;
+            let posX = baseX + foto.oscX * escalaDistribuicao + foto.reacaoX;
+            let posY = baseY + foto.oscY * escalaDistribuicao + foto.reacaoY;
 
             if (!movimento && !regresso && area) {
                 const b = limitesFoto(foto);
@@ -754,6 +845,8 @@
         refX = refY = ultimaDistancia = ultimoAngulo = 0;
         velX = velY = mapVelX = mapVelY = mapVelScale = mapVelRotation = 0;
         regresso = null;
+        toqueVazio = ultimoToqueVazio = null;
+        cliqueVazio = false;
 
         // Conserva o zoom, a rotação e as posições atuais.
     }
@@ -797,11 +890,14 @@
             limparGestosMapa();
         }
 
-        if (
-            e.target.closest('.foto') ||
-            e.target.id === 'mapa-container' ||
-            e.target.tagName.toLowerCase() === 'canvas'
-        ) {
+        if (alvo === mapa && e.touches.length === 1 && !sobreposto()) {
+            const toque = e.changedTouches[0];
+            toqueVazio = { id: toque.identifier, x: toque.clientX, y: toque.clientY, instante: performance.now() };
+        } else {
+            toqueVazio = ultimoToqueVazio = null;
+        }
+
+        if (alvo === mapa || alvo.closest('.foto')) {
             e.preventDefault();
         }
 
@@ -860,6 +956,12 @@
         e.preventDefault();
 
         for (const touch of e.changedTouches) {
+            if (toqueVazio?.id === touch.identifier && Math.hypot(
+                touch.clientX - toqueVazio.x, touch.clientY - toqueVazio.y
+            ) > 12) {
+                toqueVazio = ultimoToqueVazio = null;
+            }
+
             if (ativos[touch.identifier]) {
                 ativos[touch.identifier].x = touch.clientX;
                 ativos[touch.identifier].y = touch.clientY;
@@ -981,6 +1083,29 @@
             delete ativos[touch.identifier];
         }
 
+        const toque = Array.from(e.changedTouches).find(touch => touch.identifier === toqueVazio?.id);
+        const inicio = toqueVazio;
+        toqueVazio = null;
+
+        if (toque && e.touches.length === 0 && !sobreposto()) {
+            const agora = performance.now();
+            const anterior = ultimoToqueVazio;
+            if (agora - inicio.instante <= 220 && Math.hypot(toque.clientX - inicio.x, toque.clientY - inicio.y) <= 12) {
+                if (anterior && inicio.instante - anterior.instante <= INTERVALO_DUPLO_TOQUE &&
+                    Math.hypot(toque.clientX - anterior.x, toque.clientY - anterior.y) <= 28) {
+                    ultimoToqueVazio = null;
+                    e.preventDefault();
+                    espalharFotos();
+                    return;
+                }
+                ultimoToqueVazio = { x: toque.clientX, y: toque.clientY, instante: agora };
+                e.preventDefault();
+                garantirVisiveis();
+                return;
+            }
+        }
+        ultimoToqueVazio = null;
+
         if (Object.keys(ativos).length === 0) {
             if (fotoEmArrasto) {
                 if (Math.abs(velX) > 0.5 || Math.abs(velY) > 0.5) {
@@ -1041,6 +1166,7 @@
         iniciarVisual();
     }
 
+    document.addEventListener('click', cliqueNoMapa, true);
     document.addEventListener('touchstart', touchStart, { passive: false });
     document.addEventListener('touchmove', touchMove, { passive: false });
     document.addEventListener('touchend', touchEnd, { passive: false });
@@ -1068,19 +1194,21 @@
         });
     }
 
-    // O WebSocket insere as fotos no body. Posiciona-as antes da primeira pintura.
+    // Posiciona as fotos da camada do mapa antes da primeira pintura.
     const fotosObserver = new MutationObserver(records => {
         if (!paginaAtiva) return;
 
-        const mudou = records.some(record =>
-            [...record.addedNodes, ...record.removedNodes].some(node =>
-                node.nodeType === 1 && node.matches('.foto')
-            )
-        );
+        const mudou = records.some(record => {
+            const fotos = record.target === mapa
+                ? [...record.addedNodes, ...record.removedNodes]
+                : Array.from(record.addedNodes);
+            return fotos.some(node => node.nodeType === 1 && node.matches('.foto'));
+        });
 
         if (mudou) inicializarFotos();
     });
 
+    fotosObserver.observe(mapa, { childList: true });
     fotosObserver.observe(document.body, { childList: true });
 
     window.inicializarFotos = inicializarFotos;
@@ -1092,6 +1220,7 @@
         limparGestosMapa();
         fotosCache.forEach(memorizarPosicaoFoto);
 
+        document.removeEventListener('click', cliqueNoMapa, true);
         document.removeEventListener('touchstart', touchStart);
         document.removeEventListener('touchmove', touchMove);
         document.removeEventListener('touchend', touchEnd);
@@ -1113,7 +1242,8 @@
             delete window.inicializarFotos;
         }
 
-        document.querySelectorAll('.foto').forEach(foto => foto.remove());
+        mapa.querySelectorAll('.foto').forEach(foto => foto.remove());
+        document.querySelectorAll('body > .foto').forEach(foto => foto.remove());
         fotosCache = [];
     }
 
