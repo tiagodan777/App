@@ -133,7 +133,7 @@ function qrEscape(string $text): string
     </script>
     <?php endif; ?>
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#fbfaf8">
+    <meta name="theme-color" content="#fcfbfa">
     <meta name="description" content="<?= qrEscape($copy['intro']) ?>">
 
     <title>Margot — <?= qrEscape($spaceLabel !== '' ? $spaceLabel : $copy['line1'] . ' ' . $copy['line2']) ?></title>
@@ -149,7 +149,7 @@ function qrEscape(string $text): string
 
         html {
             color-scheme: light;
-            background: #fbfaf8;
+            background: #fcfbfa;
         }
 
         body {
@@ -164,7 +164,7 @@ function qrEscape(string $text): string
             overflow-x: clip;
             position: relative;
             isolation: isolate;
-            background: #fbfaf8;
+            background: #fcfbfa;
             color: #25222b;
             font-family:
                 -apple-system,
@@ -190,7 +190,7 @@ function qrEscape(string $text): string
             left: 0;
             background: radial-gradient(
                 ellipse at left,
-                #ffe8c8,
+                #ffecce,
                 transparent 72%
             );
         }

@@ -30,17 +30,36 @@
             }
             var estilo = document.createElement('style');
             estilo.id = estiloFotosId;
-            estilo.textContent = [
-                '.foto {',
-                '    transition: opacity 560ms cubic-bezier(.22, 1, .36, 1) !important;',
-                '}',
-                'body.margot-mini-menu-aberto .foto {',
-                '    display: block !important;',
-                '    visibility: visible !important;',
-                '    opacity: 0 !important;',
-                '    pointer-events: none !important;',
-                '}'
-            ].join('\n');
+            var escalaAnimada = typeof window.CSS?.registerProperty === 'function';
+            estilo.textContent = `
+                @property --mini-menu-foto-escala {
+                    syntax: '<number>';
+                    inherits: false;
+                    initial-value: 1;
+                }
+
+                .foto {
+                    transition: opacity 560ms cubic-bezier(.22, 1, .36, 1)
+                        ${escalaAnimada ? ', --mini-menu-foto-escala 230ms ease-out' : ''} !important;
+                }
+
+                body.margot-mini-menu-aberto .foto {
+                    display: block !important;
+                    visibility: visible !important;
+                    opacity: 0 !important;
+                    pointer-events: none !important;
+                    --mini-menu-foto-escala: ${escalaAnimada ? '.9' : '1'};
+                    transition-duration: 145ms !important;
+                    transition-timing-function: cubic-bezier(.22, .75, .32, 1) !important;
+                }
+
+                @media (prefers-reduced-motion: reduce) {
+                    body.margot-mini-menu-aberto .foto {
+                        --mini-menu-foto-escala: 1;
+                        transition: opacity 85ms linear !important;
+                    }
+                }
+            `;
             document.head.appendChild(estilo);
         }
 

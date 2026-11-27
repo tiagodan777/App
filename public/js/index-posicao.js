@@ -623,7 +623,7 @@
             foto.visualY = posY - baseY;
 
             foto.elemento.style.transform =
-                `translate3d(${posX}px, ${posY}px, 0) scale(${fotoScale})`;
+                `translate3d(${posX}px, ${posY}px, 0) scale(${fotoScale}) scale(var(--mini-menu-foto-escala, 1))`;
         }
     }
 
