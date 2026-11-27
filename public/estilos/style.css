@@ -45,10 +45,10 @@ body:has(#gridCanvas) {
         ),
         radial-gradient(
             circle at 5% 78%,
-            rgba(244, 220, 146, 0.03),
+            rgba(244, 220, 146, 0.025),
             transparent 31%
         ),
-        #fefefc;
+        #fffffe;
 }
 
 /* CANVAS */
